@@ -469,6 +469,46 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("spell count 1");
   });
 
+  it("lets Lua scripts mutate and filter groups", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Group A", kind: "monster", attack: 1000 },
+      { code: "200", name: "Group B", kind: "monster", attack: 2000 },
+      { code: "300", name: "Group C", kind: "monster", attack: 3000 },
+    ];
+    const session = createDuel({ seed: 15, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local all = Duel.GetFieldGroup(0, LOCATION_HAND, 0)
+      local high = all:Filter(function(tc) return tc:GetAttack() >= 2000 end, nil)
+      local c100 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local c200 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local g = Group.CreateGroup()
+      g:AddCard(c100)
+      g:AddCard(c100)
+      Debug.Message("added unique " .. g:GetCount() .. " " .. tostring(g:IsContains(c100)))
+      g:Merge(high)
+      Debug.Message("merged " .. g:GetCount() .. " " .. tostring(g:IsContains(c200)))
+      g:RemoveCard(c100)
+      Debug.Message("removed " .. g:GetCount() .. " " .. tostring(g:IsContains(c100)))
+      Debug.Message("filtered high " .. high:GetCount())
+      `,
+      "group-mutation.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("added unique 1 true");
+    expect(host.messages).toContain("merged 3 true");
+    expect(host.messages).toContain("removed 2 false");
+    expect(host.messages).toContain("filtered high 2");
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

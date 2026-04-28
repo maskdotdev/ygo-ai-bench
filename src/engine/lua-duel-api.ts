@@ -463,6 +463,11 @@ function pushGroupTable(L: unknown, uids: string[]): void {
   copyGlobalFunctionToField(L, "Group", "GetFirst");
   copyGlobalFunctionToField(L, "Group", "GetNext");
   copyGlobalFunctionToField(L, "Group", "GetCount");
+  copyGlobalFunctionToField(L, "Group", "AddCard");
+  copyGlobalFunctionToField(L, "Group", "Merge");
+  copyGlobalFunctionToField(L, "Group", "RemoveCard");
+  copyGlobalFunctionToField(L, "Group", "IsContains");
+  copyGlobalFunctionToField(L, "Group", "Filter");
 }
 
 function copyGlobalFunctionToField(L: unknown, tableName: string, fieldName: string): void {

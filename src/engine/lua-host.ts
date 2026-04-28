@@ -378,6 +378,38 @@ function installGroupApi(L: unknown): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 2);
+    if (uid) setGroupUids(state, 1, uniqueUids([...readGroupUids(state, 1), uid]));
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("AddCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    setGroupUids(state, 1, uniqueUids([...readGroupUids(state, 1), ...readGroupUids(state, 2)]));
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Merge"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 2);
+    if (uid) setGroupUids(state, 1, readGroupUids(state, 1).filter((candidate) => candidate !== uid));
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("RemoveCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 2);
+    lua.lua_pushboolean(state, Boolean(uid && readGroupUids(state, 1).includes(uid)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsContains"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
+    const excluded = readCardUid(state, 3);
+    const uids = filterRef === undefined ? readGroupUids(state, 1) : readGroupUids(state, 1).filter((uid) => uid !== excluded && groupCardMatchesFilter(state, uid, filterRef));
+    releaseOptionalFunctionRef(state, filterRef);
+    pushGroupTable(state, uids);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Filter"));
   lua.lua_setglobal(L, to_luastring("Group"));
 }
 
@@ -572,6 +604,11 @@ function pushGroupTable(L: unknown, uids: string[]): void {
   copyGlobalFunctionToField(L, "Group", "GetFirst");
   copyGlobalFunctionToField(L, "Group", "GetNext");
   copyGlobalFunctionToField(L, "Group", "GetCount");
+  copyGlobalFunctionToField(L, "Group", "AddCard");
+  copyGlobalFunctionToField(L, "Group", "Merge");
+  copyGlobalFunctionToField(L, "Group", "RemoveCard");
+  copyGlobalFunctionToField(L, "Group", "IsContains");
+  copyGlobalFunctionToField(L, "Group", "Filter");
 }
 
 function readTableStringField(L: unknown, index: number, fieldName: string): string | undefined {
@@ -610,6 +647,39 @@ function readGroupUids(L: unknown, index: number): string[] {
   }
   lua.lua_pop(L, 1);
   return uids;
+}
+
+function setGroupUids(L: unknown, index: number, uids: string[]): void {
+  lua.lua_newtable(L);
+  for (const [luaIndex, uid] of uids.entries()) {
+    lua.lua_pushliteral(L, uid);
+    lua.lua_rawseti(L, -2, luaIndex + 1);
+  }
+  lua.lua_setfield(L, index, to_luastring("__group_uids"));
+}
+
+function uniqueUids(uids: string[]): string[] {
+  return [...new Set(uids)];
+}
+
+function readOptionalFunctionRef(L: unknown, index: number): number | undefined {
+  if (!lua.lua_isfunction(L, index)) return undefined;
+  lua.lua_pushvalue(L, index);
+  return lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX);
+}
+
+function releaseOptionalFunctionRef(L: unknown, ref: number | undefined): void {
+  if (ref !== undefined) lauxlib.luaL_unref(L, lua.LUA_REGISTRYINDEX, ref);
+}
+
+function groupCardMatchesFilter(L: unknown, uid: string, filterRef: number): boolean {
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, filterRef);
+  pushCardTable(L, uid);
+  const status = lua.lua_pcall(L, 1, 1, 0);
+  if (status !== lua.LUA_OK) return false;
+  const result = Boolean(lua.lua_toboolean(L, -1));
+  lua.lua_pop(L, 1);
+  return result;
 }
 
 function locationsFromMask(mask: number): DuelLocation[] {
