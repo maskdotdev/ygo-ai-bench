@@ -117,7 +117,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       if (effect.event !== "ignition" && effect.event !== "quick") continue;
       const source = findCard(state, effect.sourceUid);
       if (!source || !effect.range.includes(source.location)) continue;
-      if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(effect))) continue;
+      if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(state, effect))) continue;
       const ctx = createEffectContext(state, source, player);
       if (effect.canActivate && !effect.canActivate(ctx)) continue;
       actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
@@ -278,7 +278,7 @@ function activateEffect(session: DuelSession, player: PlayerId, uid: string, eff
   pushDuelLog(session.state, "activate", player, source.name, effect.id);
   session.state.status = "resolving";
   effect.operation(ctx);
-  if (effect.oncePerTurn) session.state.usedCountKeys.push(effectCountKey(effect));
+  if (effect.oncePerTurn) session.state.usedCountKeys.push(effectCountKey(session.state, effect));
   session.state.chain.pop();
   session.state.status = "awaiting";
 }
@@ -356,7 +356,7 @@ function createEffectContext(state: DuelState, source: DuelCardInstance, player:
 function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard: DuelCardInstance): void {
   for (const effect of state.effects) {
     if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
-    if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(effect))) continue;
+    if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(state, effect))) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createEffectContext(state, source, effect.controller, eventName, eventCard);
@@ -385,7 +385,7 @@ function resolveEffect(state: DuelState, effect: DuelEffectDefinition, source: D
   pushDuelLog(state, logAction, player, source.name, effect.id);
   state.status = "resolving";
   effect.operation(ctx);
-  if (effect.oncePerTurn) state.usedCountKeys.push(effectCountKey(effect));
+  if (effect.oncePerTurn) state.usedCountKeys.push(effectCountKey(state, effect));
   state.chain.pop();
   state.status = "awaiting";
 }
@@ -418,8 +418,8 @@ function pushDuelLog(state: DuelState, action: string, player: PlayerId | undefi
   state.log.push({ step: state.log.length + 1, action, detail, ...(player === undefined ? {} : { player }), ...(card === undefined ? {} : { card }) });
 }
 
-function effectCountKey(effect: DuelEffectDefinition): string {
-  return `${effect.controller}:${effect.sourceUid}:${effect.id}`;
+function effectCountKey(state: DuelState, effect: DuelEffectDefinition): string {
+  return `${state.turn}:${effect.controller}:${effect.sourceUid}:${effect.id}`;
 }
 
 function sameAction(a: DuelAction, b: DuelResponse): boolean {
