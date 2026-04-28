@@ -453,4 +453,77 @@ describe("Node upstream workspace loader", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("graveyard trigger resolved");
   });
+
+  it("lets Lua quick effects negate pending chain links", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("negated lua operation should not resolve")
+          Duel.SendtoGrave(c, REASON_EFFECT)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(root, "script", "c400.lua"),
+      `
+      c400 = {}
+      c400.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("chain depth " .. Duel.GetCurrentChain())
+          if Duel.NegateActivation() then
+            Debug.Message("lua negation resolved")
+          end
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 300, type: 1 }, { id: 400, type: 1 }, { id: 500, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.loadCardScript(400, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const activation = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(activation).toBeTruthy();
+    const opened = applyResponse(session, activation!);
+    expect(opened.ok).toBe(true);
+    expect(opened.state.chain).toHaveLength(1);
+
+    const response = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(response).toBeTruthy();
+    const result = applyResponse(session, response!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.chain).toHaveLength(0);
+    expect(result.state.cards.find((card) => card.code === "100")?.location).toBe("hand");
+    expect(host.messages).toContain("chain depth 1");
+    expect(host.messages).toContain("lua negation resolved");
+    expect(host.messages).not.toContain("negated lua operation should not resolve");
+  });
 });

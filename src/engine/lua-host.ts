@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { scriptFilenameForCard } from "./data-loaders.js";
-import { registerEffect, sendDuelCardToGraveyard, specialSummonDuelCard } from "./duel-core.js";
+import { negateDuelChainLink, registerEffect, sendDuelCardToGraveyard, specialSummonDuelCard } from "./duel-core.js";
 import type { DuelCardInstance, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -190,6 +190,22 @@ function installDuelApi(L: unknown, session: DuelSession, messages: string[]): v
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("DebugMessage"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, session.state.chain.length);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetCurrentChain"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const target = lua.lua_isnumber(state, 1) ? session.state.chain[lua.lua_tointeger(state, 1) - 1] : session.state.chain[session.state.chain.length - 1];
+    if (!target) {
+      lua.lua_pushboolean(state, false);
+      return 1;
+    }
+    const source = session.state.cards.find((candidate) => candidate.uid === target.sourceUid);
+    lua.lua_pushboolean(state, negateDuelChainLink(session.state, target.id, source?.controller ?? session.state.turnPlayer, source?.name ?? "Lua effect"));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("NegateActivation"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readCardOrGroupUids(state, 1);
     let moved = 0;
