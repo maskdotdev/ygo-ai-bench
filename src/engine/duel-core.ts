@@ -288,8 +288,8 @@ function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerI
   const effect = session.state.effects.find((candidate) => candidate.sourceUid === trigger.sourceUid && candidate.id === trigger.effectId);
   if (!effect) throw new Error(`Effect ${trigger.effectId} is not registered`);
   const source = findCard(session.state, trigger.sourceUid);
-  const eventCard = findCard(session.state, trigger.eventCardUid);
-  if (!source || !eventCard) throw new Error(`Trigger ${triggerId} lost its source or event card`);
+  const eventCard = trigger.eventCardUid === undefined ? undefined : findCard(session.state, trigger.eventCardUid);
+  if (!source || (trigger.eventCardUid !== undefined && !eventCard)) throw new Error(`Trigger ${triggerId} lost its source or event card`);
   resolveEffect(session.state, effect, source, trigger.player, trigger.eventName, eventCard, "trigger");
   session.state.waitingFor = session.state.pendingTriggers[0]?.player ?? session.state.turnPlayer;
 }
@@ -314,6 +314,7 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
   if (phaseOrder.indexOf(phase) <= phaseOrder.indexOf(state.phase)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
   state.phase = phase;
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
+  collectTriggerEffects(state, "phaseChanged");
 }
 
 function endTurn(state: DuelState, player: PlayerId): void {
@@ -326,6 +327,7 @@ function endTurn(state: DuelState, player: PlayerId): void {
   draw(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");
   state.phase = "main1";
   pushDuelLog(state, "turn", state.turnPlayer, undefined, `Turn ${state.turn} started`);
+  collectTriggerEffects(state, "turnStarted");
 }
 
 function draw(state: DuelState, player: PlayerId, count: number, detail: string): void {
@@ -353,7 +355,7 @@ function createEffectContext(state: DuelState, source: DuelCardInstance, player:
   };
 }
 
-function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard: DuelCardInstance): void {
+function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
   for (const effect of state.effects) {
     if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
     if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(state, effect))) continue;
@@ -366,14 +368,14 @@ function collectTriggerEffects(state: DuelState, eventName: DuelEventName, event
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
 }
 
-function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard: DuelCardInstance): PendingTrigger {
+function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard?: DuelCardInstance): PendingTrigger {
   return {
     id: `trigger-${state.log.length + 1}-${state.pendingTriggers.length + 1}`,
     player: effect.controller,
     sourceUid: source.uid,
     effectId: effect.id,
     eventName,
-    eventCardUid: eventCard.uid,
+    ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
   };
 }
 

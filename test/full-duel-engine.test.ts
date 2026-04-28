@@ -273,4 +273,65 @@ describe("full duel engine API", () => {
     expect(secondResult.state.cards.find((card) => card.uid === secondSource!.uid)?.location).toBe("graveyard");
     expect(secondResult.state.cards.find((card) => card.uid === firstSource!.uid)?.location).toBe("hand");
   });
+
+  it("collects phase and turn-start trigger effects", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const phaseSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(phaseSource).toBeTruthy();
+    expect(turnSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "on-phase-change",
+      sourceUid: phaseSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "phaseChanged",
+      range: ["monsterZone"],
+      operation(ctx) {
+        ctx.log(`Observed ${ctx.eventName ?? "missing event"}`);
+      },
+    });
+    registerEffect(session, {
+      id: "on-turn-start",
+      sourceUid: turnSource!.uid,
+      controller: 1,
+      event: "trigger",
+      triggerEvent: "turnStarted",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Observed ${ctx.eventName ?? "missing event"}`);
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === phaseSource!.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const battlePhase = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battlePhase).toBeTruthy();
+    const phaseResult = applyResponse(session, battlePhase!);
+
+    expect(phaseResult.ok).toBe(true);
+    expect(phaseResult.state.pendingTriggers).toHaveLength(1);
+    expect(phaseResult.state.pendingTriggers[0]).toMatchObject({ eventName: "phaseChanged", effectId: "on-phase-change" });
+    expect(phaseResult.state.pendingTriggers[0]?.eventCardUid).toBeUndefined();
+    const phaseTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "on-phase-change");
+    expect(phaseTrigger).toBeTruthy();
+    expect(applyResponse(session, phaseTrigger!).ok).toBe(true);
+
+    const endTurn = getDuelLegalActions(session, 0).find((action) => action.type === "endTurn");
+    expect(endTurn).toBeTruthy();
+    const turnResult = applyResponse(session, endTurn!);
+
+    expect(turnResult.ok).toBe(true);
+    expect(turnResult.state.turn).toBe(2);
+    expect(turnResult.state.pendingTriggers).toHaveLength(1);
+    expect(turnResult.state.pendingTriggers[0]).toMatchObject({ player: 1, eventName: "turnStarted", effectId: "on-turn-start" });
+  });
 });

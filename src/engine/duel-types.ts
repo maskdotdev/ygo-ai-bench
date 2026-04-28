@@ -97,7 +97,7 @@ export interface PendingTrigger {
   sourceUid: string;
   effectId: string;
   eventName: DuelEventName;
-  eventCardUid: string;
+  eventCardUid?: string;
 }
 
 export interface DuelState {
