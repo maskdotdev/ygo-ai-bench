@@ -151,13 +151,15 @@ function installMoveHelpers(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("SendtoExtraP"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readCardOrGroupUids(state, 1);
-    const targetPlayer = lua.lua_isnumber(state, 5) ? normalizePlayer(lua.lua_tointeger(state, 5)) : undefined;
+    const targetPlayer = readOptionalPlayer(state, 4);
+    const requestedPosition = lua.lua_isnumber(state, 7) ? positionFromMask(lua.lua_tointeger(state, 7)) : undefined;
     let moved = 0;
     for (const uid of uids) {
       const card = session.state.cards.find((candidate) => candidate.uid === uid);
       if (!card) continue;
       try {
-        specialSummonDuelCard(session.state, uid, targetPlayer ?? card.controller);
+        const summoned = specialSummonDuelCard(session.state, uid, targetPlayer ?? card.controller);
+        if (requestedPosition) applySummonPosition(summoned, requestedPosition);
         moved += 1;
       } catch {
         // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
@@ -250,6 +252,18 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
   });
   lua.lua_setfield(L, -2, to_luastring("GetLocationCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    lua.lua_pushinteger(state, availableMonsterZoneCount(session, player, readCardOrGroupUids(state, 2)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetMZoneCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const positionMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0x1;
+    lua.lua_pushinteger(state, positionMaskFromPosition(positionFromMask(positionMask) ?? "faceUpAttack"));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SelectPosition"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const minimum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
@@ -317,6 +331,11 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, location: D
     moved += 1;
   }
   return moved;
+}
+
+function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, position: CardPosition): void {
+  card.position = position;
+  card.faceUp = position !== "faceDownDefense";
 }
 
 function pushLuaSummonResult(L: unknown, session: DuelSession, summonType: "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummon" | "RitualSummon"): number {
@@ -468,9 +487,14 @@ function matchingCardUidsWithFilter(L: unknown, session: DuelSession, filterRef:
 
 function availableLocationCount(session: DuelSession, player: PlayerId, locationMask: number): number {
   const locations = locationsFromMask(locationMask);
-  if (locations.includes("monsterZone")) return Math.max(0, 5 - matchingCardUids(session, player, 0x04).length);
+  if (locations.includes("monsterZone")) return availableMonsterZoneCount(session, player, []);
   if (locations.includes("spellTrapZone")) return Math.max(0, 5 - matchingCardUids(session, player, 0x08).length);
   return 99;
+}
+
+function availableMonsterZoneCount(session: DuelSession, player: PlayerId, excludedUids: string[]): number {
+  const occupied = session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && !excludedUids.includes(card.uid)).length;
+  return Math.max(0, 5 - occupied);
 }
 
 function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: number): string[] {
@@ -498,6 +522,13 @@ function positionFromMask(mask: number): CardPosition | undefined {
   if ((mask & 0x4) !== 0) return "faceUpDefense";
   if ((mask & 0x8) !== 0) return "faceDownDefense";
   return undefined;
+}
+
+function positionMaskFromPosition(position: CardPosition): number {
+  if (position === "faceUpAttack") return 0x1;
+  if (position === "faceUpDefense") return 0x4;
+  if (position === "faceDownDefense") return 0x8;
+  return 0;
 }
 
 function normalizePlayer(value: number): PlayerId {

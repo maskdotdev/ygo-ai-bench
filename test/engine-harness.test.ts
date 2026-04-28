@@ -257,6 +257,53 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("graveyard");
   });
 
+  it("lets Lua scripts query monster zones and choose summon positions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Zone Filler A", kind: "monster" },
+      { code: "200", name: "Zone Filler B", kind: "monster" },
+      { code: "300", name: "Zone Filler C", kind: "monster" },
+      { code: "400", name: "Zone Filler D", kind: "monster" },
+      { code: "500", name: "Zone Filler E", kind: "monster" },
+      { code: "600", name: "Position Summon", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 10, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500", "600"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    for (const code of ["100", "200", "300", "400", "500"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local excluded = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("location count " .. Duel.GetLocationCount(0, LOCATION_MZONE))
+      Debug.Message("mzone count " .. Duel.GetMZoneCount(0))
+      Debug.Message("mzone with excluded " .. Duel.GetMZoneCount(0, excluded))
+      local selected = Duel.SelectPosition(0, nil, POS_FACEUP_DEFENSE + POS_FACEDOWN_DEFENSE)
+      Debug.Message("selected position " .. selected)
+      local summon = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("summoned " .. Duel.SpecialSummon(summon, 0, 0, 1, false, false, selected))
+      `,
+      "summon-position.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("location count 0");
+    expect(host.messages).toContain("mzone count 0");
+    expect(host.messages).toContain("mzone with excluded 1");
+    expect(host.messages).toContain("selected position 4");
+    expect(host.messages).toContain("summoned 1");
+    const summoned = session.state.cards.find((card) => card.code === "600");
+    expect(summoned?.controller).toBe(1);
+    expect(summoned?.location).toBe("monsterZone");
+    expect(summoned?.position).toBe("faceUpDefense");
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

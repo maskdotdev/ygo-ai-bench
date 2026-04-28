@@ -12,6 +12,7 @@ export function installConstants(L: unknown): void {
     LOCATION_REMOVED: 0x20,
     LOCATION_EXTRA: 0x40,
     POS_FACEUP_ATTACK: 0x1,
+    POS_FACEDOWN_ATTACK: 0x2,
     POS_FACEUP_DEFENSE: 0x4,
     POS_FACEDOWN_DEFENSE: 0x8,
     EFFECT_TYPE_IGNITION: 0x10,
