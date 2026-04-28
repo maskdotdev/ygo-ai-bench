@@ -240,10 +240,22 @@ export interface ScriptedResponseSelector {
 
 export type ScriptedDuelStep = DuelResponse | ScriptedResponseSelector;
 
+export interface ScriptedFixtureMove {
+  player: PlayerId;
+  code: string;
+  from?: DuelLocation;
+  to: DuelLocation;
+  controller?: PlayerId;
+  occurrence?: number;
+}
+
 export interface ScriptedDuelFixture {
   name: string;
   options?: DuelOptions;
   decks: Record<PlayerId, DuelPlayerDeck>;
+  setup?: {
+    moveCards?: ScriptedFixtureMove[];
+  };
   responses: ScriptedDuelStep[];
   expected: {
     phase?: DuelPhase;

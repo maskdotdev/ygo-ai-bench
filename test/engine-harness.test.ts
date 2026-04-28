@@ -13,6 +13,7 @@ import {
   upstreamDatabasePath,
   upstreamScriptPath,
 } from "../src/engine/index.js";
+import type { DuelCardData, ScriptedDuelFixture } from "../src/engine/index.js";
 import { createLuaScriptHost } from "../src/engine/lua-host.js";
 
 describe("EDOPro compatibility harness scaffolding", () => {
@@ -62,6 +63,62 @@ describe("EDOPro compatibility harness scaffolding", () => {
     );
 
     expect(result).toEqual({ ok: true, failures: [] });
+  });
+
+  it("selects extra deck scripted fixture responses by material uids", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Material A", kind: "monster" },
+      { code: "300", name: "Material B", kind: "monster" },
+      { code: "900", name: "Fixture Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
+      { code: "910", name: "Fixture Synchro", kind: "extra", synchroMaterials: { tuner: "100", nonTuners: ["300"] } },
+      { code: "920", name: "Fixture Xyz", kind: "extra", xyzMaterials: ["100", "300"] },
+      { code: "930", name: "Fixture Link", kind: "extra", linkMaterials: ["100", "300"] },
+    ];
+    const fixtureBase = {
+      options: { seed: 3, startingHandSize: 2 },
+      decks: {
+        0: { main: ["100", "300"] },
+        1: { main: ["100", "300"] },
+      },
+    } satisfies Pick<ScriptedDuelFixture, "options" | "decks">;
+    const materialUids = ["p0-deck-100-0", "p0-deck-300-1"];
+    const fixtures: ScriptedDuelFixture[] = [
+      {
+        ...fixtureBase,
+        name: "fusion fixture",
+        decks: { ...fixtureBase.decks, 0: { ...fixtureBase.decks[0], extra: ["900"] } },
+        responses: [makeResponseSelector("fusionSummon", 0, { code: "900", location: "extraDeck", materialUids })],
+        expected: { locations: { monsterZone: ["900"], graveyard: ["100", "300"] }, logIncludes: ["Fusion Summoned"] },
+      },
+      {
+        ...fixtureBase,
+        name: "synchro fixture",
+        decks: { ...fixtureBase.decks, 0: { ...fixtureBase.decks[0], extra: ["910"] } },
+        setup: { moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone" }, { player: 0, code: "300", from: "hand", to: "monsterZone" }] },
+        responses: [makeResponseSelector("synchroSummon", 0, { code: "910", location: "extraDeck", materialUids })],
+        expected: { locations: { monsterZone: ["910"], graveyard: ["100", "300"] }, logIncludes: ["Synchro Summoned"] },
+      },
+      {
+        ...fixtureBase,
+        name: "xyz fixture",
+        decks: { ...fixtureBase.decks, 0: { ...fixtureBase.decks[0], extra: ["920"] } },
+        setup: { moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone" }, { player: 0, code: "300", from: "hand", to: "monsterZone" }] },
+        responses: [makeResponseSelector("xyzSummon", 0, { code: "920", location: "extraDeck", materialUids })],
+        expected: { locations: { monsterZone: ["920"], overlay: ["100", "300"] }, logIncludes: ["Xyz Summoned"] },
+      },
+      {
+        ...fixtureBase,
+        name: "link fixture",
+        decks: { ...fixtureBase.decks, 0: { ...fixtureBase.decks[0], extra: ["930"] } },
+        setup: { moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone" }, { player: 0, code: "300", from: "hand", to: "monsterZone" }] },
+        responses: [makeResponseSelector("linkSummon", 0, { code: "930", location: "extraDeck", materialUids })],
+        expected: { locations: { monsterZone: ["930"], graveyard: ["100", "300"] }, logIncludes: ["Link Summoned"] },
+      },
+    ];
+
+    for (const fixture of fixtures) {
+      expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+    }
   });
 
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {

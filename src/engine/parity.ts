@@ -3,11 +3,12 @@ import {
   createDuel,
   getLegalActions,
   loadDecks,
+  moveDuelCard,
   queryPublicState,
   startDuel,
   type CreateDuelOptions,
 } from "./duel-core.js";
-import type { DuelAction, DuelCardReader, DuelLocation, PlayerId, ScriptedDuelFixture, ScriptedDuelStep, ScriptedResponseSelector } from "./duel-types.js";
+import type { DuelAction, DuelCardReader, DuelLocation, DuelSession, PlayerId, ScriptedDuelFixture, ScriptedDuelStep, ScriptedFixtureMove, ScriptedResponseSelector } from "./duel-types.js";
 
 export interface ParityRunOptions extends CreateDuelOptions {
   cardReader?: DuelCardReader;
@@ -29,6 +30,8 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
   startDuel(session);
 
   const failures: ParityFailure[] = [];
+  applyFixtureSetup(session, fixture.setup?.moveCards ?? [], failures, fixture.name);
+  if (failures.length) return { ok: false, failures };
   for (const step of fixture.responses) {
     const legal = getLegalActions(session, step.player);
     const response = resolveScriptedStep(step, legal, queryPublicState(session).cards);
@@ -112,6 +115,21 @@ function resolveScriptedStep(step: ScriptedDuelStep, legal: DuelAction[], cards:
 function isConcreteResponse(step: ScriptedDuelStep): step is DuelAction {
   if (step.type === "changePhase") return "phase" in step && "label" in step;
   return "label" in step && (!("uid" in step) || typeof step.uid === "string");
+}
+
+function applyFixtureSetup(session: DuelSession, moves: ScriptedFixtureMove[], failures: ParityFailure[], fixture: string): void {
+  for (const move of moves) {
+    const cards = queryPublicState(session).cards.filter((card) => {
+      if (card.controller !== move.player || card.code !== move.code) return false;
+      return move.from === undefined || card.location === move.from;
+    });
+    const card = cards[move.occurrence ?? 0];
+    if (!card) {
+      failures.push({ fixture, message: `Setup could not find ${move.code} for player ${move.player}` });
+      return;
+    }
+    moveDuelCard(session.state, card.uid, move.to, move.controller);
+  }
 }
 
 function sameAction(action: DuelAction, response: DuelAction): boolean {
