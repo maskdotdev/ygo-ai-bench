@@ -3,7 +3,7 @@ export type PlayerId = 0 | 1;
 export type DuelPhase = "draw" | "standby" | "main1" | "battle" | "main2" | "end";
 export type DuelStatus = "setup" | "awaiting" | "resolving" | "ended";
 export type CardPosition = "faceDownDefense" | "faceUpAttack" | "faceUpDefense" | "faceDown";
-export type DuelLocation = "deck" | "hand" | "monsterZone" | "spellTrapZone" | "graveyard" | "banished" | "extraDeck";
+export type DuelLocation = "deck" | "hand" | "monsterZone" | "spellTrapZone" | "graveyard" | "banished" | "extraDeck" | "overlay";
 export type DuelCardKind = "monster" | "spell" | "trap" | "extra";
 export type DuelEventName =
   | "normalSummoned"
@@ -40,6 +40,7 @@ export interface DuelCardData {
     tuner: string;
     nonTuners: string[];
   };
+  xyzMaterials?: string[];
 }
 
 export interface DuelCardInstance {
@@ -161,6 +162,7 @@ export type DuelAction =
   | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; label: string }
   | { type: "fusionSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
   | { type: "synchroSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
+  | { type: "xyzSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
   | { type: "setMonster"; player: PlayerId; uid: string; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }

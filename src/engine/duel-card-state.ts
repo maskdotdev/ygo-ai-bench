@@ -6,7 +6,7 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   card.location = to;
   if (controller !== undefined) card.controller = controller;
   card.sequence = nextSequence(state, card.controller, to);
-  if (to === "hand") card.faceUp = false;
+  if (to === "hand" || to === "overlay") card.faceUp = false;
   if (to === "graveyard" || to === "banished" || to === "monsterZone" || to === "spellTrapZone") card.faceUp = true;
   resequence(state, card.controller, to);
   return card;
