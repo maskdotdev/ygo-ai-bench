@@ -7,12 +7,17 @@ import {
   canMoveDuelCardToLocation,
   damageDuelPlayer,
   destroyDuelCard,
+  fusionSummonDuelCard,
+  linkSummonDuelCard,
   negateDuelChainLink,
   recoverDuelPlayer,
   registerEffect,
+  ritualSummonDuelCard,
   sendDuelCardToGraveyard,
   setDuelPlayerLifePoints,
   specialSummonDuelCard,
+  synchroSummonDuelCard,
+  xyzSummonDuelCard,
 } from "./duel-core.js";
 import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
@@ -271,6 +276,16 @@ function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, "FusionSummon"));
+  lua.lua_setfield(L, -2, to_luastring("FusionSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, "SynchroSummon"));
+  lua.lua_setfield(L, -2, to_luastring("SynchroSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, "XyzSummon"));
+  lua.lua_setfield(L, -2, to_luastring("XyzSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, "LinkSummon"));
+  lua.lua_setfield(L, -2, to_luastring("LinkSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, "RitualSummon"));
+  lua.lua_setfield(L, -2, to_luastring("RitualSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readCardOrGroupUids(state, 1);
     const requestedPosition = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
@@ -361,6 +376,27 @@ function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostStat
   });
   lua.lua_setfield(L, -2, to_luastring("GetTargetCards"));
   lua.lua_setglobal(L, to_luastring("Duel"));
+}
+
+function pushLuaSummonResult(L: unknown, session: DuelSession, summonType: "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummon" | "RitualSummon"): number {
+  const targetUid = readCardUid(L, 1);
+  const materialUids = readCardOrGroupUids(L, 2);
+  const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
+  if (!target) {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  try {
+    if (summonType === "FusionSummon") fusionSummonDuelCard(session.state, target.controller, target.uid, materialUids);
+    else if (summonType === "SynchroSummon") synchroSummonDuelCard(session.state, target.controller, target.uid, materialUids);
+    else if (summonType === "XyzSummon") xyzSummonDuelCard(session.state, target.controller, target.uid, materialUids);
+    else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, target.controller, target.uid, materialUids);
+    else ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids);
+    lua.lua_pushinteger(L, 1);
+  } catch {
+    lua.lua_pushinteger(L, 0);
+  }
+  return 1;
 }
 
 function installEffectApi(L: unknown, hostState: LuaHostState): void {

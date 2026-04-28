@@ -4,6 +4,7 @@ import {
   createDuel,
   loadDecks,
   makeResponseSelector,
+  moveDuelCard,
   normalizeCdbRows,
   parseBanlistConf,
   runScriptedDuelFixture,
@@ -127,6 +128,53 @@ describe("EDOPro compatibility harness scaffolding", () => {
 
     for (const fixture of fixtures) {
       expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+    }
+  });
+
+  it("lets Lua scripts invoke scaffolded summon helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Material A", kind: "monster" },
+      { code: "300", name: "Material B", kind: "monster" },
+      { code: "900", name: "Lua Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
+      { code: "910", name: "Lua Synchro", kind: "extra", synchroMaterials: { tuner: "100", nonTuners: ["300"] } },
+      { code: "920", name: "Lua Xyz", kind: "extra", xyzMaterials: ["100", "300"] },
+      { code: "930", name: "Lua Link", kind: "extra", linkMaterials: ["100", "300"] },
+      { code: "940", name: "Lua Ritual", kind: "monster", ritualMaterials: ["100", "300"] },
+    ];
+    const cases = [
+      { label: "fusion", fn: "FusionSummon", target: "900", targetLocation: "LOCATION_EXTRA", materials: "LOCATION_HAND", extra: ["900"], main: ["100", "300"] },
+      { label: "synchro", fn: "SynchroSummon", target: "910", targetLocation: "LOCATION_EXTRA", materials: "LOCATION_MZONE", extra: ["910"], main: ["100", "300"], field: true },
+      { label: "xyz", fn: "XyzSummon", target: "920", targetLocation: "LOCATION_EXTRA", materials: "LOCATION_MZONE", extra: ["920"], main: ["100", "300"], field: true },
+      { label: "link", fn: "LinkSummon", target: "930", targetLocation: "LOCATION_EXTRA", materials: "LOCATION_MZONE", extra: ["930"], main: ["100", "300"], field: true },
+      { label: "ritual", fn: "RitualSummon", target: "940", targetLocation: "LOCATION_HAND", materials: "LOCATION_HAND", main: ["940", "100", "300"] },
+    ];
+
+    for (const current of cases) {
+      const session = createDuel({ seed: 5, startingHandSize: current.main.length, cardReader: createCardReader(cards) });
+      loadDecks(session, {
+        0: { main: current.main, extra: current.extra ?? [] },
+        1: { main: ["100", "300", "100"] },
+      });
+      startDuel(session);
+      if (current.field) {
+        for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+          moveDuelCard(session.state, card.uid, "monsterZone", 0);
+        }
+      }
+
+      const host = createLuaScriptHost(session);
+      const result = host.loadScript(
+        `
+        local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${current.target}), 0, ${current.targetLocation}, 0, 1, 1, nil):GetFirst()
+        local materials = Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(100) or tc:IsCode(300) end, 0, ${current.materials}, 0, 2, 2, target)
+        Debug.Message("${current.label} " .. Duel.${current.fn}(target, materials))
+        `,
+        `${current.label}-summon.lua`,
+      );
+
+      expect(result.ok).toBe(true);
+      expect(host.messages).toContain(`${current.label} 1`);
+      expect(session.state.cards.find((card) => card.code === current.target)?.location).toBe("monsterZone");
     }
   });
 
