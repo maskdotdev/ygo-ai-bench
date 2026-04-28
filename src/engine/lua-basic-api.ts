@@ -1,0 +1,75 @@
+import fengari from "fengari";
+
+const { lua, lauxlib, to_luastring } = fengari;
+
+export function installConstants(L: unknown): void {
+  const constants: Record<string, number> = {
+    LOCATION_DECK: 0x01,
+    LOCATION_HAND: 0x02,
+    LOCATION_MZONE: 0x04,
+    LOCATION_SZONE: 0x08,
+    LOCATION_GRAVE: 0x10,
+    LOCATION_REMOVED: 0x20,
+    LOCATION_EXTRA: 0x40,
+    POS_FACEUP_ATTACK: 0x1,
+    POS_FACEUP_DEFENSE: 0x4,
+    POS_FACEDOWN_DEFENSE: 0x8,
+    EFFECT_TYPE_IGNITION: 0x10,
+    EFFECT_TYPE_TRIGGER_O: 0x20,
+    EFFECT_TYPE_QUICK_O: 0x100,
+    EVENT_SUMMON_SUCCESS: 0x40,
+    EVENT_SPSUMMON_SUCCESS: 0x80,
+    EVENT_TO_GRAVE: 0x400,
+    EVENT_CHANGE_POS: 1016,
+    EVENT_ATTACK_ANNOUNCE: 1130,
+    EVENT_BATTLE_DESTROYED: 1140,
+    REASON_EFFECT: 0x40,
+    REASON_DESTROY: 0x1,
+    RESET_EVENT: 0x1000,
+    RESETS_STANDARD: 0x2000,
+  };
+  for (const [name, value] of Object.entries(constants)) {
+    lua.lua_pushinteger(L, value);
+    lua.lua_setglobal(L, to_luastring(name));
+  }
+}
+
+export function installDebugApi(L: unknown, messages: string[]): void {
+  lua.lua_newtable(L);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const message = lua.lua_isstring(state, 1) ? lua.lua_tojsstring(state, 1) : "";
+    messages.push(message);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Message"));
+  lua.lua_setglobal(L, to_luastring("Debug"));
+}
+
+export function installAuxApi(L: unknown, readLuaError: (state: unknown) => string): void {
+  lua.lua_newtable(L);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    if (!lua.lua_isfunction(state, 1)) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    const extraArgCount = lua.lua_gettop(state) - 1;
+    const refs: number[] = [];
+    lua.lua_pushvalue(state, 1);
+    refs.push(lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX));
+    for (let index = 0; index < extraArgCount; index += 1) {
+      lua.lua_pushvalue(state, index + 2);
+      refs.push(lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX));
+    }
+    lua.lua_pushjsfunction(state, (callState: unknown) => {
+      lua.lua_rawgeti(callState, lua.LUA_REGISTRYINDEX, refs[0]);
+      lua.lua_pushvalue(callState, 1);
+      for (let index = 1; index < refs.length; index += 1) lua.lua_rawgeti(callState, lua.LUA_REGISTRYINDEX, refs[index]);
+      const status = lua.lua_pcall(callState, refs.length, 1, 0);
+      if (status !== lua.LUA_OK) return lauxlib.luaL_error(callState, to_luastring(readLuaError(callState)));
+      return 1;
+    });
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("FilterBoolFunction"));
+  lua.lua_setglobal(L, to_luastring("aux"));
+}
