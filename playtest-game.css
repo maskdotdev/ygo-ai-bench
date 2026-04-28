@@ -903,7 +903,9 @@ body.duel-arena {
 .game-card {
   position: relative;
   width: var(--card-width);
-  height: var(--card-height);
+  height: auto;
+  aspect-ratio: 59 / 86;
+  padding: 0;
   border-radius: var(--card-radius);
   background: linear-gradient(180deg, #8b5a2b 0%, #6b4422 100%);
   border: 2px solid #4a3520;
@@ -934,7 +936,7 @@ body.duel-arena {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 /* Card Frame Inner */
@@ -1056,10 +1058,10 @@ body.duel-arena {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 100%;
-  height: 100%;
+  width: min(100%, var(--card-width));
+  height: auto;
   max-width: var(--card-width);
-  max-height: var(--card-height);
+  max-height: 100%;
 }
 
 .field-grid .game-card:hover {
@@ -1073,6 +1075,70 @@ body.duel-arena {
 
 .hand-fan .game-card:hover {
   transform: translateY(-16px) scale(1.1);
+}
+
+/* ---------- Card Zoom ---------- */
+.card-zoom-dialog {
+  width: min(92vw, 480px);
+  max-height: 94vh;
+  padding: 0;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 10px;
+  background: rgba(8, 10, 8, 0.96);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.72), var(--glow-gold);
+}
+
+.card-zoom-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.74);
+  backdrop-filter: blur(4px);
+}
+
+.card-zoom-shell {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+  padding: 1rem;
+}
+
+.card-zoom-shell img {
+  display: block;
+  width: min(100%, 421px);
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: var(--shadow-card-hover);
+}
+
+.card-zoom-shell h2 {
+  max-width: 100%;
+  color: var(--ui-text);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.zoom-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.68);
+  color: var(--ui-text);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.zoom-close:hover {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold-light);
 }
 
 /* ---------- Evaluation Section ---------- */

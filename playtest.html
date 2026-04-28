@@ -307,6 +307,14 @@
   <!-- Toast notifications -->
   <div class="toast-container" id="toastStack" aria-live="assertive" aria-atomic="true"></div>
 
+  <dialog class="card-zoom-dialog" id="cardZoomDialog" aria-labelledby="cardZoomTitle">
+    <form method="dialog" class="card-zoom-shell">
+      <button class="zoom-close" type="submit" aria-label="Close card preview">×</button>
+      <img id="cardZoomImage" src="" alt="" />
+      <h2 id="cardZoomTitle"></h2>
+    </form>
+  </dialog>
+
   <script type="module" src="/src/playtestPage.ts"></script>
 </body>
 </html>

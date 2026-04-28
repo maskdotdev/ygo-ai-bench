@@ -55,6 +55,9 @@ const el = {
   
   // Toast
   toastStack: byId<HTMLElement>("toastStack"),
+  cardZoomDialog: byId<HTMLDialogElement>("cardZoomDialog"),
+  cardZoomImage: byId<HTMLImageElement>("cardZoomImage"),
+  cardZoomTitle: byId<HTMLElement>("cardZoomTitle"),
 };
 
 let session: PlaytestSession | null = null;
@@ -178,6 +181,10 @@ el.autoRunBtn.addEventListener("click", () => {
   if (!session) return;
   runPlaytest(session, chooseHighestPriority, Number(el.maxActionsInput.value) || 10);
   render();
+});
+
+el.cardZoomDialog.addEventListener("click", (event) => {
+  if (event.target === el.cardZoomDialog) el.cardZoomDialog.close();
 });
 
 function render(): void {
@@ -319,6 +326,7 @@ function renderHandCards(cards: CardSummary[]): void {
   }
   
   el.handZone.innerHTML = cards.map((card) => createCardHtml(card)).join("");
+  bindCardZoom(el.handZone);
 }
 
 function renderFieldCards(cards: CardSummary[]): void {
@@ -333,6 +341,7 @@ function renderFieldCards(cards: CardSummary[]): void {
       if (slot) slot.innerHTML = createCardHtml(card);
     }
   });
+  bindCardZoom(el.fieldZone);
 }
 
 function renderFieldSlots(): void {
@@ -365,6 +374,7 @@ function renderPileCards(target: HTMLElement, cards: CardSummary[], emptyLabel: 
   const visibleCards = cards.slice(0, 3);
   target.innerHTML = visibleCards.map((card) => createCardHtml(card)).join("") +
     `<span class="pile-count">${cards.length}</span>`;
+  bindCardZoom(target);
 }
 
 function createCardHtml(card: CardSummary): string {
@@ -374,13 +384,13 @@ function createCardHtml(card: CardSummary): string {
   const fullCard = image?.large || image?.small;
   if (fullCard) {
     return `
-      <div class="game-card real-card ${typeClass}" data-uid="${escapeAttr(card.uid)}" title="${escapeAttr(card.name)}">
+      <button class="game-card real-card ${typeClass}" type="button" data-card-id="${escapeAttr(card.id)}" data-card-name="${escapeAttr(card.name)}" data-card-image="${escapeAttr(image.large || fullCard)}" data-uid="${escapeAttr(card.uid)}" title="${escapeAttr(card.name)}">
         <img src="${escapeAttr(fullCard)}" alt="${escapeAttr(card.name)}" loading="lazy" />
-      </div>`;
+      </button>`;
   }
   
   return `
-    <div class="game-card ${typeClass}" data-uid="${escapeAttr(card.uid)}" title="${escapeAttr(card.name)}">
+    <button class="game-card ${typeClass}" type="button" data-card-id="${escapeAttr(card.id)}" data-card-name="${escapeAttr(card.name)}" data-uid="${escapeAttr(card.uid)}" title="${escapeAttr(card.name)}">
       <div class="game-card-inner">
         <div class="card-art">
           <span class="card-art-icon">${icon}</span>
@@ -390,7 +400,7 @@ function createCardHtml(card: CardSummary): string {
           <span class="card-type-badge">${escapeHtml(formatCardType(card.type))}</span>
         </div>
       </div>
-    </div>`;
+    </button>`;
 }
 
 function getCardTypeClass(type: string, tags: string[]): string {
@@ -441,6 +451,19 @@ function renderActions(actions: PlaytestAction[]): void {
       const result = applyAction(session, action);
       render();
       if (!result.ok) toast("Action rejected", result.error ?? "The engine rejected that action.", "error");
+    });
+  }
+}
+
+function bindCardZoom(root: HTMLElement): void {
+  for (const card of root.querySelectorAll<HTMLButtonElement>(".game-card")) {
+    card.addEventListener("click", () => {
+      const image = card.dataset.cardImage;
+      if (!image) return;
+      el.cardZoomImage.src = image;
+      el.cardZoomImage.alt = card.dataset.cardName || "Card preview";
+      el.cardZoomTitle.textContent = card.dataset.cardName || "";
+      el.cardZoomDialog.showModal();
     });
   }
 }
