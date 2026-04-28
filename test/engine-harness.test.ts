@@ -216,6 +216,47 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "500")?.location).toBe("monsterZone");
   });
 
+  it("lets Lua scripts move cards to hand, deck, and extra deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Recoverable Monster", kind: "monster" },
+      { code: "300", name: "Illegal Extra Return", kind: "monster" },
+      { code: "900", name: "Extra Return", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 9, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["100", "300"] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && (candidate.code === "100" || candidate.code === "300" || candidate.code === "900"))) {
+      moveDuelCard(session.state, card.uid, "graveyard", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local recover = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("to hand " .. Duel.SendtoHand(recover, 0, REASON_EFFECT))
+      local hand = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("to deck " .. Duel.SendtoDeck(hand, 0, 0, REASON_EFFECT))
+      local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("to extra " .. Duel.SendtoExtraP(extra, 0, REASON_EFFECT))
+      local illegal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("illegal extra " .. Duel.SendtoExtraP(illegal, 0, REASON_EFFECT))
+      `,
+      "movement-helpers.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("to hand 1");
+    expect(host.messages).toContain("to deck 1");
+    expect(host.messages).toContain("to extra 1");
+    expect(host.messages).toContain("illegal extra 0");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "100")?.location).toBe("deck");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "900")?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("graveyard");
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

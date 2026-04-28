@@ -2,6 +2,7 @@ import fengari from "fengari";
 import {
   banishDuelCard,
   changeDuelCardPosition,
+  canMoveDuelCardToLocation,
   damageDuelPlayer,
   destroyDuelCard,
   fusionSummonDuelCard,
@@ -13,6 +14,7 @@ import {
   setDuelPlayerLifePoints,
   specialSummonDuelCard,
   synchroSummonDuelCard,
+  moveDuelCard,
   xyzSummonDuelCard,
 } from "./duel-core.js";
 import type { CardPosition, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
@@ -132,6 +134,21 @@ function installMoveHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Release"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "hand"));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SendtoHand"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "deck"));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SendtoDeck"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "extraDeck"));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SendtoExtraP"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readCardOrGroupUids(state, 1);
     const targetPlayer = lua.lua_isnumber(state, 5) ? normalizePlayer(lua.lua_tointeger(state, 5)) : undefined;
@@ -287,6 +304,17 @@ function moveCardOrGroup(session: DuelSession, L: unknown, mover: typeof sendDue
     } catch {
       // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
     }
+  }
+  return moved;
+}
+
+function moveCardOrGroupToLocation(session: DuelSession, L: unknown, location: DuelLocation): number {
+  let moved = 0;
+  for (const uid of readCardOrGroupUids(L, 1)) {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!card || !canMoveDuelCardToLocation(session.state, uid, location)) continue;
+    moveDuelCard(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller);
+    moved += 1;
   }
   return moved;
 }
@@ -474,6 +502,13 @@ function positionFromMask(mask: number): CardPosition | undefined {
 
 function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
+}
+
+function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
+  if (!lua.lua_isnumber(L, index)) return undefined;
+  const value = lua.lua_tointeger(L, index);
+  if (value !== 0 && value !== 1) return undefined;
+  return value;
 }
 
 function otherPlayer(player: PlayerId): PlayerId {
