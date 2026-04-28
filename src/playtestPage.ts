@@ -356,7 +356,7 @@ function renderPileCards(target: HTMLElement, cards: CardSummary[], emptyLabel: 
   }
   if (faceDown) {
     target.innerHTML = `
-      <div class="card-back"><img src="./assets/card-back.svg" alt="${escapeAttr(emptyLabel)} card stack" /></div>
+      <div class="card-back"><img src="./assets/card-back.webp" alt="${escapeAttr(emptyLabel)} card stack" /></div>
       <span class="pile-count">${cards.length}</span>`;
     return;
   }
