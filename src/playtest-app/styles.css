@@ -1,0 +1,450 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-family: "Exo 2", system-ui, sans-serif;
+    
+    /* Yu-Gi-Oh Gold Palette */
+    --gold: #d4af37;
+    --gold-bright: #f4d03f;
+    --gold-muted: #b8962f;
+    --gold-soft: rgba(212, 175, 55, 0.15);
+    
+    /* Card Frame Colors */
+    --monster-normal: #c9a158;
+    --monster-effect: #b85c1e;
+    --monster-ritual: #3d6bb8;
+    --monster-fusion: #7b2d8e;
+    --monster-synchro: #e8e8e8;
+    --monster-xyz: #1a1a1a;
+    --monster-link: #0066cc;
+    --spell: #1d8a6e;
+    --trap: #a12962;
+    
+    background: #030507;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background:
+      radial-gradient(ellipse 120% 50% at 50% -10%, rgba(212, 175, 55, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 40% at 90% 100%, rgba(123, 45, 142, 0.08) 0%, transparent 40%),
+      radial-gradient(ellipse 80% 40% at 10% 100%, rgba(29, 138, 110, 0.08) 0%, transparent 40%),
+      linear-gradient(180deg, #030507 0%, #0a0c0a 50%, #050706 100%);
+    color: #f3ead2;
+  }
+
+  /* Mystical grid pattern overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L30 60M0 30L60 30' stroke='%23d4af37' stroke-opacity='0.025' stroke-width='0.5'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  button,
+  textarea,
+  input {
+    font: inherit;
+  }
+
+  /* Gold scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--gold-muted);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--gold-muted) transparent;
+  }
+}
+
+@layer components {
+  /* Main panel styling with gold accents */
+  .tcg-panel {
+    position: relative;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    background:
+      linear-gradient(180deg, rgba(212, 175, 55, 0.03) 0%, transparent 30%),
+      linear-gradient(180deg, rgba(24, 28, 22, 0.95), rgba(9, 12, 11, 0.97));
+    box-shadow: 
+      0 24px 70px rgba(0, 0, 0, 0.45),
+      0 0 40px rgba(212, 175, 55, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .tcg-panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.4), transparent);
+  }
+
+  /* Zone frame styling */
+  .zone-frame {
+    position: relative;
+    border: 1px dashed rgba(212, 175, 55, 0.25);
+    background: 
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(212, 175, 55, 0.02) 0%, transparent 70%),
+      rgba(3, 7, 6, 0.6);
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .zone-frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: 
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 40px,
+        rgba(212, 175, 55, 0.015) 40px,
+        rgba(212, 175, 55, 0.015) 41px
+      );
+    pointer-events: none;
+  }
+
+  /* Card button with glow effects */
+  .card-button {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 59 / 86;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 2px solid rgba(212, 175, 55, 0.35);
+    background: #11130d;
+    box-shadow: 
+      0 8px 20px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(0, 0, 0, 0.3);
+    transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-button:hover,
+  .card-button:focus-visible {
+    transform: translateY(-6px) scale(1.02);
+    border-color: var(--gold);
+    box-shadow: 
+      0 16px 40px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(212, 175, 55, 0.25),
+      0 0 0 3px rgba(212, 175, 55, 0.15);
+    outline: none;
+    z-index: 10;
+  }
+
+  /* Card type-specific styling */
+  .card-button.spell-card {
+    border-color: rgba(29, 138, 110, 0.5);
+  }
+  .card-button.spell-card:hover {
+    border-color: var(--spell);
+    box-shadow: 
+      0 16px 40px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(29, 138, 110, 0.3);
+  }
+
+  .card-button.trap-card {
+    border-color: rgba(161, 41, 98, 0.5);
+  }
+  .card-button.trap-card:hover {
+    border-color: var(--trap);
+    box-shadow: 
+      0 16px 40px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(161, 41, 98, 0.3);
+  }
+
+  .card-button.extra-card {
+    border-color: rgba(123, 45, 142, 0.5);
+  }
+  .card-button.extra-card:hover {
+    border-color: var(--monster-fusion);
+    box-shadow: 
+      0 16px 40px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(123, 45, 142, 0.3);
+  }
+
+  /* Action button styling */
+  .action-button {
+    position: relative;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    background: 
+      linear-gradient(180deg, rgba(20, 30, 24, 0.9), rgba(10, 15, 12, 0.95));
+    color: #f6edda;
+    font-weight: 600;
+    transition: all 180ms ease;
+  }
+
+  .action-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(212, 175, 55, 0.08), transparent 50%);
+    opacity: 0;
+    transition: opacity 180ms ease;
+  }
+
+  .action-button:hover::before,
+  .action-button:focus-visible::before {
+    opacity: 1;
+  }
+
+  .action-button:hover,
+  .action-button:focus-visible {
+    border-color: rgba(212, 175, 55, 0.5);
+    background: 
+      linear-gradient(180deg, rgba(35, 55, 40, 0.95), rgba(15, 25, 18, 0.98));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 15px rgba(212, 175, 55, 0.1);
+    outline: none;
+  }
+
+  /* Primary gold button */
+  .primary-button {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-muted) 100%);
+    border: 1px solid var(--gold-bright);
+    color: #0a0c08;
+    font-weight: 700;
+    box-shadow: 
+      0 4px 15px rgba(0, 0, 0, 0.3),
+      0 0 20px rgba(212, 175, 55, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: all 200ms ease;
+  }
+
+  .primary-button:hover {
+    background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold) 100%);
+    box-shadow: 
+      0 6px 25px rgba(0, 0, 0, 0.4),
+      0 0 35px rgba(212, 175, 55, 0.35);
+    transform: translateY(-2px);
+  }
+
+  /* Score ring glow */
+  .score-ring {
+    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.3));
+  }
+
+  /* Input styling */
+  .tcg-input {
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff7dc;
+    transition: all 180ms ease;
+  }
+
+  .tcg-input:focus {
+    border-color: rgba(212, 175, 55, 0.5);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+    outline: none;
+  }
+
+  .tcg-input::placeholder {
+    color: rgba(199, 185, 143, 0.4);
+  }
+
+  /* Textarea styling */
+  .tcg-textarea {
+    border: 1px solid rgba(212, 175, 55, 0.18);
+    background: 
+      linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.4));
+    color: #f5ead0;
+    transition: all 180ms ease;
+  }
+
+  .tcg-textarea:focus {
+    border-color: rgba(212, 175, 55, 0.5);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.08);
+    outline: none;
+  }
+
+  /* Badge/pill styling */
+  .tcg-badge {
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    color: #f4dc9c;
+    font-weight: 700;
+  }
+
+  /* Risk item styling */
+  .risk-item {
+    border-left: 3px solid rgba(212, 175, 55, 0.4);
+    background: rgba(0, 0, 0, 0.3);
+    transition: all 150ms ease;
+  }
+
+  .risk-item:hover {
+    border-left-color: var(--gold);
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  /* Log entry styling */
+  .log-entry {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(212, 175, 55, 0.08);
+    transition: all 150ms ease;
+  }
+
+  .log-entry:hover {
+    background: rgba(0, 0, 0, 0.45);
+    border-color: rgba(212, 175, 55, 0.15);
+  }
+
+  /* Empty state styling */
+  .empty-state {
+    border: 1px dashed rgba(212, 175, 55, 0.15);
+    background: rgba(0, 0, 0, 0.25);
+    color: rgba(199, 185, 143, 0.5);
+  }
+
+  /* Card placeholder in field */
+  .field-slot {
+    border: 1px dashed rgba(212, 175, 55, 0.12);
+    background: rgba(0, 0, 0, 0.3);
+    transition: all 200ms ease;
+  }
+
+  .field-slot:hover {
+    border-color: rgba(212, 175, 55, 0.25);
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  /* Card zoom modal */
+  .card-zoom-overlay {
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+  }
+
+  .card-zoom-frame {
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    background: #040604;
+    box-shadow: 
+      0 30px 80px rgba(0, 0, 0, 0.7),
+      0 0 60px rgba(212, 175, 55, 0.15);
+  }
+
+  /* Toast notifications */
+  .toast-default {
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: linear-gradient(180deg, rgba(10, 12, 10, 0.98), rgba(5, 7, 5, 0.98));
+    color: #fff7dc;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.1);
+  }
+
+  .toast-success {
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: linear-gradient(180deg, rgba(5, 40, 20, 0.98), rgba(3, 25, 12, 0.98));
+    color: #d1fae5;
+  }
+
+  .toast-warning {
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    background: linear-gradient(180deg, rgba(45, 30, 5, 0.98), rgba(30, 20, 3, 0.98));
+    color: #fef3c7;
+  }
+
+  .toast-error {
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: linear-gradient(180deg, rgba(50, 10, 10, 0.98), rgba(35, 5, 5, 0.98));
+    color: #fee2e2;
+  }
+
+  /* Header navigation */
+  .nav-link {
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: rgba(212, 175, 55, 0.08);
+    color: #fff7dc;
+    font-weight: 600;
+    transition: all 180ms ease;
+  }
+
+  .nav-link:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: rgba(212, 175, 55, 0.5);
+  }
+
+  .nav-link-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e5d7b8;
+    transition: all 180ms ease;
+  }
+
+  .nav-link-secondary:hover {
+    border-color: rgba(212, 175, 55, 0.3);
+    background: rgba(212, 175, 55, 0.08);
+  }
+
+  /* Quality badges */
+  .quality-strong {
+    background: rgba(34, 197, 94, 0.15);
+    color: #86efac;
+  }
+
+  .quality-playable {
+    background: rgba(34, 197, 94, 0.12);
+    color: #86efac;
+  }
+
+  .quality-thin {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+  }
+
+  .quality-weak {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+  }
+
+  .quality-waiting {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  /* Deck pile counter */
+  .pile-counter {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.9);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Animation for card entrance */
+  @keyframes cardEntrance {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .card-animate {
+    animation: cardEntrance 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}

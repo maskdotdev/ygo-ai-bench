@@ -97,4 +97,4 @@ bun run build
 - `styles.css` — responsive, polished UI.
 - `app.js` — card loading, deck state, validation, import/export, drag/drop.
 - `playtest.html` — React/TanStack Router playtest arena shell.
-- `src/playtestApp` — Tailwind-styled playtest UI.
+- `src/playtest-app` — Tailwind-styled playtest UI.

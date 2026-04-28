@@ -2,3 +2,19 @@ export * from "./types.js";
 export * from "./rng.js";
 export * from "./effects.js";
 export * from "./core.js";
+export * from "./duel-types.js";
+export * from "./data-loaders.js";
+export * from "./parity.js";
+export {
+  createDuel,
+  loadDecks,
+  startDuel,
+  registerEffect,
+  getLegalActions as getDuelLegalActions,
+  applyResponse,
+  queryPublicState,
+  serializeDuel,
+  restoreDuel,
+  moveDuelCard,
+  type CreateDuelOptions,
+} from "./duel-core.js";

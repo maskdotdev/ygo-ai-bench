@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@tanstack/react-router": "^1.168.25",
+    "fengari": "^0.1.5",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   }

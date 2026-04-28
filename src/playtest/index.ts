@@ -1,3 +1,3 @@
 export * from "./api.js";
-export * from "./agentBridge.js";
+export * from "./agent-bridge.js";
 export * from "./ydk.js";
