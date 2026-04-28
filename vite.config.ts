@@ -2,10 +2,10 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   build: {
-    lib: {
-      entry: "src/browserPlaytest.ts",
-      formats: ["es"],
-      fileName: () => "playtest-engine.js",
+    rollupOptions: {
+      input: {
+        playtest: "playtest.html",
+      },
     },
     outDir: "dist",
     emptyOutDir: true,

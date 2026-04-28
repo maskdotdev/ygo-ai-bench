@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Headless Yu-Gi-Oh! Dark Magician playtest lab." />
+  <title>Duel Deck Studio — Playtest Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="playtest-page">
+  <header class="app-header">
+    <section class="brand-block" aria-label="Application title">
+      <div class="brand-mark" aria-hidden="true">YG</div>
+      <div>
+        <p class="eyebrow">Goldfish engine</p>
+        <h1>Duel Deck Studio</h1>
+      </div>
+    </section>
+    <section class="header-actions" aria-label="Playtest navigation">
+      <a class="button ghost" href="./index.html">Deck builder</a>
+      <button class="button ghost" id="loadIncludedDeckBtn" type="button">Load included deck</button>
+      <button class="button primary" id="startPlaytestBtn" type="button">Start hand</button>
+    </section>
+  </header>
+
+  <main class="playtest-shell">
+    <section class="playtest-command" aria-label="Playtest controls">
+      <div class="playtest-command-copy">
+        <p class="eyebrow">Dark Magician V1</p>
+        <h2>Opening-hand playtest</h2>
+      </div>
+      <label class="field compact">
+        <span>Seed</span>
+        <input id="seedInput" type="text" value="42" />
+      </label>
+      <label class="field compact">
+        <span>Hand</span>
+        <input id="handSizeInput" type="number" min="1" max="10" value="5" />
+      </label>
+      <label class="field compact">
+        <span>Steps</span>
+        <input id="maxActionsInput" type="number" min="1" max="30" value="10" />
+      </label>
+      <button class="button ghost" id="stepActionBtn" type="button" disabled>Step</button>
+      <button class="button ghost" id="autoRunBtn" type="button" disabled>Auto-run</button>
+    </section>
+
+    <section class="playtest-grid">
+      <article class="playtest-panel deck-input-panel">
+        <div class="section-heading">
+          <h3>Deck input</h3>
+          <span class="badge neutral" id="deckInputBadge">YDK</span>
+        </div>
+        <textarea id="playtestYdkInput" spellcheck="false" aria-label="YDK input"></textarea>
+      </article>
+
+      <article class="playtest-panel evaluation-panel">
+        <div class="section-heading">
+          <h3>Evaluation</h3>
+          <span class="badge neutral" id="qualityBadge">Waiting</span>
+        </div>
+        <div class="playtest-score">
+          <strong id="scoreValue">0</strong>
+          <span>score</span>
+        </div>
+        <div class="playtest-kv">
+          <span>Deck</span>
+          <strong id="deckCountValue">0</strong>
+          <span>Actions</span>
+          <strong id="actionCountValue">0</strong>
+          <span>Session</span>
+          <strong id="sessionValue">—</strong>
+        </div>
+        <div>
+          <h4>Risks</h4>
+          <ul class="playtest-list" id="riskList"></ul>
+        </div>
+      </article>
+
+      <article class="playtest-panel zones-panel">
+        <div class="section-heading">
+          <h3>Zones</h3>
+          <span class="badge neutral" id="normalSummonBadge">Normal ready</span>
+        </div>
+        <div class="zone-board">
+          <section>
+            <h4>Hand</h4>
+            <div class="mini-card-list" id="handZone"></div>
+          </section>
+          <section>
+            <h4>Field</h4>
+            <div class="mini-card-list" id="fieldZone"></div>
+          </section>
+          <section>
+            <h4>Graveyard</h4>
+            <div class="mini-card-list" id="graveyardZone"></div>
+          </section>
+          <section>
+            <h4>Extra Deck</h4>
+            <div class="mini-card-list" id="extraZone"></div>
+          </section>
+        </div>
+      </article>
+
+      <article class="playtest-panel actions-panel">
+        <div class="section-heading">
+          <h3>Legal actions</h3>
+          <span class="badge neutral" id="legalActionBadge">0</span>
+        </div>
+        <div class="action-stack" id="legalActionList"></div>
+      </article>
+
+      <article class="playtest-panel transcript-panel">
+        <div class="section-heading">
+          <h3>Transcript</h3>
+          <span class="badge neutral" id="logBadge">0</span>
+        </div>
+        <ol class="transcript-list" id="transcriptList"></ol>
+      </article>
+    </section>
+  </main>
+
+  <div class="toast-stack" id="toastStack" aria-live="assertive" aria-atomic="true"></div>
+  <script type="module" src="/src/playtestPage.ts"></script>
+</body>
+</html>
