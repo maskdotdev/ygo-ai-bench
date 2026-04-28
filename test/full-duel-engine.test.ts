@@ -148,6 +148,60 @@ describe("full duel engine API", () => {
     expect(quickLog!.step).toBeLessThan(originalLog!.step);
   });
 
+  it("allows quick effects to negate earlier chain links", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const originalSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(originalSource).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    registerEffect(session, {
+      id: "negated-original",
+      sourceUid: originalSource!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.moveCard(ctx.source.uid, "graveyard");
+        ctx.log("Negated operation should not resolve");
+      },
+    });
+    registerEffect(session, {
+      id: "negating-response",
+      sourceUid: quickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        const target = ctx.duel.chain.find((link) => link.effectId === "negated-original");
+        if (target) ctx.negateChainLink(target.id);
+        ctx.log("Negation resolved");
+      },
+    });
+
+    const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "negated-original");
+    expect(original).toBeTruthy();
+    const opened = applyResponse(session, original!);
+    expect(opened.state.chain).toHaveLength(1);
+
+    const response = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "negating-response");
+    expect(response).toBeTruthy();
+    const resolved = applyResponse(session, response!);
+
+    expect(resolved.ok).toBe(true);
+    expect(resolved.state.chain).toHaveLength(0);
+    expect(resolved.state.cards.find((card) => card.uid === originalSource!.uid)?.location).toBe("hand");
+    expect(resolved.state.log.some((entry) => entry.action === "negate" && entry.detail === "negated-original")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.action === "chainNegated" && entry.detail === "negated-original")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.detail === "Negation resolved")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.detail === "Negated operation should not resolve")).toBe(false);
+  });
+
   it("resolves a pending chain when the responding player passes", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

@@ -388,6 +388,9 @@ function createEffectContext(state: DuelState, source: DuelCardInstance, player:
     moveCard(uid, to, controller) {
       return moveDuelCard(state, uid, to, controller);
     },
+    negateChainLink(chainLinkId) {
+      return negateChainLink(state, chainLinkId, player, source.name);
+    },
   };
 }
 
@@ -467,6 +470,10 @@ function resolveChain(state: DuelState): void {
   while (state.chain.length) {
     const link = state.chain.pop();
     if (!link) continue;
+    if (link.negated) {
+      pushDuelLog(state, "chainNegated", link.player, undefined, link.effectId);
+      continue;
+    }
     const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
     const source = findCard(state, link.sourceUid);
     if (!effect || !source) continue;
@@ -477,6 +484,14 @@ function resolveChain(state: DuelState): void {
   state.chainPasses = [];
   state.status = "awaiting";
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+}
+
+function negateChainLink(state: DuelState, chainLinkId: string, player: PlayerId, cardName: string): boolean {
+  const link = state.chain.find((candidate) => candidate.id === chainLinkId);
+  if (!link || link.negated) return false;
+  link.negated = true;
+  pushDuelLog(state, "negate", player, cardName, link.effectId);
+  return true;
 }
 
 function getCards(state: DuelState, player: PlayerId, location: DuelLocation): DuelCardInstance[] {

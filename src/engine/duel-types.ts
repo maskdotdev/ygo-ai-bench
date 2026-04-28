@@ -82,6 +82,7 @@ export interface DuelEffectContext {
   eventName?: DuelEventName;
   log(detail: string): void;
   moveCard(uid: string, to: DuelLocation, controller?: PlayerId): DuelCardInstance;
+  negateChainLink(chainLinkId: string): boolean;
 }
 
 export interface ChainLink {
@@ -91,6 +92,7 @@ export interface ChainLink {
   effectId: string;
   eventName?: DuelEventName;
   eventCardUid?: string;
+  negated?: boolean;
 }
 
 export interface PendingTrigger {
