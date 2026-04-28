@@ -24,6 +24,9 @@ export {
   damageDuelPlayer,
   recoverDuelPlayer,
   setDuelPlayerLifePoints,
+  canDuelCardAttack,
+  getDuelAttackTargets,
+  declareDuelAttack,
   negateDuelChainLink,
   type CreateDuelOptions,
 } from "./duel-core.js";

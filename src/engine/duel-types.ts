@@ -122,6 +122,7 @@ export interface DuelState {
   chainPasses: PlayerId[];
   pendingTriggers: PendingTrigger[];
   usedCountKeys: string[];
+  attacksDeclared: string[];
   waitingFor?: PlayerId;
   log: DuelLogEntry[];
   options: Required<Pick<DuelOptions, "startingLifePoints" | "startingHandSize" | "drawPerTurn">>;
@@ -141,6 +142,7 @@ export type DuelAction =
   | { type: "passChain"; player: PlayerId; label: string }
   | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
   | { type: "declineTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
+  | { type: "declareAttack"; player: PlayerId; attackerUid: string; targetUid?: string; label: string }
   | { type: "changePhase"; player: PlayerId; phase: DuelPhase; label: string }
   | { type: "endTurn"; player: PlayerId; label: string };
 
@@ -171,6 +173,7 @@ export interface PublicDuelState {
   cards: PublicDuelCard[];
   chain: ChainLink[];
   pendingTriggers: PendingTrigger[];
+  attacksDeclared: string[];
   log: DuelLogEntry[];
 }
 
@@ -191,6 +194,8 @@ export interface ScriptedResponseSelector {
   player: PlayerId;
   code?: string;
   uid?: string;
+  attackerUid?: string;
+  targetUid?: string;
   effectId?: string;
   triggerId?: string;
   location?: DuelLocation;

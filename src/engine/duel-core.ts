@@ -48,6 +48,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     chainPasses: [],
     pendingTriggers: [],
     usedCountKeys: [],
+    attacksDeclared: [],
     log: [],
     options: {
       startingLifePoints: options.startingLifePoints ?? 8000,
@@ -130,6 +131,9 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
     }
   }
+  if (state.phase === "battle") {
+    actions.push(...attackActions(state, player));
+  }
   const nextPhase = phaseOrder[phaseOrder.indexOf(state.phase) + 1];
   if (nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
   actions.push({ type: "endTurn", player, label: "End turn" });
@@ -148,6 +152,7 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
     else if (response.type === "passChain") passChain(session.state, response.player);
     else if (response.type === "activateTrigger") activatePendingTrigger(session, response.player, response.triggerId);
     else if (response.type === "declineTrigger") declinePendingTrigger(session, response.player, response.triggerId);
+    else if (response.type === "declareAttack") declareDuelAttack(session.state, response.player, response.attackerUid, response.targetUid);
     else if (response.type === "changePhase") changePhase(session.state, response.player, response.phase);
     else if (response.type === "endTurn") endTurn(session.state, response.player);
     return result(session, true);
@@ -172,6 +177,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
     cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
     chain: state.chain.map(copyChainLink),
     pendingTriggers: state.pendingTriggers.map((trigger) => ({ ...trigger })),
+    attacksDeclared: [...state.attacksDeclared],
     log: state.log.map((entry) => ({ ...entry })),
   };
 }
@@ -191,6 +197,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       chainPasses: [...session.state.chainPasses],
       pendingTriggers: session.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       usedCountKeys: [...session.state.usedCountKeys],
+      attacksDeclared: [...session.state.attacksDeclared],
       log: session.state.log.map((entry) => ({ ...entry })),
     },
   };
@@ -212,6 +219,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       chainPasses: [...snapshot.state.chainPasses],
       pendingTriggers: snapshot.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       usedCountKeys: [...snapshot.state.usedCountKeys],
+      attacksDeclared: [...snapshot.state.attacksDeclared],
       log: snapshot.state.log.map((entry) => ({ ...entry })),
     },
   };
@@ -292,6 +300,43 @@ export function setDuelPlayerLifePoints(state: DuelState, player: PlayerId, life
   state.players[player].lifePoints = Math.max(0, Math.floor(lifePoints));
   pushDuelLog(state, "setLifePoints", player, undefined, String(state.players[player].lifePoints));
   if (state.players[player].lifePoints <= 0) state.status = "ended";
+}
+
+export function canDuelCardAttack(state: DuelState, uid: string): boolean {
+  const card = findCard(state, uid);
+  if (!card) return false;
+  return canAttackWithCard(state, card);
+}
+
+export function getDuelAttackTargets(state: DuelState, attackerUid: string): DuelCardInstance[] {
+  const attacker = findCard(state, attackerUid);
+  if (!attacker || !canAttackWithCard(state, attacker)) return [];
+  return getAttackTargets(state, attacker.controller);
+}
+
+export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {
+  const attacker = requireControlledCard(state, player, attackerUid, "monsterZone");
+  if (state.phase !== "battle") throw new Error("Attacks can only be declared during the battle phase");
+  if (!canAttackWithCard(state, attacker)) throw new Error(`${attacker.name} cannot attack`);
+
+  const targets = getAttackTargets(state, player);
+  const target = targetUid === undefined ? undefined : findCard(state, targetUid);
+  if (targets.length > 0) {
+    if (!target || !targets.some((candidate) => candidate.uid === target.uid)) throw new Error("Attack target is not legal");
+  } else if (targetUid !== undefined) {
+    throw new Error("Direct attacks cannot have a target");
+  }
+
+  state.attacksDeclared.push(attacker.uid);
+  if (!target) {
+    const damage = getBattleAttack(attacker);
+    pushDuelLog(state, "attack", player, attacker.name, "Direct attack");
+    damageDuelPlayer(state, otherPlayer(player), damage);
+    return;
+  }
+
+  pushDuelLog(state, "attack", player, attacker.name, `Attacked ${target.name}`);
+  resolveBattle(state, attacker, target);
 }
 
 function instantiateDeck(session: DuelSession, player: PlayerId, location: DuelLocation, codes: string[]): void {
@@ -404,6 +449,7 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
   if (state.turnPlayer !== player) throw new Error("Only the turn player can change phases");
   if (phaseOrder.indexOf(phase) <= phaseOrder.indexOf(state.phase)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
   state.phase = phase;
+  if (phase === "battle") state.attacksDeclared = [];
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
   collectTriggerEffects(state, "phaseChanged");
 }
@@ -414,6 +460,7 @@ function endTurn(state: DuelState, player: PlayerId): void {
   state.turnPlayer = otherPlayer(player);
   state.phase = "draw";
   state.waitingFor = state.turnPlayer;
+  state.attacksDeclared = [];
   state.players[state.turnPlayer].normalSummonAvailable = true;
   draw(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");
   state.phase = "main1";
@@ -428,6 +475,81 @@ function draw(state: DuelState, player: PlayerId, count: number, detail: string)
     moveDuelCard(state, card.uid, "hand", player);
     pushDuelLog(state, "draw", player, card.name, detail);
   }
+}
+
+function attackActions(state: DuelState, player: PlayerId): DuelAction[] {
+  const actions: DuelAction[] = [];
+  const attackers = getCards(state, player, "monsterZone").filter((card) => canAttackWithCard(state, card));
+  const targets = getAttackTargets(state, player);
+  for (const attacker of attackers) {
+    if (targets.length === 0) {
+      actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, label: `${attacker.name}: Direct attack` });
+      continue;
+    }
+    for (const target of targets) {
+      actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, targetUid: target.uid, label: `${attacker.name}: Attack ${target.name}` });
+    }
+  }
+  return actions;
+}
+
+function canAttackWithCard(state: DuelState, card: DuelCardInstance): boolean {
+  if (state.phase !== "battle") return false;
+  if (card.location !== "monsterZone" || card.controller !== state.turnPlayer) return false;
+  if (!isMonsterLike(card) || !card.faceUp) return false;
+  if (card.position !== "faceUpAttack") return false;
+  return !state.attacksDeclared.includes(card.uid);
+}
+
+function getAttackTargets(state: DuelState, player: PlayerId): DuelCardInstance[] {
+  return getCards(state, otherPlayer(player), "monsterZone").filter((card) => isMonsterLike(card));
+}
+
+function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance): void {
+  const attackerAttack = getBattleAttack(attacker);
+  const targetStat = target.position === "faceUpAttack" ? getBattleAttack(target) : getBattleDefense(target);
+  if (target.position === "faceUpAttack") {
+    resolveAttackPositionBattle(state, attacker, attackerAttack, target, targetStat);
+    return;
+  }
+  resolveDefensePositionBattle(state, attacker, attackerAttack, target, targetStat);
+}
+
+function resolveAttackPositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetAttack: number): void {
+  if (attackerAttack > targetAttack) {
+    destroyDuelCard(state, target.uid, target.controller);
+    damageDuelPlayer(state, target.controller, attackerAttack - targetAttack);
+    return;
+  }
+  if (attackerAttack < targetAttack) {
+    destroyDuelCard(state, attacker.uid, attacker.controller);
+    damageDuelPlayer(state, attacker.controller, targetAttack - attackerAttack);
+    return;
+  }
+  destroyDuelCard(state, attacker.uid, attacker.controller);
+  destroyDuelCard(state, target.uid, target.controller);
+}
+
+function resolveDefensePositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetDefense: number): void {
+  if (attackerAttack > targetDefense) {
+    destroyDuelCard(state, target.uid, target.controller);
+    return;
+  }
+  if (attackerAttack < targetDefense) {
+    damageDuelPlayer(state, attacker.controller, targetDefense - attackerAttack);
+  }
+}
+
+function getBattleAttack(card: DuelCardInstance): number {
+  return Math.max(0, card.data.attack ?? 0);
+}
+
+function getBattleDefense(card: DuelCardInstance): number {
+  return Math.max(0, card.data.defense ?? 0);
+}
+
+function isMonsterLike(card: DuelCardInstance): boolean {
+  return card.kind === "monster" || card.kind === "extra";
 }
 
 function createEffectContext(state: DuelState, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance, targetUids: string[] = []): DuelEffectContext {
@@ -618,6 +740,8 @@ function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (a.type === "activateEffect" && b.type === "activateEffect" && a.effectId !== b.effectId) return false;
   if (a.type === "activateTrigger" && b.type === "activateTrigger" && a.triggerId !== b.triggerId) return false;
   if (a.type === "declineTrigger" && b.type === "declineTrigger" && a.triggerId !== b.triggerId) return false;
+  if (a.type === "declareAttack" && b.type === "declareAttack" && a.attackerUid !== b.attackerUid) return false;
+  if (a.type === "declareAttack" && b.type === "declareAttack" && a.targetUid !== b.targetUid) return false;
   if (a.type === "changePhase" && b.type === "changePhase" && a.phase !== b.phase) return false;
   return true;
 }

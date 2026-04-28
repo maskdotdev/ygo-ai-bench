@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   banishDuelCard,
+  canDuelCardAttack,
   canMoveDuelCardToLocation,
   createCardReader,
   createDuel,
   damageDuelPlayer,
+  declareDuelAttack,
   destroyDuelCard,
+  getDuelAttackTargets,
   getDuelLegalActions,
   loadDecks,
   moveDuelCard,
@@ -23,11 +26,11 @@ import {
 import type { DuelCardData } from "../src/engine/index.js";
 
 const cards: DuelCardData[] = [
-  { code: "100", name: "Normal Test Monster", kind: "monster" },
+  { code: "100", name: "Normal Test Monster", kind: "monster", attack: 1800, defense: 1200 },
   { code: "200", name: "Test Spell", kind: "spell" },
-  { code: "300", name: "Second Monster", kind: "monster" },
-  { code: "400", name: "Opponent Monster", kind: "monster" },
-  { code: "500", name: "Third Monster", kind: "monster" },
+  { code: "300", name: "Second Monster", kind: "monster", attack: 1000, defense: 1000 },
+  { code: "400", name: "Opponent Monster", kind: "monster", attack: 1500, defense: 1600 },
+  { code: "500", name: "Third Monster", kind: "monster", attack: 2400, defense: 2000 },
 ];
 
 describe("full duel engine API", () => {
@@ -851,6 +854,96 @@ describe("full duel engine API", () => {
     for (const card of spells.slice(0, 5)) moveDuelCard(session.state, card.uid, "spellTrapZone", 0);
 
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "setSpellTrap")).toBe(false);
+  });
+
+  it("declares a direct attack and tracks attackers for the battle phase", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    expect(canDuelCardAttack(session.state, attacker!.uid)).toBe(true);
+    expect(getDuelAttackTargets(session.state, attacker!.uid)).toHaveLength(0);
+
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
+    expect(attack).toBeTruthy();
+    const attackResult = applyResponse(session, attack!);
+
+    expect(attackResult.ok).toBe(true);
+    expect(attackResult.state.players[1].lifePoints).toBe(6200);
+    expect(attackResult.state.attacksDeclared).toContain(attacker!.uid);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid)).toBe(false);
+    expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.attacksDeclared).toContain(attacker!.uid);
+  });
+
+  it("resolves attack-position monster battles with destruction and battle damage", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["500"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const target = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(target).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    specialSummonDuelCard(session.state, target!.uid, 1);
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    expect(getDuelAttackTargets(session.state, attacker!.uid).map((card) => card.uid)).toEqual([target!.uid]);
+
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.targetUid === target!.uid);
+    expect(attack).toBeTruthy();
+    const result = applyResponse(session, attack!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === attacker!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("graveyard");
+    expect(result.state.players[1].lifePoints).toBe(7100);
+    expect(result.state.log.some((entry) => entry.action === "destroy" && entry.card === "Opponent Monster")).toBe(true);
+  });
+
+  it("resolves defense-position battles without destroying the attacker", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["300"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const target = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(target).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    specialSummonDuelCard(session.state, target!.uid, 1);
+    const targetState = session.state.cards.find((card) => card.uid === target!.uid);
+    expect(targetState).toBeTruthy();
+    targetState!.position = "faceUpDefense";
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    declareDuelAttack(session.state, 0, attacker!.uid, target!.uid);
+
+    const state = queryPublicState(session);
+    expect(state.cards.find((card) => card.uid === attacker!.uid)?.location).toBe("monsterZone");
+    expect(state.cards.find((card) => card.uid === target!.uid)?.location).toBe("monsterZone");
+    expect(state.players[0].lifePoints).toBe(7400);
+    expect(state.log.some((entry) => entry.action === "damage" && entry.player === 0 && entry.detail === "600")).toBe(true);
   });
 
   it("modifies player life points and ends the duel at zero", () => {
