@@ -195,6 +195,73 @@ describe("full duel engine API", () => {
     expect(resolved.state.log.some((entry) => entry.detail === "Should not resolve")).toBe(false);
   });
 
+  it("marks once-per-turn quick effects as used when chained", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const originalSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const playerQuickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(originalSource).toBeTruthy();
+    expect(playerQuickSource).toBeTruthy();
+    expect(opponentQuickSource).toBeTruthy();
+    registerEffect(session, {
+      id: "chain-starter",
+      sourceUid: originalSource!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Starter resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "player-quick",
+      sourceUid: playerQuickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Player quick resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "opponent-quick-once",
+      sourceUid: opponentQuickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      operation(ctx) {
+        ctx.log("Opponent quick resolved");
+      },
+    });
+
+    const starter = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "chain-starter");
+    expect(starter).toBeTruthy();
+    expect(applyResponse(session, starter!).state.waitingFor).toBe(1);
+    const opponentQuick = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "opponent-quick-once");
+    expect(opponentQuick).toBeTruthy();
+    const chained = applyResponse(session, opponentQuick!);
+
+    expect(chained.ok).toBe(true);
+    expect(chained.state.chain).toHaveLength(2);
+    expect(chained.state.waitingFor).toBe(0);
+
+    const pass = getDuelLegalActions(session, 0).find((action) => action.type === "passChain");
+    expect(pass).toBeTruthy();
+    const resolved = applyResponse(session, pass!);
+
+    expect(resolved.ok).toBe(true);
+    expect(resolved.state.chain).toHaveLength(0);
+    expect(resolved.state.waitingFor).toBe(0);
+    expect(resolved.state.log.filter((entry) => entry.detail === "Opponent quick resolved")).toHaveLength(1);
+  });
+
   it("resets once-per-turn effect usage on a later turn", () => {
     const session = createDuel({ seed: 3, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

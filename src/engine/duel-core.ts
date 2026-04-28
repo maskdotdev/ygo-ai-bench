@@ -300,6 +300,7 @@ function activateEffect(session: DuelSession, player: PlayerId, uid: string, eff
   if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
   pushChainLink(session.state, player, uid, effectId);
   pushDuelLog(session.state, "activate", player, source.name, effect.id);
+  markEffectUsed(session.state, effect);
   const responsePlayer = otherPlayer(player);
   if (hasChainResponses(session.state, responsePlayer)) {
     session.state.waitingFor = responsePlayer;
@@ -410,9 +411,9 @@ function resolveEffect(state: DuelState, effect: DuelEffectDefinition, source: D
   if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
   state.chain.push({ id: `chain-${state.log.length + 1}`, player, sourceUid: source.uid, effectId: effect.id });
   pushDuelLog(state, logAction, player, source.name, effect.id);
+  markEffectUsed(state, effect);
   state.status = "resolving";
   effect.operation(ctx);
-  if (effect.oncePerTurn) state.usedCountKeys.push(effectCountKey(state, effect));
   state.chain.pop();
   state.status = "awaiting";
 }
@@ -467,7 +468,6 @@ function resolveChain(state: DuelState): void {
     if (!effect || !source) continue;
     const ctx = createEffectContext(state, source, link.player);
     effect.operation(ctx);
-    if (effect.oncePerTurn) state.usedCountKeys.push(effectCountKey(state, effect));
   }
   state.chainPasses = [];
   state.status = "awaiting";
@@ -504,6 +504,12 @@ function pushDuelLog(state: DuelState, action: string, player: PlayerId | undefi
 
 function effectCountKey(state: DuelState, effect: DuelEffectDefinition): string {
   return `${state.turn}:${effect.controller}:${effect.sourceUid}:${effect.id}`;
+}
+
+function markEffectUsed(state: DuelState, effect: DuelEffectDefinition): void {
+  if (!effect.oncePerTurn) return;
+  const key = effectCountKey(state, effect);
+  if (!state.usedCountKeys.includes(key)) state.usedCountKeys.push(key);
 }
 
 function sameAction(a: DuelAction, b: DuelResponse): boolean {
