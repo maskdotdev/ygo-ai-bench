@@ -304,6 +304,50 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(summoned?.position).toBe("faceUpDefense");
   });
 
+  it("lets Lua scripts inspect, confirm, and move deck-top groups", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Deck A", kind: "monster" },
+      { code: "200", name: "Deck B", kind: "monster" },
+      { code: "300", name: "Deck C", kind: "monster" },
+      { code: "400", name: "Deck D", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 11, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const expectedTop = session.state.cards
+      .filter((card) => card.controller === 0 && card.location === "deck")
+      .sort((a, b) => a.sequence - b.sequence)
+      .slice(0, 2)
+      .map((card) => card.code);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local top = Duel.GetDecktopGroup(0, 2)
+      Debug.Message("top count " .. top:GetCount())
+      local first = top:GetNext()
+      local second = top:GetNext()
+      Debug.Message("first top " .. first:GetCode())
+      Debug.Message("second top " .. second:GetCode())
+      Duel.ConfirmCards(1, top)
+      Debug.Message("sent top " .. Duel.SendtoHand(top, 0, REASON_EFFECT))
+      Duel.ShuffleDeck(0)
+      `,
+      "deck-top.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("top count 2");
+    expect(host.messages).toContain(`first top ${expectedTop[0]}`);
+    expect(host.messages).toContain(`second top ${expectedTop[1]}`);
+    expect(host.messages).toContain(`confirmed 1: ${expectedTop.join(",")}`);
+    expect(host.messages).toContain("sent top 2");
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && expectedTop.includes(card.code))).toHaveLength(2);
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

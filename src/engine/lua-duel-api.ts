@@ -17,6 +17,7 @@ import {
   moveDuelCard,
   xyzSummonDuelCard,
 } from "./duel-core.js";
+import { shuffle } from "./rng.js";
 import type { CardPosition, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
@@ -264,6 +265,28 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
   });
   lua.lua_setfield(L, -2, to_luastring("SelectPosition"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
+    pushGroupTable(state, topDeckUids(session, player, count));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetDecktopGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const confirmed = readCardOrGroupUids(state, 2)
+      .map((uid) => session.state.cards.find((card) => card.uid === uid)?.code)
+      .filter((code): code is string => Boolean(code));
+    hostState.messages.push(`confirmed ${player}: ${confirmed.join(",")}`);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ConfirmCards"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    shuffleDeck(session, player);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ShuffleDeck"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const minimum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
@@ -394,6 +417,7 @@ function pushGroupTable(L: unknown, uids: string[]): void {
   }
   lua.lua_setfield(L, -2, to_luastring("__group_uids"));
   copyGlobalFunctionToField(L, "Group", "GetFirst");
+  copyGlobalFunctionToField(L, "Group", "GetNext");
   copyGlobalFunctionToField(L, "Group", "GetCount");
 }
 
@@ -495,6 +519,16 @@ function availableLocationCount(session: DuelSession, player: PlayerId, location
 function availableMonsterZoneCount(session: DuelSession, player: PlayerId, excludedUids: string[]): number {
   const occupied = session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && !excludedUids.includes(card.uid)).length;
   return Math.max(0, 5 - occupied);
+}
+
+function topDeckUids(session: DuelSession, player: PlayerId, count: number): string[] {
+  return matchingCardUids(session, player, 0x01).slice(0, count);
+}
+
+function shuffleDeck(session: DuelSession, player: PlayerId): void {
+  const deckCards = session.state.cards.filter((card) => card.controller === player && card.location === "deck").sort((a, b) => a.sequence - b.sequence);
+  const shuffled = shuffle(deckCards, `${session.state.seed}:lua-shuffle:${player}:${session.state.log.length}`);
+  for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
 }
 
 function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: number): string[] {

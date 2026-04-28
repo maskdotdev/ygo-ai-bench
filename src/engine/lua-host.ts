@@ -262,6 +262,20 @@ function installGroupApi(L: unknown): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetFirst"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const uids = readGroupUids(state, 1);
+    const cursor = readTableNumberField(state, 1, "__group_cursor") ?? 0;
+    const uid = uids[cursor];
+    if (!uid) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    lua.lua_pushinteger(state, cursor + 1);
+    lua.lua_setfield(state, 1, to_luastring("__group_cursor"));
+    pushCardTable(state, uid);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetNext"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushinteger(state, readGroupUids(state, 1).length);
     return 1;
   });
@@ -445,6 +459,7 @@ function pushGroupTable(L: unknown, uids: string[]): void {
   }
   lua.lua_setfield(L, -2, to_luastring("__group_uids"));
   copyGlobalFunctionToField(L, "Group", "GetFirst");
+  copyGlobalFunctionToField(L, "Group", "GetNext");
   copyGlobalFunctionToField(L, "Group", "GetCount");
 }
 
