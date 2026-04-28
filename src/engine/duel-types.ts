@@ -160,11 +160,24 @@ export interface SerializedDuel {
   state: DuelState;
 }
 
+export interface ScriptedResponseSelector {
+  type: DuelResponse["type"];
+  player: PlayerId;
+  code?: string;
+  uid?: string;
+  effectId?: string;
+  location?: DuelLocation;
+  labelIncludes?: string;
+  occurrence?: number;
+}
+
+export type ScriptedDuelStep = DuelResponse | ScriptedResponseSelector;
+
 export interface ScriptedDuelFixture {
   name: string;
   options?: DuelOptions;
   decks: Record<PlayerId, DuelPlayerDeck>;
-  responses: DuelResponse[];
+  responses: ScriptedDuelStep[];
   expected: {
     phase?: DuelPhase;
     turn?: number;

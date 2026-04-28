@@ -52,6 +52,18 @@ export function scriptFilenameForCard(code: string | number): string {
   return `c${String(code)}.lua`;
 }
 
+export function upstreamScriptPath(config: UpstreamSourceConfig, code: string | number): string {
+  return joinPath(config.root, config.scriptPath ?? "script", scriptFilenameForCard(code));
+}
+
+export function upstreamDatabasePath(config: UpstreamSourceConfig, filename: string): string {
+  return joinPath(config.root, config.databasePath ?? "cdb", filename);
+}
+
+export function upstreamBanlistPath(config: UpstreamSourceConfig, filename: string): string {
+  return joinPath(config.root, config.lflistPath ?? ".", filename);
+}
+
 export function normalizeCdbRows(datas: RawCdbDataRow[], texts: RawCdbTextRow[]): DuelCardData[] {
   const textById = new Map(texts.map((row) => [String(row.id), row]));
   return datas.map((row) => {
@@ -118,4 +130,11 @@ function toNumber(value: number | string | undefined): number | undefined {
   if (value === undefined) return undefined;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function joinPath(...parts: string[]): string {
+  return parts
+    .flatMap((part) => part.split("/"))
+    .filter((part) => part && part !== ".")
+    .join("/");
 }

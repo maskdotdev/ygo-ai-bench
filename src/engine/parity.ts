@@ -7,7 +7,7 @@ import {
   startDuel,
   type CreateDuelOptions,
 } from "./duel-core.js";
-import type { DuelCardReader, DuelLocation, PlayerId, ScriptedDuelFixture } from "./duel-types.js";
+import type { DuelAction, DuelCardReader, DuelLocation, PlayerId, ScriptedDuelFixture, ScriptedDuelStep, ScriptedResponseSelector } from "./duel-types.js";
 
 export interface ParityRunOptions extends CreateDuelOptions {
   cardReader?: DuelCardReader;
@@ -29,10 +29,11 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
   startDuel(session);
 
   const failures: ParityFailure[] = [];
-  for (const response of fixture.responses) {
-    const legal = getLegalActions(session, response.player);
-    if (!legal.some((action) => action.type === response.type)) {
-      failures.push({ fixture: fixture.name, message: `No legal ${response.type} response for player ${response.player}` });
+  for (const step of fixture.responses) {
+    const legal = getLegalActions(session, step.player);
+    const response = resolveScriptedStep(step, legal, queryPublicState(session).cards);
+    if (!response) {
+      failures.push({ fixture: fixture.name, message: `No legal response matched ${describeStep(step)}` });
       break;
     }
     const result = applyResponse(session, response);
@@ -64,6 +65,51 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
   return { ok: failures.length === 0, failures };
 }
 
-export function makeResponseSelector(type: ScriptedDuelFixture["responses"][number]["type"], player: PlayerId) {
-  return { type, player };
+export function makeResponseSelector(type: ScriptedDuelStep["type"], player: PlayerId, selector: Omit<ScriptedResponseSelector, "type" | "player"> = {}): ScriptedResponseSelector {
+  return { type, player, ...selector };
+}
+
+function resolveScriptedStep(step: ScriptedDuelStep, legal: DuelAction[], cards: { uid: string; code: string; location: DuelLocation }[]): DuelAction | undefined {
+  if (isConcreteResponse(step) && legal.some((action) => sameAction(action, step))) return step;
+  const selector = step as ScriptedResponseSelector;
+  const matches = legal.filter((action) => {
+    if (action.type !== selector.type || action.player !== selector.player) return false;
+    if (selector.uid && "uid" in action && action.uid !== selector.uid) return false;
+    if (selector.effectId && action.type === "activateEffect" && action.effectId !== selector.effectId) return false;
+    if (selector.labelIncludes && !action.label.includes(selector.labelIncludes)) return false;
+    if (selector.code || selector.location) {
+      if (!("uid" in action)) return false;
+      const card = cards.find((candidate) => candidate.uid === action.uid);
+      if (!card) return false;
+      if (selector.code && card.code !== selector.code) return false;
+      if (selector.location && card.location !== selector.location) return false;
+    }
+    return true;
+  });
+  return matches[selector.occurrence ?? 0];
+}
+
+function isConcreteResponse(step: ScriptedDuelStep): step is DuelAction {
+  if (step.type === "changePhase") return "phase" in step && "label" in step;
+  return "label" in step && (!("uid" in step) || typeof step.uid === "string");
+}
+
+function sameAction(action: DuelAction, response: DuelAction): boolean {
+  if (action.type !== response.type || action.player !== response.player) return false;
+  if ("uid" in action && "uid" in response && action.uid !== response.uid) return false;
+  if (action.type === "activateEffect" && response.type === "activateEffect" && action.effectId !== response.effectId) return false;
+  if (action.type === "changePhase" && response.type === "changePhase" && action.phase !== response.phase) return false;
+  return true;
+}
+
+function describeStep(step: ScriptedDuelStep): string {
+  const detail = [
+    `type=${step.type}`,
+    `player=${step.player}`,
+    "code" in step && step.code ? `code=${step.code}` : undefined,
+    "uid" in step && step.uid ? `uid=${step.uid}` : undefined,
+    "effectId" in step && step.effectId ? `effectId=${step.effectId}` : undefined,
+    "location" in step && step.location ? `location=${step.location}` : undefined,
+  ].filter(Boolean);
+  return detail.join(" ");
 }

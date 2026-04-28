@@ -3,11 +3,15 @@ import {
   createCardReader,
   createDuel,
   loadDecks,
+  makeResponseSelector,
   normalizeCdbRows,
   parseBanlistConf,
   runScriptedDuelFixture,
   scriptFilenameForCard,
   startDuel,
+  upstreamBanlistPath,
+  upstreamDatabasePath,
+  upstreamScriptPath,
 } from "../src/engine/index.js";
 import { createLuaScriptHost } from "../src/engine/lua-host.js";
 
@@ -28,6 +32,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(cards.map((card) => card.kind)).toEqual(["monster", "spell", "trap"]);
     expect(cards[0]?.name).toBe("Fixture Monster");
     expect(scriptFilenameForCard(100)).toBe("c100.lua");
+    const upstream = { root: ".upstream/ignis", coreUrl: "core", scriptsUrl: "scripts", databaseUrl: "db", lflistUrl: "lists" };
+    expect(upstreamScriptPath(upstream, 100)).toBe(".upstream/ignis/script/c100.lua");
+    expect(upstreamDatabasePath(upstream, "cards.cdb")).toBe(".upstream/ignis/cdb/cards.cdb");
+    expect(upstreamBanlistPath(upstream, "lflist.conf")).toBe(".upstream/ignis/lflist.conf");
     expect(parseBanlistConf("100 1\n# comment\n200 0\n!header\n300 4")).toEqual([
       { code: "100", limit: 1 },
       { code: "200", limit: 0 },
@@ -44,7 +52,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           0: { main: ["100", "200"] },
           1: { main: ["300", "400"] },
         },
-        responses: [{ type: "normalSummon", player: 0, uid: "p0-deck-100-0", label: "Normal Summon Card 100" }],
+        responses: [makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })],
         expected: {
           locations: { monsterZone: ["100"] },
           logIncludes: ["Normal Summoned"],
