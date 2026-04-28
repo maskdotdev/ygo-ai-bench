@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyResponse,
   createCardReader,
   createDuel,
+  getDuelLegalActions,
   loadDecks,
   makeResponseSelector,
   moveDuelCard,
@@ -543,6 +545,57 @@ describe("EDOPro compatibility harness scaffolding", () => {
       property: 0x10010,
       hintTiming: [0x20, 0x4],
     });
+  });
+
+  it("lets Lua effects pass labels and label objects between callbacks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Label Source", kind: "monster" },
+      { code: "200", name: "Label Object", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 17, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetLabel(7)
+        e:SetTarget(function(e,c)
+          Debug.Message("target label " .. e:GetLabel())
+          e:SetLabel(e:GetLabel()+1)
+          local g=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, c)
+          e:SetLabelObject(g)
+          return true
+        end)
+        e:SetOperation(function(e,c)
+          local g=e:GetLabelObject()
+          Debug.Message("operation label " .. e:GetLabel())
+          Debug.Message("label object count " .. g:GetCount())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "effect-labels.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    applyResponse(session, action!);
+    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    expect(host.messages).toContain("target label 7");
+    expect(host.messages).toContain("operation label 8");
+    expect(host.messages).toContain("label object count 1");
   });
 
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {

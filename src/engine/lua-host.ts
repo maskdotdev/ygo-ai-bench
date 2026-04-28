@@ -39,6 +39,8 @@ interface LuaEffectRecord {
   category?: number;
   property?: number;
   hintTiming?: [number, number?];
+  label?: number;
+  labelObjectRef?: number;
   conditionRef?: number;
   costRef?: number;
   targetRef?: number;
@@ -164,6 +166,29 @@ function pushEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectR
     const secondary = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
     effect.hintTiming = secondary === undefined ? [primary] : [primary, secondary];
     return 0;
+  });
+  pushEffectMethod(L, effects, "SetLabel", (state, effect) => {
+    effect.label = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    return 0;
+  });
+  pushEffectMethod(L, effects, "GetLabel", (state, effect) => {
+    lua.lua_pushinteger(state, effect.label ?? 0);
+    return 1;
+  });
+  pushEffectMethod(L, effects, "SetLabelObject", (state, effect) => {
+    if (effect.labelObjectRef !== undefined) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, effect.labelObjectRef);
+    if (lua.lua_isnoneornil(state, 2)) {
+      delete effect.labelObjectRef;
+      return 0;
+    }
+    lua.lua_pushvalue(state, 2);
+    effect.labelObjectRef = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
+    return 0;
+  });
+  pushEffectMethod(L, effects, "GetLabelObject", (state, effect) => {
+    if (effect.labelObjectRef === undefined) lua.lua_pushnil(state);
+    else lua.lua_rawgeti(state, lua.LUA_REGISTRYINDEX, effect.labelObjectRef);
+    return 1;
   });
   pushEffectMethod(L, effects, "SetRange", (state, effect) => {
     const firstRange = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
