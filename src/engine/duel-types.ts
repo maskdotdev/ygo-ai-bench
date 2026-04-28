@@ -89,6 +89,10 @@ export interface DuelEffectDefinition {
   triggerEvent?: DuelEventName;
   range: DuelLocation[];
   oncePerTurn?: boolean;
+  description?: number;
+  category?: number;
+  property?: number;
+  hintTiming?: [number, number?];
   canActivate?: (ctx: DuelEffectContext) => boolean;
   cost?: (ctx: DuelEffectContext) => boolean;
   target?: (ctx: DuelEffectContext) => boolean;

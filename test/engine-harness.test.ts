@@ -509,6 +509,42 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("filtered high 2");
   });
 
+  it("stores Lua effect metadata setters on registered effects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Metadata Source", kind: "monster" }];
+    const session = createDuel({ seed: 16, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetDescription(1234)
+        e:SetCategory(CATEGORY_DRAW + CATEGORY_SEARCH)
+        e:SetProperty(EFFECT_FLAG_CARD_TARGET + EFFECT_FLAG_DELAY)
+        e:SetHintTiming(TIMING_END_PHASE, TIMING_MAIN_END)
+        c:RegisterEffect(e)
+      end
+      `,
+      "effect-metadata.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    expect(session.state.effects[0]).toMatchObject({
+      description: 1234,
+      category: 0x180,
+      property: 0x10010,
+      hintTiming: [0x20, 0x4],
+    });
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

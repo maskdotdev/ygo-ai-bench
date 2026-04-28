@@ -35,6 +35,10 @@ interface LuaEffectRecord {
   code?: number;
   range?: DuelLocation[];
   countLimit?: number;
+  description?: number;
+  category?: number;
+  property?: number;
+  hintTiming?: [number, number?];
   conditionRef?: number;
   costRef?: number;
   targetRef?: number;
@@ -151,6 +155,16 @@ function pushEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectR
   });
   pushEffectMethod(L, effects, "SetType", setEffectNumberField("typeFlags"));
   pushEffectMethod(L, effects, "SetCode", setEffectNumberField("code"));
+  pushEffectMethod(L, effects, "SetDescription", setEffectNumberField("description"));
+  pushEffectMethod(L, effects, "SetCategory", setEffectNumberField("category"));
+  pushEffectMethod(L, effects, "SetProperty", setEffectNumberField("property"));
+  pushEffectMethod(L, effects, "SetHintTiming", (state, effect) => {
+    const primary = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
+    if (primary === undefined) return 0;
+    const secondary = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
+    effect.hintTiming = secondary === undefined ? [primary] : [primary, secondary];
+    return 0;
+  });
   pushEffectMethod(L, effects, "SetRange", (state, effect) => {
     const firstRange = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
     if (firstRange !== undefined) effect.range = locationsFromMask(firstRange);
@@ -180,7 +194,7 @@ function pushEffectMethod(L: unknown, effects: Map<number, LuaEffectRecord>, nam
   lua.lua_setfield(L, -2, to_luastring(name));
 }
 
-function setEffectNumberField(field: "typeFlags" | "code") {
+function setEffectNumberField(field: "typeFlags" | "code" | "description" | "category" | "property") {
   return (state: unknown, effect: LuaEffectRecord): number => {
     if (lua.lua_isnumber(state, 2)) effect[field] = lua.lua_tointeger(state, 2);
     return 0;
@@ -209,6 +223,10 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
     range,
     oncePerTurn: (luaEffect.countLimit ?? 0) > 0,
+    ...(luaEffect.description === undefined ? {} : { description: luaEffect.description }),
+    ...(luaEffect.category === undefined ? {} : { category: luaEffect.category }),
+    ...(luaEffect.property === undefined ? {} : { property: luaEffect.property }),
+    ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
     canActivate: () => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true),
     cost: () => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.costRef, true),
     target: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.targetRef, true, ctx),
