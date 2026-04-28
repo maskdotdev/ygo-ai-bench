@@ -1,6 +1,6 @@
 # Duel Deck Studio — Yu-Gi-Oh! Deck Builder
 
-A polished, dependency-free browser app for building Yu-Gi-Oh! decks with real card data and images from the public YGOPRODeck API.
+A polished browser app for building Yu-Gi-Oh! decks with real card data and images from the public YGOPRODeck API. The deck builder remains static, while the playtest arena now runs as a React/TanStack Router surface.
 
 ## Features
 
@@ -22,7 +22,7 @@ A polished, dependency-free browser app for building Yu-Gi-Oh! decks with real c
 
 ## How to run
 
-Open `index.html` in a browser, or serve the folder locally:
+For the static deck builder, open `index.html` in a browser, or serve the folder locally:
 
 ```bash
 cd yugioh-deck-builder
@@ -30,6 +30,15 @@ python3 -m http.server 8080
 ```
 
 Then open `http://localhost:8080`.
+
+For the React playtest arena, use Bun:
+
+```bash
+bun install
+bun run dev
+```
+
+Then open the local Vite URL and visit `/playtest.html`.
 
 ## API notes
 
@@ -57,7 +66,7 @@ window.duelDeckAgent.importYdk('#main\n89631139\n#extra\n!side\n')
 
 ## TypeScript playtest engine
 
-The new framework-agnostic playtest engine lives under `src`. It is separate from the current static browser app and can be consumed by a future React/TanStack app.
+The framework-agnostic playtest engine lives under `src`. The `/playtest.html` arena consumes it through a React/TanStack Router app styled with Tailwind.
 
 ```ts
 import { chooseHighestPriority, parseYdk, runPlaytest, startPlaytest } from './src/playtest';
@@ -70,12 +79,12 @@ const result = runPlaytest(session, chooseHighestPriority, 10);
 Run checks with:
 
 ```bash
-npm run typecheck
-npm test
-npm run build
+bun run typecheck
+bun run test
+bun run build
 ```
 
-`npm run build` emits `dist/playtest-engine.js`, which exposes `window.duelDeckPlaytest` in the browser. If that bundle is loaded, the existing `window.duelDeckAgent.playtest` bridge can start, inspect, step, and auto-run playtest sessions from the current deck.
+`bun run build` emits the React playtest page and `dist/playtest-engine.js`, which exposes `window.duelDeckPlaytest` in the browser. If that bundle is loaded, the existing `window.duelDeckAgent.playtest` bridge can start, inspect, step, and auto-run playtest sessions from the current deck.
 
 ## Included decks
 
@@ -87,3 +96,5 @@ npm run build
 - `index.html` — app shell and accessible markup.
 - `styles.css` — responsive, polished UI.
 - `app.js` — card loading, deck state, validation, import/export, drag/drop.
+- `playtest.html` — React/TanStack Router playtest arena shell.
+- `src/playtestApp` — Tailwind-styled playtest UI.
