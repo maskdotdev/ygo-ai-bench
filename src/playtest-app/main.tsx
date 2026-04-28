@@ -682,6 +682,7 @@ function Pile(props: {
 
   const topCard = props.cards[props.cards.length - 1];
   if (!topCard) return null;
+  
   const image = props.images.get(topCard.id);
   const fullCard = image?.large || image?.small;
   

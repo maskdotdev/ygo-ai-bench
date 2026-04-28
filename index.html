@@ -7,7 +7,6 @@
   <title>Duel Deck Studio — Yu-Gi-Oh! Deck Builder</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -15,7 +14,7 @@
 
   <header class="app-header">
     <section class="brand-block" aria-label="Application title">
-      <div class="brand-mark" aria-hidden="true">YG</div>
+      <div class="brand-mark" aria-hidden="true">⚔</div>
       <div>
         <p class="eyebrow">Yu-Gi-Oh! deck builder</p>
         <h1>Duel Deck Studio</h1>
@@ -72,18 +71,75 @@
             </select>
           </label>
           <label class="field">
+            <span>Extra Type</span>
+            <select id="extraTypeFilter">
+              <option value="all">All Extra</option>
+              <option value="fusion">Fusion</option>
+              <option value="synchro">Synchro</option>
+              <option value="xyz">Xyz</option>
+              <option value="link">Link</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Monster Type</span>
+            <select id="monsterTypeFilter">
+              <option value="all">All Monster Types</option>
+              <option value="normal">Normal</option>
+              <option value="effect">Effect</option>
+              <option value="ritual">Ritual</option>
+              <option value="tuner">Tuner</option>
+              <option value="pendulum">Pendulum</option>
+              <option value="flip">Flip</option>
+              <option value="toon">Toon</option>
+              <option value="spirit">Spirit</option>
+              <option value="union">Union</option>
+              <option value="gemini">Gemini</option>
+            </select>
+          </label>
+          <label class="field">
             <span>Race</span>
             <select id="raceFilter"><option value="all">All Races</option></select>
           </label>
           <label class="field">
             <span>Attribute</span>
-            <select id="attributeFilter"><option value="all">All Attr</option></select>
+            <select id="attributeFilter"><option value="all">All Attributes</option></select>
+          </label>
+          <label class="field">
+            <span>Level/Rank</span>
+            <select id="levelFilter">
+              <option value="all">All Levels</option>
+              <option value="1">Level/Rank 1</option>
+              <option value="2">Level/Rank 2</option>
+              <option value="3">Level/Rank 3</option>
+              <option value="4">Level/Rank 4</option>
+              <option value="5">Level/Rank 5</option>
+              <option value="6">Level/Rank 6</option>
+              <option value="7">Level/Rank 7</option>
+              <option value="8">Level/Rank 8</option>
+              <option value="9">Level/Rank 9</option>
+              <option value="10">Level/Rank 10</option>
+              <option value="11">Level/Rank 11</option>
+              <option value="12">Level/Rank 12</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Link Rating</span>
+            <select id="linkFilter">
+              <option value="all">All Link</option>
+              <option value="1">Link-1</option>
+              <option value="2">Link-2</option>
+              <option value="3">Link-3</option>
+              <option value="4">Link-4</option>
+              <option value="5">Link-5</option>
+              <option value="6">Link-6</option>
+            </select>
           </label>
           <label class="field">
             <span>Sort</span>
             <select id="sortSelect">
               <option value="name">Name A–Z</option>
               <option value="atk">ATK ↓</option>
+              <option value="def">DEF ↓</option>
               <option value="level">Level ↓</option>
               <option value="new">Newest</option>
             </select>

@@ -34,8 +34,12 @@ const state = {
   filters: {
     query: '',
     bucket: 'all',
+    extraType: 'all',
+    monsterType: 'all',
     race: 'all',
     attribute: 'all',
+    level: 'all',
+    link: 'all',
     sort: 'name',
     legalOnly: true,
     showImages: true,
@@ -64,8 +68,12 @@ function cacheElements() {
     searchInput: document.getElementById('searchInput'),
     clearSearchBtn: document.getElementById('clearSearchBtn'),
     bucketFilter: document.getElementById('bucketFilter'),
+    extraTypeFilter: document.getElementById('extraTypeFilter'),
+    monsterTypeFilter: document.getElementById('monsterTypeFilter'),
     raceFilter: document.getElementById('raceFilter'),
     attributeFilter: document.getElementById('attributeFilter'),
+    levelFilter: document.getElementById('levelFilter'),
+    linkFilter: document.getElementById('linkFilter'),
     sortSelect: document.getElementById('sortSelect'),
     legalOnlyToggle: document.getElementById('legalOnlyToggle'),
     imageToggle: document.getElementById('imageToggle'),
@@ -165,8 +173,12 @@ function bindEvents() {
   });
 
   el.bucketFilter.addEventListener('change', () => updateFilter('bucket', el.bucketFilter.value));
+  el.extraTypeFilter.addEventListener('change', () => updateFilter('extraType', el.extraTypeFilter.value));
+  el.monsterTypeFilter.addEventListener('change', () => updateFilter('monsterType', el.monsterTypeFilter.value));
   el.raceFilter.addEventListener('change', () => updateFilter('race', el.raceFilter.value));
   el.attributeFilter.addEventListener('change', () => updateFilter('attribute', el.attributeFilter.value));
+  el.levelFilter.addEventListener('change', () => updateFilter('level', el.levelFilter.value));
+  el.linkFilter.addEventListener('change', () => updateFilter('link', el.linkFilter.value));
   el.sortSelect.addEventListener('change', () => updateFilter('sort', el.sortSelect.value));
   el.legalOnlyToggle.addEventListener('change', () => updateFilter('legalOnly', el.legalOnlyToggle.checked));
   el.imageToggle.addEventListener('change', () => updateFilter('showImages', el.imageToggle.checked));
@@ -393,7 +405,7 @@ function renderAll(shouldPersist = true) {
 }
 
 function applyFilters() {
-  const { query, bucket, race, attribute, sort, legalOnly } = state.filters;
+  const { query, bucket, extraType, monsterType, race, attribute, level, link, sort, legalOnly } = state.filters;
   const q = query.toLowerCase();
 
   let cards = state.cards.filter((card) => {
@@ -401,10 +413,49 @@ function applyFilters() {
     if (q && !card.searchText.includes(q)) return false;
     if (race !== 'all' && card.race !== race) return false;
     if (attribute !== 'all' && card.attribute !== attribute) return false;
+    
+    // Bucket filter (main card type)
     if (bucket === 'monster' && !card.isMonster) return false;
     if (bucket === 'spell' && !card.isSpell) return false;
     if (bucket === 'trap' && !card.isTrap) return false;
     if (bucket === 'extra' && !card.isExtra) return false;
+    
+    // Extra deck type filter (Fusion, Synchro, Xyz, Link)
+    if (extraType !== 'all') {
+      const typeLower = card.type.toLowerCase();
+      if (extraType === 'fusion' && !typeLower.includes('fusion')) return false;
+      if (extraType === 'synchro' && !typeLower.includes('synchro')) return false;
+      if (extraType === 'xyz' && !typeLower.includes('xyz')) return false;
+      if (extraType === 'link' && !typeLower.includes('link')) return false;
+    }
+    
+    // Monster type filter (Effect, Tuner, Pendulum, etc.)
+    if (monsterType !== 'all') {
+      const typeLower = card.type.toLowerCase();
+      if (monsterType === 'normal' && !typeLower.includes('normal')) return false;
+      if (monsterType === 'effect' && !typeLower.includes('effect')) return false;
+      if (monsterType === 'ritual' && !typeLower.includes('ritual')) return false;
+      if (monsterType === 'tuner' && !typeLower.includes('tuner')) return false;
+      if (monsterType === 'pendulum' && !typeLower.includes('pendulum')) return false;
+      if (monsterType === 'flip' && !typeLower.includes('flip')) return false;
+      if (monsterType === 'toon' && !typeLower.includes('toon')) return false;
+      if (monsterType === 'spirit' && !typeLower.includes('spirit')) return false;
+      if (monsterType === 'union' && !typeLower.includes('union')) return false;
+      if (monsterType === 'gemini' && !typeLower.includes('gemini')) return false;
+    }
+    
+    // Level/Rank filter
+    if (level !== 'all') {
+      const targetLevel = parseInt(level, 10);
+      if (card.level !== targetLevel) return false;
+    }
+    
+    // Link rating filter
+    if (link !== 'all') {
+      const targetLink = parseInt(link, 10);
+      if (card.linkval !== targetLink) return false;
+    }
+    
     return true;
   });
 
@@ -412,6 +463,8 @@ function applyFilters() {
     switch (sort) {
       case 'atk':
         return nullToLow(b.atk) - nullToLow(a.atk) || a.name.localeCompare(b.name);
+      case 'def':
+        return nullToLow(b.def) - nullToLow(a.def) || a.name.localeCompare(b.name);
       case 'level':
         return nullToLow(b.level ?? b.linkval) - nullToLow(a.level ?? a.linkval) || a.name.localeCompare(b.name);
       case 'new':
@@ -468,12 +521,13 @@ function renderCardTile(card) {
   const limitText = limitStatus ? shortLimit(limitStatus) : '';
   const typeLine = card.isMonster ? `${card.race}${card.attribute ? ` · ${card.attribute}` : ''}` : card.race;
   const smartZone = routeZone(card);
+  const cardTypeAttr = getCardFrameType(card);
   const imageMarkup = state.filters.showImages && card.imageSmall
     ? `<img src="${escapeAttr(card.imageSmall)}" loading="lazy" alt="${escapeAttr(card.name)} card image" />`
     : `<div class="no-image">${escapeHtml(card.name)}</div>`;
 
   return `
-    <article class="card-tile" data-id="${escapeAttr(card.id)}" draggable="true" tabindex="0" aria-label="${escapeAttr(card.name)}">
+    <article class="card-tile" data-id="${escapeAttr(card.id)}" data-card-type="${escapeAttr(cardTypeAttr)}" draggable="true" tabindex="0" aria-label="${escapeAttr(card.name)}">
       ${limitStatus ? `<span class="limit-badge ${limitClass}">${escapeHtml(limitText)}</span>` : ''}
       ${count ? `<span class="count-badge">×${count}</span>` : ''}
       <div class="card-image-wrap">${imageMarkup}</div>
@@ -486,6 +540,21 @@ function renderCardTile(card) {
         <button type="button" data-id="${escapeAttr(card.id)}" data-add-zone="side" title="Add to Side Deck">S</button>
       </div>
     </article>`;
+}
+
+function getCardFrameType(card) {
+  const typeLower = card.type.toLowerCase();
+  if (card.isSpell) return 'spell';
+  if (card.isTrap) return 'trap';
+  if (typeLower.includes('link')) return 'link';
+  if (typeLower.includes('xyz')) return 'xyz';
+  if (typeLower.includes('synchro')) return 'synchro';
+  if (typeLower.includes('fusion')) return 'fusion';
+  if (typeLower.includes('ritual')) return 'ritual';
+  if (typeLower.includes('pendulum')) return 'pendulum';
+  if (typeLower.includes('normal') && !typeLower.includes('effect')) return 'normal';
+  if (card.isMonster) return 'effect';
+  return 'unknown';
 }
 
 function makeSkeletonTiles(count) {

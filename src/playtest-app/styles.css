@@ -324,14 +324,24 @@
 
   /* Card placeholder in field */
   .field-slot {
-    border: 1px dashed rgba(212, 175, 55, 0.12);
-    background: rgba(0, 0, 0, 0.3);
+    border: 1px dashed rgba(212, 175, 55, 0.15);
+    background: rgba(0, 0, 0, 0.35);
     transition: all 200ms ease;
   }
 
   .field-slot:hover {
-    border-color: rgba(212, 175, 55, 0.25);
-    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(212, 175, 55, 0.3);
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  /* Duel field container */
+  .duel-field {
+    background: 
+      radial-gradient(ellipse 100% 80% at 50% 50%, rgba(212, 175, 55, 0.03) 0%, transparent 60%),
+      rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid rgba(212, 175, 55, 0.1);
   }
 
   /* Card zoom modal */
