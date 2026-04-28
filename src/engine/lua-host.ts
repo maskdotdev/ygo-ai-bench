@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { scriptFilenameForCard } from "./data-loaders.js";
 import { negateDuelChainLink, registerEffect, sendDuelCardToGraveyard, specialSummonDuelCard } from "./duel-core.js";
-import type { DuelCardInstance, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
 
@@ -40,16 +40,17 @@ interface LuaHostState {
   nextEffectId: number;
   effects: Map<number, LuaEffectRecord>;
   messages: string[];
+  activeTargetUids: string[] | undefined;
 }
 
 export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
   const L = lauxlib.luaL_newstate();
-  const hostState: LuaHostState = { nextEffectId: 1, effects: new Map(), messages: [] };
+  const hostState: LuaHostState = { nextEffectId: 1, effects: new Map(), messages: [], activeTargetUids: undefined };
   lualib.luaL_openlibs(L);
   installConstants(L);
   installDebugApi(L, hostState.messages);
   installAuxApi(L);
-  installDuelApi(L, session, hostState.messages);
+  installDuelApi(L, session, hostState);
   installEffectApi(L, hostState);
   installCardApi(L, session, hostState);
   installGroupApi(L);
@@ -172,7 +173,7 @@ function installAuxApi(L: unknown): void {
   lua.lua_setglobal(L, to_luastring("aux"));
 }
 
-function installDuelApi(L: unknown, session: DuelSession, messages: string[]): void {
+function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostState): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushinteger(state, session.state.turnPlayer);
@@ -186,7 +187,7 @@ function installDuelApi(L: unknown, session: DuelSession, messages: string[]): v
   lua.lua_setfield(L, -2, to_luastring("GetCurrentPhase"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const message = lua.lua_isstring(state, 1) ? lua.lua_tojsstring(state, 1) : "";
-    messages.push(message);
+    hostState.messages.push(message);
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("DebugMessage"));
@@ -282,9 +283,24 @@ function installDuelApi(L: unknown, session: DuelSession, messages: string[]): v
   });
   lua.lua_setfield(L, -2, to_luastring("SelectMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    return pushSelectedMatchingGroup(state, session);
+    return pushSelectedMatchingGroup(state, session, hostState.activeTargetUids);
   });
   lua.lua_setfield(L, -2, to_luastring("SelectTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const target = hostState.activeTargetUids?.[0];
+    if (!target) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardTable(state, target);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetFirstTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    pushGroupTable(state, hostState.activeTargetUids ?? []);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetTargetCards"));
   lua.lua_setglobal(L, to_luastring("Duel"));
 }
 
@@ -309,7 +325,7 @@ function installCardApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     const card = cardUid ? session.state.cards.find((candidate) => candidate.uid === cardUid) : undefined;
     const luaEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
     if (!card || !luaEffect) return 0;
-    registerEffect(session, toDuelEffect(card, luaEffect, state, hostState.effects));
+    registerEffect(session, toDuelEffect(card, luaEffect, state, hostState));
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));
@@ -431,7 +447,7 @@ function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef")
   };
 }
 
-function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unknown, effects: Map<number, LuaEffectRecord>): DuelEffectDefinition {
+function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unknown, hostState: LuaHostState): DuelEffectDefinition {
   const event = (luaEffect.typeFlags & 0x20) !== 0 ? "trigger" : (luaEffect.typeFlags & 0x100) !== 0 ? "quick" : "ignition";
   const range = luaEffect.range ?? [card.location];
   const triggerEvent = triggerEventFromCode(luaEffect.code);
@@ -443,20 +459,22 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
     range,
     oncePerTurn: (luaEffect.countLimit ?? 0) > 0,
-    canActivate: () => callLuaEffectBoolean(L, effects, luaEffect, card, luaEffect.conditionRef, true),
-    cost: () => callLuaEffectBoolean(L, effects, luaEffect, card, luaEffect.costRef, true),
-    target: () => callLuaEffectBoolean(L, effects, luaEffect, card, luaEffect.targetRef, true),
+    canActivate: () => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true),
+    cost: () => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.costRef, true),
+    target: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.targetRef, true, ctx),
     operation: (ctx) => {
       if (luaEffect.operationRef === undefined) {
         ctx.log("Lua effect resolved without an operation");
         return;
       }
-      lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.operationRef);
-      pushEffectTable(L, luaEffect.id, effects);
-      pushCardTable(L, card.uid);
-      const status = lua.lua_pcall(L, 2, 0, 0);
-      if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
-      ctx.log("Lua effect operation resolved");
+      withActiveTargets(hostState, ctx.targetUids, () => {
+        lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.operationRef);
+        pushEffectTable(L, luaEffect.id, hostState.effects);
+        pushCardTable(L, card.uid);
+        const status = lua.lua_pcall(L, 2, 0, 0);
+        if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+        ctx.log("Lua effect operation resolved");
+      });
     },
   };
 }
@@ -468,16 +486,28 @@ function triggerEventFromCode(code: number | undefined): DuelEventName | undefin
   return undefined;
 }
 
-function callLuaEffectBoolean(L: unknown, effects: Map<number, LuaEffectRecord>, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean): boolean {
+function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean, ctx?: DuelEffectContext): boolean {
   if (ref === undefined) return fallback;
-  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
-  pushEffectTable(L, luaEffect.id, effects);
-  pushCardTable(L, card.uid);
-  const status = lua.lua_pcall(L, 2, 1, 0);
-  if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
-  const result = lua.lua_isnil(L, -1) ? fallback : Boolean(lua.lua_toboolean(L, -1));
-  lua.lua_pop(L, 1);
-  return result;
+  return withActiveTargets(hostState, ctx?.targetUids, () => {
+    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
+    pushEffectTable(L, luaEffect.id, hostState.effects);
+    pushCardTable(L, card.uid);
+    const status = lua.lua_pcall(L, 2, 1, 0);
+    if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+    const result = lua.lua_isnil(L, -1) ? fallback : Boolean(lua.lua_toboolean(L, -1));
+    lua.lua_pop(L, 1);
+    return result;
+  });
+}
+
+function withActiveTargets<T>(hostState: LuaHostState, targetUids: string[] | undefined, callback: () => T): T {
+  const previous = hostState.activeTargetUids;
+  hostState.activeTargetUids = targetUids;
+  try {
+    return callback();
+  } finally {
+    hostState.activeTargetUids = previous;
+  }
 }
 
 function copyGlobalFunctionToField(L: unknown, tableName: string, fieldName: string): void {
@@ -563,7 +593,7 @@ function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefine
   return Boolean(result);
 }
 
-function pushSelectedMatchingGroup(L: unknown, session: DuelSession): number {
+function pushSelectedMatchingGroup(L: unknown, session: DuelSession, targetUids?: string[]): number {
   const filterRef = readOptionalFunctionRef(L, 2);
   const player = normalizePlayer(lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : session.state.turnPlayer);
   const selfMask = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0;
@@ -574,7 +604,9 @@ function pushSelectedMatchingGroup(L: unknown, session: DuelSession): number {
   const uids = matchingCardUidsWithFilter(L, session, filterRef, player, selfMask, opponentMask, excluded);
   releaseOptionalFunctionRef(L, filterRef);
   const limit = max > 0 ? max : Math.max(min, 1);
-  pushGroupTable(L, uids.slice(0, limit));
+  const selected = uids.slice(0, limit);
+  if (targetUids) targetUids.splice(0, targetUids.length, ...selected);
+  pushGroupTable(L, selected);
   return 1;
 }
 

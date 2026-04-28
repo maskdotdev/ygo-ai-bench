@@ -526,4 +526,81 @@ describe("Node upstream workspace loader", () => {
     expect(host.messages).toContain("lua negation resolved");
     expect(host.messages).not.toContain("negated lua operation should not resolve");
   });
+
+  it("persists Lua selected targets until chain resolution", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,c)
+          local g = Duel.SelectTarget(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, 0, LOCATION_HAND, 1, 1, c)
+          Debug.Message("lua target count " .. g:GetCount())
+          return g:GetCount() == 1
+        end)
+        e:SetOperation(function(e,c)
+          local tc = Duel.GetFirstTarget()
+          if tc then
+            Debug.Message("lua target persisted " .. tc:GetCode())
+            Duel.SendtoGrave(tc, REASON_EFFECT)
+          end
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(root, "script", "c400.lua"),
+      `
+      c400 = {}
+      c400.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("lua response before target")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 300, type: 1 }, { id: 400, type: 1 }, { id: 500, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.loadCardScript(400, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const activation = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.label.includes("Card 100"));
+    expect(activation).toBeTruthy();
+    const opened = applyResponse(session, activation!);
+    expect(opened.ok).toBe(true);
+    expect(opened.state.chain[0]?.targetUids).toHaveLength(1);
+
+    const response = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(response).toBeTruthy();
+    const result = applyResponse(session, response!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.code === "500")?.location).toBe("graveyard");
+    expect(host.messages).toContain("lua target count 1");
+    expect(host.messages).toContain("lua response before target");
+    expect(host.messages).toContain("lua target persisted 500");
+  });
 });
