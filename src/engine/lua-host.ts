@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { scriptFilenameForCard } from "./data-loaders.js";
-import { negateDuelChainLink, registerEffect, sendDuelCardToGraveyard, specialSummonDuelCard } from "./duel-core.js";
+import { banishDuelCard, destroyDuelCard, negateDuelChainLink, registerEffect, sendDuelCardToGraveyard, specialSummonDuelCard } from "./duel-core.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -124,6 +124,7 @@ function installConstants(L: unknown): void {
     EVENT_SPSUMMON_SUCCESS: 0x80,
     EVENT_TO_GRAVE: 0x400,
     REASON_EFFECT: 0x40,
+    REASON_DESTROY: 0x1,
     RESET_EVENT: 0x1000,
     RESETS_STANDARD: 0x2000,
   };
@@ -220,6 +221,32 @@ function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SendtoGrave"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uids = readCardOrGroupUids(state, 1);
+    let moved = 0;
+    for (const uid of uids) {
+      const card = session.state.cards.find((candidate) => candidate.uid === uid);
+      if (!card) continue;
+      destroyDuelCard(session.state, uid, card.controller);
+      moved += 1;
+    }
+    lua.lua_pushinteger(state, moved);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Destroy"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uids = readCardOrGroupUids(state, 1);
+    let moved = 0;
+    for (const uid of uids) {
+      const card = session.state.cards.find((candidate) => candidate.uid === uid);
+      if (!card) continue;
+      banishDuelCard(session.state, uid, card.controller);
+      moved += 1;
+    }
+    lua.lua_pushinteger(state, moved);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Remove"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readCardOrGroupUids(state, 1);
     const targetPlayer = lua.lua_isnumber(state, 5) ? normalizePlayer(lua.lua_tointeger(state, 5)) : undefined;

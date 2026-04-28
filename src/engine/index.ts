@@ -18,6 +18,8 @@ export {
   moveDuelCard,
   specialSummonDuelCard,
   sendDuelCardToGraveyard,
+  destroyDuelCard,
+  banishDuelCard,
   negateDuelChainLink,
   type CreateDuelOptions,
 } from "./duel-core.js";

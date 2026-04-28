@@ -603,4 +603,52 @@ describe("Node upstream workspace loader", () => {
     expect(host.messages).toContain("lua response before target");
     expect(host.messages).toContain("lua target persisted 500");
   });
+
+  it("lets Lua operations destroy and banish cards", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          local dg = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, c)
+          local rg = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, c)
+          Debug.Message("destroyed " .. Duel.Destroy(dg, REASON_EFFECT))
+          Debug.Message("removed " .. Duel.Remove(rg, POS_FACEUP_ATTACK, REASON_EFFECT))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 300, type: 1 }, { id: 500, type: 1 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.code === "300")?.location).toBe("graveyard");
+    expect(result.state.cards.find((card) => card.code === "500")?.location).toBe("banished");
+    expect(host.messages).toContain("destroyed 1");
+    expect(host.messages).toContain("removed 1");
+  });
 });

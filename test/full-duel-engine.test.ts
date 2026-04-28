@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   applyResponse,
+  banishDuelCard,
   createCardReader,
   createDuel,
+  destroyDuelCard,
   getDuelLegalActions,
   loadDecks,
   queryPublicState,
@@ -787,5 +789,28 @@ describe("full duel engine API", () => {
 
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.state.log.some((entry) => entry.detail.includes("Second Monster sent"))).toBe(true);
+  });
+
+  it("moves cards through destroy and banish primitives", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const destroyed = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const banished = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(destroyed).toBeTruthy();
+    expect(banished).toBeTruthy();
+
+    destroyDuelCard(session.state, destroyed!.uid, 0);
+    banishDuelCard(session.state, banished!.uid, 0);
+    const state = queryPublicState(session);
+
+    expect(state.cards.find((card) => card.uid === destroyed!.uid)?.location).toBe("graveyard");
+    expect(state.cards.find((card) => card.uid === banished!.uid)?.location).toBe("banished");
+    expect(state.log.some((entry) => entry.action === "destroy" && entry.card === "Normal Test Monster")).toBe(true);
+    expect(state.log.some((entry) => entry.action === "banish" && entry.card === "Second Monster")).toBe(true);
   });
 });

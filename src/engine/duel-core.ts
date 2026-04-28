@@ -243,6 +243,20 @@ export function sendDuelCardToGraveyard(state: DuelState, uid: string, controlle
   return card;
 }
 
+export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+  const card = moveDuelCard(state, uid, "graveyard", controller);
+  pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
+  collectTriggerEffects(state, "sentToGraveyard", card);
+  return card;
+}
+
+export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+  const card = moveDuelCard(state, uid, "banished", controller);
+  pushDuelLog(state, "banish", card.controller, card.name, "Banished");
+  collectTriggerEffects(state, "banished", card);
+  return card;
+}
+
 function instantiateDeck(session: DuelSession, player: PlayerId, location: DuelLocation, codes: string[]): void {
   for (const [index, code] of codes.entries()) {
     const data = session.cardReader(String(code)) ?? fallbackCardReader(String(code));
