@@ -1,6 +1,17 @@
 import fengari from "fengari";
 import { scriptFilenameForCard } from "./data-loaders.js";
-import { banishDuelCard, canMoveDuelCardToLocation, destroyDuelCard, negateDuelChainLink, registerEffect, sendDuelCardToGraveyard, specialSummonDuelCard } from "./duel-core.js";
+import {
+  banishDuelCard,
+  canMoveDuelCardToLocation,
+  damageDuelPlayer,
+  destroyDuelCard,
+  negateDuelChainLink,
+  recoverDuelPlayer,
+  registerEffect,
+  sendDuelCardToGraveyard,
+  setDuelPlayerLifePoints,
+  specialSummonDuelCard,
+} from "./duel-core.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -210,6 +221,33 @@ function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("NegateActivation"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    lua.lua_pushinteger(state, session.state.players[player].lifePoints);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetLP"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    setDuelPlayerLifePoints(session.state, player, value);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SetLP"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushinteger(state, damageDuelPlayer(session.state, player, value));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Damage"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushinteger(state, recoverDuelPlayer(session.state, player, value));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Recover"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readCardOrGroupUids(state, 1);
     let moved = 0;

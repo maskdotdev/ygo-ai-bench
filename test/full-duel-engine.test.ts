@@ -5,6 +5,7 @@ import {
   canMoveDuelCardToLocation,
   createCardReader,
   createDuel,
+  damageDuelPlayer,
   destroyDuelCard,
   getDuelLegalActions,
   loadDecks,
@@ -14,6 +15,8 @@ import {
   restoreDuel,
   serializeDuel,
   sendDuelCardToGraveyard,
+  recoverDuelPlayer,
+  setDuelPlayerLifePoints,
   specialSummonDuelCard,
   startDuel,
 } from "../src/engine/index.js";
@@ -848,5 +851,27 @@ describe("full duel engine API", () => {
     for (const card of spells.slice(0, 5)) moveDuelCard(session.state, card.uid, "spellTrapZone", 0);
 
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "setSpellTrap")).toBe(false);
+  });
+
+  it("modifies player life points and ends the duel at zero", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    expect(damageDuelPlayer(session.state, 1, 1500)).toBe(1500);
+    expect(queryPublicState(session).players[1].lifePoints).toBe(6500);
+    expect(recoverDuelPlayer(session.state, 1, 500)).toBe(500);
+    expect(queryPublicState(session).players[1].lifePoints).toBe(7000);
+    setDuelPlayerLifePoints(session.state, 1, 0);
+
+    const state = queryPublicState(session);
+    expect(state.players[1].lifePoints).toBe(0);
+    expect(state.status).toBe("ended");
+    expect(state.log.some((entry) => entry.action === "damage" && entry.detail === "1500")).toBe(true);
+    expect(state.log.some((entry) => entry.action === "recover" && entry.detail === "500")).toBe(true);
+    expect(state.log.some((entry) => entry.action === "setLifePoints" && entry.detail === "0")).toBe(true);
   });
 });

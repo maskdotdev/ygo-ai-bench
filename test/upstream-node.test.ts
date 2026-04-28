@@ -720,4 +720,52 @@ describe("Node upstream workspace loader", () => {
     expect(host.messages).toContain("open zones 0");
     expect(host.messages).toContain("special summoned 0");
   });
+
+  it("lets Lua operations read and modify life points", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("lp before " .. Duel.GetLP(1))
+          Debug.Message("damage " .. Duel.Damage(1, 1200, REASON_EFFECT))
+          Debug.Message("lp after damage " .. Duel.GetLP(1))
+          Debug.Message("recover " .. Duel.Recover(1, 300, REASON_EFFECT))
+          Duel.SetLP(1, 250)
+          Debug.Message("lp final " .. Duel.GetLP(1))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.players[1].lifePoints).toBe(250);
+    expect(host.messages).toEqual(expect.arrayContaining(["lp before 8000", "damage 1200", "lp after damage 6800", "recover 300", "lp final 250"]));
+  });
 });

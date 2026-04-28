@@ -21,6 +21,9 @@ export {
   sendDuelCardToGraveyard,
   destroyDuelCard,
   banishDuelCard,
+  damageDuelPlayer,
+  recoverDuelPlayer,
+  setDuelPlayerLifePoints,
   negateDuelChainLink,
   type CreateDuelOptions,
 } from "./duel-core.js";
