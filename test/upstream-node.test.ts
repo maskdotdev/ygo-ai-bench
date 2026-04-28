@@ -151,6 +151,12 @@ describe("Node upstream workspace loader", () => {
         e:SetType(EFFECT_TYPE_IGNITION)
         e:SetRange(LOCATION_HAND)
         e:SetOperation(function(e,c)
+          local ct = Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsSetCard, 0x123), 0, LOCATION_HAND, 0, c)
+          Debug.Message("matching set count " .. ct)
+          if Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, c) then
+            Debug.Message("existing code found")
+          end
+          Debug.Message("open monster zones " .. Duel.GetLocationCount(0, LOCATION_MZONE))
           local g = Duel.SelectTarget(0, aux.FilterBoolFunction(Card.IsSetCard, 0x123), 0, LOCATION_HAND, 0, 1, 1, c)
           Debug.Message("selected set count " .. g:GetCount())
           Duel.SendtoGrave(g, REASON_EFFECT)
@@ -186,6 +192,9 @@ describe("Node upstream workspace loader", () => {
     const result = applyResponse(session, action!);
 
     expect(result.ok).toBe(true);
+    expect(host.messages).toContain("matching set count 1");
+    expect(host.messages).toContain("existing code found");
+    expect(host.messages).toContain("open monster zones 5");
     expect(host.messages).toContain("selected set count 1");
     expect(result.state.cards.find((card) => card.code === "300")?.location).toBe("graveyard");
   });
