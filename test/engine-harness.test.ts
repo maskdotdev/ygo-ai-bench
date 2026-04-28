@@ -433,7 +433,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
 
   it("lets Lua scripts read card type, stats, race, and attribute", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Stat Monster", kind: "monster", typeFlags: 0x21, attack: 2500, defense: 2100, level: 7, race: 0x2, attribute: 0x20 },
+      { code: "100", alias: "900", name: "Stat Monster", kind: "monster", typeFlags: 0x21, attack: 2500, defense: 2100, level: 7, race: 0x2, attribute: 0x20 },
       { code: "200", name: "Fixture Spell", kind: "spell", typeFlags: 0x2 },
     ];
     const session = createDuel({ seed: 14, startingHandSize: 2, cardReader: createCardReader(cards) });
@@ -450,6 +450,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local c = monsters:GetFirst()
       Debug.Message("type " .. c:GetType())
       Debug.Message("stats " .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. c:GetLevel())
+      Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsLevel(7)))
+      Debug.Message("code checks " .. tostring(c:IsCode(900)) .. "/" .. tostring(c:IsOriginalCode(900)) .. "/" .. tostring(c:IsOriginalCode(100)))
       Debug.Message("race " .. c:GetRace() .. " " .. tostring(c:IsRace(RACE_SPELLCASTER)))
       Debug.Message("attribute " .. c:GetAttribute() .. " " .. tostring(c:IsAttribute(ATTRIBUTE_DARK)))
       Debug.Message("spell count " .. Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, nil))
@@ -460,6 +462,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("type 33");
     expect(host.messages).toContain("stats 2500/2100/7");
+    expect(host.messages).toContain("stat predicates true/true/true");
+    expect(host.messages).toContain("code checks true/false/true");
     expect(host.messages).toContain("race 2 true");
     expect(host.messages).toContain("attribute 32 true");
     expect(host.messages).toContain("spell count 1");

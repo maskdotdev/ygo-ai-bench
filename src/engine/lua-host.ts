@@ -147,10 +147,18 @@ function installCardApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
     const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
+    lua.lua_pushboolean(state, Boolean(card && requested && cardCodes(card).includes(requested)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCode"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsOriginalCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
@@ -184,6 +192,14 @@ function installCardApi(L: unknown, session: DuelSession, hostState: LuaHostStat
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && (card.data.attack ?? 0) === requested));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsAttack"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
     lua.lua_pushinteger(state, card?.data.defense ?? 0);
     return 1;
   });
@@ -191,10 +207,26 @@ function installCardApi(L: unknown, session: DuelSession, hostState: LuaHostStat
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && (card.data.defense ?? 0) === requested));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsDefense"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
     lua.lua_pushinteger(state, card?.data.level ?? 0);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetLevel"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && (card.data.level ?? 0) === requested));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsLevel"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
@@ -362,12 +394,16 @@ function pushCardTable(L: unknown, uid: string): void {
   copyGlobalFunctionToField(L, "Card", "RegisterEffect");
   copyGlobalFunctionToField(L, "Card", "GetCode");
   copyGlobalFunctionToField(L, "Card", "IsCode");
+  copyGlobalFunctionToField(L, "Card", "IsOriginalCode");
   copyGlobalFunctionToField(L, "Card", "IsSetCard");
   copyGlobalFunctionToField(L, "Card", "GetType");
   copyGlobalFunctionToField(L, "Card", "IsType");
   copyGlobalFunctionToField(L, "Card", "GetAttack");
+  copyGlobalFunctionToField(L, "Card", "IsAttack");
   copyGlobalFunctionToField(L, "Card", "GetDefense");
+  copyGlobalFunctionToField(L, "Card", "IsDefense");
   copyGlobalFunctionToField(L, "Card", "GetLevel");
+  copyGlobalFunctionToField(L, "Card", "IsLevel");
   copyGlobalFunctionToField(L, "Card", "GetRace");
   copyGlobalFunctionToField(L, "Card", "IsRace");
   copyGlobalFunctionToField(L, "Card", "GetAttribute");
@@ -605,4 +641,8 @@ function cardTypeFlags(card: DuelCardInstance | undefined): number {
   if (card.kind === "spell") return 0x2;
   if (card.kind === "trap") return 0x4;
   return 0x1;
+}
+
+function cardCodes(card: DuelCardInstance): string[] {
+  return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
