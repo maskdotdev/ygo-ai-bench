@@ -422,6 +422,21 @@ function installCardApi(L: unknown, session: DuelSession, hostState: LuaHostStat
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && !card.faceUp));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsFacedown"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    const requestedPosition = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requestedPosition && card.position === requestedPosition));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPosition"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
     lua.lua_pushboolean(state, Boolean(card && card.position === "faceUpAttack"));
     return 1;
   });
@@ -522,6 +537,8 @@ function pushCardTable(L: unknown, uid: string): void {
   copyGlobalFunctionToField(L, "Card", "IsCode");
   copyGlobalFunctionToField(L, "Card", "IsSetCard");
   copyGlobalFunctionToField(L, "Card", "IsFaceup");
+  copyGlobalFunctionToField(L, "Card", "IsFacedown");
+  copyGlobalFunctionToField(L, "Card", "IsPosition");
   copyGlobalFunctionToField(L, "Card", "IsAttackPos");
   copyGlobalFunctionToField(L, "Card", "IsDefensePos");
   copyGlobalFunctionToField(L, "Card", "IsLocation");
@@ -631,6 +648,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
 }
 
 function triggerEventFromCode(code: number | undefined): DuelEventName | undefined {
+  if (code === 1001) return "flipSummoned";
   if (code === 0x40) return "normalSummoned";
   if (code === 0x80) return "specialSummoned";
   if (code === 0x400) return "sentToGraveyard";

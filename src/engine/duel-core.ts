@@ -127,6 +127,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     if (state.players[player].normalSummonAvailable && hasZoneSpace(state, player, "monsterZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
         if (tributeCountForNormalSummon(card) === 0) actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
+        actions.push({ type: "setMonster", player, uid: card.uid, label: `Set ${card.name}` });
       }
     }
     actions.push(...tributeSummonActions(state, player, hand));
@@ -146,6 +147,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
     }
     actions.push(...positionChangeActions(state, player));
+    actions.push(...flipSummonActions(state, player));
   }
   if (state.phase === "battle") {
     actions.push(...attackActions(state, player));
@@ -164,11 +166,13 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
   try {
     if (response.type === "normalSummon") normalSummon(session.state, response.player, response.uid);
     else if (response.type === "tributeSummon") tributeSummonDuelCard(session.state, response.player, response.uid, response.tributeUids);
+    else if (response.type === "setMonster") setMonster(session.state, response.player, response.uid);
     else if (response.type === "setSpellTrap") setSpellTrap(session.state, response.player, response.uid);
     else if (response.type === "activateEffect") activateEffect(session, response.player, response.uid, response.effectId);
     else if (response.type === "passChain") passChain(session.state, response.player);
     else if (response.type === "activateTrigger") activatePendingTrigger(session, response.player, response.triggerId);
     else if (response.type === "declineTrigger") declinePendingTrigger(session, response.player, response.triggerId);
+    else if (response.type === "flipSummon") flipSummonDuelCard(session.state, response.player, response.uid);
     else if (response.type === "changePosition") changeDuelCardPosition(session.state, response.player, response.uid, response.position);
     else if (response.type === "declareAttack") declareDuelAttack(session.state, response.player, response.attackerUid, response.targetUid);
     else if (response.type === "changePhase") changePhase(session.state, response.player, response.phase);
@@ -409,6 +413,18 @@ function normalSummon(state: DuelState, player: PlayerId, uid: string): void {
   collectTriggerEffects(state, "normalSummoned", card);
 }
 
+function setMonster(state: DuelState, player: PlayerId, uid: string): void {
+  const card = requireControlledCard(state, player, uid, "hand");
+  if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
+  if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
+  requireZoneSpace(state, player, "monsterZone");
+  moveDuelCard(state, uid, "monsterZone", player);
+  card.position = "faceDownDefense";
+  card.faceUp = false;
+  state.players[player].normalSummonAvailable = false;
+  pushDuelLog(state, "setMonster", player, card.name, "Set from hand");
+}
+
 export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
@@ -434,6 +450,16 @@ export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: s
   state.players[player].normalSummonAvailable = false;
   pushDuelLog(state, "tributeSummon", player, card.name, `Tribute Summoned with ${requiredTributes} tribute(s)`);
   collectTriggerEffects(state, "normalSummoned", card);
+}
+
+export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: string): DuelCardInstance {
+  const card = requireControlledCard(state, player, uid, "monsterZone");
+  if (card.position !== "faceDownDefense") throw new Error(`${card.name} is not face-down defense`);
+  card.position = "faceUpAttack";
+  card.faceUp = true;
+  pushDuelLog(state, "flipSummon", player, card.name, "Flip Summoned");
+  collectTriggerEffects(state, "flipSummoned", card);
+  return card;
 }
 
 function setSpellTrap(state: DuelState, player: PlayerId, uid: string): void {
@@ -584,6 +610,12 @@ function positionChangeActions(state: DuelState, player: PlayerId): DuelAction[]
     }
   }
   return actions;
+}
+
+function flipSummonActions(state: DuelState, player: PlayerId): DuelAction[] {
+  return getCards(state, player, "monsterZone")
+    .filter((card) => card.position === "faceDownDefense")
+    .map((card) => ({ type: "flipSummon", player, uid: card.uid, label: `Flip Summon ${card.name}` }));
 }
 
 function nextManualPositions(card: DuelCardInstance): CardPosition[] {

@@ -15,7 +15,8 @@ export type DuelEventName =
   | "turnStarted"
   | "attackDeclared"
   | "battleDestroyed"
-  | "positionChanged";
+  | "positionChanged"
+  | "flipSummoned";
 
 export interface DuelOptions {
   seed?: string | number;
@@ -153,11 +154,13 @@ export type DuelCardReader = (code: string) => DuelCardData | undefined;
 export type DuelAction =
   | { type: "normalSummon"; player: PlayerId; uid: string; label: string }
   | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; label: string }
+  | { type: "setMonster"; player: PlayerId; uid: string; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
   | { type: "passChain"; player: PlayerId; label: string }
   | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
   | { type: "declineTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
+  | { type: "flipSummon"; player: PlayerId; uid: string; label: string }
   | { type: "changePosition"; player: PlayerId; uid: string; position: CardPosition; label: string }
   | { type: "declareAttack"; player: PlayerId; attackerUid: string; targetUid?: string; label: string }
   | { type: "changePhase"; player: PlayerId; phase: DuelPhase; label: string }

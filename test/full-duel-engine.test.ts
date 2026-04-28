@@ -25,6 +25,7 @@ import {
   specialSummonDuelCard,
   startDuel,
   tributeSummonDuelCard,
+  flipSummonDuelCard,
 } from "../src/engine/index.js";
 import type { DuelCardData } from "../src/engine/index.js";
 
@@ -899,6 +900,74 @@ describe("full duel engine API", () => {
     expect(action.tributeUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
     expect(result.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(4);
     expect(() => tributeSummonDuelCard(session.state, 0, tributeMonster!.uid, action.tributeUids)).toThrow("not in hand");
+  });
+
+  it("sets a monster face-down and flip summons it later", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const monster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(monster).toBeTruthy();
+    const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === monster!.uid);
+    expect(setAction).toBeTruthy();
+    const setResult = applyResponse(session, setAction!);
+
+    expect(setResult.ok).toBe(true);
+    expect(setResult.state.cards.find((card) => card.uid === monster!.uid)?.position).toBe("faceDownDefense");
+    expect(setResult.state.cards.find((card) => card.uid === monster!.uid)?.faceUp).toBe(false);
+    expect(setResult.state.players[0].normalSummonAvailable).toBe(false);
+
+    const flipAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === monster!.uid);
+    expect(flipAction).toBeTruthy();
+    const flipResult = applyResponse(session, flipAction!);
+
+    expect(flipResult.ok).toBe(true);
+    expect(flipResult.state.cards.find((card) => card.uid === monster!.uid)?.position).toBe("faceUpAttack");
+    expect(flipResult.state.cards.find((card) => card.uid === monster!.uid)?.faceUp).toBe(true);
+    expect(flipResult.state.log.some((entry) => entry.action === "flipSummon" && entry.card === "Normal Test Monster")).toBe(true);
+  });
+
+  it("collects flip summon trigger effects", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const monster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(monster).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    moveDuelCard(session.state, monster!.uid, "monsterZone", 0).position = "faceDownDefense";
+    session.state.cards.find((card) => card.uid === monster!.uid)!.faceUp = false;
+    registerEffect(session, {
+      id: "flip-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "flipSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Flip summoned ${ctx.eventCard?.name}`);
+      },
+    });
+
+    flipSummonDuelCard(session.state, 0, monster!.uid);
+
+    const state = queryPublicState(session);
+    expect(state.pendingTriggers).toHaveLength(1);
+    expect(state.pendingTriggers[0]).toMatchObject({ eventName: "flipSummoned", eventCardUid: monster!.uid });
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "flip-trigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.log.some((entry) => entry.detail === "Flip summoned Normal Test Monster")).toBe(true);
   });
 
   it("hides set actions when the spell/trap zone is full", () => {

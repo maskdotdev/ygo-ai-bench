@@ -19,6 +19,7 @@ export {
   moveDuelCard,
   specialSummonDuelCard,
   tributeSummonDuelCard,
+  flipSummonDuelCard,
   sendDuelCardToGraveyard,
   destroyDuelCard,
   banishDuelCard,

@@ -911,4 +911,60 @@ describe("Node upstream workspace loader", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("position trigger resolved");
   });
+
+  it("lets Lua flip triggers inspect face-down and position state", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c300.lua"),
+      `
+      c300 = {}
+      c300.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_FLIP)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("facedown source " .. tostring(c:IsFacedown()))
+          local g = Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsPosition, POS_FACEUP_ATTACK), 0, LOCATION_MZONE, 0, nil)
+          Debug.Message("faceup attackers " .. g:GetCount())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1, atk: 1800, def: 1200 }, { id: 300, type: 1 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const monster = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(monster).toBeTruthy();
+    moveDuelCard(session.state, monster!.uid, "monsterZone", 0).position = "faceDownDefense";
+    session.state.cards.find((card) => card.uid === monster!.uid)!.faceUp = false;
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(300, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === monster!.uid);
+    expect(action).toBeTruthy();
+    const flip = applyResponse(session, action!);
+    expect(flip.ok).toBe(true);
+    expect(flip.state.pendingTriggers).toHaveLength(1);
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toEqual(expect.arrayContaining(["facedown source true", "faceup attackers 1"]));
+  });
 });

@@ -17,6 +17,7 @@ export function installConstants(L: unknown): void {
     EFFECT_TYPE_IGNITION: 0x10,
     EFFECT_TYPE_TRIGGER_O: 0x20,
     EFFECT_TYPE_QUICK_O: 0x100,
+    EVENT_FLIP: 1001,
     EVENT_SUMMON_SUCCESS: 0x40,
     EVENT_SPSUMMON_SUCCESS: 0x80,
     EVENT_TO_GRAVE: 0x400,
