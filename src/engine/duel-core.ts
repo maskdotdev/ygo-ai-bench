@@ -29,6 +29,15 @@ import {
   xyzSummonActions,
   xyzSummonDuelCard as xyzSummonDuelCardWithEvents,
 } from "./duel-summon.js";
+import {
+  attackActions,
+  canChangeDuelCardPosition as canChangeDuelCardPositionRule,
+  canDuelCardAttack as canDuelCardAttackRule,
+  changeDuelCardPosition as changeDuelCardPositionRule,
+  declareDuelAttack as declareDuelAttackRule,
+  getDuelAttackTargets as getDuelAttackTargetsRule,
+  positionChangeActions,
+} from "./duel-battle.js";
 import type {
   ApplyDuelResponseResult,
   CardPosition,
@@ -363,65 +372,27 @@ export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: st
 }
 
 export function canDuelCardAttack(state: DuelState, uid: string): boolean {
-  const card = findCard(state, uid);
-  if (!card) return false;
-  return canAttackWithCard(state, card);
+  return canDuelCardAttackRule(state, uid);
 }
 
 export function getDuelAttackTargets(state: DuelState, attackerUid: string): DuelCardInstance[] {
-  const attacker = findCard(state, attackerUid);
-  if (!attacker || !canAttackWithCard(state, attacker)) return [];
-  return getAttackTargets(state, attacker.controller);
+  return getDuelAttackTargetsRule(state, attackerUid);
 }
 
 export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {
-  const attacker = requireControlledCard(state, player, attackerUid, "monsterZone");
-  if (state.phase !== "battle") throw new Error("Attacks can only be declared during the battle phase");
-  if (!canAttackWithCard(state, attacker)) throw new Error(`${attacker.name} cannot attack`);
-
-  const targets = getAttackTargets(state, player);
-  const target = targetUid === undefined ? undefined : findCard(state, targetUid);
-  if (targets.length > 0) {
-    if (!target || !targets.some((candidate) => candidate.uid === target.uid)) throw new Error("Attack target is not legal");
-  } else if (targetUid !== undefined) {
-    throw new Error("Direct attacks cannot have a target");
-  }
-
-  state.attacksDeclared.push(attacker.uid);
-  state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
-  if (!target) {
-    const damage = getBattleAttack(attacker);
-    pushDuelLog(state, "attack", player, attacker.name, "Direct attack");
-    collectTriggerEffects(state, "attackDeclared", attacker);
-    damageDuelPlayer(state, otherPlayer(player), damage);
-    return;
-  }
-
-  pushDuelLog(state, "attack", player, attacker.name, `Attacked ${target.name}`);
-  collectTriggerEffects(state, "attackDeclared", attacker);
-  resolveBattle(state, attacker, target);
+  declareDuelAttackRule(state, player, attackerUid, targetUid, {
+    collectEvent: (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
+    damagePlayer: (damagedPlayer, amount) => damageDuelPlayer(state, damagedPlayer, amount),
+    destroyCard: (uid, controller) => destroyDuelCard(state, uid, controller),
+  });
 }
 
 export function canChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition): boolean {
-  const card = findCard(state, uid);
-  if (!card || card.location !== "monsterZone") return false;
-  if (!isMonsterLike(card)) return false;
-  if (!isMonsterPosition(position)) return false;
-  if (card.position === position) return false;
-  if (state.positionsChanged.includes(card.uid)) return false;
-  if (state.attacksDeclared.includes(card.uid)) return false;
-  return true;
+  return canChangeDuelCardPositionRule(state, uid, position);
 }
 
 export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition): DuelCardInstance {
-  const card = requireControlledCard(state, player, uid, "monsterZone");
-  if (!canChangeDuelCardPosition(state, uid, position)) throw new Error(`${card.name} cannot change to ${position}`);
-  card.position = position;
-  card.faceUp = position !== "faceDownDefense";
-  state.positionsChanged.push(card.uid);
-  pushDuelLog(state, "changePosition", player, card.name, position);
-  collectTriggerEffects(state, "positionChanged", card);
-  return card;
+  return changeDuelCardPositionRule(state, player, uid, position, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
 }
 
 function instantiateDeck(session: DuelSession, player: PlayerId, location: DuelLocation, codes: string[]): void {
@@ -551,116 +522,6 @@ function draw(state: DuelState, player: PlayerId, count: number, detail: string)
     moveDuelCard(state, card.uid, "hand", player);
     pushDuelLog(state, "draw", player, card.name, detail);
   }
-}
-
-function positionChangeActions(state: DuelState, player: PlayerId): DuelAction[] {
-  const actions: DuelAction[] = [];
-  for (const card of getCards(state, player, "monsterZone")) {
-    for (const position of nextManualPositions(card)) {
-      if (canChangeDuelCardPosition(state, card.uid, position)) {
-        actions.push({ type: "changePosition", player, uid: card.uid, position, label: `${card.name}: Change to ${positionLabel(position)}` });
-      }
-    }
-  }
-  return actions;
-}
-
-function nextManualPositions(card: DuelCardInstance): CardPosition[] {
-  if (card.position === "faceUpAttack") return ["faceUpDefense"];
-  if (card.position === "faceUpDefense") return ["faceUpAttack"];
-  if (card.position === "faceDownDefense") return ["faceUpAttack"];
-  return [];
-}
-
-function positionLabel(position: CardPosition): string {
-  if (position === "faceUpAttack") return "Attack";
-  if (position === "faceUpDefense") return "Defense";
-  if (position === "faceDownDefense") return "face-down Defense";
-  return position;
-}
-
-function attackActions(state: DuelState, player: PlayerId): DuelAction[] {
-  const actions: DuelAction[] = [];
-  const attackers = getCards(state, player, "monsterZone").filter((card) => canAttackWithCard(state, card));
-  const targets = getAttackTargets(state, player);
-  for (const attacker of attackers) {
-    if (targets.length === 0) {
-      actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, label: `${attacker.name}: Direct attack` });
-      continue;
-    }
-    for (const target of targets) {
-      actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, targetUid: target.uid, label: `${attacker.name}: Attack ${target.name}` });
-    }
-  }
-  return actions;
-}
-
-function canAttackWithCard(state: DuelState, card: DuelCardInstance): boolean {
-  if (state.phase !== "battle") return false;
-  if (card.location !== "monsterZone" || card.controller !== state.turnPlayer) return false;
-  if (!isMonsterLike(card) || !card.faceUp) return false;
-  if (card.position !== "faceUpAttack") return false;
-  return !state.attacksDeclared.includes(card.uid);
-}
-
-function getAttackTargets(state: DuelState, player: PlayerId): DuelCardInstance[] {
-  return getCards(state, otherPlayer(player), "monsterZone").filter((card) => isMonsterLike(card));
-}
-
-function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance): void {
-  const attackerAttack = getBattleAttack(attacker);
-  const targetStat = target.position === "faceUpAttack" ? getBattleAttack(target) : getBattleDefense(target);
-  if (target.position === "faceUpAttack") {
-    resolveAttackPositionBattle(state, attacker, attackerAttack, target, targetStat);
-    return;
-  }
-  resolveDefensePositionBattle(state, attacker, attackerAttack, target, targetStat);
-}
-
-function resolveAttackPositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetAttack: number): void {
-  if (attackerAttack > targetAttack) {
-    destroyDuelCard(state, target.uid, target.controller);
-    collectTriggerEffects(state, "battleDestroyed", target);
-    damageDuelPlayer(state, target.controller, attackerAttack - targetAttack);
-    return;
-  }
-  if (attackerAttack < targetAttack) {
-    destroyDuelCard(state, attacker.uid, attacker.controller);
-    collectTriggerEffects(state, "battleDestroyed", attacker);
-    damageDuelPlayer(state, attacker.controller, targetAttack - attackerAttack);
-    return;
-  }
-  destroyDuelCard(state, attacker.uid, attacker.controller);
-  destroyDuelCard(state, target.uid, target.controller);
-  collectTriggerEffects(state, "battleDestroyed", attacker);
-  collectTriggerEffects(state, "battleDestroyed", target);
-}
-
-function resolveDefensePositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetDefense: number): void {
-  if (attackerAttack > targetDefense) {
-    destroyDuelCard(state, target.uid, target.controller);
-    collectTriggerEffects(state, "battleDestroyed", target);
-    return;
-  }
-  if (attackerAttack < targetDefense) {
-    damageDuelPlayer(state, attacker.controller, targetDefense - attackerAttack);
-  }
-}
-
-function getBattleAttack(card: DuelCardInstance): number {
-  return Math.max(0, card.data.attack ?? 0);
-}
-
-function getBattleDefense(card: DuelCardInstance): number {
-  return Math.max(0, card.data.defense ?? 0);
-}
-
-function isMonsterLike(card: DuelCardInstance): boolean {
-  return card.kind === "monster" || card.kind === "extra";
-}
-
-function isMonsterPosition(position: CardPosition): boolean {
-  return position === "faceUpAttack" || position === "faceUpDefense" || position === "faceDownDefense";
 }
 
 function createEffectContext(state: DuelState, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance, targetUids: string[] = []): DuelEffectContext {
