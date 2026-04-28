@@ -310,4 +310,138 @@ describe("Node upstream workspace loader", () => {
     expect(result.state.cards.find((card) => card.code === "300")?.location).toBe("graveyard");
     expect(result.state.log.some((entry) => entry.action === "trigger")).toBe(true);
   });
+
+  it("maps Lua special summon trigger events", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          local g = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, c)
+          Duel.SpecialSummon(g, 0, 0, 0, false, false, POS_FACEUP_ATTACK)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(root, "script", "c400.lua"),
+      `
+      c400 = {}
+      c400.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SPSUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("special summon trigger resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 300, type: 1 }, { id: 400, type: 1 }, { id: 500, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.loadCardScript(400, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeTruthy();
+    const activation = applyResponse(session, action!);
+    expect(activation.ok).toBe(true);
+    expect(activation.state.pendingTriggers).toHaveLength(1);
+
+    const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("special summon trigger resolved");
+  });
+
+  it("maps Lua sent-to-graveyard trigger events", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          local g = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, c)
+          Duel.SendtoGrave(g, REASON_EFFECT)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(root, "script", "c400.lua"),
+      `
+      c400 = {}
+      c400.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_TO_GRAVE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("graveyard trigger resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 300, type: 1 }, { id: 400, type: 1 }, { id: 500, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.loadCardScript(400, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeTruthy();
+    const activation = applyResponse(session, action!);
+    expect(activation.ok).toBe(true);
+    expect(activation.state.pendingTriggers).toHaveLength(1);
+
+    const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("graveyard trigger resolved");
+  });
 });

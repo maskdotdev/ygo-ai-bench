@@ -120,6 +120,8 @@ function installConstants(L: unknown): void {
     EFFECT_TYPE_TRIGGER_O: 0x20,
     EFFECT_TYPE_QUICK_O: 0x100,
     EVENT_SUMMON_SUCCESS: 0x40,
+    EVENT_SPSUMMON_SUCCESS: 0x80,
+    EVENT_TO_GRAVE: 0x400,
     REASON_EFFECT: 0x40,
     RESET_EVENT: 0x1000,
     RESETS_STANDARD: 0x2000,
@@ -416,6 +418,8 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
 
 function triggerEventFromCode(code: number | undefined): DuelEventName | undefined {
   if (code === 0x40) return "normalSummoned";
+  if (code === 0x80) return "specialSummoned";
+  if (code === 0x400) return "sentToGraveyard";
   return undefined;
 }
 
