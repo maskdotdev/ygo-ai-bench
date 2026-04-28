@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { scriptFilenameForCard } from "./data-loaders.js";
 import type { DuelSession } from "./duel-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -12,8 +13,13 @@ export interface LuaScriptLoadResult {
 export interface LuaScriptHost {
   readonly messages: string[];
   loadScript(code: string, name: string): LuaScriptLoadResult;
+  loadCardScript(cardCode: string | number, source: LuaScriptSource): LuaScriptLoadResult;
   getGlobalString(name: string): string | undefined;
   getGlobalNumber(name: string): number | undefined;
+}
+
+export interface LuaScriptSource {
+  readScript(name: string): string | undefined;
 }
 
 export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
@@ -34,6 +40,12 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
       const callStatus = lua.lua_pcall(L, 0, lua.LUA_MULTRET, 0);
       if (callStatus !== lua.LUA_OK) return { ok: false, name, error: readLuaError(L) };
       return { ok: true, name };
+    },
+    loadCardScript(cardCode, source) {
+      const name = scriptFilenameForCard(cardCode);
+      const code = source.readScript(name);
+      if (code === undefined) return { ok: false, name, error: `Script ${name} was not found` };
+      return this.loadScript(code, name);
     },
     getGlobalString(name) {
       lua.lua_getglobal(L, to_luastring(name));

@@ -133,8 +133,9 @@ function toNumber(value: number | string | undefined): number | undefined {
 }
 
 function joinPath(...parts: string[]): string {
-  return parts
+  const joined = parts
     .flatMap((part) => part.split("/"))
     .filter((part) => part && part !== ".")
     .join("/");
+  return parts[0]?.startsWith("/") ? `/${joined}` : joined;
 }
