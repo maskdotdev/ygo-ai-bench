@@ -316,8 +316,18 @@ function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerI
   const source = findCard(session.state, trigger.sourceUid);
   const eventCard = trigger.eventCardUid === undefined ? undefined : findCard(session.state, trigger.eventCardUid);
   if (!source || (trigger.eventCardUid !== undefined && !eventCard)) throw new Error(`Trigger ${triggerId} lost its source or event card`);
-  resolveEffect(session.state, effect, source, trigger.player, trigger.eventName, eventCard, "trigger");
-  session.state.waitingFor = session.state.pendingTriggers[0]?.player ?? session.state.turnPlayer;
+  const ctx = createEffectContext(session.state, source, trigger.player, trigger.eventName, eventCard);
+  if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
+  if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
+  pushChainLink(session.state, trigger.player, source.uid, effect.id, trigger.eventName, eventCard);
+  pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
+  markEffectUsed(session.state, effect);
+  const responsePlayer = otherPlayer(trigger.player);
+  if (hasChainResponses(session.state, responsePlayer)) {
+    session.state.waitingFor = responsePlayer;
+    return;
+  }
+  resolveChain(session.state);
 }
 
 function declinePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
@@ -405,19 +415,6 @@ function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, so
   };
 }
 
-function resolveEffect(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId, eventName: DuelEventName | undefined, eventCard: DuelCardInstance | undefined, logAction: string): void {
-  const ctx = createEffectContext(state, source, player, eventName, eventCard);
-  if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
-  if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
-  state.chain.push({ id: `chain-${state.log.length + 1}`, player, sourceUid: source.uid, effectId: effect.id });
-  pushDuelLog(state, logAction, player, source.name, effect.id);
-  markEffectUsed(state, effect);
-  state.status = "resolving";
-  effect.operation(ctx);
-  state.chain.pop();
-  state.status = "awaiting";
-}
-
 function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction[] {
   const actions = quickEffectActions(state, player);
   actions.push({ type: "passChain", player, label: "Pass" });
@@ -442,8 +439,15 @@ function hasChainResponses(state: DuelState, player: PlayerId): boolean {
   return quickEffectActions(state, player).length > 0;
 }
 
-function pushChainLink(state: DuelState, player: PlayerId, sourceUid: string, effectId: string): void {
-  state.chain.push({ id: `chain-${state.log.length + 1}`, player, sourceUid, effectId });
+function pushChainLink(state: DuelState, player: PlayerId, sourceUid: string, effectId: string, eventName?: DuelEventName, eventCard?: DuelCardInstance): void {
+  state.chain.push({
+    id: `chain-${state.log.length + 1}`,
+    player,
+    sourceUid,
+    effectId,
+    ...(eventName === undefined ? {} : { eventName }),
+    ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
+  });
   state.chainPasses = [];
 }
 
@@ -466,7 +470,8 @@ function resolveChain(state: DuelState): void {
     const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
     const source = findCard(state, link.sourceUid);
     if (!effect || !source) continue;
-    const ctx = createEffectContext(state, source, link.player);
+    const eventCard = link.eventCardUid === undefined ? undefined : findCard(state, link.eventCardUid);
+    const ctx = createEffectContext(state, source, link.player, link.eventName, eventCard);
     effect.operation(ctx);
   }
   state.chainPasses = [];

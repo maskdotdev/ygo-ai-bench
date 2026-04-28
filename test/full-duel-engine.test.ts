@@ -348,6 +348,69 @@ describe("full duel engine API", () => {
     expect(triggerResult.state.log.some((entry) => entry.detail.includes("Normal Summoned"))).toBe(true);
   });
 
+  it("lets quick effects respond to trigger activations", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "chainable-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Trigger saw ${ctx.eventCard?.name ?? "missing card"}`);
+      },
+    });
+    registerEffect(session, {
+      id: "trigger-response",
+      sourceUid: quickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Quick response to trigger resolved");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).state.pendingTriggers).toHaveLength(1);
+    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "chainable-trigger");
+    expect(trigger).toBeTruthy();
+    const opened = applyResponse(session, trigger!);
+
+    expect(opened.ok).toBe(true);
+    expect(opened.state.chain).toHaveLength(1);
+    expect(opened.state.pendingTriggers).toHaveLength(0);
+    expect(opened.state.waitingFor).toBe(1);
+    expect(opened.state.log.some((entry) => entry.detail.includes("Trigger saw"))).toBe(false);
+
+    const response = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "trigger-response");
+    expect(response).toBeTruthy();
+    const resolved = applyResponse(session, response!);
+    const quickLog = resolved.state.log.find((entry) => entry.detail === "Quick response to trigger resolved");
+    const triggerLog = resolved.state.log.find((entry) => entry.detail.includes("Trigger saw Normal Test Monster"));
+
+    expect(resolved.ok).toBe(true);
+    expect(resolved.state.chain).toHaveLength(0);
+    expect(quickLog).toBeTruthy();
+    expect(triggerLog).toBeTruthy();
+    expect(quickLog!.step).toBeLessThan(triggerLog!.step);
+  });
+
   it("allows optional trigger effects to be declined", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

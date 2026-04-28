@@ -89,6 +89,8 @@ export interface ChainLink {
   player: PlayerId;
   sourceUid: string;
   effectId: string;
+  eventName?: DuelEventName;
+  eventCardUid?: string;
 }
 
 export interface PendingTrigger {
