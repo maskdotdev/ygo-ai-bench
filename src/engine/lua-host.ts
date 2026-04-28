@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { scriptFilenameForCard } from "./data-loaders.js";
-import { registerEffect } from "./duel-core.js";
-import type { DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession } from "./duel-types.js";
+import { moveDuelCard, registerEffect } from "./duel-core.js";
+import type { DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
 
@@ -116,6 +116,7 @@ function installConstants(L: unknown): void {
     EFFECT_TYPE_TRIGGER_O: 0x20,
     EFFECT_TYPE_QUICK_O: 0x100,
     EVENT_SUMMON_SUCCESS: 0x40,
+    REASON_EFFECT: 0x40,
     RESET_EVENT: 0x1000,
     RESETS_STANDARD: 0x2000,
   };
@@ -154,6 +155,46 @@ function installDuelApi(L: unknown, session: DuelSession, messages: string[]): v
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("DebugMessage"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uids = readCardOrGroupUids(state, 1);
+    let moved = 0;
+    for (const uid of uids) {
+      const card = session.state.cards.find((candidate) => candidate.uid === uid);
+      if (!card) continue;
+      moveDuelCard(session.state, uid, "graveyard", card.controller);
+      moved += 1;
+    }
+    lua.lua_pushinteger(state, moved);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SendtoGrave"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uids = readCardOrGroupUids(state, 1);
+    const targetPlayer = lua.lua_isnumber(state, 5) ? normalizePlayer(lua.lua_tointeger(state, 5)) : undefined;
+    let moved = 0;
+    for (const uid of uids) {
+      const card = session.state.cards.find((candidate) => candidate.uid === uid);
+      if (!card) continue;
+      moveDuelCard(session.state, uid, "monsterZone", targetPlayer ?? card.controller);
+      moved += 1;
+    }
+    lua.lua_pushinteger(state, moved);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
+    const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
+    const opponentMask = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
+    const excluded = readCardUid(state, 5);
+    const uids = [
+      ...matchingCardUids(session, player, selfMask),
+      ...matchingCardUids(session, otherPlayer(player), opponentMask),
+    ].filter((uid) => uid !== excluded);
+    pushGroupTable(state, uids);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetMatchingGroup"));
   lua.lua_setglobal(L, to_luastring("Duel"));
 }
 
@@ -182,16 +223,46 @@ function installCardApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    lua.lua_pushinteger(state, card ? Number(card.code) : 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetCode"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsCode"));
   lua.lua_setglobal(L, to_luastring("Card"));
 }
 
 function installGroupApi(L: unknown): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_newtable(state);
+    pushGroupTable(state, []);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("CreateGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uids = readGroupUids(state, 1);
+    if (!uids[0]) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardTable(state, uids[0]);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetFirst"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, readGroupUids(state, 1).length);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetCount"));
   lua.lua_setglobal(L, to_luastring("Group"));
 }
 
@@ -206,6 +277,8 @@ function pushCardTable(L: unknown, uid: string): void {
   lua.lua_pushliteral(L, uid);
   lua.lua_setfield(L, -2, to_luastring("__duel_uid"));
   copyGlobalFunctionToField(L, "Card", "RegisterEffect");
+  copyGlobalFunctionToField(L, "Card", "GetCode");
+  copyGlobalFunctionToField(L, "Card", "IsCode");
 }
 
 function pushEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectRecord>): void {
@@ -279,6 +352,18 @@ function copyGlobalFunctionToField(L: unknown, tableName: string, fieldName: str
   lua.lua_pop(L, 1);
 }
 
+function pushGroupTable(L: unknown, uids: string[]): void {
+  lua.lua_newtable(L);
+  lua.lua_newtable(L);
+  for (const [index, uid] of uids.entries()) {
+    lua.lua_pushliteral(L, uid);
+    lua.lua_rawseti(L, -2, index + 1);
+  }
+  lua.lua_setfield(L, -2, to_luastring("__group_uids"));
+  copyGlobalFunctionToField(L, "Group", "GetFirst");
+  copyGlobalFunctionToField(L, "Group", "GetCount");
+}
+
 function readTableStringField(L: unknown, index: number, fieldName: string): string | undefined {
   lua.lua_getfield(L, index, to_luastring(fieldName));
   const value = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) : undefined;
@@ -293,6 +378,35 @@ function readTableNumberField(L: unknown, index: number, fieldName: string): num
   return value;
 }
 
+function readCardUid(L: unknown, index: number): string | undefined {
+  if (!lua.lua_istable(L, index)) return undefined;
+  return readTableStringField(L, index, "__duel_uid");
+}
+
+function readGroupUids(L: unknown, index: number): string[] {
+  if (!lua.lua_istable(L, index)) return [];
+  lua.lua_getfield(L, index, to_luastring("__group_uids"));
+  if (!lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, 1);
+    return [];
+  }
+  const count = lua.lua_rawlen(L, -1);
+  const uids: string[] = [];
+  for (let luaIndex = 1; luaIndex <= count; luaIndex += 1) {
+    lua.lua_rawgeti(L, -1, luaIndex);
+    const uid = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) : undefined;
+    if (uid) uids.push(uid);
+    lua.lua_pop(L, 1);
+  }
+  lua.lua_pop(L, 1);
+  return uids;
+}
+
+function readCardOrGroupUids(L: unknown, index: number): string[] {
+  const cardUid = readCardUid(L, index);
+  return cardUid ? [cardUid] : readGroupUids(L, index);
+}
+
 function locationsFromMask(mask: number): DuelLocation[] {
   const locations: DuelLocation[] = [];
   if ((mask & 0x01) !== 0) locations.push("deck");
@@ -303,4 +417,20 @@ function locationsFromMask(mask: number): DuelLocation[] {
   if ((mask & 0x20) !== 0) locations.push("banished");
   if ((mask & 0x40) !== 0) locations.push("extraDeck");
   return locations;
+}
+
+function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: number): string[] {
+  const locations = locationsFromMask(locationMask);
+  return session.state.cards
+    .filter((card) => card.controller === player && locations.includes(card.location))
+    .sort((a, b) => a.sequence - b.sequence)
+    .map((card) => card.uid);
+}
+
+function normalizePlayer(value: number): PlayerId {
+  return value === 1 ? 1 : 0;
+}
+
+function otherPlayer(player: PlayerId): PlayerId {
+  return player === 0 ? 1 : 0;
 }
