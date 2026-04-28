@@ -257,4 +257,50 @@ describe("Node upstream workspace loader", () => {
     expect(host.messages).not.toContain("hidden should not resolve");
     expect(result.state.cards.find((card) => card.code === "300")?.location).toBe("graveyard");
   });
+
+  it("fires Lua trigger effects after a normal summon", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c300.lua"),
+      `
+      c300 = {}
+      c300.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("summon trigger resolved")
+          Duel.SendtoGrave(c, REASON_EFFECT)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 300, type: 1 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(300, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.label.includes("Card 100"));
+    expect(summon).toBeTruthy();
+    const result = applyResponse(session, summon!);
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("summon trigger resolved");
+    expect(result.state.cards.find((card) => card.code === "300")?.location).toBe("graveyard");
+    expect(result.state.log.some((entry) => entry.action === "trigger")).toBe(true);
+  });
 });

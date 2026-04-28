@@ -8,6 +8,7 @@ import type {
   DuelCardReader,
   DuelEffectContext,
   DuelEffectDefinition,
+  DuelEventName,
   DuelLocation,
   DuelOptions,
   DuelPhase,
@@ -238,6 +239,7 @@ function normalSummon(state: DuelState, player: PlayerId, uid: string): void {
   card.position = "faceUpAttack";
   state.players[player].normalSummonAvailable = false;
   pushDuelLog(state, "normalSummon", player, card.name, "Normal Summoned from hand");
+  resolveTriggerEffects(state, "normalSummoned", card);
 }
 
 function setSpellTrap(state: DuelState, player: PlayerId, uid: string): void {
@@ -293,11 +295,13 @@ function draw(state: DuelState, player: PlayerId, count: number, detail: string)
   }
 }
 
-function createEffectContext(state: DuelState, source: DuelCardInstance, player: PlayerId): DuelEffectContext {
+function createEffectContext(state: DuelState, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance): DuelEffectContext {
   return {
     duel: state,
     source,
     player,
+    ...(eventName === undefined ? {} : { eventName }),
+    ...(eventCard === undefined ? {} : { eventCard }),
     log(detail) {
       pushDuelLog(state, "effect", player, source.name, detail);
     },
@@ -305,6 +309,26 @@ function createEffectContext(state: DuelState, source: DuelCardInstance, player:
       return moveDuelCard(state, uid, to, controller);
     },
   };
+}
+
+function resolveTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard: DuelCardInstance): void {
+  for (const effect of state.effects) {
+    if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
+    if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(effect))) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createEffectContext(state, source, effect.controller, eventName, eventCard);
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    if (effect.cost && !effect.cost(ctx)) continue;
+    if (effect.target && !effect.target(ctx)) continue;
+    state.chain.push({ id: `chain-${state.log.length + 1}`, player: effect.controller, sourceUid: source.uid, effectId: effect.id });
+    pushDuelLog(state, "trigger", effect.controller, source.name, effect.id);
+    state.status = "resolving";
+    effect.operation(ctx);
+    if (effect.oncePerTurn) state.usedCountKeys.push(effectCountKey(effect));
+    state.chain.pop();
+    state.status = "awaiting";
+  }
 }
 
 function getCards(state: DuelState, player: PlayerId, location: DuelLocation): DuelCardInstance[] {

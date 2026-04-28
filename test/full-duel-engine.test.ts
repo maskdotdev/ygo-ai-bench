@@ -89,4 +89,40 @@ describe("full duel engine API", () => {
     expect(result.state.cards.find((card) => card.uid === source!.uid)?.location).toBe("graveyard");
     expect(result.state.log.some((entry) => entry.detail.includes("Sent itself"))).toBe(true);
   });
+
+  it("auto-resolves trigger effects after a normal summon", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(summoned).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "on-normal-summon",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.moveCard(ctx.source.uid, "graveyard");
+        ctx.log(`Saw ${ctx.eventCard?.name ?? "a card"} Normal Summoned`);
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    const result = applyResponse(session, summon!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === triggerSource!.uid)?.location).toBe("graveyard");
+    expect(result.state.log.some((entry) => entry.action === "trigger" && entry.detail === "on-normal-summon")).toBe(true);
+    expect(result.state.log.some((entry) => entry.detail.includes("Normal Summoned"))).toBe(true);
+  });
 });

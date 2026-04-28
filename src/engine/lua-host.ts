@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { scriptFilenameForCard } from "./data-loaders.js";
 import { moveDuelCard, registerEffect } from "./duel-core.js";
-import type { DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
+import type { DuelCardInstance, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
 
@@ -385,13 +385,15 @@ function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef")
 }
 
 function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unknown, effects: Map<number, LuaEffectRecord>): DuelEffectDefinition {
-  const event = (luaEffect.typeFlags & 0x100) !== 0 ? "quick" : "ignition";
+  const event = (luaEffect.typeFlags & 0x20) !== 0 ? "trigger" : (luaEffect.typeFlags & 0x100) !== 0 ? "quick" : "ignition";
   const range = luaEffect.range ?? [card.location];
+  const triggerEvent = triggerEventFromCode(luaEffect.code);
   return {
     id: `lua-${luaEffect.id}${luaEffect.code === undefined ? "" : `-${luaEffect.code}`}`,
     sourceUid: card.uid,
     controller: card.controller,
     event,
+    ...(triggerEvent === undefined ? {} : { triggerEvent }),
     range,
     oncePerTurn: (luaEffect.countLimit ?? 0) > 0,
     canActivate: () => callLuaEffectBoolean(L, effects, luaEffect, card, luaEffect.conditionRef, true),
@@ -410,6 +412,11 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
       ctx.log("Lua effect operation resolved");
     },
   };
+}
+
+function triggerEventFromCode(code: number | undefined): DuelEventName | undefined {
+  if (code === 0x40) return "normalSummoned";
+  return undefined;
 }
 
 function callLuaEffectBoolean(L: unknown, effects: Map<number, LuaEffectRecord>, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean): boolean {

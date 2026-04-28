@@ -65,6 +65,7 @@ export interface DuelEffectDefinition {
   sourceUid: string;
   controller: PlayerId;
   event: "ignition" | "trigger" | "quick" | "continuous";
+  triggerEvent?: DuelEventName;
   range: DuelLocation[];
   oncePerTurn?: boolean;
   canActivate?: (ctx: DuelEffectContext) => boolean;
@@ -77,6 +78,8 @@ export interface DuelEffectContext {
   duel: DuelState;
   source: DuelCardInstance;
   player: PlayerId;
+  eventCard?: DuelCardInstance;
+  eventName?: DuelEventName;
   log(detail: string): void;
   moveCard(uid: string, to: DuelLocation, controller?: PlayerId): DuelCardInstance;
 }
