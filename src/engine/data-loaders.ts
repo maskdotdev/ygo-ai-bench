@@ -19,6 +19,8 @@ export interface RawCdbDataRow {
   atk?: number | string;
   def?: number | string;
   level?: number | string;
+  race?: number | string;
+  attribute?: number | string;
 }
 
 export interface RawCdbTextRow {
@@ -80,9 +82,13 @@ export function normalizeCdbRows(datas: RawCdbDataRow[], texts: RawCdbTextRow[])
     const level = toNumber(row.level);
     const attack = toNumber(row.atk);
     const defense = toNumber(row.def);
+    const race = toNumber(row.race);
+    const attribute = toNumber(row.attribute);
     if (level !== undefined) card.level = level;
     if (attack !== undefined) card.attack = attack;
     if (defense !== undefined) card.defense = defense;
+    if (race !== undefined) card.race = race;
+    if (attribute !== undefined) card.attribute = attribute;
     return card;
   });
 }

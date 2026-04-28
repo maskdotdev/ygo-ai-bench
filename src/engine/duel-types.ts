@@ -34,6 +34,8 @@ export interface DuelCardData {
   level?: number;
   attack?: number;
   defense?: number;
+  race?: number;
+  attribute?: number;
   setcodes?: number[];
   fusionMaterials?: string[];
   synchroMaterials?: {

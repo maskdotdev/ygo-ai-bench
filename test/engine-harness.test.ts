@@ -21,7 +21,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
   it("normalizes card database rows and banlist entries", () => {
     const cards = normalizeCdbRows(
       [
-        { id: 100, type: 1, atk: 2500, def: 2100, level: 4, setcode: 0 },
+        { id: 100, type: 1, atk: 2500, def: 2100, level: 4, setcode: 0, race: 0x2, attribute: 0x20 },
         { id: 200, type: 2 },
         { id: 300, type: 4 },
       ],
@@ -33,6 +33,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
 
     expect(cards.map((card) => card.kind)).toEqual(["monster", "spell", "trap"]);
     expect(cards[0]?.name).toBe("Fixture Monster");
+    expect(cards[0]?.race).toBe(0x2);
+    expect(cards[0]?.attribute).toBe(0x20);
     expect(scriptFilenameForCard(100)).toBe("c100.lua");
     const upstream = { root: ".upstream/ignis", coreUrl: "core", scriptsUrl: "scripts", databaseUrl: "db", lflistUrl: "lists" };
     expect(upstreamScriptPath(upstream, 100)).toBe(".upstream/ignis/script/c100.lua");
@@ -427,6 +429,40 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("banished count 1");
     expect(host.messages).toContain("mixed codes 100,200,300,400");
     expect(host.messages).toContain("onfield count 0");
+  });
+
+  it("lets Lua scripts read card type, stats, race, and attribute", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Stat Monster", kind: "monster", typeFlags: 0x21, attack: 2500, defense: 2100, level: 7, race: 0x2, attribute: 0x20 },
+      { code: "200", name: "Fixture Spell", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 14, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local monsters = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsType, TYPE_MONSTER), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local c = monsters:GetFirst()
+      Debug.Message("type " .. c:GetType())
+      Debug.Message("stats " .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. c:GetLevel())
+      Debug.Message("race " .. c:GetRace() .. " " .. tostring(c:IsRace(RACE_SPELLCASTER)))
+      Debug.Message("attribute " .. c:GetAttribute() .. " " .. tostring(c:IsAttribute(ATTRIBUTE_DARK)))
+      Debug.Message("spell count " .. Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, nil))
+      `,
+      "card-stats.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("type 33");
+    expect(host.messages).toContain("stats 2500/2100/7");
+    expect(host.messages).toContain("race 2 true");
+    expect(host.messages).toContain("attribute 32 true");
+    expect(host.messages).toContain("spell count 1");
   });
 
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
