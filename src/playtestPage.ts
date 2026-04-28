@@ -371,15 +371,19 @@ function createCardHtml(card: CardSummary): string {
   const typeClass = getCardTypeClass(card.type, card.tags);
   const icon = getCardIcon(card.type);
   const image = cardImages.get(card.id);
-  const art = image
-    ? `<img src="${escapeAttr(image.small || image.large)}" alt="${escapeAttr(card.name)} card artwork" loading="lazy" />`
-    : `<span class="card-art-icon">${icon}</span>`;
+  const fullCard = image?.large || image?.small;
+  if (fullCard) {
+    return `
+      <div class="game-card real-card ${typeClass}" data-uid="${escapeAttr(card.uid)}" title="${escapeAttr(card.name)}">
+        <img src="${escapeAttr(fullCard)}" alt="${escapeAttr(card.name)}" loading="lazy" />
+      </div>`;
+  }
   
   return `
     <div class="game-card ${typeClass}" data-uid="${escapeAttr(card.uid)}" title="${escapeAttr(card.name)}">
       <div class="game-card-inner">
         <div class="card-art">
-          ${art}
+          <span class="card-art-icon">${icon}</span>
         </div>
         <div class="card-info">
           <span class="card-name">${escapeHtml(card.name)}</span>
