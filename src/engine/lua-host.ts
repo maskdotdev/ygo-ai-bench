@@ -383,6 +383,36 @@ function installCardApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSetCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    lua.lua_pushboolean(state, Boolean(card?.faceUp));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsFaceup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushboolean(state, Boolean(card && locationsFromMask(locationMask).includes(card.location)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsLocation"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    const player = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && player !== undefined && card.controller === player));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsControler"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && card.location !== "graveyard"));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsAbleToGrave"));
   lua.lua_setglobal(L, to_luastring("Card"));
 }
 
@@ -425,6 +455,10 @@ function pushCardTable(L: unknown, uid: string): void {
   copyGlobalFunctionToField(L, "Card", "GetCode");
   copyGlobalFunctionToField(L, "Card", "IsCode");
   copyGlobalFunctionToField(L, "Card", "IsSetCard");
+  copyGlobalFunctionToField(L, "Card", "IsFaceup");
+  copyGlobalFunctionToField(L, "Card", "IsLocation");
+  copyGlobalFunctionToField(L, "Card", "IsControler");
+  copyGlobalFunctionToField(L, "Card", "IsAbleToGrave");
 }
 
 function pushEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectRecord>): void {

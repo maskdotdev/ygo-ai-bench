@@ -108,6 +108,10 @@ describe("Node upstream workspace loader", () => {
             Duel.SendtoGrave(tc, REASON_EFFECT)
           end
           Duel.SpecialSummon(c, 0, 0, 0, false, false, POS_FACEUP_ATTACK)
+          Debug.Message("self faceup " .. tostring(c:IsFaceup()))
+          Debug.Message("self in mzone " .. tostring(c:IsLocation(LOCATION_MZONE)))
+          Debug.Message("self controller " .. tostring(c:IsControler(0)))
+          Debug.Message("self able grave " .. tostring(c:IsAbleToGrave()))
         end)
         c:RegisterEffect(e)
       end
@@ -134,6 +138,7 @@ describe("Node upstream workspace loader", () => {
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("hand group count 1");
+    expect(host.messages).toEqual(expect.arrayContaining(["self faceup true", "self in mzone true", "self controller true", "self able grave true"]));
     expect(result.state.cards.find((card) => card.code === "100")?.location).toBe("monsterZone");
     expect(result.state.cards.find((card) => card.code === "300")?.location).toBe("graveyard");
   });
