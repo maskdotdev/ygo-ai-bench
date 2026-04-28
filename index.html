@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A polished Yu-Gi-Oh! deck builder powered by the public YGOPRODeck API." />
+  <title>Duel Deck Studio — Yu-Gi-Oh! Deck Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="background-glow" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <section class="brand-block" aria-label="Application title">
+      <div class="brand-mark" aria-hidden="true">YG</div>
+      <div>
+        <p class="eyebrow">Yu-Gi-Oh! deck builder</p>
+        <h1>Duel Deck Studio</h1>
+        <p class="subhead">Search real cards, add them with images, and validate your Main, Extra, and Side Deck in real time.</p>
+      </div>
+    </section>
+
+    <section class="header-actions" aria-label="Deck actions">
+      <label class="field compact">
+        <span>Format</span>
+        <select id="formatSelect" aria-label="Deck format">
+          <option value="tcg" selected>TCG Advanced</option>
+          <option value="masterduel">Master Duel</option>
+          <option value="ocg">OCG</option>
+          <option value="goat">GOAT</option>
+          <option value="casual">Casual / no banlist</option>
+        </select>
+      </label>
+      <button class="button ghost" id="refreshDataBtn" type="button" title="Refresh card database from the API">Refresh cards</button>
+      <button class="button ghost" id="importBtn" type="button">Import .ydk</button>
+      <button class="button ghost" id="headerViewDeckBtn" type="button">View deck</button>
+      <button class="button primary" id="exportBtn" type="button">Export .ydk</button>
+      <button class="button danger" id="clearDeckBtn" type="button">Clear</button>
+    </section>
+  </header>
+
+  <main class="layout" id="appRoot">
+    <aside class="panel search-panel" aria-label="Card search and filters">
+      <div class="panel-heading sticky-top">
+        <div>
+          <p class="eyebrow">Card database</p>
+          <h2>Find cards</h2>
+        </div>
+        <span class="status-pill" id="dataStatus">Loading…</span>
+      </div>
+
+      <div class="search-filters">
+        <div class="search-box">
+          <label for="searchInput" class="visually-hidden">Search cards</label>
+          <input id="searchInput" type="search" autocomplete="off" placeholder="Search cards…" />
+          <button id="clearSearchBtn" class="icon-button" type="button" aria-label="Clear search">×</button>
+        </div>
+
+        <div class="filter-grid" aria-label="Card filters">
+          <label class="field">
+            <span>Type</span>
+            <select id="bucketFilter">
+              <option value="all">All Types</option>
+              <option value="monster">Monster</option>
+              <option value="spell">Spell</option>
+              <option value="trap">Trap</option>
+              <option value="extra">Extra Deck</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Race</span>
+            <select id="raceFilter"><option value="all">All Races</option></select>
+          </label>
+          <label class="field">
+            <span>Attribute</span>
+            <select id="attributeFilter"><option value="all">All Attr</option></select>
+          </label>
+          <label class="field">
+            <span>Sort</span>
+            <select id="sortSelect">
+              <option value="name">Name A–Z</option>
+              <option value="atk">ATK ↓</option>
+              <option value="level">Level ↓</option>
+              <option value="new">Newest</option>
+            </select>
+          </label>
+          <div class="toggle-row">
+            <label class="check-pill">
+              <input id="legalOnlyToggle" type="checkbox" checked />
+              <span>Deckable</span>
+            </label>
+            <label class="check-pill">
+              <input id="imageToggle" type="checkbox" checked />
+              <span>Images</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-meta">
+        <span id="resultCount">0 cards</span>
+        <span id="deckCountMeta">0 in deck</span>
+      </div>
+
+      <section class="results-grid" id="resultsGrid" aria-live="polite" aria-busy="true"></section>
+      <button class="button full ghost" id="showMoreBtn" type="button" hidden>Show more</button>
+    </aside>
+
+    <section class="panel deck-panel is-collapsed" id="deckPanel" aria-label="Deck builder" aria-expanded="false">
+      <div class="panel-heading deck-heading sticky-top">
+        <div>
+          <p class="eyebrow">Build</p>
+          <h2 id="deckTitle" contenteditable="true" spellcheck="false" aria-label="Deck name">Untitled Deck</h2>
+        </div>
+        <button class="button primary small deck-heading-view-btn" id="deckHeadingViewBtn" type="button">View full deck</button>
+        <button class="icon-button deck-collapse-btn" id="deckCollapseBtn" type="button" aria-label="Collapse deck">×</button>
+        <div class="deck-status-card" id="overallStatus" role="status">
+          <span class="dot"></span>
+          <strong>Checking…</strong>
+          <small>Validation will update after data loads.</small>
+        </div>
+      </div>
+
+      <section class="stats-grid" aria-label="Deck counts">
+        <article class="stat-card" id="mainStat"><span>Main</span><strong>0</strong><small>40–60</small></article>
+        <article class="stat-card" id="extraStat"><span>Extra</span><strong>0</strong><small>0–15</small></article>
+        <article class="stat-card" id="sideStat"><span>Side</span><strong>0</strong><small>0–15</small></article>
+        <article class="stat-card" id="copyStat"><span>Copy issues</span><strong>0</strong><small>total</small></article>
+      </section>
+
+      <section class="deck-toolbar" aria-label="Deck utilities">
+        <button class="button ghost small" id="saveDeckBtn" type="button">Save locally</button>
+        <button class="button ghost small" id="loadDeckBtn" type="button">Load local</button>
+        <button class="button ghost small" id="viewDeckBtn" type="button">View deck</button>
+        <button class="button ghost small" id="sampleBtn" type="button">Load starter shell</button>
+        <button class="button ghost small" id="sortDeckBtn" type="button">Sort deck</button>
+      </section>
+
+      <section class="deck-zones">
+        <article class="deck-zone" data-zone="main" aria-label="Main Deck drop zone">
+          <div class="zone-title">
+            <div>
+              <h3>Main Deck</h3>
+              <p>Normal, Effect, Ritual, Spell, and Trap cards.</p>
+            </div>
+            <span class="zone-count" id="mainCount">0 / 40–60</span>
+          </div>
+          <div class="drop-hint">Drop cards here</div>
+          <div class="deck-list" id="mainList"></div>
+        </article>
+
+        <article class="deck-zone" data-zone="extra" aria-label="Extra Deck drop zone">
+          <div class="zone-title">
+            <div>
+              <h3>Extra Deck</h3>
+              <p>Fusion, Synchro, Xyz, and Link monsters.</p>
+            </div>
+            <span class="zone-count" id="extraCount">0 / 15</span>
+          </div>
+          <div class="drop-hint">Drop Extra Deck monsters here</div>
+          <div class="deck-list" id="extraList"></div>
+        </article>
+
+        <article class="deck-zone" data-zone="side" aria-label="Side Deck drop zone">
+          <div class="zone-title">
+            <div>
+              <h3>Side Deck</h3>
+              <p>Cards you can swap between Duels in a Match.</p>
+            </div>
+            <span class="zone-count" id="sideCount">0 / 15</span>
+          </div>
+          <div class="drop-hint">Drop cards here</div>
+          <div class="deck-list" id="sideList"></div>
+        </article>
+      </section>
+    </section>
+
+    <aside class="panel inspector-panel" aria-label="Card details and validation">
+      <div class="panel-heading sticky-top">
+        <div>
+          <p class="eyebrow">Inspector</p>
+          <h2>Details & rules</h2>
+        </div>
+      </div>
+
+      <section class="card-preview empty" id="cardPreview" aria-live="polite">
+        <div class="empty-art" aria-hidden="true"></div>
+        <h3>Select a card</h3>
+        <p>Click any search result or deck row to inspect stats, text, prices, and limit status.</p>
+      </section>
+
+      <section class="validation-card" aria-label="Deck validation">
+        <div class="section-heading">
+          <h3>Deck legality</h3>
+          <span id="validationBadge" class="badge neutral">Waiting</span>
+        </div>
+        <ul class="issue-list" id="issueList"></ul>
+      </section>
+
+      <section class="analysis-card" aria-label="Deck composition">
+        <div class="section-heading">
+          <h3>Composition</h3>
+          <span id="totalDeckBadge" class="badge neutral">0 cards</span>
+        </div>
+        <div class="bar-group" id="typeBars"></div>
+        <div class="mini-grid" id="levelGrid"></div>
+      </section>
+
+      <section class="tips-card" aria-label="Deck building tips">
+        <h3>Builder tips</h3>
+        <p>Use <kbd>Enter</kbd> in search to add the first result. Drag thumbnails into a zone, or use Smart Add to route Extra Deck monsters automatically.</p>
+        <p class="muted">Card data and images are loaded from YGOPRODeck. For a production deployment, re-host images instead of hotlinking them continuously.</p>
+      </section>
+    </aside>
+  </main>
+
+  <button class="deck-float-button" id="deckFloatBtn" type="button" aria-controls="deckPanel" aria-expanded="false">
+    <span>Deck</span>
+    <strong id="floatDeckCount">0</strong>
+  </button>
+
+  <dialog class="modal" id="importDialog" aria-labelledby="importTitle">
+    <form method="dialog" class="modal-card">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Import deck</p>
+          <h2 id="importTitle">Paste or upload .ydk</h2>
+        </div>
+        <button class="icon-button" type="submit" aria-label="Close import dialog">×</button>
+      </div>
+      <p class="muted">Supports standard YDK sections: <code>#main</code>, <code>#extra</code>, and <code>!side</code>.</p>
+      <textarea id="ydkInput" rows="12" placeholder="#created by Duel Deck Studio&#10;#main&#10;89631139&#10;#extra&#10;!side"></textarea>
+      <div class="modal-actions">
+        <input id="fileInput" type="file" accept=".ydk,.txt" hidden />
+        <button class="button ghost" id="pickFileBtn" type="button">Choose file</button>
+        <button class="button primary" id="applyImportBtn" type="button">Import deck</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="reader-modal" id="cardReaderDialog" aria-labelledby="readerTitle">
+    <form method="dialog" class="reader-shell">
+      <button class="icon-button reader-close" type="submit" aria-label="Close card reader">×</button>
+      <div id="cardReaderContent"></div>
+    </form>
+  </dialog>
+
+  <dialog class="deck-view-dialog" id="deckViewDialog" aria-labelledby="deckViewTitle">
+    <form method="dialog" class="deck-view-shell">
+      <header class="deck-view-header">
+        <div>
+          <h2 id="deckViewTitle">Untitled Deck</h2>
+          <div class="deck-view-summary" id="deckViewSummary"></div>
+        </div>
+        <div class="deck-view-actions">
+          <button class="button small" type="button" id="deckViewModeToggle" data-mode="grid">List View</button>
+          <button class="icon-button" type="submit" aria-label="Close deck view">×</button>
+        </div>
+      </header>
+      <div class="deck-view-content" id="deckViewContent"></div>
+    </form>
+  </dialog>
+
+  <div class="toast-stack" id="toastStack" aria-live="assertive" aria-atomic="true"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
