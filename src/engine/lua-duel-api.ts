@@ -4,6 +4,7 @@ import {
   changeDuelCardPosition,
   canMoveDuelCardToLocation,
   damageDuelPlayer,
+  drawDuelCards,
   destroyDuelCard,
   fusionSummonDuelCard,
   linkSummonDuelCard,
@@ -108,6 +109,20 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Recover"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
+    lua.lua_pushboolean(state, topDeckUids(session, player, count).length >= count);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDraw"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1;
+    lua.lua_pushinteger(state, drawDuelCards(session.state, player, count, "Lua draw"));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Draw"));
   installMoveHelpers(L, session);
   installSummonHelpers(L, session);
   installQueryHelpers(L, session, hostState);

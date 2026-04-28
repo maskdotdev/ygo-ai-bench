@@ -348,6 +348,44 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && expectedTop.includes(card.code))).toHaveLength(2);
   });
 
+  it("lets Lua scripts draw and search deck cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Draw A", kind: "monster" },
+      { code: "200", name: "Draw B", kind: "monster" },
+      { code: "300", name: "Search Target", kind: "monster" },
+      { code: "400", name: "Draw C", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 12, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const deckOrder = session.state.cards.filter((card) => card.controller === 0 && card.location === "deck").sort((a, b) => a.sequence - b.sequence);
+    const drawnCodes = deckOrder.slice(0, 2).map((card) => card.code);
+    const searchCode = deckOrder.slice(2).find((card) => card.code === "300")?.code ?? deckOrder[2]!.code;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("can draw two " .. tostring(Duel.IsPlayerCanDraw(0, 2)))
+      Debug.Message("can draw five " .. tostring(Duel.IsPlayerCanDraw(0, 5)))
+      Debug.Message("drawn " .. Duel.Draw(0, 2, REASON_EFFECT))
+      local searched = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${searchCode}), 0, LOCATION_DECK, 0, 1, 1, nil)
+      Debug.Message("searched " .. Duel.SendtoHand(searched, 0, REASON_EFFECT))
+      `,
+      "draw-search.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("can draw two true");
+    expect(host.messages).toContain("can draw five false");
+    expect(host.messages).toContain("drawn 2");
+    expect(host.messages).toContain("searched 1");
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && drawnCodes.includes(card.code))).toHaveLength(2);
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === searchCode)?.location).toBe("hand");
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

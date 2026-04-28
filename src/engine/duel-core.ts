@@ -371,6 +371,10 @@ export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: st
   return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
 }
 
+export function drawDuelCards(state: DuelState, player: PlayerId, count: number, detail = "Effect draw"): number {
+  return draw(state, player, Math.max(0, count), detail);
+}
+
 export function canDuelCardAttack(state: DuelState, uid: string): boolean {
   return canDuelCardAttackRule(state, uid);
 }
@@ -515,13 +519,16 @@ function endTurn(state: DuelState, player: PlayerId): void {
   collectTriggerEffects(state, "turnStarted");
 }
 
-function draw(state: DuelState, player: PlayerId, count: number, detail: string): void {
+function draw(state: DuelState, player: PlayerId, count: number, detail: string): number {
+  let drawn = 0;
   for (let index = 0; index < count; index += 1) {
     const card = getCards(state, player, "deck").sort((a, b) => a.sequence - b.sequence)[0];
-    if (!card) return;
+    if (!card) return drawn;
     moveDuelCard(state, card.uid, "hand", player);
     pushDuelLog(state, "draw", player, card.name, detail);
+    drawn += 1;
   }
+  return drawn;
 }
 
 function createEffectContext(state: DuelState, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance, targetUids: string[] = []): DuelEffectContext {
