@@ -111,6 +111,7 @@ export interface DuelState {
   cards: DuelCardInstance[];
   effects: DuelEffectDefinition[];
   chain: ChainLink[];
+  chainPasses: PlayerId[];
   pendingTriggers: PendingTrigger[];
   usedCountKeys: string[];
   waitingFor?: PlayerId;
@@ -129,6 +130,7 @@ export type DuelAction =
   | { type: "normalSummon"; player: PlayerId; uid: string; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
+  | { type: "passChain"; player: PlayerId; label: string }
   | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
   | { type: "declineTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
   | { type: "changePhase"; player: PlayerId; phase: DuelPhase; label: string }

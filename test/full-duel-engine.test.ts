@@ -93,6 +93,108 @@ describe("full duel engine API", () => {
     expect(result.state.log.some((entry) => entry.detail.includes("Sent itself"))).toBe(true);
   });
 
+  it("lets an opponent quick effect chain before the original operation resolves", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const originalSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(originalSource).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    registerEffect(session, {
+      id: "original-effect",
+      sourceUid: originalSource!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Original operation resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "quick-response",
+      sourceUid: quickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Quick response resolved");
+      },
+    });
+
+    const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "original-effect");
+    expect(original).toBeTruthy();
+    const opened = applyResponse(session, original!);
+
+    expect(opened.ok).toBe(true);
+    expect(opened.state.chain).toHaveLength(1);
+    expect(opened.state.waitingFor).toBe(1);
+    expect(opened.state.log.some((entry) => entry.detail === "Original operation resolved")).toBe(false);
+
+    const response = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "quick-response");
+    expect(response).toBeTruthy();
+    const resolved = applyResponse(session, response!);
+    const quickLog = resolved.state.log.find((entry) => entry.detail === "Quick response resolved");
+    const originalLog = resolved.state.log.find((entry) => entry.detail === "Original operation resolved");
+
+    expect(resolved.ok).toBe(true);
+    expect(resolved.state.chain).toHaveLength(0);
+    expect(quickLog).toBeTruthy();
+    expect(originalLog).toBeTruthy();
+    expect(quickLog!.step).toBeLessThan(originalLog!.step);
+  });
+
+  it("resolves a pending chain when the responding player passes", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const originalSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(originalSource).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    registerEffect(session, {
+      id: "pass-original",
+      sourceUid: originalSource!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Passed chain resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "available-quick",
+      sourceUid: quickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Should not resolve");
+      },
+    });
+
+    const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "pass-original");
+    expect(original).toBeTruthy();
+    expect(applyResponse(session, original!).state.chain).toHaveLength(1);
+
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeTruthy();
+    const resolved = applyResponse(session, pass!);
+
+    expect(resolved.ok).toBe(true);
+    expect(resolved.state.chain).toHaveLength(0);
+    expect(resolved.state.log.some((entry) => entry.detail === "Passed chain resolved")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.detail === "Should not resolve")).toBe(false);
+  });
+
   it("resets once-per-turn effect usage on a later turn", () => {
     const session = createDuel({ seed: 3, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

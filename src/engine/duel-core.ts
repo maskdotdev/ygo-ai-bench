@@ -45,6 +45,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     cards: [],
     effects: [],
     chain: [],
+    chainPasses: [],
     pendingTriggers: [],
     usedCountKeys: [],
     log: [],
@@ -93,6 +94,10 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   const { state } = session;
   if (state.status !== "awaiting" || state.waitingFor !== player) return [];
   const actions: DuelAction[] = [];
+  if (state.chain.length) {
+    actions.push(...getChainResponseActions(state, player));
+    return actions;
+  }
   if (state.pendingTriggers.length) {
     for (const trigger of state.pendingTriggers.filter((candidate) => candidate.player === player)) {
       const source = findCard(state, trigger.sourceUid);
@@ -138,6 +143,7 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
     if (response.type === "normalSummon") normalSummon(session.state, response.player, response.uid);
     else if (response.type === "setSpellTrap") setSpellTrap(session.state, response.player, response.uid);
     else if (response.type === "activateEffect") activateEffect(session, response.player, response.uid, response.effectId);
+    else if (response.type === "passChain") passChain(session.state, response.player);
     else if (response.type === "activateTrigger") activatePendingTrigger(session, response.player, response.triggerId);
     else if (response.type === "declineTrigger") declinePendingTrigger(session, response.player, response.triggerId);
     else if (response.type === "changePhase") changePhase(session.state, response.player, response.phase);
@@ -180,6 +186,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       cards: session.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids] })),
       effects: [],
       chain: session.state.chain.map((link) => ({ ...link })),
+      chainPasses: [...session.state.chainPasses],
       pendingTriggers: session.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       usedCountKeys: [...session.state.usedCountKeys],
       log: session.state.log.map((entry) => ({ ...entry })),
@@ -200,6 +207,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       cards: snapshot.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids] })),
       effects: [],
       chain: snapshot.state.chain.map((link) => ({ ...link })),
+      chainPasses: [...snapshot.state.chainPasses],
       pendingTriggers: snapshot.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       usedCountKeys: [...snapshot.state.usedCountKeys],
       log: snapshot.state.log.map((entry) => ({ ...entry })),
@@ -290,13 +298,14 @@ function activateEffect(session: DuelSession, player: PlayerId, uid: string, eff
   const ctx = createEffectContext(session.state, source, player);
   if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
   if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
-  session.state.chain.push({ id: `chain-${session.state.log.length + 1}`, player, sourceUid: uid, effectId });
+  pushChainLink(session.state, player, uid, effectId);
   pushDuelLog(session.state, "activate", player, source.name, effect.id);
-  session.state.status = "resolving";
-  effect.operation(ctx);
-  if (effect.oncePerTurn) session.state.usedCountKeys.push(effectCountKey(session.state, effect));
-  session.state.chain.pop();
-  session.state.status = "awaiting";
+  const responsePlayer = otherPlayer(player);
+  if (hasChainResponses(session.state, responsePlayer)) {
+    session.state.waitingFor = responsePlayer;
+    return;
+  }
+  resolveChain(session.state);
 }
 
 function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
@@ -406,6 +415,63 @@ function resolveEffect(state: DuelState, effect: DuelEffectDefinition, source: D
   if (effect.oncePerTurn) state.usedCountKeys.push(effectCountKey(state, effect));
   state.chain.pop();
   state.status = "awaiting";
+}
+
+function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction[] {
+  const actions = quickEffectActions(state, player);
+  actions.push({ type: "passChain", player, label: "Pass" });
+  return actions;
+}
+
+function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
+  const actions: DuelAction[] = [];
+  for (const effect of state.effects) {
+    if (effect.controller !== player || effect.event !== "quick") continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(state, effect))) continue;
+    const ctx = createEffectContext(state, source, player);
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
+  }
+  return actions;
+}
+
+function hasChainResponses(state: DuelState, player: PlayerId): boolean {
+  return quickEffectActions(state, player).length > 0;
+}
+
+function pushChainLink(state: DuelState, player: PlayerId, sourceUid: string, effectId: string): void {
+  state.chain.push({ id: `chain-${state.log.length + 1}`, player, sourceUid, effectId });
+  state.chainPasses = [];
+}
+
+function passChain(state: DuelState, player: PlayerId): void {
+  if (!state.chain.length) throw new Error("No chain is pending");
+  if (!state.chainPasses.includes(player)) state.chainPasses.push(player);
+  const nextPlayer = otherPlayer(player);
+  if (state.chainPasses.includes(nextPlayer) || !hasChainResponses(state, nextPlayer)) {
+    resolveChain(state);
+    return;
+  }
+  state.waitingFor = nextPlayer;
+}
+
+function resolveChain(state: DuelState): void {
+  state.status = "resolving";
+  while (state.chain.length) {
+    const link = state.chain.pop();
+    if (!link) continue;
+    const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
+    const source = findCard(state, link.sourceUid);
+    if (!effect || !source) continue;
+    const ctx = createEffectContext(state, source, link.player);
+    effect.operation(ctx);
+    if (effect.oncePerTurn) state.usedCountKeys.push(effectCountKey(state, effect));
+  }
+  state.chainPasses = [];
+  state.status = "awaiting";
+  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
 }
 
 function getCards(state: DuelState, player: PlayerId, location: DuelLocation): DuelCardInstance[] {
