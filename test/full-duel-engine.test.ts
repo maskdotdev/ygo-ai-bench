@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   banishDuelCard,
+  canMoveDuelCardToLocation,
   createCardReader,
   createDuel,
   destroyDuelCard,
@@ -813,6 +814,10 @@ describe("full duel engine API", () => {
     expect(state.cards.find((card) => card.uid === banished!.uid)?.location).toBe("banished");
     expect(state.log.some((entry) => entry.action === "destroy" && entry.card === "Normal Test Monster")).toBe(true);
     expect(state.log.some((entry) => entry.action === "banish" && entry.card === "Second Monster")).toBe(true);
+    expect(canMoveDuelCardToLocation(session.state, destroyed!.uid, "graveyard")).toBe(false);
+    expect(canMoveDuelCardToLocation(session.state, banished!.uid, "banished")).toBe(false);
+    expect(() => sendDuelCardToGraveyard(session.state, destroyed!.uid, 0)).toThrow("cannot move to graveyard");
+    expect(() => banishDuelCard(session.state, banished!.uid, 0)).toThrow("cannot move to banished");
   });
 
   it("hides normal summon actions when the monster zone is full", () => {

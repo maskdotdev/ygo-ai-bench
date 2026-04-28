@@ -116,6 +116,10 @@ describe("Node upstream workspace loader", () => {
           Debug.Message("self in mzone " .. tostring(c:IsLocation(LOCATION_MZONE)))
           Debug.Message("self controller " .. tostring(c:IsControler(0)))
           Debug.Message("self able grave " .. tostring(c:IsAbleToGrave()))
+          Debug.Message("self able hand " .. tostring(c:IsAbleToHand()))
+          Debug.Message("self able deck " .. tostring(c:IsAbleToDeck()))
+          Debug.Message("self able remove " .. tostring(c:IsAbleToRemove()))
+          Debug.Message("self able extra " .. tostring(c:IsAbleToExtra()))
         end)
         c:RegisterEffect(e)
       end
@@ -143,6 +147,7 @@ describe("Node upstream workspace loader", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("hand group count 1");
     expect(host.messages).toEqual(expect.arrayContaining(["self faceup true", "self in mzone true", "self controller true", "self able grave true"]));
+    expect(host.messages).toEqual(expect.arrayContaining(["self able hand true", "self able deck true", "self able remove true", "self able extra false"]));
     expect(result.state.cards.find((card) => card.code === "100")?.location).toBe("monsterZone");
     expect(result.state.cards.find((card) => card.code === "300")?.location).toBe("graveyard");
   });
@@ -629,7 +634,9 @@ describe("Node upstream workspace loader", () => {
           local dg = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, c)
           local rg = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, c)
           Debug.Message("destroyed " .. Duel.Destroy(dg, REASON_EFFECT))
+          Debug.Message("destroyed again " .. Duel.Destroy(dg, REASON_EFFECT))
           Debug.Message("removed " .. Duel.Remove(rg, POS_FACEUP_ATTACK, REASON_EFFECT))
+          Debug.Message("removed again " .. Duel.Remove(rg, POS_FACEUP_ATTACK, REASON_EFFECT))
         end)
         c:RegisterEffect(e)
       end
@@ -658,7 +665,9 @@ describe("Node upstream workspace loader", () => {
     expect(result.state.cards.find((card) => card.code === "300")?.location).toBe("graveyard");
     expect(result.state.cards.find((card) => card.code === "500")?.location).toBe("banished");
     expect(host.messages).toContain("destroyed 1");
+    expect(host.messages).toContain("destroyed again 0");
     expect(host.messages).toContain("removed 1");
+    expect(host.messages).toContain("removed again 0");
   });
 
   it("returns zero from Lua special summon when the monster zone is full", () => {

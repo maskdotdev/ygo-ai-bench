@@ -15,6 +15,7 @@ export {
   queryPublicState,
   serializeDuel,
   restoreDuel,
+  canMoveDuelCardToLocation,
   moveDuelCard,
   specialSummonDuelCard,
   sendDuelCardToGraveyard,

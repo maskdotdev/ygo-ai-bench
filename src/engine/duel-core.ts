@@ -229,6 +229,13 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   return card;
 }
 
+export function canMoveDuelCardToLocation(state: DuelState, uid: string, to: DuelLocation): boolean {
+  const card = findCard(state, uid);
+  if (!card || card.location === to) return false;
+  if (to === "extraDeck") return card.kind === "extra";
+  return true;
+}
+
 export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
@@ -243,6 +250,7 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
 }
 
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+  requireMoveAllowed(state, uid, "graveyard");
   const card = moveDuelCard(state, uid, "graveyard", controller);
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
   collectTriggerEffects(state, "sentToGraveyard", card);
@@ -250,6 +258,7 @@ export function sendDuelCardToGraveyard(state: DuelState, uid: string, controlle
 }
 
 export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+  requireMoveAllowed(state, uid, "graveyard");
   const card = moveDuelCard(state, uid, "graveyard", controller);
   pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
   collectTriggerEffects(state, "sentToGraveyard", card);
@@ -257,6 +266,7 @@ export function destroyDuelCard(state: DuelState, uid: string, controller?: Play
 }
 
 export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+  requireMoveAllowed(state, uid, "banished");
   const card = moveDuelCard(state, uid, "banished", controller);
   pushDuelLog(state, "banish", card.controller, card.name, "Banished");
   collectTriggerEffects(state, "banished", card);
@@ -557,6 +567,10 @@ function hasZoneSpace(state: DuelState, player: PlayerId, location: DuelLocation
 
 function requireZoneSpace(state: DuelState, player: PlayerId, location: DuelLocation): void {
   if (!hasZoneSpace(state, player, location)) throw new Error(`${location} is full for player ${player}`);
+}
+
+function requireMoveAllowed(state: DuelState, uid: string, to: DuelLocation): void {
+  if (!canMoveDuelCardToLocation(state, uid, to)) throw new Error(`Card ${uid} cannot move to ${to}`);
 }
 
 function resequence(state: DuelState, player: PlayerId, location: DuelLocation): void {

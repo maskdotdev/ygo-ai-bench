@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { scriptFilenameForCard } from "./data-loaders.js";
-import { banishDuelCard, destroyDuelCard, negateDuelChainLink, registerEffect, sendDuelCardToGraveyard, specialSummonDuelCard } from "./duel-core.js";
+import { banishDuelCard, canMoveDuelCardToLocation, destroyDuelCard, negateDuelChainLink, registerEffect, sendDuelCardToGraveyard, specialSummonDuelCard } from "./duel-core.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -216,8 +216,12 @@ function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     for (const uid of uids) {
       const card = session.state.cards.find((candidate) => candidate.uid === uid);
       if (!card) continue;
-      sendDuelCardToGraveyard(session.state, uid, card.controller);
-      moved += 1;
+      try {
+        sendDuelCardToGraveyard(session.state, uid, card.controller);
+        moved += 1;
+      } catch {
+        // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
+      }
     }
     lua.lua_pushinteger(state, moved);
     return 1;
@@ -229,8 +233,12 @@ function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     for (const uid of uids) {
       const card = session.state.cards.find((candidate) => candidate.uid === uid);
       if (!card) continue;
-      destroyDuelCard(session.state, uid, card.controller);
-      moved += 1;
+      try {
+        destroyDuelCard(session.state, uid, card.controller);
+        moved += 1;
+      } catch {
+        // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
+      }
     }
     lua.lua_pushinteger(state, moved);
     return 1;
@@ -242,8 +250,12 @@ function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     for (const uid of uids) {
       const card = session.state.cards.find((candidate) => candidate.uid === uid);
       if (!card) continue;
-      banishDuelCard(session.state, uid, card.controller);
-      moved += 1;
+      try {
+        banishDuelCard(session.state, uid, card.controller);
+        moved += 1;
+      } catch {
+        // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
+      }
     }
     lua.lua_pushinteger(state, moved);
     return 1;
@@ -411,11 +423,34 @@ function installCardApi(L: unknown, session: DuelSession, hostState: LuaHostStat
   lua.lua_setfield(L, -2, to_luastring("IsControler"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
-    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && card.location !== "graveyard"));
+    lua.lua_pushboolean(state, Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "graveyard")));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsAbleToGrave"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    lua.lua_pushboolean(state, Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "hand")));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsAbleToHand"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    lua.lua_pushboolean(state, Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "deck")));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsAbleToDeck"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    lua.lua_pushboolean(state, Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "banished")));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsAbleToRemove"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    lua.lua_pushboolean(state, Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "extraDeck")));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsAbleToExtra"));
   lua.lua_setglobal(L, to_luastring("Card"));
 }
 
@@ -462,6 +497,10 @@ function pushCardTable(L: unknown, uid: string): void {
   copyGlobalFunctionToField(L, "Card", "IsLocation");
   copyGlobalFunctionToField(L, "Card", "IsControler");
   copyGlobalFunctionToField(L, "Card", "IsAbleToGrave");
+  copyGlobalFunctionToField(L, "Card", "IsAbleToHand");
+  copyGlobalFunctionToField(L, "Card", "IsAbleToDeck");
+  copyGlobalFunctionToField(L, "Card", "IsAbleToRemove");
+  copyGlobalFunctionToField(L, "Card", "IsAbleToExtra");
 }
 
 function pushEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectRecord>, session: DuelSession): void {
