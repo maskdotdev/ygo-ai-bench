@@ -30,6 +30,9 @@ interface LuaEffectRecord {
   code?: number;
   range?: DuelLocation[];
   countLimit?: number;
+  conditionRef?: number;
+  costRef?: number;
+  targetRef?: number;
   operationRef?: number;
 }
 
@@ -345,6 +348,9 @@ function pushEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectR
     effect.countLimit = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1;
     return 0;
   });
+  pushEffectMethod(L, effects, "SetCondition", setEffectFunctionField("conditionRef"));
+  pushEffectMethod(L, effects, "SetCost", setEffectFunctionField("costRef"));
+  pushEffectMethod(L, effects, "SetTarget", setEffectFunctionField("targetRef"));
   pushEffectMethod(L, effects, "SetOperation", (state, effect) => {
     if (!lua.lua_isfunction(state, 2)) return 0;
     lua.lua_pushvalue(state, 2);
@@ -369,6 +375,15 @@ function setEffectNumberField(field: "typeFlags" | "code") {
   };
 }
 
+function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef") {
+  return (state: unknown, effect: LuaEffectRecord): number => {
+    if (!lua.lua_isfunction(state, 2)) return 0;
+    lua.lua_pushvalue(state, 2);
+    effect[field] = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
+    return 0;
+  };
+}
+
 function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unknown, effects: Map<number, LuaEffectRecord>): DuelEffectDefinition {
   const event = (luaEffect.typeFlags & 0x100) !== 0 ? "quick" : "ignition";
   const range = luaEffect.range ?? [card.location];
@@ -379,6 +394,9 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     event,
     range,
     oncePerTurn: (luaEffect.countLimit ?? 0) > 0,
+    canActivate: () => callLuaEffectBoolean(L, effects, luaEffect, card, luaEffect.conditionRef, true),
+    cost: () => callLuaEffectBoolean(L, effects, luaEffect, card, luaEffect.costRef, true),
+    target: () => callLuaEffectBoolean(L, effects, luaEffect, card, luaEffect.targetRef, true),
     operation: (ctx) => {
       if (luaEffect.operationRef === undefined) {
         ctx.log("Lua effect resolved without an operation");
@@ -392,6 +410,18 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
       ctx.log("Lua effect operation resolved");
     },
   };
+}
+
+function callLuaEffectBoolean(L: unknown, effects: Map<number, LuaEffectRecord>, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean): boolean {
+  if (ref === undefined) return fallback;
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
+  pushEffectTable(L, luaEffect.id, effects);
+  pushCardTable(L, card.uid);
+  const status = lua.lua_pcall(L, 2, 1, 0);
+  if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+  const result = lua.lua_isnil(L, -1) ? fallback : Boolean(lua.lua_toboolean(L, -1));
+  lua.lua_pop(L, 1);
+  return result;
 }
 
 function copyGlobalFunctionToField(L: unknown, tableName: string, fieldName: string): void {

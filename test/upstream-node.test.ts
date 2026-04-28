@@ -189,4 +189,72 @@ describe("Node upstream workspace loader", () => {
     expect(host.messages).toContain("selected set count 1");
     expect(result.state.cards.find((card) => card.code === "300")?.location).toBe("graveyard");
   });
+
+  it("uses Lua condition, cost, and target callbacks during activation", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local hidden = Effect.CreateEffect(c)
+        hidden:SetType(EFFECT_TYPE_IGNITION)
+        hidden:SetRange(LOCATION_HAND)
+        hidden:SetCondition(function(e,c)
+          return false
+        end)
+        hidden:SetOperation(function(e,c)
+          Debug.Message("hidden should not resolve")
+        end)
+        c:RegisterEffect(hidden)
+
+        local active = Effect.CreateEffect(c)
+        active:SetType(EFFECT_TYPE_IGNITION)
+        active:SetRange(LOCATION_HAND)
+        active:SetCondition(function(e,c)
+          return Duel.GetTurnPlayer() == 0
+        end)
+        active:SetCost(function(e,c)
+          local g = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, c)
+          Debug.Message("cost count " .. g:GetCount())
+          Duel.SendtoGrave(g, REASON_EFFECT)
+          return true
+        end)
+        active:SetTarget(function(e,c)
+          Debug.Message("target checked")
+          return true
+        end)
+        active:SetOperation(function(e,c)
+          Debug.Message("condition cost target operation resolved")
+        end)
+        c:RegisterEffect(active)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 300, type: 1 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const actions = getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "activateEffect");
+    expect(actions).toHaveLength(1);
+    const result = applyResponse(session, actions[0]!);
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toEqual(expect.arrayContaining(["cost count 1", "target checked", "condition cost target operation resolved"]));
+    expect(host.messages).not.toContain("hidden should not resolve");
+    expect(result.state.cards.find((card) => card.code === "300")?.location).toBe("graveyard");
+  });
 });
