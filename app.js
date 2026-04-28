@@ -1109,8 +1109,34 @@ function exposeAgentBridge() {
     validateDeck: () => cloneForAgent(validateDeck()),
     analyzeDeck: agentAnalyzeDeck,
     simulateHands: agentSimulateHands,
+    playtest: agentPlaytestBridge(),
     importYdk: agentImportYdk,
     exportYdk: buildYdkText,
+  };
+}
+
+function agentPlaytestBridge() {
+  return {
+    available: () => Boolean(window.duelDeckPlaytest),
+    status: () => window.duelDeckPlaytest
+      ? window.duelDeckPlaytest.status()
+      : { available: false, message: 'Build and load dist/playtest-engine.js to enable the TypeScript playtest engine.' },
+    start: (options = {}) => {
+      if (!window.duelDeckPlaytest) return { ok: false, error: 'TypeScript playtest engine is not loaded.' };
+      return window.duelDeckPlaytest.start({ deck: serializeDeckState(), ...options });
+    },
+    state: (sessionId) => window.duelDeckPlaytest
+      ? window.duelDeckPlaytest.state(sessionId)
+      : { ok: false, error: 'TypeScript playtest engine is not loaded.' },
+    legalActions: (sessionId) => window.duelDeckPlaytest
+      ? window.duelDeckPlaytest.legalActions(sessionId)
+      : [],
+    action: (action, sessionId) => window.duelDeckPlaytest
+      ? window.duelDeckPlaytest.action(action, sessionId)
+      : { ok: false, error: 'TypeScript playtest engine is not loaded.' },
+    autoRun: (options = {}) => window.duelDeckPlaytest
+      ? window.duelDeckPlaytest.autoRun(options)
+      : { ok: false, error: 'TypeScript playtest engine is not loaded.' },
   };
 }
 

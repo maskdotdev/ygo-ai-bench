@@ -72,7 +72,10 @@ Run checks with:
 ```bash
 npm run typecheck
 npm test
+npm run build
 ```
+
+`npm run build` emits `dist/playtest-engine.js`, which exposes `window.duelDeckPlaytest` in the browser. If that bundle is loaded, the existing `window.duelDeckAgent.playtest` bridge can start, inspect, step, and auto-run playtest sessions from the current deck.
 
 ## Included decks
 
