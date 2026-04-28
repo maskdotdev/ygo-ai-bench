@@ -98,6 +98,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       const source = findCard(state, trigger.sourceUid);
       if (!source) continue;
       actions.push({ type: "activateTrigger", player, triggerId: trigger.id, uid: source.uid, effectId: trigger.effectId, label: `${source.name}: ${trigger.effectId}` });
+      actions.push({ type: "declineTrigger", player, triggerId: trigger.id, uid: source.uid, effectId: trigger.effectId, label: `Decline ${source.name}: ${trigger.effectId}` });
     }
     return actions;
   }
@@ -138,6 +139,7 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
     else if (response.type === "setSpellTrap") setSpellTrap(session.state, response.player, response.uid);
     else if (response.type === "activateEffect") activateEffect(session, response.player, response.uid, response.effectId);
     else if (response.type === "activateTrigger") activatePendingTrigger(session, response.player, response.triggerId);
+    else if (response.type === "declineTrigger") declinePendingTrigger(session, response.player, response.triggerId);
     else if (response.type === "changePhase") changePhase(session.state, response.player, response.phase);
     else if (response.type === "endTurn") endTurn(session.state, response.player);
     return result(session, true);
@@ -282,10 +284,7 @@ function activateEffect(session: DuelSession, player: PlayerId, uid: string, eff
 }
 
 function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
-  const triggerIndex = session.state.pendingTriggers.findIndex((candidate) => candidate.id === triggerId && candidate.player === player);
-  if (triggerIndex < 0) throw new Error(`Trigger ${triggerId} is not pending for player ${player}`);
-  const [trigger] = session.state.pendingTriggers.splice(triggerIndex, 1);
-  if (!trigger) throw new Error(`Trigger ${triggerId} is not pending`);
+  const trigger = takePendingTrigger(session.state, player, triggerId);
   const effect = session.state.effects.find((candidate) => candidate.sourceUid === trigger.sourceUid && candidate.id === trigger.effectId);
   if (!effect) throw new Error(`Effect ${trigger.effectId} is not registered`);
   const source = findCard(session.state, trigger.sourceUid);
@@ -293,6 +292,21 @@ function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerI
   if (!source || !eventCard) throw new Error(`Trigger ${triggerId} lost its source or event card`);
   resolveEffect(session.state, effect, source, trigger.player, trigger.eventName, eventCard, "trigger");
   session.state.waitingFor = session.state.pendingTriggers[0]?.player ?? session.state.turnPlayer;
+}
+
+function declinePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
+  const trigger = takePendingTrigger(session.state, player, triggerId);
+  const source = findCard(session.state, trigger.sourceUid);
+  pushDuelLog(session.state, "declineTrigger", player, source?.name, trigger.effectId);
+  session.state.waitingFor = session.state.pendingTriggers[0]?.player ?? session.state.turnPlayer;
+}
+
+function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: string): PendingTrigger {
+  const triggerIndex = state.pendingTriggers.findIndex((candidate) => candidate.id === triggerId && candidate.player === player);
+  if (triggerIndex < 0) throw new Error(`Trigger ${triggerId} is not pending for player ${player}`);
+  const [trigger] = state.pendingTriggers.splice(triggerIndex, 1);
+  if (!trigger) throw new Error(`Trigger ${triggerId} is not pending`);
+  return trigger;
 }
 
 function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void {
@@ -413,6 +427,7 @@ function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if ("uid" in a && "uid" in b && a.uid !== b.uid) return false;
   if (a.type === "activateEffect" && b.type === "activateEffect" && a.effectId !== b.effectId) return false;
   if (a.type === "activateTrigger" && b.type === "activateTrigger" && a.triggerId !== b.triggerId) return false;
+  if (a.type === "declineTrigger" && b.type === "declineTrigger" && a.triggerId !== b.triggerId) return false;
   if (a.type === "changePhase" && b.type === "changePhase" && a.phase !== b.phase) return false;
   return true;
 }

@@ -75,7 +75,12 @@ function resolveScriptedStep(step: ScriptedDuelStep, legal: DuelAction[], cards:
   const matches = legal.filter((action) => {
     if (action.type !== selector.type || action.player !== selector.player) return false;
     if (selector.uid && "uid" in action && action.uid !== selector.uid) return false;
-    if (selector.effectId && action.type === "activateEffect" && action.effectId !== selector.effectId) return false;
+    if (selector.effectId) {
+      if (!("effectId" in action) || action.effectId !== selector.effectId) return false;
+    }
+    if (selector.triggerId) {
+      if (!("triggerId" in action) || action.triggerId !== selector.triggerId) return false;
+    }
     if (selector.labelIncludes && !action.label.includes(selector.labelIncludes)) return false;
     if (selector.code || selector.location) {
       if (!("uid" in action)) return false;
@@ -98,6 +103,8 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type !== response.type || action.player !== response.player) return false;
   if ("uid" in action && "uid" in response && action.uid !== response.uid) return false;
   if (action.type === "activateEffect" && response.type === "activateEffect" && action.effectId !== response.effectId) return false;
+  if (action.type === "activateTrigger" && response.type === "activateTrigger" && action.triggerId !== response.triggerId) return false;
+  if (action.type === "declineTrigger" && response.type === "declineTrigger" && action.triggerId !== response.triggerId) return false;
   if (action.type === "changePhase" && response.type === "changePhase" && action.phase !== response.phase) return false;
   return true;
 }
@@ -109,6 +116,7 @@ function describeStep(step: ScriptedDuelStep): string {
     "code" in step && step.code ? `code=${step.code}` : undefined,
     "uid" in step && step.uid ? `uid=${step.uid}` : undefined,
     "effectId" in step && step.effectId ? `effectId=${step.effectId}` : undefined,
+    "triggerId" in step && step.triggerId ? `triggerId=${step.triggerId}` : undefined,
     "location" in step && step.location ? `location=${step.location}` : undefined,
   ].filter(Boolean);
   return detail.join(" ");

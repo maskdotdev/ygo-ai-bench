@@ -18,6 +18,7 @@ const cards: DuelCardData[] = [
   { code: "200", name: "Test Spell", kind: "spell" },
   { code: "300", name: "Second Monster", kind: "monster" },
   { code: "400", name: "Opponent Monster", kind: "monster" },
+  { code: "500", name: "Third Monster", kind: "monster" },
 ];
 
 describe("full duel engine API", () => {
@@ -132,5 +133,102 @@ describe("full duel engine API", () => {
     expect(triggerResult.state.cards.find((card) => card.uid === triggerSource!.uid)?.location).toBe("graveyard");
     expect(triggerResult.state.log.some((entry) => entry.action === "trigger" && entry.detail === "on-normal-summon")).toBe(true);
     expect(triggerResult.state.log.some((entry) => entry.detail.includes("Normal Summoned"))).toBe(true);
+  });
+
+  it("allows optional trigger effects to be declined", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(summoned).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "optional-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.moveCard(ctx.source.uid, "graveyard");
+        ctx.log("Declined effect should not resolve");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+
+    const decline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger");
+    expect(decline).toBeTruthy();
+    const result = applyResponse(session, decline!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.pendingTriggers).toHaveLength(0);
+    expect(result.state.cards.find((card) => card.uid === triggerSource!.uid)?.location).toBe("hand");
+    expect(result.state.log.some((entry) => entry.detail.includes("Declined effect should not resolve"))).toBe(false);
+    expect(result.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "optional-trigger")).toBe(true);
+  });
+
+  it("lets a player choose the order of multiple pending triggers", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const publicState = queryPublicState(session);
+    const summoned = publicState.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstSource = publicState.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const secondSource = publicState.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(summoned).toBeTruthy();
+    expect(firstSource).toBeTruthy();
+    expect(secondSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "first-trigger",
+      sourceUid: firstSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.moveCard(ctx.source.uid, "graveyard");
+        ctx.log("First trigger resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "second-trigger",
+      sourceUid: secondSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.moveCard(ctx.source.uid, "graveyard");
+        ctx.log("Second trigger resolved");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    const summonResult = applyResponse(session, summon!);
+    expect(summonResult.ok).toBe(true);
+    expect(summonResult.state.pendingTriggers).toHaveLength(2);
+
+    const second = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "second-trigger");
+    expect(second).toBeTruthy();
+    const secondResult = applyResponse(session, second!);
+    expect(secondResult.ok).toBe(true);
+    expect(secondResult.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["first-trigger"]);
+    expect(secondResult.state.cards.find((card) => card.uid === secondSource!.uid)?.location).toBe("graveyard");
+    expect(secondResult.state.cards.find((card) => card.uid === firstSource!.uid)?.location).toBe("hand");
   });
 });

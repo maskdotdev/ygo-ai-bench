@@ -130,6 +130,7 @@ export type DuelAction =
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
   | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
+  | { type: "declineTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
   | { type: "changePhase"; player: PlayerId; phase: DuelPhase; label: string }
   | { type: "endTurn"; player: PlayerId; label: string };
 
@@ -181,6 +182,7 @@ export interface ScriptedResponseSelector {
   code?: string;
   uid?: string;
   effectId?: string;
+  triggerId?: string;
   location?: DuelLocation;
   labelIncludes?: string;
   occurrence?: number;
