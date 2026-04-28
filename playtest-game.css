@@ -746,6 +746,12 @@ body.duel-arena {
   grid-row: 3;
 }
 
+.zone-deck .zone-cards {
+  align-items: center;
+  justify-content: center;
+  padding: 1.75rem 0.75rem 0.75rem;
+}
+
 .zone-banished {
   grid-column: 1;
   grid-row: 3;
@@ -808,19 +814,30 @@ body.duel-arena {
 
 .pile-count {
   position: absolute;
-  bottom: 0.25rem;
-  right: 0.25rem;
-  min-width: 24px;
-  height: 24px;
+  bottom: -0.35rem;
+  right: -0.35rem;
+  min-width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0 0.3rem;
+  border-radius: 6px;
+  background: rgba(5, 5, 5, 0.94);
+  border: 1px solid rgba(212, 175, 55, 0.45);
   color: var(--ui-text);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  z-index: 2;
+  line-height: 1;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+  z-index: 4;
+}
+
+.deck-pile .pile-count {
+  bottom: -0.45rem;
+  right: -0.45rem;
+  min-width: 24px;
+  height: 24px;
+  font-size: 0.75rem;
 }
 
 /* ---------- Card Back ---------- */
