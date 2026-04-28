@@ -3,6 +3,7 @@ import type { PlaytestAction, CardSummary } from "./engine/index.js";
 
 const el = {
   loadIncludedDeckBtn: byId<HTMLButtonElement>("loadIncludedDeckBtn"),
+  useBuilderDeckBtn: byId<HTMLButtonElement>("useBuilderDeckBtn"),
   startPlaytestBtn: byId<HTMLButtonElement>("startPlaytestBtn"),
   stepActionBtn: byId<HTMLButtonElement>("stepActionBtn"),
   autoRunBtn: byId<HTMLButtonElement>("autoRunBtn"),
@@ -30,6 +31,7 @@ const el = {
 };
 
 let session: PlaytestSession | null = null;
+const AUTO_DECK_KEY = "duelDeckStudio.autoDeck.v1";
 
 const starterYdk = `#created by Duel Deck Studio
 #deck Dark Magical Blast - TCG Branded DM
@@ -93,7 +95,13 @@ const starterYdk = `#created by Duel Deck Studio
 !side`;
 
 el.ydkInput.value = starterYdk;
+if (new URLSearchParams(window.location.search).get("source") === "builder") loadBuilderDeck(false);
 renderEmpty();
+
+el.useBuilderDeckBtn.addEventListener("click", () => {
+  if (loadBuilderDeck(true)) return;
+  toast("No builder deck", "Build or import a deck on the deck builder page first.", "warning");
+});
 
 el.loadIncludedDeckBtn.addEventListener("click", async () => {
   try {
@@ -199,7 +207,12 @@ function renderDeckBadge(): void {
 
 function renderCards(target: HTMLElement, cards: CardSummary[]): void {
   target.innerHTML = cards.length
-    ? cards.map((card) => `<span class="mini-card ${escapeAttr(card.type)}"><strong>${escapeHtml(card.name)}</strong><small>${escapeHtml(card.type)}</small></span>`).join("")
+    ? cards.map((card) => `
+      <span class="mini-card duel-card ${escapeAttr(card.type)}">
+        <i aria-hidden="true"></i>
+        <strong>${escapeHtml(card.name)}</strong>
+        <small>${escapeHtml(card.type)}</small>
+      </span>`).join("")
     : `<span class="mini-card empty">Empty</span>`;
 }
 
@@ -247,6 +260,38 @@ function toast(title: string, message: string, tone = "default"): void {
     node.style.transition = "opacity 180ms ease, transform 180ms ease";
     window.setTimeout(() => node.remove(), 220);
   }, 3000);
+}
+
+function loadBuilderDeck(showToast: boolean): boolean {
+  const raw = localStorage.getItem(AUTO_DECK_KEY);
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw) as { deckName?: string; deck?: { main?: Record<string, number>; extra?: Record<string, number>; side?: Record<string, number> } };
+    const main = expandZone(parsed.deck?.main);
+    const extra = expandZone(parsed.deck?.extra);
+    const side = expandZone(parsed.deck?.side);
+    if (!main.length && !extra.length) return false;
+    el.ydkInput.value = [
+      "#created by Duel Deck Studio",
+      `#deck ${parsed.deckName || "Builder Deck"}`,
+      "#main",
+      ...main,
+      "#extra",
+      ...extra,
+      "!side",
+      ...side,
+    ].join("\n");
+    renderDeckBadge();
+    if (showToast) toast("Builder deck loaded", `${main.length} Main and ${extra.length} Extra cards copied into playtest.`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function expandZone(zone: Record<string, number> | undefined): string[] {
+  if (!zone) return [];
+  return Object.entries(zone).flatMap(([id, count]) => Array.from({ length: Math.max(0, Number(count) || 0) }, () => id));
 }
 
 function byId<T extends HTMLElement>(id: string): T {

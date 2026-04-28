@@ -1979,6 +1979,201 @@ mark {
 .transcript-list strong,
 .transcript-list small { display: block; }
 
+/* Playtest duel-table treatment */
+.playtest-page {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.16), transparent 34rem),
+    linear-gradient(180deg, #080808 0%, #111 100%);
+}
+
+.duel-command {
+  grid-template-columns: minmax(220px, 1fr) 120px 92px 92px 96px 120px;
+  background: rgba(14, 14, 14, 0.94);
+}
+
+.playtest-command .field.compact {
+  min-width: 0;
+}
+
+.duel-layout {
+  grid-template-columns: 300px minmax(520px, 1fr) 340px;
+  grid-template-rows: 210px minmax(0, 1fr);
+  background: #090909;
+}
+
+.duel-side-panel {
+  grid-row: 1 / 3;
+  border-right: 1px solid var(--line);
+}
+
+.duel-score-panel {
+  grid-column: 3;
+  grid-row: 1;
+  border-left: 1px solid var(--line);
+}
+
+.duel-mat-panel {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  padding: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255,255,255,0.03) 1px, transparent 1px),
+    #101312;
+  background-size: 96px 96px;
+}
+
+.duel-mat-panel > .section-heading {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(10, 10, 10, 0.7);
+}
+
+.duel-mat {
+  min-height: calc(100% - 54px);
+  display: grid;
+  grid-template-columns: 148px 1fr 148px;
+  grid-template-rows: minmax(130px, 0.8fr) minmax(190px, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.duel-zone {
+  min-width: 0;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-md);
+  background: rgba(4, 4, 4, 0.36);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35);
+}
+
+.duel-zone h4 {
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.field-zone {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+
+.extra-pile { grid-column: 1; grid-row: 1; }
+.grave-pile { grid-column: 3; grid-row: 1; }
+
+.hand-zone {
+  grid-column: 1 / 4;
+  grid-row: 2;
+  align-self: end;
+}
+
+.field-card-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(76px, 1fr));
+  align-content: center;
+  gap: 0.75rem;
+  min-height: calc(100% - 38px);
+  padding: 1rem;
+}
+
+.hand-card-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: end;
+  min-height: 154px;
+  padding: 0.875rem;
+  overflow-x: auto;
+}
+
+.pile-list {
+  max-height: 240px;
+  padding: 0.75rem;
+  overflow: auto;
+}
+
+.duel-card {
+  position: relative;
+  width: 100%;
+  min-width: 82px;
+  max-width: 132px;
+  min-height: 118px;
+  align-content: end;
+  padding: 0.5rem;
+  border-width: 2px;
+  border-left-width: 2px;
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), transparent 35%),
+    #6f4a28;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.38);
+}
+
+.duel-card i {
+  position: absolute;
+  inset: 0.5rem 0.5rem auto;
+  height: 54px;
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255,255,255,0.22), transparent 26px),
+    rgba(0,0,0,0.28);
+  border: 1px solid rgba(255,255,255,0.14);
+}
+
+.duel-card strong,
+.duel-card small {
+  position: relative;
+  z-index: 1;
+}
+
+.duel-card strong {
+  color: #fff7e6;
+  font-size: 0.75rem;
+  line-height: 1.15;
+}
+
+.duel-card small {
+  color: rgba(255,255,255,0.72);
+  text-transform: uppercase;
+  font-size: 0.625rem;
+}
+
+.duel-card.spell { background-color: #1f6f58; }
+.duel-card.trap { background-color: #7a2f62; }
+.duel-card.extra { background-color: #2b2b35; }
+
+.hand-card-row .duel-card {
+  flex: 0 0 104px;
+}
+
+.pile-list .duel-card {
+  min-height: 86px;
+}
+
+.pile-list .duel-card i {
+  height: 30px;
+}
+
+.duel-action-panel {
+  grid-column: 3;
+  grid-row: 2;
+  border-left: 1px solid var(--line);
+}
+
+.duel-log-panel {
+  grid-column: 1;
+  grid-row: 2;
+  border-right: 1px solid var(--line);
+}
+
+.duel-log-panel .transcript-list {
+  max-height: none;
+}
+
 /* ========== RESPONSIVE ========== */
 @media (max-width: 1200px) {
   .layout { 
@@ -2057,13 +2252,54 @@ mark {
     overflow: visible;
   }
 
-  .playtest-command,
-  .playtest-grid { grid-template-columns: 1fr; }
+  .playtest-page .app-header {
+    height: auto;
+    min-height: var(--header-height);
+    flex-wrap: wrap;
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+  }
+
+  .playtest-page .header-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .playtest-command {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .playtest-command-copy {
+    grid-column: 1 / 4;
+  }
+
+  .playtest-grid,
+  .duel-layout { grid-template-columns: 1fr; }
 
   .playtest-grid { grid-template-rows: none; }
 
   .deck-input-panel,
-  .zones-panel { grid-row: auto; }
+  .zones-panel,
+  .duel-side-panel,
+  .duel-score-panel,
+  .duel-mat-panel,
+  .duel-action-panel,
+  .duel-log-panel {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .duel-mat {
+    min-height: 520px;
+  }
+
+  .duel-mat-panel { order: 1; }
+  .duel-score-panel { order: 2; }
+  .duel-action-panel { order: 3; }
+  .duel-log-panel { order: 4; }
+  .duel-side-panel { order: 5; }
 
   .deck-input-panel textarea { min-height: 260px; }
 }
@@ -2129,10 +2365,38 @@ mark {
     margin-top: 0.25rem;
   }
 
-  .playtest-command,
+  .playtest-command {
+    grid-template-columns: 1fr 1fr;
+    padding: 0.75rem;
+  }
+
+  .playtest-command-copy {
+    grid-column: 1 / -1;
+  }
+
   .playtest-panel { padding: 0.75rem; }
 
   .evaluation-panel { grid-template-columns: 1fr; }
+
+  .duel-mat {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    min-height: auto;
+  }
+
+  .field-zone,
+  .hand-zone {
+    grid-column: 1 / -1;
+  }
+
+  .field-zone { grid-row: 1; }
+  .extra-pile { grid-column: 1; grid-row: 2; }
+  .grave-pile { grid-column: 2; grid-row: 2; }
+  .hand-zone { grid-row: 3; }
+
+  .field-card-grid {
+    grid-template-columns: repeat(2, minmax(90px, 1fr));
+  }
 }
 
 /* ========== SCROLLBAR STYLING ========== */

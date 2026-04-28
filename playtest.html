@@ -21,13 +21,14 @@
     </section>
     <section class="header-actions" aria-label="Playtest navigation">
       <a class="button ghost" href="./index.html">Deck builder</a>
+      <button class="button ghost" id="useBuilderDeckBtn" type="button">Use builder deck</button>
       <button class="button ghost" id="loadIncludedDeckBtn" type="button">Load included deck</button>
       <button class="button primary" id="startPlaytestBtn" type="button">Start hand</button>
     </section>
   </header>
 
   <main class="playtest-shell">
-    <section class="playtest-command" aria-label="Playtest controls">
+    <section class="playtest-command duel-command" aria-label="Playtest controls">
       <div class="playtest-command-copy">
         <p class="eyebrow">Dark Magician V1</p>
         <h2>Opening-hand playtest</h2>
@@ -48,8 +49,8 @@
       <button class="button ghost" id="autoRunBtn" type="button" disabled>Auto-run</button>
     </section>
 
-    <section class="playtest-grid">
-      <article class="playtest-panel deck-input-panel">
+    <section class="playtest-grid duel-layout">
+      <article class="playtest-panel deck-input-panel duel-side-panel">
         <div class="section-heading">
           <h3>Deck input</h3>
           <span class="badge neutral" id="deckInputBadge">YDK</span>
@@ -57,7 +58,7 @@
         <textarea id="playtestYdkInput" spellcheck="false" aria-label="YDK input"></textarea>
       </article>
 
-      <article class="playtest-panel evaluation-panel">
+      <article class="playtest-panel evaluation-panel duel-score-panel">
         <div class="section-heading">
           <h3>Evaluation</h3>
           <span class="badge neutral" id="qualityBadge">Waiting</span>
@@ -80,32 +81,32 @@
         </div>
       </article>
 
-      <article class="playtest-panel zones-panel">
+      <article class="playtest-panel zones-panel duel-mat-panel">
         <div class="section-heading">
-          <h3>Zones</h3>
+          <h3>Duel field</h3>
           <span class="badge neutral" id="normalSummonBadge">Normal ready</span>
         </div>
-        <div class="zone-board">
-          <section>
-            <h4>Hand</h4>
-            <div class="mini-card-list" id="handZone"></div>
+        <div class="duel-mat" aria-label="Playtest zones">
+          <section class="duel-zone extra-pile">
+            <h4>Extra</h4>
+            <div class="mini-card-list pile-list" id="extraZone"></div>
           </section>
-          <section>
+          <section class="duel-zone field-zone">
             <h4>Field</h4>
-            <div class="mini-card-list" id="fieldZone"></div>
+            <div class="mini-card-list field-card-grid" id="fieldZone"></div>
           </section>
-          <section>
+          <section class="duel-zone grave-pile">
             <h4>Graveyard</h4>
-            <div class="mini-card-list" id="graveyardZone"></div>
+            <div class="mini-card-list pile-list" id="graveyardZone"></div>
           </section>
-          <section>
-            <h4>Extra Deck</h4>
-            <div class="mini-card-list" id="extraZone"></div>
+          <section class="duel-zone hand-zone">
+            <h4>Hand</h4>
+            <div class="mini-card-list hand-card-row" id="handZone"></div>
           </section>
         </div>
       </article>
 
-      <article class="playtest-panel actions-panel">
+      <article class="playtest-panel actions-panel duel-action-panel">
         <div class="section-heading">
           <h3>Legal actions</h3>
           <span class="badge neutral" id="legalActionBadge">0</span>
@@ -113,7 +114,7 @@
         <div class="action-stack" id="legalActionList"></div>
       </article>
 
-      <article class="playtest-panel transcript-panel">
+      <article class="playtest-panel transcript-panel duel-log-panel">
         <div class="section-heading">
           <h3>Transcript</h3>
           <span class="badge neutral" id="logBadge">0</span>
