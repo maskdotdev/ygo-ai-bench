@@ -24,6 +24,7 @@ import {
   setDuelPlayerLifePoints,
   specialSummonDuelCard,
   startDuel,
+  ritualSummonDuelCard,
   tributeSummonDuelCard,
   flipSummonDuelCard,
   fusionSummonDuelCard,
@@ -45,6 +46,7 @@ const cards: DuelCardData[] = [
   { code: "910", name: "Synchro Test Monster", kind: "extra", attack: 2500, defense: 2000, synchroMaterials: { tuner: "100", nonTuners: ["300"] } },
   { code: "920", name: "Xyz Test Monster", kind: "extra", attack: 2400, defense: 2000, xyzMaterials: ["100", "300"] },
   { code: "930", name: "Link Test Monster", kind: "extra", attack: 2300, linkMaterials: ["100", "300"] },
+  { code: "940", name: "Ritual Test Monster", kind: "monster", attack: 2500, defense: 2100, ritualMaterials: ["100", "300"] },
 ];
 
 describe("full duel engine API", () => {
@@ -1173,6 +1175,111 @@ describe("full duel engine API", () => {
     expect(link).toBeTruthy();
     expect(materials).toHaveLength(2);
     expect(() => linkSummonDuelCard(full.state, 0, link!.uid, materials.map((card) => card.uid))).toThrow("monsterZone is full");
+  });
+
+  it("ritual summons from the hand using hand materials", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const ritual = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    expect(ritual).toBeTruthy();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("ritualSummon");
+    if (!action || action.type !== "ritualSummon") throw new Error("Expected ritual summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === ritual!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === ritual!.uid)?.position).toBe("faceUpAttack");
+    expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
+    expect(result.state.log.some((entry) => entry.action === "ritualSummon" && entry.card === "Ritual Test Monster")).toBe(true);
+  });
+
+  it("ritual summons using mixed hand and field materials and emits special summon triggers", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300", "500"] },
+      1: { main: ["400", "400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const ritual = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const fieldMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(ritual).toBeTruthy();
+    expect(fieldMaterial).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    moveDuelCard(session.state, fieldMaterial!.uid, "monsterZone", 0);
+    registerEffect(session, {
+      id: "ritual-special-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Ritual special summoned ${ctx.eventCard?.name}`);
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
+    expect(action).toBeTruthy();
+    const summonResult = applyResponse(session, action!);
+
+    expect(summonResult.ok).toBe(true);
+    expect(summonResult.state.cards.find((card) => card.uid === fieldMaterial!.uid)?.location).toBe("graveyard");
+    expect(summonResult.state.pendingTriggers).toHaveLength(1);
+    expect(summonResult.state.pendingTriggers[0]).toMatchObject({ eventName: "specialSummoned", eventCardUid: ritual!.uid });
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "ritual-special-trigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.log.some((entry) => entry.detail === "Ritual special summoned Ritual Test Monster")).toBe(true);
+  });
+
+  it("does not expose ritual summon actions without materials or with no monster zone space", () => {
+    const missing = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(missing, {
+      0: { main: ["940", "100"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(missing);
+    expect(getDuelLegalActions(missing, 0).some((candidate) => candidate.type === "ritualSummon")).toBe(false);
+
+    const duplicate = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(duplicate, {
+      0: { main: ["940", "100", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(duplicate);
+    const duplicateRitual = queryPublicState(duplicate).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const duplicateMaterial = queryPublicState(duplicate).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(duplicateRitual).toBeTruthy();
+    expect(duplicateMaterial).toBeTruthy();
+    expect(() => ritualSummonDuelCard(duplicate.state, 0, duplicateRitual!.uid, [duplicateMaterial!.uid, duplicateMaterial!.uid])).toThrow("ritual materials must be unique");
+
+    const full = createDuel({ seed: 1, startingHandSize: 8, cardReader: createCardReader(cards) });
+    loadDecks(full, {
+      0: { main: ["940", "100", "300", "500", "500", "500", "500", "500"] },
+      1: { main: ["400", "400", "400", "400", "400", "400", "400", "400"] },
+    });
+    startDuel(full);
+    const blockers = queryPublicState(full).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "monster" && card.code === "500");
+    expect(blockers).toHaveLength(5);
+    for (const blocker of blockers) moveDuelCard(full.state, blocker.uid, "monsterZone", 0);
+    expect(getDuelLegalActions(full, 0).some((candidate) => candidate.type === "ritualSummon")).toBe(false);
+
+    const ritual = queryPublicState(full).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const materials = queryPublicState(full).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(ritual).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    expect(() => ritualSummonDuelCard(full.state, 0, ritual!.uid, materials.map((card) => card.uid))).toThrow("monsterZone is full");
   });
 
   it("collects trigger effects after a card is sent to the graveyard", () => {

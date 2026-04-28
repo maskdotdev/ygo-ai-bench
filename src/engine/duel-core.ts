@@ -19,6 +19,8 @@ import {
   linkSummonDuelCard as linkSummonDuelCardWithEvents,
   normalSummon,
   normalSummonActions,
+  ritualSummonActions,
+  ritualSummonDuelCard as ritualSummonDuelCardWithEvents,
   setMonster,
   synchroSummonActions,
   synchroSummonDuelCard as synchroSummonDuelCardWithEvents,
@@ -147,6 +149,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...synchroSummonActions(state, player));
     actions.push(...xyzSummonActions(state, player));
     actions.push(...linkSummonActions(state, player));
+    actions.push(...ritualSummonActions(state, player, hand));
     if (hasZoneSpace(state, player, "spellTrapZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
         actions.push({ type: "setSpellTrap", player, uid: card.uid, label: `Set ${card.name}` });
@@ -186,6 +189,7 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
     else if (response.type === "synchroSummon") synchroSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
     else if (response.type === "xyzSummon") xyzSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
     else if (response.type === "linkSummon") linkSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
+    else if (response.type === "ritualSummon") ritualSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
     else if (response.type === "setMonster") setMonster(session.state, response.player, response.uid);
     else if (response.type === "setSpellTrap") setSpellTrap(session.state, response.player, response.uid);
     else if (response.type === "activateEffect") activateEffect(session, response.player, response.uid, response.effectId);
@@ -352,6 +356,10 @@ export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: strin
 
 export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
   return linkSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
+}
+
+export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
 }
 
 export function canDuelCardAttack(state: DuelState, uid: string): boolean {
@@ -807,6 +815,7 @@ function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (a.type === "synchroSummon" && b.type === "synchroSummon" && !sameStringSet(a.materialUids, b.materialUids)) return false;
   if (a.type === "xyzSummon" && b.type === "xyzSummon" && !sameStringSet(a.materialUids, b.materialUids)) return false;
   if (a.type === "linkSummon" && b.type === "linkSummon" && !sameStringSet(a.materialUids, b.materialUids)) return false;
+  if (a.type === "ritualSummon" && b.type === "ritualSummon" && !sameStringSet(a.materialUids, b.materialUids)) return false;
   if (a.type === "changePosition" && b.type === "changePosition" && a.position !== b.position) return false;
   if (a.type === "declareAttack" && b.type === "declareAttack" && a.attackerUid !== b.attackerUid) return false;
   if (a.type === "declareAttack" && b.type === "declareAttack" && a.targetUid !== b.targetUid) return false;

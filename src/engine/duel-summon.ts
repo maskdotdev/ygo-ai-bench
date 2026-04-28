@@ -129,6 +129,34 @@ export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
   return card;
 }
 
+export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
+  const card = requireControlledCard(state, player, uid, "hand");
+  const requiredMaterials = card.data.ritualMaterials ?? [];
+  if (card.kind !== "monster") throw new Error(`${card.name} is not a ritual monster`);
+  if (requiredMaterials.length === 0) throw new Error(`${card.name} does not define ritual materials`);
+  if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} ritual materials must be unique`);
+  const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
+  if (materials.some((material) => material.uid === card.uid)) throw new Error(`${card.name} cannot use itself as ritual material`);
+  if (!sameStringMultiset(materials.map((material) => material.code), requiredMaterials)) throw new Error(`${card.name} ritual materials are not legal`);
+  for (const material of materials) {
+    if (material.location !== "hand" && material.location !== "monsterZone") throw new Error(`${material.name} cannot be used as ritual material`);
+  }
+  requireZoneSpace(state, player, "monsterZone");
+
+  for (const material of materials) {
+    moveDuelCard(state, material.uid, "graveyard", player);
+    pushDuelLog(state, "ritualMaterial", player, material.name, `Used for ${card.name}`);
+    collectEvent("sentToGraveyard", material);
+  }
+
+  moveDuelCard(state, uid, "monsterZone", player);
+  card.position = "faceUpAttack";
+  card.faceUp = true;
+  pushDuelLog(state, "ritualSummon", player, card.name, `Ritual Summoned with ${materialUids.length} material(s)`);
+  collectEvent("specialSummoned", card);
+  return card;
+}
+
 export function normalSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {
   if (!state.players[player].normalSummonAvailable || !hasZoneSpace(state, player, "monsterZone")) return [];
   const actions: DuelAction[] = [];
@@ -182,6 +210,19 @@ export function linkSummonActions(state: DuelState, player: PlayerId): DuelActio
   if (!hasZoneSpace(state, player, "monsterZone")) return [];
   const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card));
   return extraDeckSummonActions(state, player, materialPool, "linkSummon", "Link", (card) => card.data.linkMaterials);
+}
+
+export function ritualSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {
+  if (!hasZoneSpace(state, player, "monsterZone")) return [];
+  const materialPool = hand.filter((card) => card.kind === "monster").concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card)));
+  const actions: DuelAction[] = [];
+  for (const card of hand.filter((candidate) => candidate.kind === "monster" && candidate.data.ritualMaterials?.length)) {
+    const materialUids = findMaterialUids(materialPool.filter((material) => material.uid !== card.uid), card.data.ritualMaterials ?? []);
+    if (!materialUids) continue;
+    const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
+    actions.push({ type: "ritualSummon", player, uid: card.uid, materialUids, label: `Ritual Summon ${card.name} using ${materialNames}` });
+  }
+  return actions;
 }
 
 function extraDeckSummonActions(

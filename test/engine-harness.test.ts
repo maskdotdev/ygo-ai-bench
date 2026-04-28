@@ -73,6 +73,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
       { code: "910", name: "Fixture Synchro", kind: "extra", synchroMaterials: { tuner: "100", nonTuners: ["300"] } },
       { code: "920", name: "Fixture Xyz", kind: "extra", xyzMaterials: ["100", "300"] },
       { code: "930", name: "Fixture Link", kind: "extra", linkMaterials: ["100", "300"] },
+      { code: "940", name: "Fixture Ritual", kind: "monster", ritualMaterials: ["100", "300"] },
     ];
     const fixtureBase = {
       options: { seed: 3, startingHandSize: 2 },
@@ -113,6 +114,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
         setup: { moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone" }, { player: 0, code: "300", from: "hand", to: "monsterZone" }] },
         responses: [makeResponseSelector("linkSummon", 0, { code: "930", location: "extraDeck", materialUids })],
         expected: { locations: { monsterZone: ["930"], graveyard: ["100", "300"] }, logIncludes: ["Link Summoned"] },
+      },
+      {
+        ...fixtureBase,
+        name: "ritual fixture",
+        options: { seed: 3, startingHandSize: 3 },
+        decks: { ...fixtureBase.decks, 0: { main: ["100", "300", "940"] } },
+        responses: [makeResponseSelector("ritualSummon", 0, { code: "940", location: "hand", materialUids })],
+        expected: { locations: { monsterZone: ["940"], graveyard: ["100", "300"] }, logIncludes: ["Ritual Summoned"] },
       },
     ];
 

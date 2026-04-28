@@ -24,6 +24,7 @@ export {
   synchroSummonDuelCard,
   xyzSummonDuelCard,
   linkSummonDuelCard,
+  ritualSummonDuelCard,
   sendDuelCardToGraveyard,
   destroyDuelCard,
   banishDuelCard,
