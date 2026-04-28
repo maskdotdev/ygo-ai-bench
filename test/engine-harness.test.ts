@@ -178,6 +178,44 @@ describe("EDOPro compatibility harness scaffolding", () => {
     }
   });
 
+  it("lets Lua scripts check, select, and release monster-zone groups", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Release A", kind: "monster" },
+      { code: "300", name: "Release B", kind: "monster" },
+      { code: "500", name: "Release C", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 8, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["100", "300", "500"] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local filter = function(tc) return tc:IsCode(100) or tc:IsCode(300) end
+      Debug.Message("can release two " .. tostring(Duel.CheckReleaseGroup(0, filter, 2, nil)))
+      Debug.Message("can release three " .. tostring(Duel.CheckReleaseGroup(0, filter, 3, nil)))
+      local g = Duel.SelectReleaseGroup(0, filter, 1, 2, nil)
+      Debug.Message("selected releases " .. g:GetCount())
+      Debug.Message("released " .. Duel.Release(g, REASON_COST))
+      `,
+      "release-group.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("can release two true");
+    expect(host.messages).toContain("can release three false");
+    expect(host.messages).toContain("selected releases 2");
+    expect(host.messages).toContain("released 2");
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "graveyard" && (card.code === "100" || card.code === "300"))).toHaveLength(2);
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "500")?.location).toBe("monsterZone");
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

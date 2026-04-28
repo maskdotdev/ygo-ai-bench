@@ -128,6 +128,11 @@ function installMoveHelpers(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("Remove"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, moveCardOrGroup(session, state, sendDuelCardToGraveyard));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Release"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readCardOrGroupUids(state, 1);
     const targetPlayer = lua.lua_isnumber(state, 5) ? normalizePlayer(lua.lua_tointeger(state, 5)) : undefined;
     let moved = 0;
@@ -227,6 +232,29 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetLocationCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const minimum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
+    const excluded = readCardUid(state, 4);
+    const count = matchingCardUidsWithFilter(state, session, filterRef, player, 0x04, 0, excluded).length;
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushboolean(state, count >= minimum);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CheckReleaseGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const min = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
+    const max = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : min;
+    const excluded = readCardUid(state, 5);
+    const uids = matchingCardUidsWithFilter(state, session, filterRef, player, 0x04, 0, excluded);
+    releaseOptionalFunctionRef(state, filterRef);
+    pushGroupTable(state, uids.slice(0, max > 0 ? max : Math.max(min, 1)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SelectReleaseGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session, hostState.activeTargetUids));
