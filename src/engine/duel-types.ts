@@ -14,7 +14,8 @@ export type DuelEventName =
   | "phaseChanged"
   | "turnStarted"
   | "attackDeclared"
-  | "battleDestroyed";
+  | "battleDestroyed"
+  | "positionChanged";
 
 export interface DuelOptions {
   seed?: string | number;
@@ -132,6 +133,7 @@ export interface DuelState {
   pendingTriggers: PendingTrigger[];
   usedCountKeys: string[];
   attacksDeclared: string[];
+  positionsChanged: string[];
   currentAttack?: {
     attackerUid: string;
     targetUid?: string;
@@ -155,6 +157,7 @@ export type DuelAction =
   | { type: "passChain"; player: PlayerId; label: string }
   | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
   | { type: "declineTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
+  | { type: "changePosition"; player: PlayerId; uid: string; position: CardPosition; label: string }
   | { type: "declareAttack"; player: PlayerId; attackerUid: string; targetUid?: string; label: string }
   | { type: "changePhase"; player: PlayerId; phase: DuelPhase; label: string }
   | { type: "endTurn"; player: PlayerId; label: string };
@@ -187,6 +190,7 @@ export interface PublicDuelState {
   chain: ChainLink[];
   pendingTriggers: PendingTrigger[];
   attacksDeclared: string[];
+  positionsChanged: string[];
   log: DuelLogEntry[];
 }
 
@@ -207,6 +211,7 @@ export interface ScriptedResponseSelector {
   player: PlayerId;
   code?: string;
   uid?: string;
+  position?: CardPosition;
   attackerUid?: string;
   targetUid?: string;
   effectId?: string;

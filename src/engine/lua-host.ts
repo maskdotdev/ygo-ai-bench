@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { scriptFilenameForCard } from "./data-loaders.js";
 import {
   banishDuelCard,
+  changeDuelCardPosition,
   canMoveDuelCardToLocation,
   damageDuelPlayer,
   destroyDuelCard,
@@ -12,7 +13,7 @@ import {
   setDuelPlayerLifePoints,
   specialSummonDuelCard,
 } from "./duel-core.js";
-import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
+import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
 
@@ -129,6 +130,7 @@ function installConstants(L: unknown): void {
     LOCATION_REMOVED: 0x20,
     LOCATION_EXTRA: 0x40,
     POS_FACEUP_ATTACK: 0x1,
+    POS_FACEUP_DEFENSE: 0x4,
     POS_FACEDOWN_DEFENSE: 0x8,
     EFFECT_TYPE_IGNITION: 0x10,
     EFFECT_TYPE_TRIGGER_O: 0x20,
@@ -136,6 +138,7 @@ function installConstants(L: unknown): void {
     EVENT_SUMMON_SUCCESS: 0x40,
     EVENT_SPSUMMON_SUCCESS: 0x80,
     EVENT_TO_GRAVE: 0x400,
+    EVENT_CHANGE_POS: 1016,
     EVENT_ATTACK_ANNOUNCE: 1130,
     EVENT_BATTLE_DESTROYED: 1140,
     REASON_EFFECT: 0x40,
@@ -340,6 +343,28 @@ function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostStat
   });
   lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const uids = readCardOrGroupUids(state, 1);
+    const requestedPosition = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
+    if (!requestedPosition) {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
+    let changed = 0;
+    for (const uid of uids) {
+      const card = session.state.cards.find((candidate) => candidate.uid === uid);
+      if (!card) continue;
+      try {
+        changeDuelCardPosition(session.state, card.controller, uid, requestedPosition);
+        changed += 1;
+      } catch {
+        // EDOPro-style helpers report the number of changed cards; illegal changes simply fail.
+      }
+    }
+    lua.lua_pushinteger(state, changed);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ChangePosition"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 1);
     const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
     const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
@@ -468,6 +493,20 @@ function installCardApi(L: unknown, session: DuelSession, hostState: LuaHostStat
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && card.position === "faceUpAttack"));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsAttackPos"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && (card.position === "faceUpDefense" || card.position === "faceDownDefense")));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsDefensePos"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     lua.lua_pushboolean(state, Boolean(card && locationsFromMask(locationMask).includes(card.location)));
     return 1;
@@ -554,6 +593,8 @@ function pushCardTable(L: unknown, uid: string): void {
   copyGlobalFunctionToField(L, "Card", "IsCode");
   copyGlobalFunctionToField(L, "Card", "IsSetCard");
   copyGlobalFunctionToField(L, "Card", "IsFaceup");
+  copyGlobalFunctionToField(L, "Card", "IsAttackPos");
+  copyGlobalFunctionToField(L, "Card", "IsDefensePos");
   copyGlobalFunctionToField(L, "Card", "IsLocation");
   copyGlobalFunctionToField(L, "Card", "IsControler");
   copyGlobalFunctionToField(L, "Card", "IsAbleToGrave");
@@ -664,6 +705,7 @@ function triggerEventFromCode(code: number | undefined): DuelEventName | undefin
   if (code === 0x40) return "normalSummoned";
   if (code === 0x80) return "specialSummoned";
   if (code === 0x400) return "sentToGraveyard";
+  if (code === 1016) return "positionChanged";
   if (code === 1130) return "attackDeclared";
   if (code === 1140) return "battleDestroyed";
   return undefined;
@@ -817,6 +859,13 @@ function locationsFromMask(mask: number): DuelLocation[] {
   if ((mask & 0x20) !== 0) locations.push("banished");
   if ((mask & 0x40) !== 0) locations.push("extraDeck");
   return locations;
+}
+
+function positionFromMask(mask: number): CardPosition | undefined {
+  if ((mask & 0x1) !== 0) return "faceUpAttack";
+  if ((mask & 0x4) !== 0) return "faceUpDefense";
+  if ((mask & 0x8) !== 0) return "faceDownDefense";
+  return undefined;
 }
 
 function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: number): string[] {

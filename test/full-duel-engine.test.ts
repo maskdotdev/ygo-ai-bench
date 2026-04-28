@@ -3,7 +3,9 @@ import {
   applyResponse,
   banishDuelCard,
   canDuelCardAttack,
+  canChangeDuelCardPosition,
   canMoveDuelCardToLocation,
+  changeDuelCardPosition,
   createCardReader,
   createDuel,
   damageDuelPlayer,
@@ -854,6 +856,69 @@ describe("full duel engine API", () => {
     for (const card of spells.slice(0, 5)) moveDuelCard(session.state, card.uid, "spellTrapZone", 0);
 
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "setSpellTrap")).toBe(false);
+  });
+
+  it("changes monster battle position once per turn", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const monster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(monster).toBeTruthy();
+    specialSummonDuelCard(session.state, monster!.uid, 0);
+    expect(canChangeDuelCardPosition(session.state, monster!.uid, "faceUpDefense")).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePosition" && candidate.uid === monster!.uid && candidate.position === "faceUpDefense");
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === monster!.uid)?.position).toBe("faceUpDefense");
+    expect(result.state.positionsChanged).toContain(monster!.uid);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "changePosition" && candidate.uid === monster!.uid)).toBe(false);
+    expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.positionsChanged).toContain(monster!.uid);
+  });
+
+  it("collects position-change trigger effects", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const monster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(monster).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    specialSummonDuelCard(session.state, monster!.uid, 0);
+    registerEffect(session, {
+      id: "position-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "positionChanged",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Position changed ${ctx.eventCard?.name}`);
+      },
+    });
+
+    changeDuelCardPosition(session.state, 0, monster!.uid, "faceUpDefense");
+
+    const state = queryPublicState(session);
+    expect(state.pendingTriggers).toHaveLength(1);
+    expect(state.pendingTriggers[0]).toMatchObject({ eventName: "positionChanged", eventCardUid: monster!.uid });
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "position-trigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.log.some((entry) => entry.detail === "Position changed Normal Test Monster")).toBe(true);
   });
 
   it("declares a direct attack and tracks attackers for the battle phase", () => {

@@ -75,6 +75,9 @@ function resolveScriptedStep(step: ScriptedDuelStep, legal: DuelAction[], cards:
   const matches = legal.filter((action) => {
     if (action.type !== selector.type || action.player !== selector.player) return false;
     if (selector.uid && "uid" in action && action.uid !== selector.uid) return false;
+    if (selector.position) {
+      if (action.type !== "changePosition" || action.position !== selector.position) return false;
+    }
     if (selector.attackerUid) {
       if (action.type !== "declareAttack" || action.attackerUid !== selector.attackerUid) return false;
     }
@@ -111,6 +114,7 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "activateEffect" && response.type === "activateEffect" && action.effectId !== response.effectId) return false;
   if (action.type === "activateTrigger" && response.type === "activateTrigger" && action.triggerId !== response.triggerId) return false;
   if (action.type === "declineTrigger" && response.type === "declineTrigger" && action.triggerId !== response.triggerId) return false;
+  if (action.type === "changePosition" && response.type === "changePosition" && action.position !== response.position) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.targetUid !== response.targetUid) return false;
   if (action.type === "changePhase" && response.type === "changePhase" && action.phase !== response.phase) return false;
@@ -123,6 +127,7 @@ function describeStep(step: ScriptedDuelStep): string {
     `player=${step.player}`,
     "code" in step && step.code ? `code=${step.code}` : undefined,
     "uid" in step && step.uid ? `uid=${step.uid}` : undefined,
+    "position" in step && step.position ? `position=${step.position}` : undefined,
     "attackerUid" in step && step.attackerUid ? `attackerUid=${step.attackerUid}` : undefined,
     "targetUid" in step && step.targetUid ? `targetUid=${step.targetUid}` : undefined,
     "effectId" in step && step.effectId ? `effectId=${step.effectId}` : undefined,

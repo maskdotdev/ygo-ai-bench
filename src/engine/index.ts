@@ -27,6 +27,8 @@ export {
   canDuelCardAttack,
   getDuelAttackTargets,
   declareDuelAttack,
+  canChangeDuelCardPosition,
+  changeDuelCardPosition,
   negateDuelChainLink,
   type CreateDuelOptions,
 } from "./duel-core.js";

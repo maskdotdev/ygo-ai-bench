@@ -836,4 +836,79 @@ describe("Node upstream workspace loader", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("attack 100 -> 400");
   });
+
+  it("lets Lua effects change battle position and trigger position-change effects", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_MZONE)
+        e:SetOperation(function(e,c)
+          Debug.Message("attack before " .. tostring(c:IsAttackPos()))
+          Debug.Message("changed " .. Duel.ChangePosition(c, POS_FACEUP_DEFENSE))
+          Debug.Message("defense after " .. tostring(c:IsDefensePos()))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(root, "script", "c300.lua"),
+      `
+      c300 = {}
+      c300.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_CHANGE_POS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("position trigger resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1, atk: 1800, def: 1200 }, { id: 300, type: 1 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const monster = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(monster).toBeTruthy();
+    moveDuelCard(session.state, monster!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.loadCardScript(300, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeTruthy();
+    const activation = applyResponse(session, action!);
+
+    expect(activation.ok).toBe(true);
+    expect(activation.state.cards.find((card) => card.uid === monster!.uid)?.position).toBe("faceUpDefense");
+    expect(activation.state.pendingTriggers).toHaveLength(1);
+    expect(host.messages).toEqual(expect.arrayContaining(["attack before true", "changed 1", "defense after true"]));
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("position trigger resolved");
+  });
 });
