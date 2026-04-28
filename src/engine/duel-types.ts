@@ -152,6 +152,7 @@ export type DuelCardReader = (code: string) => DuelCardData | undefined;
 
 export type DuelAction =
   | { type: "normalSummon"; player: PlayerId; uid: string; label: string }
+  | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
   | { type: "passChain"; player: PlayerId; label: string }
@@ -211,6 +212,7 @@ export interface ScriptedResponseSelector {
   player: PlayerId;
   code?: string;
   uid?: string;
+  tributeUids?: string[];
   position?: CardPosition;
   attackerUid?: string;
   targetUid?: string;

@@ -113,9 +113,10 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   if (state.phase === "main1" || state.phase === "main2") {
     if (state.players[player].normalSummonAvailable && hasZoneSpace(state, player, "monsterZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
-        actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
+        if (tributeCountForNormalSummon(card) === 0) actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
       }
     }
+    actions.push(...tributeSummonActions(state, player, hand));
     if (hasZoneSpace(state, player, "spellTrapZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
         actions.push({ type: "setSpellTrap", player, uid: card.uid, label: `Set ${card.name}` });
@@ -149,6 +150,7 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
 
   try {
     if (response.type === "normalSummon") normalSummon(session.state, response.player, response.uid);
+    else if (response.type === "tributeSummon") tributeSummonDuelCard(session.state, response.player, response.uid, response.tributeUids);
     else if (response.type === "setSpellTrap") setSpellTrap(session.state, response.player, response.uid);
     else if (response.type === "activateEffect") activateEffect(session, response.player, response.uid, response.effectId);
     else if (response.type === "passChain") passChain(session.state, response.player);
@@ -403,12 +405,40 @@ function fallbackCardReader(code: string): DuelCardData {
 function normalSummon(state: DuelState, player: PlayerId, uid: string): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
+  if (tributeCountForNormalSummon(card) > 0) throw new Error(`${card.name} requires a Tribute Summon`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
   requireZoneSpace(state, player, "monsterZone");
   moveDuelCard(state, uid, "monsterZone", player);
   card.position = "faceUpAttack";
   state.players[player].normalSummonAvailable = false;
   pushDuelLog(state, "normalSummon", player, card.name, "Normal Summoned from hand");
+  collectTriggerEffects(state, "normalSummoned", card);
+}
+
+export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
+  const card = requireControlledCard(state, player, uid, "hand");
+  if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
+  if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
+  const requiredTributes = tributeCountForNormalSummon(card);
+  if (requiredTributes <= 0) throw new Error(`${card.name} does not require tributes`);
+  if (tributeUids.length !== requiredTributes) throw new Error(`${card.name} requires ${requiredTributes} tribute(s)`);
+
+  const uniqueTributes = [...new Set(tributeUids)];
+  if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
+  for (const tributeUid of uniqueTributes) {
+    requireControlledCard(state, player, tributeUid, "monsterZone");
+  }
+  for (const tributeUid of uniqueTributes) {
+    const tribute = moveDuelCard(state, tributeUid, "graveyard", player);
+    pushDuelLog(state, "release", player, tribute.name, `Tributed for ${card.name}`);
+    collectTriggerEffects(state, "sentToGraveyard", tribute);
+  }
+
+  moveDuelCard(state, uid, "monsterZone", player);
+  card.position = "faceUpAttack";
+  card.faceUp = true;
+  state.players[player].normalSummonAvailable = false;
+  pushDuelLog(state, "tributeSummon", player, card.name, `Tribute Summoned with ${requiredTributes} tribute(s)`);
   collectTriggerEffects(state, "normalSummoned", card);
 }
 
@@ -511,6 +541,43 @@ function draw(state: DuelState, player: PlayerId, count: number, detail: string)
     moveDuelCard(state, card.uid, "hand", player);
     pushDuelLog(state, "draw", player, card.name, detail);
   }
+}
+
+function tributeSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {
+  if (!state.players[player].normalSummonAvailable) return [];
+  const availableTributes = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card));
+  const actions: DuelAction[] = [];
+  for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
+    const tributeCount = tributeCountForNormalSummon(card);
+    if (tributeCount <= 0 || availableTributes.length < tributeCount) continue;
+    for (const tributeUids of tributeCombinations(availableTributes, tributeCount)) {
+      const tributeNames = tributeUids.map((tributeUid) => findCard(state, tributeUid)?.name ?? tributeUid).join(", ");
+      actions.push({ type: "tributeSummon", player, uid: card.uid, tributeUids, label: `Tribute Summon ${card.name} using ${tributeNames}` });
+    }
+  }
+  return actions;
+}
+
+function tributeCountForNormalSummon(card: DuelCardInstance): number {
+  const level = card.data.level ?? 4;
+  if (level >= 7) return 2;
+  if (level >= 5) return 1;
+  return 0;
+}
+
+function tributeCombinations(cards: DuelCardInstance[], count: number): string[][] {
+  if (count === 0) return [[]];
+  if (cards.length < count) return [];
+  if (count === 1) return cards.map((card) => [card.uid]);
+  const results: string[][] = [];
+  for (let index = 0; index <= cards.length - count; index += 1) {
+    const head = cards[index];
+    if (!head) continue;
+    for (const tail of tributeCombinations(cards.slice(index + 1), count - 1)) {
+      results.push([head.uid, ...tail]);
+    }
+  }
+  return results;
 }
 
 function positionChangeActions(state: DuelState, player: PlayerId): DuelAction[] {
@@ -811,11 +878,16 @@ function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (a.type === "activateEffect" && b.type === "activateEffect" && a.effectId !== b.effectId) return false;
   if (a.type === "activateTrigger" && b.type === "activateTrigger" && a.triggerId !== b.triggerId) return false;
   if (a.type === "declineTrigger" && b.type === "declineTrigger" && a.triggerId !== b.triggerId) return false;
+  if (a.type === "tributeSummon" && b.type === "tributeSummon" && !sameStringSet(a.tributeUids, b.tributeUids)) return false;
   if (a.type === "changePosition" && b.type === "changePosition" && a.position !== b.position) return false;
   if (a.type === "declareAttack" && b.type === "declareAttack" && a.attackerUid !== b.attackerUid) return false;
   if (a.type === "declareAttack" && b.type === "declareAttack" && a.targetUid !== b.targetUid) return false;
   if (a.type === "changePhase" && b.type === "changePhase" && a.phase !== b.phase) return false;
   return true;
+}
+
+function sameStringSet(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((value) => b.includes(value));
 }
 
 function toPublicCard(card: DuelCardInstance): PublicDuelCard {

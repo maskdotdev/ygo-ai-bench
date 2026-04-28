@@ -24,6 +24,7 @@ import {
   setDuelPlayerLifePoints,
   specialSummonDuelCard,
   startDuel,
+  tributeSummonDuelCard,
 } from "../src/engine/index.js";
 import type { DuelCardData } from "../src/engine/index.js";
 
@@ -33,6 +34,8 @@ const cards: DuelCardData[] = [
   { code: "300", name: "Second Monster", kind: "monster", attack: 1000, defense: 1000 },
   { code: "400", name: "Opponent Monster", kind: "monster", attack: 1500, defense: 1600 },
   { code: "500", name: "Third Monster", kind: "monster", attack: 2400, defense: 2000 },
+  { code: "600", name: "One Tribute Monster", kind: "monster", level: 6, attack: 2300, defense: 1800 },
+  { code: "700", name: "Two Tribute Monster", kind: "monster", level: 7, attack: 2600, defense: 2100 },
 ];
 
 describe("full duel engine API", () => {
@@ -842,6 +845,60 @@ describe("full duel engine API", () => {
     const legal = getDuelLegalActions(session, 0);
     expect(legal.some((action) => action.type === "normalSummon")).toBe(false);
     expect(() => specialSummonDuelCard(session.state, handMonsters[5]!.uid, 0)).toThrow("monsterZone is full");
+  });
+
+  it("tribute summons a level 5 or 6 monster with one tribute", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["600", "100", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const tributeMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "600");
+    const tribute = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(tributeMonster).toBeTruthy();
+    expect(tribute).toBeTruthy();
+    moveDuelCard(session.state, tribute!.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "normalSummon" && action.uid === tributeMonster!.uid)).toBe(false);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "tributeSummon" && candidate.uid === tributeMonster!.uid && candidate.tributeUids.includes(tribute!.uid));
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === tribute!.uid)?.location).toBe("graveyard");
+    expect(result.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("monsterZone");
+    expect(result.state.players[0].normalSummonAvailable).toBe(false);
+    expect(result.state.log.some((entry) => entry.action === "release" && entry.card === "Normal Test Monster")).toBe(true);
+    expect(result.state.log.some((entry) => entry.action === "tributeSummon" && entry.card === "One Tribute Monster")).toBe(true);
+  });
+
+  it("tribute summons a level 7 or higher monster with two tributes even from a full monster zone", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["700", "100", "300", "300", "300", "500"] },
+      1: { main: ["400", "400", "400", "400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const tributeMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "700");
+    const tributes = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "monster" && card.uid !== tributeMonster!.uid);
+    expect(tributeMonster).toBeTruthy();
+    expect(tributes).toHaveLength(5);
+    for (const card of tributes) moveDuelCard(session.state, card.uid, "monsterZone", 0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "tributeSummon" && candidate.uid === tributeMonster!.uid && candidate.tributeUids.length === 2);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("tributeSummon");
+    if (!action || action.type !== "tributeSummon") throw new Error("Expected tribute summon action");
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("monsterZone");
+    expect(action.tributeUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
+    expect(result.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(4);
+    expect(() => tributeSummonDuelCard(session.state, 0, tributeMonster!.uid, action.tributeUids)).toThrow("not in hand");
   });
 
   it("hides set actions when the spell/trap zone is full", () => {

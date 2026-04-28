@@ -18,6 +18,7 @@ export {
   canMoveDuelCardToLocation,
   moveDuelCard,
   specialSummonDuelCard,
+  tributeSummonDuelCard,
   sendDuelCardToGraveyard,
   destroyDuelCard,
   banishDuelCard,
