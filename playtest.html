@@ -3,128 +3,310 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Headless Yu-Gi-Oh! Dark Magician playtest lab." />
-  <title>Duel Deck Studio — Playtest Lab</title>
+  <meta name="description" content="Yu-Gi-Oh! Dark Magician playtest arena." />
+  <title>Duel Arena — Dark Magician Playtest</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="playtest-game.css" />
 </head>
-<body class="playtest-page">
-  <header class="app-header">
-    <section class="brand-block" aria-label="Application title">
-      <div class="brand-mark" aria-hidden="true">YG</div>
-      <div>
-        <p class="eyebrow">Goldfish engine</p>
-        <h1>Duel Deck Studio</h1>
+<body class="duel-arena">
+  <!-- Ambient background effects -->
+  <div class="arena-backdrop" aria-hidden="true">
+    <div class="arena-vignette"></div>
+    <div class="arena-particles"></div>
+  </div>
+
+  <!-- Top bar with duel info -->
+  <header class="arena-header">
+    <div class="header-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+          <line x1="12" y1="22" x2="12" y2="15.5"/>
+          <line x1="22" y1="8.5" x2="12" y2="15.5"/>
+          <line x1="2" y1="8.5" x2="12" y2="15.5"/>
+        </svg>
       </div>
-    </section>
-    <section class="header-actions" aria-label="Playtest navigation">
-      <a class="button ghost" href="./index.html">Deck builder</a>
-      <button class="button ghost" id="useBuilderDeckBtn" type="button">Use builder deck</button>
-      <button class="button ghost" id="loadIncludedDeckBtn" type="button">Load included deck</button>
-      <button class="button primary" id="startPlaytestBtn" type="button">Start hand</button>
-    </section>
+      <div class="brand-text">
+        <span class="brand-sub">Goldfish Engine</span>
+        <h1>Duel Arena</h1>
+      </div>
+    </div>
+    
+    <div class="header-stats">
+      <div class="stat-block">
+        <span class="stat-label">Deck</span>
+        <span class="stat-value" id="headerDeckCount">40</span>
+      </div>
+      <div class="stat-block">
+        <span class="stat-label">Hand</span>
+        <span class="stat-value" id="headerHandCount">5</span>
+      </div>
+      <div class="stat-block">
+        <span class="stat-label">Field</span>
+        <span class="stat-value" id="headerFieldCount">0</span>
+      </div>
+      <div class="stat-block">
+        <span class="stat-label">GY</span>
+        <span class="stat-value" id="headerGYCount">0</span>
+      </div>
+    </div>
+
+    <nav class="header-nav">
+      <a href="./index.html" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="9"/>
+          <rect x="14" y="3" width="7" height="5"/>
+          <rect x="14" y="12" width="7" height="9"/>
+          <rect x="3" y="16" width="7" height="5"/>
+        </svg>
+        Deck Builder
+      </a>
+    </nav>
   </header>
 
-  <main class="playtest-shell">
-    <section class="playtest-command duel-command" aria-label="Playtest controls">
-      <div class="playtest-command-copy">
-        <p class="eyebrow">Dark Magician V1</p>
-        <h2>Opening-hand playtest</h2>
+  <!-- Main game area -->
+  <main class="arena-main">
+    <!-- Left sidebar: Deck input & transcript -->
+    <aside class="arena-sidebar sidebar-left">
+      <section class="sidebar-section deck-input-section">
+        <div class="section-header">
+          <h2>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="4" width="16" height="16" rx="2"/>
+              <path d="M9 9h6M9 13h6M9 17h4"/>
+            </svg>
+            Deck List
+          </h2>
+          <span class="badge badge-gold" id="deckInputBadge">40 / 15</span>
+        </div>
+        <textarea id="playtestYdkInput" spellcheck="false" placeholder="Paste YDK deck list here..." aria-label="YDK input"></textarea>
+        <div class="deck-actions">
+          <button class="btn btn-ghost" id="loadIncludedDeckBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Load Sample
+          </button>
+          <button class="btn btn-ghost" id="useBuilderDeckBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            From Builder
+          </button>
+        </div>
+      </section>
+
+      <section class="sidebar-section transcript-section">
+        <div class="section-header">
+          <h2>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            Duel Log
+          </h2>
+          <span class="badge" id="logBadge">0</span>
+        </div>
+        <ol class="transcript-log" id="transcriptList">
+          <li class="log-empty">Start a duel to see the action log...</li>
+        </ol>
+      </section>
+    </aside>
+
+    <!-- Center: Game mat -->
+    <div class="arena-center">
+      <!-- Control bar -->
+      <div class="duel-controls">
+        <div class="control-group control-config">
+          <label class="control-field">
+            <span>Seed</span>
+            <input id="seedInput" type="text" value="42" />
+          </label>
+          <label class="control-field">
+            <span>Hand</span>
+            <input id="handSizeInput" type="number" min="1" max="10" value="5" />
+          </label>
+          <label class="control-field">
+            <span>Steps</span>
+            <input id="maxActionsInput" type="number" min="1" max="30" value="10" />
+          </label>
+        </div>
+        <div class="control-group control-actions">
+          <button class="btn btn-primary btn-lg" id="startPlaytestBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Draw Hand
+          </button>
+          <button class="btn btn-secondary" id="stepActionBtn" type="button" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+            Step
+          </button>
+          <button class="btn btn-secondary" id="autoRunBtn" type="button" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+              <line x1="19" y1="5" x2="19" y2="19"/>
+            </svg>
+            Auto
+          </button>
+        </div>
+        <div class="control-status">
+          <span class="status-indicator" id="normalSummonIndicator">
+            <span class="status-dot"></span>
+            <span id="normalSummonBadge">Normal Ready</span>
+          </span>
+        </div>
       </div>
-      <label class="field compact">
-        <span>Seed</span>
-        <input id="seedInput" type="text" value="42" />
-      </label>
-      <label class="field compact">
-        <span>Hand</span>
-        <input id="handSizeInput" type="number" min="1" max="10" value="5" />
-      </label>
-      <label class="field compact">
-        <span>Steps</span>
-        <input id="maxActionsInput" type="number" min="1" max="30" value="10" />
-      </label>
-      <button class="button ghost" id="stepActionBtn" type="button" disabled>Step</button>
-      <button class="button ghost" id="autoRunBtn" type="button" disabled>Auto-run</button>
-    </section>
 
-    <section class="playtest-grid duel-layout">
-      <article class="playtest-panel deck-input-panel duel-side-panel">
-        <div class="section-heading">
-          <h3>Deck input</h3>
-          <span class="badge neutral" id="deckInputBadge">YDK</span>
-        </div>
-        <textarea id="playtestYdkInput" spellcheck="false" aria-label="YDK input"></textarea>
-      </article>
+      <!-- The game mat -->
+      <div class="game-mat">
+        <div class="mat-surface">
+          <!-- Extra Deck Zone -->
+          <div class="mat-zone zone-extra" data-zone="extra">
+            <div class="zone-label">Extra Deck</div>
+            <div class="zone-cards pile-stack" id="extraZone">
+              <div class="card-placeholder">
+                <span>ED</span>
+              </div>
+            </div>
+          </div>
 
-      <article class="playtest-panel evaluation-panel duel-score-panel">
-        <div class="section-heading">
-          <h3>Evaluation</h3>
-          <span class="badge neutral" id="qualityBadge">Waiting</span>
-        </div>
-        <div class="playtest-score">
-          <strong id="scoreValue">0</strong>
-          <span>score</span>
-        </div>
-        <div class="playtest-kv">
-          <span>Deck</span>
-          <strong id="deckCountValue">0</strong>
-          <span>Actions</span>
-          <strong id="actionCountValue">0</strong>
-          <span>Session</span>
-          <strong id="sessionValue">—</strong>
-        </div>
-        <div>
-          <h4>Risks</h4>
-          <ul class="playtest-list" id="riskList"></ul>
-        </div>
-      </article>
+          <!-- Graveyard Zone -->
+          <div class="mat-zone zone-graveyard" data-zone="graveyard">
+            <div class="zone-label">Graveyard</div>
+            <div class="zone-cards pile-stack" id="graveyardZone">
+              <div class="card-placeholder">
+                <span>GY</span>
+              </div>
+            </div>
+          </div>
 
-      <article class="playtest-panel zones-panel duel-mat-panel">
-        <div class="section-heading">
-          <h3>Duel field</h3>
-          <span class="badge neutral" id="normalSummonBadge">Normal ready</span>
-        </div>
-        <div class="duel-mat" aria-label="Playtest zones">
-          <section class="duel-zone extra-pile">
-            <h4>Extra</h4>
-            <div class="mini-card-list pile-list" id="extraZone"></div>
-          </section>
-          <section class="duel-zone field-zone">
-            <h4>Field</h4>
-            <div class="mini-card-list field-card-grid" id="fieldZone"></div>
-          </section>
-          <section class="duel-zone grave-pile">
-            <h4>Graveyard</h4>
-            <div class="mini-card-list pile-list" id="graveyardZone"></div>
-          </section>
-          <section class="duel-zone hand-zone">
-            <h4>Hand</h4>
-            <div class="mini-card-list hand-card-row" id="handZone"></div>
-          </section>
-        </div>
-      </article>
+          <!-- Main Monster/Spell Zones -->
+          <div class="mat-zone zone-field" data-zone="field">
+            <div class="zone-label">Field</div>
+            <div class="zone-cards field-grid" id="fieldZone">
+              <div class="field-slot monster-slot" data-slot="m1"></div>
+              <div class="field-slot monster-slot" data-slot="m2"></div>
+              <div class="field-slot monster-slot" data-slot="m3"></div>
+              <div class="field-slot monster-slot" data-slot="m4"></div>
+              <div class="field-slot monster-slot" data-slot="m5"></div>
+              <div class="field-slot spell-slot" data-slot="st1"></div>
+              <div class="field-slot spell-slot" data-slot="st2"></div>
+              <div class="field-slot spell-slot" data-slot="st3"></div>
+              <div class="field-slot spell-slot" data-slot="st4"></div>
+              <div class="field-slot spell-slot" data-slot="st5"></div>
+            </div>
+          </div>
 
-      <article class="playtest-panel actions-panel duel-action-panel">
-        <div class="section-heading">
-          <h3>Legal actions</h3>
-          <span class="badge neutral" id="legalActionBadge">0</span>
-        </div>
-        <div class="action-stack" id="legalActionList"></div>
-      </article>
+          <!-- Deck Zone -->
+          <div class="mat-zone zone-deck" data-zone="deck">
+            <div class="zone-label">Deck</div>
+            <div class="zone-cards pile-stack deck-pile">
+              <div class="card-back">
+                <img src="./assets/card-back.svg" alt="Card back" />
+              </div>
+              <span class="pile-count" id="deckPileCount">40</span>
+            </div>
+          </div>
 
-      <article class="playtest-panel transcript-panel duel-log-panel">
-        <div class="section-heading">
-          <h3>Transcript</h3>
-          <span class="badge neutral" id="logBadge">0</span>
+          <!-- Banished Zone (if needed) -->
+          <div class="mat-zone zone-banished" data-zone="banished">
+            <div class="zone-label">Banished</div>
+            <div class="zone-cards pile-stack" id="banishedZone">
+              <div class="card-placeholder faded">
+                <span>RFG</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hand Zone -->
+          <div class="mat-zone zone-hand" data-zone="hand">
+            <div class="zone-label">Hand</div>
+            <div class="zone-cards hand-fan" id="handZone">
+              <!-- Cards will be inserted here -->
+            </div>
+          </div>
         </div>
-        <ol class="transcript-list" id="transcriptList"></ol>
-      </article>
-    </section>
+      </div>
+    </div>
+
+    <!-- Right sidebar: Evaluation & Actions -->
+    <aside class="arena-sidebar sidebar-right">
+      <section class="sidebar-section evaluation-section">
+        <div class="section-header">
+          <h2>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20V10"/>
+              <path d="M18 20V4"/>
+              <path d="M6 20v-4"/>
+            </svg>
+            Evaluation
+          </h2>
+          <span class="badge" id="qualityBadge">Waiting</span>
+        </div>
+        
+        <div class="score-display">
+          <div class="score-ring">
+            <svg viewBox="0 0 100 100">
+              <circle class="score-ring-bg" cx="50" cy="50" r="42"/>
+              <circle class="score-ring-fill" cx="50" cy="50" r="42" id="scoreRing"/>
+            </svg>
+            <div class="score-value">
+              <span id="scoreValue">0</span>
+              <small>Score</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="eval-stats">
+          <div class="eval-stat">
+            <span class="eval-stat-label">Session</span>
+            <span class="eval-stat-value" id="sessionValue">—</span>
+          </div>
+          <div class="eval-stat">
+            <span class="eval-stat-label">Actions</span>
+            <span class="eval-stat-value" id="actionCountValue">0</span>
+          </div>
+        </div>
+
+        <div class="risk-panel">
+          <h3>Risk Analysis</h3>
+          <ul class="risk-list" id="riskList">
+            <li>Start a hand to evaluate...</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="sidebar-section actions-section">
+        <div class="section-header">
+          <h2>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Legal Actions
+          </h2>
+          <span class="badge badge-gold" id="legalActionBadge">0</span>
+        </div>
+        <div class="action-list" id="legalActionList">
+          <p class="no-actions">No session yet.</p>
+        </div>
+      </section>
+    </aside>
   </main>
 
-  <div class="toast-stack" id="toastStack" aria-live="assertive" aria-atomic="true"></div>
+  <!-- Toast notifications -->
+  <div class="toast-container" id="toastStack" aria-live="assertive" aria-atomic="true"></div>
+
   <script type="module" src="/src/playtestPage.ts"></script>
 </body>
 </html>
