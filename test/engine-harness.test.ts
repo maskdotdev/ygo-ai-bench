@@ -386,6 +386,49 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === searchCode)?.location).toBe("hand");
   });
 
+  it("lets Lua scripts query field groups across both players and locations", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Self Grave", kind: "monster" },
+      { code: "200", name: "Self Banished", kind: "monster" },
+      { code: "300", name: "Opponent Grave", kind: "monster" },
+      { code: "400", name: "Opponent Deck", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 13, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["300", "400"] },
+    });
+    startDuel(session);
+    moveDuelCard(session.state, session.state.cards.find((card) => card.controller === 0 && card.code === "100")!.uid, "graveyard", 0);
+    moveDuelCard(session.state, session.state.cards.find((card) => card.controller === 0 && card.code === "200")!.uid, "banished", 0);
+    moveDuelCard(session.state, session.state.cards.find((card) => card.controller === 1 && card.code === "300")!.uid, "graveyard", 1);
+    moveDuelCard(session.state, session.state.cards.find((card) => card.controller === 1 && card.code === "400")!.uid, "deck", 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local mixed = Duel.GetFieldGroup(0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK)
+      Debug.Message("mixed count " .. mixed:GetCount())
+      Debug.Message("field count " .. Duel.GetFieldGroupCount(0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK))
+      Debug.Message("banished count " .. Duel.GetMatchingGroupCount(Card.IsAbleToGrave, 0, LOCATION_REMOVED, 0, nil))
+      local first = mixed:GetNext()
+      local second = mixed:GetNext()
+      local third = mixed:GetNext()
+      local fourth = mixed:GetNext()
+      Debug.Message("mixed codes " .. first:GetCode() .. "," .. second:GetCode() .. "," .. third:GetCode() .. "," .. fourth:GetCode())
+      Debug.Message("onfield count " .. Duel.GetFieldGroupCount(0, LOCATION_ONFIELD, LOCATION_ONFIELD))
+      `,
+      "field-groups.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("mixed count 4");
+    expect(host.messages).toContain("field count 4");
+    expect(host.messages).toContain("banished count 1");
+    expect(host.messages).toContain("mixed codes 100,200,300,400");
+    expect(host.messages).toContain("onfield count 0");
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
