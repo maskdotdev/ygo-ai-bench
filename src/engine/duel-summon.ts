@@ -137,6 +137,29 @@ export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: strin
   return card;
 }
 
+export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
+  const card = requireControlledCard(state, player, uid, "extraDeck");
+  const requiredMaterials = card.data.linkMaterials ?? [];
+  if (requiredMaterials.length === 0) throw new Error(`${card.name} does not define Link materials`);
+  if (!sameStringMultiset(materialUids.map((materialUid) => requireControlledCard(state, player, materialUid, "monsterZone").code), requiredMaterials)) {
+    throw new Error(`${card.name} Link materials are not legal`);
+  }
+  requireZoneSpace(state, player, "monsterZone");
+
+  for (const materialUid of materialUids) {
+    const material = moveDuelCard(state, materialUid, "graveyard", player);
+    pushDuelLog(state, "linkMaterial", player, material.name, `Used for ${card.name}`);
+    collectEvent("sentToGraveyard", material);
+  }
+
+  moveDuelCard(state, uid, "monsterZone", player);
+  card.position = "faceUpAttack";
+  card.faceUp = true;
+  pushDuelLog(state, "linkSummon", player, card.name, `Link Summoned with ${materialUids.length} material(s)`);
+  collectEvent("specialSummoned", card);
+  return card;
+}
+
 export function normalSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {
   if (!state.players[player].normalSummonAvailable || !hasZoneSpace(state, player, "monsterZone")) return [];
   const actions: DuelAction[] = [];
@@ -205,6 +228,19 @@ export function xyzSummonActions(state: DuelState, player: PlayerId): DuelAction
     if (!materialUids) continue;
     const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
     actions.push({ type: "xyzSummon", player, uid: card.uid, materialUids, label: `Xyz Summon ${card.name} using ${materialNames}` });
+  }
+  return actions;
+}
+
+export function linkSummonActions(state: DuelState, player: PlayerId): DuelAction[] {
+  if (!hasZoneSpace(state, player, "monsterZone")) return [];
+  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card));
+  const actions: DuelAction[] = [];
+  for (const card of getCards(state, player, "extraDeck").filter((candidate) => candidate.data.linkMaterials?.length)) {
+    const materialUids = findMaterialUids(materialPool, card.data.linkMaterials ?? []);
+    if (!materialUids) continue;
+    const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
+    actions.push({ type: "linkSummon", player, uid: card.uid, materialUids, label: `Link Summon ${card.name} using ${materialNames}` });
   }
   return actions;
 }

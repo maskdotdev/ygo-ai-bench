@@ -23,6 +23,7 @@ export {
   fusionSummonDuelCard,
   synchroSummonDuelCard,
   xyzSummonDuelCard,
+  linkSummonDuelCard,
   sendDuelCardToGraveyard,
   destroyDuelCard,
   banishDuelCard,
