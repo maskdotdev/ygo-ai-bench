@@ -45,6 +45,7 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
   lualib.luaL_openlibs(L);
   installConstants(L);
   installDebugApi(L, hostState.messages);
+  installAuxApi(L);
   installDuelApi(L, session, hostState.messages);
   installEffectApi(L, hostState);
   installCardApi(L, session, hostState);
@@ -137,6 +138,35 @@ function installDebugApi(L: unknown, messages: string[]): void {
   lua.lua_setglobal(L, to_luastring("Debug"));
 }
 
+function installAuxApi(L: unknown): void {
+  lua.lua_newtable(L);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    if (!lua.lua_isfunction(state, 1)) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    const extraArgCount = lua.lua_gettop(state) - 1;
+    const refs: number[] = [];
+    lua.lua_pushvalue(state, 1);
+    refs.push(lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX));
+    for (let index = 0; index < extraArgCount; index += 1) {
+      lua.lua_pushvalue(state, index + 2);
+      refs.push(lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX));
+    }
+    lua.lua_pushjsfunction(state, (callState: unknown) => {
+      lua.lua_rawgeti(callState, lua.LUA_REGISTRYINDEX, refs[0]);
+      lua.lua_pushvalue(callState, 1);
+      for (let index = 1; index < refs.length; index += 1) lua.lua_rawgeti(callState, lua.LUA_REGISTRYINDEX, refs[index]);
+      const status = lua.lua_pcall(callState, refs.length, 1, 0);
+      if (status !== lua.LUA_OK) return lauxlib.luaL_error(callState, to_luastring(readLuaError(callState)));
+      return 1;
+    });
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("FilterBoolFunction"));
+  lua.lua_setglobal(L, to_luastring("aux"));
+}
+
 function installDuelApi(L: unknown, session: DuelSession, messages: string[]): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -183,6 +213,7 @@ function installDuelApi(L: unknown, session: DuelSession, messages: string[]): v
   });
   lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 1);
     const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
     const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
     const opponentMask = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
@@ -190,11 +221,20 @@ function installDuelApi(L: unknown, session: DuelSession, messages: string[]): v
     const uids = [
       ...matchingCardUids(session, player, selfMask),
       ...matchingCardUids(session, otherPlayer(player), opponentMask),
-    ].filter((uid) => uid !== excluded);
+    ].filter((uid) => uid !== excluded && cardMatchesFilter(state, uid, filterRef));
+    releaseOptionalFunctionRef(state, filterRef);
     pushGroupTable(state, uids);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetMatchingGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    return pushSelectedMatchingGroup(state, session);
+  });
+  lua.lua_setfield(L, -2, to_luastring("SelectMatchingCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    return pushSelectedMatchingGroup(state, session);
+  });
+  lua.lua_setfield(L, -2, to_luastring("SelectTarget"));
   lua.lua_setglobal(L, to_luastring("Duel"));
 }
 
@@ -238,6 +278,14 @@ function installCardApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCode"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && card.data.setcodes?.includes(requested)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSetCard"));
   lua.lua_setglobal(L, to_luastring("Card"));
 }
 
@@ -279,6 +327,7 @@ function pushCardTable(L: unknown, uid: string): void {
   copyGlobalFunctionToField(L, "Card", "RegisterEffect");
   copyGlobalFunctionToField(L, "Card", "GetCode");
   copyGlobalFunctionToField(L, "Card", "IsCode");
+  copyGlobalFunctionToField(L, "Card", "IsSetCard");
 }
 
 function pushEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectRecord>): void {
@@ -405,6 +454,45 @@ function readGroupUids(L: unknown, index: number): string[] {
 function readCardOrGroupUids(L: unknown, index: number): string[] {
   const cardUid = readCardUid(L, index);
   return cardUid ? [cardUid] : readGroupUids(L, index);
+}
+
+function readOptionalFunctionRef(L: unknown, index: number): number | undefined {
+  if (!lua.lua_isfunction(L, index)) return undefined;
+  lua.lua_pushvalue(L, index);
+  return lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX);
+}
+
+function releaseOptionalFunctionRef(L: unknown, ref: number | undefined): void {
+  if (ref !== undefined) lauxlib.luaL_unref(L, lua.LUA_REGISTRYINDEX, ref);
+}
+
+function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefined): boolean {
+  if (filterRef === undefined) return true;
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, filterRef);
+  pushCardTable(L, uid);
+  const status = lua.lua_pcall(L, 1, 1, 0);
+  if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
+}
+
+function pushSelectedMatchingGroup(L: unknown, session: DuelSession): number {
+  const filterRef = readOptionalFunctionRef(L, 2);
+  const player = normalizePlayer(lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : session.state.turnPlayer);
+  const selfMask = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0;
+  const opponentMask = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 0;
+  const min = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : 1;
+  const max = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : min;
+  const excluded = readCardUid(L, 8);
+  const uids = [
+    ...matchingCardUids(session, player, selfMask),
+    ...matchingCardUids(session, otherPlayer(player), opponentMask),
+  ].filter((uid) => uid !== excluded && cardMatchesFilter(L, uid, filterRef));
+  releaseOptionalFunctionRef(L, filterRef);
+  const limit = max > 0 ? max : Math.max(min, 1);
+  pushGroupTable(L, uids.slice(0, limit));
+  return 1;
 }
 
 function locationsFromMask(mask: number): DuelLocation[] {
