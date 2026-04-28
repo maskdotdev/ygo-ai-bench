@@ -90,7 +90,7 @@ describe("full duel engine API", () => {
     expect(result.state.log.some((entry) => entry.detail.includes("Sent itself"))).toBe(true);
   });
 
-  it("auto-resolves trigger effects after a normal summon", () => {
+  it("exposes trigger effects as pending legal responses after a normal summon", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
       0: { main: ["100", "300"] },
@@ -118,11 +118,19 @@ describe("full duel engine API", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeTruthy();
-    const result = applyResponse(session, summon!);
+    const summonResult = applyResponse(session, summon!);
 
-    expect(result.ok).toBe(true);
-    expect(result.state.cards.find((card) => card.uid === triggerSource!.uid)?.location).toBe("graveyard");
-    expect(result.state.log.some((entry) => entry.action === "trigger" && entry.detail === "on-normal-summon")).toBe(true);
-    expect(result.state.log.some((entry) => entry.detail.includes("Normal Summoned"))).toBe(true);
+    expect(summonResult.ok).toBe(true);
+    expect(summonResult.state.pendingTriggers).toHaveLength(1);
+    expect(summonResult.state.cards.find((card) => card.uid === triggerSource!.uid)?.location).toBe("hand");
+    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    const triggerResult = applyResponse(session, trigger!);
+
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.state.pendingTriggers).toHaveLength(0);
+    expect(triggerResult.state.cards.find((card) => card.uid === triggerSource!.uid)?.location).toBe("graveyard");
+    expect(triggerResult.state.log.some((entry) => entry.action === "trigger" && entry.detail === "on-normal-summon")).toBe(true);
+    expect(triggerResult.state.log.some((entry) => entry.detail.includes("Normal Summoned"))).toBe(true);
   });
 });

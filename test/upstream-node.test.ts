@@ -296,7 +296,14 @@ describe("Node upstream workspace loader", () => {
 
     const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.label.includes("Card 100"));
     expect(summon).toBeTruthy();
-    const result = applyResponse(session, summon!);
+    const summonResult = applyResponse(session, summon!);
+
+    expect(summonResult.ok).toBe(true);
+    expect(summonResult.state.pendingTriggers).toHaveLength(1);
+    expect(summonResult.state.cards.find((card) => card.code === "300")?.location).toBe("hand");
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("summon trigger resolved");

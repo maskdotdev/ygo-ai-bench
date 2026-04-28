@@ -16,6 +16,7 @@ import type {
   DuelResponse,
   DuelSession,
   DuelState,
+  PendingTrigger,
   PlayerId,
   PublicDuelCard,
   PublicDuelState,
@@ -44,6 +45,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     cards: [],
     effects: [],
     chain: [],
+    pendingTriggers: [],
     usedCountKeys: [],
     log: [],
     options: {
@@ -91,6 +93,14 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   const { state } = session;
   if (state.status !== "awaiting" || state.waitingFor !== player) return [];
   const actions: DuelAction[] = [];
+  if (state.pendingTriggers.length) {
+    for (const trigger of state.pendingTriggers.filter((candidate) => candidate.player === player)) {
+      const source = findCard(state, trigger.sourceUid);
+      if (!source) continue;
+      actions.push({ type: "activateTrigger", player, triggerId: trigger.id, uid: source.uid, effectId: trigger.effectId, label: `${source.name}: ${trigger.effectId}` });
+    }
+    return actions;
+  }
   const hand = getCards(state, player, "hand");
   if (state.phase === "main1" || state.phase === "main2") {
     if (state.players[player].normalSummonAvailable) {
@@ -127,6 +137,7 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
     if (response.type === "normalSummon") normalSummon(session.state, response.player, response.uid);
     else if (response.type === "setSpellTrap") setSpellTrap(session.state, response.player, response.uid);
     else if (response.type === "activateEffect") activateEffect(session, response.player, response.uid, response.effectId);
+    else if (response.type === "activateTrigger") activatePendingTrigger(session, response.player, response.triggerId);
     else if (response.type === "changePhase") changePhase(session.state, response.player, response.phase);
     else if (response.type === "endTurn") endTurn(session.state, response.player);
     return result(session, true);
@@ -150,6 +161,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
     },
     cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
     chain: state.chain.map((link) => ({ ...link })),
+    pendingTriggers: state.pendingTriggers.map((trigger) => ({ ...trigger })),
     log: state.log.map((entry) => ({ ...entry })),
   };
 }
@@ -166,6 +178,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       cards: session.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids] })),
       effects: [],
       chain: session.state.chain.map((link) => ({ ...link })),
+      pendingTriggers: session.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       usedCountKeys: [...session.state.usedCountKeys],
       log: session.state.log.map((entry) => ({ ...entry })),
     },
@@ -185,6 +198,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       cards: snapshot.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids] })),
       effects: [],
       chain: snapshot.state.chain.map((link) => ({ ...link })),
+      pendingTriggers: snapshot.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       usedCountKeys: [...snapshot.state.usedCountKeys],
       log: snapshot.state.log.map((entry) => ({ ...entry })),
     },
@@ -239,7 +253,7 @@ function normalSummon(state: DuelState, player: PlayerId, uid: string): void {
   card.position = "faceUpAttack";
   state.players[player].normalSummonAvailable = false;
   pushDuelLog(state, "normalSummon", player, card.name, "Normal Summoned from hand");
-  resolveTriggerEffects(state, "normalSummoned", card);
+  collectTriggerEffects(state, "normalSummoned", card);
 }
 
 function setSpellTrap(state: DuelState, player: PlayerId, uid: string): void {
@@ -265,6 +279,20 @@ function activateEffect(session: DuelSession, player: PlayerId, uid: string, eff
   if (effect.oncePerTurn) session.state.usedCountKeys.push(effectCountKey(effect));
   session.state.chain.pop();
   session.state.status = "awaiting";
+}
+
+function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
+  const triggerIndex = session.state.pendingTriggers.findIndex((candidate) => candidate.id === triggerId && candidate.player === player);
+  if (triggerIndex < 0) throw new Error(`Trigger ${triggerId} is not pending for player ${player}`);
+  const [trigger] = session.state.pendingTriggers.splice(triggerIndex, 1);
+  if (!trigger) throw new Error(`Trigger ${triggerId} is not pending`);
+  const effect = session.state.effects.find((candidate) => candidate.sourceUid === trigger.sourceUid && candidate.id === trigger.effectId);
+  if (!effect) throw new Error(`Effect ${trigger.effectId} is not registered`);
+  const source = findCard(session.state, trigger.sourceUid);
+  const eventCard = findCard(session.state, trigger.eventCardUid);
+  if (!source || !eventCard) throw new Error(`Trigger ${triggerId} lost its source or event card`);
+  resolveEffect(session.state, effect, source, trigger.player, trigger.eventName, eventCard, "trigger");
+  session.state.waitingFor = session.state.pendingTriggers[0]?.player ?? session.state.turnPlayer;
 }
 
 function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void {
@@ -311,7 +339,7 @@ function createEffectContext(state: DuelState, source: DuelCardInstance, player:
   };
 }
 
-function resolveTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard: DuelCardInstance): void {
+function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard: DuelCardInstance): void {
   for (const effect of state.effects) {
     if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
     if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(effect))) continue;
@@ -319,16 +347,33 @@ function resolveTriggerEffects(state: DuelState, eventName: DuelEventName, event
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createEffectContext(state, source, effect.controller, eventName, eventCard);
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
-    if (effect.cost && !effect.cost(ctx)) continue;
-    if (effect.target && !effect.target(ctx)) continue;
-    state.chain.push({ id: `chain-${state.log.length + 1}`, player: effect.controller, sourceUid: source.uid, effectId: effect.id });
-    pushDuelLog(state, "trigger", effect.controller, source.name, effect.id);
-    state.status = "resolving";
-    effect.operation(ctx);
-    if (effect.oncePerTurn) state.usedCountKeys.push(effectCountKey(effect));
-    state.chain.pop();
-    state.status = "awaiting";
+    state.pendingTriggers.push(createPendingTrigger(state, effect, source, eventName, eventCard));
   }
+  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+}
+
+function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard: DuelCardInstance): PendingTrigger {
+  return {
+    id: `trigger-${state.log.length + 1}-${state.pendingTriggers.length + 1}`,
+    player: effect.controller,
+    sourceUid: source.uid,
+    effectId: effect.id,
+    eventName,
+    eventCardUid: eventCard.uid,
+  };
+}
+
+function resolveEffect(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId, eventName: DuelEventName | undefined, eventCard: DuelCardInstance | undefined, logAction: string): void {
+  const ctx = createEffectContext(state, source, player, eventName, eventCard);
+  if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
+  if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
+  state.chain.push({ id: `chain-${state.log.length + 1}`, player, sourceUid: source.uid, effectId: effect.id });
+  pushDuelLog(state, logAction, player, source.name, effect.id);
+  state.status = "resolving";
+  effect.operation(ctx);
+  if (effect.oncePerTurn) state.usedCountKeys.push(effectCountKey(effect));
+  state.chain.pop();
+  state.status = "awaiting";
 }
 
 function getCards(state: DuelState, player: PlayerId, location: DuelLocation): DuelCardInstance[] {
@@ -367,6 +412,7 @@ function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (a.type !== b.type || a.player !== b.player) return false;
   if ("uid" in a && "uid" in b && a.uid !== b.uid) return false;
   if (a.type === "activateEffect" && b.type === "activateEffect" && a.effectId !== b.effectId) return false;
+  if (a.type === "activateTrigger" && b.type === "activateTrigger" && a.triggerId !== b.triggerId) return false;
   if (a.type === "changePhase" && b.type === "changePhase" && a.phase !== b.phase) return false;
   return true;
 }

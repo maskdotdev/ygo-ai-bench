@@ -91,6 +91,15 @@ export interface ChainLink {
   effectId: string;
 }
 
+export interface PendingTrigger {
+  id: string;
+  player: PlayerId;
+  sourceUid: string;
+  effectId: string;
+  eventName: DuelEventName;
+  eventCardUid: string;
+}
+
 export interface DuelState {
   id: string;
   seed: string;
@@ -102,6 +111,7 @@ export interface DuelState {
   cards: DuelCardInstance[];
   effects: DuelEffectDefinition[];
   chain: ChainLink[];
+  pendingTriggers: PendingTrigger[];
   usedCountKeys: string[];
   waitingFor?: PlayerId;
   log: DuelLogEntry[];
@@ -119,6 +129,7 @@ export type DuelAction =
   | { type: "normalSummon"; player: PlayerId; uid: string; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
+  | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
   | { type: "changePhase"; player: PlayerId; phase: DuelPhase; label: string }
   | { type: "endTurn"; player: PlayerId; label: string };
 
@@ -148,6 +159,7 @@ export interface PublicDuelState {
   players: Record<PlayerId, DuelPlayerState>;
   cards: PublicDuelCard[];
   chain: ChainLink[];
+  pendingTriggers: PendingTrigger[];
   log: DuelLogEntry[];
 }
 
