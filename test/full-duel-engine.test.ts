@@ -916,6 +916,53 @@ describe("full duel engine API", () => {
     expect(result.state.log.some((entry) => entry.action === "destroy" && entry.card === "Opponent Monster")).toBe(true);
   });
 
+  it("collects battle destruction trigger effects", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["500", "200"] },
+      1: { main: ["400", "200"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const target = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    expect(attacker).toBeTruthy();
+    expect(target).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    specialSummonDuelCard(session.state, target!.uid, 1);
+    registerEffect(session, {
+      id: "battle-destroyed-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 1,
+      event: "trigger",
+      triggerEvent: "battleDestroyed",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Battle destroyed ${ctx.eventCard?.name}`);
+      },
+    });
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.targetUid === target!.uid);
+    expect(attack).toBeTruthy();
+    const attackResult = applyResponse(session, attack!);
+
+    expect(attackResult.ok).toBe(true);
+    expect(attackResult.state.pendingTriggers).toHaveLength(1);
+    expect(attackResult.state.pendingTriggers[0]).toMatchObject({ eventName: "battleDestroyed", eventCardUid: target!.uid });
+
+    const trigger = getDuelLegalActions(session, 1).find((action) => action.type === "activateTrigger" && action.effectId === "battle-destroyed-trigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.log.some((entry) => entry.detail === "Battle destroyed Opponent Monster")).toBe(true);
+  });
+
   it("resolves defense-position battles without destroying the attacker", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

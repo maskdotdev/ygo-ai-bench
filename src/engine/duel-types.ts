@@ -5,7 +5,16 @@ export type DuelStatus = "setup" | "awaiting" | "resolving" | "ended";
 export type CardPosition = "faceDownDefense" | "faceUpAttack" | "faceUpDefense" | "faceDown";
 export type DuelLocation = "deck" | "hand" | "monsterZone" | "spellTrapZone" | "graveyard" | "banished" | "extraDeck";
 export type DuelCardKind = "monster" | "spell" | "trap" | "extra";
-export type DuelEventName = "normalSummoned" | "specialSummoned" | "activated" | "sentToGraveyard" | "banished" | "phaseChanged" | "turnStarted";
+export type DuelEventName =
+  | "normalSummoned"
+  | "specialSummoned"
+  | "activated"
+  | "sentToGraveyard"
+  | "banished"
+  | "phaseChanged"
+  | "turnStarted"
+  | "attackDeclared"
+  | "battleDestroyed";
 
 export interface DuelOptions {
   seed?: string | number;
@@ -123,6 +132,10 @@ export interface DuelState {
   pendingTriggers: PendingTrigger[];
   usedCountKeys: string[];
   attacksDeclared: string[];
+  currentAttack?: {
+    attackerUid: string;
+    targetUid?: string;
+  };
   waitingFor?: PlayerId;
   log: DuelLogEntry[];
   options: Required<Pick<DuelOptions, "startingLifePoints" | "startingHandSize" | "drawPerTurn">>;

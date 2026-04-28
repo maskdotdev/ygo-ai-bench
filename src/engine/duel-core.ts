@@ -198,6 +198,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       pendingTriggers: session.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       usedCountKeys: [...session.state.usedCountKeys],
       attacksDeclared: [...session.state.attacksDeclared],
+      ...(session.state.currentAttack === undefined ? {} : { currentAttack: { ...session.state.currentAttack } }),
       log: session.state.log.map((entry) => ({ ...entry })),
     },
   };
@@ -220,6 +221,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       pendingTriggers: snapshot.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       usedCountKeys: [...snapshot.state.usedCountKeys],
       attacksDeclared: [...snapshot.state.attacksDeclared],
+      ...(snapshot.state.currentAttack === undefined ? {} : { currentAttack: { ...snapshot.state.currentAttack } }),
       log: snapshot.state.log.map((entry) => ({ ...entry })),
     },
   };
@@ -328,14 +330,17 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   }
 
   state.attacksDeclared.push(attacker.uid);
+  state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
   if (!target) {
     const damage = getBattleAttack(attacker);
     pushDuelLog(state, "attack", player, attacker.name, "Direct attack");
+    collectTriggerEffects(state, "attackDeclared", attacker);
     damageDuelPlayer(state, otherPlayer(player), damage);
     return;
   }
 
   pushDuelLog(state, "attack", player, attacker.name, `Attacked ${target.name}`);
+  collectTriggerEffects(state, "attackDeclared", attacker);
   resolveBattle(state, attacker, target);
 }
 
@@ -450,6 +455,7 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
   if (phaseOrder.indexOf(phase) <= phaseOrder.indexOf(state.phase)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
   state.phase = phase;
   if (phase === "battle") state.attacksDeclared = [];
+  else delete state.currentAttack;
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
   collectTriggerEffects(state, "phaseChanged");
 }
@@ -461,6 +467,7 @@ function endTurn(state: DuelState, player: PlayerId): void {
   state.phase = "draw";
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
+  delete state.currentAttack;
   state.players[state.turnPlayer].normalSummonAvailable = true;
   draw(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");
   state.phase = "main1";
@@ -518,21 +525,26 @@ function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: Due
 function resolveAttackPositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetAttack: number): void {
   if (attackerAttack > targetAttack) {
     destroyDuelCard(state, target.uid, target.controller);
+    collectTriggerEffects(state, "battleDestroyed", target);
     damageDuelPlayer(state, target.controller, attackerAttack - targetAttack);
     return;
   }
   if (attackerAttack < targetAttack) {
     destroyDuelCard(state, attacker.uid, attacker.controller);
+    collectTriggerEffects(state, "battleDestroyed", attacker);
     damageDuelPlayer(state, attacker.controller, targetAttack - attackerAttack);
     return;
   }
   destroyDuelCard(state, attacker.uid, attacker.controller);
   destroyDuelCard(state, target.uid, target.controller);
+  collectTriggerEffects(state, "battleDestroyed", attacker);
+  collectTriggerEffects(state, "battleDestroyed", target);
 }
 
 function resolveDefensePositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetDefense: number): void {
   if (attackerAttack > targetDefense) {
     destroyDuelCard(state, target.uid, target.controller);
+    collectTriggerEffects(state, "battleDestroyed", target);
     return;
   }
   if (attackerAttack < targetDefense) {

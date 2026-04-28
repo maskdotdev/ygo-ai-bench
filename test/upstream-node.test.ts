@@ -768,4 +768,72 @@ describe("Node upstream workspace loader", () => {
     expect(result.state.players[1].lifePoints).toBe(250);
     expect(host.messages).toEqual(expect.arrayContaining(["lp before 8000", "damage 1200", "lp after damage 6800", "recover 300", "lp final 250"]));
   });
+
+  it("lets Lua attack triggers inspect the attacker and attack target", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c300.lua"),
+      `
+      c300 = {}
+      c300.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_ATTACK_ANNOUNCE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          local a = Duel.GetAttacker()
+          local t = Duel.GetAttackTarget()
+          Debug.Message("attack " .. a:GetCode() .. " -> " .. t:GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows(
+      [
+        { id: 100, type: 1, atk: 1800, def: 1200 },
+        { id: 300, type: 1, atk: 0, def: 0 },
+        { id: 400, type: 1, atk: 1000, def: 1000 },
+      ],
+      [],
+    );
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "100"] },
+      1: { main: ["300", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(target).toBeTruthy();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    expect(host.loadCardScript(300, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid);
+    expect(attack).toBeTruthy();
+    const attackResult = applyResponse(session, attack!);
+    expect(attackResult.ok).toBe(true);
+    expect(attackResult.state.pendingTriggers).toHaveLength(1);
+
+    const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("attack 100 -> 400");
+  });
 });

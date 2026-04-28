@@ -136,6 +136,8 @@ function installConstants(L: unknown): void {
     EVENT_SUMMON_SUCCESS: 0x40,
     EVENT_SPSUMMON_SUCCESS: 0x80,
     EVENT_TO_GRAVE: 0x400,
+    EVENT_ATTACK_ANNOUNCE: 1130,
+    EVENT_BATTLE_DESTROYED: 1140,
     REASON_EFFECT: 0x40,
     REASON_DESTROY: 0x1,
     RESET_EVENT: 0x1000,
@@ -210,6 +212,26 @@ function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetCurrentChain"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const attackerUid = session.state.currentAttack?.attackerUid;
+    if (!attackerUid) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardTable(state, attackerUid);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetAttacker"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const targetUid = session.state.currentAttack?.targetUid;
+    if (!targetUid) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardTable(state, targetUid);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetAttackTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const target = lua.lua_isnumber(state, 1) ? session.state.chain[lua.lua_tointeger(state, 1) - 1] : session.state.chain[session.state.chain.length - 1];
     if (!target) {
@@ -642,6 +664,8 @@ function triggerEventFromCode(code: number | undefined): DuelEventName | undefin
   if (code === 0x40) return "normalSummoned";
   if (code === 0x80) return "specialSummoned";
   if (code === 0x400) return "sentToGraveyard";
+  if (code === 1130) return "attackDeclared";
+  if (code === 1140) return "battleDestroyed";
   return undefined;
 }
 
