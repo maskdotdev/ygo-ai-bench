@@ -18,10 +18,20 @@ import {
   moveDuelCard,
   xyzSummonDuelCard,
 } from "./duel-core.js";
+import { pushCardTable } from "./lua-card-api.js";
+import { pushGroupTable } from "./lua-group-api.js";
+import {
+  locationsFromMask,
+  positionFromMask,
+  readCardUid,
+  readGroupUids,
+  readOptionalFunctionRef,
+  releaseOptionalFunctionRef,
+} from "./lua-api-utils.js";
 import { shuffle } from "./rng.js";
 import type { CardPosition, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
-const { lua, lauxlib, to_luastring } = fengari;
+const { lua, to_luastring } = fengari;
 
 export interface LuaDuelApiHostState {
   messages: string[];
@@ -413,114 +423,9 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, summonType: "Fusi
   return 1;
 }
 
-function pushCardTable(L: unknown, uid: string): void {
-  lua.lua_newtable(L);
-  lua.lua_pushliteral(L, uid);
-  lua.lua_setfield(L, -2, to_luastring("__duel_uid"));
-  for (const fieldName of [
-    "RegisterEffect",
-    "GetCode",
-    "IsCode",
-    "IsOriginalCode",
-    "IsSetCard",
-    "GetType",
-    "IsType",
-    "GetAttack",
-    "IsAttack",
-    "GetDefense",
-    "IsDefense",
-    "GetLevel",
-    "IsLevel",
-    "GetRace",
-    "IsRace",
-    "GetAttribute",
-    "IsAttribute",
-    "IsFaceup",
-    "IsFacedown",
-    "IsPosition",
-    "IsAttackPos",
-    "IsDefensePos",
-    "IsLocation",
-    "IsControler",
-    "IsAbleToGrave",
-    "IsAbleToHand",
-    "IsAbleToDeck",
-    "IsAbleToRemove",
-    "IsAbleToExtra",
-  ]) {
-    copyGlobalFunctionToField(L, "Card", fieldName);
-  }
-}
-
-function pushGroupTable(L: unknown, uids: string[]): void {
-  lua.lua_newtable(L);
-  lua.lua_newtable(L);
-  for (const [index, uid] of uids.entries()) {
-    lua.lua_pushliteral(L, uid);
-    lua.lua_rawseti(L, -2, index + 1);
-  }
-  lua.lua_setfield(L, -2, to_luastring("__group_uids"));
-  copyGlobalFunctionToField(L, "Group", "GetFirst");
-  copyGlobalFunctionToField(L, "Group", "GetNext");
-  copyGlobalFunctionToField(L, "Group", "GetCount");
-  copyGlobalFunctionToField(L, "Group", "AddCard");
-  copyGlobalFunctionToField(L, "Group", "Merge");
-  copyGlobalFunctionToField(L, "Group", "RemoveCard");
-  copyGlobalFunctionToField(L, "Group", "IsContains");
-  copyGlobalFunctionToField(L, "Group", "Filter");
-}
-
-function copyGlobalFunctionToField(L: unknown, tableName: string, fieldName: string): void {
-  lua.lua_getglobal(L, to_luastring(tableName));
-  lua.lua_getfield(L, -1, to_luastring(fieldName));
-  lua.lua_setfield(L, -3, to_luastring(fieldName));
-  lua.lua_pop(L, 1);
-}
-
-function readCardUid(L: unknown, index: number): string | undefined {
-  if (!lua.lua_istable(L, index)) return undefined;
-  return readTableStringField(L, index, "__duel_uid");
-}
-
-function readGroupUids(L: unknown, index: number): string[] {
-  if (!lua.lua_istable(L, index)) return [];
-  lua.lua_getfield(L, index, to_luastring("__group_uids"));
-  if (!lua.lua_istable(L, -1)) {
-    lua.lua_pop(L, 1);
-    return [];
-  }
-  const count = lua.lua_rawlen(L, -1);
-  const uids: string[] = [];
-  for (let luaIndex = 1; luaIndex <= count; luaIndex += 1) {
-    lua.lua_rawgeti(L, -1, luaIndex);
-    const uid = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) : undefined;
-    if (uid) uids.push(uid);
-    lua.lua_pop(L, 1);
-  }
-  lua.lua_pop(L, 1);
-  return uids;
-}
-
 function readCardOrGroupUids(L: unknown, index: number): string[] {
   const cardUid = readCardUid(L, index);
   return cardUid ? [cardUid] : readGroupUids(L, index);
-}
-
-function readTableStringField(L: unknown, index: number, fieldName: string): string | undefined {
-  lua.lua_getfield(L, index, to_luastring(fieldName));
-  const value = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) : undefined;
-  lua.lua_pop(L, 1);
-  return value;
-}
-
-function readOptionalFunctionRef(L: unknown, index: number): number | undefined {
-  if (!lua.lua_isfunction(L, index)) return undefined;
-  lua.lua_pushvalue(L, index);
-  return lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX);
-}
-
-function releaseOptionalFunctionRef(L: unknown, ref: number | undefined): void {
-  if (ref !== undefined) lauxlib.luaL_unref(L, lua.LUA_REGISTRYINDEX, ref);
 }
 
 function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefined): boolean {
@@ -590,25 +495,6 @@ function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: 
     .filter((card) => card.controller === player && locations.includes(card.location))
     .sort((a, b) => a.sequence - b.sequence)
     .map((card) => card.uid);
-}
-
-function locationsFromMask(mask: number): DuelLocation[] {
-  const locations: DuelLocation[] = [];
-  if ((mask & 0x01) !== 0) locations.push("deck");
-  if ((mask & 0x02) !== 0) locations.push("hand");
-  if ((mask & 0x04) !== 0) locations.push("monsterZone");
-  if ((mask & 0x08) !== 0) locations.push("spellTrapZone");
-  if ((mask & 0x10) !== 0) locations.push("graveyard");
-  if ((mask & 0x20) !== 0) locations.push("banished");
-  if ((mask & 0x40) !== 0) locations.push("extraDeck");
-  return locations;
-}
-
-function positionFromMask(mask: number): CardPosition | undefined {
-  if ((mask & 0x1) !== 0) return "faceUpAttack";
-  if ((mask & 0x4) !== 0) return "faceUpDefense";
-  if ((mask & 0x8) !== 0) return "faceDownDefense";
-  return undefined;
 }
 
 function positionMaskFromPosition(position: CardPosition): number {
