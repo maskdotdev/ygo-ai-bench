@@ -219,6 +219,15 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   return card;
 }
 
+export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+  const card = moveDuelCard(state, uid, "monsterZone", controller);
+  card.position = "faceUpAttack";
+  card.faceUp = true;
+  pushDuelLog(state, "specialSummon", card.controller, card.name, "Special Summoned");
+  collectTriggerEffects(state, "specialSummoned", card);
+  return card;
+}
+
 function instantiateDeck(session: DuelSession, player: PlayerId, location: DuelLocation, codes: string[]): void {
   for (const [index, code] of codes.entries()) {
     const data = session.cardReader(String(code)) ?? fallbackCardReader(String(code));

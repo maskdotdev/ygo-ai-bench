@@ -16,5 +16,6 @@ export {
   serializeDuel,
   restoreDuel,
   moveDuelCard,
+  specialSummonDuelCard,
   type CreateDuelOptions,
 } from "./duel-core.js";

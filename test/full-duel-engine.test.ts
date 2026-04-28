@@ -9,6 +9,7 @@ import {
   registerEffect,
   restoreDuel,
   serializeDuel,
+  specialSummonDuelCard,
   startDuel,
 } from "../src/engine/index.js";
 import type { DuelCardData } from "../src/engine/index.js";
@@ -333,5 +334,58 @@ describe("full duel engine API", () => {
     expect(turnResult.state.turn).toBe(2);
     expect(turnResult.state.pendingTriggers).toHaveLength(1);
     expect(turnResult.state.pendingTriggers[0]).toMatchObject({ player: 1, eventName: "turnStarted", effectId: "on-turn-start" });
+  });
+
+  it("collects trigger effects after a special summon operation", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(source).toBeTruthy();
+    expect(summoned).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "summon-from-hand",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        specialSummonDuelCard(ctx.duel, summoned!.uid, ctx.player);
+      },
+    });
+    registerEffect(session, {
+      id: "on-special-summon",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Saw ${ctx.eventCard?.name ?? "missing card"} Special Summoned`);
+      },
+    });
+
+    const activation = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "summon-from-hand");
+    expect(activation).toBeTruthy();
+    const activationResult = applyResponse(session, activation!);
+
+    expect(activationResult.ok).toBe(true);
+    expect(activationResult.state.cards.find((card) => card.uid === summoned!.uid)?.location).toBe("monsterZone");
+    expect(activationResult.state.pendingTriggers).toHaveLength(1);
+    expect(activationResult.state.pendingTriggers[0]).toMatchObject({ eventName: "specialSummoned", eventCardUid: summoned!.uid });
+    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "on-special-summon");
+    expect(trigger).toBeTruthy();
+    const triggerResult = applyResponse(session, trigger!);
+
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.state.log.some((entry) => entry.detail.includes("Second Monster Special Summoned"))).toBe(true);
   });
 });
