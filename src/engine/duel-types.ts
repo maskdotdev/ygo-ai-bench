@@ -36,6 +36,10 @@ export interface DuelCardData {
   defense?: number;
   setcodes?: number[];
   fusionMaterials?: string[];
+  synchroMaterials?: {
+    tuner: string;
+    nonTuners: string[];
+  };
 }
 
 export interface DuelCardInstance {
@@ -156,6 +160,7 @@ export type DuelAction =
   | { type: "normalSummon"; player: PlayerId; uid: string; label: string }
   | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; label: string }
   | { type: "fusionSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
+  | { type: "synchroSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
   | { type: "setMonster"; player: PlayerId; uid: string; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }

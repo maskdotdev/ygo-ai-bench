@@ -21,6 +21,7 @@ export {
   tributeSummonDuelCard,
   flipSummonDuelCard,
   fusionSummonDuelCard,
+  synchroSummonDuelCard,
   sendDuelCardToGraveyard,
   destroyDuelCard,
   banishDuelCard,

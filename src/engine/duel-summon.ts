@@ -90,6 +90,29 @@ export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: st
   return card;
 }
 
+export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
+  const card = requireControlledCard(state, player, uid, "extraDeck");
+  const requiredMaterials = synchroMaterialCodes(card);
+  if (!requiredMaterials) throw new Error(`${card.name} does not define synchro materials`);
+  if (!sameStringMultiset(materialUids.map((materialUid) => requireControlledCard(state, player, materialUid, "monsterZone").code), requiredMaterials)) {
+    throw new Error(`${card.name} synchro materials are not legal`);
+  }
+  requireZoneSpace(state, player, "monsterZone");
+
+  for (const materialUid of materialUids) {
+    const material = moveDuelCard(state, materialUid, "graveyard", player);
+    pushDuelLog(state, "synchroMaterial", player, material.name, `Used for ${card.name}`);
+    collectEvent("sentToGraveyard", material);
+  }
+
+  moveDuelCard(state, uid, "monsterZone", player);
+  card.position = "faceUpAttack";
+  card.faceUp = true;
+  pushDuelLog(state, "synchroSummon", player, card.name, `Synchro Summoned with ${materialUids.length} material(s)`);
+  collectEvent("specialSummoned", card);
+  return card;
+}
+
 export function normalSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {
   if (!state.players[player].normalSummonAvailable || !hasZoneSpace(state, player, "monsterZone")) return [];
   const actions: DuelAction[] = [];
@@ -134,6 +157,21 @@ export function fusionSummonActions(state: DuelState, player: PlayerId): DuelAct
   return actions;
 }
 
+export function synchroSummonActions(state: DuelState, player: PlayerId): DuelAction[] {
+  if (!hasZoneSpace(state, player, "monsterZone")) return [];
+  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card));
+  const actions: DuelAction[] = [];
+  for (const card of getCards(state, player, "extraDeck").filter((candidate) => candidate.data.synchroMaterials)) {
+    const requiredCodes = synchroMaterialCodes(card);
+    if (!requiredCodes) continue;
+    const materialUids = findMaterialUids(materialPool, requiredCodes);
+    if (!materialUids) continue;
+    const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
+    actions.push({ type: "synchroSummon", player, uid: card.uid, materialUids, label: `Synchro Summon ${card.name} using ${materialNames}` });
+  }
+  return actions;
+}
+
 function tributeCountForNormalSummon(card: DuelCardInstance): number {
   const level = card.data.level ?? 4;
   if (level >= 7) return 2;
@@ -157,6 +195,10 @@ function tributeCombinations(cards: DuelCardInstance[], count: number): string[]
 }
 
 function findFusionMaterialUids(cards: DuelCardInstance[], requiredCodes: string[]): string[] | undefined {
+  return findMaterialUids(cards, requiredCodes);
+}
+
+function findMaterialUids(cards: DuelCardInstance[], requiredCodes: string[]): string[] | undefined {
   const used = new Set<string>();
   const selected: string[] = [];
   for (const code of requiredCodes) {
@@ -166,6 +208,11 @@ function findFusionMaterialUids(cards: DuelCardInstance[], requiredCodes: string
     selected.push(material.uid);
   }
   return selected;
+}
+
+function synchroMaterialCodes(card: DuelCardInstance): string[] | undefined {
+  const materials = card.data.synchroMaterials;
+  return materials ? [materials.tuner, ...materials.nonTuners] : undefined;
 }
 
 function sameStringMultiset(actual: string[], expected: string[]): boolean {

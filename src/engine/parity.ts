@@ -79,7 +79,7 @@ function resolveScriptedStep(step: ScriptedDuelStep, legal: DuelAction[], cards:
       if (action.type !== "tributeSummon" || !sameStringSet(action.tributeUids, selector.tributeUids)) return false;
     }
     if (selector.materialUids) {
-      if (action.type !== "fusionSummon" || !sameStringSet(action.materialUids, selector.materialUids)) return false;
+      if ((action.type !== "fusionSummon" && action.type !== "synchroSummon") || !sameStringSet(action.materialUids, selector.materialUids)) return false;
     }
     if (selector.position) {
       if (action.type !== "changePosition" || action.position !== selector.position) return false;
@@ -122,6 +122,7 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "declineTrigger" && response.type === "declineTrigger" && action.triggerId !== response.triggerId) return false;
   if (action.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringSet(action.tributeUids, response.tributeUids)) return false;
   if (action.type === "fusionSummon" && response.type === "fusionSummon" && !sameStringSet(action.materialUids, response.materialUids)) return false;
+  if (action.type === "synchroSummon" && response.type === "synchroSummon" && !sameStringSet(action.materialUids, response.materialUids)) return false;
   if (action.type === "changePosition" && response.type === "changePosition" && action.position !== response.position) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.targetUid !== response.targetUid) return false;
