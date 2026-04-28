@@ -80,9 +80,12 @@ export interface DuelEffectContext {
   player: PlayerId;
   eventCard?: DuelCardInstance;
   eventName?: DuelEventName;
+  targetUids: string[];
   log(detail: string): void;
   moveCard(uid: string, to: DuelLocation, controller?: PlayerId): DuelCardInstance;
   negateChainLink(chainLinkId: string): boolean;
+  setTargets(uids: string[]): void;
+  getTargets(): DuelCardInstance[];
 }
 
 export interface ChainLink {
@@ -92,6 +95,7 @@ export interface ChainLink {
   effectId: string;
   eventName?: DuelEventName;
   eventCardUid?: string;
+  targetUids?: string[];
   negated?: boolean;
 }
 

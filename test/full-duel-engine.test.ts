@@ -148,6 +148,66 @@ describe("full duel engine API", () => {
     expect(quickLog!.step).toBeLessThan(originalLog!.step);
   });
 
+  it("persists targets on delayed chain links", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "500");
+    const responseSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(source).toBeTruthy();
+    expect(target).toBeTruthy();
+    expect(responseSource).toBeTruthy();
+    registerEffect(session, {
+      id: "targeted-send",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      target(ctx) {
+        ctx.setTargets([target!.uid]);
+        return true;
+      },
+      operation(ctx) {
+        const [selected] = ctx.getTargets();
+        if (selected) ctx.moveCard(selected.uid, "graveyard", selected.controller);
+        ctx.log(`Resolved with ${ctx.targetUids.length} target`);
+      },
+    });
+    registerEffect(session, {
+      id: "target-response",
+      sourceUid: responseSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Response resolved before target");
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "targeted-send");
+    expect(action).toBeTruthy();
+    const opened = applyResponse(session, action!);
+
+    expect(opened.ok).toBe(true);
+    expect(opened.state.chain).toHaveLength(1);
+    expect(opened.state.chain[0]?.targetUids).toEqual([target!.uid]);
+    expect(opened.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("hand");
+
+    const response = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "target-response");
+    expect(response).toBeTruthy();
+    const resolved = applyResponse(session, response!);
+
+    expect(resolved.ok).toBe(true);
+    expect(resolved.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("graveyard");
+    expect(resolved.state.log.some((entry) => entry.detail === "Response resolved before target")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.detail === "Resolved with 1 target")).toBe(true);
+  });
+
   it("allows quick effects to negate earlier chain links", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
