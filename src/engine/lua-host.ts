@@ -254,8 +254,12 @@ function installDuelApi(L: unknown, session: DuelSession, hostState: LuaHostStat
     for (const uid of uids) {
       const card = session.state.cards.find((candidate) => candidate.uid === uid);
       if (!card) continue;
-      specialSummonDuelCard(session.state, uid, targetPlayer ?? card.controller);
-      moved += 1;
+      try {
+        specialSummonDuelCard(session.state, uid, targetPlayer ?? card.controller);
+        moved += 1;
+      } catch {
+        // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
+      }
     }
     lua.lua_pushinteger(state, moved);
     return 1;

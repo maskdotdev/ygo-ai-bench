@@ -109,13 +109,15 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   }
   const hand = getCards(state, player, "hand");
   if (state.phase === "main1" || state.phase === "main2") {
-    if (state.players[player].normalSummonAvailable) {
+    if (state.players[player].normalSummonAvailable && hasZoneSpace(state, player, "monsterZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
         actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
       }
     }
-    for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
-      actions.push({ type: "setSpellTrap", player, uid: card.uid, label: `Set ${card.name}` });
+    if (hasZoneSpace(state, player, "spellTrapZone")) {
+      for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
+        actions.push({ type: "setSpellTrap", player, uid: card.uid, label: `Set ${card.name}` });
+      }
     }
     for (const effect of state.effects) {
       if (effect.controller !== player) continue;
@@ -228,7 +230,11 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
 }
 
 export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
-  const card = moveDuelCard(state, uid, "monsterZone", controller);
+  const card = findCard(state, uid);
+  if (!card) throw new Error(`Card ${uid} is not in the duel`);
+  const summonController = controller ?? card.controller;
+  requireZoneSpace(state, summonController, "monsterZone");
+  moveDuelCard(state, uid, "monsterZone", summonController);
   card.position = "faceUpAttack";
   card.faceUp = true;
   pushDuelLog(state, "specialSummon", card.controller, card.name, "Special Summoned");
@@ -289,6 +295,7 @@ function normalSummon(state: DuelState, player: PlayerId, uid: string): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
+  requireZoneSpace(state, player, "monsterZone");
   moveDuelCard(state, uid, "monsterZone", player);
   card.position = "faceUpAttack";
   state.players[player].normalSummonAvailable = false;
@@ -299,6 +306,7 @@ function normalSummon(state: DuelState, player: PlayerId, uid: string): void {
 function setSpellTrap(state: DuelState, player: PlayerId, uid: string): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "spell" && card.kind !== "trap") throw new Error(`${card.name} is not a spell/trap`);
+  requireZoneSpace(state, player, "spellTrapZone");
   moveDuelCard(state, uid, "spellTrapZone", player);
   card.position = "faceDown";
   card.faceUp = false;
@@ -540,6 +548,15 @@ function requireControlledCard(state: DuelState, player: PlayerId, uid: string, 
 
 function nextSequence(state: DuelState, player: PlayerId, location: DuelLocation): number {
   return getCards(state, player, location).length;
+}
+
+function hasZoneSpace(state: DuelState, player: PlayerId, location: DuelLocation): boolean {
+  if (location !== "monsterZone" && location !== "spellTrapZone") return true;
+  return getCards(state, player, location).length < 5;
+}
+
+function requireZoneSpace(state: DuelState, player: PlayerId, location: DuelLocation): void {
+  if (!hasZoneSpace(state, player, location)) throw new Error(`${location} is full for player ${player}`);
 }
 
 function resequence(state: DuelState, player: PlayerId, location: DuelLocation): void {

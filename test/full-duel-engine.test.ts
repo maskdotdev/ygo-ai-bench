@@ -7,6 +7,7 @@ import {
   destroyDuelCard,
   getDuelLegalActions,
   loadDecks,
+  moveDuelCard,
   queryPublicState,
   registerEffect,
   restoreDuel,
@@ -812,5 +813,35 @@ describe("full duel engine API", () => {
     expect(state.cards.find((card) => card.uid === banished!.uid)?.location).toBe("banished");
     expect(state.log.some((entry) => entry.action === "destroy" && entry.card === "Normal Test Monster")).toBe(true);
     expect(state.log.some((entry) => entry.action === "banish" && entry.card === "Second Monster")).toBe(true);
+  });
+
+  it("hides normal summon actions when the monster zone is full", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "300", "300", "300", "500"] },
+      1: { main: ["400", "400", "400", "400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const handMonsters = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "monster");
+    for (const card of handMonsters.slice(0, 5)) moveDuelCard(session.state, card.uid, "monsterZone", 0);
+
+    const legal = getDuelLegalActions(session, 0);
+    expect(legal.some((action) => action.type === "normalSummon")).toBe(false);
+    expect(() => specialSummonDuelCard(session.state, handMonsters[5]!.uid, 0)).toThrow("monsterZone is full");
+  });
+
+  it("hides set actions when the spell/trap zone is full", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["200", "200", "200", "200", "200", "200"] },
+      1: { main: ["400", "400", "400", "400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const spells = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "spell");
+    for (const card of spells.slice(0, 5)) moveDuelCard(session.state, card.uid, "spellTrapZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "setSpellTrap")).toBe(false);
   });
 });
