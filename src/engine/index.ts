@@ -17,5 +17,6 @@ export {
   restoreDuel,
   moveDuelCard,
   specialSummonDuelCard,
+  sendDuelCardToGraveyard,
   type CreateDuelOptions,
 } from "./duel-core.js";

@@ -9,6 +9,7 @@ import {
   registerEffect,
   restoreDuel,
   serializeDuel,
+  sendDuelCardToGraveyard,
   specialSummonDuelCard,
   startDuel,
 } from "../src/engine/index.js";
@@ -387,5 +388,58 @@ describe("full duel engine API", () => {
 
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.state.log.some((entry) => entry.detail.includes("Second Monster Special Summoned"))).toBe(true);
+  });
+
+  it("collects trigger effects after a card is sent to the graveyard", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const sent = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(source).toBeTruthy();
+    expect(sent).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "send-card",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        sendDuelCardToGraveyard(ctx.duel, sent!.uid, ctx.player);
+      },
+    });
+    registerEffect(session, {
+      id: "on-sent",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "sentToGraveyard",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Saw ${ctx.eventCard?.name ?? "missing card"} sent`);
+      },
+    });
+
+    const activation = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "send-card");
+    expect(activation).toBeTruthy();
+    const activationResult = applyResponse(session, activation!);
+
+    expect(activationResult.ok).toBe(true);
+    expect(activationResult.state.cards.find((card) => card.uid === sent!.uid)?.location).toBe("graveyard");
+    expect(activationResult.state.pendingTriggers).toHaveLength(1);
+    expect(activationResult.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCardUid: sent!.uid });
+    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "on-sent");
+    expect(trigger).toBeTruthy();
+    const triggerResult = applyResponse(session, trigger!);
+
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.state.log.some((entry) => entry.detail.includes("Second Monster sent"))).toBe(true);
   });
 });

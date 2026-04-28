@@ -228,6 +228,13 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   return card;
 }
 
+export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+  const card = moveDuelCard(state, uid, "graveyard", controller);
+  pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
+  collectTriggerEffects(state, "sentToGraveyard", card);
+  return card;
+}
+
 function instantiateDeck(session: DuelSession, player: PlayerId, location: DuelLocation, codes: string[]): void {
   for (const [index, code] of codes.entries()) {
     const data = session.cardReader(String(code)) ?? fallbackCardReader(String(code));

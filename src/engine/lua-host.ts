@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { scriptFilenameForCard } from "./data-loaders.js";
-import { moveDuelCard, registerEffect, specialSummonDuelCard } from "./duel-core.js";
+import { registerEffect, sendDuelCardToGraveyard, specialSummonDuelCard } from "./duel-core.js";
 import type { DuelCardInstance, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -194,7 +194,7 @@ function installDuelApi(L: unknown, session: DuelSession, messages: string[]): v
     for (const uid of uids) {
       const card = session.state.cards.find((candidate) => candidate.uid === uid);
       if (!card) continue;
-      moveDuelCard(session.state, uid, "graveyard", card.controller);
+      sendDuelCardToGraveyard(session.state, uid, card.controller);
       moved += 1;
     }
     lua.lua_pushinteger(state, moved);
