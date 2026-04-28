@@ -58,6 +58,8 @@ describe("Node upstream workspace loader", () => {
         e:SetCountLimit(1)
         e:SetOperation(function(e,c)
           Debug.Message("lua ignition resolved")
+          Debug.Message("handler code " .. e:GetHandler():GetCode())
+          Debug.Message("handler player " .. e:GetHandlerPlayer())
         end)
         c:RegisterEffect(e)
       end
@@ -84,6 +86,8 @@ describe("Node upstream workspace loader", () => {
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("lua ignition resolved");
+    expect(host.messages).toContain("handler code 100");
+    expect(host.messages).toContain("handler player 0");
     expect(result.state.log.some((entry) => entry.detail.includes("Lua effect operation resolved"))).toBe(true);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect")).toBe(false);
   });
