@@ -63,6 +63,33 @@ export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
   return card;
 }
 
+export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
+  const card = requireControlledCard(state, player, uid, "extraDeck");
+  const requiredMaterials = card.data.fusionMaterials ?? [];
+  if (requiredMaterials.length === 0) throw new Error(`${card.name} does not define fusion materials`);
+  if (!sameStringMultiset(materialUids.map((materialUid) => requireControlledCard(state, player, materialUid).code), requiredMaterials)) {
+    throw new Error(`${card.name} fusion materials are not legal`);
+  }
+  requireZoneSpace(state, player, "monsterZone");
+
+  for (const materialUid of materialUids) {
+    const material = requireControlledCard(state, player, materialUid);
+    if (material.location !== "hand" && material.location !== "monsterZone") throw new Error(`${material.name} cannot be used as fusion material`);
+  }
+  for (const materialUid of materialUids) {
+    const material = moveDuelCard(state, materialUid, "graveyard", player);
+    pushDuelLog(state, "fusionMaterial", player, material.name, `Used for ${card.name}`);
+    collectEvent("sentToGraveyard", material);
+  }
+
+  moveDuelCard(state, uid, "monsterZone", player);
+  card.position = "faceUpAttack";
+  card.faceUp = true;
+  pushDuelLog(state, "fusionSummon", player, card.name, `Fusion Summoned with ${materialUids.length} material(s)`);
+  collectEvent("specialSummoned", card);
+  return card;
+}
+
 export function normalSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {
   if (!state.players[player].normalSummonAvailable || !hasZoneSpace(state, player, "monsterZone")) return [];
   const actions: DuelAction[] = [];
@@ -94,6 +121,19 @@ export function flipSummonActions(state: DuelState, player: PlayerId): DuelActio
     .map((card) => ({ type: "flipSummon", player, uid: card.uid, label: `Flip Summon ${card.name}` }));
 }
 
+export function fusionSummonActions(state: DuelState, player: PlayerId): DuelAction[] {
+  if (!hasZoneSpace(state, player, "monsterZone")) return [];
+  const materialPool = getCards(state, player, "hand").filter((card) => card.kind === "monster").concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card)));
+  const actions: DuelAction[] = [];
+  for (const card of getCards(state, player, "extraDeck").filter((candidate) => candidate.data.fusionMaterials?.length)) {
+    const materialUids = findFusionMaterialUids(materialPool, card.data.fusionMaterials ?? []);
+    if (!materialUids) continue;
+    const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
+    actions.push({ type: "fusionSummon", player, uid: card.uid, materialUids, label: `Fusion Summon ${card.name} using ${materialNames}` });
+  }
+  return actions;
+}
+
 function tributeCountForNormalSummon(card: DuelCardInstance): number {
   const level = card.data.level ?? 4;
   if (level >= 7) return 2;
@@ -114,6 +154,29 @@ function tributeCombinations(cards: DuelCardInstance[], count: number): string[]
     }
   }
   return results;
+}
+
+function findFusionMaterialUids(cards: DuelCardInstance[], requiredCodes: string[]): string[] | undefined {
+  const used = new Set<string>();
+  const selected: string[] = [];
+  for (const code of requiredCodes) {
+    const material = cards.find((card) => card.code === code && !used.has(card.uid));
+    if (!material) return undefined;
+    used.add(material.uid);
+    selected.push(material.uid);
+  }
+  return selected;
+}
+
+function sameStringMultiset(actual: string[], expected: string[]): boolean {
+  if (actual.length !== expected.length) return false;
+  const remaining = [...expected];
+  for (const value of actual) {
+    const index = remaining.indexOf(value);
+    if (index < 0) return false;
+    remaining.splice(index, 1);
+  }
+  return remaining.length === 0;
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {

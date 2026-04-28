@@ -26,6 +26,7 @@ import {
   startDuel,
   tributeSummonDuelCard,
   flipSummonDuelCard,
+  fusionSummonDuelCard,
 } from "../src/engine/index.js";
 import type { DuelCardData } from "../src/engine/index.js";
 
@@ -37,6 +38,7 @@ const cards: DuelCardData[] = [
   { code: "500", name: "Third Monster", kind: "monster", attack: 2400, defense: 2000 },
   { code: "600", name: "One Tribute Monster", kind: "monster", level: 6, attack: 2300, defense: 1800 },
   { code: "700", name: "Two Tribute Monster", kind: "monster", level: 7, attack: 2600, defense: 2100 },
+  { code: "900", name: "Fusion Test Monster", kind: "extra", attack: 2800, defense: 2200, fusionMaterials: ["100", "300"] },
 ];
 
 describe("full duel engine API", () => {
@@ -750,6 +752,100 @@ describe("full duel engine API", () => {
 
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.state.log.some((entry) => entry.detail.includes("Second Monster Special Summoned"))).toBe(true);
+  });
+
+  it("fusion summons from the extra deck using hand materials", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    expect(fusion).toBeTruthy();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("fusionSummon");
+    if (!action || action.type !== "fusionSummon") throw new Error("Expected fusion summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === fusion!.uid)?.position).toBe("faceUpAttack");
+    expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
+    expect(result.state.log.some((entry) => entry.action === "fusionSummon" && entry.card === "Fusion Test Monster")).toBe(true);
+  });
+
+  it("fusion summons using mixed hand and field materials and emits special summon triggers", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"], extra: ["900"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const fieldMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(fieldMaterial).toBeTruthy();
+    expect(fusion).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    moveDuelCard(session.state, fieldMaterial!.uid, "monsterZone", 0);
+    registerEffect(session, {
+      id: "fusion-special-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Fusion special summoned ${ctx.eventCard?.name}`);
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
+    expect(action).toBeTruthy();
+    const fusionResult = applyResponse(session, action!);
+
+    expect(fusionResult.ok).toBe(true);
+    expect(fusionResult.state.cards.find((card) => card.uid === fieldMaterial!.uid)?.location).toBe("graveyard");
+    expect(fusionResult.state.pendingTriggers).toHaveLength(1);
+    expect(fusionResult.state.pendingTriggers[0]).toMatchObject({ eventName: "specialSummoned", eventCardUid: fusion!.uid });
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "fusion-special-trigger");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.log.some((entry) => entry.detail === "Fusion special summoned Fusion Test Monster")).toBe(true);
+  });
+
+  it("does not expose fusion summon actions without all materials or with no monster zone space", () => {
+    const missing = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(missing, {
+      0: { main: ["100"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(missing);
+    expect(getDuelLegalActions(missing, 0).some((candidate) => candidate.type === "fusionSummon")).toBe(false);
+
+    const full = createDuel({ seed: 1, startingHandSize: 7, cardReader: createCardReader(cards) });
+    loadDecks(full, {
+      0: { main: ["100", "300", "500", "500", "500", "500", "500"], extra: ["900"] },
+      1: { main: ["400", "400", "400", "400", "400", "400", "400"] },
+    });
+    startDuel(full);
+    const blockers = queryPublicState(full).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "monster" && card.code === "500");
+    expect(blockers).toHaveLength(5);
+    for (const blocker of blockers) moveDuelCard(full.state, blocker.uid, "monsterZone", 0);
+    expect(getDuelLegalActions(full, 0).some((candidate) => candidate.type === "fusionSummon")).toBe(false);
+
+    const fusion = queryPublicState(full).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    const materials = queryPublicState(full).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(fusion).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    expect(() => fusionSummonDuelCard(full.state, 0, fusion!.uid, materials.map((card) => card.uid))).toThrow("monsterZone is full");
   });
 
   it("collects trigger effects after a card is sent to the graveyard", () => {

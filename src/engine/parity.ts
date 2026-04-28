@@ -78,6 +78,9 @@ function resolveScriptedStep(step: ScriptedDuelStep, legal: DuelAction[], cards:
     if (selector.tributeUids) {
       if (action.type !== "tributeSummon" || !sameStringSet(action.tributeUids, selector.tributeUids)) return false;
     }
+    if (selector.materialUids) {
+      if (action.type !== "fusionSummon" || !sameStringSet(action.materialUids, selector.materialUids)) return false;
+    }
     if (selector.position) {
       if (action.type !== "changePosition" || action.position !== selector.position) return false;
     }
@@ -118,6 +121,7 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "activateTrigger" && response.type === "activateTrigger" && action.triggerId !== response.triggerId) return false;
   if (action.type === "declineTrigger" && response.type === "declineTrigger" && action.triggerId !== response.triggerId) return false;
   if (action.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringSet(action.tributeUids, response.tributeUids)) return false;
+  if (action.type === "fusionSummon" && response.type === "fusionSummon" && !sameStringSet(action.materialUids, response.materialUids)) return false;
   if (action.type === "changePosition" && response.type === "changePosition" && action.position !== response.position) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.targetUid !== response.targetUid) return false;
@@ -132,6 +136,7 @@ function describeStep(step: ScriptedDuelStep): string {
     "code" in step && step.code ? `code=${step.code}` : undefined,
     "uid" in step && step.uid ? `uid=${step.uid}` : undefined,
     "tributeUids" in step && step.tributeUids ? `tributeUids=${step.tributeUids.join(",")}` : undefined,
+    "materialUids" in step && step.materialUids ? `materialUids=${step.materialUids.join(",")}` : undefined,
     "position" in step && step.position ? `position=${step.position}` : undefined,
     "attackerUid" in step && step.attackerUid ? `attackerUid=${step.attackerUid}` : undefined,
     "targetUid" in step && step.targetUid ? `targetUid=${step.targetUid}` : undefined,

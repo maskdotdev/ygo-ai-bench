@@ -20,6 +20,7 @@ export {
   specialSummonDuelCard,
   tributeSummonDuelCard,
   flipSummonDuelCard,
+  fusionSummonDuelCard,
   sendDuelCardToGraveyard,
   destroyDuelCard,
   banishDuelCard,

@@ -35,6 +35,7 @@ export interface DuelCardData {
   attack?: number;
   defense?: number;
   setcodes?: number[];
+  fusionMaterials?: string[];
 }
 
 export interface DuelCardInstance {
@@ -154,6 +155,7 @@ export type DuelCardReader = (code: string) => DuelCardData | undefined;
 export type DuelAction =
   | { type: "normalSummon"; player: PlayerId; uid: string; label: string }
   | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; label: string }
+  | { type: "fusionSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
   | { type: "setMonster"; player: PlayerId; uid: string; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
@@ -216,6 +218,7 @@ export interface ScriptedResponseSelector {
   code?: string;
   uid?: string;
   tributeUids?: string[];
+  materialUids?: string[];
   position?: CardPosition;
   attackerUid?: string;
   targetUid?: string;
