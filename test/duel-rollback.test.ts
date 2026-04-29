@@ -305,4 +305,32 @@ describe("duel rollback", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
     expect(session.state.log.some((entry) => entry.action === "fusionMaterial")).toBe(false);
   });
+
+  it("rolls back failed synchro summon material moves from responses", () => {
+    const { session, target: synchro, first: firstMaterial, blocked: blockedMaterial } = setupFailedMoveAfterFirstFixture({
+      seed: 89,
+      main: ["100", "300"],
+      extra: ["910"],
+      target: { location: "extraDeck", code: "910" },
+      first: { location: "hand", code: "100", moveTo: "monsterZone" },
+      blocked: { location: "hand", code: "300", moveTo: "monsterZone" },
+      block: { id: "cannot-send-second-synchro-material", code: 68, range: ["monsterZone"], firstMovedTo: "graveyard" },
+    });
+    expect(synchro).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("synchroSummon");
+    if (!action || action.type !== "synchroSummon") throw new Error("Expected synchro summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
+    expect(session.state.log.some((entry) => entry.action === "synchroMaterial")).toBe(false);
+  });
 });
