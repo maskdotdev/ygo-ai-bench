@@ -506,6 +506,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local group_excluded = Duel.GetMatchingGroup(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded)
       Debug.Message("group excluded count " .. group_excluded:GetCount())
       Debug.Message("group excluded matching count " .. Duel.GetMatchingGroupCount(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded))
+      Debug.Message("matching target alias count " .. Duel.GetMatchingTargetCount(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded))
+      Debug.Message("matching target alias group " .. Duel.GetMatchingTarget(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded):GetCount())
       Debug.Message("group excluded exists " .. tostring(Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 1, excluded)))
       Debug.Message("group excluded first " .. Duel.GetFirstMatchingCard(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded):GetCode())
       Debug.Message("group excluded selected " .. Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 1, 3, excluded):GetCount())
@@ -523,6 +525,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("first matching card 300");
     expect(host.messages).toContain("group excluded count 2");
     expect(host.messages).toContain("group excluded matching count 2");
+    expect(host.messages).toContain("matching target alias count 2");
+    expect(host.messages).toContain("matching target alias group 2");
     expect(host.messages).toContain("group excluded exists false");
     expect(host.messages).toContain("group excluded first 200");
     expect(host.messages).toContain("group excluded selected 2");

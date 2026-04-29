@@ -19,26 +19,22 @@ import { pushCardTable } from "./lua-card-api.js";
 import { duelReason } from "./duel-reasons.js";
 import { installDuelActivityApi } from "./lua-duel-activity-api.js";
 import { installDuelDeckApi } from "./lua-duel-deck-api.js";
-import { installDuelLocationApi } from "./lua-duel-location-api.js";
 import { installDuelLpApi } from "./lua-duel-lp-api.js";
 import { installDuelPlayerApi } from "./lua-duel-player-api.js";
+import { installDuelQueryApi } from "./lua-duel-query-api.js";
 import { installDuelReleaseApi } from "./lua-duel-release-api.js";
 import { installDuelTurnApi } from "./lua-duel-turn-api.js";
 import { pushGroupTable } from "./lua-group-api.js";
 import {
-  locationsFromMask,
   positionFromMask,
   readCardUid,
   readGroupUids,
-  readOptionalFunctionRef,
-  releaseOptionalFunctionRef,
 } from "./lua-api-utils.js";
 import type { CardPosition, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "./duel-types.js";
 
 const { lua, to_luastring } = fengari;
 
 type LuaCardMover = (state: DuelState, uid: string, controller?: PlayerId, reason?: number) => DuelCardInstance;
-type LuaFilterArgs = { start: number; count: number };
 
 export interface LuaDuelApiHostState {
   messages: string[];
@@ -127,7 +123,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelPlayerApi(L, session);
   installMoveHelpers(L, session, hostState);
   installSummonHelpers(L, session, hostState);
-  installQueryHelpers(L, session, hostState);
+  installDuelQueryApi(L, session, hostState);
   installDuelReleaseApi(L, session);
   installOperationInfoHelpers(L, hostState);
   installFlagHelpers(L, session);
@@ -333,109 +329,6 @@ function installSummonHelpers(L: unknown, session: DuelSession, hostState: LuaDu
   lua.lua_setfield(L, -2, to_luastring("RitualSummon"));
 }
 
-function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const filterRef = readOptionalFunctionRef(state, 1);
-    const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
-    const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
-    const opponentMask = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
-    const excluded = readCardOrGroupUids(state, 5);
-    const uids = matchingCardUidsWithFilter(state, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(state, 6));
-    releaseOptionalFunctionRef(state, filterRef);
-    pushGroupTable(state, uids);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetMatchingGroup"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const filterRef = readOptionalFunctionRef(state, 1);
-    const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
-    const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
-    const opponentMask = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
-    const excluded = readCardOrGroupUids(state, 5);
-    const count = matchingCardUidsWithFilter(state, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(state, 6)).length;
-    releaseOptionalFunctionRef(state, filterRef);
-    lua.lua_pushinteger(state, count);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetMatchingGroupCount"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const selfMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const opponentMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
-    pushGroupTable(state, fieldGroupUids(session, player, selfMask, opponentMask));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetFieldGroup"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const selfMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const opponentMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
-    lua.lua_pushinteger(state, fieldGroupUids(session, player, selfMask, opponentMask).length);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetFieldGroupCount"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const sequence = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
-    const uid = fieldCardUid(session, player, locationMask, sequence);
-    if (!uid) {
-      lua.lua_pushnil(state);
-      return 1;
-    }
-    pushCardTable(state, uid);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetFieldCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsExistingMatchingCard(state, session));
-  lua.lua_setfield(L, -2, to_luastring("IsExistingMatchingCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsExistingMatchingCard(state, session));
-  lua.lua_setfield(L, -2, to_luastring("IsExistingTarget"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushTargetCount(state, session));
-  lua.lua_setfield(L, -2, to_luastring("GetTargetCount"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const filterRef = readOptionalFunctionRef(state, 1);
-    const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
-    const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
-    const opponentMask = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
-    const excluded = readCardOrGroupUids(state, 5);
-    const uid = matchingCardUidsWithFilter(state, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(state, 6))[0];
-    releaseOptionalFunctionRef(state, filterRef);
-    if (!uid) {
-      lua.lua_pushnil(state);
-      return 1;
-    }
-    pushCardTable(state, uid);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetFirstMatchingCard"));
-  installDuelLocationApi(L, session);
-  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session));
-  lua.lua_setfield(L, -2, to_luastring("SelectMatchingCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session, hostState.activeTargetUids));
-  lua.lua_setfield(L, -2, to_luastring("SelectTarget"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const target = hostState.activeTargetUids?.[0];
-    if (!target) {
-      lua.lua_pushnil(state);
-      return 1;
-    }
-    pushCardTable(state, target);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetFirstTarget"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    pushGroupTable(state, hostState.activeTargetUids ?? []);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetTargetCards"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    pushGroupTable(state, hostState.operatedUids);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetOperatedGroup"));
-}
-
 function installOperationInfoHelpers(L: unknown, hostState: LuaDuelApiHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const info: LuaDuelOperationInfo = {
@@ -552,89 +445,6 @@ function readCardOrGroupUids(L: unknown, index: number): string[] {
   return cardUid ? [cardUid] : readGroupUids(L, index);
 }
 
-function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefined, args: LuaFilterArgs): boolean {
-  if (filterRef === undefined) return true;
-  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, filterRef);
-  pushCardTable(L, uid);
-  for (let index = 0; index < args.count; index += 1) lua.lua_pushvalue(L, args.start + index);
-  const status = lua.lua_pcall(L, 1 + args.count, 1, 0);
-  if (status !== lua.LUA_OK) return false;
-  const result = lua.lua_toboolean(L, -1);
-  lua.lua_pop(L, 1);
-  return Boolean(result);
-}
-
-function pushIsExistingMatchingCard(L: unknown, session: DuelSession): number {
-  const filterRef = readOptionalFunctionRef(L, 1);
-  const player = normalizePlayer(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : session.state.turnPlayer);
-  const selfMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
-  const opponentMask = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0;
-  const minimum = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 1;
-  const excluded = readCardOrGroupUids(L, 6);
-  const count = matchingCardUidsWithFilter(L, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(L, 7)).length;
-  releaseOptionalFunctionRef(L, filterRef);
-  lua.lua_pushboolean(L, count >= minimum);
-  return 1;
-}
-
-function pushTargetCount(L: unknown, session: DuelSession): number {
-  const filterRef = readOptionalFunctionRef(L, 1);
-  const player = normalizePlayer(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : session.state.turnPlayer);
-  const selfMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
-  const opponentMask = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0;
-  const excluded = readCardOrGroupUids(L, 5);
-  const count = matchingCardUidsWithFilter(L, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(L, 6)).length;
-  releaseOptionalFunctionRef(L, filterRef);
-  lua.lua_pushinteger(L, count);
-  return 1;
-}
-
-function pushSelectedMatchingGroup(L: unknown, session: DuelSession, targetUids?: string[]): number {
-  const filterRef = readOptionalFunctionRef(L, 2);
-  const player = normalizePlayer(lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : session.state.turnPlayer);
-  const selfMask = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0;
-  const opponentMask = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 0;
-  const min = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : 1;
-  const max = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : min;
-  const excluded = readCardOrGroupUids(L, 8);
-  const uids = matchingCardUidsWithFilter(L, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(L, 9));
-  releaseOptionalFunctionRef(L, filterRef);
-  const limit = max > 0 ? max : Math.max(min, 1);
-  const selected = uids.slice(0, limit);
-  if (targetUids) targetUids.splice(0, targetUids.length, ...selected);
-  pushGroupTable(L, selected);
-  return 1;
-}
-
-function matchingCardUidsWithFilter(
-  L: unknown,
-  session: DuelSession,
-  filterRef: number | undefined,
-  player: PlayerId,
-  selfMask: number,
-  opponentMask: number,
-  excluded: string[],
-  args: LuaFilterArgs,
-): string[] {
-  return fieldGroupUids(session, player, selfMask, opponentMask).filter((uid) => !excluded.includes(uid) && cardMatchesFilter(L, uid, filterRef, args));
-}
-
-function readFilterArgs(L: unknown, start: number): LuaFilterArgs {
-  const top = lua.lua_gettop(L);
-  return { start, count: Math.max(0, top - start + 1) };
-}
-
-function fieldGroupUids(session: DuelSession, player: PlayerId, selfMask: number, opponentMask: number): string[] {
-  return [
-    ...matchingCardUids(session, player, selfMask),
-    ...matchingCardUids(session, otherPlayer(player), opponentMask),
-  ];
-}
-
-function fieldCardUid(session: DuelSession, player: PlayerId, locationMask: number, sequence: number): string | undefined {
-  return matchingCardUids(session, player, locationMask)[sequence];
-}
-
 function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
   if (location === "deck") return 0x01;
   if (location === "hand") return 0x02;
@@ -644,14 +454,6 @@ function locationMaskFromLocation(location: DuelCardInstance["location"] | undef
   if (location === "banished") return 0x20;
   if (location === "extraDeck") return 0x40;
   return 0;
-}
-
-function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: number): string[] {
-  const locations = locationsFromMask(locationMask);
-  return session.state.cards
-    .filter((card) => card.controller === player && locations.includes(card.location))
-    .sort((a, b) => a.sequence - b.sequence)
-    .map((card) => card.uid);
 }
 
 function normalizePlayer(value: number): PlayerId {
