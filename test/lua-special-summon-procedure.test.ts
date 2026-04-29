@@ -143,8 +143,8 @@ describe("Lua special summon procedures", () => {
 
   it("lets Lua special summon procedures consume field materials", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Material Procedure Source", kind: "monster" },
-      { code: "200", name: "Blocked Material Procedure", kind: "monster" },
+      { code: "100", name: "Material Procedure Source", kind: "monster", ritualMaterials: ["300"] },
+      { code: "200", name: "Blocked Material Procedure", kind: "monster", ritualMaterials: ["999"] },
       { code: "300", name: "Procedure Field Material", kind: "monster" },
     ];
     const session = createDuel({ seed: 34, startingHandSize: 3, cardReader: createCardReader(cards) });
@@ -168,10 +168,10 @@ describe("Lua special summon procedures", () => {
         e:SetCode(EFFECT_SPSUMMON_PROC)
         e:SetRange(LOCATION_HAND)
         e:SetCondition(function(e,c)
-          return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_MZONE, 0, 1, nil)
+          return Duel.IsExistingMatchingCard(function(tc) return tc:IsCanBeRitualMaterial(c) end, c:GetControler(), LOCATION_MZONE, 0, 1, nil)
         end)
         e:SetOperation(function(e,c)
-          local g=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_MZONE, 0, 1, 1, nil)
+          local g=Duel.SelectMatchingCard(c:GetControler(), function(tc) return tc:IsCanBeRitualMaterial(c) end, c:GetControler(), LOCATION_MZONE, 0, 1, 1, nil)
           Debug.Message("material procedure selected " .. g:GetCount() .. "/" .. g:GetFirst():GetCode())
           Duel.SendtoGrave(g, REASON_MATERIAL + REASON_SPSUMMON)
         end)
@@ -184,7 +184,7 @@ describe("Lua special summon procedures", () => {
         e:SetCode(EFFECT_SPSUMMON_PROC)
         e:SetRange(LOCATION_HAND)
         e:SetCondition(function(e,c)
-          return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 999), c:GetControler(), LOCATION_MZONE, 0, 1, nil)
+          return Duel.IsExistingMatchingCard(function(tc) return tc:IsCanBeRitualMaterial(c) end, c:GetControler(), LOCATION_MZONE, 0, 1, nil)
         end)
         c:RegisterEffect(e)
       end
