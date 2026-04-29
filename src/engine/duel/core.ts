@@ -76,7 +76,7 @@ import {
   applySendReplacement,
   type ReplacementEffectHandlers,
 } from "#duel/replacement-effects.js";
-import { sameAction } from "#duel/response-match.js";
+import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import type {
   ApplyDuelResponseResult,
   CardPosition,
@@ -99,7 +99,6 @@ import type {
   PendingTrigger,
   PlayerId,
 } from "#duel/types.js";
-import { queryPublicState } from "#duel/snapshot.js";
 
 export { moveDuelCard } from "#duel/card-state.js";
 export { queryPublicState, serializeDuel, restoreDuel } from "#duel/snapshot.js";
@@ -113,6 +112,38 @@ const activationHandlers: DuelActivationHandlers = {
   resolveChain,
   canAttemptSpecialSummonProcedure,
   specialSummonCard: specialSummonDuelCard,
+};
+
+const responseHandlers: DuelResponseHandlers = {
+  getLegalActions,
+  normalSummon(state, player, uid) {
+    normalSummon(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
+  },
+  tributeSummon: tributeSummonDuelCard,
+  fusionSummon: fusionSummonDuelCard,
+  synchroSummon: synchroSummonDuelCard,
+  xyzSummon: xyzSummonDuelCard,
+  linkSummon: linkSummonDuelCard,
+  ritualSummon: ritualSummonDuelCard,
+  specialSummonProcedure(session, player, uid, effectId) {
+    specialSummonDuelByProcedure(session, player, uid, effectId, activationHandlers);
+  },
+  setMonster,
+  setSpellTrap,
+  activateEffect(session, player, uid, effectId) {
+    activateDuelEffect(session, player, uid, effectId, activationHandlers);
+  },
+  passChain,
+  resolvePrompt,
+  activateTrigger(session, player, triggerId) {
+    activateDuelPendingTrigger(session, player, triggerId, activationHandlers);
+  },
+  declineTrigger: declineDuelPendingTrigger,
+  flipSummon: flipSummonDuelCard,
+  changePosition: changeDuelCardPosition,
+  declareAttack: declareDuelAttack,
+  changePhase,
+  endTurn,
 };
 
 export interface CreateDuelOptions extends DuelOptions {
@@ -247,37 +278,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
 }
 
 export function applyResponse(session: DuelSession, response: DuelResponse): ApplyDuelResponseResult {
-  const legal = getLegalActions(session, response.player);
-  const isLegal = legal.some((action) => sameAction(action, response));
-  if (!isLegal) return result(session, false, "Response is not currently legal");
-
-  const rollback = captureDuelState(session.state);
-  try {
-    if (response.type === "normalSummon") normalSummon(session.state, response.player, response.uid, (eventName, eventCard) => collectTriggerEffects(session.state, eventName, eventCard));
-    else if (response.type === "tributeSummon") tributeSummonDuelCard(session.state, response.player, response.uid, response.tributeUids);
-    else if (response.type === "fusionSummon") fusionSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
-    else if (response.type === "synchroSummon") synchroSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
-    else if (response.type === "xyzSummon") xyzSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
-    else if (response.type === "linkSummon") linkSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
-    else if (response.type === "ritualSummon") ritualSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
-    else if (response.type === "specialSummonProcedure") specialSummonDuelByProcedure(session, response.player, response.uid, response.effectId, activationHandlers);
-    else if (response.type === "setMonster") setMonster(session.state, response.player, response.uid);
-    else if (response.type === "setSpellTrap") setSpellTrap(session.state, response.player, response.uid);
-    else if (response.type === "activateEffect") activateDuelEffect(session, response.player, response.uid, response.effectId, activationHandlers);
-    else if (response.type === "passChain") passChain(session.state, response.player);
-    else if (response.type === "selectOption" || response.type === "selectYesNo") resolvePrompt(session.state, response);
-    else if (response.type === "activateTrigger") activateDuelPendingTrigger(session, response.player, response.triggerId, activationHandlers);
-    else if (response.type === "declineTrigger") declineDuelPendingTrigger(session, response.player, response.triggerId);
-    else if (response.type === "flipSummon") flipSummonDuelCard(session.state, response.player, response.uid);
-    else if (response.type === "changePosition") changeDuelCardPosition(session.state, response.player, response.uid, response.position);
-    else if (response.type === "declareAttack") declareDuelAttack(session.state, response.player, response.attackerUid, response.targetUid);
-    else if (response.type === "changePhase") changePhase(session.state, response.player, response.phase);
-    else if (response.type === "endTurn") endTurn(session.state, response.player);
-    return result(session, true);
-  } catch (error) {
-    restoreDuelState(session.state, rollback);
-    return result(session, false, error instanceof Error ? error.message : "Unknown duel engine error");
-  }
+  return applyDuelResponse(session, response, responseHandlers);
 }
 
 export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
@@ -873,15 +874,6 @@ export function negateDuelChainLink(state: DuelState, chainLinkId: string, playe
   link.disablePlayer = player;
   pushDuelLog(state, "negate", player, cardName, link.effectId);
   return true;
-}
-
-function result(session: DuelSession, ok: boolean, error?: string): ApplyDuelResponseResult {
-  return {
-    ok,
-    ...(error === undefined ? {} : { error }),
-    state: queryPublicState(session),
-    legalActions: getLegalActions(session, session.state.waitingFor ?? session.state.turnPlayer),
-  };
 }
 
 function otherPlayer(player: PlayerId): PlayerId {
