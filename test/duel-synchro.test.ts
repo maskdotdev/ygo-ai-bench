@@ -71,6 +71,42 @@ describe("duel synchro summons", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
   });
 
+  it("matches explicit synchro materials through card aliases", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 2,
+      cardReader: createCardReader([
+        { code: "100", alias: "101", name: "Aliased Tuner", kind: "monster", typeFlags: 0x1001 },
+        { code: "300", alias: "301", name: "Aliased Non-Tuner", kind: "monster" },
+        { code: "910", name: "Alias Synchro", kind: "extra", synchroMaterials: { tuner: "101", nonTuners: ["301"] } },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["910"] },
+      1: { main: ["300", "300"] },
+    });
+    startDuel(session);
+
+    const synchro = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "910");
+    const aliasTuner = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const aliasNonTuner = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(synchro).toBeTruthy();
+    expect(aliasTuner).toBeTruthy();
+    expect(aliasNonTuner).toBeTruthy();
+    moveDuelCard(session.state, aliasTuner!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, aliasNonTuner!.uid, "monsterZone", 0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid);
+    expect(action).toBeTruthy();
+    expect(action).toMatchObject({ materialUids: [aliasTuner!.uid, aliasNonTuner!.uid] });
+
+    synchroSummonDuelCard(session.state, 0, synchro!.uid, [aliasTuner!.uid, aliasNonTuner!.uid]);
+
+    expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === aliasTuner!.uid)?.location).toBe("graveyard");
+    expect(session.state.cards.find((card) => card.uid === aliasNonTuner!.uid)?.location).toBe("graveyard");
+  });
+
   it("blocks synchro summons when material cannot be used as Synchro material", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

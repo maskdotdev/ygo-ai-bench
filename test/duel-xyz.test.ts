@@ -74,6 +74,41 @@ describe("duel xyz summons", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
   });
 
+  it("matches explicit Xyz materials through card aliases", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 2,
+      cardReader: createCardReader([
+        { code: "100", alias: "101", name: "Aliased Xyz Material", kind: "monster", level: 4 },
+        { code: "300", alias: "301", name: "Second Aliased Xyz Material", kind: "monster", level: 4 },
+        { code: "920", name: "Alias Xyz", kind: "extra", xyzMaterials: ["101", "301"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["920"] },
+      1: { main: ["300", "300"] },
+    });
+    startDuel(session);
+
+    const xyz = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    const firstMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const secondMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(xyz).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(secondMaterial).toBeTruthy();
+    moveDuelCard(session.state, firstMaterial!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, secondMaterial!.uid, "monsterZone", 0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid);
+    expect(action).toBeTruthy();
+    expect(action).toMatchObject({ materialUids: [firstMaterial!.uid, secondMaterial!.uid] });
+
+    xyzSummonDuelCard(session.state, 0, xyz!.uid, [firstMaterial!.uid, secondMaterial!.uid]);
+
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([firstMaterial!.uid, secondMaterial!.uid]);
+  });
+
   it("xyz summons emit special summon triggers without sending materials to the graveyard", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

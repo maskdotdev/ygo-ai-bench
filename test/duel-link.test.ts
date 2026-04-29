@@ -109,6 +109,42 @@ describe("duel link summons", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
   });
 
+  it("matches explicit Link materials through card aliases", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 2,
+      cardReader: createCardReader([
+        { code: "100", alias: "101", name: "Aliased Link Material", kind: "monster" },
+        { code: "300", alias: "301", name: "Second Aliased Link Material", kind: "monster" },
+        { code: "930", name: "Alias Link", kind: "extra", typeFlags: 0x4000001, level: 2, linkMaterials: ["101", "301"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["930"] },
+      1: { main: ["300", "300"] },
+    });
+    startDuel(session);
+
+    const link = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "930");
+    const firstMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const secondMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(link).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(secondMaterial).toBeTruthy();
+    moveDuelCard(session.state, firstMaterial!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, secondMaterial!.uid, "monsterZone", 0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid);
+    expect(action).toBeTruthy();
+    expect(action).toMatchObject({ materialUids: [firstMaterial!.uid, secondMaterial!.uid] });
+
+    linkSummonDuelCard(session.state, 0, link!.uid, [firstMaterial!.uid, secondMaterial!.uid]);
+
+    expect(session.state.cards.find((card) => card.uid === link!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("graveyard");
+    expect(session.state.cards.find((card) => card.uid === secondMaterial!.uid)?.location).toBe("graveyard");
+  });
+
   it("link summons emit special summon triggers", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

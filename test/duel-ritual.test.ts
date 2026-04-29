@@ -80,6 +80,40 @@ describe("duel ritual summons", () => {
     expect(result.state.log.some((entry) => entry.detail === "Ritual special summoned Ritual Test Monster")).toBe(true);
   });
 
+  it("matches explicit ritual materials through card aliases", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 3,
+      cardReader: createCardReader([
+        { code: "100", alias: "101", name: "Aliased Ritual Material", kind: "monster" },
+        { code: "300", name: "Second Ritual Material", kind: "monster" },
+        { code: "940", name: "Alias Ritual", kind: "monster", ritualMaterials: ["101", "300"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300"] },
+      1: { main: ["300", "300", "300"] },
+    });
+    startDuel(session);
+
+    const ritual = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const aliasMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const otherMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(ritual).toBeTruthy();
+    expect(aliasMaterial).toBeTruthy();
+    expect(otherMaterial).toBeTruthy();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
+    expect(action).toBeTruthy();
+    expect(action).toMatchObject({ materialUids: [aliasMaterial!.uid, otherMaterial!.uid] });
+
+    ritualSummonDuelCard(session.state, 0, ritual!.uid, [aliasMaterial!.uid, otherMaterial!.uid]);
+
+    expect(session.state.cards.find((card) => card.uid === ritual!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === aliasMaterial!.uid)?.location).toBe("graveyard");
+    expect(session.state.cards.find((card) => card.uid === otherMaterial!.uid)?.location).toBe("graveyard");
+  });
+
   it("blocks ritual summons when material cannot be sent to the graveyard", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
