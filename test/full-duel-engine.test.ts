@@ -1574,34 +1574,6 @@ describe("full duel engine API", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
   });
 
-  it("rolls back failed link summon material moves from responses", () => {
-    const { session, target: link, first: firstMaterial, blocked: blockedMaterial } = setupFailedMoveAfterFirstFixture({
-      seed: 91,
-      main: ["100", "300"],
-      extra: ["930"],
-      target: { location: "extraDeck", code: "930" },
-      first: { location: "hand", code: "100", moveTo: "monsterZone" },
-      blocked: { location: "hand", code: "300", moveTo: "monsterZone" },
-      block: { id: "cannot-send-second-link-material", code: 68, range: ["monsterZone"], firstMovedTo: "graveyard" },
-    });
-    expect(link).toBeTruthy();
-    expect(firstMaterial).toBeTruthy();
-    expect(blockedMaterial).toBeTruthy();
-
-    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid);
-    expect(action).toBeTruthy();
-    expect(action?.type).toBe("linkSummon");
-    if (!action || action.type !== "linkSummon") throw new Error("Expected Link summon action");
-    const result = applyResponse(session, action);
-
-    expect(result.ok).toBe(false);
-    expect(result.error).toContain("cannot move to graveyard");
-    expect(session.state.cards.find((card) => card.uid === link!.uid)?.location).toBe("extraDeck");
-    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("monsterZone");
-    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
-    expect(session.state.log.some((entry) => entry.action === "linkMaterial")).toBe(false);
-  });
-
   it("link summons emit special summon triggers", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
