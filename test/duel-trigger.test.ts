@@ -575,6 +575,93 @@ describe("duel triggers", () => {
     expect(getDuelLegalActions(session, 1).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["opponent-later-optional-bucket"]);
   });
 
+  it("activates optional trigger buckets without exposing later buckets early", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "500", "300"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstTurnOptional = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const secondTurnOptional = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const opponentOptional = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(firstTurnOptional).toBeTruthy();
+    expect(secondTurnOptional).toBeTruthy();
+    expect(opponentOptional).toBeTruthy();
+
+    registerEffect(session, {
+      id: "first-turn-optional-activation",
+      sourceUid: firstTurnOptional!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("First turn optional activation resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "opponent-later-optional-activation",
+      sourceUid: opponentOptional!.uid,
+      controller: 1,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Opponent later optional activation resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "second-turn-optional-activation",
+      sourceUid: secondTurnOptional!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Second turn optional activation resolved");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    const result = applyResponse(session, summon!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
+      "first-turn-optional-activation",
+      "second-turn-optional-activation",
+      "opponent-later-optional-activation",
+    ]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([
+      "first-turn-optional-activation",
+      "second-turn-optional-activation",
+    ]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+
+    const activateFirst = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "first-turn-optional-activation");
+    expect(activateFirst).toBeTruthy();
+    const afterFirstActivation = applyResponse(session, activateFirst!);
+
+    expect(afterFirstActivation.ok).toBe(true);
+    expect(afterFirstActivation.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-turn-optional-activation", "opponent-later-optional-activation"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-turn-optional-activation"]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+
+    const activateSecond = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "second-turn-optional-activation");
+    expect(activateSecond).toBeTruthy();
+    const afterSecondActivation = applyResponse(session, activateSecond!);
+
+    expect(afterSecondActivation.ok).toBe(true);
+    expect(afterSecondActivation.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["opponent-later-optional-activation"]);
+    expect(afterSecondActivation.state.waitingFor).toBe(1);
+    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 1).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["opponent-later-optional-activation"]);
+  });
+
   it("collects phase and turn-start trigger effects", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
