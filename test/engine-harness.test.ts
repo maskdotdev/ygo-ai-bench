@@ -1462,6 +1462,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalNumber("RESETS_STANDARD")).toBe(0x1fe0000);
     expect(host.getGlobalNumber("RESET_PHASE")).toBe(0x40000000);
     expect(host.getGlobalNumber("RESET_CHAIN")).toBe(0x80000000);
+    expect(host.getGlobalNumber("REASON_LINK")).toBe(0x10000000);
+    expect(host.getGlobalNumber("REASON_DRAW")).toBe(0x2000000);
     expect(host.registerInitialEffects()).toBe(2);
     expect(host.messages).toContain("effect predicates true/true/true");
     expect(host.messages).toContain("effect callbacks true/true/true/true");
