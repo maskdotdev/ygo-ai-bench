@@ -122,6 +122,69 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("attack lock checked 100");
   });
 
+  it("applies Lua continuous material restrictions to card material predicates", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Fusion Locked Material", kind: "monster" },
+      { code: "200", name: "Generic Locked Material", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 57, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+      card.faceUp = true;
+      card.position = "faceUpAttack";
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_CANNOT_BE_FUSION_MATERIAL)
+        e:SetRange(LOCATION_MZONE)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("fusion material lock checked " .. e:GetHandler():GetCode())
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_CANNOT_BE_MATERIAL)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+      `,
+      "material-lock-predicates.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const check = host.loadScript(
+      `
+      local fusion_locked = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local generic_locked = Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      Debug.Message("fusion material predicates " .. tostring(fusion_locked:IsCanBeFusionMaterial(nil)) .. "/" .. tostring(fusion_locked:IsCanBeSynchroMaterial(nil)))
+      Debug.Message("generic material predicates " .. tostring(generic_locked:IsCanBeFusionMaterial(nil)) .. "/" .. tostring(generic_locked:IsCanBeRitualMaterial(nil)))
+      `,
+      "material-lock-predicate-check.lua",
+    );
+
+    expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain("fusion material predicates false/true");
+    expect(host.messages).toContain("generic material predicates false/false");
+    expect(host.messages).toContain("fusion material lock checked 100");
+  });
+
   it("applies Lua continuous graveyard redirect effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Redirected Monster", kind: "monster" }];
     const session = createDuel({ seed: 41, startingHandSize: 1, cardReader: createCardReader(cards) });

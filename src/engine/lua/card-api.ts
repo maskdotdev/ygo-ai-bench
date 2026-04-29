@@ -1,5 +1,6 @@
 import fengari from "fengari";
-import { canMoveDuelCardToLocation, detachDuelOverlayMaterials, registerEffect } from "#duel/core.js";
+import { canMoveDuelCardToLocation, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
+import { isMaterialUsePrevented, type ContinuousEffectContextFactory, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -11,7 +12,7 @@ import {
   readTableNumberField,
   readTableStringField,
 } from "#lua/api-utils.js";
-import type { CardPosition, DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -238,11 +239,11 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
-  pushBooleanGetter(L, "IsCanBeFusionMaterial", session, (card) => Boolean(card));
-  pushBooleanGetter(L, "IsCanBeSynchroMaterial", session, (card) => Boolean(card));
-  pushBooleanGetter(L, "IsCanBeXyzMaterial", session, (card) => Boolean(card));
-  pushBooleanGetter(L, "IsCanBeLinkMaterial", session, (card) => Boolean(card));
-  pushBooleanGetter(L, "IsCanBeRitualMaterial", session, (card) => Boolean(card));
+  pushBooleanGetter(L, "IsCanBeFusionMaterial", session, (_, uid) => canBeMaterial(session.state, uid, "fusion"));
+  pushBooleanGetter(L, "IsCanBeSynchroMaterial", session, (_, uid) => canBeMaterial(session.state, uid, "synchro"));
+  pushBooleanGetter(L, "IsCanBeXyzMaterial", session, (_, uid) => canBeMaterial(session.state, uid, "xyz"));
+  pushBooleanGetter(L, "IsCanBeLinkMaterial", session, (_, uid) => canBeMaterial(session.state, uid, "link"));
+  pushBooleanGetter(L, "IsCanBeRitualMaterial", session, (_, uid) => canBeMaterial(session.state, uid, "ritual"));
 }
 
 function installFlagHelpers(L: unknown, session: DuelSession): void {
@@ -329,6 +330,33 @@ function detachOverlayRange(session: DuelSession, card: DuelCardInstance, min: n
 
 function setOperatedUids<EffectRecord extends LuaCardApiEffectRecord>(hostState: LuaCardApiState<EffectRecord>, uids: string[]): void {
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...uids);
+}
+
+function canBeMaterial(state: DuelState, uid: string | undefined, kind: MaterialUseKind): boolean {
+  return Boolean(uid && !isMaterialUsePrevented(state, uid, kind, createMaterialCheckContext(state)));
+}
+
+function createMaterialCheckContext(state: DuelState): ContinuousEffectContextFactory {
+  return (effect, source, card) => ({
+    duel: state,
+    source,
+    player: effect.controller,
+    checkOnly: true,
+    targetUids: card ? [card.uid] : [],
+    log() {},
+    moveCard(uid: string, to: DuelLocation, controller?: PlayerId) {
+      return moveDuelCard(state, uid, to, controller);
+    },
+    negateChainLink() {
+      return false;
+    },
+    setTargets() {},
+    getTargets() {
+      return card ? [card] : [];
+    },
+    setTargetPlayer() {},
+    setTargetParam() {},
+  });
 }
 
 function readCard(L: unknown, session: DuelSession | undefined): DuelCardInstance | undefined {
