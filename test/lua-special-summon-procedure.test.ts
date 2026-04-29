@@ -618,4 +618,73 @@ describe("Lua special summon procedures", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)).toMatchObject({ location: "hand" });
     expect(session.state.log.some((entry) => entry.action === "sendToGraveyard" && entry.card === "First Partial Material")).toBe(false);
   });
+
+  it("ignores Lua operation return false for summon procedure compatibility", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Return False Procedure Source", kind: "monster" },
+      { code: "200", name: "Return False First Material", kind: "monster" },
+      { code: "300", name: "Return False Blocked Material", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 86, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstMaterial = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const blockedMaterial = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "block-second-return-false-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 68,
+      range: ["hand"],
+      canActivate(ctx) {
+        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "graveyard";
+      },
+      operation() {},
+    });
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          local first=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 200), c:GetControler(), LOCATION_HAND, 0, 1, 1, c):GetFirst()
+          local blocked=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_HAND, 0, 1, 1, c):GetFirst()
+          local g=Group.FromCards(first, blocked)
+          local moved=Duel.SendtoGrave(g, REASON_MATERIAL + REASON_SPSUMMON)
+          Debug.Message("return false material moves " .. moved .. "/" .. g:GetCount())
+          if moved~=g:GetCount() then return false end
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "return-false-material-move-special-summon-procedure.lua",
+    );
+
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("return false material moves 1/2");
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)).toMatchObject({ location: "hand" });
+  });
 });
