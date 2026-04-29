@@ -569,4 +569,86 @@ describe("Lua chain helpers", () => {
     expect(getDuelLegalActions(session, 0).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === "lua-1-1100").map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
     expect(getDuelLegalActions(session, 0).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === "lua-2-1100").map((action) => action.type)).toEqual(["activateTrigger"]);
   });
+
+  it("orders Lua cross-player trigger buckets", () => {
+    const cards: DuelCardData[] = [
+      { code: "8100", name: "Lua Bucket Summon", kind: "monster" },
+      { code: "8200", name: "Lua Turn Optional", kind: "monster" },
+      { code: "8300", name: "Lua Turn Mandatory", kind: "monster" },
+      { code: "8400", name: "Lua Opponent Mandatory", kind: "monster" },
+      { code: "8500", name: "Lua Opponent Optional", kind: "monster" },
+      { code: "8600", name: "Lua Bucket Filler", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 88, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["8100", "8200", "8300"] },
+      1: { main: ["8400", "8500", "8600"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c8500={}
+      function c8500.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("opponent optional bucket")
+        end)
+        c:RegisterEffect(e)
+      end
+      c8200={}
+      function c8200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("turn optional bucket")
+        end)
+        c:RegisterEffect(e)
+      end
+      c8400={}
+      function c8400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_F)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("opponent mandatory bucket")
+        end)
+        c:RegisterEffect(e)
+      end
+      c8300={}
+      function c8300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_F)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("turn mandatory bucket")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-cross-player-trigger-buckets.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(4);
+    const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "8100");
+    expect(summonSource).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
+    expect(summon).toBeDefined();
+    const summoned = applyResponse(session, summon!);
+
+    expect(summoned.ok).toBe(true);
+    expect(summoned.state.pendingTriggers.map((trigger) => summoned.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["8300", "8400", "8200", "8500"]);
+    expect(summoned.state.waitingFor).toBe(0);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === summoned.state.pendingTriggers[0]?.effectId).map((action) => action.type)).toEqual(["activateTrigger"]);
+  });
 });
