@@ -1347,6 +1347,50 @@ describe("full duel engine API", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
   });
 
+  it("rolls back failed synchro summon material moves from responses", () => {
+    const session = createDuel({ seed: 89, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["910"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const synchro = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "910");
+    const firstMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockedMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(synchro).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+    moveDuelCard(session.state, firstMaterial!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, blockedMaterial!.uid, "monsterZone", 0);
+
+    registerEffect(session, {
+      id: "cannot-send-second-synchro-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 68,
+      range: ["monsterZone"],
+      canActivate(ctx) {
+        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "graveyard";
+      },
+      operation() {},
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("synchroSummon");
+    if (!action || action.type !== "synchroSummon") throw new Error("Expected synchro summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
+    expect(session.state.log.some((entry) => entry.action === "synchroMaterial")).toBe(false);
+  });
+
   it("blocks synchro summons when material cannot be used as Synchro material", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -1595,6 +1639,51 @@ describe("full duel engine API", () => {
     expect(() => xyzSummonDuelCard(session.state, 0, xyz!.uid, materials.map((card) => card.uid))).toThrow("cannot be used as Xyz material");
     expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.location).toBe("extraDeck");
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
+  });
+
+  it("rolls back failed Xyz summon material moves from responses", () => {
+    const session = createDuel({ seed: 90, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["920"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const xyz = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    const firstMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockedMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(xyz).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+    moveDuelCard(session.state, firstMaterial!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, blockedMaterial!.uid, "monsterZone", 0);
+
+    registerEffect(session, {
+      id: "cannot-overlay-second-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 238,
+      range: ["monsterZone"],
+      canActivate(ctx) {
+        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "overlay";
+      },
+      operation() {},
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("xyzSummon");
+    if (!action || action.type !== "xyzSummon") throw new Error("Expected Xyz summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cannot be used as Xyz material");
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([]);
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
+    expect(session.state.log.some((entry) => entry.action === "xyzMaterial")).toBe(false);
   });
 
   it("xyz summons emit special summon triggers without sending materials to the graveyard", () => {
@@ -1860,6 +1949,50 @@ describe("full duel engine API", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
   });
 
+  it("rolls back failed link summon material moves from responses", () => {
+    const session = createDuel({ seed: 91, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["930"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const link = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "930");
+    const firstMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockedMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(link).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+    moveDuelCard(session.state, firstMaterial!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, blockedMaterial!.uid, "monsterZone", 0);
+
+    registerEffect(session, {
+      id: "cannot-send-second-link-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 68,
+      range: ["monsterZone"],
+      canActivate(ctx) {
+        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "graveyard";
+      },
+      operation() {},
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("linkSummon");
+    if (!action || action.type !== "linkSummon") throw new Error("Expected Link summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === link!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
+    expect(session.state.log.some((entry) => entry.action === "linkMaterial")).toBe(false);
+  });
+
   it("link summons emit special summon triggers", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -2111,6 +2244,48 @@ describe("full duel engine API", () => {
     expect(() => ritualSummonDuelCard(session.state, 0, ritual!.uid, [blockedMaterial!.uid, otherMaterial!.uid])).toThrow("cannot move to graveyard");
     expect(session.state.cards.find((card) => card.uid === ritual!.uid)?.location).toBe("hand");
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
+  });
+
+  it("rolls back failed ritual summon material moves from responses", () => {
+    const session = createDuel({ seed: 92, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const ritual = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const firstMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockedMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(ritual).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "cannot-send-second-ritual-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 68,
+      range: ["hand"],
+      canActivate(ctx) {
+        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "graveyard";
+      },
+      operation() {},
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("ritualSummon");
+    if (!action || action.type !== "ritualSummon") throw new Error("Expected ritual summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === ritual!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
+    expect(session.state.log.some((entry) => entry.action === "ritualMaterial")).toBe(false);
   });
 
   it("blocks ritual summons when material cannot be used as material", () => {
@@ -2673,6 +2848,50 @@ describe("full duel engine API", () => {
     expect(() => tributeSummonDuelCard(session.state, 0, tributeMonster!.uid, [tribute!.uid])).toThrow("cannot be released");
     expect(session.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("hand");
     expect(session.state.cards.find((card) => card.uid === tribute!.uid)?.location).toBe("monsterZone");
+  });
+
+  it("rolls back failed tribute summon release moves from responses", () => {
+    const session = createDuel({ seed: 93, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["700", "100", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const tributeMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "700");
+    const firstTribute = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockedTribute = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(tributeMonster).toBeTruthy();
+    expect(firstTribute).toBeTruthy();
+    expect(blockedTribute).toBeTruthy();
+    moveDuelCard(session.state, firstTribute!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, blockedTribute!.uid, "monsterZone", 0);
+
+    registerEffect(session, {
+      id: "cannot-send-second-tribute",
+      sourceUid: blockedTribute!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 68,
+      range: ["monsterZone"],
+      canActivate(ctx) {
+        return ctx.duel.cards.find((card) => card.uid === firstTribute!.uid)?.location === "graveyard";
+      },
+      operation() {},
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "tributeSummon" && candidate.uid === tributeMonster!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("tributeSummon");
+    if (!action || action.type !== "tributeSummon") throw new Error("Expected tribute summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === firstTribute!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === blockedTribute!.uid)?.location).toBe("monsterZone");
+    expect(session.state.log.some((entry) => entry.action === "release")).toBe(false);
   });
 
   it("tribute summons a level 7 or higher monster with two tributes even from a full monster zone", () => {
