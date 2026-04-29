@@ -912,6 +912,23 @@ describe("Lua chain helpers", () => {
     expect(fixture.host.messages.filter((message) => message === fixture.message)).toHaveLength(1);
   });
 
+  it("allows Lua turn-scoped trigger count limits again on a later turn", () => {
+    const fixture = setupLuaCountLimitTriggerFixture(93, { first: "13100", trigger: "13200", second: "13300" }, "1", "turn count limited trigger");
+
+    specialSummonDuelCard(fixture.session.state, fixture.firstSummon.uid);
+    activateOnlyPendingTrigger(fixture.session);
+    expect(fixture.session.state.usedCountKeys).toHaveLength(1);
+
+    fixture.session.state.turn += 1;
+    fixture.session.state.waitingFor = 0;
+    specialSummonDuelCard(fixture.session.state, fixture.secondSummon.uid);
+    activateOnlyPendingTrigger(fixture.session);
+
+    expect(fixture.session.state.usedCountKeys).toHaveLength(2);
+    expect(new Set(fixture.session.state.usedCountKeys).size).toBe(2);
+    expect(fixture.host.messages.filter((message) => message === fixture.message)).toHaveLength(2);
+  });
+
   it("keeps Lua duel-scoped trigger count codes spent across later turns", () => {
     const fixture = setupLuaCountLimitTriggerFixture(92, { first: "12100", trigger: "12200", second: "12300" }, "1, 0x302", "duel count limited trigger");
 
