@@ -246,6 +246,61 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "500")?.location).toBe("monsterZone");
   });
 
+  it("excludes unreleasable cards from Lua release group helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Unreleasable Cost", kind: "monster" },
+      { code: "300", name: "Releasable Cost", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 81, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_UNRELEASABLE_NONSUM)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+      `,
+      "unreleasable-release-helper.lua",
+    );
+
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const result = host.loadScript(
+      `
+      Debug.Message("release check two " .. tostring(Duel.CheckReleaseGroup(0, aux.TRUE, 2, nil)))
+      Debug.Message("release check one " .. tostring(Duel.CheckReleaseGroup(0, aux.TRUE, 1, nil)))
+      local selected = Duel.SelectReleaseGroup(0, aux.TRUE, 1, 2, nil)
+      Debug.Message("release selected " .. selected:GetCount())
+      Debug.Message("release selected blocked " .. tostring(selected:IsExists(aux.FilterBoolFunction(Card.IsCode, 100), 1, nil)))
+      local both = Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_MZONE, 0, 1, 2, nil)
+      Debug.Message("release moved " .. Duel.Release(both, REASON_COST))
+      `,
+      "unreleasable-release-helper-run.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("release check two false");
+    expect(host.messages).toContain("release check one true");
+    expect(host.messages).toContain("release selected 1");
+    expect(host.messages).toContain("release selected blocked false");
+    expect(host.messages).toContain("release moved 1");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+  });
+
   it("lets Lua scripts move cards to hand, deck, and extra deck", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Recoverable Monster", kind: "monster" },

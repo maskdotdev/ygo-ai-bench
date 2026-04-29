@@ -301,6 +301,7 @@ export function canPlayerSpecialSummon(state: DuelState, player: PlayerId, card?
 
 export function canMoveDuelCardToLocation(state: DuelState, uid: string, to: DuelLocation, reason: number = duelReason.effect): boolean {
   if (!canMoveDuelCardToLocationRule(state, uid, to)) return false;
+  if ((reason & duelReason.release) !== 0 && isReleasePrevented(state, uid, reason, createContinuousEffectContext(state))) return false;
   return !isMoveToLocationPrevented(state, uid, to, reason, createContinuousEffectContext(state));
 }
 
