@@ -175,6 +175,11 @@ function pushLuaEffectTable(L: unknown, id: number, effects: Map<number, LuaEffe
     lua.lua_pushinteger(state, source?.controller ?? 0);
     return 1;
   });
+  pushEffectMethod(L, effects, "GetType", getEffectNumberField("typeFlags"));
+  pushEffectMethod(L, effects, "GetCode", getEffectNumberField("code"));
+  pushEffectMethod(L, effects, "GetDescription", getEffectNumberField("description"));
+  pushEffectMethod(L, effects, "GetCategory", getEffectNumberField("category"));
+  pushEffectMethod(L, effects, "GetProperty", getEffectNumberField("property"));
   pushEffectMethod(L, effects, "SetType", setEffectNumberField("typeFlags"));
   pushEffectMethod(L, effects, "SetCode", setEffectNumberField("code"));
   pushEffectMethod(L, effects, "SetDescription", setEffectNumberField("description"));
@@ -215,16 +220,30 @@ function pushLuaEffectTable(L: unknown, id: number, effects: Map<number, LuaEffe
     if (firstRange !== undefined) effect.range = locationsFromMask(firstRange);
     return 0;
   });
+  pushEffectMethod(L, effects, "GetRange", (state, effect) => {
+    lua.lua_pushinteger(state, locationMaskFromLocations(effect.range ?? []));
+    return 1;
+  });
   pushEffectMethod(L, effects, "SetCountLimit", (state, effect) => {
     effect.countLimit = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1;
     if (lua.lua_isnumber(state, 3)) effect.countLimitCode = lua.lua_tointeger(state, 3);
     return 0;
+  });
+  pushEffectMethod(L, effects, "GetCountLimit", (state, effect) => {
+    lua.lua_pushinteger(state, effect.countLimit ?? 0);
+    lua.lua_pushinteger(state, effect.countLimitCode ?? 0);
+    return 2;
   });
   pushEffectMethod(L, effects, "SetReset", (state, effect) => {
     const flags = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const count = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
     effect.reset = count === undefined ? { flags } : { flags, count };
     return 0;
+  });
+  pushEffectMethod(L, effects, "GetReset", (state, effect) => {
+    lua.lua_pushinteger(state, effect.reset?.flags ?? 0);
+    lua.lua_pushinteger(state, effect.reset?.count ?? 0);
+    return 2;
   });
   pushEffectMethod(L, effects, "Reset", (state, effect) => {
     effect.countLimit = 0;
@@ -256,6 +275,13 @@ function setEffectNumberField(field: "typeFlags" | "code" | "description" | "cat
   return (state: unknown, effect: LuaEffectRecord): number => {
     if (lua.lua_isnumber(state, 2)) effect[field] = lua.lua_tointeger(state, 2);
     return 0;
+  };
+}
+
+function getEffectNumberField(field: "typeFlags" | "code" | "description" | "category" | "property") {
+  return (state: unknown, effect: LuaEffectRecord): number => {
+    lua.lua_pushinteger(state, effect[field] ?? 0);
+    return 1;
   };
 }
 
@@ -317,6 +343,18 @@ function triggerEventFromCode(code: number | undefined): DuelEventName | undefin
   if (code === 1130) return "attackDeclared";
   if (code === 1140) return "battleDestroyed";
   return undefined;
+}
+
+function locationMaskFromLocations(locations: DuelLocation[]): number {
+  let mask = 0;
+  if (locations.includes("deck")) mask |= 0x01;
+  if (locations.includes("hand")) mask |= 0x02;
+  if (locations.includes("monsterZone")) mask |= 0x04;
+  if (locations.includes("spellTrapZone")) mask |= 0x08;
+  if (locations.includes("graveyard")) mask |= 0x10;
+  if (locations.includes("banished")) mask |= 0x20;
+  if (locations.includes("extraDeck")) mask |= 0x40;
+  return mask;
 }
 
 function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean, ctx?: DuelEffectContext): boolean {
