@@ -121,6 +121,8 @@ function installStateHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsControler"));
+  pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
+  pushNumberMatcher(L, "IsSummonType", session, (card, requested) => isSummonTypeMatch(summonTypeMask(card), requested));
   pushBooleanGetter(L, "IsAbleToGrave", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "graveyard")));
   pushBooleanGetter(L, "IsAbleToHand", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "hand")));
   pushBooleanGetter(L, "IsAbleToDeck", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "deck")));
@@ -177,6 +179,25 @@ function cardCodes(card: DuelCardInstance): string[] {
   return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
 
+function summonTypeMask(card: DuelCardInstance | undefined): number {
+  if (!card?.summonType) return 0;
+  if (card.summonType === "normal") return 0x10000000;
+  if (card.summonType === "tribute") return 0x11000000;
+  if (card.summonType === "flip") return 0x20000000;
+  if (card.summonType === "special") return 0x40000000;
+  if (card.summonType === "fusion") return 0x43000000;
+  if (card.summonType === "ritual") return 0x45000000;
+  if (card.summonType === "synchro") return 0x46000000;
+  if (card.summonType === "xyz") return 0x49000000;
+  if (card.summonType === "link") return 0x4c000000;
+  return 0;
+}
+
+function isSummonTypeMatch(actual: number, requested: number): boolean {
+  if (actual === 0 || requested === 0) return false;
+  return actual === requested || (actual & requested) === requested;
+}
+
 const cardFieldNames = [
   "RegisterEffect",
   "GetCode",
@@ -202,6 +223,8 @@ const cardFieldNames = [
   "IsDefensePos",
   "IsLocation",
   "IsControler",
+  "GetSummonType",
+  "IsSummonType",
   "IsAbleToGrave",
   "IsAbleToHand",
   "IsAbleToDeck",

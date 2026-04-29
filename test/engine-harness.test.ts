@@ -629,6 +629,55 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("wrapped count 1");
   });
 
+  it("exposes summon type metadata to Lua card helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summon A", kind: "monster" },
+      { code: "300", name: "Summon B", kind: "monster" },
+      { code: "900", name: "Summon Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
+    ];
+    const session = createDuel({ seed: 19, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const normalUid = session.state.cards.find((card) => card.code === "100" && card.owner === 0)?.uid;
+    const normal = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === normalUid);
+    expect(normal).toBeDefined();
+    expect(applyResponse(session, normal!).ok).toBe(true);
+
+    const host = createLuaScriptHost(session);
+    const normalResult = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("normal type " .. tostring(c:IsSummonType(SUMMON_TYPE_NORMAL)) .. "/" .. c:GetSummonType())
+      `,
+      "summon-type-normal.lua",
+    );
+
+    expect(normalResult.ok).toBe(true);
+    expect(host.messages).toContain("normal type true/268435456");
+
+    const fusion = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon");
+    expect(fusion).toBeDefined();
+    expect(applyResponse(session, fusion!).ok).toBe(true);
+    expect(session.state.cards.find((card) => card.code === "900")?.summonType).toBe("fusion");
+
+    const fusionResult = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("fusion type " .. tostring(c:IsSummonType(SUMMON_TYPE_FUSION)) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_SPECIAL)))
+      cost_reason = REASON_COST
+      `,
+      "summon-type-fusion.lua",
+    );
+
+    expect(fusionResult.ok).toBe(true);
+    expect(host.messages).toContain("fusion type true/true");
+    expect(host.getGlobalNumber("cost_reason")).toBe(0x80);
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

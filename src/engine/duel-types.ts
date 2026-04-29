@@ -5,6 +5,7 @@ export type DuelStatus = "setup" | "awaiting" | "resolving" | "ended";
 export type CardPosition = "faceDownDefense" | "faceUpAttack" | "faceUpDefense" | "faceDown";
 export type DuelLocation = "deck" | "hand" | "monsterZone" | "spellTrapZone" | "graveyard" | "banished" | "extraDeck" | "overlay";
 export type DuelCardKind = "monster" | "spell" | "trap" | "extra";
+export type DuelSummonType = "normal" | "tribute" | "flip" | "special" | "fusion" | "synchro" | "xyz" | "link" | "ritual";
 export type DuelEventName =
   | "normalSummoned"
   | "specialSummoned"
@@ -59,6 +60,7 @@ export interface DuelCardInstance {
   position: CardPosition;
   overlayUids: string[];
   faceUp: boolean;
+  summonType?: DuelSummonType;
   data: DuelCardData;
 }
 

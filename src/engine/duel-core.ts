@@ -293,6 +293,7 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   moveDuelCard(state, uid, "monsterZone", summonController);
   card.position = "faceUpAttack";
   card.faceUp = true;
+  card.summonType = "special";
   pushDuelLog(state, "specialSummon", card.controller, card.name, "Special Summoned");
   collectTriggerEffects(state, "specialSummoned", card);
   return card;
