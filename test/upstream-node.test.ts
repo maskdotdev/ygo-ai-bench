@@ -133,6 +133,8 @@ describe("Node upstream workspace loader", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }]);
     expect(restored.registeredEffects).toBe(1);
+    expect(restored.restoredRegistryKeys).toEqual(["lua:100:lua-1"]);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects.map((effect) => effect.registryKey)).toEqual(["lua:100:lua-1"]);
 
     const action = getDuelLegalActions(restored.session, 0).find((candidate) => candidate.type === "activateEffect");
@@ -141,6 +143,97 @@ describe("Node upstream workspace loader", () => {
 
     expect(result.ok).toBe(true);
     expect(restored.host.messages).toContain("restored lua operation 100");
+  });
+
+  it("reports missing Lua scripts during snapshot restore", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c) Debug.Message("should not run") end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const session = createDuel({ seed: 3, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const snapshot = serializeDuel(session);
+    fs.rmSync(path.join(root, "script", "c100.lua"));
+
+    const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
+
+    expect(restored.loadedScripts).toEqual([{ ok: false, name: "c100.lua", error: "Script c100.lua was not found" }]);
+    expect(restored.registeredEffects).toBe(0);
+    expect(restored.restoredRegistryKeys).toEqual([]);
+    expect(restored.missingRegistryKeys).toEqual(["lua:100:lua-1"]);
+    expect(restored.session.state.effects).toHaveLength(0);
+    expect(getDuelLegalActions(restored.session, 0).some((candidate) => candidate.type === "activateEffect")).toBe(false);
+  });
+
+  it("filters Lua effects not present in the restored snapshot", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e1 = Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_IGNITION)
+        e1:SetRange(LOCATION_HAND)
+        e1:SetOperation(function(e,c) Debug.Message("kept effect") end)
+        c:RegisterEffect(e1)
+        local e2 = Effect.CreateEffect(c)
+        e2:SetType(EFFECT_TYPE_IGNITION)
+        e2:SetRange(LOCATION_HAND)
+        e2:SetOperation(function(e,c) Debug.Message("extra effect") end)
+        c:RegisterEffect(e2)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const session = createDuel({ seed: 4, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const snapshot = serializeDuel(session);
+    snapshot.state.effects = snapshot.state.effects.filter((effect) => effect.registryKey === "lua:100:lua-1");
+
+    const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
+
+    expect(restored.registeredEffects).toBe(1);
+    expect(restored.restoredRegistryKeys).toEqual(["lua:100:lua-1"]);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.session.state.effects.map((effect) => effect.registryKey)).toEqual(["lua:100:lua-1"]);
   });
 
   it("lets Lua operations move cards through Duel helpers", () => {

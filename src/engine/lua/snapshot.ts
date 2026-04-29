@@ -8,6 +8,8 @@ export interface LuaSnapshotRestoreResult {
   host: LuaScriptHost;
   loadedScripts: LuaScriptLoadResult[];
   registeredEffects: number;
+  restoredRegistryKeys: string[];
+  missingRegistryKeys: string[];
 }
 
 export function restoreDuelWithLuaScripts(
@@ -19,11 +21,16 @@ export function restoreDuelWithLuaScripts(
   const host = createLuaScriptHost(session);
   const registryKeys = luaRegistryKeys(snapshot);
   const loadedScripts = [...luaRegistryCardCodes(registryKeys)].map((code) => host.loadCardScript(code, source));
-  const registeredEffects = host.registerInitialEffects();
-  if (registryKeys.size > 0) {
-    session.state.effects = session.state.effects.filter((effect) => effect.registryKey === undefined || registryKeys.has(effect.registryKey));
-  }
-  return { session, host, loadedScripts, registeredEffects };
+  const registeredEffects = loadedScripts.every((result) => result.ok) ? host.registerInitialEffects() : 0;
+  const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys);
+  const missingRegistryKeys = [...registryKeys].filter((key) => !restoredRegistryKeys.includes(key));
+  return { session, host, loadedScripts, registeredEffects, restoredRegistryKeys, missingRegistryKeys };
+}
+
+function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string>): string[] {
+  if (registryKeys.size === 0) return [];
+  session.state.effects = session.state.effects.filter((effect) => effect.registryKey === undefined || registryKeys.has(effect.registryKey));
+  return session.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua:")));
 }
 
 function luaRegistryKeys(snapshot: SerializedDuel): Set<string> {
