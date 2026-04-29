@@ -76,6 +76,16 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   lua.lua_pushcfunction(L, () => 0);
   lua.lua_setfield(L, -2, to_luastring("Hint"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, lua.lua_gettop(state) >= 2 ? 0 : -1);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SelectOption"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, true);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SelectYesNo"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushinteger(state, session.state.chain.length);
     return 1;
   });

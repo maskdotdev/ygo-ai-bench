@@ -1253,6 +1253,29 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("wrapped count 1");
   });
 
+  it("provides deterministic Lua option prompt helpers", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Prompt Source", kind: "monster" }];
+    const session = createDuel({ seed: 30, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local option=Duel.SelectOption(0, 101, 102, 103)
+      local yes=Duel.SelectYesNo(0, 201)
+      Debug.Message("prompt option " .. option .. "/" .. tostring(yes))
+      `,
+      "prompt-helpers.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("prompt option 0/true");
+  });
+
   it("exposes summon type metadata to Lua card helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Summon A", kind: "monster" },
