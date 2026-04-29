@@ -4,7 +4,6 @@ import {
   changeDuelCardPosition,
   canMoveDuelCardToLocation,
   damageDuelPlayer,
-  drawDuelCards,
   destroyDuelCard,
   fusionSummonDuelCard,
   linkSummonDuelCard,
@@ -21,6 +20,7 @@ import {
 import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "./duel-flags.js";
 import { pushCardTable } from "./lua-card-api.js";
 import { duelReason } from "./duel-reasons.js";
+import { installDuelDeckApi } from "./lua-duel-deck-api.js";
 import { availableMonsterZoneCount, installDuelLocationApi } from "./lua-duel-location-api.js";
 import { pushGroupTable } from "./lua-group-api.js";
 import {
@@ -31,7 +31,6 @@ import {
   readOptionalFunctionRef,
   releaseOptionalFunctionRef,
 } from "./lua-api-utils.js";
-import { shuffle } from "./rng.js";
 import type { CardPosition, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "./duel-types.js";
 
 const { lua, to_luastring } = fengari;
@@ -156,55 +155,8 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Recover"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    lua.lua_pushboolean(state, topDeckUids(session, player, count).length >= count);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDraw"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    lua.lua_pushboolean(state, topDeckUids(session, player, count).length >= count);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDiscardDeck"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    lua.lua_pushboolean(state, matchingCardUids(session, player, 0x02).length >= count);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDiscardHand"));
+  installDuelDeckApi(L, session, hostState);
   installPlayerLegalityHelpers(L, session);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const count = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1;
-    const drawUids = topDeckUids(session, player, count);
-    const drawn = drawDuelCards(session.state, player, count, "Lua draw");
-    setOperatedUids(hostState, drawUids.slice(0, drawn));
-    lua.lua_pushinteger(state, drawn);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("Draw"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
-    const discarded = discardDeckCards(session, player, count, reason);
-    setOperatedUids(hostState, discarded);
-    lua.lua_pushinteger(state, discarded.length);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("DiscardDeck"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const discarded = discardHandCards(session, state);
-    setOperatedUids(hostState, discarded);
-    lua.lua_pushinteger(state, discarded.length);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("DiscardHand"));
   installMoveHelpers(L, session, hostState);
   installSummonHelpers(L, session, hostState);
   installQueryHelpers(L, session, hostState);
@@ -514,28 +466,6 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
   lua.lua_setfield(L, -2, to_luastring("GetFirstMatchingCard"));
   installDuelLocationApi(L, session);
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    pushGroupTable(state, topDeckUids(session, player, count));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetDecktopGroup"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const confirmed = readCardOrGroupUids(state, 2)
-      .map((uid) => session.state.cards.find((card) => card.uid === uid)?.code)
-      .filter((code): code is string => Boolean(code));
-    hostState.messages.push(`confirmed ${player}: ${confirmed.join(",")}`);
-    return 0;
-  });
-  lua.lua_setfield(L, -2, to_luastring("ConfirmCards"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    shuffleDeck(session, player);
-    return 0;
-  });
-  lua.lua_setfield(L, -2, to_luastring("ShuffleDeck"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const minimum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
@@ -792,50 +722,6 @@ function locationMaskFromLocation(location: DuelCardInstance["location"] | undef
   if (location === "banished") return 0x20;
   if (location === "extraDeck") return 0x40;
   return 0;
-}
-
-function topDeckUids(session: DuelSession, player: PlayerId, count: number): string[] {
-  return matchingCardUids(session, player, 0x01).slice(0, count);
-}
-
-function discardDeckCards(session: DuelSession, player: PlayerId, count: number, reason: number): string[] {
-  const discarded: string[] = [];
-  for (const uid of topDeckUids(session, player, count)) {
-    try {
-      sendDuelCardToGraveyard(session.state, uid, player, reason);
-      discarded.push(uid);
-    } catch {
-      // EDOPro-style helpers report moved cards; illegal moves simply fail.
-    }
-  }
-  return discarded;
-}
-
-function discardHandCards(session: DuelSession, L: unknown): string[] {
-  const filterRef = readOptionalFunctionRef(L, 2);
-  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
-  const min = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
-  const max = Math.max(min, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min);
-  const reason = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : duelReason.effect;
-  const selected = matchingCardUidsWithFilter(L, session, filterRef, player, 0x02, 0, undefined, readFilterArgs(L, 6)).slice(0, max);
-  releaseOptionalFunctionRef(L, filterRef);
-  if (selected.length < min) return [];
-  const discarded: string[] = [];
-  for (const uid of selected) {
-    try {
-      sendDuelCardToGraveyard(session.state, uid, player, reason);
-      discarded.push(uid);
-    } catch {
-      // EDOPro-style helpers report moved cards; illegal moves simply fail.
-    }
-  }
-  return discarded;
-}
-
-function shuffleDeck(session: DuelSession, player: PlayerId): void {
-  const deckCards = session.state.cards.filter((card) => card.controller === player && card.location === "deck").sort((a, b) => a.sequence - b.sequence);
-  const shuffled = shuffle(deckCards, `${session.state.seed}:lua-shuffle:${player}:${session.state.log.length}`);
-  for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
 }
 
 function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: number): string[] {
