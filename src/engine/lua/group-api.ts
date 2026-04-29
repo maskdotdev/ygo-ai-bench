@@ -181,6 +181,10 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetSum"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushExtremeGroup(state, "max"));
+  lua.lua_setfield(L, -2, to_luastring("GetMaxGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushExtremeGroup(state, "min"));
+  lua.lua_setfield(L, -2, to_luastring("GetMinGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
     const sum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
@@ -343,6 +347,26 @@ function selectGroupUids(uids: string[], min: number, max: number): string[] {
   return uids.slice(0, limit);
 }
 
+function pushExtremeGroup(L: unknown, direction: "max" | "min"): number {
+  const filterRef = readOptionalFunctionRef(L, 2);
+  const args = readFilterArgs(L, 3);
+  const entries = filterRef === undefined
+    ? []
+    : readGroupUids(L, 1)
+      .map((uid) => ({ uid, value: groupCardFilterValue(L, uid, filterRef, args) }))
+      .filter((entry): entry is { uid: string; value: number } => entry.value !== undefined);
+  releaseOptionalFunctionRef(L, filterRef);
+  if (!entries.length) {
+    pushGroupTable(L, []);
+    lua.lua_pushinteger(L, 0);
+    return 2;
+  }
+  const extreme = entries.reduce((best, entry) => direction === "max" ? Math.max(best, entry.value) : Math.min(best, entry.value), entries[0]!.value);
+  pushGroupTable(L, entries.filter((entry) => entry.value === extreme).map((entry) => entry.uid));
+  lua.lua_pushinteger(L, extreme);
+  return 2;
+}
+
 function selectUidsWithSum(L: unknown, uids: string[], filterRef: number | undefined, sum: number, min: number, max: number, args: LuaFilterArgs, selectedUids: string[] = []): string[] | undefined {
   if (filterRef === undefined) return undefined;
   const boundedMin = Math.max(0, min);
@@ -452,6 +476,8 @@ const groupFieldNames = [
   "IsExists",
   "GetClassCount",
   "GetSum",
+  "GetMaxGroup",
+  "GetMinGroup",
   "CheckWithSumEqual",
   "SelectWithSumEqual",
   "CheckWithSumGreater",

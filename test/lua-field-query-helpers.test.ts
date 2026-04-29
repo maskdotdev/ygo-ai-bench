@@ -465,6 +465,12 @@ describe("Lua field and query helpers", () => {
       Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
       Debug.Message("attack sum " .. all:GetSum(Card.GetAttack))
       Debug.Message("attack sum vararg " .. all:GetSum(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 1500))
+      local max_group,max_attack = all:GetMaxGroup(Card.GetAttack)
+      local min_group,min_attack = all:GetMinGroup(Card.GetAttack)
+      Debug.Message("max group " .. max_group:GetCount() .. "/" .. max_attack .. "/" .. max_group:GetFirst():GetCode())
+      Debug.Message("min group " .. min_group:GetCount() .. "/" .. min_attack .. "/" .. min_group:GetFirst():GetCode())
+      local max_vararg,max_vararg_attack = all:GetMaxGroup(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 1500)
+      Debug.Message("max group vararg " .. max_vararg:GetCount() .. "/" .. max_vararg_attack .. "/" .. max_vararg:GetFirst():GetCode())
       Debug.Message("sum exact " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 3000, 2, 2)))
       Debug.Message("sum miss " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 4500, 2, 2)))
       Debug.Message("sum greater " .. tostring(all:CheckWithSumGreater(Card.GetAttack, 3500, 2, 2)))
@@ -541,6 +547,9 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("class count 2");
     expect(host.messages).toContain("attack sum 6000");
     expect(host.messages).toContain("attack sum vararg 5000");
+    expect(host.messages).toContain("max group 1/3000/300");
+    expect(host.messages).toContain("min group 1/1000/100");
+    expect(host.messages).toContain("max group vararg 1/3000/300");
     expect(host.messages).toContain("sum exact true");
     expect(host.messages).toContain("sum miss false");
     expect(host.messages).toContain("sum greater true");
