@@ -1,12 +1,5 @@
 import fengari from "fengari";
-import {
-  fusionSummonDuelCard,
-  linkSummonDuelCard,
-  negateDuelChainLink,
-  ritualSummonDuelCard,
-  synchroSummonDuelCard,
-  xyzSummonDuelCard,
-} from "./duel-core.js";
+import { negateDuelChainLink } from "./duel-core.js";
 import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "./duel-flags.js";
 import { pushCardTable } from "./lua-card-api.js";
 import { duelReason } from "./duel-reasons.js";
@@ -17,6 +10,7 @@ import { installDuelMoveApi } from "./lua-duel-move-api.js";
 import { installDuelPlayerApi } from "./lua-duel-player-api.js";
 import { installDuelQueryApi } from "./lua-duel-query-api.js";
 import { installDuelReleaseApi } from "./lua-duel-release-api.js";
+import { installDuelSummonApi } from "./lua-duel-summon-api.js";
 import { installDuelTurnApi } from "./lua-duel-turn-api.js";
 import { pushGroupTable } from "./lua-group-api.js";
 import { readCardUid, readGroupUids } from "./lua-api-utils.js";
@@ -110,7 +104,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelDeckApi(L, session, hostState);
   installDuelPlayerApi(L, session);
   installDuelMoveApi(L, session, hostState);
-  installSummonHelpers(L, session, hostState);
+  installDuelSummonApi(L, session, hostState);
   installDuelQueryApi(L, session, hostState);
   installDuelReleaseApi(L, session);
   installOperationInfoHelpers(L, hostState);
@@ -207,19 +201,6 @@ function chainLinkByLuaIndex(L: unknown, session: DuelSession): DuelState["chain
   return session.state.chain[chainIndex];
 }
 
-function installSummonHelpers(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
-  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, "FusionSummon"));
-  lua.lua_setfield(L, -2, to_luastring("FusionSummon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, "SynchroSummon"));
-  lua.lua_setfield(L, -2, to_luastring("SynchroSummon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, "XyzSummon"));
-  lua.lua_setfield(L, -2, to_luastring("XyzSummon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, "LinkSummon"));
-  lua.lua_setfield(L, -2, to_luastring("LinkSummon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, "RitualSummon"));
-  lua.lua_setfield(L, -2, to_luastring("RitualSummon"));
-}
-
 function installOperationInfoHelpers(L: unknown, hostState: LuaDuelApiHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const info: LuaDuelOperationInfo = {
@@ -262,34 +243,6 @@ function findOperationInfo(operationInfos: LuaDuelOperationInfo[], chainIndex: n
     if (candidate.chainIndex === chainIndex && candidate.category === category) return candidate;
   }
   return undefined;
-}
-
-function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState, summonType: "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummon" | "RitualSummon"): number {
-  const targetUid = readCardUid(L, 1);
-  const materialUids = readCardOrGroupUids(L, 2);
-  const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
-  if (!target) {
-    setOperatedUids(hostState, []);
-    lua.lua_pushinteger(L, 0);
-    return 1;
-  }
-  try {
-    if (summonType === "FusionSummon") fusionSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    else if (summonType === "SynchroSummon") synchroSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    else if (summonType === "XyzSummon") xyzSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    else ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    setOperatedUids(hostState, [target.uid]);
-    lua.lua_pushinteger(L, 1);
-  } catch {
-    setOperatedUids(hostState, []);
-    lua.lua_pushinteger(L, 0);
-  }
-  return 1;
-}
-
-function setOperatedUids(hostState: LuaDuelApiHostState, uids: string[]): void {
-  hostState.operatedUids.splice(0, hostState.operatedUids.length, ...uids);
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {
