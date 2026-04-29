@@ -61,6 +61,17 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   });
   lua.lua_setfield(L, -2, to_luastring("GetTurnPlayer"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, session.state.turn);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetTurnCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    lua.lua_pushboolean(state, session.state.turnPlayer === player);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsTurnPlayer"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushliteral(state, session.state.phase);
     return 1;
   });
