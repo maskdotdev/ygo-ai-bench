@@ -95,6 +95,7 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetType", session, (card) => cardTypeFlags(card));
   pushNumberGetter(L, "GetOriginalType", session, (card) => cardTypeFlags(card));
   pushNumberMatcher(L, "IsType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
+  pushNumberMatcher(L, "IsOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
   pushNumberGetter(L, "GetAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberGetter(L, "GetBaseAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberMatcher(L, "IsAttack", session, (card, requested) => (card.data.attack ?? 0) === requested);
@@ -104,19 +105,24 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetLevel", session, (card) => card?.data.level ?? 0);
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
   pushNumberMatcher(L, "IsLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
+  pushNumberMatcher(L, "IsOriginalLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
   pushNumberGetter(L, "GetRank", session, (card) => cardRank(card));
   pushNumberGetter(L, "GetOriginalRank", session, (card) => cardRank(card));
   pushNumberMatcher(L, "IsRank", session, (card, requested) => cardRank(card) === requested);
+  pushNumberMatcher(L, "IsOriginalRank", session, (card, requested) => cardRank(card) === requested);
   pushNumberGetter(L, "GetLink", session, (card) => cardLink(card));
   pushNumberGetter(L, "GetOriginalLink", session, (card) => cardLink(card));
   pushNumberMatcher(L, "IsLink", session, (card, requested) => cardLink(card) === requested);
+  pushNumberMatcher(L, "IsOriginalLink", session, (card, requested) => cardLink(card) === requested);
   pushNumberGetter(L, "GetLinkMarker", session, (card) => card?.data.linkMarkers ?? 0);
   pushNumberGetter(L, "GetRace", session, (card) => card?.data.race ?? 0);
   pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
   pushNumberMatcher(L, "IsRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
+  pushNumberMatcher(L, "IsOriginalRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
   pushNumberGetter(L, "GetAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberGetter(L, "GetOriginalAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberMatcher(L, "IsAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
+  pushNumberMatcher(L, "IsOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
 }
 
 function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
@@ -364,6 +370,7 @@ const cardFieldNames = [
   "GetType",
   "GetOriginalType",
   "IsType",
+  "IsOriginalType",
   "GetAttack",
   "GetBaseAttack",
   "IsAttack",
@@ -373,19 +380,24 @@ const cardFieldNames = [
   "GetLevel",
   "GetOriginalLevel",
   "IsLevel",
+  "IsOriginalLevel",
   "GetRank",
   "GetOriginalRank",
   "IsRank",
+  "IsOriginalRank",
   "GetLink",
   "GetOriginalLink",
   "IsLink",
+  "IsOriginalLink",
   "GetLinkMarker",
   "GetRace",
   "GetOriginalRace",
   "IsRace",
+  "IsOriginalRace",
   "GetAttribute",
   "GetOriginalAttribute",
   "IsAttribute",
+  "IsOriginalAttribute",
   "IsFaceup",
   "IsFacedown",
   "GetLocation",
