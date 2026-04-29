@@ -412,6 +412,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("can discard two " .. tostring(Duel.IsPlayerCanDiscardDeck(0, 2)))
       Debug.Message("discarded " .. Duel.DiscardDeck(0, 2, REASON_EFFECT))
       Debug.Message("discard operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("can hand discard three " .. tostring(Duel.IsPlayerCanDiscardHand(0, 3)))
+      Debug.Message("can hand discard four " .. tostring(Duel.IsPlayerCanDiscardHand(0, 4)))
+      Debug.Message("hand discarded " .. Duel.DiscardHand(0, aux.FilterBoolFunction(Card.IsCode, ${drawnCodes[0]}), 1, 1, REASON_EFFECT))
+      Debug.Message("hand discard operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       `,
       "draw-search.lua",
     );
@@ -433,7 +437,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("can discard two false");
     expect(host.messages).toContain("discarded 1");
     expect(host.messages).toContain(`discard operated 1/${discardedCode}`);
-    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && drawnCodes.includes(card.code))).toHaveLength(2);
+    expect(host.messages).toContain("can hand discard three true");
+    expect(host.messages).toContain("can hand discard four false");
+    expect(host.messages).toContain("hand discarded 1");
+    expect(host.messages).toContain(`hand discard operated 1/${drawnCodes[0]}`);
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && drawnCodes.includes(card.code))).toHaveLength(1);
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === drawnCodes[0])?.location).toBe("graveyard");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === searchCode)?.location).toBe("hand");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === discardedCode)?.location).toBe("graveyard");
   });

@@ -170,6 +170,13 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDiscardDeck"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
+    lua.lua_pushboolean(state, matchingCardUids(session, player, 0x02).length >= count);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDiscardHand"));
   installPlayerLegalityHelpers(L, session);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
@@ -191,6 +198,13 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("DiscardDeck"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const discarded = discardHandCards(session, state);
+    setOperatedUids(hostState, discarded);
+    lua.lua_pushinteger(state, discarded.length);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("DiscardHand"));
   installMoveHelpers(L, session, hostState);
   installSummonHelpers(L, session, hostState);
   installQueryHelpers(L, session, hostState);
@@ -787,6 +801,27 @@ function topDeckUids(session: DuelSession, player: PlayerId, count: number): str
 function discardDeckCards(session: DuelSession, player: PlayerId, count: number, reason: number): string[] {
   const discarded: string[] = [];
   for (const uid of topDeckUids(session, player, count)) {
+    try {
+      sendDuelCardToGraveyard(session.state, uid, player, reason);
+      discarded.push(uid);
+    } catch {
+      // EDOPro-style helpers report moved cards; illegal moves simply fail.
+    }
+  }
+  return discarded;
+}
+
+function discardHandCards(session: DuelSession, L: unknown): string[] {
+  const filterRef = readOptionalFunctionRef(L, 2);
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const min = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
+  const max = Math.max(min, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min);
+  const reason = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : duelReason.effect;
+  const selected = matchingCardUidsWithFilter(L, session, filterRef, player, 0x02, 0, undefined, readFilterArgs(L, 6)).slice(0, max);
+  releaseOptionalFunctionRef(L, filterRef);
+  if (selected.length < min) return [];
+  const discarded: string[] = [];
+  for (const uid of selected) {
     try {
       sendDuelCardToGraveyard(session.state, uid, player, reason);
       discarded.push(uid);
