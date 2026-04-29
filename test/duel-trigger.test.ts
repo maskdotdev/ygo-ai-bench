@@ -710,6 +710,62 @@ describe("duel triggers", () => {
     expect(session.state.log.filter((entry) => entry.detail.includes("Duel-scoped trigger saw"))).toHaveLength(1);
   });
 
+  it("shares trigger count codes across multiple trigger effects", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = findPublicCard(session, 0, "100");
+    const firstSource = findPublicCard(session, 0, "300");
+    const secondSource = findPublicCard(session, 0, "500");
+    expect(summoned).toBeTruthy();
+    expect(firstSource).toBeTruthy();
+    expect(secondSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "first-shared-count-trigger",
+      sourceUid: firstSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      countLimit: 1,
+      countLimitCode: 0x444,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`First shared count saw ${ctx.eventCard?.name ?? "missing card"}`);
+      },
+    });
+    registerEffect(session, {
+      id: "second-shared-count-trigger",
+      sourceUid: secondSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      countLimit: 1,
+      countLimitCode: 0x444,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Second shared count saw ${ctx.eventCard?.name ?? "missing card"}`);
+      },
+    });
+
+    specialSummonDuelCard(session.state, summoned!.uid);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["first-shared-count-trigger", "second-shared-count-trigger"]);
+    const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "first-shared-count-trigger");
+    expect(firstTrigger).toBeTruthy();
+    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+
+    expect(session.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-shared-count-trigger"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger" && action.effectId === "second-shared-count-trigger")).toHaveLength(1);
+    expect(session.state.log.some((entry) => entry.detail.includes("First shared count saw"))).toBe(true);
+    expect(session.state.log.some((entry) => entry.detail.includes("Second shared count saw"))).toBe(false);
+  });
+
   it("collects phase and turn-start trigger effects", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
