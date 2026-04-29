@@ -162,6 +162,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDraw"));
+  installPlayerLegalityHelpers(L, session);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1;
@@ -184,6 +185,30 @@ function pushFirstAnnouncementValue(L: unknown, fallback: number): number {
   const value = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : fallback;
   lua.lua_pushinteger(L, value);
   return 1;
+}
+
+function installPlayerLegalityHelpers(L: unknown, session: DuelSession): void {
+  pushPlayerMoveMatcher(L, "IsPlayerCanSendtoGrave", session, "graveyard");
+  pushPlayerMoveMatcher(L, "IsPlayerCanSendtoHand", session, "hand");
+  pushPlayerMoveMatcher(L, "IsPlayerCanSendtoDeck", session, "deck");
+  pushPlayerMoveMatcher(L, "IsPlayerCanRemove", session, "banished");
+  pushPlayerMoveMatcher(L, "IsPlayerCanSendtoExtra", session, "extraDeck");
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const targetPlayer = readOptionalPlayer(state, 4) ?? player;
+    lua.lua_pushboolean(state, availableMonsterZoneCount(session, targetPlayer, []) > 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummon"));
+}
+
+function pushPlayerMoveMatcher(L: unknown, fieldName: string, session: DuelSession, location: DuelLocation): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uids = readCardOrGroupUids(state, 2);
+    lua.lua_pushboolean(state, uids.length === 0 || uids.every((uid) => canMoveDuelCardToLocation(session.state, uid, location)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
 function installFlagHelpers(L: unknown, session: DuelSession): void {

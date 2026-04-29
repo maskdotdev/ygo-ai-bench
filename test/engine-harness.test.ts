@@ -392,6 +392,13 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("drawn " .. Duel.Draw(0, 2, REASON_EFFECT))
       Debug.Message("draw operated " .. Duel.GetOperatedGroup():GetCount())
       local searched = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${searchCode}), 0, LOCATION_DECK, 0, 1, 1, nil)
+      local searched_card = searched:GetFirst()
+      Debug.Message("can grave searched " .. tostring(Duel.IsPlayerCanSendtoGrave(0, searched_card)))
+      Debug.Message("can hand searched " .. tostring(Duel.IsPlayerCanSendtoHand(0, searched_card)))
+      Debug.Message("can deck searched " .. tostring(Duel.IsPlayerCanSendtoDeck(0, searched_card)))
+      Debug.Message("can remove searched " .. tostring(Duel.IsPlayerCanRemove(0, searched_card)))
+      Debug.Message("can extra searched " .. tostring(Duel.IsPlayerCanSendtoExtra(0, searched_card)))
+      Debug.Message("can special summon " .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0)))
       Debug.Message("searched " .. Duel.SendtoHand(searched, 0, REASON_EFFECT))
       Debug.Message("search operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
       `,
@@ -403,6 +410,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("can draw five false");
     expect(host.messages).toContain("drawn 2");
     expect(host.messages).toContain("draw operated 2");
+    expect(host.messages).toContain("can grave searched true");
+    expect(host.messages).toContain("can hand searched true");
+    expect(host.messages).toContain("can deck searched false");
+    expect(host.messages).toContain("can remove searched true");
+    expect(host.messages).toContain("can extra searched false");
+    expect(host.messages).toContain("can special summon true");
     expect(host.messages).toContain("searched 1");
     expect(host.messages).toContain(`search operated ${searchCode}`);
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && drawnCodes.includes(card.code))).toHaveLength(2);
