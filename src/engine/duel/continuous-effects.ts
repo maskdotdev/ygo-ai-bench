@@ -14,6 +14,12 @@ export type ContinuousEffectContextFactory = (
   card?: DuelCardInstance,
 ) => DuelEffectContext;
 
+export interface ContinuousEffectMatch {
+  effect: DuelEffectDefinition;
+  source: DuelCardInstance;
+  card: DuelCardInstance;
+}
+
 export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card?: DuelCardInstance): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 22) continue;
@@ -83,6 +89,20 @@ export function leaveFieldRedirectLocation(
     if (!redirectLocation) continue;
     const ctx = createContext(effect, source, card);
     if (!effect.canActivate || effect.canActivate(ctx)) return redirectLocation;
+  }
+  return undefined;
+}
+
+export function findDestroyReplacementEffect(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
+  const card = findCard(state, uid);
+  if (!card) return undefined;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || (effect.code !== 45 && effect.code !== 50)) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return { effect, source, card };
   }
   return undefined;
 }

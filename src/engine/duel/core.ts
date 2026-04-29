@@ -47,6 +47,7 @@ import {
   positionChangeActions,
 } from "#duel/battle.js";
 import {
+  findDestroyReplacementEffect,
   isAttackPrevented,
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
@@ -299,6 +300,8 @@ export function sendDuelCardToGraveyard(state: DuelState, uid: string, controlle
 }
 
 export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy): DuelCardInstance {
+  const replacement = applyDestroyReplacement(state, uid, controller, reason);
+  if (replacement) return replacement;
   requireMoveAllowed(state, uid, "graveyard");
   const card = moveDuelCard(state, uid, "graveyard", controller, reason);
   pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
@@ -617,6 +620,19 @@ function createEffectContext(
 
 function createContinuousEffectContext(state: DuelState): ContinuousEffectContextFactory {
   return (effect, source, card) => createEffectContext(state, source, effect.controller, undefined, card, [], true);
+}
+
+function applyDestroyReplacement(state: DuelState, uid: string, controller: PlayerId | undefined, reason: number): DuelCardInstance | undefined {
+  if ((reason & duelReason.replace) !== 0) return undefined;
+  const match = findDestroyReplacementEffect(state, uid, createContinuousEffectContext(state));
+  if (!match || !canUseEffectCount(state, match.effect)) return undefined;
+  const ctx = createEffectContext(state, match.source, match.effect.controller, undefined, match.card, [], false);
+  if (match.effect.cost && !match.effect.cost(ctx)) return undefined;
+  if (match.effect.target && !match.effect.target(ctx)) return undefined;
+  match.effect.operation(ctx);
+  markEffectUsed(state, match.effect);
+  pushDuelLog(state, "destroyReplace", controller ?? match.card.controller, match.card.name, "Destruction replaced");
+  return match.card;
 }
 
 function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
