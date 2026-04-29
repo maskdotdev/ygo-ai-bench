@@ -42,6 +42,7 @@ const cards: DuelCardData[] = [
   { code: "310", name: "Level Four Non-Tuner", kind: "monster", typeFlags: 0x1, level: 4, attack: 1600, defense: 1000 },
   { code: "320", name: "Level Three Non-Tuner", kind: "monster", typeFlags: 0x1, level: 3, attack: 1300, defense: 900 },
   { code: "330", name: "Second Level Four Non-Tuner", kind: "monster", typeFlags: 0x1, level: 4, attack: 1400, defense: 1100 },
+  { code: "340", name: "Level One Non-Tuner", kind: "monster", typeFlags: 0x1, level: 1, attack: 500, defense: 500 },
   { code: "400", name: "Opponent Monster", kind: "monster", attack: 1500, defense: 1600 },
   { code: "500", name: "Third Monster", kind: "monster", attack: 2400, defense: 2000 },
   { code: "600", name: "One Tribute Monster", kind: "monster", level: 6, attack: 2300, defense: 1800 },
@@ -1027,6 +1028,24 @@ describe("full duel engine API", () => {
 
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid)).toBe(false);
     expect(() => synchroSummonDuelCard(session.state, 0, synchro!.uid, materials.map((card) => card.uid))).toThrow("synchro materials are not legal");
+  });
+
+  it("does not treat non-synchro extra deck ranks as generic synchro targets", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["110", "340"], extra: ["980"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const xyz = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "980");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "110" || card.code === "340"));
+    expect(xyz).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "synchroSummon" && candidate.uid === xyz!.uid)).toBe(false);
+    expect(() => synchroSummonDuelCard(session.state, 0, xyz!.uid, materials.map((card) => card.uid))).toThrow("synchro materials are not legal");
   });
 
   it("does not expose synchro summon actions without field materials or with no monster zone space", () => {

@@ -435,10 +435,14 @@ function findXyzMaterialUids(materialPool: DuelCardInstance[], card: DuelCardIns
 }
 
 function canGenericSynchroMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
-  const targetLevel = card.data.level ?? 0;
+  const targetLevel = synchroLevel(card);
   if (targetLevel <= 0 || materials.length < 2) return false;
   if (materials.filter((material) => isTuner(material)).length !== 1) return false;
   return materials.reduce((total, material) => total + (material.data.level ?? 0), 0) === targetLevel;
+}
+
+function synchroLevel(card: DuelCardInstance): number {
+  return ((card.data.typeFlags ?? 0) & 0x2000) !== 0 ? card.data.level ?? 0 : 0;
 }
 
 function canGenericXyzMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
