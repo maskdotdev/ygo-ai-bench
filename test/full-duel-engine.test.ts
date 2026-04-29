@@ -1267,6 +1267,37 @@ describe("full duel engine API", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
   });
 
+  it("preserves static continuous effects across snapshots", () => {
+    const session = createDuel({ seed: 95, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const fusion = findPublicCard(session, 0, "extraDeck", "900");
+    const blockedMaterial = findPublicCard(session, 0, "hand", "100");
+    expect(fusion).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "snapshot-cannot-be-fusion-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 235,
+      range: ["hand"],
+      operation() {},
+    });
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+
+    expect(restored.state.effects).toHaveLength(1);
+    expect(restored.state.effects[0]).toMatchObject({ id: "snapshot-cannot-be-fusion-material", event: "continuous", code: 235 });
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid)).toBe(false);
+    expect(() => fusionSummonDuelCard(restored.state, 0, fusion!.uid, restored.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300")).map((card) => card.uid))).toThrow("cannot be used as fusion material");
+  });
+
   it("does not expose fusion summon actions without all materials or with no monster zone space", () => {
     const missing = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(missing, {

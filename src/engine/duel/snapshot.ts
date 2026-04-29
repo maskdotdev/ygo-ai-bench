@@ -3,6 +3,7 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import type {
   DuelCardInstance,
   DuelCardReader,
+  DuelEffectDefinition,
   DuelPromptState,
   DuelSession,
   DuelState,
@@ -45,7 +46,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
         1: { ...session.state.players[1] },
       },
       cards: session.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids] })),
-      effects: [],
+      effects: session.state.effects.flatMap(serializeEffect),
       chain: session.state.chain.map(copyChainLink),
       chainLimits: [],
       chainPasses: [...session.state.chainPasses],
@@ -73,7 +74,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
         1: { ...snapshot.state.players[1] },
       },
       cards: snapshot.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids] })),
-      effects: [],
+      effects: snapshot.state.effects.map(restoreEffect),
       chain: snapshot.state.chain.map(copyChainLink),
       chainLimits: [],
       chainPasses: [...snapshot.state.chainPasses],
@@ -89,6 +90,35 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
     },
   };
 }
+
+function serializeEffect(effect: DuelEffectDefinition): DuelEffectDefinition[] {
+  if (!isStaticContinuousEffect(effect)) return [];
+  return [{
+    ...effect,
+    range: [...effect.range],
+    ...(effect.reset ? { reset: { ...effect.reset } } : {}),
+    ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
+    ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
+    operation: noopEffectOperation,
+  }];
+}
+
+function restoreEffect(effect: DuelEffectDefinition): DuelEffectDefinition {
+  return {
+    ...effect,
+    range: [...effect.range],
+    ...(effect.reset ? { reset: { ...effect.reset } } : {}),
+    ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
+    ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
+    operation: noopEffectOperation,
+  };
+}
+
+function isStaticContinuousEffect(effect: DuelEffectDefinition): boolean {
+  return effect.event === "continuous" && effect.canActivate === undefined && effect.cost === undefined && effect.target === undefined;
+}
+
+function noopEffectOperation(): void {}
 
 function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][number] {
   return { ...link, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };
