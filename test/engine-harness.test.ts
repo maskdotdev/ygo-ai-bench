@@ -1454,6 +1454,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalNumber("HINT_SELECTMSG")).toBe(3);
     expect(host.getGlobalNumber("HINTMSG_TOHAND")).toBe(506);
     expect(host.getGlobalNumber("HINTMSG_TARGET")).toBe(551);
+    expect(host.getGlobalNumber("PHASE_MAIN1")).toBe(0x4);
+    expect(host.getGlobalNumber("PHASE_BATTLE")).toBe(0x80);
     expect(host.registerInitialEffects()).toBe(2);
     expect(host.messages).toContain("effect predicates true/true/true");
     expect(host.messages).toContain("effect callbacks true/true/true/true");
@@ -2547,7 +2549,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(result.ok).toBe(true);
     expect(host.getGlobalNumber("observed_player")).toBe(0);
     expect(host.getGlobalNumber("observed_turn")).toBe(1);
-    expect(host.getGlobalString("observed_phase")).toBe("main1");
+    expect(host.getGlobalNumber("observed_phase")).toBe(0x4);
     expect(host.getGlobalString("observed_turn_player")).toBe("true");
     expect(host.getGlobalString("observed_not_turn_player")).toBe("false");
     expect(host.getGlobalString("observed_main_phase")).toBe("true");

@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import type { DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelPhase, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -21,7 +21,7 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsTurnPlayer"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushliteral(state, session.state.phase);
+    lua.lua_pushinteger(state, phaseMask(session.state.phase));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetCurrentPhase"));
@@ -49,4 +49,13 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
 
 function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
+}
+
+function phaseMask(phase: DuelPhase): number {
+  if (phase === "draw") return 0x1;
+  if (phase === "standby") return 0x2;
+  if (phase === "main1") return 0x4;
+  if (phase === "battle") return 0x80;
+  if (phase === "main2") return 0x100;
+  return 0x200;
 }
