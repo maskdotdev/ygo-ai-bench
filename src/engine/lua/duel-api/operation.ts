@@ -7,6 +7,7 @@ const { lua, to_luastring } = fengari;
 
 export interface LuaDuelOperationApiHostState {
   operationInfos: LuaDuelOperationInfo[];
+  possibleOperationInfos: LuaDuelOperationInfo[];
 }
 
 export interface LuaDuelOperationInfo {
@@ -19,38 +20,46 @@ export interface LuaDuelOperationInfo {
 }
 
 export function installDuelOperationApi(L: unknown, hostState: LuaDuelOperationApiHostState): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const info: LuaDuelOperationInfo = {
-      chainIndex: lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0,
-      category: lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0,
-      targetUids: readCardOrGroupUids(state, 3),
-      count: lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0,
-      player: readOptionalPlayer(state, 5) ?? 0,
-      parameter: lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : 0,
-    };
-    const existingIndex = hostState.operationInfos.findIndex((candidate) => candidate.chainIndex === info.chainIndex && candidate.category === info.category);
-    if (existingIndex >= 0) hostState.operationInfos[existingIndex] = info;
-    else hostState.operationInfos.push(info);
-    return 0;
-  });
+  lua.lua_pushcfunction(L, (state: unknown) => pushSetOperationInfo(state, hostState.operationInfos));
   lua.lua_setfield(L, -2, to_luastring("SetOperationInfo"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const chainIndex = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0;
-    const category = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const info = findOperationInfo(hostState.operationInfos, chainIndex, category);
-    if (!info) {
-      lua.lua_pushboolean(state, false);
-      return 1;
-    }
-    lua.lua_pushboolean(state, true);
-    lua.lua_pushinteger(state, info.category);
-    pushGroupTable(state, info.targetUids);
-    lua.lua_pushinteger(state, info.count);
-    lua.lua_pushinteger(state, info.player);
-    lua.lua_pushinteger(state, info.parameter);
-    return 6;
-  });
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, hostState.operationInfos));
   lua.lua_setfield(L, -2, to_luastring("GetOperationInfo"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSetOperationInfo(state, hostState.possibleOperationInfos));
+  lua.lua_setfield(L, -2, to_luastring("SetPossibleOperationInfo"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, hostState.possibleOperationInfos));
+  lua.lua_setfield(L, -2, to_luastring("GetPossibleOperationInfo"));
+}
+
+function pushSetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {
+  const info: LuaDuelOperationInfo = {
+    chainIndex: lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0,
+    category: lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0,
+    targetUids: readCardOrGroupUids(L, 3),
+    count: lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0,
+    player: readOptionalPlayer(L, 5) ?? 0,
+    parameter: lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : 0,
+  };
+  const existingIndex = operationInfos.findIndex((candidate) => candidate.chainIndex === info.chainIndex && candidate.category === info.category);
+  if (existingIndex >= 0) operationInfos[existingIndex] = info;
+  else operationInfos.push(info);
+  return 0;
+}
+
+function pushGetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {
+  const chainIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0;
+  const category = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const info = findOperationInfo(operationInfos, chainIndex, category);
+  if (!info) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  lua.lua_pushboolean(L, true);
+  lua.lua_pushinteger(L, info.category);
+  pushGroupTable(L, info.targetUids);
+  lua.lua_pushinteger(L, info.count);
+  lua.lua_pushinteger(L, info.player);
+  lua.lua_pushinteger(L, info.parameter);
+  return 6;
 }
 
 function findOperationInfo(operationInfos: LuaDuelOperationInfo[], chainIndex: number, category: number): LuaDuelOperationInfo | undefined {

@@ -65,6 +65,7 @@ interface LuaHostState {
   activeTargetUids: string[] | undefined;
   activeContext: DuelEffectContext | undefined;
   operationInfos: LuaDuelOperationInfo[];
+  possibleOperationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
   selectedUids: string[];
   pushEffectTable: (state: unknown, id: number) => void;
@@ -80,6 +81,7 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
     activeTargetUids: undefined,
     activeContext: undefined,
     operationInfos: [],
+    possibleOperationInfos: [],
     operatedUids: [],
     selectedUids: [],
     pushEffectTable(state, id) {

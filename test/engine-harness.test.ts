@@ -1741,11 +1741,16 @@ describe("EDOPro compatibility harness scaffolding", () => {
           Duel.Hint(HINT_SELECTMSG, 0, HINTMSG_TOHAND)
           local g=Duel.SelectTarget(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, c)
           Duel.SetOperationInfo(0, CATEGORY_TOHAND, g, g:GetCount(), 0, 0)
+          Duel.SetPossibleOperationInfo(0, CATEGORY_DRAW, nil, 0, 1, 2)
           return true
         end)
         e:SetOperation(function(e,c)
           local ok,cat,g,count,p,param=Duel.GetOperationInfo(0, CATEGORY_TOHAND)
           Debug.Message("operation info " .. tostring(ok) .. "/" .. cat .. "/" .. g:GetCount() .. "/" .. count .. "/" .. p .. "/" .. param)
+          local possible,pcat,pg,pcount,pp,pparam=Duel.GetPossibleOperationInfo(0, CATEGORY_DRAW)
+          Debug.Message("possible operation info " .. tostring(possible) .. "/" .. pcat .. "/" .. pg:GetCount() .. "/" .. pcount .. "/" .. pp .. "/" .. pparam)
+          local committed_draw=Duel.GetOperationInfo(0, CATEGORY_DRAW)
+          Debug.Message("possible separate " .. tostring(committed_draw))
           Debug.Message("target relates " .. tostring(Duel.GetFirstTarget():IsRelateToEffect(e)))
         end)
         c:RegisterEffect(e)
@@ -1763,6 +1768,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
     applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
     expect(host.messages).toContain("operation info true/8/1/1/0/0");
+    expect(host.messages).toContain("possible operation info true/128/0/0/1/2");
+    expect(host.messages).toContain("possible separate false");
     expect(host.messages).toContain("target relates true");
   });
 
