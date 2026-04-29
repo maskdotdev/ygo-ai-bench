@@ -204,6 +204,18 @@ export function installGroupApi(L: unknown): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SelectUnselect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const selected = readGroupUids(state, 2);
+    const min = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 1;
+    const max = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : min;
+    const filterRef = readOptionalFunctionRef(state, 7);
+    const candidates = readGroupUids(state, 1).filter((uid) => !selected.includes(uid));
+    const chosen = filterRef === undefined ? selectGroupUids(candidates, min, max) : selectSubGroup(state, candidates, filterRef, min, max, readFilterArgs(state, 8)) ?? [];
+    releaseOptionalFunctionRef(state, filterRef);
+    pushGroupTable(state, chosen);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SelectUnselectSubGroup"));
   lua.lua_setglobal(L, to_luastring("Group"));
 }
 
@@ -335,6 +347,7 @@ const groupFieldNames = [
   "KeepAlive",
   "DeleteGroup",
   "SelectUnselect",
+  "SelectUnselectSubGroup",
 ];
 
 function sameUidSet(a: string[], b: string[]): boolean {

@@ -1279,6 +1279,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("subgroup miss " .. tostring(all:CheckSubGroup(subgroup_attack, 2, 2, 6000)))
       local subgroup = all:SelectSubGroup(0, subgroup_attack, false, 2, 2, 4000)
       Debug.Message("subgroup selected " .. subgroup:GetCount())
+      local picked_subgroup = all:SelectUnselectSubGroup(Group.FromCards(c100), 0, false, 2, 2, subgroup_attack, 5000)
+      Debug.Message("select unselect subgroup " .. picked_subgroup:GetCount() .. " " .. tostring(picked_subgroup:IsContains(c100)))
+      local missed_subgroup = all:SelectUnselectSubGroup(Group.FromCards(c100), 0, false, 2, 2, subgroup_attack, 6000)
+      Debug.Message("select unselect subgroup miss " .. missed_subgroup:GetCount())
+      local plain_subgroup = all:SelectUnselectSubGroup(Group.FromCards(c100), 0, false, 1, 0)
+      Debug.Message("select unselect subgroup plain " .. plain_subgroup:GetCount() .. " " .. tostring(plain_subgroup:IsContains(c100)))
       g:RemoveCard(c100)
       g:DeleteGroup()
       Debug.Message("removed " .. g:GetCount() .. " " .. tostring(g:IsContains(c100)))
@@ -1312,6 +1318,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("subgroup check true");
     expect(host.messages).toContain("subgroup miss false");
     expect(host.messages).toContain("subgroup selected 2");
+    expect(host.messages).toContain("select unselect subgroup 2 false");
+    expect(host.messages).toContain("select unselect subgroup miss 0");
+    expect(host.messages).toContain("select unselect subgroup plain 2 false");
     expect(host.messages).toContain("removed 2 false");
     expect(host.messages).toContain("filtered high 2");
     expect(host.messages).toContain("vararg high 1");
