@@ -177,6 +177,17 @@ export function installGroupApi(L: unknown): void {
   });
   lua.lua_setfield(L, -2, to_luastring("CheckWithSumEqual"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
+    const sum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
+    const min = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 1;
+    const max = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : min;
+    const selected = selectUidsWithSumGreater(state, readGroupUids(state, 1), filterRef, sum, min, max, readFilterArgs(state, 6));
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushboolean(state, selected !== undefined);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CheckWithSumGreater"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 3);
     const sum = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
     const min = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 1;
@@ -187,6 +198,17 @@ export function installGroupApi(L: unknown): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SelectWithSumEqual"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 3);
+    const sum = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
+    const min = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 1;
+    const max = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : min;
+    const selected = selectUidsWithSumGreater(state, readGroupUids(state, 1), filterRef, sum, min, max, readFilterArgs(state, 7)) ?? [];
+    releaseOptionalFunctionRef(state, filterRef);
+    pushGroupTable(state, selected);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SelectWithSumGreater"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
     const min = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
@@ -315,6 +337,16 @@ function selectUidsWithSum(L: unknown, uids: string[], filterRef: number | undef
   return findSumSelection(entries, sum, boundedMin, boundedMax, 0, [], 0);
 }
 
+function selectUidsWithSumGreater(L: unknown, uids: string[], filterRef: number | undefined, sum: number, min: number, max: number, args: LuaFilterArgs): string[] | undefined {
+  if (filterRef === undefined) return undefined;
+  const boundedMin = Math.max(0, min);
+  const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
+  const entries = uids
+    .map((uid) => ({ uid, value: groupCardFilterValue(L, uid, filterRef, args) }))
+    .filter((entry): entry is { uid: string; value: number } => entry.value !== undefined);
+  return findSumGreaterSelection(entries, sum, boundedMin, boundedMax, 0, [], 0);
+}
+
 function findSumSelection(entries: { uid: string; value: number }[], target: number, min: number, max: number, index: number, selected: string[], current: number): string[] | undefined {
   if (current === target && selected.length >= min && selected.length <= max) return [...selected];
   if (index >= entries.length || selected.length >= max) return undefined;
@@ -323,6 +355,20 @@ function findSumSelection(entries: { uid: string; value: number }[], target: num
     if (!entry) continue;
     selected.push(entry.uid);
     const found = findSumSelection(entries, target, min, max, nextIndex + 1, selected, current + entry.value);
+    if (found) return found;
+    selected.pop();
+  }
+  return undefined;
+}
+
+function findSumGreaterSelection(entries: { uid: string; value: number }[], target: number, min: number, max: number, index: number, selected: string[], current: number): string[] | undefined {
+  if (current >= target && selected.length >= min && selected.length <= max) return [...selected];
+  if (index >= entries.length || selected.length >= max) return undefined;
+  for (let nextIndex = index; nextIndex < entries.length; nextIndex += 1) {
+    const entry = entries[nextIndex];
+    if (!entry) continue;
+    selected.push(entry.uid);
+    const found = findSumGreaterSelection(entries, target, min, max, nextIndex + 1, selected, current + entry.value);
     if (found) return found;
     selected.pop();
   }
@@ -382,6 +428,8 @@ const groupFieldNames = [
   "GetClassCount",
   "CheckWithSumEqual",
   "SelectWithSumEqual",
+  "CheckWithSumGreater",
+  "SelectWithSumGreater",
   "CheckSubGroup",
   "SelectSubGroup",
   "KeepAlive",

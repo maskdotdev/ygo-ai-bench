@@ -1147,10 +1147,16 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("vararg existing " .. tostring(Duel.IsExistingMatchingCard(match, 0, LOCATION_HAND, 0, 1, nil, 200, 1000)))
       Debug.Message("duel sum check " .. tostring(Duel.CheckWithSumEqual(Card.GetAttack, 0, LOCATION_HAND, 0, 2500, 2, 2, nil)))
       Debug.Message("duel sum miss " .. tostring(Duel.CheckWithSumEqual(Card.GetAttack, 0, LOCATION_HAND, 0, 4500, 2, 2, nil)))
+      Debug.Message("duel sum greater check " .. tostring(Duel.CheckWithSumGreater(Card.GetAttack, 0, LOCATION_HAND, 0, 3500, 2, 2, nil)))
+      Debug.Message("duel sum greater miss " .. tostring(Duel.CheckWithSumGreater(Card.GetAttack, 0, LOCATION_HAND, 0, 5500, 2, 2, nil)))
       local sum_selected = Duel.SelectWithSumEqual(0, Card.GetAttack, 0, LOCATION_HAND, 0, 3600, 2, 2, nil)
       Debug.Message("duel sum selected " .. sum_selected:GetCount())
+      local sum_greater_selected = Duel.SelectWithSumGreater(0, Card.GetAttack, 0, LOCATION_HAND, 0, 3500, 2, 2, nil)
+      Debug.Message("duel sum greater selected " .. sum_greater_selected:GetCount())
       local vararg_sum = Duel.SelectWithSumEqual(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 0, LOCATION_HAND, 0, 3600, 2, 2, nil, 1500)
       Debug.Message("duel sum vararg " .. vararg_sum:GetCount())
+      local vararg_greater_sum = Duel.SelectWithSumGreater(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 0, LOCATION_HAND, 0, 3500, 2, 2, nil, 1500)
+      Debug.Message("duel sum greater vararg " .. vararg_greater_sum:GetCount())
       local function subgroup_attack(sg,minatk)
         local total=0
         local tc=sg:GetFirst()
@@ -1174,8 +1180,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("vararg existing false");
     expect(host.messages).toContain("duel sum check true");
     expect(host.messages).toContain("duel sum miss false");
+    expect(host.messages).toContain("duel sum greater check true");
+    expect(host.messages).toContain("duel sum greater miss false");
     expect(host.messages).toContain("duel sum selected 2");
+    expect(host.messages).toContain("duel sum greater selected 2");
     expect(host.messages).toContain("duel sum vararg 2");
+    expect(host.messages).toContain("duel sum greater vararg 2");
     expect(host.messages).toContain("duel subgroup check true");
     expect(host.messages).toContain("duel subgroup miss false");
     expect(host.messages).toContain("duel subgroup selected 2");
@@ -1271,10 +1281,16 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
       Debug.Message("sum exact " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 3000, 2, 2)))
       Debug.Message("sum miss " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 4500, 2, 2)))
+      Debug.Message("sum greater " .. tostring(all:CheckWithSumGreater(Card.GetAttack, 3500, 2, 2)))
+      Debug.Message("sum greater miss " .. tostring(all:CheckWithSumGreater(Card.GetAttack, 5500, 2, 2)))
       local sum_selected = all:SelectWithSumEqual(0, Card.GetAttack, 3000, 2, 2)
       Debug.Message("sum selected " .. sum_selected:GetCount())
+      local sum_greater_selected = all:SelectWithSumGreater(0, Card.GetAttack, 3500, 2, 2)
+      Debug.Message("sum greater selected " .. sum_greater_selected:GetCount())
       local vararg_sum = all:SelectWithSumEqual(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 5000, 2, 2, 1500)
       Debug.Message("sum vararg " .. vararg_sum:GetCount())
+      local vararg_greater_sum = all:SelectWithSumGreater(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 4500, 2, 2, 1500)
+      Debug.Message("sum greater vararg " .. vararg_greater_sum:GetCount())
       local function subgroup_attack(sg,minatk)
         local total=0
         local tc=sg:GetFirst()
@@ -1326,8 +1342,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("class count 2");
     expect(host.messages).toContain("sum exact true");
     expect(host.messages).toContain("sum miss false");
+    expect(host.messages).toContain("sum greater true");
+    expect(host.messages).toContain("sum greater miss false");
     expect(host.messages).toContain("sum selected 2");
+    expect(host.messages).toContain("sum greater selected 2");
     expect(host.messages).toContain("sum vararg 2");
+    expect(host.messages).toContain("sum greater vararg 2");
     expect(host.messages).toContain("subgroup check true");
     expect(host.messages).toContain("subgroup miss false");
     expect(host.messages).toContain("subgroup selected 2");
