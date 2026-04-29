@@ -32,6 +32,7 @@ import {
   xyzSummonDuelCard,
 } from "#duel/core.js";
 import { canMoveDuelCardToLocation, moveDuelCard } from "#duel/card-state.js";
+import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 
@@ -1693,6 +1694,48 @@ describe("full duel engine API", () => {
     expect(state.cards.find((card) => card.uid === threatened!.uid)?.location).toBe("hand");
     expect(state.cards.find((card) => card.uid === replacement!.uid)?.location).toBe("graveyard");
     expect(state.log.some((entry) => entry.action === "destroyReplace" && entry.card === "Normal Test Monster")).toBe(true);
+  });
+
+  it("applies release replacement effects before moving the released card", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const threatened = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const replacement = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(threatened).toBeTruthy();
+    expect(replacement).toBeTruthy();
+    expect(source).toBeTruthy();
+
+    registerEffect(session, {
+      id: "release-replace",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 51,
+      property: 0x800,
+      targetRange: [1, 0],
+      range: ["hand"],
+      target(ctx) {
+        ctx.setTargets([replacement!.uid]);
+        return true;
+      },
+      operation(ctx) {
+        const [selected] = ctx.getTargets();
+        if (selected) sendDuelCardToGraveyard(ctx.duel, selected.uid, ctx.player, duelReason.release | duelReason.replace);
+      },
+    });
+
+    sendDuelCardToGraveyard(session.state, threatened!.uid, 0, duelReason.release | duelReason.cost);
+    const state = queryPublicState(session);
+
+    expect(state.cards.find((card) => card.uid === threatened!.uid)?.location).toBe("hand");
+    expect(state.cards.find((card) => card.uid === replacement!.uid)?.location).toBe("graveyard");
+    expect(state.log.some((entry) => entry.action === "releaseReplace" && entry.card === "Normal Test Monster")).toBe(true);
   });
 
   it("prevents effect destruction with indestructible effects", () => {

@@ -49,6 +49,7 @@ import {
 import {
   findDestroyReplacementEffect,
   findIndestructibleEffect,
+  findReleaseReplacementEffect,
   isAttackPrevented,
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
@@ -289,6 +290,8 @@ export function canPlayerSpecialSummon(state: DuelState, player: PlayerId, card?
 }
 
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
+  const replacement = applyReleaseReplacement(state, uid, controller, reason);
+  if (replacement) return replacement;
   const createContext = createContinuousEffectContext(state);
   if (shouldRedirectToGraveyardMove(state, uid, createContext)) return banishDuelCard(state, uid, controller, reason | duelReason.redirect);
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "graveyard", createContext);
@@ -641,13 +644,29 @@ function consumeIndestructibleCount(effect: DuelEffectDefinition): void {
 function applyDestroyReplacement(state: DuelState, uid: string, controller: PlayerId | undefined, reason: number): DuelCardInstance | undefined {
   if ((reason & duelReason.replace) !== 0) return undefined;
   const match = findDestroyReplacementEffect(state, uid, createContinuousEffectContext(state));
+  return applyReplacementEffect(state, match, controller, "destroyReplace", "Destruction replaced");
+}
+
+function applyReleaseReplacement(state: DuelState, uid: string, controller: PlayerId | undefined, reason: number): DuelCardInstance | undefined {
+  if ((reason & duelReason.release) === 0 || (reason & duelReason.replace) !== 0) return undefined;
+  const match = findReleaseReplacementEffect(state, uid, createContinuousEffectContext(state));
+  return applyReplacementEffect(state, match, controller, "releaseReplace", "Release replaced");
+}
+
+function applyReplacementEffect(
+  state: DuelState,
+  match: ReturnType<typeof findDestroyReplacementEffect>,
+  controller: PlayerId | undefined,
+  action: string,
+  detail: string,
+): DuelCardInstance | undefined {
   if (!match || !canUseEffectCount(state, match.effect)) return undefined;
   const ctx = createEffectContext(state, match.source, match.effect.controller, undefined, match.card, [], false);
   if (match.effect.cost && !match.effect.cost(ctx)) return undefined;
   if (match.effect.target && !match.effect.target(ctx)) return undefined;
   match.effect.operation(ctx);
   markEffectUsed(state, match.effect);
-  pushDuelLog(state, "destroyReplace", controller ?? match.card.controller, match.card.name, "Destruction replaced");
+  pushDuelLog(state, action, controller ?? match.card.controller, match.card.name, detail);
   return match.card;
 }
 

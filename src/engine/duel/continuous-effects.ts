@@ -94,10 +94,24 @@ export function leaveFieldRedirectLocation(
 }
 
 export function findDestroyReplacementEffect(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
+  return findReplacementEffect(state, uid, 45, 50, createContext);
+}
+
+export function findReleaseReplacementEffect(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
+  return findReplacementEffect(state, uid, 51, undefined, createContext);
+}
+
+function findReplacementEffect(
+  state: DuelState,
+  uid: string,
+  firstCode: number,
+  secondCode: number | undefined,
+  createContext: ContinuousEffectContextFactory,
+): ContinuousEffectMatch | undefined {
   const card = findCard(state, uid);
   if (!card) return undefined;
   for (const effect of state.effects) {
-    if (effect.event !== "continuous" || (effect.code !== 45 && effect.code !== 50)) continue;
+    if (effect.event !== "continuous" || (effect.code !== firstCode && effect.code !== secondCode)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectAffectsCard(effect, source, card)) continue;
