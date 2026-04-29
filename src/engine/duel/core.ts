@@ -258,6 +258,13 @@ export function canSpecialSummonDuelCard(state: DuelState, uid: string, controll
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
 }
 
+function canAttemptSpecialSummonProcedure(state: DuelState, uid: string): boolean {
+  const card = findCard(state, uid);
+  if (!card || !isMonsterLike(card)) return false;
+  if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card)) return false;
+  return canMoveDuelCardToLocation(state, uid, "monsterZone");
+}
+
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
   requireMoveAllowed(state, uid, "graveyard");
   const card = moveDuelCard(state, uid, "graveyard", controller, reason);
@@ -432,7 +439,7 @@ function specialSummonByProcedure(session: DuelSession, player: PlayerId, uid: s
   const source = requireControlledCard(session.state, player, uid);
   if (!effect.range.includes(source.location)) throw new Error(`${source.name} summon procedure is not in range`);
   const ctx = createEffectContext(session.state, source, player);
-  if (!canSpecialSummonDuelCard(session.state, uid, player)) throw new Error(`${source.name} cannot be Special Summoned`);
+  if (!canAttemptSpecialSummonProcedure(session.state, uid)) throw new Error(`${source.name} cannot be Special Summoned`);
   if (effect.canActivate && !effect.canActivate(ctx)) throw new Error(`Condition for ${effectId} is not legal`);
   if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
   if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
@@ -630,7 +637,7 @@ function specialSummonProcedureActions(state: DuelState, player: PlayerId): Duel
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!canUseEffectCount(state, effect)) continue;
-    if (!canSpecialSummonDuelCard(state, source.uid, player)) continue;
+    if (!canAttemptSpecialSummonProcedure(state, source.uid)) continue;
     if (!canChooseEffect(state, effect, source, player)) continue;
     actions.push({ type: "specialSummonProcedure", player, uid: source.uid, effectId: effect.id, label: `Special Summon ${source.name}` });
   }

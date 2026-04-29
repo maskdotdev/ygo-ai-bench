@@ -660,6 +660,84 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
   });
 
+  it("lets Lua special summon procedures free the last monster zone with materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Full Zone Procedure Source", kind: "monster" },
+      { code: "200", name: "Full Zone Blocked Procedure", kind: "monster" },
+      { code: "300", name: "Full Zone Material", kind: "monster" },
+      { code: "400", name: "Zone Filler A", kind: "monster" },
+      { code: "500", name: "Zone Filler B", kind: "monster" },
+      { code: "600", name: "Zone Filler C", kind: "monster" },
+      { code: "700", name: "Zone Filler D", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 35, startingHandSize: 7, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500", "600", "700"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    for (const code of ["300", "400", "500", "600", "700"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockedSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(source).toBeTruthy();
+    expect(blockedSource).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          local g=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_MZONE, 0, nil)
+          return g:GetCount()>0 and Duel.GetLocationCountFromEx(c:GetControler(), c:GetControler(), nil, g)>0
+        end)
+        e:SetOperation(function(e,c)
+          local g=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_MZONE, 0, 1, 1, nil)
+          Debug.Message("full zone material selected " .. g:GetCount() .. "/" .. Duel.GetLocationCountFromEx(c:GetControler(), c:GetControler(), nil, g))
+          Duel.SendtoGrave(g, REASON_MATERIAL + REASON_SPSUMMON)
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          return Duel.GetLocationCount(c:GetControler(), LOCATION_MZONE)>0
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "full-zone-material-special-summon-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const actions = getDuelLegalActions(session, 0);
+    const action = actions.find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    const blocked = actions.find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === blockedSource!.uid);
+    expect(action).toBeDefined();
+    expect(blocked).toBeUndefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("full zone material selected 1/1");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
+  });
+
   it("lets Lua scripts query monster zones and choose summon positions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Zone Filler A", kind: "monster" },
