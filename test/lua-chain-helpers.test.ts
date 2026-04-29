@@ -565,7 +565,7 @@ describe("Lua chain helpers", () => {
     const summoned = applyResponse(session, summon!);
 
     expect(summoned.ok).toBe(true);
-    expect(summoned.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["lua-1-1100", "lua-2-1100"]);
+    expect(summoned.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["lua-2-1100", "lua-1-1100"]);
     expect(getDuelLegalActions(session, 0).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === "lua-1-1100").map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
     expect(getDuelLegalActions(session, 0).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === "lua-2-1100").map((action) => action.type)).toEqual(["activateTrigger"]);
   });

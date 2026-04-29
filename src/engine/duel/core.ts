@@ -661,13 +661,14 @@ function collectTriggerEffects(state: DuelState, eventName: DuelEventName, event
     if (!canChooseEffect(state, effect, source, effect.controller, eventName, eventCard)) continue;
     collected.push({ effect, source, index });
   }
-  collected.sort((a, b) => triggerPlayerPriority(state, a.effect.controller) - triggerPlayerPriority(state, b.effect.controller) || a.index - b.index);
+  collected.sort((a, b) => triggerPriority(state, a.effect) - triggerPriority(state, b.effect) || a.index - b.index);
   for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, eventCard));
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
 }
 
-function triggerPlayerPriority(state: DuelState, player: PlayerId): number {
-  return player === state.turnPlayer ? 0 : 1;
+function triggerPriority(state: DuelState, effect: DuelEffectDefinition): number {
+  const optionalOffset = effect.optional === false ? 0 : 2;
+  return optionalOffset + (effect.controller === state.turnPlayer ? 0 : 1);
 }
 
 function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard?: DuelCardInstance): PendingTrigger {
