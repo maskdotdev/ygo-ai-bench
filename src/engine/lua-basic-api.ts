@@ -95,6 +95,23 @@ export function installDebugApi(L: unknown, messages: string[]): void {
 export function installAuxApi(L: unknown, readLuaError: (state: unknown) => string): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const code = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0;
+    const index = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushinteger(state, code * 16 + index);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Stringid"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, true);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("TRUE"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, false);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("FALSE"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     if (!lua.lua_isfunction(state, 1)) {
       lua.lua_pushnil(state);
       return 1;
@@ -118,5 +135,23 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("FilterBoolFunction"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    if (!lua.lua_isfunction(state, 1)) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    lua.lua_pushvalue(state, 1);
+    const ref = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
+    lua.lua_pushjsfunction(state, (callState: unknown) => {
+      const argCount = lua.lua_gettop(callState);
+      lua.lua_rawgeti(callState, lua.LUA_REGISTRYINDEX, ref);
+      for (let index = 1; index <= argCount; index += 1) lua.lua_pushvalue(callState, index);
+      const status = lua.lua_pcall(callState, argCount, 1, 0);
+      if (status !== lua.LUA_OK) return lauxlib.luaL_error(callState, to_luastring(readLuaError(callState)));
+      return 1;
+    });
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("NecroValleyFilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
 }

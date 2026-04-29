@@ -598,6 +598,37 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("label object count 1");
   });
 
+  it("provides common aux compatibility helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Aux A", kind: "monster" },
+      { code: "200", name: "Aux B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 18, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      observed_stringid = aux.Stringid(100, 2)
+      Debug.Message("true count " .. Duel.GetMatchingGroupCount(aux.TRUE, 0, LOCATION_HAND, 0, nil))
+      Debug.Message("false count " .. Duel.GetMatchingGroupCount(aux.FALSE, 0, LOCATION_HAND, 0, nil))
+      local wrapped = aux.NecroValleyFilter(aux.FilterBoolFunction(Card.IsCode, 100))
+      Debug.Message("wrapped count " .. Duel.GetMatchingGroupCount(wrapped, 0, LOCATION_HAND, 0, nil))
+      `,
+      "aux-helpers.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.getGlobalNumber("observed_stringid")).toBe(1602);
+    expect(host.messages).toContain("true count 2");
+    expect(host.messages).toContain("false count 0");
+    expect(host.messages).toContain("wrapped count 1");
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
