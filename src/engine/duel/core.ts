@@ -279,6 +279,7 @@ export function canPlayerSpecialSummon(state: DuelState, player: PlayerId, card?
 }
 
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
+  if (shouldRedirectToGraveyardMove(state, uid)) return banishDuelCard(state, uid, controller, reason | duelReason.redirect);
   requireMoveAllowed(state, uid, "graveyard");
   const card = moveDuelCard(state, uid, "graveyard", controller, reason);
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
@@ -703,6 +704,19 @@ function isAttackPrevented(state: DuelState, card: DuelCardInstance): boolean {
     if (!source || !effect.range.includes(source.location)) continue;
     const affectsCard = source.uid === card.uid || (((effect.property ?? 0) & 0x800) !== 0 && continuousEffectTargetsPlayer(effect, source, card.controller));
     if (!affectsCard) continue;
+    const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+function shouldRedirectToGraveyardMove(state: DuelState, uid: string): boolean {
+  const card = findCard(state, uid);
+  if (!card) return false;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 63) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || source.uid !== card.uid || !effect.range.includes(source.location)) continue;
     const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
