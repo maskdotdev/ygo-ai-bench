@@ -11,6 +11,7 @@ import {
   damageDuelPlayer,
   declareDuelAttack,
   destroyDuelCard,
+  detachDuelOverlayMaterials,
   getDuelAttackTargets,
   getDuelLegalActions,
   loadDecks,
@@ -1181,6 +1182,30 @@ describe("full duel engine API", () => {
     expect(result.state.cards.find((card) => card.uid === xyz!.uid)?.location).toBe("monsterZone");
     expect(result.state.cards.find((card) => card.uid === xyz!.uid)?.overlayCount).toBe(2);
     expect(action.materialUids.every((materialUid) => result.state.cards.find((card) => card.uid === materialUid)?.location === "overlay")).toBe(true);
+  });
+
+  it("detaches Xyz overlay materials to the graveyard", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["310", "330"], extra: ["980"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const xyz = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "980");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "310" || card.code === "330"));
+    expect(xyz).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+    xyzSummonDuelCard(session.state, 0, xyz!.uid, materials.map((card) => card.uid));
+    const firstOverlayUid = session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids[0];
+    const firstOverlayCode = session.state.cards.find((card) => card.uid === firstOverlayUid)?.code;
+
+    const detached = detachDuelOverlayMaterials(session.state, xyz!.uid, 1, 0);
+    expect(detached.map((card) => card.code)).toEqual([firstOverlayCode]);
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toHaveLength(1);
+    expect(session.state.cards.find((card) => card.uid === detached[0]!.uid)?.location).toBe("graveyard");
+    expect(() => detachDuelOverlayMaterials(session.state, xyz!.uid, 2, 0)).toThrow("does not have enough overlay materials");
   });
 
   it("rejects generic xyz materials with mismatched levels", () => {

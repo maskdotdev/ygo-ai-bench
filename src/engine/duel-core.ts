@@ -269,6 +269,24 @@ export function banishDuelCard(state: DuelState, uid: string, controller?: Playe
   return card;
 }
 
+export function detachDuelOverlayMaterials(state: DuelState, uid: string, count: number, controller?: PlayerId, reason: number = duelReason.cost): DuelCardInstance[] {
+  const card = findCard(state, uid);
+  if (!card) throw new Error(`Card ${uid} is not in the duel`);
+  const detachCount = Math.max(0, Math.floor(count));
+  if (detachCount === 0) return [];
+  if (card.overlayUids.length < detachCount) throw new Error(`${card.name} does not have enough overlay materials`);
+  const detachedUids = card.overlayUids.slice(0, detachCount);
+  card.overlayUids = card.overlayUids.slice(detachCount);
+  const detached: DuelCardInstance[] = [];
+  for (const materialUid of detachedUids) {
+    const material = moveDuelCard(state, materialUid, "graveyard", controller ?? card.controller, reason);
+    pushDuelLog(state, "detachOverlay", material.controller, material.name, `Detached from ${card.name}`);
+    collectTriggerEffects(state, "sentToGraveyard", material);
+    detached.push(material);
+  }
+  return detached;
+}
+
 export function damageDuelPlayer(state: DuelState, player: PlayerId, amount: number): number {
   const value = Math.max(0, Math.floor(amount));
   state.players[player].lifePoints = Math.max(0, state.players[player].lifePoints - value);

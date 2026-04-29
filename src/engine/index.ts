@@ -28,6 +28,7 @@ export {
   sendDuelCardToGraveyard,
   destroyDuelCard,
   banishDuelCard,
+  detachDuelOverlayMaterials,
   damageDuelPlayer,
   recoverDuelPlayer,
   setDuelPlayerLifePoints,

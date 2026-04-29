@@ -330,6 +330,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local second = overlays:GetNext()
       Debug.Message("overlay count " .. xyz:GetOverlayCount() .. "/" .. overlays:GetCount())
       Debug.Message("overlay codes " .. first:GetCode() .. "/" .. second:GetCode())
+      Debug.Message("card detach " .. xyz:RemoveOverlayCard(0, 1, 1, REASON_COST))
+      Debug.Message("card detach operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("overlay after card detach " .. xyz:GetOverlayCount())
+      Debug.Message("duel detach " .. Duel.RemoveOverlayCard(0, LOCATION_MZONE, 0, 1, 1, REASON_COST))
+      Debug.Message("duel detach operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("overlay after duel detach " .. xyz:GetOverlayCount())
+      Debug.Message("duel detach empty " .. Duel.RemoveOverlayCard(0, LOCATION_MZONE, 0, 1, 1, REASON_COST))
+      Debug.Message("empty detach operated " .. Duel.GetOperatedGroup():GetCount())
       `,
       "overlay-helpers.lua",
     );
@@ -337,6 +345,16 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("overlay count 2/2");
     expect(host.messages).toContain("overlay codes 100/300");
+    expect(host.messages).toContain("card detach 1");
+    expect(host.messages).toContain("card detach operated 1/100");
+    expect(host.messages).toContain("overlay after card detach 1");
+    expect(host.messages).toContain("duel detach 1");
+    expect(host.messages).toContain("duel detach operated 1/300");
+    expect(host.messages).toContain("overlay after duel detach 0");
+    expect(host.messages).toContain("duel detach empty 0");
+    expect(host.messages).toContain("empty detach operated 0");
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([]);
+    expect(materials.every((card) => session.state.cards.find((candidate) => candidate.uid === card.uid)?.location === "graveyard")).toBe(true);
   });
 
   it("lets Lua scripts query monster zones and choose summon positions", () => {

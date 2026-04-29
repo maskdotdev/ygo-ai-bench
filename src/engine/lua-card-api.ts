@@ -1,6 +1,7 @@
 import fengari from "fengari";
-import { canMoveDuelCardToLocation, registerEffect } from "./duel-core.js";
+import { canMoveDuelCardToLocation, detachDuelOverlayMaterials, registerEffect } from "./duel-core.js";
 import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "./duel-flags.js";
+import { duelReason } from "./duel-reasons.js";
 import { pushGroupTable } from "./lua-group-api.js";
 import {
   copyGlobalFunctionToField,
@@ -20,6 +21,7 @@ export interface LuaCardApiEffectRecord {
 
 export interface LuaCardApiState<EffectRecord extends LuaCardApiEffectRecord> {
   effects: Map<number, EffectRecord>;
+  operatedUids?: string[];
 }
 
 export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
@@ -41,7 +43,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));
   installCodeHelpers(L, session);
   installStatHelpers(L, session);
-  installStateHelpers(L, session);
+  installStateHelpers(L, session, hostState);
   installFlagHelpers(L, session);
   lua.lua_setglobal(L, to_luastring("Card"));
 }
@@ -117,7 +119,7 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
 }
 
-function installStateHelpers(L: unknown, session: DuelSession): void {
+function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
   pushNumberGetter(L, "GetOwner", session, (card) => card?.owner ?? 0);
   pushNumberMatcher(L, "IsOwner", session, (card, requested) => card.owner === normalizePlayer(requested));
   pushNumberGetter(L, "GetControler", session, (card) => card?.controller ?? 0);
@@ -131,6 +133,8 @@ function installStateHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetOverlayGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushRemoveOverlayCard(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
   pushBooleanGetter(L, "IsFaceup", session, (card) => Boolean(card?.faceUp));
   pushBooleanGetter(L, "IsFacedown", session, (card) => Boolean(card && !card.faceUp));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -253,6 +257,32 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
+function pushRemoveOverlayCard<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const card = readCard(L, session);
+  const player = lua.lua_isnumber(L, 2) ? normalizePlayer(lua.lua_tointeger(L, 2)) : card?.controller ?? 0;
+  const min = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
+  const max = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min;
+  const reason = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : duelReason.cost;
+  const detached = card ? detachOverlayRange(session, card, min, max, player, reason) : [];
+  setOperatedUids(hostState, detached.map((material) => material.uid));
+  lua.lua_pushinteger(L, detached.length);
+  return 1;
+}
+
+function detachOverlayRange(session: DuelSession, card: DuelCardInstance, min: number, max: number, player: PlayerId, reason: number): DuelCardInstance[] {
+  const count = Math.min(Math.max(min, 0), Math.max(max, 0), card.overlayUids.length);
+  if (count < min) return [];
+  try {
+    return detachDuelOverlayMaterials(session.state, card.uid, count, player, reason);
+  } catch {
+    return [];
+  }
+}
+
+function setOperatedUids<EffectRecord extends LuaCardApiEffectRecord>(hostState: LuaCardApiState<EffectRecord>, uids: string[]): void {
+  hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...uids);
+}
+
 function readCard(L: unknown, session: DuelSession | undefined): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1);
   return uid && session ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
@@ -361,6 +391,7 @@ const cardFieldNames = [
   "GetPosition",
   "GetOverlayCount",
   "GetOverlayGroup",
+  "RemoveOverlayCard",
   "IsPosition",
   "IsAttackPos",
   "IsDefensePos",

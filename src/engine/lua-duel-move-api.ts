@@ -3,13 +3,14 @@ import {
   banishDuelCard,
   canMoveDuelCardToLocation,
   changeDuelCardPosition,
+  detachDuelOverlayMaterials,
   destroyDuelCard,
   moveDuelCard,
   sendDuelCardToGraveyard,
   specialSummonDuelCard,
 } from "./duel-core.js";
 import { duelReason } from "./duel-reasons.js";
-import { positionFromMask, readCardUid, readGroupUids } from "./lua-api-utils.js";
+import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "./lua-api-utils.js";
 import type { CardPosition, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "./duel-types.js";
 
 const { lua, to_luastring } = fengari;
@@ -29,6 +30,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   pushMoveToLocationHelper(L, "SendtoDeck", session, hostState, "deck", 4);
   pushMoveToLocationHelper(L, "SendtoExtraP", session, hostState, "extraDeck", 3);
   pushMoveToLocationHelper(L, "SendtoExtra", session, hostState, "extraDeck", 3);
+  lua.lua_pushcfunction(L, (state: unknown) => pushRemoveOverlayCard(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummon(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangePosition(state, session, hostState));
@@ -100,6 +103,20 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
   return 1;
 }
 
+function pushRemoveOverlayCard(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
+  const selfLocations = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const opponentLocations = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
+  const min = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 1;
+  const max = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : min;
+  const reason = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : duelReason.cost;
+  const holders = overlayHolders(session, player, selfLocations, opponentLocations);
+  const detached = detachOverlayRange(session, holders, min, max, player, reason);
+  setOperatedUids(hostState, detached);
+  lua.lua_pushinteger(L, detached.length);
+  return 1;
+}
+
 function moveCardOrGroup(session: DuelSession, L: unknown, mover: LuaCardMover, extraReason = 0): string[] {
   const reason = readMoveReason(L, 2, extraReason);
   const moved: string[] = [];
@@ -114,6 +131,35 @@ function moveCardOrGroup(session: DuelSession, L: unknown, mover: LuaCardMover, 
     }
   }
   return moved;
+}
+
+function overlayHolders(session: DuelSession, player: PlayerId, selfMask: number, opponentMask: number): DuelCardInstance[] {
+  return [
+    ...overlayHoldersForPlayer(session, player, selfMask),
+    ...overlayHoldersForPlayer(session, otherPlayer(player), opponentMask),
+  ];
+}
+
+function overlayHoldersForPlayer(session: DuelSession, player: PlayerId, locationMask: number): DuelCardInstance[] {
+  const locations = locationsFromMask(locationMask);
+  if (locations.length === 0) return [];
+  return session.state.cards.filter((card) => card.controller === player && locations.includes(card.location) && card.overlayUids.length > 0);
+}
+
+function detachOverlayRange(session: DuelSession, holders: DuelCardInstance[], min: number, max: number, player: PlayerId, reason: number): string[] {
+  const available = holders.reduce((total, holder) => total + holder.overlayUids.length, 0);
+  const count = Math.min(Math.max(min, 0), Math.max(max, 0), available);
+  if (count < min) return [];
+  const detached: string[] = [];
+  let remaining = count;
+  for (const holder of holders) {
+    if (remaining <= 0) break;
+    const holderCount = Math.min(holder.overlayUids.length, remaining);
+    const materials = detachDuelOverlayMaterials(session.state, holder.uid, holderCount, player, reason);
+    detached.push(...materials.map((material) => material.uid));
+    remaining -= holderCount;
+  }
+  return detached;
 }
 
 function moveCardOrGroupToLocation(session: DuelSession, L: unknown, location: DuelLocation, reasonIndex: number): string[] {
@@ -149,6 +195,10 @@ function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
   const value = lua.lua_tointeger(L, index);
   if (value !== 0 && value !== 1) return undefined;
   return value;
+}
+
+function otherPlayer(player: PlayerId): PlayerId {
+  return player === 0 ? 1 : 0;
 }
 
 function setOperatedUids(hostState: LuaDuelMoveApiHostState, uids: string[]): void {
