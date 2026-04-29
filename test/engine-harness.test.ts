@@ -989,6 +989,40 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalNumber("cost_reason")).toBe(0x80);
   });
 
+  it("exposes card owner, controller, location, sequence, and position metadata", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "State Probe", kind: "monster" }];
+    const session = createDuel({ seed: 20, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const normal = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon");
+    expect(normal).toBeDefined();
+    expect(applyResponse(session, normal!).ok).toBe(true);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      Debug.Message("card state " .. c:GetOwner() .. "/" .. tostring(c:IsOwner(0)) .. "/" .. c:GetControler() .. "/" .. c:GetLocation() .. "/" .. c:GetSequence() .. "/" .. c:GetPosition())
+      Debug.Message("position checks " .. tostring(c:IsPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(c:IsControler(0)))
+      Duel.SendtoGrave(c, REASON_EFFECT)
+      local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
+      Debug.Message("previous state " .. g:GetPreviousLocation() .. "/" .. g:GetPreviousControler() .. "/" .. g:GetPreviousSequence() .. "/" .. g:GetPreviousPosition())
+      Debug.Message("previous position " .. tostring(g:IsPreviousPosition(POS_FACEUP_ATTACK)))
+      `,
+      "card-state.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.messages).toContain("card state 0/true/0/4/0/1");
+    expect(host.messages).toContain("position checks true/true");
+    expect(host.messages).toContain("previous state 4/0/0/1");
+    expect(host.messages).toContain("previous position true");
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

@@ -9,7 +9,7 @@ import {
   readTableNumberField,
   readTableStringField,
 } from "./lua-api-utils.js";
-import type { DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "./duel-types.js";
+import type { CardPosition, DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "./duel-types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -98,6 +98,12 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
 }
 
 function installStateHelpers(L: unknown, session: DuelSession): void {
+  pushNumberGetter(L, "GetOwner", session, (card) => card?.owner ?? 0);
+  pushNumberMatcher(L, "IsOwner", session, (card, requested) => card.owner === normalizePlayer(requested));
+  pushNumberGetter(L, "GetControler", session, (card) => card?.controller ?? 0);
+  pushNumberGetter(L, "GetLocation", session, (card) => locationMaskFromLocation(card?.location));
+  pushNumberGetter(L, "GetSequence", session, (card) => card?.sequence ?? 0);
+  pushNumberGetter(L, "GetPosition", session, (card) => positionMaskFromPosition(card?.position));
   pushBooleanGetter(L, "IsFaceup", session, (card) => Boolean(card?.faceUp));
   pushBooleanGetter(L, "IsFacedown", session, (card) => Boolean(card && !card.faceUp));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -117,6 +123,8 @@ function installStateHelpers(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsLocation"));
   pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
+  pushNumberGetter(L, "GetPreviousSequence", session, (card) => card?.previousSequence ?? 0);
+  pushNumberGetter(L, "GetPreviousPosition", session, (card) => positionMaskFromPosition(card?.previousPosition));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
@@ -124,6 +132,13 @@ function installStateHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPreviousLocation"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requestedPosition = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
+    lua.lua_pushboolean(state, Boolean(card?.previousPosition && requestedPosition && card.previousPosition === requestedPosition));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPreviousPosition"));
   pushNumberGetter(L, "GetPreviousControler", session, (card) => card?.previousController ?? 0);
   pushNumberMatcher(L, "IsPreviousControler", session, (card, requested) => card.previousController === normalizePlayer(requested));
   pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
@@ -238,6 +253,13 @@ function locationMaskFromLocation(location: DuelCardInstance["location"] | undef
   return 0;
 }
 
+function positionMaskFromPosition(position: CardPosition | undefined): number {
+  if (position === "faceUpAttack") return 0x1;
+  if (position === "faceUpDefense") return 0x4;
+  if (position === "faceDownDefense") return 0x8;
+  return 0;
+}
+
 function summonTypeMask(card: DuelCardInstance | undefined): number {
   if (!card?.summonType) return 0;
   if (card.summonType === "normal") return 0x10000000;
@@ -263,6 +285,9 @@ const cardFieldNames = [
   "IsCode",
   "IsOriginalCode",
   "IsSetCard",
+  "GetOwner",
+  "IsOwner",
+  "GetControler",
   "GetType",
   "IsType",
   "GetAttack",
@@ -277,12 +302,18 @@ const cardFieldNames = [
   "IsAttribute",
   "IsFaceup",
   "IsFacedown",
+  "GetLocation",
+  "GetSequence",
+  "GetPosition",
   "IsPosition",
   "IsAttackPos",
   "IsDefensePos",
   "IsLocation",
   "GetPreviousLocation",
+  "GetPreviousSequence",
+  "GetPreviousPosition",
   "IsPreviousLocation",
+  "IsPreviousPosition",
   "GetPreviousControler",
   "IsPreviousControler",
   "GetReason",
