@@ -36,8 +36,11 @@ import type { DuelCardData } from "../src/engine/index.js";
 
 const cards: DuelCardData[] = [
   { code: "100", name: "Normal Test Monster", kind: "monster", attack: 1800, defense: 1200 },
+  { code: "110", name: "Level Three Tuner", kind: "monster", typeFlags: 0x1001, level: 3, attack: 1200, defense: 800 },
   { code: "200", name: "Test Spell", kind: "spell" },
   { code: "300", name: "Second Monster", kind: "monster", attack: 1000, defense: 1000 },
+  { code: "310", name: "Level Four Non-Tuner", kind: "monster", typeFlags: 0x1, level: 4, attack: 1600, defense: 1000 },
+  { code: "320", name: "Level Three Non-Tuner", kind: "monster", typeFlags: 0x1, level: 3, attack: 1300, defense: 900 },
   { code: "400", name: "Opponent Monster", kind: "monster", attack: 1500, defense: 1600 },
   { code: "500", name: "Third Monster", kind: "monster", attack: 2400, defense: 2000 },
   { code: "600", name: "One Tribute Monster", kind: "monster", level: 6, attack: 2300, defense: 1800 },
@@ -48,6 +51,7 @@ const cards: DuelCardData[] = [
   { code: "930", name: "Link Test Monster", kind: "extra", attack: 2300, linkMaterials: ["100", "300"] },
   { code: "950", name: "Generic Link-2", kind: "extra", attack: 1800, typeFlags: 0x4000001, level: 2 },
   { code: "960", name: "Generic Link-3", kind: "extra", attack: 2400, typeFlags: 0x4000001, level: 3 },
+  { code: "970", name: "Generic Level 7 Synchro", kind: "extra", attack: 2600, defense: 2100, typeFlags: 0x2001, level: 7 },
   { code: "940", name: "Ritual Test Monster", kind: "monster", attack: 2500, defense: 2100, ritualMaterials: ["100", "300"] },
 ];
 
@@ -960,6 +964,67 @@ describe("full duel engine API", () => {
 
     expect(result.ok).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Synchro special summoned Synchro Test Monster")).toBe(true);
+  });
+
+  it("synchro summons generic monsters with one tuner and matching levels", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["110", "310"], extra: ["970"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const synchro = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "970");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "110" || card.code === "310"));
+    expect(synchro).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("synchroSummon");
+    if (!action || action.type !== "synchroSummon") throw new Error("Expected synchro summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === synchro!.uid)?.location).toBe("monsterZone");
+    expect(action.materialUids.every((materialUid) => result.state.cards.find((card) => card.uid === materialUid)?.location === "graveyard")).toBe(true);
+  });
+
+  it("rejects generic synchro materials with the wrong level total", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["110", "320"], extra: ["970"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const synchro = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "970");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "110" || card.code === "320"));
+    expect(synchro).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid)).toBe(false);
+    expect(() => synchroSummonDuelCard(session.state, 0, synchro!.uid, materials.map((card) => card.uid))).toThrow("synchro materials are not legal");
+  });
+
+  it("rejects generic synchro materials without exactly one tuner", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["310", "320"], extra: ["970"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const synchro = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "970");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "310" || card.code === "320"));
+    expect(synchro).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid)).toBe(false);
+    expect(() => synchroSummonDuelCard(session.state, 0, synchro!.uid, materials.map((card) => card.uid))).toThrow("synchro materials are not legal");
   });
 
   it("does not expose synchro summon actions without field materials or with no monster zone space", () => {
