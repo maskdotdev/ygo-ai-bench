@@ -389,6 +389,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     const deckOrder = session.state.cards.filter((card) => card.controller === 0 && card.location === "deck").sort((a, b) => a.sequence - b.sequence);
     const drawnCodes = deckOrder.slice(0, 2).map((card) => card.code);
     const searchCode = deckOrder.slice(2).find((card) => card.code === "300")?.code ?? deckOrder[2]!.code;
+    const discardedCode = deckOrder.slice(2).find((card) => card.code !== searchCode)!.code;
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -407,6 +408,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("can special summon " .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0)))
       Debug.Message("searched " .. Duel.SendtoHand(searched, 0, REASON_EFFECT))
       Debug.Message("search operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("can discard one " .. tostring(Duel.IsPlayerCanDiscardDeck(0, 1)))
+      Debug.Message("can discard two " .. tostring(Duel.IsPlayerCanDiscardDeck(0, 2)))
+      Debug.Message("discarded " .. Duel.DiscardDeck(0, 2, REASON_EFFECT))
+      Debug.Message("discard operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       `,
       "draw-search.lua",
     );
@@ -424,8 +429,13 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("can special summon true");
     expect(host.messages).toContain("searched 1");
     expect(host.messages).toContain(`search operated ${searchCode}`);
+    expect(host.messages).toContain("can discard one true");
+    expect(host.messages).toContain("can discard two false");
+    expect(host.messages).toContain("discarded 1");
+    expect(host.messages).toContain(`discard operated 1/${discardedCode}`);
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && drawnCodes.includes(card.code))).toHaveLength(2);
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === searchCode)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === discardedCode)?.location).toBe("graveyard");
   });
 
   it("lets Lua scripts query field groups across both players and locations", () => {

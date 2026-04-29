@@ -163,6 +163,13 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDraw"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
+    lua.lua_pushboolean(state, topDeckUids(session, player, count).length >= count);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDiscardDeck"));
   installPlayerLegalityHelpers(L, session);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
@@ -174,6 +181,16 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Draw"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
+    const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
+    const discarded = discardDeckCards(session, player, count, reason);
+    setOperatedUids(hostState, discarded);
+    lua.lua_pushinteger(state, discarded.length);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("DiscardDeck"));
   installMoveHelpers(L, session, hostState);
   installSummonHelpers(L, session, hostState);
   installQueryHelpers(L, session, hostState);
@@ -765,6 +782,19 @@ function locationMaskFromLocation(location: DuelCardInstance["location"] | undef
 
 function topDeckUids(session: DuelSession, player: PlayerId, count: number): string[] {
   return matchingCardUids(session, player, 0x01).slice(0, count);
+}
+
+function discardDeckCards(session: DuelSession, player: PlayerId, count: number, reason: number): string[] {
+  const discarded: string[] = [];
+  for (const uid of topDeckUids(session, player, count)) {
+    try {
+      sendDuelCardToGraveyard(session.state, uid, player, reason);
+      discarded.push(uid);
+    } catch {
+      // EDOPro-style helpers report moved cards; illegal moves simply fail.
+    }
+  }
+  return discarded;
 }
 
 function shuffleDeck(session: DuelSession, player: PlayerId): void {
