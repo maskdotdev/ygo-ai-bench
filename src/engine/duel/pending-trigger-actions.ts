@@ -22,3 +22,11 @@ export function getPendingTriggerActions(state: DuelState, player: PlayerId): Du
 
   return actions;
 }
+
+export function pruneSpentMandatoryPendingTriggers(state: DuelState): void {
+  state.pendingTriggers = state.pendingTriggers.filter((trigger) => {
+    const effect = state.effects.find((candidate) => candidate.id === trigger.effectId && candidate.sourceUid === trigger.sourceUid);
+    return effect?.optional !== false || canUseEffectCount(state, effect);
+  });
+  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+}

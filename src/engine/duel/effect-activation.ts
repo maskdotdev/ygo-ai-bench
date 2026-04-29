@@ -1,5 +1,6 @@
 import { findCard, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
+import { pruneSpentMandatoryPendingTriggers } from "#duel/pending-trigger-actions.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import type {
   DuelCardInstance,
@@ -110,6 +111,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
     handlers.pushChainLink(session.state, trigger.player, source.uid, effect.id, trigger.eventName, eventCard, targetUids, ctx.targetPlayer, ctx.targetParam);
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
     markEffectUsed(session.state, effect);
+    pruneSpentMandatoryPendingTriggers(session.state);
     const responsePlayer = otherPlayer(trigger.player);
     if (handlers.hasChainResponses(session.state, responsePlayer)) {
       session.state.waitingFor = responsePlayer;

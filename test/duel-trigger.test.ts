@@ -740,6 +740,51 @@ describe("duel triggers", () => {
     expect(session.state.log.some((entry) => entry.detail.includes("Second shared count saw"))).toBe(false);
   });
 
+  it("prunes mandatory shared-count triggers after a sibling spends the count", () => {
+    const { session, firstSummon, triggerSource, secondSummon } = setupTriggerCountFixture();
+
+    registerEffect(session, {
+      id: "first-mandatory-shared-count-trigger",
+      sourceUid: triggerSource.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      optional: false,
+      countLimit: 1,
+      countLimitCode: 0x555,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`First mandatory shared count saw ${ctx.eventCard?.name ?? "missing card"}`);
+      },
+    });
+    registerEffect(session, {
+      id: "second-mandatory-shared-count-trigger",
+      sourceUid: secondSummon.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      optional: false,
+      countLimit: 1,
+      countLimitCode: 0x555,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Second mandatory shared count saw ${ctx.eventCard?.name ?? "missing card"}`);
+      },
+    });
+
+    specialSummonDuelCard(session.state, firstSummon.uid);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["first-mandatory-shared-count-trigger", "second-mandatory-shared-count-trigger"]);
+
+    activateTriggerByEffect(session, "first-mandatory-shared-count-trigger");
+
+    expect(session.state.usedCountKeys).toEqual(["turn-1:0:code-1365"]);
+    expect(session.state.pendingTriggers).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateTrigger" || action.type === "declineTrigger")).toBe(false);
+    expect(session.state.waitingFor).toBe(0);
+    expect(session.state.log.some((entry) => entry.detail.includes("First mandatory shared count saw"))).toBe(true);
+    expect(session.state.log.some((entry) => entry.detail.includes("Second mandatory shared count saw"))).toBe(false);
+  });
+
   it("collects phase and turn-start trigger effects", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
