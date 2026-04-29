@@ -1,9 +1,9 @@
 import fengari from "fengari";
-import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "./duel-flags.js";
 import { pushCardTable } from "./lua-card-api.js";
 import { installDuelActivityApi } from "./lua-duel-activity-api.js";
 import { installDuelChainApi } from "./lua-duel-chain-api.js";
 import { installDuelDeckApi } from "./lua-duel-deck-api.js";
+import { installDuelFlagApi } from "./lua-duel-flag-api.js";
 import { installDuelLpApi } from "./lua-duel-lp-api.js";
 import { installDuelMoveApi } from "./lua-duel-move-api.js";
 import { installDuelPlayerApi } from "./lua-duel-player-api.js";
@@ -95,7 +95,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelQueryApi(L, session, hostState);
   installDuelReleaseApi(L, session);
   installOperationInfoHelpers(L, hostState);
-  installFlagHelpers(L, session);
+  installDuelFlagApi(L, session);
   lua.lua_setglobal(L, to_luastring("Duel"));
 }
 
@@ -103,34 +103,6 @@ function pushFirstAnnouncementValue(L: unknown, fallback: number): number {
   const value = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : fallback;
   lua.lua_pushinteger(L, value);
   return 1;
-}
-
-function installFlagHelpers(L: unknown, session: DuelSession): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const reset = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
-    const property = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
-    const value = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0;
-    registerDuelFlagEffect(session.state, { ownerType: "player", ownerId: player }, code, reset, property, value);
-    lua.lua_pushinteger(state, getDuelFlagEffectCount(session.state, { ownerType: "player", ownerId: player }, code));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("RegisterFlagEffect"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushinteger(state, getDuelFlagEffectCount(session.state, { ownerType: "player", ownerId: player }, code));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetFlagEffect"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushinteger(state, resetDuelFlagEffect(session.state, { ownerType: "player", ownerId: player }, code));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("ResetFlagEffect"));
 }
 
 function installOperationInfoHelpers(L: unknown, hostState: LuaDuelApiHostState): void {
@@ -180,10 +152,6 @@ function findOperationInfo(operationInfos: LuaDuelOperationInfo[], chainIndex: n
 function readCardOrGroupUids(L: unknown, index: number): string[] {
   const cardUid = readCardUid(L, index);
   return cardUid ? [cardUid] : readGroupUids(L, index);
-}
-
-function normalizePlayer(value: number): PlayerId {
-  return value === 1 ? 1 : 0;
 }
 
 function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
