@@ -96,7 +96,12 @@ describe("duel triggers", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).state.pendingTriggers).toHaveLength(1);
+    const summonedState = applyResponse(session, summon!).state;
+    expect(summonedState.pendingTriggers).toHaveLength(1);
+    expect(summonedState.waitingFor).toBe(0);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
+
     const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "chainable-trigger");
     expect(trigger).toBeTruthy();
     const opened = applyResponse(session, trigger!);
@@ -106,6 +111,7 @@ describe("duel triggers", () => {
     expect(opened.state.pendingTriggers).toHaveLength(0);
     expect(opened.state.waitingFor).toBe(1);
     expect(opened.state.log.some((entry) => entry.detail.includes("Trigger saw"))).toBe(false);
+    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
 
     const response = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "trigger-response");
     expect(response).toBeTruthy();
