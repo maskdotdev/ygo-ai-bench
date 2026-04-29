@@ -575,6 +575,50 @@ describe("duel triggers", () => {
     expect(getDuelLegalActions(session, 1).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["opponent-later-optional-activation"]);
   });
 
+  it("suppresses once-per-turn triggers after first activation", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const firstSummon = findPublicCard(session, 0, "100");
+    const triggerSource = findPublicCard(session, 0, "300");
+    const secondSummon = findPublicCard(session, 0, "500");
+    expect(firstSummon).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    expect(secondSummon).toBeTruthy();
+
+    registerEffect(session, {
+      id: "once-per-turn-special-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      oncePerTurn: true,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Once trigger saw ${ctx.eventCard?.name ?? "missing card"}`);
+      },
+    });
+
+    specialSummonDuelCard(session.state, firstSummon!.uid);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["once-per-turn-special-trigger"]);
+    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "once-per-turn-special-trigger");
+    expect(trigger).toBeTruthy();
+    const triggerResult = applyResponse(session, trigger!);
+
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.state.pendingTriggers).toHaveLength(0);
+    expect(session.state.usedCountKeys).toHaveLength(1);
+
+    specialSummonDuelCard(session.state, secondSummon!.uid);
+    expect(session.state.pendingTriggers).toHaveLength(0);
+    expect(session.state.usedCountKeys).toHaveLength(1);
+    expect(session.state.log.filter((entry) => entry.detail.includes("Once trigger saw"))).toHaveLength(1);
+  });
+
   it("collects phase and turn-start trigger effects", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
