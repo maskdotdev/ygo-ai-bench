@@ -1,0 +1,440 @@
+import { describe, expect, it } from "vitest";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createCardReader } from "#engine/data-loaders.js";
+import type { DuelCardData } from "#duel/types.js";
+import { createLuaScriptHost } from "#lua/host.js";
+
+describe("Lua special summon procedures", () => {
+  it("registers Lua special summon procedure effects as legal summon actions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Procedure Source", kind: "monster" },
+      { code: "200", name: "Blocked Procedure Source", kind: "monster" },
+      { code: "300", name: "Procedure Cost", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 32, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_HAND, 0, 1, c)
+        end)
+        e:SetValue(function(e,c)
+          Debug.Message("procedure value " .. c:GetCode())
+          return c:IsCode(100)
+        end)
+        e:SetOperation(function(e,c)
+          local g=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_HAND, 0, 1, 1, c)
+          Debug.Message("procedure operation cost " .. g:GetCount())
+          Duel.SendtoGrave(g, REASON_COST)
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetValue(function(e,c)
+          Debug.Message("blocked procedure value " .. c:GetCode())
+          return false
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "special-summon-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("100"));
+    const blocked = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("200"));
+    expect(action).toBeDefined();
+    expect(blocked).toBeUndefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("procedure value 100");
+    expect(host.messages).toContain("blocked procedure value 200");
+    expect(host.messages).toContain("procedure operation cost 1");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
+  });
+
+  it("supports Lua special summon procedures from face-up pendulum extra deck cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "301", name: "Extra Procedure Pendulum", kind: "monster", typeFlags: 0x1000001 },
+      { code: "920", name: "Blocked Extra Procedure", kind: "extra", typeFlags: 0x800001, level: 4 },
+    ];
+    const session = createDuel({ seed: 33, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["301"], extra: ["920"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const pendulum = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "301");
+    const extra = session.state.cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    expect(pendulum).toBeTruthy();
+    expect(extra).toBeTruthy();
+    moveDuelCard(session.state, pendulum!.uid, "extraDeck", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c301={}
+      function c301.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_EXTRA)
+        e:SetValue(function(e,c)
+          Debug.Message("extra procedure value " .. tostring(c:IsFaceup()) .. "/" .. c:GetLocation())
+          return c:IsFaceup()
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("extra procedure operation " .. c:GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      c920={}
+      function c920.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_EXTRA)
+        e:SetValue(function(e,c)
+          Debug.Message("blocked extra procedure value " .. tostring(c:IsFaceup()) .. "/" .. c:GetLocation())
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "extra-special-summon-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === pendulum!.uid);
+    const blocked = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === extra!.uid);
+    expect(action).toBeDefined();
+    expect(blocked).toBeUndefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("extra procedure value true/64");
+    expect(host.messages).toContain("extra procedure operation 301");
+    expect(session.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false });
+  });
+
+  it("lets Lua special summon procedures consume field materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Material Procedure Source", kind: "monster" },
+      { code: "200", name: "Blocked Material Procedure", kind: "monster" },
+      { code: "300", name: "Procedure Field Material", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 34, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const material = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(material).toBeTruthy();
+    moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_MZONE, 0, 1, nil)
+        end)
+        e:SetOperation(function(e,c)
+          local g=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_MZONE, 0, 1, 1, nil)
+          Debug.Message("material procedure selected " .. g:GetCount() .. "/" .. g:GetFirst():GetCode())
+          Duel.SendtoGrave(g, REASON_MATERIAL + REASON_SPSUMMON)
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 999), c:GetControler(), LOCATION_MZONE, 0, 1, nil)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "material-special-summon-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("100"));
+    const blocked = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("200"));
+    expect(action).toBeDefined();
+    expect(blocked).toBeUndefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("material procedure selected 1/300");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
+  });
+
+  it("lets Lua special summon procedures free the last monster zone with materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Full Zone Procedure Source", kind: "monster" },
+      { code: "200", name: "Full Zone Blocked Procedure", kind: "monster" },
+      { code: "300", name: "Full Zone Material", kind: "monster" },
+      { code: "400", name: "Zone Filler A", kind: "monster" },
+      { code: "500", name: "Zone Filler B", kind: "monster" },
+      { code: "600", name: "Zone Filler C", kind: "monster" },
+      { code: "700", name: "Zone Filler D", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 35, startingHandSize: 7, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500", "600", "700"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    for (const code of ["300", "400", "500", "600", "700"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockedSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(source).toBeTruthy();
+    expect(blockedSource).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          local g=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_MZONE, 0, nil)
+          return g:GetCount()>0 and Duel.GetLocationCountFromEx(c:GetControler(), c:GetControler(), nil, g)>0
+        end)
+        e:SetOperation(function(e,c)
+          local g=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_MZONE, 0, 1, 1, nil)
+          Debug.Message("full zone material selected " .. g:GetCount() .. "/" .. Duel.GetLocationCountFromEx(c:GetControler(), c:GetControler(), nil, g))
+          Duel.SendtoGrave(g, REASON_MATERIAL + REASON_SPSUMMON)
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          return Duel.GetLocationCount(c:GetControler(), LOCATION_MZONE)>0
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "full-zone-material-special-summon-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const actions = getDuelLegalActions(session, 0);
+    const action = actions.find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    const blocked = actions.find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === blockedSource!.uid);
+    expect(action).toBeDefined();
+    expect(blocked).toBeUndefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("full zone material selected 1/1");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
+  });
+
+  it("lets Lua special summon procedure costs release material before summoning", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Release Procedure Source", kind: "monster" },
+      { code: "200", name: "Blocked Release Procedure", kind: "monster" },
+      { code: "300", name: "Release Procedure Material", kind: "monster" },
+      { code: "400", name: "Release Filler A", kind: "monster" },
+      { code: "500", name: "Release Filler B", kind: "monster" },
+      { code: "600", name: "Release Filler C", kind: "monster" },
+      { code: "700", name: "Release Filler D", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 36, startingHandSize: 7, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500", "600", "700"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    for (const code of ["300", "400", "500", "600", "700"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockedSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const material = session.state.cards.find((card) => card.controller === 0 && card.location === "monsterZone" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(blockedSource).toBeTruthy();
+    expect(material).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCost(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.CheckReleaseGroup(tp, aux.FilterBoolFunction(Card.IsCode, 300), 1, e:GetHandler()) end
+          local g=Duel.SelectReleaseGroup(tp, aux.FilterBoolFunction(Card.IsCode, 300), 1, 1, e:GetHandler())
+          Debug.Message("procedure release cost " .. g:GetCount() .. "/" .. Duel.GetLocationCountFromEx(tp, tp, nil, g))
+          Duel.Release(g, REASON_COST)
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCost(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.CheckReleaseGroup(tp, aux.FilterBoolFunction(Card.IsCode, 999), 1, e:GetHandler()) end
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "release-cost-special-summon-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const actions = getDuelLegalActions(session, 0);
+    const action = actions.find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    const blocked = actions.find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === blockedSource!.uid);
+    expect(action).toBeDefined();
+    expect(blocked).toBeUndefined();
+    expect(host.messages).not.toContain("procedure release cost 1/1");
+    expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("procedure release cost 1/1");
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.uid === blockedSource!.uid)).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
+  });
+
+  it("rolls back Lua special summon procedure costs when release count falls short", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Rollback Procedure Source", kind: "monster" },
+      { code: "200", name: "Rollback Release Material", kind: "monster" },
+      { code: "300", name: "Rollback Replacement", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 82, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const material = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const replacement = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(material).toBeTruthy();
+    expect(replacement).toBeTruthy();
+    moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCost(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.CheckReleaseGroup(tp, aux.FilterBoolFunction(Card.IsCode, 200), 1, e:GetHandler()) end
+          local g=Duel.SelectReleaseGroup(tp, aux.FilterBoolFunction(Card.IsCode, 200), 1, 1, e:GetHandler())
+          local released=Duel.Release(g, REASON_COST)
+          Debug.Message("rollback release cost " .. released .. "/" .. g:GetCount())
+          return released==g:GetCount()
+        end)
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_RELEASE_REPLACE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return true end
+          Duel.SetTargetCard(Group.FromCards(e:GetHandler()))
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Duel.Release(Duel.GetTargetCards(), REASON_EFFECT+REASON_REPLACE)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "rollback-release-cost-procedure.lua",
+    );
+
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(false);
+    expect(host.messages).toContain("rollback release cost 0/1");
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "hand" });
+  });
+});
