@@ -925,6 +925,60 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.log.some((entry) => entry.action === "chainNegated")).toBe(true);
   });
 
+  it("passes upstream-style Lua callback arguments to trigger effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summoned Event", kind: "monster" },
+      { code: "400", name: "Argument Trigger", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 26, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          local ec=eg:GetFirst()
+          Debug.Message("condition args " .. tp .. "/" .. eg:GetCount() .. "/" .. ep .. "/" .. ev .. "/" .. tostring(re==nil) .. "/" .. r .. "/" .. rp .. "/" .. ec:GetCode())
+          return tp==1 and eg:GetCount()==1 and ep==0 and ec:IsCode(100)
+        end)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp)
+          local handler=e:GetHandler()
+          Debug.Message("target args " .. tp .. "/" .. handler:GetCode() .. "/" .. eg:GetFirst():GetCode())
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("operation args " .. tp .. "/" .. eg:GetFirst():GetCode() .. "/" .. tostring(re==nil))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "callback-args.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const normal = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon");
+    expect(normal).toBeDefined();
+    expect(applyResponse(session, normal!).ok).toBe(true);
+    const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+
+    expect(host.messages).toContain("condition args 1/1/0/0/true/16/0/100");
+    expect(host.messages).toContain("target args 1/400/100");
+    expect(host.messages).toContain("operation args 1/100/true");
+  });
+
   it("lets Lua effects register, read, and reset duel and card flags", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Flag Source", kind: "monster" }];
     const session = createDuel({ seed: 22, startingHandSize: 1, cardReader: createCardReader(cards) });
