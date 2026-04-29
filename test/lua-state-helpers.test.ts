@@ -182,10 +182,13 @@ describe("Lua state helpers", () => {
   });
 
   it("exposes card owner, controller, location, sequence, and position metadata", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "State Probe", kind: "monster", typeFlags: 0x21, attack: 1700, defense: 1300, level: 4, race: 0x2, attribute: 0x20 }];
+    const cards: DuelCardData[] = [
+      { code: "100", name: "State Probe", kind: "monster", typeFlags: 0x21, attack: 1700, defense: 1300, level: 4, race: 0x2, attribute: 0x20 },
+      { code: "900", name: "Hidden Extra", kind: "extra" },
+    ];
     const session = createDuel({ seed: 20, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100"] },
+      0: { main: ["100"], extra: ["900"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -202,6 +205,8 @@ describe("Lua state helpers", () => {
       Debug.Message("original meta " .. c:GetOriginalCode() .. "/" .. c:GetOriginalType() .. "/" .. c:GetOriginalLevel() .. "/" .. c:GetOriginalRace() .. "/" .. c:GetOriginalAttribute())
       Debug.Message("base stats " .. c:GetBaseAttack() .. "/" .. c:GetBaseDefense())
       Debug.Message("position checks " .. tostring(c:IsPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(c:IsControler(0)))
+      local hidden = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
+      Debug.Message("public checks " .. tostring(c:IsPublic()) .. "/" .. tostring(hidden:IsPublic()))
       Debug.Message("relation checks " .. tostring(c:IsOnField()) .. "/" .. tostring(c:IsMonster()) .. "/" .. tostring(c:IsSpell()) .. "/" .. tostring(c:IsTrap()) .. "/" .. tostring(c:IsCanBeEffectTarget(nil)))
       Debug.Message("activity counts " .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_FLIPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_ATTACK))
       Debug.Message("used summon legality " .. tostring(Duel.IsPlayerCanSummon(0, c)) .. "/" .. tostring(Duel.IsPlayerCanMSet(0, c)) .. "/" .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, c)))
@@ -220,6 +225,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("original meta 100/33/4/2/32");
     expect(host.messages).toContain("base stats 1700/1300");
     expect(host.messages).toContain("position checks true/true");
+    expect(host.messages).toContain("public checks true/false");
     expect(host.messages).toContain("relation checks true/true/false/false/true");
     expect(host.messages).toContain("activity counts 1/1/0/0/0");
     expect(host.messages).toContain("used summon legality false/false/false");
