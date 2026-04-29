@@ -1875,6 +1875,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           local ok,handler=pcall(function() return te:GetHandler() end)
           Debug.Message("handler ok " .. tostring(ok) .. "/" .. tostring(handler ~= nil))
           if not ok then return false end
+          Debug.Message("chain solving window " .. tostring(Duel.IsChainSolving()))
           Debug.Message("chain info " .. tp .. "/" .. loc .. "/" .. tc:GetCode() .. "/" .. tg:GetCount() .. "/" .. handler:GetCode())
           Debug.Message("chain count player " .. Duel.GetChainCount() .. "/" .. Duel.GetChainPlayer(1))
           local pos,code,code2,level,rank,attr,race,atk,def=Duel.GetChainInfo(1, CHAININFO_TRIGGERING_POSITION, CHAININFO_TRIGGERING_CODE, CHAININFO_TRIGGERING_CODE2, CHAININFO_TRIGGERING_LEVEL, CHAININFO_TRIGGERING_RANK, CHAININFO_TRIGGERING_ATTRIBUTE, CHAININFO_TRIGGERING_RACE, CHAININFO_TRIGGERING_ATTACK, CHAININFO_TRIGGERING_DEFENSE)
@@ -1910,6 +1911,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     applyResponse(session, quickAction!);
     applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
     applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    expect(host.messages).toContain("chain solving window false");
     expect(host.messages).toContain("chain info 0/2/100/1/100");
     expect(host.messages).toContain("chain count player 1/0");
     expect(host.messages).toContain("chain stats 0/100/101/4/0/32/2/1800/1200");
@@ -2122,6 +2124,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           return true
         end)
         e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("target metadata solving " .. tostring(Duel.IsChainSolving()))
           Debug.Message("target metadata chain player " .. Duel.GetChainPlayer(0))
           local p,d=Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)
           Debug.Message("target metadata " .. p .. "/" .. d)
@@ -2141,6 +2144,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
     applyResponse(session, action!);
+    expect(host.messages).toContain("target metadata solving true");
     expect(host.messages).toContain("target metadata chain player 0");
     expect(host.messages).toContain("target metadata 1/700");
     expect(host.messages).toContain("target metadata changed 0/900");

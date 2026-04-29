@@ -26,6 +26,11 @@ export function installDuelChainApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("GetChainCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChainPlayer(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetChainPlayer"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, session.state.status === "resolving" && hostState.activeContext?.chainLink !== undefined);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsChainSolving"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChainInfo(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetChainInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChainEvent(state, session, hostState));
