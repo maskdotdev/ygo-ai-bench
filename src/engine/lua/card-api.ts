@@ -239,11 +239,11 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
-  pushBooleanGetter(L, "IsCanBeFusionMaterial", session, (card) => canBeMaterial(session.state, card, "fusion"));
-  pushBooleanGetter(L, "IsCanBeSynchroMaterial", session, (card) => canBeMaterial(session.state, card, "synchro"));
-  pushBooleanGetter(L, "IsCanBeXyzMaterial", session, (card) => canBeMaterial(session.state, card, "xyz"));
-  pushBooleanGetter(L, "IsCanBeLinkMaterial", session, (card) => canBeMaterial(session.state, card, "link"));
-  pushBooleanGetter(L, "IsCanBeRitualMaterial", session, (card) => canBeMaterial(session.state, card, "ritual"));
+  pushMaterialPredicate(L, "IsCanBeFusionMaterial", session, "fusion");
+  pushMaterialPredicate(L, "IsCanBeSynchroMaterial", session, "synchro");
+  pushMaterialPredicate(L, "IsCanBeXyzMaterial", session, "xyz");
+  pushMaterialPredicate(L, "IsCanBeLinkMaterial", session, "link");
+  pushMaterialPredicate(L, "IsCanBeRitualMaterial", session, "ritual");
 }
 
 function installFlagHelpers(L: unknown, session: DuelSession): void {
@@ -306,6 +306,17 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
+function pushMaterialPredicate(L: unknown, fieldName: string, session: DuelSession, kind: MaterialUseKind): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const targetUid = readCardUid(state, 2);
+    const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
+    lua.lua_pushboolean(state, canBeMaterial(session.state, card, kind, target));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
 function pushRemoveOverlayCard<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
   const card = readCard(L, session);
   const player = lua.lua_isnumber(L, 2) ? normalizePlayer(lua.lua_tointeger(L, 2)) : card?.controller ?? 0;
@@ -332,8 +343,14 @@ function setOperatedUids<EffectRecord extends LuaCardApiEffectRecord>(hostState:
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...uids);
 }
 
-function canBeMaterial(state: DuelState, card: DuelCardInstance | undefined, kind: MaterialUseKind): boolean {
-  return Boolean(card && isMonsterLike(card) && canBeMaterialFromLocation(card.location, kind) && !isMaterialUsePrevented(state, card.uid, kind, createMaterialCheckContext(state)));
+function canBeMaterial(state: DuelState, card: DuelCardInstance | undefined, kind: MaterialUseKind, target?: DuelCardInstance): boolean {
+  return Boolean(
+    card &&
+      isMonsterLike(card) &&
+      canBeMaterialFromLocation(card.location, kind) &&
+      targetAllowsMaterial(target, card, kind) &&
+      !isMaterialUsePrevented(state, card.uid, kind, createMaterialCheckContext(state)),
+  );
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {
@@ -343,6 +360,23 @@ function isMonsterLike(card: DuelCardInstance): boolean {
 function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind): boolean {
   if (kind === "fusion" || kind === "ritual") return location === "hand" || location === "monsterZone";
   return location === "monsterZone";
+}
+
+function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {
+  if (!target) return true;
+  if (kind === "fusion") return !target.data.fusionMaterials?.length || target.data.fusionMaterials.includes(card.code);
+  if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.includes(card.code);
+  if (kind === "synchro") {
+    const materials = target.data.synchroMaterials;
+    return !materials || [materials.tuner, ...materials.nonTuners].includes(card.code);
+  }
+  if (kind === "xyz") return !target.data.xyzMaterials?.length ? cardRank(target) === (card.data.level ?? 0) : target.data.xyzMaterials.includes(card.code);
+  if (kind === "link") return !target.data.linkMaterials?.length ? linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.includes(card.code);
+  return true;
+}
+
+function linkMaterialRating(card: DuelCardInstance): number {
+  return cardLink(card) || 1;
 }
 
 function createMaterialCheckContext(state: DuelState): ContinuousEffectContextFactory {

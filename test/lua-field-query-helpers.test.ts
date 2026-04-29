@@ -313,6 +313,41 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("spell material checks false/false");
   });
 
+  it("checks Lua material predicates against an optional summon target", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Target Material A", kind: "monster", level: 4 },
+      { code: "200", name: "Wrong Material", kind: "monster", level: 3 },
+      { code: "900", name: "Target Fusion", kind: "extra", fusionMaterials: ["100"] },
+      { code: "920", name: "Target Xyz", kind: "extra", typeFlags: 0x800001, level: 4 },
+    ];
+    const session = createDuel({ seed: 58, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"], extra: ["900", "920"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c100 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local c200 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local fusion = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
+      local xyz = Duel.GetFieldCard(0, LOCATION_EXTRA, 1)
+      Debug.Message("fusion target material " .. tostring(c100:IsCanBeFusionMaterial(fusion)) .. "/" .. tostring(c200:IsCanBeFusionMaterial(fusion)))
+      Debug.Message("xyz target hand material " .. tostring(c100:IsCanBeXyzMaterial(xyz)))
+      Duel.SpecialSummon(c100, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
+      Debug.Message("xyz target field material " .. tostring(c100:IsCanBeXyzMaterial(xyz)) .. "/" .. tostring(c200:IsCanBeXyzMaterial(xyz)))
+      `,
+      "target-material-predicates.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("fusion target material true/false");
+    expect(host.messages).toContain("xyz target hand material false");
+    expect(host.messages).toContain("xyz target field material true/false");
+  });
+
   it("passes extra filter arguments through Lua matching helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Vararg A", kind: "monster", attack: 1600 },
