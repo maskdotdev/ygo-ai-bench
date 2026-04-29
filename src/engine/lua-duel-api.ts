@@ -8,6 +8,7 @@ import { installDuelLpApi } from "./lua-duel-lp-api.js";
 import { installDuelMoveApi } from "./lua-duel-move-api.js";
 import { installDuelOperationApi } from "./lua-duel-operation-api.js";
 import { installDuelPlayerApi } from "./lua-duel-player-api.js";
+import { installDuelPromptApi } from "./lua-duel-prompt-api.js";
 import { installDuelQueryApi } from "./lua-duel-query-api.js";
 import { installDuelReleaseApi } from "./lua-duel-release-api.js";
 import { installDuelSummonApi } from "./lua-duel-summon-api.js";
@@ -28,34 +29,7 @@ export interface LuaDuelApiHostState {
 export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
   lua.lua_newtable(L);
   installDuelTurnApi(L, session);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const message = lua.lua_isstring(state, 1) ? lua.lua_tojsstring(state, 1) : "";
-    hostState.messages.push(message);
-    return 0;
-  });
-  lua.lua_setfield(L, -2, to_luastring("DebugMessage"));
-  lua.lua_pushcfunction(L, () => 0);
-  lua.lua_setfield(L, -2, to_luastring("Hint"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, lua.lua_gettop(state) >= 2 ? 0 : -1);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("SelectOption"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, true);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("SelectYesNo"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushFirstAnnouncementValue(state, 0));
-  lua.lua_setfield(L, -2, to_luastring("AnnounceNumber"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushFirstAnnouncementValue(state, 0));
-  lua.lua_setfield(L, -2, to_luastring("AnnounceCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushFirstAnnouncementValue(state, 0));
-  lua.lua_setfield(L, -2, to_luastring("AnnounceType"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushFirstAnnouncementValue(state, 0));
-  lua.lua_setfield(L, -2, to_luastring("AnnounceRace"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushFirstAnnouncementValue(state, 0));
-  lua.lua_setfield(L, -2, to_luastring("AnnounceAttribute"));
+  installDuelPromptApi(L, hostState);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const attackerUid = session.state.currentAttack?.attackerUid;
     if (!attackerUid) {
@@ -88,10 +62,4 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelOperationApi(L, hostState);
   installDuelFlagApi(L, session);
   lua.lua_setglobal(L, to_luastring("Duel"));
-}
-
-function pushFirstAnnouncementValue(L: unknown, fallback: number): number {
-  const value = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : fallback;
-  lua.lua_pushinteger(L, value);
-  return 1;
 }
