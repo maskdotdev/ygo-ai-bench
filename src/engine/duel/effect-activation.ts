@@ -81,6 +81,9 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
     if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
     if (effect.operation) effect.operation(ctx);
+    const currentSource = requireControlledCard(session.state, player, uid);
+    if (!effect.range.includes(currentSource.location)) throw new Error(`${source.name} summon procedure is no longer in range`);
+    if (!handlers.canAttemptSpecialSummonProcedure(session.state, uid)) throw new Error(`${source.name} cannot be Special Summoned`);
     markEffectUsed(session.state, effect);
     handlers.specialSummonCard(session.state, uid, player);
   } catch (error) {

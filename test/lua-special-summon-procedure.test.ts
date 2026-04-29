@@ -437,4 +437,50 @@ describe("Lua special summon procedures", () => {
     expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
     expect(session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "hand" });
   });
+
+  it("rolls back Lua special summon procedures when operation moves the source out of range", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Self Moving Procedure Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 83, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          local moved=Duel.SendtoGrave(c, REASON_COST)
+          Debug.Message("source moved before summon " .. moved .. "/" .. c:GetLocation())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "source-moved-special-summon-procedure.lua",
+    );
+
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("summon procedure is no longer in range");
+    expect(host.messages).toContain("source moved before summon 1/16");
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+    expect(session.state.log.some((entry) => entry.action === "sendToGraveyard" && entry.card === "Self Moving Procedure Source")).toBe(false);
+  });
 });
