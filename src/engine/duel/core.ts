@@ -52,6 +52,7 @@ import {
   isAttackPrevented,
   isMaterialUsePrevented,
   isMoveToLocationPrevented,
+  isReleasePrevented,
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
   moveDestinationRedirectLocation,
@@ -191,7 +192,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   const hand = getCards(state, player, "hand");
   if (state.phase === "main1" || state.phase === "main2") {
     actions.push(...normalSummonActions(state, player, hand));
-    actions.push(...tributeSummonActions(state, player, hand));
+    actions.push(...tributeSummonActions(state, player, hand, createReleasePredicate(state, duelReason.release | duelReason.summon)));
     actions.push(...fusionSummonActions(state, player, createMaterialUsePredicate(state, "fusion")));
     actions.push(...synchroSummonActions(state, player, createMaterialUsePredicate(state, "synchro")));
     actions.push(...xyzSummonActions(state, player, (uid) => !isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))));
@@ -308,6 +309,7 @@ function requireDuelMoveAllowed(state: DuelState, uid: string, to: DuelLocation,
 }
 
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
+  if ((reason & duelReason.release) !== 0 && isReleasePrevented(state, uid, reason, createContinuousEffectContext(state))) throw new Error(`Card ${uid} cannot be released`);
   const replacementHandlers = createReplacementEffectHandlers(state);
   const replacement = applyReleaseReplacement(state, uid, controller, reason, replacementHandlers);
   if (replacement) return replacement;
@@ -398,7 +400,15 @@ export function setDuelPlayerLifePoints(state: DuelState, player: PlayerId, life
 }
 
 export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
-  tributeSummonDuelCardWithEvents(state, player, uid, tributeUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state));
+  tributeSummonDuelCardWithEvents(
+    state,
+    player,
+    uid,
+    tributeUids,
+    (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
+    createMaterialMover(state),
+    createReleasePredicate(state, duelReason.release | duelReason.summon),
+  );
 }
 
 export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: string): DuelCardInstance {
@@ -442,6 +452,10 @@ function createOverlayMaterialMover(state: DuelState): DuelOverlayMaterialMover 
 
 function createMaterialUsePredicate(state: DuelState, kind: "fusion" | "synchro" | "xyz" | "link" | "ritual"): DuelMaterialPredicate {
   return (uid) => !isMaterialUsePrevented(state, uid, kind, createContinuousEffectContext(state));
+}
+
+function createReleasePredicate(state: DuelState, reason: number): DuelMaterialPredicate {
+  return (uid) => !isReleasePrevented(state, uid, reason, createContinuousEffectContext(state));
 }
 
 export function drawDuelCards(state: DuelState, player: PlayerId, count: number, detail = "Effect draw"): number {

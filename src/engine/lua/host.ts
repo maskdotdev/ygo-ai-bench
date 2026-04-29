@@ -480,8 +480,12 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
     code === 40 ||
     code === 41 ||
     code === 42 ||
+    code === 43 ||
+    code === 44 ||
     code === 45 ||
+    code === 46 ||
     code === 47 ||
+    code === 48 ||
     code === 50 ||
     code === 51 ||
     code === 52 ||

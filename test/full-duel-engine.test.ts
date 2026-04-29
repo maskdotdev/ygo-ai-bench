@@ -2028,6 +2028,31 @@ describe("full duel engine API", () => {
     expect(state.log.some((entry) => entry.action === "releaseReplace" && entry.card === "Normal Test Monster")).toBe(true);
   });
 
+  it("blocks non-summon releases with unreleasable effects", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const threatened = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(threatened).toBeTruthy();
+
+    registerEffect(session, {
+      id: "unreleasable-nonsummon",
+      sourceUid: threatened!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 44,
+      range: ["hand"],
+      operation() {},
+    });
+
+    expect(() => sendDuelCardToGraveyard(session.state, threatened!.uid, 0, duelReason.release | duelReason.cost)).toThrow("cannot be released");
+    expect(session.state.cards.find((card) => card.uid === threatened!.uid)?.location).toBe("hand");
+  });
+
   it("applies send replacement effects before sending a card to the graveyard", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -2299,6 +2324,36 @@ describe("full duel engine API", () => {
     expect(released?.reason && (released.reason & duelReason.release)).toBe(duelReason.release);
     expect(released?.reason && (released.reason & duelReason.redirect)).toBe(duelReason.redirect);
     expect(session.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("monsterZone");
+  });
+
+  it("blocks tribute summons with unreleasable summon materials", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["600", "100", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const tributeMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "600");
+    const tribute = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(tributeMonster).toBeTruthy();
+    expect(tribute).toBeTruthy();
+    moveDuelCard(session.state, tribute!.uid, "monsterZone", 0);
+
+    registerEffect(session, {
+      id: "unreleasable-summon",
+      sourceUid: tribute!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 43,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "tributeSummon" && candidate.uid === tributeMonster!.uid)).toBe(false);
+    expect(() => tributeSummonDuelCard(session.state, 0, tributeMonster!.uid, [tribute!.uid])).toThrow("cannot be released");
+    expect(session.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === tribute!.uid)?.location).toBe("monsterZone");
   });
 
   it("tribute summons a level 7 or higher monster with two tributes even from a full monster zone", () => {

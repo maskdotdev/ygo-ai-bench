@@ -171,6 +171,20 @@ export function isMaterialUsePrevented(state: DuelState, uid: string, kind: Mate
   return false;
 }
 
+export function isReleasePrevented(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory): boolean {
+  const card = findCard(state, uid);
+  if (!card) return false;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || !isUnreleasableCodeForReason(effect.code, reason)) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
 function locationFromRedirectValue(value: number | undefined): DuelLocation | undefined {
   if (value === 0x02) return "hand";
   if (value === 0x10) return "graveyard";
@@ -233,5 +247,13 @@ function isCannotMaterialCodeForKind(code: number | undefined, kind: MaterialUse
   if (code === 236) return kind === "synchro";
   if (code === 238) return kind === "xyz";
   if (code === 239) return kind === "link";
+  return false;
+}
+
+function isUnreleasableCodeForReason(code: number | undefined, reason: number): boolean {
+  if (code === 46) return true;
+  if (code === 43) return (reason & 0x10) !== 0;
+  if (code === 44) return (reason & 0x10) === 0;
+  if (code === 48) return (reason & 0x40) !== 0;
   return false;
 }

@@ -41,7 +41,15 @@ export function setMonster(state: DuelState, player: PlayerId, uid: string): voi
   pushDuelLog(state, "setMonster", player, card.name, "Set from hand");
 }
 
-export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[], collectEvent: DuelEventCollector, moveMaterial: DuelMaterialMover = defaultMaterialMover(state)): void {
+export function tributeSummonDuelCard(
+  state: DuelState,
+  player: PlayerId,
+  uid: string,
+  tributeUids: string[],
+  collectEvent: DuelEventCollector,
+  moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
+  canReleaseMaterial: DuelMaterialPredicate = () => true,
+): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
@@ -51,7 +59,10 @@ export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: s
 
   const uniqueTributes = [...new Set(tributeUids)];
   if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
-  for (const tributeUid of uniqueTributes) requireControlledCard(state, player, tributeUid, "monsterZone");
+  for (const tributeUid of uniqueTributes) {
+    const tribute = requireControlledCard(state, player, tributeUid, "monsterZone");
+    if (!canReleaseMaterial(tribute.uid)) throw new Error(`${tribute.name} cannot be released`);
+  }
   for (const tributeUid of uniqueTributes) {
     const result = moveMaterial(tributeUid, player, duelReason.release | duelReason.summon);
     const tribute = result.card;
@@ -239,9 +250,9 @@ export function normalSummonActions(state: DuelState, player: PlayerId, hand: Du
   return actions;
 }
 
-export function tributeSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {
+export function tributeSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], canReleaseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
   if (!state.players[player].normalSummonAvailable) return [];
-  const availableTributes = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card));
+  const availableTributes = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canReleaseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
     const tributeCount = tributeCountForNormalSummon(card);
