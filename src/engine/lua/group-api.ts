@@ -97,8 +97,8 @@ export function installGroupApi(L: unknown): void {
   lua.lua_setfield(L, -2, to_luastring("Equal"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
-    const excluded = readCardUid(state, 3);
-    const uids = filterRef === undefined ? readGroupUids(state, 1) : readGroupUids(state, 1).filter((uid) => uid !== excluded && groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 4)));
+    const excluded = readCardOrGroupUids(state, 3);
+    const uids = filterRef === undefined ? readGroupUids(state, 1) : readGroupUids(state, 1).filter((uid) => !excluded.includes(uid) && groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 4)));
     releaseOptionalFunctionRef(state, filterRef);
     pushGroupTable(state, uids);
     return 1;
@@ -120,8 +120,8 @@ export function installGroupApi(L: unknown): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
     const count = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
-    const excluded = readCardUid(state, 4);
-    const matches = filterRef === undefined ? readGroupUids(state, 1) : readGroupUids(state, 1).filter((uid) => uid !== excluded && groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 5)));
+    const excluded = readCardOrGroupUids(state, 4);
+    const matches = filterRef === undefined ? readGroupUids(state, 1) : readGroupUids(state, 1).filter((uid) => !excluded.includes(uid) && groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 5)));
     releaseOptionalFunctionRef(state, filterRef);
     lua.lua_pushboolean(state, matches.length >= count);
     return 1;
@@ -229,6 +229,12 @@ function groupCardFilterValue(L: unknown, uid: string, filterRef: number, args: 
 function readFilterArgs(L: unknown, start: number): LuaFilterArgs {
   const top = lua.lua_gettop(L);
   return { start, count: Math.max(0, top - start + 1) };
+}
+
+function readCardOrGroupUids(L: unknown, index: number): string[] {
+  const uid = readCardUid(L, index);
+  if (uid) return [uid];
+  return readGroupUids(L, index);
 }
 
 function selectUidsWithSum(L: unknown, uids: string[], filterRef: number | undefined, sum: number, min: number, max: number, args: LuaFilterArgs): string[] | undefined {

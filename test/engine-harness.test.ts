@@ -1222,6 +1222,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local vararg_high = all:Filter(function(tc,minatk) return tc:GetAttack() >= minatk end, nil, 2500)
       local c100 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local c200 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local excluded_group = Group.FromCards(c200)
+      local without_c200 = all:Filter(function(tc,minatk) return tc:GetAttack() >= minatk end, excluded_group, 1000)
       local g = Group.CreateGroup()
       g:AddCard(c100)
       g:AddCard(c100)
@@ -1240,6 +1242,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local selected = clone:Select(0, 1, 2, nil)
       Debug.Message("selected group " .. selected:GetCount())
       Debug.Message("exists high " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 2, nil, 1500)))
+      Debug.Message("filter group excluded " .. without_c200:GetCount() .. " " .. tostring(without_c200:IsContains(c200)))
+      Debug.Message("exists group excluded " .. tostring(all:IsExists(aux.FilterBoolFunction(Card.IsCode, 200), 1, excluded_group)))
+      Debug.Message("exists group remainder " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 1, excluded_group, 2500)))
       Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
       Debug.Message("sum exact " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 3000, 2, 2)))
       Debug.Message("sum miss " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 4500, 2, 2)))
@@ -1277,6 +1282,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("clear group 0");
     expect(host.messages).toContain("selected group 2");
     expect(host.messages).toContain("exists high true");
+    expect(host.messages).toContain("filter group excluded 2 false");
+    expect(host.messages).toContain("exists group excluded false");
+    expect(host.messages).toContain("exists group remainder true");
     expect(host.messages).toContain("class count 2");
     expect(host.messages).toContain("sum exact true");
     expect(host.messages).toContain("sum miss false");
