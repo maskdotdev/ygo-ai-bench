@@ -239,11 +239,11 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
-  pushBooleanGetter(L, "IsCanBeFusionMaterial", session, (_, uid) => canBeMaterial(session.state, uid, "fusion"));
-  pushBooleanGetter(L, "IsCanBeSynchroMaterial", session, (_, uid) => canBeMaterial(session.state, uid, "synchro"));
-  pushBooleanGetter(L, "IsCanBeXyzMaterial", session, (_, uid) => canBeMaterial(session.state, uid, "xyz"));
-  pushBooleanGetter(L, "IsCanBeLinkMaterial", session, (_, uid) => canBeMaterial(session.state, uid, "link"));
-  pushBooleanGetter(L, "IsCanBeRitualMaterial", session, (_, uid) => canBeMaterial(session.state, uid, "ritual"));
+  pushBooleanGetter(L, "IsCanBeFusionMaterial", session, (card) => canBeMaterial(session.state, card, "fusion"));
+  pushBooleanGetter(L, "IsCanBeSynchroMaterial", session, (card) => canBeMaterial(session.state, card, "synchro"));
+  pushBooleanGetter(L, "IsCanBeXyzMaterial", session, (card) => canBeMaterial(session.state, card, "xyz"));
+  pushBooleanGetter(L, "IsCanBeLinkMaterial", session, (card) => canBeMaterial(session.state, card, "link"));
+  pushBooleanGetter(L, "IsCanBeRitualMaterial", session, (card) => canBeMaterial(session.state, card, "ritual"));
 }
 
 function installFlagHelpers(L: unknown, session: DuelSession): void {
@@ -332,8 +332,17 @@ function setOperatedUids<EffectRecord extends LuaCardApiEffectRecord>(hostState:
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...uids);
 }
 
-function canBeMaterial(state: DuelState, uid: string | undefined, kind: MaterialUseKind): boolean {
-  return Boolean(uid && !isMaterialUsePrevented(state, uid, kind, createMaterialCheckContext(state)));
+function canBeMaterial(state: DuelState, card: DuelCardInstance | undefined, kind: MaterialUseKind): boolean {
+  return Boolean(card && isMonsterLike(card) && canBeMaterialFromLocation(card.location, kind) && !isMaterialUsePrevented(state, card.uid, kind, createMaterialCheckContext(state)));
+}
+
+function isMonsterLike(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x1) !== 0;
+}
+
+function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind): boolean {
+  if (kind === "fusion" || kind === "ritual") return location === "hand" || location === "monsterZone";
+  return location === "monsterZone";
 }
 
 function createMaterialCheckContext(state: DuelState): ContinuousEffectContextFactory {

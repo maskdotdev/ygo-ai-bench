@@ -292,6 +292,8 @@ describe("Lua field and query helpers", () => {
       Debug.Message("race " .. c:GetRace() .. " " .. tostring(c:IsRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsOriginalRace(RACE_SPELLCASTER)))
       Debug.Message("attribute " .. c:GetAttribute() .. " " .. tostring(c:IsAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsOriginalAttribute(ATTRIBUTE_DARK)))
       Debug.Message("spell count " .. Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, nil))
+      local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("spell material checks " .. tostring(spell:IsCanBeFusionMaterial(nil)) .. "/" .. tostring(spell:IsCanBeRitualMaterial(nil)))
       `,
       "card-stats.lua",
     );
@@ -308,6 +310,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("race 2 true/true");
     expect(host.messages).toContain("attribute 32 true/true");
     expect(host.messages).toContain("spell count 1");
+    expect(host.messages).toContain("spell material checks false/false");
   });
 
   it("passes extra filter arguments through Lua matching helpers", () => {
