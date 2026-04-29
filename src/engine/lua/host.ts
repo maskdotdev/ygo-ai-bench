@@ -482,9 +482,9 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
 function triggerEventFromCode(code: number | undefined): DuelEventName | undefined {
   if (code === 30) return undefined;
   if (code === 1001) return "flipSummoned";
-  if (code === 0x40) return "normalSummoned";
-  if (code === 0x80) return "specialSummoned";
-  if (code === 0x400) return "sentToGraveyard";
+  if (code === 1100) return "normalSummoned";
+  if (code === 1102) return "specialSummoned";
+  if (code === 1014) return "sentToGraveyard";
   if (code === 1016) return "positionChanged";
   if (code === 1130) return "attackDeclared";
   if (code === 1140) return "battleDestroyed";

@@ -1456,11 +1456,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalNumber("HINTMSG_TARGET")).toBe(551);
     expect(host.getGlobalNumber("PHASE_MAIN1")).toBe(0x4);
     expect(host.getGlobalNumber("PHASE_BATTLE")).toBe(0x80);
+    expect(host.getGlobalNumber("EVENT_SUMMON_SUCCESS")).toBe(1100);
+    expect(host.getGlobalNumber("EVENT_TO_GRAVE")).toBe(1014);
+    expect(host.getGlobalNumber("EVENT_CHAINING")).toBe(1027);
     expect(host.registerInitialEffects()).toBe(2);
     expect(host.messages).toContain("effect predicates true/true/true");
     expect(host.messages).toContain("effect callbacks true/true/true/true");
     expect(host.messages).toContain("effect value function 107");
-    expect(host.messages).toContain("effect getters 64/64/1234/196608/65552/2");
+    expect(host.messages).toContain("effect getters 64/1100/1234/196608/65552/2");
     expect(host.messages).toContain("effect target range 4/16");
     expect(host.messages).toContain("effect count reset 2/987/12288/1");
     expect(host.messages).toContain("effect value number 2500");
