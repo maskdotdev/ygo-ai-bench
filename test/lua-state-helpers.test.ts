@@ -208,6 +208,7 @@ describe("Lua state helpers", () => {
       local hidden = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
       Debug.Message("public checks " .. tostring(c:IsPublic()) .. "/" .. tostring(hidden:IsPublic()))
       Debug.Message("relation checks " .. tostring(c:IsOnField()) .. "/" .. tostring(c:IsMonster()) .. "/" .. tostring(c:IsSpell()) .. "/" .. tostring(c:IsTrap()) .. "/" .. tostring(c:IsCanBeEffectTarget(nil)))
+      Debug.Message("material checks " .. tostring(c:IsCanBeFusionMaterial(nil)) .. "/" .. tostring(c:IsCanBeSynchroMaterial(nil)) .. "/" .. tostring(c:IsCanBeXyzMaterial(nil)) .. "/" .. tostring(c:IsCanBeLinkMaterial(nil)) .. "/" .. tostring(c:IsCanBeRitualMaterial(nil)))
       Debug.Message("activity counts " .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_FLIPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_ATTACK))
       Debug.Message("used summon legality " .. tostring(Duel.IsPlayerCanSummon(0, c)) .. "/" .. tostring(Duel.IsPlayerCanMSet(0, c)) .. "/" .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, c)))
       Duel.SendtoGrave(c, REASON_EFFECT)
@@ -227,6 +228,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("position checks true/true");
     expect(host.messages).toContain("public checks true/false");
     expect(host.messages).toContain("relation checks true/true/false/false/true");
+    expect(host.messages).toContain("material checks true/true/true/true/true");
     expect(host.messages).toContain("activity counts 1/1/0/0/0");
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");

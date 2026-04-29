@@ -205,6 +205,11 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
+  pushBooleanGetter(L, "IsCanBeFusionMaterial", session, (card) => Boolean(card));
+  pushBooleanGetter(L, "IsCanBeSynchroMaterial", session, (card) => Boolean(card));
+  pushBooleanGetter(L, "IsCanBeXyzMaterial", session, (card) => Boolean(card));
+  pushBooleanGetter(L, "IsCanBeLinkMaterial", session, (card) => Boolean(card));
+  pushBooleanGetter(L, "IsCanBeRitualMaterial", session, (card) => Boolean(card));
 }
 
 function installFlagHelpers(L: unknown, session: DuelSession): void {
@@ -440,6 +445,11 @@ const cardFieldNames = [
   "IsRelateToEffect",
   "IsRelateToBattle",
   "IsCanBeEffectTarget",
+  "IsCanBeFusionMaterial",
+  "IsCanBeSynchroMaterial",
+  "IsCanBeXyzMaterial",
+  "IsCanBeLinkMaterial",
+  "IsCanBeRitualMaterial",
   "RegisterFlagEffect",
   "GetFlagEffect",
   "ResetFlagEffect",
