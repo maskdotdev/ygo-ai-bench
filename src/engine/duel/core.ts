@@ -39,6 +39,7 @@ import {
   xyzSummonActions,
   xyzSummonDuelCard as xyzSummonDuelCardWithEvents,
 } from "#duel/summon.js";
+import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import {
   attackActions,
   canChangeDuelCardPosition as canChangeDuelCardPositionRule,
@@ -549,11 +550,17 @@ function specialSummonByProcedure(session: DuelSession, player: PlayerId, uid: s
   const ctx = createEffectContext(session.state, source, player);
   if (!canAttemptSpecialSummonProcedure(session.state, uid)) throw new Error(`${source.name} cannot be Special Summoned`);
   if (effect.canActivate && !effect.canActivate(ctx)) throw new Error(`Condition for ${effectId} is not legal`);
-  if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
-  if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
-  if (effect.operation) effect.operation(ctx);
-  markEffectUsed(session.state, effect);
-  specialSummonDuelCard(session.state, uid, player);
+  const rollback = captureDuelState(session.state);
+  try {
+    if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
+    if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
+    if (effect.operation) effect.operation(ctx);
+    markEffectUsed(session.state, effect);
+    specialSummonDuelCard(session.state, uid, player);
+  } catch (error) {
+    restoreDuelState(session.state, rollback);
+    throw error;
+  }
 }
 
 function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {

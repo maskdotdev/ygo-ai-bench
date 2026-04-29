@@ -1698,6 +1698,80 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
   });
 
+  it("rolls back Lua special summon procedure costs when release count falls short", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Rollback Procedure Source", kind: "monster" },
+      { code: "200", name: "Rollback Release Material", kind: "monster" },
+      { code: "300", name: "Rollback Replacement", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 82, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const material = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const replacement = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(material).toBeTruthy();
+    expect(replacement).toBeTruthy();
+    moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCost(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.CheckReleaseGroup(tp, aux.FilterBoolFunction(Card.IsCode, 200), 1, e:GetHandler()) end
+          local g=Duel.SelectReleaseGroup(tp, aux.FilterBoolFunction(Card.IsCode, 200), 1, 1, e:GetHandler())
+          local released=Duel.Release(g, REASON_COST)
+          Debug.Message("rollback release cost " .. released .. "/" .. g:GetCount())
+          return released==g:GetCount()
+        end)
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_RELEASE_REPLACE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return true end
+          Duel.SetTargetCard(Group.FromCards(e:GetHandler()))
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Duel.Release(Duel.GetTargetCards(), REASON_EFFECT+REASON_REPLACE)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "rollback-release-cost-procedure.lua",
+    );
+
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(false);
+    expect(host.messages).toContain("rollback release cost 0/1");
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "hand" });
+  });
+
   it("lets Lua scripts query monster zones and choose summon positions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Zone Filler A", kind: "monster" },
