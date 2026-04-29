@@ -185,6 +185,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetPreviousAttackOnField", session, (card) => (card?.previousLocation ? card.data.attack ?? 0 : 0));
   pushNumberGetter(L, "GetPreviousDefenseOnField", session, (card) => (card?.previousLocation ? card.data.defense ?? 0 : 0));
   pushNumberGetter(L, "GetPreviousLevelOnField", session, (card) => (card?.previousLocation ? card.data.level ?? 0 : 0));
+  pushNumberGetter(L, "GetPreviousRankOnField", session, (card) => (card?.previousLocation ? cardRank(card) : 0));
+  pushNumberGetter(L, "GetPreviousLinkOnField", session, (card) => (card?.previousLocation ? cardLink(card) : 0));
   pushNumberGetter(L, "GetPreviousRaceOnField", session, (card) => (card?.previousLocation ? card.data.race ?? 0 : 0));
   pushNumberGetter(L, "GetPreviousAttributeOnField", session, (card) => (card?.previousLocation ? card.data.attribute ?? 0 : 0));
   pushBooleanGetter(L, "WasFaceup", session, (card) => Boolean(card?.previousLocation && card.previousFaceUp));
@@ -210,6 +212,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberMatcher(L, "IsPreviousAttackOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.attack ?? 0) === requested));
   pushNumberMatcher(L, "IsPreviousDefenseOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.defense ?? 0) === requested));
   pushNumberMatcher(L, "IsPreviousLevelOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.level ?? 0) === requested));
+  pushNumberMatcher(L, "IsPreviousRankOnField", session, (card, requested) => Boolean(card.previousLocation && cardRank(card) === requested));
+  pushNumberMatcher(L, "IsPreviousLinkOnField", session, (card, requested) => Boolean(card.previousLocation && cardLink(card) === requested));
   pushNumberMatcher(L, "IsPreviousRaceOnField", session, (card, requested) => Boolean(card.previousLocation && ((card.data.race ?? 0) & requested) !== 0));
   pushNumberMatcher(L, "IsPreviousAttributeOnField", session, (card, requested) => Boolean(card.previousLocation && ((card.data.attribute ?? 0) & requested) !== 0));
   pushNumberMatcher(L, "IsPreviousSetCard", session, (card, requested) => Boolean(card.previousLocation && card.data.setcodes?.includes(requested)));
@@ -461,6 +465,8 @@ const cardFieldNames = [
   "GetPreviousAttackOnField",
   "GetPreviousDefenseOnField",
   "GetPreviousLevelOnField",
+  "GetPreviousRankOnField",
+  "GetPreviousLinkOnField",
   "GetPreviousRaceOnField",
   "GetPreviousAttributeOnField",
   "WasFaceup",
@@ -474,6 +480,8 @@ const cardFieldNames = [
   "IsPreviousAttackOnField",
   "IsPreviousDefenseOnField",
   "IsPreviousLevelOnField",
+  "IsPreviousRankOnField",
+  "IsPreviousLinkOnField",
   "IsPreviousRaceOnField",
   "IsPreviousAttributeOnField",
   "IsPreviousSetCard",
