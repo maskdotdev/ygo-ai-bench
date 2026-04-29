@@ -175,6 +175,35 @@ describe("duel ritual summons", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
   });
 
+  it("rejects matching-code non-monsters as direct ritual materials", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 3,
+      cardReader: createCardReader([
+        { code: "100", name: "Ritual Material Spell", kind: "spell" },
+        { code: "300", name: "Real Ritual Material", kind: "monster" },
+        { code: "940", name: "Spell-Proof Ritual", kind: "monster", ritualMaterials: ["100", "300"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300"] },
+      1: { main: ["300", "300", "300"] },
+    });
+    startDuel(session);
+
+    const ritual = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const spell = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const monster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(ritual).toBeTruthy();
+    expect(spell).toBeTruthy();
+    expect(monster).toBeTruthy();
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid)).toBe(false);
+    expect(() => ritualSummonDuelCard(session.state, 0, ritual!.uid, [spell!.uid, monster!.uid])).toThrow("cannot be used as ritual material");
+    expect(session.state.cards.find((card) => card.uid === ritual!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === spell!.uid)?.location).toBe("hand");
+  });
+
   it("does not expose ritual summon actions without materials or with no monster zone space", () => {
     const missing = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(missing, {

@@ -182,6 +182,35 @@ describe("duel fusion summons", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
   });
 
+  it("rejects matching-code non-monsters as direct fusion materials", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 2,
+      cardReader: createCardReader([
+        { code: "100", name: "Material Spell", kind: "spell" },
+        { code: "300", name: "Real Material", kind: "monster" },
+        { code: "900", name: "Spell-Proof Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["300", "300"] },
+    });
+    startDuel(session);
+
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    const spell = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const monster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(fusion).toBeTruthy();
+    expect(spell).toBeTruthy();
+    expect(monster).toBeTruthy();
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid)).toBe(false);
+    expect(() => fusionSummonDuelCard(session.state, 0, fusion!.uid, [spell!.uid, monster!.uid])).toThrow("cannot be used as fusion material");
+    expect(session.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === spell!.uid)?.location).toBe("hand");
+  });
+
   it("does not expose fusion summon actions without all materials or with no monster zone space", () => {
     const missing = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(missing, {

@@ -207,7 +207,7 @@ export function ritualSummonDuelCard(
   if (materials.some((material) => material.uid === card.uid)) throw new Error(`${card.name} cannot use itself as ritual material`);
   if (!materialCodesMatch(materials, requiredMaterials)) throw new Error(`${card.name} ritual materials are not legal`);
   for (const material of materials) {
-    if (material.location !== "hand" && material.location !== "monsterZone") throw new Error(`${material.name} cannot be used as ritual material`);
+    if ((material.location !== "hand" && material.location !== "monsterZone") || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as ritual material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ritual material`);
   }
   requireZoneSpace(state, player, "monsterZone");
@@ -403,7 +403,7 @@ function requireExtraDeckSummonMaterials(
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materialCodesMatch(materials, requiredMaterials)) throw new Error(`${card.name} ${summonType} materials are not legal`);
   for (const material of materials) {
-    if (!allowedLocations.includes(material.location)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
+    if (!allowedLocations.includes(material.location) || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
   }
   requireZoneSpace(state, player, "monsterZone");
