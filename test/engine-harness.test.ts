@@ -248,21 +248,29 @@ describe("EDOPro compatibility harness scaffolding", () => {
       `
       local recover = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil)
       Debug.Message("to hand " .. Duel.SendtoHand(recover, 0, REASON_EFFECT))
+      Debug.Message("operated hand " .. Duel.GetOperatedGroup():GetFirst():GetCode())
       local hand = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
       Debug.Message("to deck " .. Duel.SendtoDeck(hand, 0, 0, REASON_EFFECT))
+      Debug.Message("operated deck " .. Duel.GetOperatedGroup():GetFirst():GetCode())
       local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_GRAVE, 0, 1, 1, nil)
       Debug.Message("to extra " .. Duel.SendtoExtraP(extra, 0, REASON_EFFECT))
+      Debug.Message("operated extra " .. Duel.GetOperatedGroup():GetFirst():GetCode())
       local illegal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_GRAVE, 0, 1, 1, nil)
       Debug.Message("illegal extra " .. Duel.SendtoExtraP(illegal, 0, REASON_EFFECT))
+      Debug.Message("operated illegal " .. Duel.GetOperatedGroup():GetCount())
       `,
       "movement-helpers.lua",
     );
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("to hand 1");
+    expect(host.messages).toContain("operated hand 100");
     expect(host.messages).toContain("to deck 1");
+    expect(host.messages).toContain("operated deck 100");
     expect(host.messages).toContain("to extra 1");
+    expect(host.messages).toContain("operated extra 900");
     expect(host.messages).toContain("illegal extra 0");
+    expect(host.messages).toContain("operated illegal 0");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "100")?.location).toBe("deck");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "900")?.location).toBe("extraDeck");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("graveyard");
@@ -382,8 +390,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("can draw two " .. tostring(Duel.IsPlayerCanDraw(0, 2)))
       Debug.Message("can draw five " .. tostring(Duel.IsPlayerCanDraw(0, 5)))
       Debug.Message("drawn " .. Duel.Draw(0, 2, REASON_EFFECT))
+      Debug.Message("draw operated " .. Duel.GetOperatedGroup():GetCount())
       local searched = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${searchCode}), 0, LOCATION_DECK, 0, 1, 1, nil)
       Debug.Message("searched " .. Duel.SendtoHand(searched, 0, REASON_EFFECT))
+      Debug.Message("search operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
       `,
       "draw-search.lua",
     );
@@ -392,7 +402,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("can draw two true");
     expect(host.messages).toContain("can draw five false");
     expect(host.messages).toContain("drawn 2");
+    expect(host.messages).toContain("draw operated 2");
     expect(host.messages).toContain("searched 1");
+    expect(host.messages).toContain(`search operated ${searchCode}`);
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && drawnCodes.includes(card.code))).toHaveLength(2);
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === searchCode)?.location).toBe("hand");
   });

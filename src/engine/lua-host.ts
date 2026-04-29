@@ -60,11 +60,12 @@ interface LuaHostState {
   messages: string[];
   activeTargetUids: string[] | undefined;
   operationInfos: LuaDuelOperationInfo[];
+  operatedUids: string[];
 }
 
 export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
   const L = lauxlib.luaL_newstate();
-  const hostState: LuaHostState = { session, nextEffectId: 1, effects: new Map(), messages: [], activeTargetUids: undefined, operationInfos: [] };
+  const hostState: LuaHostState = { session, nextEffectId: 1, effects: new Map(), messages: [], activeTargetUids: undefined, operationInfos: [], operatedUids: [] };
   lualib.luaL_openlibs(L);
   installConstants(L);
   installDebugApi(L, hostState.messages);

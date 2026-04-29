@@ -42,6 +42,7 @@ export interface LuaDuelApiHostState {
   messages: string[];
   activeTargetUids: string[] | undefined;
   operationInfos: LuaDuelOperationInfo[];
+  operatedUids: string[];
 }
 
 export interface LuaDuelOperationInfo {
@@ -146,12 +147,15 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1;
-    lua.lua_pushinteger(state, drawDuelCards(session.state, player, count, "Lua draw"));
+    const drawUids = topDeckUids(session, player, count);
+    const drawn = drawDuelCards(session.state, player, count, "Lua draw");
+    setOperatedUids(hostState, drawUids.slice(0, drawn));
+    lua.lua_pushinteger(state, drawn);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Draw"));
-  installMoveHelpers(L, session);
-  installSummonHelpers(L, session);
+  installMoveHelpers(L, session, hostState);
+  installSummonHelpers(L, session, hostState);
   installQueryHelpers(L, session, hostState);
   installOperationInfoHelpers(L, hostState);
   installFlagHelpers(L, session);
@@ -186,39 +190,53 @@ function installFlagHelpers(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("ResetFlagEffect"));
 }
 
-function installMoveHelpers(L: unknown, session: DuelSession): void {
+function installMoveHelpers(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroup(session, state, sendDuelCardToGraveyard));
+    const moved = moveCardOrGroup(session, state, sendDuelCardToGraveyard);
+    setOperatedUids(hostState, moved);
+    lua.lua_pushinteger(state, moved.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SendtoGrave"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroup(session, state, destroyDuelCard, duelReason.destroy));
+    const moved = moveCardOrGroup(session, state, destroyDuelCard, duelReason.destroy);
+    setOperatedUids(hostState, moved);
+    lua.lua_pushinteger(state, moved.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Destroy"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroup(session, state, banishDuelCard));
+    const moved = moveCardOrGroup(session, state, banishDuelCard);
+    setOperatedUids(hostState, moved);
+    lua.lua_pushinteger(state, moved.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Remove"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroup(session, state, sendDuelCardToGraveyard, duelReason.release));
+    const moved = moveCardOrGroup(session, state, sendDuelCardToGraveyard, duelReason.release);
+    setOperatedUids(hostState, moved);
+    lua.lua_pushinteger(state, moved.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Release"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "hand", 3));
+    const moved = moveCardOrGroupToLocation(session, state, "hand", 3);
+    setOperatedUids(hostState, moved);
+    lua.lua_pushinteger(state, moved.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SendtoHand"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "deck", 4));
+    const moved = moveCardOrGroupToLocation(session, state, "deck", 4);
+    setOperatedUids(hostState, moved);
+    lua.lua_pushinteger(state, moved.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SendtoDeck"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "extraDeck", 3));
+    const moved = moveCardOrGroupToLocation(session, state, "extraDeck", 3);
+    setOperatedUids(hostState, moved);
+    lua.lua_pushinteger(state, moved.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SendtoExtraP"));
@@ -226,19 +244,20 @@ function installMoveHelpers(L: unknown, session: DuelSession): void {
     const uids = readCardOrGroupUids(state, 1);
     const targetPlayer = readOptionalPlayer(state, 4);
     const requestedPosition = lua.lua_isnumber(state, 7) ? positionFromMask(lua.lua_tointeger(state, 7)) : undefined;
-    let moved = 0;
+    const moved: string[] = [];
     for (const uid of uids) {
       const card = session.state.cards.find((candidate) => candidate.uid === uid);
       if (!card) continue;
       try {
         const summoned = specialSummonDuelCard(session.state, uid, targetPlayer ?? card.controller);
         if (requestedPosition) applySummonPosition(summoned, requestedPosition);
-        moved += 1;
+        moved.push(uid);
       } catch {
         // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
       }
     }
-    lua.lua_pushinteger(state, moved);
+    setOperatedUids(hostState, moved);
+    lua.lua_pushinteger(state, moved.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
@@ -246,36 +265,38 @@ function installMoveHelpers(L: unknown, session: DuelSession): void {
     const uids = readCardOrGroupUids(state, 1);
     const requestedPosition = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
     if (!requestedPosition) {
+      setOperatedUids(hostState, []);
       lua.lua_pushinteger(state, 0);
       return 1;
     }
-    let changed = 0;
+    const changed: string[] = [];
     for (const uid of uids) {
       const card = session.state.cards.find((candidate) => candidate.uid === uid);
       if (!card) continue;
       try {
         changeDuelCardPosition(session.state, card.controller, uid, requestedPosition);
-        changed += 1;
+        changed.push(uid);
       } catch {
         // EDOPro-style helpers report the number of changed cards; illegal changes simply fail.
       }
     }
-    lua.lua_pushinteger(state, changed);
+    setOperatedUids(hostState, changed);
+    lua.lua_pushinteger(state, changed.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ChangePosition"));
 }
 
-function installSummonHelpers(L: unknown, session: DuelSession): void {
-  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, "FusionSummon"));
+function installSummonHelpers(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
+  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, "FusionSummon"));
   lua.lua_setfield(L, -2, to_luastring("FusionSummon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, "SynchroSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, "SynchroSummon"));
   lua.lua_setfield(L, -2, to_luastring("SynchroSummon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, "XyzSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, "XyzSummon"));
   lua.lua_setfield(L, -2, to_luastring("XyzSummon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, "LinkSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, "LinkSummon"));
   lua.lua_setfield(L, -2, to_luastring("LinkSummon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, "RitualSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, "RitualSummon"));
   lua.lua_setfield(L, -2, to_luastring("RitualSummon"));
 }
 
@@ -445,6 +466,11 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetTargetCards"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    pushGroupTable(state, hostState.operatedUids);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetOperatedGroup"));
 }
 
 function installOperationInfoHelpers(L: unknown, hostState: LuaDuelApiHostState): void {
@@ -491,15 +517,15 @@ function findOperationInfo(operationInfos: LuaDuelOperationInfo[], chainIndex: n
   return undefined;
 }
 
-function moveCardOrGroup(session: DuelSession, L: unknown, mover: LuaCardMover, extraReason = 0): number {
+function moveCardOrGroup(session: DuelSession, L: unknown, mover: LuaCardMover, extraReason = 0): string[] {
   const reason = readMoveReason(L, 2, extraReason);
-  let moved = 0;
+  const moved: string[] = [];
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
     try {
       mover(session.state, uid, card.controller, reason);
-      moved += 1;
+      moved.push(uid);
     } catch {
       // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
     }
@@ -507,14 +533,14 @@ function moveCardOrGroup(session: DuelSession, L: unknown, mover: LuaCardMover, 
   return moved;
 }
 
-function moveCardOrGroupToLocation(session: DuelSession, L: unknown, location: DuelLocation, reasonIndex: number): number {
+function moveCardOrGroupToLocation(session: DuelSession, L: unknown, location: DuelLocation, reasonIndex: number): string[] {
   const reason = readMoveReason(L, reasonIndex, 0);
-  let moved = 0;
+  const moved: string[] = [];
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || !canMoveDuelCardToLocation(session.state, uid, location)) continue;
     moveDuelCard(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason);
-    moved += 1;
+    moved.push(uid);
   }
   return moved;
 }
@@ -530,11 +556,12 @@ function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, 
   card.faceUp = position !== "faceDownDefense";
 }
 
-function pushLuaSummonResult(L: unknown, session: DuelSession, summonType: "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummon" | "RitualSummon"): number {
+function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState, summonType: "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummon" | "RitualSummon"): number {
   const targetUid = readCardUid(L, 1);
   const materialUids = readCardOrGroupUids(L, 2);
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
   if (!target) {
+    setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
     return 1;
   }
@@ -544,11 +571,17 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, summonType: "Fusi
     else if (summonType === "XyzSummon") xyzSummonDuelCard(session.state, target.controller, target.uid, materialUids);
     else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, target.controller, target.uid, materialUids);
     else ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids);
+    setOperatedUids(hostState, [target.uid]);
     lua.lua_pushinteger(L, 1);
   } catch {
+    setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
   }
   return 1;
+}
+
+function setOperatedUids(hostState: LuaDuelApiHostState, uids: string[]): void {
+  hostState.operatedUids.splice(0, hostState.operatedUids.length, ...uids);
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {
