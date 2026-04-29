@@ -15,6 +15,10 @@ export interface LuaDuelReleaseApiHostState {
 }
 
 export function installDuelReleaseApi(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState): void {
+  lua.lua_pushcfunction(L, (state: unknown) => pushReleaseGroup(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetReleaseGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushReleaseGroupCount(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetReleaseGroupCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckReleaseGroup(state, session, hostState, false));
   lua.lua_setfield(L, -2, to_luastring("CheckReleaseGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectReleaseGroup(state, session, hostState));
@@ -23,6 +27,22 @@ export function installDuelReleaseApi(L: unknown, session: DuelSession, hostStat
   lua.lua_setfield(L, -2, to_luastring("CheckReleaseGroupEx"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectReleaseGroup(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SelectReleaseGroupEx"));
+}
+
+function pushReleaseGroup(L: unknown, session: DuelSession): number {
+  const query = readReleaseQuery(L, session);
+  const uids = releasableMonsterUids(L, session, query.filterRef, query.player, query.excluded, query.args);
+  releaseOptionalFunctionRef(L, query.filterRef);
+  pushGroupTable(L, uids);
+  return 1;
+}
+
+function pushReleaseGroupCount(L: unknown, session: DuelSession): number {
+  const query = readReleaseQuery(L, session);
+  const count = releasableMonsterUids(L, session, query.filterRef, query.player, query.excluded, query.args).length;
+  releaseOptionalFunctionRef(L, query.filterRef);
+  lua.lua_pushinteger(L, count);
+  return 1;
 }
 
 function pushCheckReleaseGroup(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState, hasMax: boolean): number {
@@ -50,6 +70,22 @@ function pushSelectReleaseGroup(L: unknown, session: DuelSession, hostState: Lua
   releaseOptionalFunctionRef(L, filterRef);
   pushGroupTable(L, uids.slice(0, max > 0 ? max : Math.max(min, 1)));
   return 1;
+}
+
+interface ReleaseQuery {
+  player: PlayerId;
+  filterRef: number | undefined;
+  excluded: string[];
+  args: LuaFilterArgs;
+}
+
+function readReleaseQuery(L: unknown, session: DuelSession): ReleaseQuery {
+  return {
+    player: normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer),
+    filterRef: readOptionalFunctionRef(L, 2),
+    excluded: readCardOrGroupUids(L, 3),
+    args: readFilterArgs(L, 4),
+  };
 }
 
 function releasableMonsterUids(L: unknown, session: DuelSession, filterRef: number | undefined, player: PlayerId, excluded: string[], args: LuaFilterArgs): string[] {

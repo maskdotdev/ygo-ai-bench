@@ -73,6 +73,8 @@ describe("Lua summon and release helpers", () => {
     const result = host.loadScript(
       `
       local filter = function(tc) return tc:IsCode(100) or tc:IsCode(300) end
+      Debug.Message("release group " .. Duel.GetReleaseGroup(0, filter, nil):GetCount())
+      Debug.Message("release group count " .. Duel.GetReleaseGroupCount(0, filter, nil))
       Debug.Message("can release two " .. tostring(Duel.CheckReleaseGroup(0, filter, 2, nil)))
       Debug.Message("can release three " .. tostring(Duel.CheckReleaseGroup(0, filter, 3, nil)))
       Debug.Message("can release ex two " .. tostring(Duel.CheckReleaseGroupEx(0, filter, 2, 2, nil)))
@@ -82,6 +84,7 @@ describe("Lua summon and release helpers", () => {
       local g = Duel.SelectReleaseGroup(0, filter, 1, 2, nil)
       Debug.Message("selected releases " .. g:GetCount())
       local excluded = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("release group excluded " .. Duel.GetReleaseGroup(0, aux.TRUE, excluded):GetCount())
       Debug.Message("group excluded release check " .. tostring(Duel.CheckReleaseGroup(0, aux.TRUE, 3, excluded)))
       Debug.Message("group excluded release selected " .. Duel.SelectReleaseGroup(0, aux.TRUE, 1, 3, excluded):GetCount())
       local forced = excluded:GetFirst()
@@ -102,12 +105,15 @@ describe("Lua summon and release helpers", () => {
     );
 
     expect(result.ok).toBe(true);
+    expect(host.messages).toContain("release group 2");
+    expect(host.messages).toContain("release group count 2");
     expect(host.messages).toContain("can release two true");
     expect(host.messages).toContain("can release three false");
     expect(host.messages).toContain("can release ex two true");
     expect(host.messages).toContain("can release ex three false");
     expect(host.messages).toContain("selected releases ex 1");
     expect(host.messages).toContain("selected releases 2");
+    expect(host.messages).toContain("release group excluded 2");
     expect(host.messages).toContain("group excluded release check false");
     expect(host.messages).toContain("group excluded release selected 2");
     expect(host.messages).toContain("forced release check true");
