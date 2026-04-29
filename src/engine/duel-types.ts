@@ -119,6 +119,8 @@ export interface DuelEffectContext {
   duel: DuelState;
   source: DuelCardInstance;
   player: PlayerId;
+  activationLocation?: DuelLocation;
+  activationSequence?: number;
   eventCard?: DuelCardInstance;
   eventName?: DuelEventName;
   checkOnly?: boolean;
@@ -135,6 +137,8 @@ export interface ChainLink {
   player: PlayerId;
   sourceUid: string;
   effectId: string;
+  activationLocation?: DuelLocation;
+  activationSequence?: number;
   eventName?: DuelEventName;
   eventCardUid?: string;
   targetUids?: string[];

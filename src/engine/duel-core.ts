@@ -543,11 +543,15 @@ function createEffectContext(
   eventCard?: DuelCardInstance,
   targetUids: string[] = [],
   checkOnly = false,
+  activationLocation: DuelLocation = source.location,
+  activationSequence: number = source.sequence,
 ): DuelEffectContext {
   return {
     duel: state,
     source,
     player,
+    activationLocation,
+    activationSequence,
     ...(eventName === undefined ? {} : { eventName }),
     ...(eventCard === undefined ? {} : { eventCard }),
     ...(checkOnly ? { checkOnly } : {}),
@@ -625,11 +629,13 @@ function hasChainResponses(state: DuelState, player: PlayerId): boolean {
 }
 
 function pushChainLink(state: DuelState, player: PlayerId, sourceUid: string, effectId: string, eventName?: DuelEventName, eventCard?: DuelCardInstance, targetUids: string[] = []): void {
+  const source = findCard(state, sourceUid);
   state.chain.push({
     id: `chain-${state.log.length + 1}`,
     player,
     sourceUid,
     effectId,
+    ...(source === undefined ? {} : { activationLocation: source.location, activationSequence: source.sequence }),
     ...(eventName === undefined ? {} : { eventName }),
     ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
     ...(targetUids.length === 0 ? {} : { targetUids: [...targetUids] }),
@@ -661,7 +667,7 @@ function resolveChain(state: DuelState): void {
     const source = findCard(state, link.sourceUid);
     if (!effect || !source) continue;
     const eventCard = link.eventCardUid === undefined ? undefined : findCard(state, link.eventCardUid);
-    const ctx = createEffectContext(state, source, link.player, link.eventName, eventCard, [...(link.targetUids ?? [])]);
+    const ctx = createEffectContext(state, source, link.player, link.eventName, eventCard, [...(link.targetUids ?? [])], false, link.activationLocation ?? source.location, link.activationSequence ?? source.sequence);
     effect.operation(ctx);
   }
   state.chainPasses = [];

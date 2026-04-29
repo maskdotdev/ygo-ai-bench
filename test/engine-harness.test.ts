@@ -709,15 +709,15 @@ describe("EDOPro compatibility harness scaffolding", () => {
         e:SetLabel(5)
         e:SetValue(10)
         e:SetOperation(function(e,c)
-          Debug.Message("base op " .. e:GetDescription() .. "/" .. e:GetLabel() .. "/" .. e:GetValue())
+          Debug.Message("base op " .. e:GetDescription() .. "/" .. e:GetLabel() .. "/" .. e:GetValue() .. "/" .. e:GetActivateLocation() .. "/" .. e:GetActivateSequence())
         end)
         local e2=e:Clone()
-        Debug.Message("clone initial " .. e2:GetDescription() .. "/" .. e2:GetLabel() .. "/" .. e2:GetValue() .. "/" .. e2:GetRange())
+        Debug.Message("clone initial " .. e2:GetDescription() .. "/" .. e2:GetLabel() .. "/" .. e2:GetValue() .. "/" .. e2:GetRange() .. "/" .. e2:GetOwner():GetCode() .. "/" .. e2:GetActivateLocation() .. "/" .. e2:GetActivateSequence())
         e2:SetDescription(222)
         e2:SetLabel(9)
         e2:SetValue(20)
         e2:SetOperation(function(e,c)
-          Debug.Message("clone op " .. e:GetDescription() .. "/" .. e:GetLabel() .. "/" .. e:GetValue())
+          Debug.Message("clone op " .. e:GetDescription() .. "/" .. e:GetLabel() .. "/" .. e:GetValue() .. "/" .. e:GetActivateLocation() .. "/" .. e:GetActivateSequence())
         end)
         c:RegisterEffect(e)
         c:RegisterEffect(e2)
@@ -728,7 +728,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
 
     expect(result.ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(host.messages).toContain("clone initial 111/5/10/2");
+    expect(host.messages).toContain("clone initial 111/5/10/2/100/2/0");
     expect(session.state.effects).toHaveLength(2);
     expect(session.state.effects[0]).toMatchObject({ description: 111, range: ["hand"] });
     expect(session.state.effects[1]).toMatchObject({ description: 222, range: ["hand"] });
@@ -740,8 +740,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(cloneAction).toBeDefined();
     expect(applyResponse(session, cloneAction!).ok).toBe(true);
 
-    expect(host.messages).toContain("base op 111/5/10");
-    expect(host.messages).toContain("clone op 222/9/20");
+    expect(host.messages).toContain("base op 111/5/10/2/0");
+    expect(host.messages).toContain("clone op 222/9/20/2/0");
   });
 
   it("stores Lua effect owner player metadata and deletes registered effects", () => {
