@@ -86,6 +86,35 @@ bun run build
 
 `bun run build` emits the React playtest page and `dist/playtest-engine.js`, which exposes `window.duelDeckPlaytest` in the browser. If that bundle is loaded, the existing `window.duelDeckAgent.playtest` bridge can start, inspect, step, and auto-run playtest sessions from the current deck.
 
+## Duel snapshot persistence
+
+The full duel engine exposes `serializeDuel(session)` and `restoreDuel(snapshot)` for deterministic test fixtures, browser handoff, and long-running playtest state. Snapshots contain serializable duel state only; callback functions are intentionally stripped.
+
+Supported effect persistence:
+
+- Static continuous effects persist automatically when they have no callback-driven activation, cost, target, or operation.
+- Lua card effects should be restored with `restoreDuelWithLuaScripts(snapshot, source, cardReader)`. The helper reloads required card scripts, registers their `initial_effect` functions, keeps only Lua registry keys that existed in the snapshot, and reports `restoredRegistryKeys` plus `missingRegistryKeys`.
+- Manual TypeScript effects with callbacks must provide a stable `registryKey` and be restored with a `DuelEffectRestoreRegistry` passed to `restoreDuel(snapshot, cardReader, registry)`.
+- Effects without a static shape or registry key are omitted from snapshots by design, because replaying arbitrary closures would not be browser-safe or deterministic.
+
+Minimal manual registry example:
+
+```ts
+import { restoreDuel, serializeDuel, type DuelEffectRestoreRegistry } from './src/engine';
+
+const snapshot = serializeDuel(session);
+const registry: DuelEffectRestoreRegistry = {
+  'manual:draw-once': (saved) => ({
+    ...saved,
+    operation: ({ session }) => {
+      session.state.log.push({ type: 'effect', message: 'restored manual effect resolved' });
+    },
+  }),
+};
+
+const restored = restoreDuel(snapshot, cardReader, registry);
+```
+
 ## Included decks
 
 - `dark-magical-blast-master-duel-day1.ydk` — 40-card Master Duel Day 1 Dark Magician upgrade path for two Dark Magical Blast structure decks plus Dragoon/Verte staples.
