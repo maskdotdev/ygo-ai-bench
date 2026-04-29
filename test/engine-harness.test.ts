@@ -1447,6 +1447,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalNumber("EFFECT_TYPE_CONTINUOUS")).toBe(0x800);
     expect(host.getGlobalNumber("CATEGORY_DISABLE")).toBe(0x4000);
     expect(host.getGlobalNumber("CATEGORY_NEGATE")).toBe(0x10000000);
+    expect(host.getGlobalNumber("EFFECT_FLAG_DAMAGE_STEP")).toBe(0x4000);
+    expect(host.getGlobalNumber("EFFECT_FLAG_DAMAGE_CAL")).toBe(0x8000);
+    expect(host.getGlobalNumber("EFFECT_FLAG_PLAYER_TARGET")).toBe(0x800);
+    expect(host.getGlobalNumber("EFFECT_FLAG_IMMEDIATELY_APPLY")).toBe(0x80000000);
     expect(host.registerInitialEffects()).toBe(2);
     expect(host.messages).toContain("effect predicates true/true/true");
     expect(host.messages).toContain("effect callbacks true/true/true/true");
