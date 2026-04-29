@@ -631,6 +631,16 @@ describe("EDOPro compatibility harness scaffolding", () => {
         e:SetHintTiming(TIMING_END_PHASE, TIMING_MAIN_END)
         e:SetCountLimit(2, 987)
         e:SetReset(RESET_EVENT + RESETS_STANDARD, 1)
+        e:SetCondition(function(e,c) return c:IsCode(100) end)
+        e:SetCost(function(e,c) return true end)
+        e:SetTarget(function(e,c) return true end)
+        e:SetOperation(function(e,c) Debug.Message("metadata operation") end)
+        local condition=e:GetCondition()
+        local cost=e:GetCost()
+        local target=e:GetTarget()
+        local operation=e:GetOperation()
+        Debug.Message("effect predicates " .. tostring(e:IsHasType(EFFECT_TYPE_IGNITION)) .. "/" .. tostring(e:IsHasCategory(CATEGORY_DRAW)) .. "/" .. tostring(e:IsHasProperty(EFFECT_FLAG_CARD_TARGET)))
+        Debug.Message("effect callbacks " .. tostring(condition(e,c)) .. "/" .. tostring(cost(e,c)) .. "/" .. tostring(target(e,c)) .. "/" .. tostring(operation ~= nil))
         e:SetValue(function(e,c) return c:GetCode()+7 end)
         local value_fn=e:GetValue()
         Debug.Message("effect value function " .. value_fn(e,c))
@@ -654,6 +664,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalNumber("EFFECT_TYPE_TRIGGER_O")).toBe(0x80);
     expect(host.getGlobalNumber("EFFECT_TYPE_CONTINUOUS")).toBe(0x800);
     expect(host.registerInitialEffects()).toBe(2);
+    expect(host.messages).toContain("effect predicates true/true/true");
+    expect(host.messages).toContain("effect callbacks true/true/true/true");
     expect(host.messages).toContain("effect value function 107");
     expect(host.messages).toContain("effect getters 64/64/1234/384/65552/2");
     expect(host.messages).toContain("effect target range 4/16");

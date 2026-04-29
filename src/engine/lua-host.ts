@@ -198,6 +198,9 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
   pushEffectMethod(L, effects, "GetDescription", getEffectNumberField("description"));
   pushEffectMethod(L, effects, "GetCategory", getEffectNumberField("category"));
   pushEffectMethod(L, effects, "GetProperty", getEffectNumberField("property"));
+  pushEffectMethod(L, effects, "IsHasType", hasEffectNumberField("typeFlags"));
+  pushEffectMethod(L, effects, "IsHasCategory", hasEffectNumberField("category"));
+  pushEffectMethod(L, effects, "IsHasProperty", hasEffectNumberField("property"));
   pushEffectMethod(L, effects, "SetType", setEffectNumberField("typeFlags"));
   pushEffectMethod(L, effects, "SetCode", setEffectNumberField("code"));
   pushEffectMethod(L, effects, "SetDescription", setEffectNumberField("description"));
@@ -304,6 +307,10 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
   pushEffectMethod(L, effects, "SetCondition", setEffectFunctionField("conditionRef"));
   pushEffectMethod(L, effects, "SetCost", setEffectFunctionField("costRef"));
   pushEffectMethod(L, effects, "SetTarget", setEffectFunctionField("targetRef"));
+  pushEffectMethod(L, effects, "GetCondition", getEffectFunctionField("conditionRef"));
+  pushEffectMethod(L, effects, "GetCost", getEffectFunctionField("costRef"));
+  pushEffectMethod(L, effects, "GetTarget", getEffectFunctionField("targetRef"));
+  pushEffectMethod(L, effects, "GetOperation", getEffectFunctionField("operationRef"));
   pushEffectMethod(L, effects, "SetOperation", (state, effect) => {
     if (!lua.lua_isfunction(state, 2)) return 0;
     lua.lua_pushvalue(state, 2);
@@ -355,6 +362,14 @@ function getEffectNumberField(field: "typeFlags" | "code" | "description" | "cat
   };
 }
 
+function hasEffectNumberField(field: "typeFlags" | "category" | "property") {
+  return (state: unknown, effect: LuaEffectRecord): number => {
+    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushboolean(state, requested !== 0 && ((effect[field] ?? 0) & requested) === requested);
+    return 1;
+  };
+}
+
 function effectController(session: DuelSession, effect: LuaEffectRecord): PlayerId {
   const source = effect.sourceUid ? session.state.cards.find((candidate) => candidate.uid === effect.sourceUid) : undefined;
   return source?.controller ?? 0;
@@ -370,6 +385,15 @@ function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef")
     lua.lua_pushvalue(state, 2);
     effect[field] = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
     return 0;
+  };
+}
+
+function getEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef" | "operationRef") {
+  return (state: unknown, effect: LuaEffectRecord): number => {
+    const ref = effect[field];
+    if (ref === undefined) lua.lua_pushnil(state);
+    else lua.lua_rawgeti(state, lua.LUA_REGISTRYINDEX, ref);
+    return 1;
   };
 }
 
