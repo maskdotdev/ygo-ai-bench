@@ -630,10 +630,15 @@ describe("EDOPro compatibility harness scaffolding", () => {
         e:SetHintTiming(TIMING_END_PHASE, TIMING_MAIN_END)
         e:SetCountLimit(2, 987)
         e:SetReset(RESET_EVENT + RESETS_STANDARD, 1)
+        e:SetValue(function(e,c) return c:GetCode()+7 end)
+        local value_fn=e:GetValue()
+        Debug.Message("effect value function " .. value_fn(e,c))
+        e:SetValue(2500)
         local limit,limit_code=e:GetCountLimit()
         local reset,reset_count=e:GetReset()
         Debug.Message("effect getters " .. e:GetType() .. "/" .. e:GetCode() .. "/" .. e:GetDescription() .. "/" .. e:GetCategory() .. "/" .. e:GetProperty() .. "/" .. e:GetRange())
         Debug.Message("effect count reset " .. limit .. "/" .. limit_code .. "/" .. reset .. "/" .. reset_count)
+        Debug.Message("effect value number " .. e:GetValue())
         c:RegisterEffect(e)
       end
       `,
@@ -642,8 +647,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
 
     expect(result.ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
+    expect(host.messages).toContain("effect value function 107");
     expect(host.messages).toContain("effect getters 16/64/1234/384/65552/2");
     expect(host.messages).toContain("effect count reset 2/987/12288/1");
+    expect(host.messages).toContain("effect value number 2500");
     expect(session.state.effects[0]).toMatchObject({
       triggerEvent: "normalSummoned",
       range: ["hand"],

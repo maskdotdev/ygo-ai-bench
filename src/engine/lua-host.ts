@@ -47,6 +47,8 @@ interface LuaEffectRecord {
   };
   label?: number;
   labelObjectRef?: number;
+  value?: number;
+  valueRef?: number;
   conditionRef?: number;
   costRef?: number;
   targetRef?: number;
@@ -213,6 +215,22 @@ function pushLuaEffectTable(L: unknown, id: number, effects: Map<number, LuaEffe
   pushEffectMethod(L, effects, "GetLabelObject", (state, effect) => {
     if (effect.labelObjectRef === undefined) lua.lua_pushnil(state);
     else lua.lua_rawgeti(state, lua.LUA_REGISTRYINDEX, effect.labelObjectRef);
+    return 1;
+  });
+  pushEffectMethod(L, effects, "SetValue", (state, effect) => {
+    if (effect.valueRef !== undefined) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, effect.valueRef);
+    delete effect.valueRef;
+    delete effect.value;
+    if (lua.lua_isfunction(state, 2)) {
+      lua.lua_pushvalue(state, 2);
+      effect.valueRef = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
+    }
+    else if (lua.lua_isnumber(state, 2)) effect.value = lua.lua_tointeger(state, 2);
+    return 0;
+  });
+  pushEffectMethod(L, effects, "GetValue", (state, effect) => {
+    if (effect.valueRef !== undefined) lua.lua_rawgeti(state, lua.LUA_REGISTRYINDEX, effect.valueRef);
+    else lua.lua_pushinteger(state, effect.value ?? 0);
     return 1;
   });
   pushEffectMethod(L, effects, "SetRange", (state, effect) => {
