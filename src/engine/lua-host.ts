@@ -374,7 +374,7 @@ function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef")
 }
 
 function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unknown, hostState: LuaHostState): DuelEffectDefinition {
-  const event = (luaEffect.typeFlags & 0x20) !== 0 ? "trigger" : (luaEffect.typeFlags & 0x100) !== 0 ? "quick" : "ignition";
+  const event = luaEffectEvent(luaEffect.typeFlags);
   const range = luaEffect.range ?? [card.location];
   const triggerEvent = triggerEventFromCode(luaEffect.code);
   luaEffect.sourceUid = card.uid;
@@ -412,6 +412,13 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
       });
     },
   };
+}
+
+function luaEffectEvent(typeFlags: number): DuelEffectDefinition["event"] {
+  if ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) return "trigger";
+  if ((typeFlags & 0x100) !== 0 || (typeFlags & 0x400) !== 0) return "quick";
+  if ((typeFlags & 0x800) !== 0) return "continuous";
+  return "ignition";
 }
 
 function triggerEventFromCode(code: number | undefined): DuelEventName | undefined {

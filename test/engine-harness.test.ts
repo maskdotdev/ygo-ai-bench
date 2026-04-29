@@ -649,9 +649,13 @@ describe("EDOPro compatibility harness scaffolding", () => {
     );
 
     expect(result.ok).toBe(true);
+    expect(host.getGlobalNumber("EFFECT_TYPE_SINGLE")).toBe(0x1);
+    expect(host.getGlobalNumber("EFFECT_TYPE_IGNITION")).toBe(0x40);
+    expect(host.getGlobalNumber("EFFECT_TYPE_TRIGGER_O")).toBe(0x80);
+    expect(host.getGlobalNumber("EFFECT_TYPE_CONTINUOUS")).toBe(0x800);
     expect(host.registerInitialEffects()).toBe(2);
     expect(host.messages).toContain("effect value function 107");
-    expect(host.messages).toContain("effect getters 16/64/1234/384/65552/2");
+    expect(host.messages).toContain("effect getters 64/64/1234/384/65552/2");
     expect(host.messages).toContain("effect target range 4/16");
     expect(host.messages).toContain("effect count reset 2/987/12288/1");
     expect(host.messages).toContain("effect value number 2500");
