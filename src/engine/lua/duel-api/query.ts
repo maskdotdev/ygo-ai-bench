@@ -94,6 +94,11 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("SetSelectedCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    pushGroupTable(state, hostState.selectedUids);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetSelectedCard"));
 }
 
 function pushMatchingGroup(L: unknown, session: DuelSession): number {

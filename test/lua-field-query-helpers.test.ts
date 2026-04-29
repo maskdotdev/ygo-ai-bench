@@ -488,6 +488,7 @@ describe("Lua field and query helpers", () => {
       local sum_greater_selected = all:SelectWithSumGreater(0, Card.GetAttack, 3500, 2, 2)
       Debug.Message("sum greater selected " .. sum_greater_selected:GetCount())
       Duel.SetSelectedCard(c300)
+      Debug.Message("selected card single " .. Duel.GetSelectedCard():GetCount() .. "/" .. Duel.GetSelectedCard():GetFirst():GetCode())
       Debug.Message("forced sum exact miss " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 3000, 2, 2)))
       Duel.SetSelectedCard(c100)
       Debug.Message("forced sum greater miss " .. tostring(all:CheckWithSumGreater(Card.GetAttack, 4500, 2, 2)))
@@ -495,6 +496,7 @@ describe("Lua field and query helpers", () => {
       local forced_sum = all:SelectWithSumGreater(0, Card.GetAttack, 4500, 2, 2)
       Debug.Message("forced sum greater selected " .. forced_sum:GetCount() .. " " .. tostring(forced_sum:IsContains(c200)))
       Duel.SetSelectedCard(nil)
+      Debug.Message("selected card cleared " .. Duel.GetSelectedCard():GetCount())
       Debug.Message("forced sum cleared " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 3000, 2, 2)))
       local vararg_sum = all:SelectWithSumEqual(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 5000, 2, 2, 1500)
       Debug.Message("sum vararg " .. vararg_sum:GetCount())
@@ -568,9 +570,11 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("sum greater miss false");
     expect(host.messages).toContain("sum selected 2");
     expect(host.messages).toContain("sum greater selected 2");
+    expect(host.messages).toContain("selected card single 1/300");
     expect(host.messages).toContain("forced sum exact miss false");
     expect(host.messages).toContain("forced sum greater miss false");
     expect(host.messages).toContain("forced sum greater selected 2 true");
+    expect(host.messages).toContain("selected card cleared 0");
     expect(host.messages).toContain("forced sum cleared true");
     expect(host.messages).toContain("sum vararg 2");
     expect(host.messages).toContain("sum greater vararg 2");
