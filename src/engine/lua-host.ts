@@ -40,6 +40,11 @@ interface LuaEffectRecord {
   category?: number;
   property?: number;
   hintTiming?: [number, number?];
+  countLimitCode?: number;
+  reset?: {
+    flags: number;
+    count?: number;
+  };
   label?: number;
   labelObjectRef?: number;
   conditionRef?: number;
@@ -199,6 +204,19 @@ function pushEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectR
   });
   pushEffectMethod(L, effects, "SetCountLimit", (state, effect) => {
     effect.countLimit = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1;
+    if (lua.lua_isnumber(state, 3)) effect.countLimitCode = lua.lua_tointeger(state, 3);
+    return 0;
+  });
+  pushEffectMethod(L, effects, "SetReset", (state, effect) => {
+    const flags = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const count = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
+    effect.reset = count === undefined ? { flags } : { flags, count };
+    return 0;
+  });
+  pushEffectMethod(L, effects, "Reset", (state, effect) => {
+    effect.countLimit = 0;
+    delete effect.countLimitCode;
+    delete effect.reset;
     return 0;
   });
   pushEffectMethod(L, effects, "SetCondition", setEffectFunctionField("conditionRef"));
@@ -250,6 +268,9 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
     range,
     oncePerTurn: (luaEffect.countLimit ?? 0) > 0,
+    ...(luaEffect.countLimit === undefined ? {} : { countLimit: luaEffect.countLimit }),
+    ...(luaEffect.countLimitCode === undefined ? {} : { countLimitCode: luaEffect.countLimitCode }),
+    ...(luaEffect.reset === undefined ? {} : { reset: luaEffect.reset }),
     ...(luaEffect.description === undefined ? {} : { description: luaEffect.description }),
     ...(luaEffect.category === undefined ? {} : { category: luaEffect.category }),
     ...(luaEffect.property === undefined ? {} : { property: luaEffect.property }),

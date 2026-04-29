@@ -106,7 +106,14 @@ export function installConstants(L: unknown): void {
     REASON_LINK: 0x400000,
     REASON_REPLACE: 0x1000000,
     RESET_EVENT: 0x1000,
+    RESET_PHASE: 0x4000,
+    RESET_CHAIN: 0x8000,
+    RESET_SELF_TURN: 0x10000000,
+    RESET_OPPO_TURN: 0x20000000,
     RESETS_STANDARD: 0x2000,
+    EFFECT_COUNT_CODE_OATH: 0x1,
+    EFFECT_COUNT_CODE_DUEL: 0x2,
+    EFFECT_COUNT_CODE_SINGLE: 0x4,
   };
   for (const [name, value] of Object.entries(constants)) {
     lua.lua_pushinteger(L, value);

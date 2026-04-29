@@ -170,7 +170,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       if (effect.event !== "ignition" && effect.event !== "quick") continue;
       const source = findCard(state, effect.sourceUid);
       if (!source || !effect.range.includes(source.location)) continue;
-      if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(state, effect))) continue;
+      if (!canUseEffectCount(state, effect)) continue;
       const ctx = createEffectContext(state, source, player);
       if (effect.canActivate && !effect.canActivate(ctx)) continue;
       actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
@@ -562,7 +562,7 @@ function createEffectContext(state: DuelState, source: DuelCardInstance, player:
 function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
   for (const effect of state.effects) {
     if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
-    if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(state, effect))) continue;
+    if (!canUseEffectCount(state, effect)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createEffectContext(state, source, effect.controller, eventName, eventCard);
@@ -595,7 +595,7 @@ function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
     if (effect.controller !== player || effect.event !== "quick") continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (effect.oncePerTurn && state.usedCountKeys.includes(effectCountKey(state, effect))) continue;
+    if (!canUseEffectCount(state, effect)) continue;
     const ctx = createEffectContext(state, source, player);
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
@@ -664,14 +664,29 @@ function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][num
   return { ...link, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };
 }
 
+function canUseEffectCount(state: DuelState, effect: DuelEffectDefinition): boolean {
+  const limit = effectCountLimit(effect);
+  if (limit <= 0) return true;
+  return state.usedCountKeys.filter((key) => key === effectCountKey(state, effect)).length < limit;
+}
+
+function effectCountLimit(effect: DuelEffectDefinition): number {
+  if (effect.countLimit !== undefined) return effect.countLimit;
+  return effect.oncePerTurn ? 1 : 0;
+}
+
 function effectCountKey(state: DuelState, effect: DuelEffectDefinition): string {
-  return `${state.turn}:${effect.controller}:${effect.sourceUid}:${effect.id}`;
+  if (effect.countLimitCode !== undefined) {
+    const scope = (effect.countLimitCode & 0x2) !== 0 ? "duel" : `turn-${state.turn}`;
+    return `${scope}:${effect.controller}:code-${effect.countLimitCode}`;
+  }
+  return `turn-${state.turn}:${effect.controller}:${effect.sourceUid}:${effect.id}`;
 }
 
 function markEffectUsed(state: DuelState, effect: DuelEffectDefinition): void {
-  if (!effect.oncePerTurn) return;
+  if (effectCountLimit(effect) <= 0) return;
   const key = effectCountKey(state, effect);
-  if (!state.usedCountKeys.includes(key)) state.usedCountKeys.push(key);
+  state.usedCountKeys.push(key);
 }
 
 function sameAction(a: DuelAction, b: DuelResponse): boolean {

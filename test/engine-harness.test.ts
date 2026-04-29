@@ -538,6 +538,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
         e:SetCategory(CATEGORY_DRAW + CATEGORY_SEARCH)
         e:SetProperty(EFFECT_FLAG_CARD_TARGET + EFFECT_FLAG_DELAY)
         e:SetHintTiming(TIMING_END_PHASE, TIMING_MAIN_END)
+        e:SetCountLimit(2, 987)
+        e:SetReset(RESET_EVENT + RESETS_STANDARD, 1)
         c:RegisterEffect(e)
       end
       `,
@@ -551,7 +553,48 @@ describe("EDOPro compatibility harness scaffolding", () => {
       category: 0x180,
       property: 0x10010,
       hintTiming: [0x20, 0x4],
+      countLimit: 2,
+      countLimitCode: 987,
+      reset: { flags: 0x3000, count: 1 },
     });
+  });
+
+  it("shares Lua keyed count limits across effect copies", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Count Source", kind: "monster" }];
+    const session = createDuel({ seed: 21, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetCountLimit(1, 700)
+        e:SetOperation(function(e,c)
+          Debug.Message("used " .. c:GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "keyed-count-limit.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+    const firstAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(firstAction).toBeDefined();
+    applyResponse(session, firstAction!);
+    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    expect(host.messages).toContain("used 100");
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect")).toBe(false);
   });
 
   it("lets Lua effects pass labels and label objects between callbacks", () => {
