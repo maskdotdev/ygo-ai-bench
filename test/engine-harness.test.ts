@@ -697,6 +697,60 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("target relates true");
   });
 
+  it("lets Lua effects register, read, and reset duel and card flags", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Flag Source", kind: "monster" }];
+    const session = createDuel({ seed: 22, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,c)
+          Debug.Message("duel flag register " .. Duel.RegisterFlagEffect(0, 901, RESET_EVENT, 0, 3))
+          Debug.Message("card flag register " .. c:RegisterFlagEffect(902, RESET_EVENT, 0, 4))
+          return true
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("duel flag count " .. Duel.GetFlagEffect(0, 901))
+          Debug.Message("card flag count " .. c:GetFlagEffect(902))
+          Debug.Message("duel flag reset " .. Duel.ResetFlagEffect(0, 901))
+          Debug.Message("card flag reset " .. c:ResetFlagEffect(902))
+          Debug.Message("duel flag after " .. Duel.GetFlagEffect(0, 901))
+          Debug.Message("card flag after " .. c:GetFlagEffect(902))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flag-effects.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    applyResponse(session, action!);
+    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    expect(host.messages).toContain("duel flag register 1");
+    expect(host.messages).toContain("card flag register 1");
+    expect(host.messages).toContain("duel flag count 1");
+    expect(host.messages).toContain("card flag count 1");
+    expect(host.messages).toContain("duel flag reset 1");
+    expect(host.messages).toContain("card flag reset 1");
+    expect(host.messages).toContain("duel flag after 0");
+    expect(host.messages).toContain("card flag after 0");
+    expect(session.state.flagEffects).toHaveLength(0);
+  });
+
   it("provides common aux compatibility helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Aux A", kind: "monster" },

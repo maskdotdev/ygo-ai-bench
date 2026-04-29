@@ -18,6 +18,7 @@ import {
   moveDuelCard,
   xyzSummonDuelCard,
 } from "./duel-core.js";
+import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "./duel-flags.js";
 import { pushCardTable } from "./lua-card-api.js";
 import { duelReason } from "./duel-reasons.js";
 import { pushGroupTable } from "./lua-group-api.js";
@@ -152,7 +153,36 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installSummonHelpers(L, session);
   installQueryHelpers(L, session, hostState);
   installOperationInfoHelpers(L, hostState);
+  installFlagHelpers(L, session);
   lua.lua_setglobal(L, to_luastring("Duel"));
+}
+
+function installFlagHelpers(L: unknown, session: DuelSession): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const reset = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
+    const property = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
+    const value = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0;
+    registerDuelFlagEffect(session.state, { ownerType: "player", ownerId: player }, code, reset, property, value);
+    lua.lua_pushinteger(state, getDuelFlagEffectCount(session.state, { ownerType: "player", ownerId: player }, code));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("RegisterFlagEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushinteger(state, getDuelFlagEffectCount(session.state, { ownerType: "player", ownerId: player }, code));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetFlagEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushinteger(state, resetDuelFlagEffect(session.state, { ownerType: "player", ownerId: player }, code));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ResetFlagEffect"));
 }
 
 function installMoveHelpers(L: unknown, session: DuelSession): void {

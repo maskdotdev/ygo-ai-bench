@@ -147,6 +147,16 @@ export interface PendingTrigger {
   eventCardUid?: string;
 }
 
+export interface DuelFlagEffect {
+  ownerType: "player" | "card";
+  ownerId: string;
+  code: number;
+  reset: number;
+  property: number;
+  value: number;
+  turn: number;
+}
+
 export interface DuelState {
   id: string;
   seed: string;
@@ -161,6 +171,7 @@ export interface DuelState {
   chainPasses: PlayerId[];
   pendingTriggers: PendingTrigger[];
   usedCountKeys: string[];
+  flagEffects: DuelFlagEffect[];
   attacksDeclared: string[];
   positionsChanged: string[];
   currentAttack?: {
