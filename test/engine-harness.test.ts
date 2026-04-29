@@ -559,17 +559,26 @@ describe("EDOPro compatibility harness scaffolding", () => {
       `
       local all = Duel.GetFieldGroup(0, LOCATION_HAND, 0)
       local high = all:Filter(function(tc) return tc:GetAttack() >= 2000 end, nil)
+      local vararg_high = all:Filter(function(tc,minatk) return tc:GetAttack() >= minatk end, nil, 2500)
       local c100 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local c200 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local g = Group.CreateGroup()
       g:AddCard(c100)
       g:AddCard(c100)
+      g:KeepAlive()
       Debug.Message("added unique " .. g:GetCount() .. " " .. tostring(g:IsContains(c100)))
       g:Merge(high)
       Debug.Message("merged " .. g:GetCount() .. " " .. tostring(g:IsContains(c200)))
+      local clone = g:Clone()
+      local selected = clone:Select(0, 1, 2, nil)
+      Debug.Message("selected group " .. selected:GetCount())
+      Debug.Message("exists high " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 2, nil, 1500)))
+      Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
       g:RemoveCard(c100)
+      g:DeleteGroup()
       Debug.Message("removed " .. g:GetCount() .. " " .. tostring(g:IsContains(c100)))
       Debug.Message("filtered high " .. high:GetCount())
+      Debug.Message("vararg high " .. vararg_high:GetCount())
       `,
       "group-mutation.lua",
     );
@@ -577,8 +586,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("added unique 1 true");
     expect(host.messages).toContain("merged 3 true");
+    expect(host.messages).toContain("selected group 2");
+    expect(host.messages).toContain("exists high true");
+    expect(host.messages).toContain("class count 2");
     expect(host.messages).toContain("removed 2 false");
     expect(host.messages).toContain("filtered high 2");
+    expect(host.messages).toContain("vararg high 1");
   });
 
   it("stores Lua effect metadata setters on registered effects", () => {
