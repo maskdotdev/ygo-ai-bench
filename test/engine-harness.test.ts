@@ -786,6 +786,66 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect")).toBe(false);
   });
 
+  it("passes chk values to upstream-style Lua cost and target callbacks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Check Source", kind: "monster" },
+      { code: "200", name: "Check Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 29, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetCost(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then
+            Debug.Message("cost check " .. tp)
+            return true
+          end
+          Debug.Message("cost activate " .. chk)
+          return true
+        end)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then
+            Debug.Message("target check " .. tp)
+            return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_HAND, 0, 1, e:GetHandler())
+          end
+          Debug.Message("target activate " .. chk)
+          local g=Duel.SelectTarget(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_HAND, 0, 1, 1, e:GetHandler())
+          Duel.SetOperationInfo(0, CATEGORY_TOHAND, g, g:GetCount(), tp, 0)
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("operation target " .. Duel.GetFirstTarget():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "effect-chk.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(host.messages).toContain("cost check 0");
+    expect(host.messages).toContain("target check 0");
+    expect(host.messages).not.toContain("target activate 0");
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(host.messages).toContain("cost activate 1");
+    expect(host.messages).toContain("target activate 1");
+    expect(host.messages).toContain("operation target 200");
+  });
+
   it("shares Lua keyed count limits across effect copies", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Count Source", kind: "monster" }];
     const session = createDuel({ seed: 21, startingHandSize: 2, cardReader: createCardReader(cards) });

@@ -172,8 +172,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       const source = findCard(state, effect.sourceUid);
       if (!source || !effect.range.includes(source.location)) continue;
       if (!canUseEffectCount(state, effect)) continue;
-      const ctx = createEffectContext(state, source, player);
-      if (effect.canActivate && !effect.canActivate(ctx)) continue;
+      if (!canChooseEffect(state, effect, source, player)) continue;
       actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
     }
     actions.push(...positionChangeActions(state, player));
@@ -536,13 +535,22 @@ function draw(state: DuelState, player: PlayerId, count: number, detail: string)
   return drawn;
 }
 
-function createEffectContext(state: DuelState, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance, targetUids: string[] = []): DuelEffectContext {
+function createEffectContext(
+  state: DuelState,
+  source: DuelCardInstance,
+  player: PlayerId,
+  eventName?: DuelEventName,
+  eventCard?: DuelCardInstance,
+  targetUids: string[] = [],
+  checkOnly = false,
+): DuelEffectContext {
   return {
     duel: state,
     source,
     player,
     ...(eventName === undefined ? {} : { eventName }),
     ...(eventCard === undefined ? {} : { eventCard }),
+    ...(checkOnly ? { checkOnly } : {}),
     targetUids,
     log(detail) {
       pushDuelLog(state, "effect", player, source.name, detail);
@@ -568,8 +576,7 @@ function collectTriggerEffects(state: DuelState, eventName: DuelEventName, event
     if (!canUseEffectCount(state, effect)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    const ctx = createEffectContext(state, source, effect.controller, eventName, eventCard);
-    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    if (!canChooseEffect(state, effect, source, effect.controller, eventName, eventCard)) continue;
     state.pendingTriggers.push(createPendingTrigger(state, effect, source, eventName, eventCard));
   }
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
@@ -599,11 +606,18 @@ function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!canUseEffectCount(state, effect)) continue;
-    const ctx = createEffectContext(state, source, player);
-    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    if (!canChooseEffect(state, effect, source, player)) continue;
     actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
   }
   return actions;
+}
+
+function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance): boolean {
+  const ctx = createEffectContext(state, source, player, eventName, eventCard, [], true);
+  if (effect.canActivate && !effect.canActivate(ctx)) return false;
+  if (effect.cost && !effect.cost(ctx)) return false;
+  if (effect.target && !effect.target(ctx)) return false;
+  return true;
 }
 
 function hasChainResponses(state: DuelState, player: PlayerId): boolean {

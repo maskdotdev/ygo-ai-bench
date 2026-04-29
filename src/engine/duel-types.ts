@@ -121,6 +121,7 @@ export interface DuelEffectContext {
   player: PlayerId;
   eventCard?: DuelCardInstance;
   eventName?: DuelEventName;
+  checkOnly?: boolean;
   targetUids: string[];
   log(detail: string): void;
   moveCard(uid: string, to: DuelLocation, controller?: PlayerId): DuelCardInstance;

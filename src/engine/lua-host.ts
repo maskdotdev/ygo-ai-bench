@@ -419,9 +419,9 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(luaEffect.property === undefined ? {} : { property: luaEffect.property }),
     ...(luaEffect.targetRange === undefined ? {} : { targetRange: luaEffect.targetRange }),
     ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
-    canActivate: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, ctx),
-    cost: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.costRef, true, ctx),
-    target: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.targetRef, true, ctx),
+    canActivate: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, "condition", ctx),
+    cost: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.costRef, true, "cost", ctx),
+    target: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.targetRef, true, "target", ctx),
     operation: (ctx) => {
       if (luaEffect.operationRef === undefined) {
         ctx.log("Lua effect resolved without an operation");
@@ -429,7 +429,8 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
       }
       withActiveTargets(hostState, ctx.targetUids, () => {
         lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.operationRef);
-        const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, ctx);
+        const legacyArgs = secondParameterName(L, -1) === "c";
+        const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
         const status = lua.lua_pcall(L, argCount, 0, 0);
         if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
         ctx.log("Lua effect operation resolved");
@@ -456,8 +457,7 @@ function triggerEventFromCode(code: number | undefined): DuelEventName | undefin
   return undefined;
 }
 
-function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ctx?: DuelEffectContext): number {
-  const legacyArgs = secondParameterName(L, -1) === "c";
+function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, kind: LuaEffectCallbackKind, legacyArgs: boolean, ctx?: DuelEffectContext): number {
   pushLuaEffectTable(L, luaEffect.id, hostState);
   if (legacyArgs) {
     pushCardTable(L, card.uid);
@@ -470,8 +470,11 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
   pushRelatedEffectTable(L, hostState);
   lua.lua_pushinteger(L, ctx?.eventCard?.reason ?? 0);
   lua.lua_pushinteger(L, ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
-  pushCardTable(L, card.uid);
-  return 9;
+  if (kind === "cost" || kind === "target") {
+    lua.lua_pushinteger(L, ctx?.checkOnly ? 0 : 1);
+    return 9;
+  }
+  return 8;
 }
 
 function secondParameterName(L: unknown, functionIndex: number): string | undefined {
@@ -509,11 +512,18 @@ function locationMaskFromLocations(locations: DuelLocation[]): number {
   return mask;
 }
 
-function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean, ctx?: DuelEffectContext): boolean {
+type LuaEffectCallbackKind = "condition" | "cost" | "target" | "operation";
+
+function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean, kind: LuaEffectCallbackKind, ctx?: DuelEffectContext): boolean {
   if (ref === undefined) return fallback;
   return withActiveTargets(hostState, ctx?.targetUids, () => {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
-    const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, ctx);
+    const legacyArgs = secondParameterName(L, -1) === "c";
+    if (legacyArgs && ctx?.checkOnly && (kind === "cost" || kind === "target")) {
+      lua.lua_pop(L, 1);
+      return fallback;
+    }
+    const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, kind, legacyArgs, ctx);
     const status = lua.lua_pcall(L, argCount, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
     const result = lua.lua_isnil(L, -1) ? fallback : Boolean(lua.lua_toboolean(L, -1));
