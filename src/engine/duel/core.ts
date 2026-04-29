@@ -726,7 +726,8 @@ function shouldRedirectToGraveyardMove(state: DuelState, uid: string): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 63) continue;
     const source = findCard(state, effect.sourceUid);
-    if (!source || source.uid !== card.uid || !effect.range.includes(source.location)) continue;
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
@@ -739,7 +740,8 @@ function shouldRedirectBanishMove(state: DuelState, uid: string): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 64) continue;
     const source = findCard(state, effect.sourceUid);
-    if (!source || source.uid !== card.uid || !effect.range.includes(source.location)) continue;
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
@@ -752,7 +754,8 @@ function leaveFieldRedirectLocation(state: DuelState, uid: string, destination: 
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 60) continue;
     const source = findCard(state, effect.sourceUid);
-    if (!source || source.uid !== card.uid || !effect.range.includes(source.location)) continue;
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const redirectLocation = locationFromRedirectValue(effect.value);
     if (!redirectLocation) continue;
     const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
@@ -778,6 +781,11 @@ function locationFromRedirectValue(value: number | undefined): DuelLocation | un
 
 function isFieldLocation(location: DuelLocation): boolean {
   return location === "monsterZone" || location === "spellTrapZone";
+}
+
+function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
+  if (source.uid === card.uid) return true;
+  return ((effect.property ?? 0) & 0x800) !== 0 && continuousEffectTargetsPlayer(effect, source, card.controller);
 }
 
 function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
