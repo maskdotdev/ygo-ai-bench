@@ -102,17 +102,12 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetAttackTarget"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const target = lua.lua_isnumber(state, 1) ? session.state.chain[lua.lua_tointeger(state, 1) - 1] : session.state.chain[session.state.chain.length - 1];
-    if (!target) {
-      lua.lua_pushboolean(state, false);
-      return 1;
-    }
-    const source = session.state.cards.find((candidate) => candidate.uid === target.sourceUid);
-    lua.lua_pushboolean(state, negateDuelChainLink(session.state, target.id, source?.controller ?? session.state.turnPlayer, source?.name ?? "Lua effect"));
-    return 1;
-  });
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsChainNegatable(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsChainNegatable"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushNegateChainLink(state, session));
   lua.lua_setfield(L, -2, to_luastring("NegateActivation"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushNegateChainLink(state, session));
+  lua.lua_setfield(L, -2, to_luastring("NegateEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     lua.lua_pushinteger(state, session.state.players[player].lifePoints);
@@ -223,6 +218,29 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
   else if (info === 0x10 && source) pushCardTable(L, source.uid);
   else if (info === 0x20) pushGroupTable(L, link.targetUids ?? []);
   else lua.lua_pushnil(L);
+}
+
+function pushIsChainNegatable(L: unknown, session: DuelSession): number {
+  const target = chainLinkByLuaIndex(L, session);
+  lua.lua_pushboolean(L, Boolean(target && !target.negated));
+  return 1;
+}
+
+function pushNegateChainLink(L: unknown, session: DuelSession): number {
+  const target = chainLinkByLuaIndex(L, session);
+  if (!target || target.negated) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  const source = session.state.cards.find((candidate) => candidate.uid === target.sourceUid);
+  lua.lua_pushboolean(L, negateDuelChainLink(session.state, target.id, source?.controller ?? session.state.turnPlayer, source?.name ?? "Lua effect"));
+  return 1;
+}
+
+function chainLinkByLuaIndex(L: unknown, session: DuelSession): DuelState["chain"][number] | undefined {
+  const requestedIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.chain.length;
+  const chainIndex = requestedIndex <= 0 ? session.state.chain.length - 1 : requestedIndex - 1;
+  return session.state.chain[chainIndex];
 }
 
 function installMoveHelpers(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {

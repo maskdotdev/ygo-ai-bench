@@ -865,6 +865,66 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("source resolved");
   });
 
+  it("lets Lua quick effects negate pending chain links", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Negated Source", kind: "monster" },
+      { code: "400", name: "Negating Quick", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 25, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("source resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          return Duel.GetCurrentChain()>0 and Duel.IsChainNegatable(1)
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("negatable " .. tostring(Duel.IsChainNegatable(1)))
+          Debug.Message("negated " .. tostring(Duel.NegateEffect(1)))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "chain-negate.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(quickAction).toBeDefined();
+    expect(applyResponse(session, quickAction!).ok).toBe(true);
+    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+
+    expect(host.messages).toContain("negatable true");
+    expect(host.messages).toContain("negated true");
+    expect(host.messages).not.toContain("source resolved");
+    expect(session.state.log.some((entry) => entry.action === "chainNegated")).toBe(true);
+  });
+
   it("lets Lua effects register, read, and reset duel and card flags", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Flag Source", kind: "monster" }];
     const session = createDuel({ seed: 22, startingHandSize: 1, cardReader: createCardReader(cards) });
