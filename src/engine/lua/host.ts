@@ -472,7 +472,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
 }
 
 function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
-  if (code === 30) return "summonProcedure";
+  if (code === 34) return "summonProcedure";
   if ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) return "trigger";
   if ((typeFlags & 0x100) !== 0 || (typeFlags & 0x400) !== 0) return "quick";
   if ((typeFlags & 0x800) !== 0) return "continuous";
@@ -480,7 +480,7 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
 }
 
 function triggerEventFromCode(code: number | undefined): DuelEventName | undefined {
-  if (code === 30) return undefined;
+  if (code === 34) return undefined;
   if (code === 1001) return "flipSummoned";
   if (code === 1100) return "normalSummoned";
   if (code === 1102) return "specialSummoned";
