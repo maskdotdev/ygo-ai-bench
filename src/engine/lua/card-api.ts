@@ -182,6 +182,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetPreviousPosition", session, (card) => positionMaskFromPosition(card?.previousPosition));
   pushNumberGetter(L, "GetPreviousCode", session, (card) => (card?.previousLocation ? Number(card.code) : 0));
   pushNumberGetter(L, "GetPreviousTypeOnField", session, (card) => (card?.previousLocation ? cardTypeFlags(card) : 0));
+  pushNumberGetter(L, "GetPreviousRaceOnField", session, (card) => (card?.previousLocation ? card.data.race ?? 0 : 0));
+  pushNumberGetter(L, "GetPreviousAttributeOnField", session, (card) => (card?.previousLocation ? card.data.attribute ?? 0 : 0));
   pushBooleanGetter(L, "WasFaceup", session, (card) => Boolean(card?.previousLocation && card.previousFaceUp));
   pushBooleanGetter(L, "WasFacedown", session, (card) => Boolean(card?.previousLocation && !card.previousFaceUp));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -202,6 +204,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberMatcher(L, "IsPreviousControler", session, (card, requested) => card.previousController === normalizePlayer(requested));
   pushNumberMatcher(L, "IsPreviousCode", session, (card, requested) => Boolean(card.previousLocation && cardCodes(card).includes(String(requested))));
   pushNumberMatcher(L, "IsPreviousTypeOnField", session, (card, requested) => Boolean(card.previousLocation && (cardTypeFlags(card) & requested) !== 0));
+  pushNumberMatcher(L, "IsPreviousRaceOnField", session, (card, requested) => Boolean(card.previousLocation && ((card.data.race ?? 0) & requested) !== 0));
+  pushNumberMatcher(L, "IsPreviousAttributeOnField", session, (card, requested) => Boolean(card.previousLocation && ((card.data.attribute ?? 0) & requested) !== 0));
   pushNumberMatcher(L, "IsPreviousSetCard", session, (card, requested) => Boolean(card.previousLocation && card.data.setcodes?.includes(requested)));
   pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
   pushNumberMatcher(L, "IsReason", session, (card, requested) => ((card.reason ?? 0) & requested) !== 0);
@@ -448,6 +452,8 @@ const cardFieldNames = [
   "GetPreviousPosition",
   "GetPreviousCode",
   "GetPreviousTypeOnField",
+  "GetPreviousRaceOnField",
+  "GetPreviousAttributeOnField",
   "WasFaceup",
   "WasFacedown",
   "IsPreviousLocation",
@@ -456,6 +462,8 @@ const cardFieldNames = [
   "IsPreviousControler",
   "IsPreviousCode",
   "IsPreviousTypeOnField",
+  "IsPreviousRaceOnField",
+  "IsPreviousAttributeOnField",
   "IsPreviousSetCard",
   "GetReason",
   "IsReason",
