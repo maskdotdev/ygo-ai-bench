@@ -107,18 +107,19 @@ export function findDestroyReplacementEffect(state: DuelState, uid: string, crea
   return undefined;
 }
 
-export function isDuelCardIndestructible(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory): boolean {
+export function findIndestructibleEffect(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
   const card = findCard(state, uid);
-  if (!card) return false;
+  if (!card) return undefined;
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || !isIndestructibleCodeForReason(effect.code, reason)) continue;
+    if (effect.code === 47 && (effect.value ?? 1) <= 0) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
-    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+    if (!effect.canActivate || effect.canActivate(ctx)) return { effect, source, card };
   }
-  return false;
+  return undefined;
 }
 
 function locationFromRedirectValue(value: number | undefined): DuelLocation | undefined {
@@ -150,5 +151,6 @@ function isIndestructibleCodeForReason(code: number | undefined, reason: number)
   if (code === 40) return true;
   if (code === 41) return (reason & 0x40) !== 0;
   if (code === 42) return (reason & 0x20) !== 0;
+  if (code === 47) return true;
   return false;
 }

@@ -48,8 +48,8 @@ import {
 } from "#duel/battle.js";
 import {
   findDestroyReplacementEffect,
+  findIndestructibleEffect,
   isAttackPrevented,
-  isDuelCardIndestructible,
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
   shouldRedirectBanishMove,
@@ -626,11 +626,16 @@ function createContinuousEffectContext(state: DuelState): ContinuousEffectContex
 }
 
 function applyDestroyPrevention(state: DuelState, uid: string, controller: PlayerId | undefined, reason: number): DuelCardInstance | undefined {
-  const card = findCard(state, uid);
-  if (!card) return undefined;
-  if (!isDuelCardIndestructible(state, uid, reason, createContinuousEffectContext(state))) return undefined;
-  pushDuelLog(state, "destroyPrevented", controller ?? card.controller, card.name, "Destruction prevented");
-  return card;
+  const match = findIndestructibleEffect(state, uid, reason, createContinuousEffectContext(state));
+  if (!match) return undefined;
+  consumeIndestructibleCount(match.effect);
+  pushDuelLog(state, "destroyPrevented", controller ?? match.card.controller, match.card.name, "Destruction prevented");
+  return match.card;
+}
+
+function consumeIndestructibleCount(effect: DuelEffectDefinition): void {
+  if (effect.code !== 47) return;
+  effect.value = Math.max(0, (effect.value ?? 1) - 1);
 }
 
 function applyDestroyReplacement(state: DuelState, uid: string, controller: PlayerId | undefined, reason: number): DuelCardInstance | undefined {

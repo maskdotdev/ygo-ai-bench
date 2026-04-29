@@ -475,7 +475,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
 
 function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
   if (code === 34) return "summonProcedure";
-  if (code === 22 || code === 40 || code === 41 || code === 42 || code === 45 || code === 50 || code === 60 || code === 63 || code === 64 || code === 85) return "continuous";
+  if (code === 22 || code === 40 || code === 41 || code === 42 || code === 45 || code === 47 || code === 50 || code === 60 || code === 63 || code === 64 || code === 85) return "continuous";
   if ((typeFlags & 0x2) !== 0) return "continuous";
   if ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) return "trigger";
   if ((typeFlags & 0x100) !== 0 || (typeFlags & 0x400) !== 0) return "quick";
