@@ -728,6 +728,48 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("clone op 222/9/20");
   });
 
+  it("stores Lua effect owner player metadata and deletes registered effects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Lifecycle Source", kind: "monster" }];
+    const session = createDuel({ seed: 28, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOwnerPlayer(1)
+        Debug.Message("owner player " .. e:GetOwnerPlayer())
+        c:RegisterEffect(e)
+        local e2=e:Clone()
+        e2:SetOwnerPlayer(0)
+        e2:SetOperation(function(e,c)
+          Debug.Message("deleted clone should not resolve")
+        end)
+        c:RegisterEffect(e2)
+        Debug.Message("clone owner " .. e2:GetOwnerPlayer())
+        e2:Delete()
+      end
+      `,
+      "effect-lifecycle.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(host.messages).toContain("owner player 1");
+    expect(host.messages).toContain("clone owner 0");
+    expect(session.state.effects).toHaveLength(1);
+    expect(session.state.effects[0]).toMatchObject({ controller: 1, ownerPlayer: 1 });
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect")).toBe(false);
+  });
+
   it("shares Lua keyed count limits across effect copies", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Count Source", kind: "monster" }];
     const session = createDuel({ seed: 21, startingHandSize: 2, cardReader: createCardReader(cards) });

@@ -5,7 +5,7 @@ import { installDuelApi } from "./lua-duel-api.js";
 import { installGroupApi, pushGroupTable } from "./lua-group-api.js";
 import { scriptFilenameForCard } from "./data-loaders.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "./lua-api-utils.js";
-import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession } from "./duel-types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
 import type { LuaDuelOperationInfo } from "./lua-duel-api.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -33,6 +33,7 @@ interface LuaEffectRecord {
   id: number;
   typeFlags: number;
   sourceUid?: string;
+  ownerPlayer?: PlayerId;
   code?: number;
   range?: DuelLocation[];
   countLimit?: number;
@@ -184,6 +185,14 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
     lua.lua_pushinteger(state, source?.controller ?? 0);
     return 1;
   });
+  pushEffectMethod(L, effects, "SetOwnerPlayer", (state, effect) => {
+    effect.ownerPlayer = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0);
+    return 0;
+  });
+  pushEffectMethod(L, effects, "GetOwnerPlayer", (state, effect) => {
+    lua.lua_pushinteger(state, effect.ownerPlayer ?? effectController(session, effect));
+    return 1;
+  });
   pushEffectMethod(L, effects, "GetType", getEffectNumberField("typeFlags"));
   pushEffectMethod(L, effects, "GetCode", getEffectNumberField("code"));
   pushEffectMethod(L, effects, "GetDescription", getEffectNumberField("description"));
@@ -287,6 +296,11 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
     delete effect.reset;
     return 0;
   });
+  pushEffectMethod(L, effects, "Delete", (_, effect) => {
+    deleteRegisteredLuaEffects(session, effect);
+    effects.delete(effect.id);
+    return 0;
+  });
   pushEffectMethod(L, effects, "SetCondition", setEffectFunctionField("conditionRef"));
   pushEffectMethod(L, effects, "SetCost", setEffectFunctionField("costRef"));
   pushEffectMethod(L, effects, "SetTarget", setEffectFunctionField("targetRef"));
@@ -319,6 +333,14 @@ function cloneLuaEffectRecord(hostState: LuaHostState, effect: LuaEffectRecord):
   return id;
 }
 
+function deleteRegisteredLuaEffects(session: DuelSession, effect: LuaEffectRecord): void {
+  session.state.effects = session.state.effects.filter((candidate) => candidate.id !== luaEffectDuelId(effect) || candidate.sourceUid !== effect.sourceUid);
+}
+
+function luaEffectDuelId(effect: LuaEffectRecord): string {
+  return `lua-${effect.id}${effect.code === undefined ? "" : `-${effect.code}`}`;
+}
+
 function setEffectNumberField(field: "typeFlags" | "code" | "description" | "category" | "property") {
   return (state: unknown, effect: LuaEffectRecord): number => {
     if (lua.lua_isnumber(state, 2)) effect[field] = lua.lua_tointeger(state, 2);
@@ -331,6 +353,15 @@ function getEffectNumberField(field: "typeFlags" | "code" | "description" | "cat
     lua.lua_pushinteger(state, effect[field] ?? 0);
     return 1;
   };
+}
+
+function effectController(session: DuelSession, effect: LuaEffectRecord): PlayerId {
+  const source = effect.sourceUid ? session.state.cards.find((candidate) => candidate.uid === effect.sourceUid) : undefined;
+  return source?.controller ?? 0;
+}
+
+function normalizePlayer(value: number): PlayerId {
+  return value === 1 ? 1 : 0;
 }
 
 function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef") {
@@ -348,9 +379,10 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
   const triggerEvent = triggerEventFromCode(luaEffect.code);
   luaEffect.sourceUid = card.uid;
   return {
-    id: `lua-${luaEffect.id}${luaEffect.code === undefined ? "" : `-${luaEffect.code}`}`,
+    id: luaEffectDuelId(luaEffect),
     sourceUid: card.uid,
-    controller: card.controller,
+    controller: luaEffect.ownerPlayer ?? card.controller,
+    ...(luaEffect.ownerPlayer === undefined ? {} : { ownerPlayer: luaEffect.ownerPlayer }),
     event,
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
     range,

@@ -93,6 +93,7 @@ export interface DuelEffectDefinition {
   id: string;
   sourceUid: string;
   controller: PlayerId;
+  ownerPlayer?: PlayerId;
   event: "ignition" | "trigger" | "quick" | "continuous";
   triggerEvent?: DuelEventName;
   range: DuelLocation[];
