@@ -85,6 +85,16 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SelectYesNo"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushFirstAnnouncementValue(state, 0));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceNumber"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushFirstAnnouncementValue(state, 0));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushFirstAnnouncementValue(state, 0));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceType"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushFirstAnnouncementValue(state, 0));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceRace"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushFirstAnnouncementValue(state, 0));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceAttribute"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushinteger(state, session.state.chain.length);
     return 1;
@@ -168,6 +178,12 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installOperationInfoHelpers(L, hostState);
   installFlagHelpers(L, session);
   lua.lua_setglobal(L, to_luastring("Duel"));
+}
+
+function pushFirstAnnouncementValue(L: unknown, fallback: number): number {
+  const value = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : fallback;
+  lua.lua_pushinteger(L, value);
+  return 1;
 }
 
 function installFlagHelpers(L: unknown, session: DuelSession): void {

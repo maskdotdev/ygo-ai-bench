@@ -1267,13 +1267,20 @@ describe("EDOPro compatibility harness scaffolding", () => {
       `
       local option=Duel.SelectOption(0, 101, 102, 103)
       local yes=Duel.SelectYesNo(0, 201)
+      local number=Duel.AnnounceNumber(0, 4, 7, 9)
+      local card=Duel.AnnounceCard(0, 100, 200)
+      local kind=Duel.AnnounceType(0, TYPE_MONSTER, TYPE_SPELL)
+      local race=Duel.AnnounceRace(0, RACE_WARRIOR, RACE_SPELLCASTER)
+      local attribute=Duel.AnnounceAttribute(0, ATTRIBUTE_LIGHT, ATTRIBUTE_DARK)
       Debug.Message("prompt option " .. option .. "/" .. tostring(yes))
+      Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute)
       `,
       "prompt-helpers.lua",
     );
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("prompt option 0/true");
+    expect(host.messages).toContain("prompt announce 4/100/1/1/16");
   });
 
   it("exposes summon type metadata to Lua card helpers", () => {
