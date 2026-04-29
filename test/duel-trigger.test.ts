@@ -21,6 +21,13 @@ interface TriggerBucketFixture {
   opponent: PublicDuelCard;
 }
 
+interface TriggerCountFixture {
+  session: DuelSession;
+  firstSummon: PublicDuelCard;
+  triggerSource: PublicDuelCard;
+  secondSummon: PublicDuelCard;
+}
+
 function setupTriggerBucketFixture(): TriggerBucketFixture {
   const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
   loadDecks(session, {
@@ -41,8 +48,32 @@ function setupTriggerBucketFixture(): TriggerBucketFixture {
   return { session, summoned: summoned!, turnFirst: turnFirst!, turnSecond: turnSecond!, opponent: opponent! };
 }
 
+function setupTriggerCountFixture(): TriggerCountFixture {
+  const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+  loadDecks(session, {
+    0: { main: ["100", "300", "500"] },
+    1: { main: ["400", "400", "400"] },
+  });
+  startDuel(session);
+
+  const firstSummon = findPublicCard(session, 0, "100");
+  const triggerSource = findPublicCard(session, 0, "300");
+  const secondSummon = findPublicCard(session, 0, "500");
+  expect(firstSummon).toBeTruthy();
+  expect(triggerSource).toBeTruthy();
+  expect(secondSummon).toBeTruthy();
+
+  return { session, firstSummon: firstSummon!, triggerSource: triggerSource!, secondSummon: secondSummon! };
+}
+
 function findPublicCard(session: DuelSession, controller: PlayerId, code: string) {
   return queryPublicState(session).cards.find((card) => card.controller === controller && card.location === "hand" && card.code === code);
+}
+
+function activateTriggerByEffect(session: DuelSession, effectId: string): void {
+  const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === effectId);
+  expect(trigger).toBeTruthy();
+  expect(applyResponse(session, trigger!).ok).toBe(true);
 }
 
 function registerBucketTrigger(session: DuelSession, id: string, source: Pick<PublicDuelCard, "uid">, controller: PlayerId, optional = true): void {
@@ -576,23 +607,11 @@ describe("duel triggers", () => {
   });
 
   it("suppresses once-per-turn triggers after first activation", () => {
-    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300", "500"] },
-      1: { main: ["400", "400", "400"] },
-    });
-    startDuel(session);
-
-    const firstSummon = findPublicCard(session, 0, "100");
-    const triggerSource = findPublicCard(session, 0, "300");
-    const secondSummon = findPublicCard(session, 0, "500");
-    expect(firstSummon).toBeTruthy();
-    expect(triggerSource).toBeTruthy();
-    expect(secondSummon).toBeTruthy();
+    const { session, firstSummon, triggerSource, secondSummon } = setupTriggerCountFixture();
 
     registerEffect(session, {
       id: "once-per-turn-special-trigger",
-      sourceUid: triggerSource!.uid,
+      sourceUid: triggerSource.uid,
       controller: 0,
       event: "trigger",
       triggerEvent: "specialSummoned",
@@ -603,40 +622,25 @@ describe("duel triggers", () => {
       },
     });
 
-    specialSummonDuelCard(session.state, firstSummon!.uid);
+    specialSummonDuelCard(session.state, firstSummon.uid);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["once-per-turn-special-trigger"]);
-    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "once-per-turn-special-trigger");
-    expect(trigger).toBeTruthy();
-    const triggerResult = applyResponse(session, trigger!);
 
-    expect(triggerResult.ok).toBe(true);
-    expect(triggerResult.state.pendingTriggers).toHaveLength(0);
+    activateTriggerByEffect(session, "once-per-turn-special-trigger");
+    expect(session.state.pendingTriggers).toHaveLength(0);
     expect(session.state.usedCountKeys).toHaveLength(1);
 
-    specialSummonDuelCard(session.state, secondSummon!.uid);
+    specialSummonDuelCard(session.state, secondSummon.uid);
     expect(session.state.pendingTriggers).toHaveLength(0);
     expect(session.state.usedCountKeys).toHaveLength(1);
     expect(session.state.log.filter((entry) => entry.detail.includes("Once trigger saw"))).toHaveLength(1);
   });
 
   it("allows once-per-turn triggers again on a later turn", () => {
-    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300", "500"] },
-      1: { main: ["400", "400", "400"] },
-    });
-    startDuel(session);
-
-    const firstSummon = findPublicCard(session, 0, "100");
-    const triggerSource = findPublicCard(session, 0, "300");
-    const secondSummon = findPublicCard(session, 0, "500");
-    expect(firstSummon).toBeTruthy();
-    expect(triggerSource).toBeTruthy();
-    expect(secondSummon).toBeTruthy();
+    const { session, firstSummon, triggerSource, secondSummon } = setupTriggerCountFixture();
 
     registerEffect(session, {
       id: "turn-scoped-special-trigger",
-      sourceUid: triggerSource!.uid,
+      sourceUid: triggerSource.uid,
       controller: 0,
       event: "trigger",
       triggerEvent: "specialSummoned",
@@ -647,19 +651,15 @@ describe("duel triggers", () => {
       },
     });
 
-    specialSummonDuelCard(session.state, firstSummon!.uid);
-    const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "turn-scoped-special-trigger");
-    expect(firstTrigger).toBeTruthy();
-    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+    specialSummonDuelCard(session.state, firstSummon.uid);
+    activateTriggerByEffect(session, "turn-scoped-special-trigger");
     expect(session.state.usedCountKeys).toHaveLength(1);
 
     session.state.turn += 1;
     session.state.waitingFor = 0;
-    specialSummonDuelCard(session.state, secondSummon!.uid);
+    specialSummonDuelCard(session.state, secondSummon.uid);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["turn-scoped-special-trigger"]);
-    const secondTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "turn-scoped-special-trigger");
-    expect(secondTrigger).toBeTruthy();
-    expect(applyResponse(session, secondTrigger!).ok).toBe(true);
+    activateTriggerByEffect(session, "turn-scoped-special-trigger");
 
     expect(session.state.usedCountKeys).toHaveLength(2);
     expect(new Set(session.state.usedCountKeys).size).toBe(2);
@@ -667,23 +667,11 @@ describe("duel triggers", () => {
   });
 
   it("keeps duel-scoped trigger count codes spent across later turns", () => {
-    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300", "500"] },
-      1: { main: ["400", "400", "400"] },
-    });
-    startDuel(session);
-
-    const firstSummon = findPublicCard(session, 0, "100");
-    const triggerSource = findPublicCard(session, 0, "300");
-    const secondSummon = findPublicCard(session, 0, "500");
-    expect(firstSummon).toBeTruthy();
-    expect(triggerSource).toBeTruthy();
-    expect(secondSummon).toBeTruthy();
+    const { session, firstSummon, triggerSource, secondSummon } = setupTriggerCountFixture();
 
     registerEffect(session, {
       id: "duel-scoped-special-trigger",
-      sourceUid: triggerSource!.uid,
+      sourceUid: triggerSource.uid,
       controller: 0,
       event: "trigger",
       triggerEvent: "specialSummoned",
@@ -695,15 +683,13 @@ describe("duel triggers", () => {
       },
     });
 
-    specialSummonDuelCard(session.state, firstSummon!.uid);
-    const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "duel-scoped-special-trigger");
-    expect(firstTrigger).toBeTruthy();
-    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+    specialSummonDuelCard(session.state, firstSummon.uid);
+    activateTriggerByEffect(session, "duel-scoped-special-trigger");
     expect(session.state.usedCountKeys).toEqual(["duel:0:code-770"]);
 
     session.state.turn += 1;
     session.state.waitingFor = 0;
-    specialSummonDuelCard(session.state, secondSummon!.uid);
+    specialSummonDuelCard(session.state, secondSummon.uid);
 
     expect(session.state.pendingTriggers).toHaveLength(0);
     expect(session.state.usedCountKeys).toEqual(["duel:0:code-770"]);
@@ -711,23 +697,11 @@ describe("duel triggers", () => {
   });
 
   it("shares trigger count codes across multiple trigger effects", () => {
-    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300", "500"] },
-      1: { main: ["400", "400", "400"] },
-    });
-    startDuel(session);
-
-    const summoned = findPublicCard(session, 0, "100");
-    const firstSource = findPublicCard(session, 0, "300");
-    const secondSource = findPublicCard(session, 0, "500");
-    expect(summoned).toBeTruthy();
-    expect(firstSource).toBeTruthy();
-    expect(secondSource).toBeTruthy();
+    const { session, firstSummon, triggerSource, secondSummon } = setupTriggerCountFixture();
 
     registerEffect(session, {
       id: "first-shared-count-trigger",
-      sourceUid: firstSource!.uid,
+      sourceUid: triggerSource.uid,
       controller: 0,
       event: "trigger",
       triggerEvent: "specialSummoned",
@@ -740,7 +714,7 @@ describe("duel triggers", () => {
     });
     registerEffect(session, {
       id: "second-shared-count-trigger",
-      sourceUid: secondSource!.uid,
+      sourceUid: secondSummon.uid,
       controller: 0,
       event: "trigger",
       triggerEvent: "specialSummoned",
@@ -752,7 +726,7 @@ describe("duel triggers", () => {
       },
     });
 
-    specialSummonDuelCard(session.state, summoned!.uid);
+    specialSummonDuelCard(session.state, firstSummon.uid);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["first-shared-count-trigger", "second-shared-count-trigger"]);
     const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "first-shared-count-trigger");
     expect(firstTrigger).toBeTruthy();
