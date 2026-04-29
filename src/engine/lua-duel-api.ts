@@ -1,6 +1,6 @@
 import fengari from "fengari";
-import { pushCardTable } from "./lua-card-api.js";
 import { installDuelActivityApi } from "./lua-duel-activity-api.js";
+import { installDuelBattleApi } from "./lua-duel-battle-api.js";
 import { installDuelChainApi } from "./lua-duel-chain-api.js";
 import { installDuelDeckApi } from "./lua-duel-deck-api.js";
 import { installDuelFlagApi } from "./lua-duel-flag-api.js";
@@ -30,26 +30,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   lua.lua_newtable(L);
   installDuelTurnApi(L, session);
   installDuelPromptApi(L, hostState);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const attackerUid = session.state.currentAttack?.attackerUid;
-    if (!attackerUid) {
-      lua.lua_pushnil(state);
-      return 1;
-    }
-    pushCardTable(state, attackerUid);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetAttacker"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const targetUid = session.state.currentAttack?.targetUid;
-    if (!targetUid) {
-      lua.lua_pushnil(state);
-      return 1;
-    }
-    pushCardTable(state, targetUid);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetAttackTarget"));
+  installDuelBattleApi(L, session);
   installDuelChainApi(L, session, hostState);
   installDuelActivityApi(L, session);
   installDuelLpApi(L, session);
