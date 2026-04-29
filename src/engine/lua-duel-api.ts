@@ -20,6 +20,7 @@ import { duelReason } from "./duel-reasons.js";
 import { installDuelDeckApi } from "./lua-duel-deck-api.js";
 import { availableMonsterZoneCount, installDuelLocationApi } from "./lua-duel-location-api.js";
 import { installDuelLpApi } from "./lua-duel-lp-api.js";
+import { installDuelTurnApi } from "./lua-duel-turn-api.js";
 import { pushGroupTable } from "./lua-group-api.js";
 import {
   locationsFromMask,
@@ -55,47 +56,7 @@ export interface LuaDuelOperationInfo {
 
 export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
   lua.lua_newtable(L);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, session.state.turnPlayer);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetTurnPlayer"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, session.state.turn);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetTurnCount"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    lua.lua_pushboolean(state, session.state.turnPlayer === player);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsTurnPlayer"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushliteral(state, session.state.phase);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetCurrentPhase"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, session.state.phase === "main1" || session.state.phase === "main2");
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsMainPhase"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, session.state.phase === "battle");
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsBattlePhase"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, false);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsDamageStep"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, false);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsDamageCalculated"));
+  installDuelTurnApi(L, session);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const message = lua.lua_isstring(state, 1) ? lua.lua_tojsstring(state, 1) : "";
     hostState.messages.push(message);
