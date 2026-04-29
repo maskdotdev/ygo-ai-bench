@@ -1766,6 +1766,55 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("target relates true");
   });
 
+  it("lets Lua effects seed target cards without selecting", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Manual Target Source", kind: "monster" },
+      { code: "200", name: "Manual Target A", kind: "monster" },
+      { code: "300", name: "Manual Target B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 48, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return true end
+          local g=Duel.GetMatchingGroup(function(tc) return tc:IsCode(200) or tc:IsCode(300) end, tp, LOCATION_HAND, 0, e:GetHandler())
+          Duel.SetTargetCard(g)
+          Debug.Message("manual target set " .. Duel.GetTargetCards():GetCount())
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          local tg=Duel.GetTargetCards()
+          Debug.Message("manual target cards " .. tg:GetCount() .. "/" .. Duel.GetFirstTarget():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "manual-target-card.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    applyResponse(session, action!);
+    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    expect(host.messages).toContain("manual target set 2");
+    expect(host.messages.join("\n")).toContain("manual target cards 2/");
+  });
+
   it("lets Lua quick effects inspect pending chain info", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Chain Source", kind: "monster" },
