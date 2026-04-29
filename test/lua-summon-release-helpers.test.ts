@@ -73,8 +73,11 @@ describe("Lua summon and release helpers", () => {
     const result = host.loadScript(
       `
       local filter = function(tc) return tc:IsCode(100) or tc:IsCode(300) end
+      local vararg_filter = function(tc, mincode) return tc:GetCode() >= mincode end
       Debug.Message("release group " .. Duel.GetReleaseGroup(0, filter, nil):GetCount())
       Debug.Message("release group count " .. Duel.GetReleaseGroupCount(0, filter, nil))
+      Debug.Message("release group vararg " .. Duel.GetReleaseGroup(0, vararg_filter, nil, 300):GetCount())
+      Debug.Message("release group count vararg " .. Duel.GetReleaseGroupCount(0, vararg_filter, nil, 300))
       Debug.Message("can release two " .. tostring(Duel.CheckReleaseGroup(0, filter, 2, nil)))
       Debug.Message("can release three " .. tostring(Duel.CheckReleaseGroup(0, filter, 3, nil)))
       Debug.Message("can release ex two " .. tostring(Duel.CheckReleaseGroupEx(0, filter, 2, 2, nil)))
@@ -107,6 +110,8 @@ describe("Lua summon and release helpers", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("release group 2");
     expect(host.messages).toContain("release group count 2");
+    expect(host.messages).toContain("release group vararg 2");
+    expect(host.messages).toContain("release group count vararg 2");
     expect(host.messages).toContain("can release two true");
     expect(host.messages).toContain("can release three false");
     expect(host.messages).toContain("can release ex two true");
