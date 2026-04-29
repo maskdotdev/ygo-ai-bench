@@ -131,7 +131,7 @@ function pushChainEvent(L: unknown, session: DuelSession, hostState: LuaDuelChai
   lua.lua_pushinteger(L, 0);
   lua.lua_pushnil(L);
   lua.lua_pushinteger(L, eventCard?.reason ?? 0);
-  lua.lua_pushinteger(L, eventCard?.controller ?? link.player);
+  lua.lua_pushinteger(L, eventCard?.reasonPlayer ?? eventCard?.controller ?? link.player);
   return 6;
 }
 

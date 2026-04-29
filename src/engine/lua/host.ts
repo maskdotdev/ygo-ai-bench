@@ -543,7 +543,7 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
   lua.lua_pushinteger(L, 0);
   pushRelatedEffectTable(L, hostState);
   lua.lua_pushinteger(L, ctx?.eventCard?.reason ?? 0);
-  lua.lua_pushinteger(L, ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
+  lua.lua_pushinteger(L, ctx?.eventCard?.reasonPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
   if (kind === "cost" || kind === "target") {
     lua.lua_pushinteger(L, ctx?.checkOnly ? 0 : 1);
     return 9;

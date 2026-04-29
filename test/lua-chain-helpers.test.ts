@@ -449,4 +449,68 @@ describe("Lua chain helpers", () => {
     expect(host.messages).toContain("operation args 1/100/true");
     expect(host.messages).toContain("chain event 1/0/0/true/16/0/100");
   });
+
+  it("reports the activating player as the Lua event reason player", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Reason Source", kind: "monster" },
+      { code: "200", name: "Opponent Event Card", kind: "monster" },
+      { code: "400", name: "Reason Trigger", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 54, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200", "400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp)
+          Duel.SelectTarget(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, 0, LOCATION_HAND, 1, 1, c)
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Duel.SendtoGrave(Duel.GetFirstTarget(), REASON_EFFECT)
+        end)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_TO_GRAVE)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          local ec=eg:GetFirst()
+          Debug.Message("reason condition " .. tp .. "/" .. ep .. "/" .. rp .. "/" .. ec:GetControler() .. "/" .. ec:GetReasonPlayer())
+          return ec:IsCode(200) and rp==0
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          local ceg,cep,cev,cre,cr,crp=Duel.GetChainEvent(0)
+          Debug.Message("reason operation " .. ep .. "/" .. rp .. "/" .. crp .. "/" .. ceg:GetFirst():GetReasonPlayer())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "reason-player-event.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+
+    expect(host.messages).toContain("reason condition 1/1/0/1/0");
+    expect(host.messages).toContain("reason operation 1/0/0/0");
+  });
 });
