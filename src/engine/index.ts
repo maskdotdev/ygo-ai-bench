@@ -17,6 +17,7 @@ export {
   restoreDuel,
   canMoveDuelCardToLocation,
   moveDuelCard,
+  canSpecialSummonDuelCard,
   specialSummonDuelCard,
   tributeSummonDuelCard,
   flipSummonDuelCard,

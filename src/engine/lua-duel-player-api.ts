@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { canMoveDuelCardToLocation } from "./duel-core.js";
+import { canMoveDuelCardToLocation, canSpecialSummonDuelCard } from "./duel-core.js";
 import { findCard } from "./duel-card-state.js";
 import { availableMonsterZoneCount } from "./lua-duel-location-api.js";
 import { positionFromMask, readCardUid, readGroupUids } from "./lua-api-utils.js";
@@ -69,7 +69,7 @@ function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: 
   const card = findCard(session.state, uid);
   if (!card || !isMonsterLike(card.kind)) return false;
   if (card.controller !== player && card.owner !== player) return false;
-  return canMoveDuelCardToLocation(session.state, uid, "monsterZone");
+  return canSpecialSummonDuelCard(session.state, uid, targetPlayer);
 }
 
 function pushPlayerMoveMatcher(L: unknown, fieldName: string, session: DuelSession, location: DuelLocation): void {

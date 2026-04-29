@@ -422,6 +422,50 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect" && candidate.uid === xyz!.uid)).toBe(false);
   });
 
+  it("lets Lua scripts special summon face-up pendulum monsters from the extra deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "301", name: "Lua Pendulum Return", kind: "monster", typeFlags: 0x1000001 },
+      { code: "920", name: "Lua Face-Down Extra", kind: "extra", typeFlags: 0x800001, level: 4 },
+    ];
+    const session = createDuel({ seed: 31, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["301"], extra: ["920"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const pendulum = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "301");
+    const extra = session.state.cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    expect(pendulum).toBeTruthy();
+    expect(extra).toBeTruthy();
+    moveDuelCard(session.state, pendulum!.uid, "extraDeck", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local pendulum = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 920), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      Debug.Message("pendulum can special " .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, pendulum)))
+      Debug.Message("extra can special " .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, extra)))
+      Debug.Message("pendulum special " .. Duel.SpecialSummon(pendulum, 0, 0, 0, false, false, POS_FACEUP_ATTACK))
+      Debug.Message("pendulum operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("extra special " .. Duel.SpecialSummon(extra, 0, 0, 0, false, false, POS_FACEUP_ATTACK))
+      Debug.Message("extra operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "pendulum-extra-special.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("pendulum can special true");
+    expect(host.messages).toContain("extra can special false");
+    expect(host.messages).toContain("pendulum special 1");
+    expect(host.messages).toContain("pendulum operated 301");
+    expect(host.messages).toContain("extra special 0");
+    expect(host.messages).toContain("extra operated 0");
+    expect(session.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
+    expect(session.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false });
+  });
+
   it("lets Lua scripts query monster zones and choose summon positions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Zone Filler A", kind: "monster" },

@@ -7,6 +7,7 @@ import {
 import { fallbackCardReader } from "./duel-card-reader.js";
 import {
   findCard,
+  canMoveDuelCardToLocation,
   getCards,
   hasZoneSpace,
   moveDuelCard,
@@ -235,6 +236,7 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
   const summonController = controller ?? card.controller;
   requireZoneSpace(state, summonController, "monsterZone");
+  if (!canSpecialSummonDuelCard(state, uid, summonController)) throw new Error(`${card.name} cannot be Special Summoned`);
   moveDuelCard(state, uid, "monsterZone", summonController, duelReason.summon | duelReason.specialSummon);
   card.position = "faceUpAttack";
   card.faceUp = true;
@@ -243,6 +245,15 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   pushDuelLog(state, "specialSummon", card.controller, card.name, "Special Summoned");
   collectTriggerEffects(state, "specialSummoned", card);
   return card;
+}
+
+export function canSpecialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId): boolean {
+  const card = findCard(state, uid);
+  if (!card || !isMonsterLike(card)) return false;
+  const summonController = controller ?? card.controller;
+  if (!hasZoneSpace(state, summonController, "monsterZone")) return false;
+  if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card)) return false;
+  return canMoveDuelCardToLocation(state, uid, "monsterZone");
 }
 
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
@@ -673,4 +684,12 @@ function result(session: DuelSession, ok: boolean, error?: string): ApplyDuelRes
 
 function otherPlayer(player: PlayerId): PlayerId {
   return player === 0 ? 1 : 0;
+}
+
+function isMonsterLike(card: DuelCardInstance): boolean {
+  return card.kind === "monster" || card.kind === "extra";
+}
+
+function isFaceUpPendulumExtraDeckCard(card: DuelCardInstance): boolean {
+  return card.faceUp && ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
 }
