@@ -170,8 +170,13 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, location: D
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || !canMoveDuelCardToLocation(session.state, uid, location, reason)) continue;
-    moveDuelCardWithRedirects(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason);
-    moved.push(uid);
+    const before = movementSnapshot(card);
+    try {
+      const result = moveDuelCardWithRedirects(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason);
+      if (didMove(result, before)) moved.push(uid);
+    } catch {
+      // Redirected destination restrictions fail like other EDOPro-style move helpers.
+    }
   }
   return moved;
 }
