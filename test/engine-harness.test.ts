@@ -1450,6 +1450,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalNumber("EFFECT_DISABLE")).toBe(2);
     expect(host.getGlobalNumber("EFFECT_CANNOT_SPECIAL_SUMMON")).toBe(22);
     expect(host.getGlobalNumber("EFFECT_TO_GRAVE_REDIRECT")).toBe(63);
+    expect(host.getGlobalNumber("EFFECT_SET_ATTACK")).toBe(101);
+    expect(host.getGlobalNumber("EFFECT_CHANGE_CODE")).toBe(114);
+    expect(host.getGlobalNumber("EFFECT_CHANGE_LEVEL")).toBe(131);
+    expect(host.getGlobalNumber("EFFECT_DOUBLE_TRIBUTE")).toBe(150);
     expect(host.getGlobalNumber("CATEGORY_DISABLE")).toBe(0x4000);
     expect(host.getGlobalNumber("CATEGORY_NEGATE")).toBe(0x10000000);
     expect(host.getGlobalNumber("EFFECT_FLAG_DAMAGE_STEP")).toBe(0x4000);
