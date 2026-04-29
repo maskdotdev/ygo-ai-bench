@@ -676,4 +676,90 @@ describe("Lua chain helpers", () => {
     expect(afterTurnOptional.state.waitingFor).toBe(1);
     expect(getDuelLegalActions(session, 1).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === afterTurnOptional.state.pendingTriggers[0]?.effectId).map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
   });
+
+  it("declines Lua optional trigger buckets without exposing later buckets early", () => {
+    const cards: DuelCardData[] = [
+      { code: "9100", name: "Lua Optional Bucket Summon", kind: "monster" },
+      { code: "9200", name: "Lua First Turn Optional", kind: "monster" },
+      { code: "9300", name: "Lua Second Turn Optional", kind: "monster" },
+      { code: "9400", name: "Lua Opponent Optional", kind: "monster" },
+      { code: "9500", name: "Lua Optional Bucket Filler", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 89, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["9100", "9200", "9300"] },
+      1: { main: ["9400", "9500", "9500"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c9400={}
+      function c9400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("opponent optional bucket")
+        end)
+        c:RegisterEffect(e)
+      end
+      c9200={}
+      function c9200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("first turn optional bucket")
+        end)
+        c:RegisterEffect(e)
+      end
+      c9300={}
+      function c9300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("second turn optional bucket")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-optional-trigger-bucket-declines.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+    const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "9100");
+    expect(summonSource).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
+    expect(summon).toBeDefined();
+    const summoned = applyResponse(session, summon!);
+
+    expect(summoned.ok).toBe(true);
+    expect(summoned.state.pendingTriggers.map((trigger) => summoned.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["9200", "9300", "9400"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([summoned.state.pendingTriggers[0]?.effectId, summoned.state.pendingTriggers[1]?.effectId]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+
+    const firstDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === summoned.state.pendingTriggers[0]?.effectId);
+    expect(firstDecline).toBeDefined();
+    const afterFirstDecline = applyResponse(session, firstDecline!);
+    expect(afterFirstDecline.ok).toBe(true);
+    expect(afterFirstDecline.state.pendingTriggers.map((trigger) => afterFirstDecline.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["9300", "9400"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([afterFirstDecline.state.pendingTriggers[0]?.effectId]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+
+    const secondDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === afterFirstDecline.state.pendingTriggers[0]?.effectId);
+    expect(secondDecline).toBeDefined();
+    const afterSecondDecline = applyResponse(session, secondDecline!);
+    expect(afterSecondDecline.ok).toBe(true);
+    expect(afterSecondDecline.state.pendingTriggers.map((trigger) => afterSecondDecline.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["9400"]);
+    expect(afterSecondDecline.state.waitingFor).toBe(1);
+    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 1).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([afterSecondDecline.state.pendingTriggers[0]?.effectId]);
+  });
 });
