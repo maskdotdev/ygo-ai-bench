@@ -1792,6 +1792,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
           local g=Duel.GetMatchingGroup(function(tc) return tc:IsCode(200) or tc:IsCode(300) end, tp, LOCATION_HAND, 0, e:GetHandler())
           Duel.SetTargetCard(g)
           Debug.Message("manual target set " .. Duel.GetTargetCards():GetCount())
+          local replacement=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 300), tp, LOCATION_HAND, 0, e:GetHandler())
+          Duel.SetTargetCard(replacement)
+          Debug.Message("manual target replaced " .. Duel.GetTargetCards():GetCount() .. "/" .. Duel.GetFirstTarget():GetCode())
+          Duel.SetTargetCard(nil)
+          Debug.Message("manual target cleared " .. Duel.GetTargetCards():GetCount() .. "/" .. tostring(Duel.GetFirstTarget()==nil))
+          Duel.SetTargetCard(g)
           return true
         end)
         e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
@@ -1812,6 +1818,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
     applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
     expect(host.messages).toContain("manual target set 2");
+    expect(host.messages).toContain("manual target replaced 1/300");
+    expect(host.messages).toContain("manual target cleared 0/true");
     expect(host.messages.join("\n")).toContain("manual target cards 2/");
   });
 
