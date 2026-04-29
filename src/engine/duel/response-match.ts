@@ -1,4 +1,4 @@
-import type { DuelAction, DuelResponse } from "./duel-types.js";
+import type { DuelAction, DuelResponse } from "#duel/types.js";
 
 export function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (a.type !== b.type || a.player !== b.player) return false;

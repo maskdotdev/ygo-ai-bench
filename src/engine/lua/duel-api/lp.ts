@@ -1,6 +1,6 @@
 import fengari from "fengari";
-import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "./duel-core.js";
-import type { DuelSession, PlayerId } from "./duel-types.js";
+import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/core.js";
+import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

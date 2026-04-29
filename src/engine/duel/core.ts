@@ -1,10 +1,10 @@
-import { shuffle } from "./rng.js";
+import { shuffle } from "#engine/rng.js";
 import {
   createDuelActivityCounts,
   recordSpecialSummonActivity,
   resetDuelActivityCounts,
-} from "./duel-activity.js";
-import { fallbackCardReader } from "./duel-card-reader.js";
+} from "#duel/activity.js";
+import { fallbackCardReader } from "#duel/card-reader.js";
 import {
   findCard,
   canMoveDuelCardToLocation,
@@ -16,8 +16,8 @@ import {
   requireMoveAllowed,
   requireZoneSpace,
   resequence,
-} from "./duel-card-state.js";
-import { duelReason } from "./duel-reasons.js";
+} from "#duel/card-state.js";
+import { duelReason } from "#duel/reasons.js";
 import {
   flipSummonActions,
   flipSummonDuelCard as flipSummonDuelCardWithEvents,
@@ -36,7 +36,7 @@ import {
   tributeSummonDuelCard as tributeSummonDuelCardWithEvents,
   xyzSummonActions,
   xyzSummonDuelCard as xyzSummonDuelCardWithEvents,
-} from "./duel-summon.js";
+} from "#duel/summon.js";
 import {
   attackActions,
   canChangeDuelCardPosition as canChangeDuelCardPositionRule,
@@ -45,9 +45,9 @@ import {
   declareDuelAttack as declareDuelAttackRule,
   getDuelAttackTargets as getDuelAttackTargetsRule,
   positionChangeActions,
-} from "./duel-battle.js";
-import { canUseEffectCount, markEffectUsed } from "./duel-effect-counts.js";
-import { sameAction } from "./duel-response-match.js";
+} from "#duel/battle.js";
+import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
+import { sameAction } from "#duel/response-match.js";
 import type {
   ApplyDuelResponseResult,
   CardPosition,
@@ -67,11 +67,11 @@ import type {
   DuelState,
   PendingTrigger,
   PlayerId,
-} from "./duel-types.js";
-import { queryPublicState } from "./duel-snapshot.js";
+} from "#duel/types.js";
+import { queryPublicState } from "#duel/snapshot.js";
 
-export { canMoveDuelCardToLocation, moveDuelCard } from "./duel-card-state.js";
-export { queryPublicState, serializeDuel, restoreDuel } from "./duel-snapshot.js";
+export { canMoveDuelCardToLocation, moveDuelCard } from "#duel/card-state.js";
+export { queryPublicState, serializeDuel, restoreDuel } from "#duel/snapshot.js";
 
 const phaseOrder: DuelPhase[] = ["draw", "standby", "main1", "battle", "main2", "end"];
 

@@ -1,5 +1,5 @@
-import { copyDuelActivityCounts } from "./duel-activity.js";
-import { fallbackCardReader } from "./duel-card-reader.js";
+import { copyDuelActivityCounts } from "#duel/activity.js";
+import { fallbackCardReader } from "#duel/card-reader.js";
 import type {
   DuelCardInstance,
   DuelCardReader,
@@ -9,7 +9,7 @@ import type {
   PublicDuelCard,
   PublicDuelState,
   SerializedDuel,
-} from "./duel-types.js";
+} from "#duel/types.js";
 
 export function queryPublicState(session: DuelSession): PublicDuelState {
   const state = session.state;

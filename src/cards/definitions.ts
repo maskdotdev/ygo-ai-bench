@@ -1,4 +1,4 @@
-import type { CardDefinition } from "../engine/index.js";
+import type { CardDefinition } from "#engine/types.js";
 
 export const DARK_MAGICIAN_CARD_IDS = {
   darkMagician: "46986414",

@@ -2,9 +2,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { applyResponse, createCardReader, createDuel, createUpstreamSourceConfig, getDuelLegalActions, loadDecks, moveDuelCard, normalizeCdbRows, startDuel } from "../src/engine/index.js";
-import { createLuaScriptHost } from "../src/engine/lua-host.js";
-import { createUpstreamNodeWorkspace } from "../src/engine/upstream-node.js";
+import { createCardReader, createUpstreamSourceConfig, normalizeCdbRows } from "#engine/data-loaders.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 
 const tempRoots: string[] = [];
 

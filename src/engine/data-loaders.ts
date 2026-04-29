@@ -1,4 +1,4 @@
-import type { DuelCardData, DuelCardKind } from "./duel-types.js";
+import type { DuelCardData, DuelCardKind } from "#duel/types.js";
 
 export interface UpstreamSourceConfig {
   root: string;

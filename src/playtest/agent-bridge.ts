@@ -1,6 +1,6 @@
-import { applyAction, chooseHighestPriority, evaluatePlaytest, getLegalActions, runPlaytest, snapshot, startPlaytest, type PlaytestSession, type StartPlaytestOptions } from "./api.js";
-import { parseYdk } from "./ydk.js";
-import type { PlaytestAction } from "../engine/index.js";
+import { applyAction, chooseHighestPriority, evaluatePlaytest, getLegalActions, runPlaytest, snapshot, startPlaytest, type PlaytestSession, type StartPlaytestOptions } from "#playtest/api.js";
+import { parseYdk } from "#playtest/ydk.js";
+import type { PlaytestAction } from "#engine/types.js";
 
 export interface SerializedDeckStateLike {
   deck?: {

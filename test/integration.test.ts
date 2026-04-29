@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { chooseHighestPriority, parseYdk, runPlaytest, startPlaytest } from "../src/playtest/index.js";
+import { chooseHighestPriority, runPlaytest, startPlaytest } from "#playtest/api.js";
+import { parseYdk } from "#playtest/ydk.js";
 
 describe("included Dark Magician deck", () => {
   it("runs fixed-seed opening playtests without impossible zone state", () => {

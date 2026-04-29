@@ -1,4 +1,4 @@
-import { createPlaytestAgent } from "./playtest/index.js";
+import { createPlaytestAgent } from "#playtest/agent-bridge.js";
 
 declare global {
   interface Window {

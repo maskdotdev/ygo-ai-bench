@@ -1,11 +1,11 @@
 import fengari from "fengari";
-import { drawDuelCards, sendDuelCardToGraveyard } from "./duel-core.js";
-import { duelReason } from "./duel-reasons.js";
-import { pushCardTable } from "./lua-card-api.js";
-import { pushGroupTable } from "./lua-group-api.js";
-import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "./lua-api-utils.js";
-import { shuffle } from "./rng.js";
-import type { DuelSession, PlayerId } from "./duel-types.js";
+import { drawDuelCards, sendDuelCardToGraveyard } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
+import { pushCardTable } from "#lua/card-api.js";
+import { pushGroupTable } from "#lua/group-api.js";
+import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import { shuffle } from "#engine/rng.js";
+import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

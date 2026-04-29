@@ -4,6 +4,15 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      "#cards": "/src/cards",
+      "#duel": "/src/engine/duel",
+      "#engine": "/src/engine",
+      "#lua": "/src/engine/lua",
+      "#playtest": "/src/playtest",
+    },
+  },
   build: {
     rollupOptions: {
       input: {

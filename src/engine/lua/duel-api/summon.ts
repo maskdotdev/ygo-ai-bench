@@ -5,9 +5,9 @@ import {
   ritualSummonDuelCard,
   synchroSummonDuelCard,
   xyzSummonDuelCard,
-} from "./duel-core.js";
-import { readCardUid, readGroupUids } from "./lua-api-utils.js";
-import type { DuelSession } from "./duel-types.js";
+} from "#duel/core.js";
+import { readCardUid, readGroupUids } from "#lua/api-utils.js";
+import type { DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

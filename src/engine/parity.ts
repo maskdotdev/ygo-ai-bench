@@ -7,8 +7,8 @@ import {
   queryPublicState,
   startDuel,
   type CreateDuelOptions,
-} from "./duel-core.js";
-import type { DuelAction, DuelCardReader, DuelLocation, DuelSession, PlayerId, ScriptedDuelFixture, ScriptedDuelStep, ScriptedFixtureMove, ScriptedResponseSelector } from "./duel-types.js";
+} from "#duel/core.js";
+import type { DuelAction, DuelCardReader, DuelLocation, DuelSession, PlayerId, ScriptedDuelFixture, ScriptedDuelStep, ScriptedFixtureMove, ScriptedResponseSelector } from "#duel/types.js";
 
 export interface ParityRunOptions extends CreateDuelOptions {
   cardReader?: DuelCardReader;

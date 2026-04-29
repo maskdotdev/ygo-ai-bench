@@ -1,3 +1,3 @@
-export * from "./definitions.js";
-export * from "./predicates.js";
-export * from "./dark-magician-scripts.js";
+export * from "#cards/definitions.js";
+export * from "#cards/predicates.js";
+export * from "#cards/dark-magician-scripts.js";

@@ -1,4 +1,4 @@
-import type { DuelEffectDefinition, DuelState } from "./duel-types.js";
+import type { DuelEffectDefinition, DuelState } from "#duel/types.js";
 
 export function canUseEffectCount(state: DuelState, effect: DuelEffectDefinition): boolean {
   const limit = effectCountLimit(effect);

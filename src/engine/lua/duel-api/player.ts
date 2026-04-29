@@ -1,9 +1,9 @@
 import fengari from "fengari";
-import { canMoveDuelCardToLocation, canSpecialSummonDuelCard } from "./duel-core.js";
-import { findCard } from "./duel-card-state.js";
-import { availableMonsterZoneCount } from "./lua-duel-location-api.js";
-import { positionFromMask, readCardUid, readGroupUids } from "./lua-api-utils.js";
-import type { DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
+import { canMoveDuelCardToLocation, canSpecialSummonDuelCard } from "#duel/core.js";
+import { findCard } from "#duel/card-state.js";
+import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
+import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import type { DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

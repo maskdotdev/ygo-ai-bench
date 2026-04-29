@@ -1,10 +1,10 @@
-export * from "./types.js";
-export * from "./rng.js";
-export * from "./effects.js";
-export * from "./core.js";
-export * from "./duel-types.js";
-export * from "./data-loaders.js";
-export * from "./parity.js";
+export * from "#engine/types.js";
+export * from "#engine/rng.js";
+export * from "#engine/effects.js";
+export * from "#engine/core.js";
+export * from "#duel/types.js";
+export * from "#engine/data-loaders.js";
+export * from "#engine/parity.js";
 export {
   createDuel,
   loadDecks,
@@ -40,4 +40,4 @@ export {
   changeDuelCardPosition,
   negateDuelChainLink,
   type CreateDuelOptions,
-} from "./duel-core.js";
+} from "#duel/core.js";

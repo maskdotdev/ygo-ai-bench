@@ -1,4 +1,4 @@
-import type { CardInstance, EventName, GameState, PlaytestAction, ZoneName } from "./types.js";
+import type { CardInstance, EventName, GameState, PlaytestAction, ZoneName } from "#engine/types.js";
 
 export type CardPredicate = (card: CardInstance, state: GameState) => boolean;
 export type EffectCondition = (ctx: EffectContext) => boolean;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { applyAction, getLegalActions, startPlaytest } from "../src/playtest/index.js";
-import { DARK_MAGICIAN_CARD_IDS as IDS } from "../src/cards/index.js";
+import { applyAction, getLegalActions, startPlaytest } from "#playtest/api.js";
+import { DARK_MAGICIAN_CARD_IDS as IDS } from "#cards/definitions.js";
 
 describe("engine primitives", () => {
   it("draws deterministic opening hands from a seed", () => {

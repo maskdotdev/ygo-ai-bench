@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import type { CardPosition, DuelLocation } from "./duel-types.js";
+import type { CardPosition, DuelLocation } from "#duel/types.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
 

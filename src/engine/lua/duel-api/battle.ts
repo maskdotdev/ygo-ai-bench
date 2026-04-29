@@ -1,6 +1,6 @@
 import fengari from "fengari";
-import { pushCardTable } from "./lua-card-api.js";
-import type { DuelSession } from "./duel-types.js";
+import { pushCardTable } from "#lua/card-api.js";
+import type { DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

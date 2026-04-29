@@ -1,9 +1,9 @@
 import fengari from "fengari";
-import { canMoveDuelCardToLocation } from "./duel-core.js";
-import { pushCardTable } from "./lua-card-api.js";
-import { pushGroupTable } from "./lua-group-api.js";
-import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef } from "./lua-api-utils.js";
-import type { DuelCardInstance, DuelSession, PlayerId } from "./duel-types.js";
+import { canMoveDuelCardToLocation } from "#duel/core.js";
+import { pushCardTable } from "#lua/card-api.js";
+import { pushGroupTable } from "#lua/group-api.js";
+import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

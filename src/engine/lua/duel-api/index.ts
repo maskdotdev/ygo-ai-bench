@@ -1,20 +1,20 @@
 import fengari from "fengari";
-import { installDuelActivityApi } from "./lua-duel-activity-api.js";
-import { installDuelBattleApi } from "./lua-duel-battle-api.js";
-import { installDuelChainApi } from "./lua-duel-chain-api.js";
-import { installDuelDeckApi } from "./lua-duel-deck-api.js";
-import { installDuelFlagApi } from "./lua-duel-flag-api.js";
-import { installDuelLpApi } from "./lua-duel-lp-api.js";
-import { installDuelMoveApi } from "./lua-duel-move-api.js";
-import { installDuelOperationApi } from "./lua-duel-operation-api.js";
-import { installDuelPlayerApi } from "./lua-duel-player-api.js";
-import { installDuelPromptApi } from "./lua-duel-prompt-api.js";
-import { installDuelQueryApi } from "./lua-duel-query-api.js";
-import { installDuelReleaseApi } from "./lua-duel-release-api.js";
-import { installDuelSummonApi } from "./lua-duel-summon-api.js";
-import { installDuelTurnApi } from "./lua-duel-turn-api.js";
-import type { LuaDuelOperationInfo } from "./lua-duel-operation-api.js";
-import type { DuelSession } from "./duel-types.js";
+import { installDuelActivityApi } from "#lua/duel-api/activity.js";
+import { installDuelBattleApi } from "#lua/duel-api/battle.js";
+import { installDuelChainApi } from "#lua/duel-api/chain.js";
+import { installDuelDeckApi } from "#lua/duel-api/deck.js";
+import { installDuelFlagApi } from "#lua/duel-api/flag.js";
+import { installDuelLpApi } from "#lua/duel-api/lp.js";
+import { installDuelMoveApi } from "#lua/duel-api/move.js";
+import { installDuelOperationApi } from "#lua/duel-api/operation.js";
+import { installDuelPlayerApi } from "#lua/duel-api/player.js";
+import { installDuelPromptApi } from "#lua/duel-api/prompt.js";
+import { installDuelQueryApi } from "#lua/duel-api/query.js";
+import { installDuelReleaseApi } from "#lua/duel-api/release.js";
+import { installDuelSummonApi } from "#lua/duel-api/summon.js";
+import { installDuelTurnApi } from "#lua/duel-api/turn.js";
+import type { LuaDuelOperationInfo } from "#lua/duel-api/operation.js";
+import type { DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

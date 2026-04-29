@@ -11,6 +11,14 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "#cards/*": ["src/cards/*"],
+      "#duel/*": ["src/engine/duel/*"],
+      "#engine/*": ["src/engine/*"],
+      "#lua/*": ["src/engine/lua/*"],
+      "#playtest/*": ["src/playtest/*"]
+    },
     "types": ["node", "vitest/globals"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts"]

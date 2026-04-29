@@ -1,6 +1,6 @@
 import fengari from "fengari";
-import { copyGlobalFunctionToField, readCardUid, readGroupUids, readOptionalFunctionRef, readTableNumberField, releaseOptionalFunctionRef, setGroupUids } from "./lua-api-utils.js";
-import { pushCardTable } from "./lua-card-api.js";
+import { copyGlobalFunctionToField, readCardUid, readGroupUids, readOptionalFunctionRef, readTableNumberField, releaseOptionalFunctionRef, setGroupUids } from "#lua/api-utils.js";
+import { pushCardTable } from "#lua/card-api.js";
 
 const { lua, to_luastring } = fengari;
 

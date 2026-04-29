@@ -6,15 +6,13 @@ import {
   applyAction,
   chooseHighestPriority,
   getLegalActions,
-  parseYdk,
   runPlaytest,
   snapshot,
   startPlaytest,
-  type PlaytestEvaluation,
-  type PlaytestSession,
-  type PlaytestSnapshot,
-} from "../playtest/index.js";
-import type { CardSummary, PlaytestAction, PlaytestLogEntry } from "../engine/index.js";
+} from "#playtest/api.js";
+import type { PlaytestEvaluation, PlaytestSession, PlaytestSnapshot } from "#playtest/api.js";
+import { parseYdk } from "#playtest/ydk.js";
+import type { CardSummary, PlaytestAction, PlaytestLogEntry } from "#engine/types.js";
 import cardBackUrl from "../../assets/card-back.webp";
 import "./styles.css";
 
@@ -33,6 +31,13 @@ interface ToastMessage {
 interface ZoomCard {
   name: string;
   image: string;
+}
+
+interface PileView {
+  title: string;
+  icon: string;
+  cards: CardSummary[];
+  faceDown?: boolean;
 }
 
 const AUTO_DECK_KEY = "duelDeckStudio.autoDeck.v1";
@@ -114,6 +119,7 @@ function PlaytestArena() {
   const [zoomCard, setZoomCard] = useState<ZoomCard | null>(null);
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [pileView, setPileView] = useState<PileView | null>(null);
   const cardImages = useRef(new Map<string, CardImageInfo>());
 
   const parsedDeck = useMemo(() => parseYdk(ydkText), [ydkText]);
@@ -172,13 +178,16 @@ function PlaytestArena() {
   }, [notify]);
 
   useEffect(() => {
-    if (!zoomCard) return;
+    if (!zoomCard && !pileView) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setZoomCard(null);
+      if (event.key === "Escape") {
+        setZoomCard(null);
+        setPileView(null);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [zoomCard]);
+  }, [zoomCard, pileView]);
 
   const start = useCallback(() => {
     try {
@@ -309,6 +318,7 @@ function PlaytestArena() {
             imageRevision={imageRevision}
             cardImages={cardImages.current}
             onZoom={setZoomCard}
+            onViewPile={setPileView}
           />
 
           {/* Right Panel - Collapsible */}
@@ -333,6 +343,14 @@ function PlaytestArena() {
 
       <ToastStack toasts={toasts} />
       {zoomCard ? <CardZoom card={zoomCard} onClose={() => setZoomCard(null)} /> : null}
+      {pileView ? (
+        <PileViewer 
+          pile={pileView} 
+          cardImages={cardImages.current}
+          onZoom={setZoomCard}
+          onClose={() => setPileView(null)} 
+        />
+      ) : null}
     </main>
   );
 }
@@ -480,6 +498,7 @@ function GameBoard(props: {
   imageRevision: number;
   cardImages: Map<string, CardImageInfo>;
   onZoom: (card: ZoomCard) => void;
+  onViewPile: (pile: PileView) => void;
 }) {
   void props.imageRevision;
   const state = props.view?.state;
@@ -488,6 +507,10 @@ function GameBoard(props: {
   // Separate field cards by type
   const monsterCards = (state?.field ?? []).filter(c => c.type === "monster" || c.type === "extra");
   const spellTrapCards = (state?.field ?? []).filter(c => c.type === "spell" || c.type === "trap");
+
+  const graveyard = state?.graveyard ?? [];
+  const extraDeck = state?.extraDeck ?? [];
+  const banished = state?.banished ?? [];
   
   return (
     <section className="tcg-panel rounded-xl p-4">
@@ -533,28 +556,38 @@ function GameBoard(props: {
             );
           })}
           
-          {/* Graveyard (Right) */}
-          <div className="zone-frame flex h-[146px] w-[100px] flex-col items-center justify-center rounded-lg p-2">
+          {/* Graveyard (Right) - Clickable */}
+          <button
+            type="button"
+            className="zone-frame zone-clickable flex h-[146px] w-[100px] flex-col items-center justify-center rounded-lg p-2"
+            onClick={() => graveyard.length > 0 && props.onViewPile({ title: "Graveyard", icon: "☠", cards: graveyard })}
+            disabled={graveyard.length === 0}
+          >
             <span className="mb-1 text-[9px] font-bold uppercase tracking-[0.1em] text-[#d4af37]/40">GY</span>
-            {(state?.graveyard?.length ?? 0) > 0 ? (
-              <Pile cards={state?.graveyard ?? []} emptyLabel="GY" images={props.cardImages} onZoom={props.onZoom} small />
+            {graveyard.length > 0 ? (
+              <PilePreview cards={graveyard} images={props.cardImages} small />
             ) : (
               <span className="text-lg text-[#d4af37]/30">☠</span>
             )}
-          </div>
+          </button>
         </div>
 
         {/* Row 3: Extra Deck + 5 Spell/Trap Zones + Main Deck */}
         <div className="flex items-center justify-center gap-3">
-          {/* Extra Deck Zone (Left) */}
-          <div className="zone-frame flex h-[146px] w-[100px] flex-col items-center justify-center rounded-lg p-2">
+          {/* Extra Deck Zone (Left) - Clickable */}
+          <button
+            type="button"
+            className="zone-frame zone-clickable flex h-[146px] w-[100px] flex-col items-center justify-center rounded-lg p-2"
+            onClick={() => extraDeck.length > 0 && props.onViewPile({ title: "Extra Deck", icon: "★", cards: extraDeck })}
+            disabled={extraDeck.length === 0}
+          >
             <span className="mb-1 text-[9px] font-bold uppercase tracking-[0.1em] text-[#d4af37]/40">Extra</span>
-            {(state?.extraDeck?.length ?? 0) > 0 ? (
-              <Pile cards={state?.extraDeck ?? []} emptyLabel="ED" faceDown images={props.cardImages} onZoom={props.onZoom} small />
+            {extraDeck.length > 0 ? (
+              <PilePreview cards={extraDeck} images={props.cardImages} faceDown small />
             ) : (
               <span className="text-lg text-[#d4af37]/30">★</span>
             )}
-          </div>
+          </button>
           
           {/* 5 Spell/Trap Zones */}
           {Array.from({ length: 5 }, (_, i) => {
@@ -588,19 +621,24 @@ function GameBoard(props: {
           </div>
         </div>
 
-        {/* Row 4: Banished Zone indication (off to the side conceptually) */}
+        {/* Row 4: Banished Zone indication - Clickable */}
         <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-[#d4af37]/10 disabled:cursor-default disabled:hover:bg-transparent"
+            onClick={() => banished.length > 0 && props.onViewPile({ title: "Banished", icon: "⊘", cards: banished })}
+            disabled={banished.length === 0}
+          >
             <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#d4af37]/40">Banished:</span>
-            {(state?.banished?.length ?? 0) > 0 ? (
+            {banished.length > 0 ? (
               <div className="flex items-center gap-2">
-                <Pile cards={state?.banished ?? []} emptyLabel="RFG" images={props.cardImages} onZoom={props.onZoom} tiny />
-                <span className="text-xs text-[#d4af37]/60">({state?.banished?.length ?? 0})</span>
+                <PilePreview cards={banished} images={props.cardImages} tiny />
+                <span className="text-xs text-[#d4af37]/60">({banished.length})</span>
               </div>
             ) : (
               <span className="text-xs text-[#d4af37]/30">Empty</span>
             )}
-          </div>
+          </button>
         </div>
 
         {/* Divider */}
@@ -650,14 +688,13 @@ function HandZone(props: { cards: CardSummary[]; images: Map<string, CardImageIn
   );
 }
 
-function Pile(props: {
+/** Non-interactive pile preview (just shows top card + count) */
+function PilePreview(props: {
   cards: CardSummary[];
-  emptyLabel: string;
   faceDown?: boolean;
   small?: boolean;
   tiny?: boolean;
   images: Map<string, CardImageInfo>;
-  onZoom: (card: ZoomCard) => void;
 }) {
   const sizeClass = props.tiny ? "w-[50px]" : props.small ? "w-[70px]" : "w-[88px]";
   
@@ -671,7 +708,7 @@ function Pile(props: {
         <img 
           className={`${sizeClass} rounded border border-[#d4af37]/30 object-contain shadow-lg`}
           src={cardBackUrl} 
-          alt={`${props.emptyLabel} stack`} 
+          alt="Card stack" 
         />
         <span className={`pile-counter absolute -bottom-1.5 -right-1.5 rounded px-1.5 py-0.5 ${props.tiny ? 'text-[8px]' : 'text-[10px]'} font-bold text-white`}>
           {props.cards.length}
@@ -684,18 +721,17 @@ function Pile(props: {
   if (!topCard) return null;
   
   const image = props.images.get(topCard.id);
-  const fullCard = image?.large || image?.small;
+  const fullCard = image?.small || image?.large;
   
   return (
     <div className={`relative ${sizeClass}`}>
       {fullCard ? (
-        <button
-          className={`${sizeClass} overflow-hidden rounded border border-[#d4af37]/30 shadow-lg transition-transform hover:scale-105`}
-          type="button"
-          onClick={() => props.onZoom({ name: topCard.name, image: image?.large || fullCard })}
-        >
-          <img className="h-full w-full object-contain" src={fullCard} alt={topCard.name} loading="lazy" />
-        </button>
+        <img 
+          className={`${sizeClass} rounded border border-[#d4af37]/30 object-contain shadow-lg`}
+          src={fullCard} 
+          alt={topCard.name} 
+          loading="lazy" 
+        />
       ) : (
         <div className={`${sizeClass} aspect-[59/86] rounded border border-[#d4af37]/30 bg-[#1a1a12] p-1`}>
           <span className="text-[8px] font-bold text-[#d4af37]/60">{topCard.name}</span>
@@ -704,6 +740,95 @@ function Pile(props: {
       <span className={`pile-counter absolute -bottom-1.5 -right-1.5 rounded px-1.5 py-0.5 ${props.tiny ? 'text-[8px]' : 'text-[10px]'} font-bold text-white`}>
         {props.cards.length}
       </span>
+    </div>
+  );
+}
+
+/** Modal to view all cards in a pile */
+function PileViewer(props: { 
+  pile: PileView; 
+  cardImages: Map<string, CardImageInfo>;
+  onZoom: (card: ZoomCard) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="pile-viewer-overlay fixed inset-0 z-40 grid place-items-center p-4" onClick={props.onClose}>
+      <div 
+        className="pile-viewer-frame relative flex max-h-[85vh] w-full max-w-[900px] flex-col rounded-xl p-5 shadow-2xl" 
+        onClick={(event) => event.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between border-b border-[#d4af37]/20 pb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{props.pile.icon}</span>
+            <div>
+              <h2 className="font-['Cinzel'] text-xl font-bold text-[#fff7dc]">{props.pile.title}</h2>
+              <p className="text-sm text-[#d4af37]/60">{props.pile.cards.length} card{props.pile.cards.length !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+          <button 
+            className="grid size-10 place-items-center rounded-full border-2 border-[#d4af37]/50 bg-black/50 text-xl font-bold text-white shadow-lg transition-colors hover:border-[#d4af37] hover:bg-[#d4af37]/20" 
+            type="button" 
+            aria-label="Close pile viewer" 
+            onClick={props.onClose}
+          >
+            ×
+          </button>
+        </div>
+        
+        {/* Cards Grid */}
+        <div className="flex-1 overflow-y-auto">
+          {props.pile.cards.length > 0 ? (
+            <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7">
+              {props.pile.cards.map((card, index) => {
+                const image = props.cardImages.get(card.id);
+                const fullCard = image?.large || image?.small;
+                const cardTypeClass = getCardTypeClass(card);
+                
+                return (
+                  <button
+                    key={`${card.uid}-${index}`}
+                    type="button"
+                    className={`pile-card-item group relative flex flex-col items-center gap-1.5 rounded-lg p-1.5 transition-all hover:bg-[#d4af37]/10 ${cardTypeClass}`}
+                    onClick={() => fullCard && props.onZoom({ name: card.name, image: image?.large || fullCard })}
+                    title={card.name}
+                  >
+                    {/* Card position indicator */}
+                    <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#d4af37]/20 text-[10px] font-bold text-[#d4af37]">
+                      {index + 1}
+                    </span>
+                    
+                    {/* Card image */}
+                    <div className="aspect-[59/86] w-full overflow-hidden rounded-md border-2 border-[#d4af37]/30 bg-[#0a0c08] shadow-lg transition-all group-hover:border-[#d4af37]/60">
+                      {fullCard ? (
+                        <img 
+                          className="h-full w-full object-contain" 
+                          src={fullCard} 
+                          alt={card.name} 
+                          loading="lazy" 
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-gradient-to-b from-[#1a1815] to-[#0d0c0a] p-1">
+                          <span className="text-center text-[9px] font-bold leading-tight text-[#d4af37]/60">{card.name}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Card name */}
+                    <span className="line-clamp-2 text-center text-[10px] font-semibold leading-tight text-[#f3ead2]">
+                      {card.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex h-40 items-center justify-center text-[#d4af37]/40">
+              No cards in this zone
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

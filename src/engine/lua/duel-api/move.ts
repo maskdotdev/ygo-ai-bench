@@ -8,10 +8,10 @@ import {
   moveDuelCard,
   sendDuelCardToGraveyard,
   specialSummonDuelCard,
-} from "./duel-core.js";
-import { duelReason } from "./duel-reasons.js";
-import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "./lua-api-utils.js";
-import type { CardPosition, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "./duel-types.js";
+} from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
+import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import type { CardPosition, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

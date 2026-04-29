@@ -1,6 +1,6 @@
-import { EffectContext, effectToAction, findZone, moveCard, pushLog, type EffectDefinition } from "./effects.js";
-import { shuffle } from "./rng.js";
-import type { CardDefinition, CardInstance, GameState, PlaytestAction, PublicGameState, ZoneName } from "./types.js";
+import { EffectContext, effectToAction, findZone, moveCard, pushLog, type EffectDefinition } from "#engine/effects.js";
+import { shuffle } from "#engine/rng.js";
+import type { CardDefinition, CardInstance, GameState, PlaytestAction, PublicGameState, ZoneName } from "#engine/types.js";
 
 export type Registry = Map<string, CardDefinition>;
 export type EffectRegistry = Map<string, EffectDefinition[]>;

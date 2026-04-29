@@ -1,6 +1,6 @@
 import fengari from "fengari";
-import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "./duel-flags.js";
-import type { DuelSession, PlayerId } from "./duel-types.js";
+import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "#duel/flags.js";
+import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

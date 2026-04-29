@@ -1,25 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   applyResponse,
-  createCardReader,
   createDuel,
   detachDuelOverlayMaterials,
-  getDuelLegalActions,
+  getLegalActions as getDuelLegalActions,
   loadDecks,
-  makeResponseSelector,
-  moveDuelCard,
-  normalizeCdbRows,
-  parseBanlistConf,
-  runScriptedDuelFixture,
-  scriptFilenameForCard,
   startDuel,
-  upstreamBanlistPath,
-  upstreamDatabasePath,
-  upstreamScriptPath,
   xyzSummonDuelCard,
-} from "../src/engine/index.js";
-import type { DuelCardData, ScriptedDuelFixture } from "../src/engine/index.js";
-import { createLuaScriptHost } from "../src/engine/lua-host.js";
+} from "#duel/core.js";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createCardReader, normalizeCdbRows, parseBanlistConf, scriptFilenameForCard, upstreamBanlistPath, upstreamDatabasePath, upstreamScriptPath } from "#engine/data-loaders.js";
+import { makeResponseSelector, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { createLuaScriptHost } from "#lua/host.js";
 
 describe("EDOPro compatibility harness scaffolding", () => {
   it("normalizes card database rows and banlist entries", () => {

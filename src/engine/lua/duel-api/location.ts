@@ -1,6 +1,6 @@
 import fengari from "fengari";
-import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "./lua-api-utils.js";
-import type { CardPosition, DuelSession, PlayerId } from "./duel-types.js";
+import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import type { CardPosition, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

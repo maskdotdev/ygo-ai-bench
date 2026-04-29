@@ -1,6 +1,6 @@
 import fengari from "fengari";
-import { duelActivity, getDuelActivityCount } from "./duel-activity.js";
-import type { DuelSession, PlayerId } from "./duel-types.js";
+import { duelActivity, getDuelActivityCount } from "#duel/activity.js";
+import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

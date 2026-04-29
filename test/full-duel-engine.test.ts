@@ -2,21 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   banishDuelCard,
-  canSpecialSummonDuelCard,
   canDuelCardAttack,
   canChangeDuelCardPosition,
-  canMoveDuelCardToLocation,
   changeDuelCardPosition,
-  createCardReader,
+  canSpecialSummonDuelCard,
   createDuel,
   damageDuelPlayer,
   declareDuelAttack,
   destroyDuelCard,
   detachDuelOverlayMaterials,
   getDuelAttackTargets,
-  getDuelLegalActions,
+  getLegalActions as getDuelLegalActions,
   loadDecks,
-  moveDuelCard,
   queryPublicState,
   registerEffect,
   restoreDuel,
@@ -33,8 +30,10 @@ import {
   linkSummonDuelCard,
   synchroSummonDuelCard,
   xyzSummonDuelCard,
-} from "../src/engine/index.js";
-import type { DuelCardData } from "../src/engine/index.js";
+} from "#duel/core.js";
+import { canMoveDuelCardToLocation, moveDuelCard } from "#duel/card-state.js";
+import { createCardReader } from "#engine/data-loaders.js";
+import type { DuelCardData } from "#duel/types.js";
 
 const cards: DuelCardData[] = [
   { code: "100", name: "Normal Test Monster", kind: "monster", attack: 1800, defense: 1200 },

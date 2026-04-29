@@ -1,6 +1,6 @@
-import { ScriptCard, type EffectDefinition } from "../engine/index.js";
-import { DARK_MAGICIAN_CARD_IDS } from "./definitions.js";
-import { byId, isDarkMagician, isDarkMagicianCard, isDarkMagicianMonster, isDarkMagicianSpellTrap, isFusion, isRitualMonster, isSpellcaster } from "./predicates.js";
+import { ScriptCard, type EffectDefinition } from "#engine/effects.js";
+import { DARK_MAGICIAN_CARD_IDS } from "#cards/definitions.js";
+import { byId, isDarkMagician, isDarkMagicianCard, isDarkMagicianMonster, isDarkMagicianSpellTrap, isFusion, isRitualMonster, isSpellcaster } from "#cards/predicates.js";
 
 export function buildDarkMagicianEffects(): Map<string, EffectDefinition[]> {
   const scripts = new Map<string, ScriptCard>();

@@ -1,4 +1,4 @@
-import type { DuelFlagEffect, DuelState, PlayerId } from "./duel-types.js";
+import type { DuelFlagEffect, DuelState, PlayerId } from "#duel/types.js";
 
 export type DuelFlagOwner = { ownerType: "player"; ownerId: PlayerId } | { ownerType: "card"; ownerId: string };
 

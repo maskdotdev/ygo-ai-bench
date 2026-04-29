@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { parseBanlistConf, upstreamBanlistPath, upstreamDatabasePath, upstreamScriptPath, type BanlistEntry, type UpstreamSourceConfig } from "./data-loaders.js";
-import type { LuaScriptSource } from "./lua-host.js";
+import { parseBanlistConf, upstreamBanlistPath, upstreamDatabasePath, upstreamScriptPath, type BanlistEntry, type UpstreamSourceConfig } from "#engine/data-loaders.js";
+import type { LuaScriptSource } from "#lua/host.js";
 
 export interface UpstreamNodeWorkspace extends LuaScriptSource {
   readonly config: UpstreamSourceConfig;

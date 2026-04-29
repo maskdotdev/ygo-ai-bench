@@ -1,8 +1,8 @@
 import fengari from "fengari";
-import { canMoveDuelCardToLocation, detachDuelOverlayMaterials, registerEffect } from "./duel-core.js";
-import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "./duel-flags.js";
-import { duelReason } from "./duel-reasons.js";
-import { pushGroupTable } from "./lua-group-api.js";
+import { canMoveDuelCardToLocation, detachDuelOverlayMaterials, registerEffect } from "#duel/core.js";
+import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "#duel/flags.js";
+import { duelReason } from "#duel/reasons.js";
+import { pushGroupTable } from "#lua/group-api.js";
 import {
   copyGlobalFunctionToField,
   locationsFromMask,
@@ -10,8 +10,8 @@ import {
   readCardUid,
   readTableNumberField,
   readTableStringField,
-} from "./lua-api-utils.js";
-import type { CardPosition, DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "./duel-types.js";
+} from "#lua/api-utils.js";
+import type { CardPosition, DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { applyAction, getLegalActions, runPlaytest, startPlaytest, chooseHighestPriority } from "../src/playtest/index.js";
-import { DARK_MAGICIAN_CARD_IDS as IDS } from "../src/cards/index.js";
+import { applyAction, getLegalActions, runPlaytest, startPlaytest, chooseHighestPriority } from "#playtest/api.js";
+import { DARK_MAGICIAN_CARD_IDS as IDS } from "#cards/definitions.js";
 
 describe("Dark Magician scripts", () => {
   it("Magician's Rod searches a Dark Magician spell/trap on summon", () => {

@@ -1,5 +1,5 @@
-import type { CardInstance } from "../engine/index.js";
-import { DARK_MAGICIAN_CARD_IDS } from "./definitions.js";
+import type { CardInstance } from "#engine/types.js";
+import { DARK_MAGICIAN_CARD_IDS } from "#cards/definitions.js";
 
 export function isDarkMagician(card: CardInstance): boolean {
   return card.id === DARK_MAGICIAN_CARD_IDS.darkMagician;

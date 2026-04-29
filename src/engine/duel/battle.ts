@@ -1,6 +1,6 @@
-import { findCard, getCards, pushDuelLog, requireControlledCard } from "./duel-card-state.js";
-import { recordAttackActivity } from "./duel-activity.js";
-import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "./duel-types.js";
+import { findCard, getCards, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
+import { recordAttackActivity } from "#duel/activity.js";
+import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface DuelBattleCallbacks {
   collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance): void;

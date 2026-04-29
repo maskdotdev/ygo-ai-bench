@@ -1,7 +1,7 @@
 import fengari from "fengari";
-import { pushGroupTable } from "./lua-group-api.js";
-import { readCardUid, readGroupUids } from "./lua-api-utils.js";
-import type { PlayerId } from "./duel-types.js";
+import { pushGroupTable } from "#lua/group-api.js";
+import { readCardUid, readGroupUids } from "#lua/api-utils.js";
+import type { PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 

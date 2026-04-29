@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createPlaytestAgent, parseYdk, toStartOptions } from "../src/playtest/index.js";
-import { DARK_MAGICIAN_CARD_IDS as IDS } from "../src/cards/index.js";
+import { createPlaytestAgent, toStartOptions } from "#playtest/agent-bridge.js";
+import { parseYdk } from "#playtest/ydk.js";
+import { DARK_MAGICIAN_CARD_IDS as IDS } from "#cards/definitions.js";
 
 describe("playtest agent bridge", () => {
   it("starts from an app-style serialized deck", () => {

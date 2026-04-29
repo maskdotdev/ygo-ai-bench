@@ -1,5 +1,7 @@
-import { buildDarkMagicianEffects, cardRegistry } from "../cards/index.js";
-import { applyAction as engineApplyAction, getLegalActions as engineGetLegalActions, publicState, startSession, type ApplyResult, type EngineSession, type PlaytestAction, type PublicGameState } from "../engine/index.js";
+import { cardRegistry } from "#cards/definitions.js";
+import { buildDarkMagicianEffects } from "#cards/dark-magician-scripts.js";
+import { applyAction as engineApplyAction, getLegalActions as engineGetLegalActions, publicState, startSession, type EngineSession } from "#engine/core.js";
+import type { ApplyResult, PlaytestAction, PublicGameState } from "#engine/types.js";
 
 export interface StartPlaytestOptions {
   deck: string[];

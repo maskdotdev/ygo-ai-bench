@@ -1,4 +1,4 @@
-import type { DuelActivityCounts, DuelState, PlayerId } from "./duel-types.js";
+import type { DuelActivityCounts, DuelState, PlayerId } from "#duel/types.js";
 
 export const duelActivity = {
   summon: 0x1,

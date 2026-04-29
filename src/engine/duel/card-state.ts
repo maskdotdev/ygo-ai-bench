@@ -1,4 +1,4 @@
-import type { DuelCardInstance, DuelLocation, DuelState, PlayerId } from "./duel-types.js";
+import type { DuelCardInstance, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason = 0): DuelCardInstance {
   const card = findCard(state, uid);

@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { duelActivity } from "./duel-activity.js";
+import { duelActivity } from "#duel/activity.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
 

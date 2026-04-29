@@ -1,6 +1,15 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "#cards": "/src/cards",
+      "#duel": "/src/engine/duel",
+      "#engine": "/src/engine",
+      "#lua": "/src/engine/lua",
+      "#playtest": "/src/playtest",
+    },
+  },
   build: {
     lib: {
       entry: "src/browser-playtest.ts",

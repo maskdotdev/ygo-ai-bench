@@ -1,12 +1,12 @@
 import fengari from "fengari";
-import { installAuxApi, installConstants, installDebugApi } from "./lua-basic-api.js";
-import { installCardApi, pushCardTable } from "./lua-card-api.js";
-import { installDuelApi } from "./lua-duel-api.js";
-import { installGroupApi, pushGroupTable } from "./lua-group-api.js";
-import { scriptFilenameForCard } from "./data-loaders.js";
-import { locationsFromMask, readCardUid, readTableNumberField } from "./lua-api-utils.js";
-import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
-import type { LuaDuelOperationInfo } from "./lua-duel-operation-api.js";
+import { installAuxApi, installConstants, installDebugApi } from "#lua/basic-api.js";
+import { installCardApi, pushCardTable } from "#lua/card-api.js";
+import { installDuelApi } from "#lua/duel-api/index.js";
+import { installGroupApi, pushGroupTable } from "#lua/group-api.js";
+import { scriptFilenameForCard } from "#engine/data-loaders.js";
+import { locationsFromMask, readCardUid, readTableNumberField } from "#lua/api-utils.js";
+import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
+import type { LuaDuelOperationInfo } from "#lua/duel-api/operation.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
 

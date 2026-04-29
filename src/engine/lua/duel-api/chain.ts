@@ -1,8 +1,8 @@
 import fengari from "fengari";
-import { negateDuelChainLink } from "./duel-core.js";
-import { pushCardTable } from "./lua-card-api.js";
-import { pushGroupTable } from "./lua-group-api.js";
-import type { DuelCardInstance, DuelSession, DuelState } from "./duel-types.js";
+import { negateDuelChainLink } from "#duel/core.js";
+import { pushCardTable } from "#lua/card-api.js";
+import { pushGroupTable } from "#lua/group-api.js";
+import type { DuelCardInstance, DuelSession, DuelState } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
