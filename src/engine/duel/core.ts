@@ -7,13 +7,12 @@ import {
 import { fallbackCardReader } from "#duel/card-reader.js";
 import {
   findCard,
-  canMoveDuelCardToLocation,
+  canMoveDuelCardToLocation as canMoveDuelCardToLocationRule,
   getCards,
   hasZoneSpace,
   moveDuelCard,
   pushDuelLog,
   requireControlledCard,
-  requireMoveAllowed,
   requireZoneSpace,
   resequence,
 } from "#duel/card-state.js";
@@ -48,6 +47,7 @@ import {
 } from "#duel/battle.js";
 import {
   isAttackPrevented,
+  isMoveToLocationPrevented,
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
   shouldRedirectBanishMove,
@@ -87,7 +87,7 @@ import type {
 } from "#duel/types.js";
 import { queryPublicState } from "#duel/snapshot.js";
 
-export { canMoveDuelCardToLocation, moveDuelCard } from "#duel/card-state.js";
+export { moveDuelCard } from "#duel/card-state.js";
 export { queryPublicState, serializeDuel, restoreDuel } from "#duel/snapshot.js";
 
 const phaseOrder: DuelPhase[] = ["draw", "standby", "main1", "battle", "main2", "end"];
@@ -293,6 +293,15 @@ export function canPlayerSpecialSummon(state: DuelState, player: PlayerId, card?
   return !isSpecialSummonPrevented(state, player, createContinuousEffectContext(state), card);
 }
 
+export function canMoveDuelCardToLocation(state: DuelState, uid: string, to: DuelLocation, reason: number = duelReason.effect): boolean {
+  if (!canMoveDuelCardToLocationRule(state, uid, to)) return false;
+  return !isMoveToLocationPrevented(state, uid, to, reason, createContinuousEffectContext(state));
+}
+
+function requireDuelMoveAllowed(state: DuelState, uid: string, to: DuelLocation, reason: number): void {
+  if (!canMoveDuelCardToLocation(state, uid, to, reason)) throw new Error(`Card ${uid} cannot move to ${to}`);
+}
+
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
   const replacementHandlers = createReplacementEffectHandlers(state);
   const replacement = applyReleaseReplacement(state, uid, controller, reason, replacementHandlers);
@@ -303,7 +312,7 @@ export function sendDuelCardToGraveyard(state: DuelState, uid: string, controlle
   if (shouldRedirectToGraveyardMove(state, uid, createContext)) return banishDuelCard(state, uid, controller, reason | duelReason.redirect);
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "graveyard", createContext);
   if (redirectLocation && redirectLocation !== "graveyard") return moveDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason);
-  requireMoveAllowed(state, uid, "graveyard");
+  requireDuelMoveAllowed(state, uid, "graveyard", reason);
   const card = moveDuelCard(state, uid, "graveyard", controller, reason);
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
   collectTriggerEffects(state, "sentToGraveyard", card);
@@ -316,7 +325,7 @@ export function destroyDuelCard(state: DuelState, uid: string, controller?: Play
   if (indestructible) return indestructible;
   const replacement = applyDestroyReplacement(state, uid, controller, reason, replacementHandlers);
   if (replacement) return replacement;
-  requireMoveAllowed(state, uid, "graveyard");
+  requireDuelMoveAllowed(state, uid, "graveyard", reason);
   const card = moveDuelCard(state, uid, "graveyard", controller, reason);
   pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
   collectTriggerEffects(state, "sentToGraveyard", card);
@@ -328,7 +337,7 @@ export function banishDuelCard(state: DuelState, uid: string, controller?: Playe
   if (shouldRedirectBanishMove(state, uid, createContext)) return sendDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect);
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "banished", createContext);
   if (redirectLocation && redirectLocation !== "banished") return moveDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason);
-  requireMoveAllowed(state, uid, "banished");
+  requireDuelMoveAllowed(state, uid, "banished", reason);
   const card = moveDuelCard(state, uid, "banished", controller, reason);
   pushDuelLog(state, "banish", card.controller, card.name, "Banished");
   collectTriggerEffects(state, "banished", card);
@@ -337,7 +346,10 @@ export function banishDuelCard(state: DuelState, uid: string, controller?: Playe
 
 export function moveDuelCardWithRedirects(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
   const redirectLocation = leaveFieldRedirectLocation(state, uid, to, createContinuousEffectContext(state));
-  return moveDuelCard(state, uid, redirectLocation ?? to, controller, redirectLocation ? reason | duelReason.redirect : reason);
+  const destination = redirectLocation ?? to;
+  const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
+  requireDuelMoveAllowed(state, uid, destination, moveReason);
+  return moveDuelCard(state, uid, destination, controller, moveReason);
 }
 
 export function detachDuelOverlayMaterials(state: DuelState, uid: string, count: number, controller?: PlayerId, reason: number = duelReason.cost): DuelCardInstance[] {

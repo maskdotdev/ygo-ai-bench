@@ -894,6 +894,60 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "graveyard" });
   });
 
+  it("applies Lua cannot-move effects to ability checks and move helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cannot Move Source", kind: "monster" },
+      { code: "200", name: "Cannot Grave Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 47, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const target = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(target).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_CANNOT_TO_GRAVE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("cannot grave checked " .. e:GetHandler():GetCode())
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "cannot-to-grave.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const moveResult = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("cannot grave able " .. tostring(c:IsAbleToGrave()))
+      Debug.Message("cannot grave send " .. Duel.SendtoGrave(c, REASON_EFFECT))
+      `,
+      "cannot-to-grave-run.lua",
+    );
+
+    expect(moveResult.ok, moveResult.error).toBe(true);
+    expect(host.messages).toContain("cannot grave checked 100");
+    expect(host.messages).toContain("cannot grave able false");
+    expect(host.messages).toContain("cannot grave send 0");
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "hand" });
+  });
+
   it("applies Lua indestructible effect destruction prevention", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Indestructible Source", kind: "monster" },

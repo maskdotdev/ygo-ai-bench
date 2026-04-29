@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
@@ -63,7 +64,7 @@ function isReleasableMonster(session: DuelSession, card: DuelCardInstance, playe
   if (excluded.includes(card.uid)) return false;
   if (card.controller !== player || card.location !== "monsterZone") return false;
   if (card.kind !== "monster" && card.kind !== "extra") return false;
-  return canMoveDuelCardToLocation(session.state, card.uid, "graveyard");
+  return canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.cost);
 }
 
 function selectedReleasableMonsterUids(session: DuelSession, player: PlayerId, excluded: string[], selectedUids: string[]): string[] {

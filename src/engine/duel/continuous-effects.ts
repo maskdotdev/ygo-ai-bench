@@ -140,6 +140,20 @@ export function findIndestructibleEffect(state: DuelState, uid: string, reason: 
   return undefined;
 }
 
+export function isMoveToLocationPrevented(state: DuelState, uid: string, to: DuelLocation, reason: number, createContext: ContinuousEffectContextFactory): boolean {
+  const card = findCard(state, uid);
+  if (!card) return false;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || !isCannotMoveCodeForLocation(effect.code, to, reason)) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
 function locationFromRedirectValue(value: number | undefined): DuelLocation | undefined {
   if (value === 0x02) return "hand";
   if (value === 0x10) return "graveyard";
@@ -170,5 +184,14 @@ function isIndestructibleCodeForReason(code: number | undefined, reason: number)
   if (code === 41) return (reason & 0x40) !== 0;
   if (code === 42) return (reason & 0x20) !== 0;
   if (code === 47) return true;
+  return false;
+}
+
+function isCannotMoveCodeForLocation(code: number | undefined, location: DuelLocation, reason: number): boolean {
+  if (code === 59) return location === "graveyard" && (reason & 0x80) !== 0;
+  if (code === 65) return location === "hand";
+  if (code === 66) return location === "deck";
+  if (code === 67) return location === "banished";
+  if (code === 68) return location === "graveyard";
   return false;
 }

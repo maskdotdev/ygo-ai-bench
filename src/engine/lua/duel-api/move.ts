@@ -169,7 +169,7 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, location: D
   const moved: string[] = [];
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!card || !canMoveDuelCardToLocation(session.state, uid, location)) continue;
+    if (!card || !canMoveDuelCardToLocation(session.state, uid, location, reason)) continue;
     moveDuelCardWithRedirects(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason);
     moved.push(uid);
   }

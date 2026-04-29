@@ -4,6 +4,7 @@ import {
   banishDuelCard,
   canDuelCardAttack,
   canChangeDuelCardPosition,
+  canMoveDuelCardToLocation,
   changeDuelCardPosition,
   canSpecialSummonDuelCard,
   createDuel,
@@ -31,7 +32,7 @@ import {
   synchroSummonDuelCard,
   xyzSummonDuelCard,
 } from "#duel/core.js";
-import { canMoveDuelCardToLocation, moveDuelCard } from "#duel/card-state.js";
+import { moveDuelCard } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -1778,6 +1779,48 @@ describe("full duel engine API", () => {
     expect(state.cards.find((card) => card.uid === threatened!.uid)?.location).toBe("hand");
     expect(state.cards.find((card) => card.uid === replacement!.uid)?.location).toBe("graveyard");
     expect(state.log.some((entry) => entry.action === "sendReplace" && entry.card === "Normal Test Monster")).toBe(true);
+  });
+
+  it("prevents moves with continuous cannot-move effects", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const graveBlocked = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const banishBlocked = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(graveBlocked).toBeTruthy();
+    expect(banishBlocked).toBeTruthy();
+    expect(source).toBeTruthy();
+
+    registerEffect(session, {
+      id: "cannot-grave",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 68,
+      property: 0x800,
+      targetRange: [1, 0],
+      range: ["hand"],
+      operation() {},
+    });
+    registerEffect(session, {
+      id: "cannot-banish",
+      sourceUid: banishBlocked!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 67,
+      range: ["hand"],
+      operation() {},
+    });
+
+    expect(canMoveDuelCardToLocation(session.state, graveBlocked!.uid, "graveyard")).toBe(false);
+    expect(canMoveDuelCardToLocation(session.state, banishBlocked!.uid, "banished")).toBe(false);
+    expect(() => sendDuelCardToGraveyard(session.state, graveBlocked!.uid, 0)).toThrow("cannot move to graveyard");
+    expect(() => banishDuelCard(session.state, banishBlocked!.uid, 0)).toThrow("cannot move to banished");
   });
 
   it("prevents effect destruction with indestructible effects", () => {
