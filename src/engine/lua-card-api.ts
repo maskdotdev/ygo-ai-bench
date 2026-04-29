@@ -114,6 +114,18 @@ function installStateHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsLocation"));
+  pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && locationsFromMask(locationMask).includes(card.previousLocation)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPreviousLocation"));
+  pushNumberGetter(L, "GetPreviousControler", session, (card) => card?.previousController ?? 0);
+  pushNumberMatcher(L, "IsPreviousControler", session, (card, requested) => card.previousController === normalizePlayer(requested));
+  pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
+  pushNumberMatcher(L, "IsReason", session, (card, requested) => ((card.reason ?? 0) & requested) !== 0);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const player = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : undefined;
@@ -181,6 +193,17 @@ function cardCodes(card: DuelCardInstance): string[] {
   return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
 
+function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
+  if (location === "deck") return 0x01;
+  if (location === "hand") return 0x02;
+  if (location === "monsterZone") return 0x04;
+  if (location === "spellTrapZone") return 0x08;
+  if (location === "graveyard") return 0x10;
+  if (location === "banished") return 0x20;
+  if (location === "extraDeck") return 0x40;
+  return 0;
+}
+
 function summonTypeMask(card: DuelCardInstance | undefined): number {
   if (!card?.summonType) return 0;
   if (card.summonType === "normal") return 0x10000000;
@@ -224,6 +247,12 @@ const cardFieldNames = [
   "IsAttackPos",
   "IsDefensePos",
   "IsLocation",
+  "GetPreviousLocation",
+  "IsPreviousLocation",
+  "GetPreviousControler",
+  "IsPreviousControler",
+  "GetReason",
+  "IsReason",
   "IsControler",
   "GetSummonType",
   "IsSummonType",

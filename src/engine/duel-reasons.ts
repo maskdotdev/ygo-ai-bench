@@ -1,0 +1,17 @@
+export const duelReason = {
+  destroy: 0x1,
+  release: 0x2,
+  material: 0x8,
+  summon: 0x10,
+  battle: 0x20,
+  effect: 0x40,
+  cost: 0x80,
+  rule: 0x400,
+  specialSummon: 0x800,
+  return: 0x20000,
+  fusion: 0x40000,
+  synchro: 0x80000,
+  ritual: 0x100000,
+  xyz: 0x200000,
+  link: 0x400000,
+} as const;

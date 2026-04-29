@@ -207,6 +207,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local g = Duel.SelectReleaseGroup(0, filter, 1, 2, nil)
       Debug.Message("selected releases " .. g:GetCount())
       Debug.Message("released " .. Duel.Release(g, REASON_COST))
+      local released = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("previous location " .. tostring(released:IsPreviousLocation(LOCATION_MZONE)))
+      Debug.Message("previous controller " .. tostring(released:IsPreviousControler(0)))
+      Debug.Message("release reason " .. tostring(released:IsReason(REASON_RELEASE)) .. "/" .. tostring(released:IsReason(REASON_COST)))
       `,
       "release-group.lua",
     );
@@ -216,6 +220,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("can release three false");
     expect(host.messages).toContain("selected releases 2");
     expect(host.messages).toContain("released 2");
+    expect(host.messages).toContain("previous location true");
+    expect(host.messages).toContain("previous controller true");
+    expect(host.messages).toContain("release reason true/true");
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "graveyard" && (card.code === "100" || card.code === "300"))).toHaveLength(2);
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "500")?.location).toBe("monsterZone");
   });

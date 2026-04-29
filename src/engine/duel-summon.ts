@@ -1,4 +1,5 @@
 import { findCard, getCards, hasZoneSpace, moveDuelCard, pushDuelLog, requireControlledCard, requireZoneSpace } from "./duel-card-state.js";
+import { duelReason } from "./duel-reasons.js";
 import type { DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "./duel-types.js";
 
 export type DuelEventCollector = (eventName: DuelEventName, eventCard?: DuelCardInstance) => void;
@@ -10,7 +11,7 @@ export function normalSummon(state: DuelState, player: PlayerId, uid: string, co
   if (tributeCountForNormalSummon(card) > 0) throw new Error(`${card.name} requires a Tribute Summon`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
   requireZoneSpace(state, player, "monsterZone");
-  moveDuelCard(state, uid, "monsterZone", player);
+  moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
   card.position = "faceUpAttack";
   card.summonType = "normal";
   state.players[player].normalSummonAvailable = false;
@@ -23,7 +24,7 @@ export function setMonster(state: DuelState, player: PlayerId, uid: string): voi
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
   requireZoneSpace(state, player, "monsterZone");
-  moveDuelCard(state, uid, "monsterZone", player);
+  moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
   card.position = "faceDownDefense";
   card.faceUp = false;
   state.players[player].normalSummonAvailable = false;
@@ -42,12 +43,12 @@ export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: s
   if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
   for (const tributeUid of uniqueTributes) requireControlledCard(state, player, tributeUid, "monsterZone");
   for (const tributeUid of uniqueTributes) {
-    const tribute = moveDuelCard(state, tributeUid, "graveyard", player);
+    const tribute = moveDuelCard(state, tributeUid, "graveyard", player, duelReason.release | duelReason.summon);
     pushDuelLog(state, "release", player, tribute.name, `Tributed for ${card.name}`);
     collectEvent("sentToGraveyard", tribute);
   }
 
-  moveDuelCard(state, uid, "monsterZone", player);
+  moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "tribute";
@@ -70,12 +71,12 @@ export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
 export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
   const { card, materials } = requireExtraDeckSummonMaterials(state, player, uid, materialUids, cardDataMaterials(state, player, uid, "fusion"), "fusion", ["hand", "monsterZone"]);
   for (const material of materials) {
-    moveDuelCard(state, material.uid, "graveyard", player);
+    moveDuelCard(state, material.uid, "graveyard", player, duelReason.material | duelReason.fusion);
     pushDuelLog(state, "fusionMaterial", player, material.name, `Used for ${card.name}`);
     collectEvent("sentToGraveyard", material);
   }
 
-  moveDuelCard(state, uid, "monsterZone", player);
+  moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.fusion);
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "fusion";
@@ -87,12 +88,12 @@ export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: st
 export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
   const { card, materials } = requireExtraDeckSummonMaterials(state, player, uid, materialUids, synchroMaterialCodes(requireControlledCard(state, player, uid, "extraDeck")), "synchro", ["monsterZone"]);
   for (const material of materials) {
-    moveDuelCard(state, material.uid, "graveyard", player);
+    moveDuelCard(state, material.uid, "graveyard", player, duelReason.material | duelReason.synchro);
     pushDuelLog(state, "synchroMaterial", player, material.name, `Used for ${card.name}`);
     collectEvent("sentToGraveyard", material);
   }
 
-  moveDuelCard(state, uid, "monsterZone", player);
+  moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.synchro);
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "synchro";
@@ -105,12 +106,12 @@ export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: strin
   const { card, materials } = requireExtraDeckSummonMaterials(state, player, uid, materialUids, cardDataMaterials(state, player, uid, "Xyz"), "Xyz", ["monsterZone"]);
   card.overlayUids = [];
   for (const material of materials) {
-    moveDuelCard(state, material.uid, "overlay", player);
+    moveDuelCard(state, material.uid, "overlay", player, duelReason.material | duelReason.xyz);
     card.overlayUids.push(material.uid);
     pushDuelLog(state, "xyzMaterial", player, material.name, `Attached to ${card.name}`);
   }
 
-  moveDuelCard(state, uid, "monsterZone", player);
+  moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.xyz);
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "xyz";
@@ -122,12 +123,12 @@ export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: strin
 export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
   const { card, materials } = requireExtraDeckSummonMaterials(state, player, uid, materialUids, cardDataMaterials(state, player, uid, "Link"), "Link", ["monsterZone"]);
   for (const material of materials) {
-    moveDuelCard(state, material.uid, "graveyard", player);
+    moveDuelCard(state, material.uid, "graveyard", player, duelReason.material | duelReason.link);
     pushDuelLog(state, "linkMaterial", player, material.name, `Used for ${card.name}`);
     collectEvent("sentToGraveyard", material);
   }
 
-  moveDuelCard(state, uid, "monsterZone", player);
+  moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.link);
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "link";
@@ -151,12 +152,12 @@ export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: st
   requireZoneSpace(state, player, "monsterZone");
 
   for (const material of materials) {
-    moveDuelCard(state, material.uid, "graveyard", player);
+    moveDuelCard(state, material.uid, "graveyard", player, duelReason.material | duelReason.ritual);
     pushDuelLog(state, "ritualMaterial", player, material.name, `Used for ${card.name}`);
     collectEvent("sentToGraveyard", material);
   }
 
-  moveDuelCard(state, uid, "monsterZone", player);
+  moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.ritual);
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "ritual";

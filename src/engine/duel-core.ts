@@ -10,6 +10,7 @@ import {
   requireZoneSpace,
   resequence,
 } from "./duel-card-state.js";
+import { duelReason } from "./duel-reasons.js";
 import {
   flipSummonActions,
   flipSummonDuelCard as flipSummonDuelCardWithEvents,
@@ -290,7 +291,7 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
   const summonController = controller ?? card.controller;
   requireZoneSpace(state, summonController, "monsterZone");
-  moveDuelCard(state, uid, "monsterZone", summonController);
+  moveDuelCard(state, uid, "monsterZone", summonController, duelReason.summon | duelReason.specialSummon);
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "special";
@@ -299,25 +300,25 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   return card;
 }
 
-export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
   requireMoveAllowed(state, uid, "graveyard");
-  const card = moveDuelCard(state, uid, "graveyard", controller);
+  const card = moveDuelCard(state, uid, "graveyard", controller, reason);
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
   collectTriggerEffects(state, "sentToGraveyard", card);
   return card;
 }
 
-export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy): DuelCardInstance {
   requireMoveAllowed(state, uid, "graveyard");
-  const card = moveDuelCard(state, uid, "graveyard", controller);
+  const card = moveDuelCard(state, uid, "graveyard", controller, reason);
   pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
   collectTriggerEffects(state, "sentToGraveyard", card);
   return card;
 }
 
-export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
   requireMoveAllowed(state, uid, "banished");
-  const card = moveDuelCard(state, uid, "banished", controller);
+  const card = moveDuelCard(state, uid, "banished", controller, reason);
   pushDuelLog(state, "banish", card.controller, card.name, "Banished");
   collectTriggerEffects(state, "banished", card);
   return card;
@@ -432,7 +433,7 @@ function setSpellTrap(state: DuelState, player: PlayerId, uid: string): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "spell" && card.kind !== "trap") throw new Error(`${card.name} is not a spell/trap`);
   requireZoneSpace(state, player, "spellTrapZone");
-  moveDuelCard(state, uid, "spellTrapZone", player);
+  moveDuelCard(state, uid, "spellTrapZone", player, duelReason.rule);
   card.position = "faceDown";
   card.faceUp = false;
   pushDuelLog(state, "set", player, card.name, "Set from hand");
@@ -525,7 +526,7 @@ function draw(state: DuelState, player: PlayerId, count: number, detail: string)
   for (let index = 0; index < count; index += 1) {
     const card = getCards(state, player, "deck").sort((a, b) => a.sequence - b.sequence)[0];
     if (!card) return drawn;
-    moveDuelCard(state, card.uid, "hand", player);
+    moveDuelCard(state, card.uid, "hand", player, duelReason.rule);
     pushDuelLog(state, "draw", player, card.name, detail);
     drawn += 1;
   }
@@ -544,7 +545,7 @@ function createEffectContext(state: DuelState, source: DuelCardInstance, player:
       pushDuelLog(state, "effect", player, source.name, detail);
     },
     moveCard(uid, to, controller) {
-      return moveDuelCard(state, uid, to, controller);
+      return moveDuelCard(state, uid, to, controller, duelReason.effect);
     },
     negateChainLink(chainLinkId) {
       return negateDuelChainLink(state, chainLinkId, player, source.name);

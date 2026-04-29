@@ -60,6 +60,12 @@ export interface DuelCardInstance {
   position: CardPosition;
   overlayUids: string[];
   faceUp: boolean;
+  previousLocation?: DuelLocation;
+  previousController?: PlayerId;
+  previousSequence?: number;
+  previousPosition?: CardPosition;
+  previousFaceUp?: boolean;
+  reason?: number;
   summonType?: DuelSummonType;
   data: DuelCardData;
 }

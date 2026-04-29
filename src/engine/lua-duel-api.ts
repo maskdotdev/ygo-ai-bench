@@ -19,6 +19,7 @@ import {
   xyzSummonDuelCard,
 } from "./duel-core.js";
 import { pushCardTable } from "./lua-card-api.js";
+import { duelReason } from "./duel-reasons.js";
 import { pushGroupTable } from "./lua-group-api.js";
 import {
   locationsFromMask,
@@ -29,9 +30,11 @@ import {
   releaseOptionalFunctionRef,
 } from "./lua-api-utils.js";
 import { shuffle } from "./rng.js";
-import type { CardPosition, DuelLocation, DuelSession, PlayerId } from "./duel-types.js";
+import type { CardPosition, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "./duel-types.js";
 
 const { lua, to_luastring } = fengari;
+
+type LuaCardMover = (state: DuelState, uid: string, controller?: PlayerId, reason?: number) => DuelCardInstance;
 
 export interface LuaDuelApiHostState {
   messages: string[];
@@ -159,7 +162,7 @@ function installMoveHelpers(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("SendtoGrave"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroup(session, state, destroyDuelCard));
+    lua.lua_pushinteger(state, moveCardOrGroup(session, state, destroyDuelCard, duelReason.destroy));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Destroy"));
@@ -169,22 +172,22 @@ function installMoveHelpers(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("Remove"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroup(session, state, sendDuelCardToGraveyard));
+    lua.lua_pushinteger(state, moveCardOrGroup(session, state, sendDuelCardToGraveyard, duelReason.release));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Release"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "hand"));
+    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "hand", 3));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SendtoHand"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "deck"));
+    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "deck", 4));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SendtoDeck"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "extraDeck"));
+    lua.lua_pushinteger(state, moveCardOrGroupToLocation(session, state, "extraDeck", 3));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SendtoExtraP"));
@@ -428,13 +431,14 @@ function findOperationInfo(operationInfos: LuaDuelOperationInfo[], chainIndex: n
   return undefined;
 }
 
-function moveCardOrGroup(session: DuelSession, L: unknown, mover: typeof sendDuelCardToGraveyard): number {
+function moveCardOrGroup(session: DuelSession, L: unknown, mover: LuaCardMover, extraReason = 0): number {
+  const reason = readMoveReason(L, 2, extraReason);
   let moved = 0;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
     try {
-      mover(session.state, uid, card.controller);
+      mover(session.state, uid, card.controller, reason);
       moved += 1;
     } catch {
       // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
@@ -443,15 +447,22 @@ function moveCardOrGroup(session: DuelSession, L: unknown, mover: typeof sendDue
   return moved;
 }
 
-function moveCardOrGroupToLocation(session: DuelSession, L: unknown, location: DuelLocation): number {
+function moveCardOrGroupToLocation(session: DuelSession, L: unknown, location: DuelLocation, reasonIndex: number): number {
+  const reason = readMoveReason(L, reasonIndex, 0);
   let moved = 0;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || !canMoveDuelCardToLocation(session.state, uid, location)) continue;
-    moveDuelCard(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller);
+    moveDuelCard(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason);
     moved += 1;
   }
   return moved;
+}
+
+function readMoveReason(L: unknown, index: number, extraReason: number): number | undefined {
+  const reason = lua.lua_isnumber(L, index) ? lua.lua_tointeger(L, index) : undefined;
+  if (reason === undefined && extraReason === 0) return undefined;
+  return (reason ?? 0) | extraReason;
 }
 
 function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, position: CardPosition): void {
