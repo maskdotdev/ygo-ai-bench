@@ -46,6 +46,7 @@ import {
   specialSummonDuelByProcedure,
   type DuelActivationHandlers,
 } from "#duel/effect-activation.js";
+import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import {
   attackActions,
   canChangeDuelCardPosition as canChangeDuelCardPositionRule,
@@ -802,6 +803,7 @@ function passChain(state: DuelState, player: PlayerId): void {
 }
 
 function resolveChain(state: DuelState): void {
+  const rollback = captureDuelState(state);
   state.status = "resolving";
   try {
     while (state.chain.length) {
@@ -831,6 +833,9 @@ function resolveChain(state: DuelState): void {
       );
       effect.operation(ctx);
     }
+  } catch (error) {
+    restoreDuelState(state, rollback);
+    throw error;
   } finally {
     clearChainLimits(state);
   }
