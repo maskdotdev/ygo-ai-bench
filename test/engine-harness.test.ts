@@ -664,6 +664,65 @@ describe("EDOPro compatibility harness scaffolding", () => {
     });
   });
 
+  it("lets Lua effects clone metadata and override callbacks independently", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Clone Source", kind: "monster" },
+      { code: "200", name: "Other Card", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 27, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetDescription(111)
+        e:SetLabel(5)
+        e:SetValue(10)
+        e:SetOperation(function(e,c)
+          Debug.Message("base op " .. e:GetDescription() .. "/" .. e:GetLabel() .. "/" .. e:GetValue())
+        end)
+        local e2=e:Clone()
+        Debug.Message("clone initial " .. e2:GetDescription() .. "/" .. e2:GetLabel() .. "/" .. e2:GetValue() .. "/" .. e2:GetRange())
+        e2:SetDescription(222)
+        e2:SetLabel(9)
+        e2:SetValue(20)
+        e2:SetOperation(function(e,c)
+          Debug.Message("clone op " .. e:GetDescription() .. "/" .. e:GetLabel() .. "/" .. e:GetValue())
+        end)
+        c:RegisterEffect(e)
+        c:RegisterEffect(e2)
+      end
+      `,
+      "effect-clone.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(host.messages).toContain("clone initial 111/5/10/2");
+    expect(session.state.effects).toHaveLength(2);
+    expect(session.state.effects[0]).toMatchObject({ description: 111, range: ["hand"] });
+    expect(session.state.effects[1]).toMatchObject({ description: 222, range: ["hand"] });
+
+    const baseAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === session.state.effects[0]?.id);
+    expect(baseAction).toBeDefined();
+    expect(applyResponse(session, baseAction!).ok).toBe(true);
+    const cloneAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === session.state.effects[1]?.id);
+    expect(cloneAction).toBeDefined();
+    expect(applyResponse(session, cloneAction!).ok).toBe(true);
+
+    expect(host.messages).toContain("base op 111/5/10");
+    expect(host.messages).toContain("clone op 222/9/20");
+  });
+
   it("shares Lua keyed count limits across effect copies", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Count Source", kind: "monster" }];
     const session = createDuel({ seed: 21, startingHandSize: 2, cardReader: createCardReader(cards) });

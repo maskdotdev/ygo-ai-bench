@@ -77,7 +77,7 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
     operationInfos: [],
     operatedUids: [],
     pushEffectTable(state, id) {
-      pushLuaEffectTable(state, id, hostState.effects, hostState.session);
+      pushLuaEffectTable(state, id, hostState);
     },
   };
   lualib.luaL_openlibs(L);
@@ -147,7 +147,7 @@ function installEffectApi(L: unknown, hostState: LuaHostState): void {
     hostState.nextEffectId += 1;
     const sourceUid = readCardUid(state, 1);
     hostState.effects.set(id, { id, typeFlags: 0, ...(sourceUid === undefined ? {} : { sourceUid }) });
-    pushLuaEffectTable(state, id, hostState.effects, hostState.session);
+    pushLuaEffectTable(state, id, hostState);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("CreateEffect"));
@@ -160,10 +160,16 @@ function readLuaError(L: unknown): string {
   return message;
 }
 
-function pushLuaEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectRecord>, session: DuelSession): void {
+function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): void {
+  const { effects, session } = hostState;
   lua.lua_newtable(L);
   lua.lua_pushinteger(L, id);
   lua.lua_setfield(L, -2, to_luastring("__effect_id"));
+  pushEffectMethod(L, effects, "Clone", (state, effect) => {
+    const cloneId = cloneLuaEffectRecord(hostState, effect);
+    pushLuaEffectTable(state, cloneId, hostState);
+    return 1;
+  });
   pushEffectMethod(L, effects, "GetHandler", (state, effect) => {
     if (!effect.sourceUid) {
       lua.lua_pushnil(state);
@@ -289,6 +295,17 @@ function pushEffectMethod(L: unknown, effects: Map<number, LuaEffectRecord>, nam
   lua.lua_setfield(L, -2, to_luastring(name));
 }
 
+function cloneLuaEffectRecord(hostState: LuaHostState, effect: LuaEffectRecord): number {
+  const id = hostState.nextEffectId;
+  hostState.nextEffectId += 1;
+  const clone: LuaEffectRecord = { ...effect, id };
+  if (effect.range) clone.range = [...effect.range];
+  if (effect.hintTiming) clone.hintTiming = [...effect.hintTiming];
+  if (effect.reset) clone.reset = { ...effect.reset };
+  hostState.effects.set(id, clone);
+  return id;
+}
+
 function setEffectNumberField(field: "typeFlags" | "code" | "description" | "category" | "property") {
   return (state: unknown, effect: LuaEffectRecord): number => {
     if (lua.lua_isnumber(state, 2)) effect[field] = lua.lua_tointeger(state, 2);
@@ -364,7 +381,7 @@ function triggerEventFromCode(code: number | undefined): DuelEventName | undefin
 
 function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ctx?: DuelEffectContext): number {
   const legacyArgs = secondParameterName(L, -1) === "c";
-  pushLuaEffectTable(L, luaEffect.id, hostState.effects, hostState.session);
+  pushLuaEffectTable(L, luaEffect.id, hostState);
   if (legacyArgs) {
     pushCardTable(L, card.uid);
     return 2;
@@ -399,7 +416,7 @@ function secondParameterName(L: unknown, functionIndex: number): string | undefi
 function pushRelatedEffectTable(L: unknown, hostState: LuaHostState): void {
   const link = hostState.session.state.chain[hostState.session.state.chain.length - 1];
   const id = Number(link?.effectId.match(/^lua-(\d+)/)?.[1]);
-  if (Number.isFinite(id)) pushLuaEffectTable(L, id, hostState.effects, hostState.session);
+  if (Number.isFinite(id)) pushLuaEffectTable(L, id, hostState);
   else lua.lua_pushnil(L);
 }
 
