@@ -1110,6 +1110,49 @@ describe("full duel engine API", () => {
     expect(result.state.log.some((entry) => entry.action === "fusionSummon" && entry.card === "Fusion Test Monster")).toBe(true);
   });
 
+  it("rolls back failed fusion summon material moves from responses", () => {
+    const session = createDuel({ seed: 88, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    const firstMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockedMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(fusion).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "cannot-send-second-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 68,
+      range: ["hand"],
+      canActivate(ctx) {
+        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "graveyard";
+      },
+      operation() {},
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("fusionSummon");
+    if (!action || action.type !== "fusionSummon") throw new Error("Expected fusion summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
+    expect(session.state.pendingTriggers).toHaveLength(0);
+    expect(session.state.log.some((entry) => entry.action === "fusionMaterial")).toBe(false);
+  });
+
   it("fusion summons using mixed hand and field materials and emits special summon triggers", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

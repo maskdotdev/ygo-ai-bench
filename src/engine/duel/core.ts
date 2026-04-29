@@ -251,6 +251,7 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
   const isLegal = legal.some((action) => sameAction(action, response));
   if (!isLegal) return result(session, false, "Response is not currently legal");
 
+  const rollback = captureDuelState(session.state);
   try {
     if (response.type === "normalSummon") normalSummon(session.state, response.player, response.uid, (eventName, eventCard) => collectTriggerEffects(session.state, eventName, eventCard));
     else if (response.type === "tributeSummon") tributeSummonDuelCard(session.state, response.player, response.uid, response.tributeUids);
@@ -274,6 +275,7 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
     else if (response.type === "endTurn") endTurn(session.state, response.player);
     return result(session, true);
   } catch (error) {
+    restoreDuelState(session.state, rollback);
     return result(session, false, error instanceof Error ? error.message : "Unknown duel engine error");
   }
 }
