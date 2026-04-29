@@ -204,6 +204,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local filter = function(tc) return tc:IsCode(100) or tc:IsCode(300) end
       Debug.Message("can release two " .. tostring(Duel.CheckReleaseGroup(0, filter, 2, nil)))
       Debug.Message("can release three " .. tostring(Duel.CheckReleaseGroup(0, filter, 3, nil)))
+      Debug.Message("can release ex two " .. tostring(Duel.CheckReleaseGroupEx(0, filter, 2, 2, nil)))
+      Debug.Message("can release ex three " .. tostring(Duel.CheckReleaseGroupEx(0, filter, 3, 3, nil)))
+      local gx = Duel.SelectReleaseGroupEx(0, filter, 1, 1, nil)
+      Debug.Message("selected releases ex " .. gx:GetCount())
       local g = Duel.SelectReleaseGroup(0, filter, 1, 2, nil)
       Debug.Message("selected releases " .. g:GetCount())
       Debug.Message("released " .. Duel.Release(g, REASON_COST))
@@ -218,6 +222,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("can release two true");
     expect(host.messages).toContain("can release three false");
+    expect(host.messages).toContain("can release ex two true");
+    expect(host.messages).toContain("can release ex three false");
+    expect(host.messages).toContain("selected releases ex 1");
     expect(host.messages).toContain("selected releases 2");
     expect(host.messages).toContain("released 2");
     expect(host.messages).toContain("previous location true");
@@ -589,15 +596,20 @@ describe("EDOPro compatibility harness scaffolding", () => {
         return c:GetAttack() >= minatk
       end
       Debug.Message("vararg release check " .. tostring(Duel.CheckReleaseGroup(0, release_filter, 2, nil, 1500)))
+      Debug.Message("vararg release ex check " .. tostring(Duel.CheckReleaseGroupEx(0, release_filter, 2, 2, nil, 1500)))
       local g = Duel.SelectReleaseGroup(0, release_filter, 1, 2, nil, 1500)
       Debug.Message("vararg release selected " .. g:GetCount())
+      local gx = Duel.SelectReleaseGroupEx(0, release_filter, 1, 1, nil, 1500)
+      Debug.Message("vararg release ex selected " .. gx:GetCount())
       `,
       "release-varargs.lua",
     );
 
     expect(releaseResult.ok).toBe(true);
     expect(host.messages).toContain("vararg release check true");
+    expect(host.messages).toContain("vararg release ex check true");
     expect(host.messages).toContain("vararg release selected 2");
+    expect(host.messages).toContain("vararg release ex selected 1");
   });
 
   it("lets Lua scripts mutate and filter groups", () => {

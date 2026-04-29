@@ -22,6 +22,7 @@ import { installDuelDeckApi } from "./lua-duel-deck-api.js";
 import { installDuelLocationApi } from "./lua-duel-location-api.js";
 import { installDuelLpApi } from "./lua-duel-lp-api.js";
 import { installDuelPlayerApi } from "./lua-duel-player-api.js";
+import { installDuelReleaseApi } from "./lua-duel-release-api.js";
 import { installDuelTurnApi } from "./lua-duel-turn-api.js";
 import { pushGroupTable } from "./lua-group-api.js";
 import {
@@ -127,6 +128,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installMoveHelpers(L, session, hostState);
   installSummonHelpers(L, session, hostState);
   installQueryHelpers(L, session, hostState);
+  installDuelReleaseApi(L, session);
   installOperationInfoHelpers(L, hostState);
   installFlagHelpers(L, session);
   lua.lua_setglobal(L, to_luastring("Duel"));
@@ -408,29 +410,6 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
   });
   lua.lua_setfield(L, -2, to_luastring("GetFirstMatchingCard"));
   installDuelLocationApi(L, session);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const filterRef = readOptionalFunctionRef(state, 2);
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const minimum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
-    const excluded = readCardUid(state, 4);
-    const count = matchingCardUidsWithFilter(state, session, filterRef, player, 0x04, 0, excluded, readFilterArgs(state, 5)).length;
-    releaseOptionalFunctionRef(state, filterRef);
-    lua.lua_pushboolean(state, count >= minimum);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("CheckReleaseGroup"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const filterRef = readOptionalFunctionRef(state, 2);
-    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const min = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
-    const max = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : min;
-    const excluded = readCardUid(state, 5);
-    const uids = matchingCardUidsWithFilter(state, session, filterRef, player, 0x04, 0, excluded, readFilterArgs(state, 6));
-    releaseOptionalFunctionRef(state, filterRef);
-    pushGroupTable(state, uids.slice(0, max > 0 ? max : Math.max(min, 1)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("SelectReleaseGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session, hostState.activeTargetUids));
