@@ -478,6 +478,58 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("spell count 1");
   });
 
+  it("passes extra filter arguments through Lua matching helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Vararg A", kind: "monster", attack: 1600 },
+      { code: "200", name: "Vararg B", kind: "monster", attack: 900 },
+      { code: "300", name: "Vararg C", kind: "monster", attack: 2000 },
+    ];
+    const session = createDuel({ seed: 23, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const handResult = host.loadScript(
+      `
+      local function match(c, code, minatk)
+        return c:IsCode(code) and c:GetAttack() >= minatk
+      end
+      local selected = Duel.SelectMatchingCard(0, match, 0, LOCATION_HAND, 0, 1, 1, nil, 100, 1500)
+      Debug.Message("vararg selected " .. selected:GetFirst():GetCode())
+      Debug.Message("vararg count " .. Duel.GetMatchingGroupCount(match, 0, LOCATION_HAND, 0, nil, 300, 1800))
+      Debug.Message("vararg existing " .. tostring(Duel.IsExistingMatchingCard(match, 0, LOCATION_HAND, 0, 1, nil, 200, 1000)))
+      `,
+      "matching-varargs.lua",
+    );
+
+    expect(handResult.ok).toBe(true);
+    expect(host.messages).toContain("vararg selected 100");
+    expect(host.messages).toContain("vararg count 1");
+    expect(host.messages).toContain("vararg existing false");
+
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+    const releaseResult = host.loadScript(
+      `
+      local function release_filter(c, minatk)
+        return c:GetAttack() >= minatk
+      end
+      Debug.Message("vararg release check " .. tostring(Duel.CheckReleaseGroup(0, release_filter, 2, nil, 1500)))
+      local g = Duel.SelectReleaseGroup(0, release_filter, 1, 2, nil, 1500)
+      Debug.Message("vararg release selected " .. g:GetCount())
+      `,
+      "release-varargs.lua",
+    );
+
+    expect(releaseResult.ok).toBe(true);
+    expect(host.messages).toContain("vararg release check true");
+    expect(host.messages).toContain("vararg release selected 2");
+  });
+
   it("lets Lua scripts mutate and filter groups", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Group A", kind: "monster", attack: 1000 },
