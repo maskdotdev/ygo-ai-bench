@@ -1445,11 +1445,13 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalNumber("EFFECT_TYPE_IGNITION")).toBe(0x40);
     expect(host.getGlobalNumber("EFFECT_TYPE_TRIGGER_O")).toBe(0x80);
     expect(host.getGlobalNumber("EFFECT_TYPE_CONTINUOUS")).toBe(0x800);
+    expect(host.getGlobalNumber("CATEGORY_DISABLE")).toBe(0x4000);
+    expect(host.getGlobalNumber("CATEGORY_NEGATE")).toBe(0x10000000);
     expect(host.registerInitialEffects()).toBe(2);
     expect(host.messages).toContain("effect predicates true/true/true");
     expect(host.messages).toContain("effect callbacks true/true/true/true");
     expect(host.messages).toContain("effect value function 107");
-    expect(host.messages).toContain("effect getters 64/64/1234/384/65552/2");
+    expect(host.messages).toContain("effect getters 64/64/1234/196608/65552/2");
     expect(host.messages).toContain("effect target range 4/16");
     expect(host.messages).toContain("effect count reset 2/987/12288/1");
     expect(host.messages).toContain("effect value number 2500");
@@ -1457,7 +1459,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
       triggerEvent: "normalSummoned",
       range: ["hand"],
       description: 1234,
-      category: 0x180,
+      category: 0x30000,
       property: 0x10010,
       targetRange: [0x04, 0x10],
       hintTiming: [0x20, 0x4],
@@ -1768,7 +1770,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
     applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
     expect(host.messages).toContain("operation info true/8/1/1/0/0");
-    expect(host.messages).toContain("possible operation info true/128/0/0/1/2");
+    expect(host.messages).toContain("possible operation info true/65536/0/0/1/2");
     expect(host.messages).toContain("possible separate false");
     expect(host.messages).toContain("target relates true");
   });

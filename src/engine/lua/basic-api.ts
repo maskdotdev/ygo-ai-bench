@@ -47,12 +47,33 @@ export function installConstants(L: unknown): void {
     CATEGORY_TOHAND: 0x8,
     CATEGORY_TODECK: 0x10,
     CATEGORY_TOGRAVE: 0x20,
-    CATEGORY_SPECIAL_SUMMON: 0x40,
-    CATEGORY_DRAW: 0x80,
-    CATEGORY_SEARCH: 0x100,
-    CATEGORY_DAMAGE: 0x200,
-    CATEGORY_RECOVER: 0x400,
-    CATEGORY_NEGATE: 0x1000,
+    CATEGORY_DECKDES: 0x40,
+    CATEGORY_HANDES: 0x80,
+    CATEGORY_SUMMON: 0x100,
+    CATEGORY_SPECIAL_SUMMON: 0x200,
+    CATEGORY_TOKEN: 0x400,
+    CATEGORY_FLIP: 0x800,
+    CATEGORY_POSITION: 0x1000,
+    CATEGORY_CONTROL: 0x2000,
+    CATEGORY_DISABLE: 0x4000,
+    CATEGORY_DISABLE_SUMMON: 0x8000,
+    CATEGORY_DRAW: 0x10000,
+    CATEGORY_SEARCH: 0x20000,
+    CATEGORY_EQUIP: 0x40000,
+    CATEGORY_DAMAGE: 0x80000,
+    CATEGORY_RECOVER: 0x100000,
+    CATEGORY_ATKCHANGE: 0x200000,
+    CATEGORY_DEFCHANGE: 0x400000,
+    CATEGORY_COUNTER: 0x800000,
+    CATEGORY_COIN: 0x1000000,
+    CATEGORY_DICE: 0x2000000,
+    CATEGORY_LEAVE_GRAVE: 0x4000000,
+    CATEGORY_LVCHANGE: 0x8000000,
+    CATEGORY_NEGATE: 0x10000000,
+    CATEGORY_ANNOUNCE: 0x20000000,
+    CATEGORY_FUSION_SUMMON: 0x40000000,
+    CATEGORY_TOEXTRA: 0x80000000,
+    CATEGORY_SET: 0x100000000,
     EFFECT_FLAG_CARD_TARGET: 0x10,
     EFFECT_FLAG_DAMAGE_STEP: 0x20,
     EFFECT_FLAG_DAMAGE_CAL: 0x40,
@@ -160,9 +181,14 @@ export function installConstants(L: unknown): void {
     ACTIVITY_ATTACK: duelActivity.attack,
   };
   for (const [name, value] of Object.entries(constants)) {
-    lua.lua_pushinteger(L, value);
+    pushLuaNumericConstant(L, value);
     lua.lua_setglobal(L, to_luastring(name));
   }
+}
+
+function pushLuaNumericConstant(L: unknown, value: number): void {
+  if (Number.isInteger(value) && value >= -0x80000000 && value <= 0x7fffffff) lua.lua_pushinteger(L, value);
+  else lua.lua_pushnumber(L, value);
 }
 
 export function installDebugApi(L: unknown, messages: string[]): void {
