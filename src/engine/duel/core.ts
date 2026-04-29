@@ -50,6 +50,7 @@ import {
   isMoveToLocationPrevented,
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
+  moveDestinationRedirectLocation,
   shouldRedirectBanishMove,
   shouldRedirectToGraveyardMove,
   type ContinuousEffectContextFactory,
@@ -345,7 +346,8 @@ export function banishDuelCard(state: DuelState, uid: string, controller?: Playe
 }
 
 export function moveDuelCardWithRedirects(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
-  const redirectLocation = leaveFieldRedirectLocation(state, uid, to, createContinuousEffectContext(state));
+  const createContext = createContinuousEffectContext(state);
+  const redirectLocation = moveDestinationRedirectLocation(state, uid, to, createContext) ?? leaveFieldRedirectLocation(state, uid, to, createContext);
   const destination = redirectLocation ?? to;
   const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
   requireDuelMoveAllowed(state, uid, destination, moveReason);

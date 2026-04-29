@@ -45,31 +45,32 @@ export function isAttackPrevented(state: DuelState, card: DuelCardInstance, crea
 }
 
 export function shouldRedirectToGraveyardMove(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): boolean {
-  const card = findCard(state, uid);
-  if (!card) return false;
-  for (const effect of state.effects) {
-    if (effect.event !== "continuous" || effect.code !== 63) continue;
-    const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
-    const ctx = createContext(effect, source, card);
-    if (!effect.canActivate || effect.canActivate(ctx)) return true;
-  }
-  return false;
+  return moveDestinationRedirectLocation(state, uid, "graveyard", createContext) === "banished";
 }
 
 export function shouldRedirectBanishMove(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): boolean {
+  return moveDestinationRedirectLocation(state, uid, "banished", createContext) === "graveyard";
+}
+
+export function moveDestinationRedirectLocation(
+  state: DuelState,
+  uid: string,
+  destination: DuelLocation,
+  createContext: ContinuousEffectContextFactory,
+): DuelLocation | undefined {
   const card = findCard(state, uid);
-  if (!card) return false;
+  if (!card) return undefined;
   for (const effect of state.effects) {
-    if (effect.event !== "continuous" || effect.code !== 64) continue;
+    if (effect.event !== "continuous" || !isDestinationRedirectCode(effect.code, destination)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const redirectLocation = locationFromRedirectValue(effect.value) ?? fallbackRedirectLocation(effect.code);
+    if (!redirectLocation) continue;
     const ctx = createContext(effect, source, card);
-    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+    if (!effect.canActivate || effect.canActivate(ctx)) return redirectLocation;
   }
-  return false;
+  return undefined;
 }
 
 export function leaveFieldRedirectLocation(
@@ -161,6 +162,20 @@ function locationFromRedirectValue(value: number | undefined): DuelLocation | un
   if (value === 0x40) return "extraDeck";
   if (value === 0x01) return "deck";
   return undefined;
+}
+
+function fallbackRedirectLocation(code: number | undefined): DuelLocation | undefined {
+  if (code === 63) return "banished";
+  if (code === 64) return "graveyard";
+  return undefined;
+}
+
+function isDestinationRedirectCode(code: number | undefined, destination: DuelLocation): boolean {
+  if (code === 61) return destination === "hand";
+  if (code === 62) return destination === "deck";
+  if (code === 63) return destination === "graveyard";
+  if (code === 64) return destination === "banished";
+  return false;
 }
 
 function isFieldLocation(location: DuelLocation): boolean {
