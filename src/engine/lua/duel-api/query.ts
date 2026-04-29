@@ -56,10 +56,10 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("SelectMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session, hostState.activeTargetUids));
   lua.lua_setfield(L, -2, to_luastring("SelectTarget"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushFirstTarget(state, hostState));
+  lua.lua_pushcfunction(L, (state: unknown) => pushFirstTarget(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetFirstTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    pushGroupTable(state, hostState.activeTargetUids ?? []);
+    pushGroupTable(state, effectiveTargetUids(session, hostState));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetTargetCards"));
@@ -245,14 +245,21 @@ function pushSelectSubGroup(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function pushFirstTarget(L: unknown, hostState: LuaDuelQueryApiHostState): number {
-  const target = hostState.activeTargetUids?.[0];
+function pushFirstTarget(L: unknown, session: DuelSession, hostState: LuaDuelQueryApiHostState): number {
+  const target = effectiveTargetUids(session, hostState)[0];
   if (!target) {
     lua.lua_pushnil(L);
     return 1;
   }
   pushCardTable(L, target);
   return 1;
+}
+
+function effectiveTargetUids(session: DuelSession, hostState: LuaDuelQueryApiHostState): string[] {
+  if (hostState.activeTargetUids?.length) return hostState.activeTargetUids;
+  if (hostState.activeContext?.chainLink) return hostState.activeContext.targetUids;
+  const chainTargetUids = session.state.chain[session.state.chain.length - 1]?.targetUids;
+  return chainTargetUids ?? [];
 }
 
 function readMatchingQuery(L: unknown, session: DuelSession, filterIndex: number, playerIndex: number, selfIndex: number, opponentIndex: number, excludedIndex: number, argsIndex: number): MatchingQuery {

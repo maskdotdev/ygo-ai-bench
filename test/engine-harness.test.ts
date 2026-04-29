@@ -1886,6 +1886,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           Debug.Message("chain id disable " .. tostring(chain_id>0) .. "/" .. disable_reason .. "/" .. disable_player)
           local mat=Duel.GetChainMaterial(1)
           Debug.Message("chain material " .. mat:GetCount() .. "/" .. mat:GetFirst():GetCode())
+          Debug.Message("chain target fallback " .. Duel.GetTargetCards():GetCount() .. "/" .. Duel.GetFirstTarget():GetCode())
           Debug.Message("chain target checks " .. tostring(Duel.CheckChainTarget(1,tg:GetFirst())) .. "/" .. tostring(Duel.CheckChainTarget(1,e:GetHandler())))
           Debug.Message("chain unique " .. tostring(Duel.CheckChainUniqueness()))
           return tp==0 and tc:IsCode(100) and tg:GetCount()==1 and handler:IsCode(100)
@@ -1918,6 +1919,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("chain type 64/1");
     expect(host.messages).toContain("chain id disable true/0/0");
     expect(host.messages).toContain("chain material 1/200");
+    expect(host.messages).toContain("chain target fallback 1/200");
     expect(host.messages).toContain("chain target checks true/false");
     expect(host.messages).toContain("chain unique true");
     expect(host.messages).toContain("quick resolved");
