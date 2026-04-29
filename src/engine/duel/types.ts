@@ -159,6 +159,8 @@ export interface ChainLink {
   targetPlayer?: PlayerId;
   targetParam?: number;
   negated?: boolean;
+  disableReason?: number;
+  disablePlayer?: PlayerId;
 }
 
 export interface PendingTrigger {

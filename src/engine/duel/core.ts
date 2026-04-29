@@ -746,6 +746,8 @@ export function negateDuelChainLink(state: DuelState, chainLinkId: string, playe
   const link = state.chain.find((candidate) => candidate.id === chainLinkId);
   if (!link || link.negated) return false;
   link.negated = true;
+  link.disableReason = duelReason.effect;
+  link.disablePlayer = player;
   pushDuelLog(state, "negate", player, cardName, link.effectId);
   return true;
 }
