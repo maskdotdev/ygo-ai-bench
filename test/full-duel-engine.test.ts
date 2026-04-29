@@ -461,6 +461,64 @@ describe("full duel engine API", () => {
     expect(resolved.state.log.some((entry) => entry.detail === "Should not resolve")).toBe(false);
   });
 
+  it("rolls back failed chain resolution after a pass", () => {
+    const session = createDuel({ seed: 85, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const moved = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(source).toBeTruthy();
+    expect(moved).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "pass-failing-operation",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        sendDuelCardToGraveyard(ctx.duel, moved!.uid, ctx.player);
+        throw new Error("passed operation failed");
+      },
+    });
+    registerEffect(session, {
+      id: "available-pass-response",
+      sourceUid: quickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Unused response");
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "pass-failing-operation");
+    expect(action).toBeTruthy();
+    const opened = applyResponse(session, action!);
+    expect(opened.ok).toBe(true);
+    expect(opened.state.chain).toHaveLength(1);
+    expect(opened.state.waitingFor).toBe(1);
+
+    const pass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeTruthy();
+    const result = applyResponse(session, pass!);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("passed operation failed");
+    expect(session.state.cards.find((card) => card.uid === source!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === moved!.uid)?.location).toBe("hand");
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chainPasses).toEqual([]);
+    expect(session.state.waitingFor).toBe(1);
+    expect(session.state.status).toBe("awaiting");
+  });
+
   it("marks once-per-turn quick effects as used when chained", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

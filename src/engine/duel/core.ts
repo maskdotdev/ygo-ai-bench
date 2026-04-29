@@ -792,14 +792,20 @@ function pushChainLink(
 }
 
 function passChain(state: DuelState, player: PlayerId): void {
-  if (!state.chain.length) throw new Error("No chain is pending");
-  if (!state.chainPasses.includes(player)) state.chainPasses.push(player);
-  const nextPlayer = otherPlayer(player);
-  if (state.chainPasses.includes(nextPlayer) || !hasChainResponses(state, nextPlayer)) {
-    resolveChain(state);
-    return;
+  const rollback = captureDuelState(state);
+  try {
+    if (!state.chain.length) throw new Error("No chain is pending");
+    if (!state.chainPasses.includes(player)) state.chainPasses.push(player);
+    const nextPlayer = otherPlayer(player);
+    if (state.chainPasses.includes(nextPlayer) || !hasChainResponses(state, nextPlayer)) {
+      resolveChain(state);
+      return;
+    }
+    state.waitingFor = nextPlayer;
+  } catch (error) {
+    restoreDuelState(state, rollback);
+    throw error;
   }
-  state.waitingFor = nextPlayer;
 }
 
 function resolveChain(state: DuelState): void {
