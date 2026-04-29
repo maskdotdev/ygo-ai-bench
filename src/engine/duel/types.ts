@@ -109,6 +109,7 @@ export interface DuelEffectDefinition {
   code?: number;
   value?: number;
   triggerEvent?: DuelEventName;
+  optional?: boolean;
   range: DuelLocation[];
   oncePerTurn?: boolean;
   countLimit?: number;

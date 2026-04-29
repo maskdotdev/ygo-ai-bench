@@ -167,6 +167,51 @@ describe("duel triggers", () => {
     expect(result.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "optional-trigger")).toBe(true);
   });
 
+  it("does not expose decline actions for mandatory trigger effects", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(summoned).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "mandatory-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      optional: false,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Mandatory trigger resolved");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+
+    const actions = getDuelLegalActions(session, 0);
+    expect(actions.map((action) => action.type)).toEqual(["activateTrigger"]);
+    expect(actions[0]).toMatchObject({ effectId: "mandatory-trigger" });
+    expect(
+      applyResponse(session, {
+        type: "declineTrigger",
+        player: 0,
+        triggerId: session.state.pendingTriggers[0]!.id,
+        uid: triggerSource!.uid,
+        effectId: "mandatory-trigger",
+        label: "Illegal decline",
+      }).ok,
+    ).toBe(false);
+  });
+
   it("lets a player choose the order of multiple pending triggers", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -255,6 +300,7 @@ describe("duel triggers", () => {
       controller: 0,
       event: "trigger",
       triggerEvent: "normalSummoned",
+      optional: false,
       range: ["hand"],
       operation(ctx) {
         ctx.log("Turn-player simultaneous trigger resolved");
@@ -269,10 +315,11 @@ describe("duel triggers", () => {
     expect(summonResult.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["turn-player-simultaneous-trigger", "opponent-simultaneous-trigger"]);
     expect(summonResult.state.waitingFor).toBe(0);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).map((action) => action.type)).toEqual(["activateTrigger"]);
 
-    const decline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === "turn-player-simultaneous-trigger");
-    expect(decline).toBeTruthy();
-    const declined = applyResponse(session, decline!);
+    const activate = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "turn-player-simultaneous-trigger");
+    expect(activate).toBeTruthy();
+    const declined = applyResponse(session, activate!);
 
     expect(declined.ok).toBe(true);
     expect(declined.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["opponent-simultaneous-trigger"]);
