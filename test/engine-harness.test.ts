@@ -1360,7 +1360,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
   });
 
   it("exposes card owner, controller, location, sequence, and position metadata", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "State Probe", kind: "monster" }];
+    const cards: DuelCardData[] = [{ code: "100", name: "State Probe", kind: "monster", typeFlags: 0x21, attack: 1700, defense: 1300, level: 4, race: 0x2, attribute: 0x20 }];
     const session = createDuel({ seed: 20, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
       0: { main: ["100"] },
@@ -1377,6 +1377,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
       `
       local c = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
       Debug.Message("card state " .. c:GetOwner() .. "/" .. tostring(c:IsOwner(0)) .. "/" .. c:GetControler() .. "/" .. c:GetLocation() .. "/" .. c:GetSequence() .. "/" .. c:GetPosition())
+      Debug.Message("original meta " .. c:GetOriginalCode() .. "/" .. c:GetOriginalType() .. "/" .. c:GetOriginalLevel() .. "/" .. c:GetOriginalRace() .. "/" .. c:GetOriginalAttribute())
+      Debug.Message("base stats " .. c:GetBaseAttack() .. "/" .. c:GetBaseDefense())
       Debug.Message("position checks " .. tostring(c:IsPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(c:IsControler(0)))
       Duel.SendtoGrave(c, REASON_EFFECT)
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
@@ -1388,6 +1390,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("card state 0/true/0/4/0/1");
+    expect(host.messages).toContain("original meta 100/33/4/2/32");
+    expect(host.messages).toContain("base stats 1700/1300");
     expect(host.messages).toContain("position checks true/true");
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous position true");

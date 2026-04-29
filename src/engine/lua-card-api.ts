@@ -61,6 +61,12 @@ function installCodeHelpers(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("GetCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
+    lua.lua_pushinteger(state, card ? Number(card.code) : 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetOriginalCode"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
     lua.lua_pushboolean(state, Boolean(card && requested && cardCodes(card).includes(requested)));
     return 1;
@@ -84,16 +90,22 @@ function installCodeHelpers(L: unknown, session: DuelSession): void {
 
 function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetType", session, (card) => cardTypeFlags(card));
+  pushNumberGetter(L, "GetOriginalType", session, (card) => cardTypeFlags(card));
   pushNumberMatcher(L, "IsType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
   pushNumberGetter(L, "GetAttack", session, (card) => card?.data.attack ?? 0);
+  pushNumberGetter(L, "GetBaseAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberMatcher(L, "IsAttack", session, (card, requested) => (card.data.attack ?? 0) === requested);
   pushNumberGetter(L, "GetDefense", session, (card) => card?.data.defense ?? 0);
+  pushNumberGetter(L, "GetBaseDefense", session, (card) => card?.data.defense ?? 0);
   pushNumberMatcher(L, "IsDefense", session, (card, requested) => (card.data.defense ?? 0) === requested);
   pushNumberGetter(L, "GetLevel", session, (card) => card?.data.level ?? 0);
+  pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
   pushNumberMatcher(L, "IsLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
   pushNumberGetter(L, "GetRace", session, (card) => card?.data.race ?? 0);
+  pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
   pushNumberMatcher(L, "IsRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
   pushNumberGetter(L, "GetAttribute", session, (card) => card?.data.attribute ?? 0);
+  pushNumberGetter(L, "GetOriginalAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberMatcher(L, "IsAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
 }
 
@@ -282,6 +294,7 @@ function isSummonTypeMatch(actual: number, requested: number): boolean {
 const cardFieldNames = [
   "RegisterEffect",
   "GetCode",
+  "GetOriginalCode",
   "IsCode",
   "IsOriginalCode",
   "IsSetCard",
@@ -289,16 +302,22 @@ const cardFieldNames = [
   "IsOwner",
   "GetControler",
   "GetType",
+  "GetOriginalType",
   "IsType",
   "GetAttack",
+  "GetBaseAttack",
   "IsAttack",
   "GetDefense",
+  "GetBaseDefense",
   "IsDefense",
   "GetLevel",
+  "GetOriginalLevel",
   "IsLevel",
   "GetRace",
+  "GetOriginalRace",
   "IsRace",
   "GetAttribute",
+  "GetOriginalAttribute",
   "IsAttribute",
   "IsFaceup",
   "IsFacedown",
