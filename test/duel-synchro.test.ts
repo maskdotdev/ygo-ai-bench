@@ -107,6 +107,33 @@ describe("duel synchro summons", () => {
     expect(session.state.cards.find((card) => card.uid === aliasNonTuner!.uid)?.location).toBe("graveyard");
   });
 
+  it("rejects non-monsters as synchro summon targets", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 2,
+      cardReader: createCardReader([
+        { code: "100", name: "Tuner Material", kind: "monster", typeFlags: 0x1001 },
+        { code: "300", name: "Non-Tuner Material", kind: "monster" },
+        { code: "910", name: "Impossible Synchro Spell", kind: "spell", synchroMaterials: { tuner: "100", nonTuners: ["300"] } },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["910"] },
+      1: { main: ["300", "300"] },
+    });
+    startDuel(session);
+
+    const target = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "910");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(target).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "synchroSummon" && candidate.uid === target!.uid)).toBe(false);
+    expect(() => synchroSummonDuelCard(session.state, 0, target!.uid, materials.map((card) => card.uid))).toThrow("is not a synchro monster");
+    expect(session.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("extraDeck");
+  });
+
   it("blocks synchro summons when material cannot be used as Synchro material", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

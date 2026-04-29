@@ -284,6 +284,7 @@ export function synchroSummonActions(state: DuelState, player: PlayerId, canUseM
   const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
+    if (!isMonsterLike(card)) continue;
     const materialUids = findSynchroMaterialUids(materialPool, card);
     if (!materialUids) continue;
     const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
@@ -297,6 +298,7 @@ export function xyzSummonActions(state: DuelState, player: PlayerId, canUseMater
   const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
+    if (!isMonsterLike(card)) continue;
     const materialUids = findXyzMaterialUids(materialPool, card);
     if (!materialUids) continue;
     const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
@@ -310,6 +312,7 @@ export function linkSummonActions(state: DuelState, player: PlayerId, canUseMate
   const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
+    if (!isMonsterLike(card)) continue;
     const materialUids = findLinkMaterialUids(materialPool, card);
     if (!materialUids) continue;
     const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
@@ -343,6 +346,7 @@ function extraDeckSummonActions(
 ): DuelAction[] {
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
+    if (!isMonsterLike(card)) continue;
     const requiredCodes = materialCodes(card);
     if (!requiredCodes?.length) continue;
     const materialUids = findMaterialUids(materialPool, requiredCodes);
@@ -398,6 +402,7 @@ function requireExtraDeckSummonMaterials(
   canUseMaterial: DuelMaterialPredicate,
 ): { card: DuelCardInstance; materials: DuelCardInstance[] } {
   const card = requireControlledCard(state, player, uid, "extraDeck");
+  if (!isMonsterLike(card)) throw new Error(`${card.name} is not a ${summonType} monster`);
   if (!requiredMaterials?.length) throw new Error(`${card.name} does not define ${summonType} materials`);
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} ${summonType} materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
@@ -412,6 +417,7 @@ function requireExtraDeckSummonMaterials(
 
 function requireSynchroSummonMaterials(state: DuelState, player: PlayerId, uid: string, materialUids: string[], canUseMaterial: DuelMaterialPredicate): { card: DuelCardInstance; materials: DuelCardInstance[] } {
   const card = requireControlledCard(state, player, uid, "extraDeck");
+  if (!isMonsterLike(card)) throw new Error(`${card.name} is not a synchro monster`);
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} synchro materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length) throw new Error(`${card.name} synchro materials are not legal`);
@@ -431,6 +437,7 @@ function requireSynchroSummonMaterials(state: DuelState, player: PlayerId, uid: 
 
 function requireXyzSummonMaterials(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): { card: DuelCardInstance; materials: DuelCardInstance[] } {
   const card = requireControlledCard(state, player, uid, "extraDeck");
+  if (!isMonsterLike(card)) throw new Error(`${card.name} is not an Xyz monster`);
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} Xyz materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length) throw new Error(`${card.name} Xyz materials are not legal`);
@@ -448,6 +455,7 @@ function requireXyzSummonMaterials(state: DuelState, player: PlayerId, uid: stri
 
 function requireLinkSummonMaterials(state: DuelState, player: PlayerId, uid: string, materialUids: string[], canUseMaterial: DuelMaterialPredicate): { card: DuelCardInstance; materials: DuelCardInstance[] } {
   const card = requireControlledCard(state, player, uid, "extraDeck");
+  if (!isMonsterLike(card)) throw new Error(`${card.name} is not a Link monster`);
   const targetRating = linkRating(card);
   if (targetRating <= 0) throw new Error(`${card.name} does not define Link materials`);
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} Link materials must be unique`);
@@ -591,5 +599,5 @@ function cardMatchesCode(card: DuelCardInstance, code: string): boolean {
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {
-  return card.kind === "monster" || card.kind === "extra";
+  return card.kind === "monster" || (card.kind === "extra" && card.data.kind !== "spell" && card.data.kind !== "trap");
 }

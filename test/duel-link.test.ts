@@ -145,6 +145,33 @@ describe("duel link summons", () => {
     expect(session.state.cards.find((card) => card.uid === secondMaterial!.uid)?.location).toBe("graveyard");
   });
 
+  it("rejects non-monsters as Link summon targets", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 2,
+      cardReader: createCardReader([
+        { code: "100", name: "First Link Material", kind: "monster" },
+        { code: "300", name: "Second Link Material", kind: "monster" },
+        { code: "930", name: "Impossible Link Spell", kind: "spell", typeFlags: 0x4000002, level: 2, linkMaterials: ["100", "300"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["930"] },
+      1: { main: ["300", "300"] },
+    });
+    startDuel(session);
+
+    const target = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "930");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(target).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "linkSummon" && candidate.uid === target!.uid)).toBe(false);
+    expect(() => linkSummonDuelCard(session.state, 0, target!.uid, materials.map((card) => card.uid))).toThrow("is not a Link monster");
+    expect(session.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("extraDeck");
+  });
+
   it("link summons emit special summon triggers", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

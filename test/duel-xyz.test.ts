@@ -109,6 +109,33 @@ describe("duel xyz summons", () => {
     expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([firstMaterial!.uid, secondMaterial!.uid]);
   });
 
+  it("rejects non-monsters as Xyz summon targets", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 2,
+      cardReader: createCardReader([
+        { code: "100", name: "First Xyz Material", kind: "monster", level: 4 },
+        { code: "300", name: "Second Xyz Material", kind: "monster", level: 4 },
+        { code: "920", name: "Impossible Xyz Spell", kind: "spell", xyzMaterials: ["100", "300"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["920"] },
+      1: { main: ["300", "300"] },
+    });
+    startDuel(session);
+
+    const target = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(target).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "xyzSummon" && candidate.uid === target!.uid)).toBe(false);
+    expect(() => xyzSummonDuelCard(session.state, 0, target!.uid, materials.map((card) => card.uid))).toThrow("is not an Xyz monster");
+    expect(session.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("extraDeck");
+  });
+
   it("xyz summons emit special summon triggers without sending materials to the graveyard", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
