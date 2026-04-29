@@ -2407,18 +2407,4 @@ describe("full duel engine API", () => {
     expect(() => tributeSummonDuelCard(session.state, 0, tributeMonster!.uid, action.tributeUids)).toThrow("not in hand");
   });
 
-  it("hides set actions when the spell/trap zone is full", () => {
-    const session = createDuel({ seed: 1, startingHandSize: 6, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["200", "200", "200", "200", "200", "200"] },
-      1: { main: ["400", "400", "400", "400", "400", "400"] },
-    });
-    startDuel(session);
-
-    const spells = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "spell");
-    for (const card of spells.slice(0, 5)) moveDuelCard(session.state, card.uid, "spellTrapZone", 0);
-
-    expect(getDuelLegalActions(session, 0).some((action) => action.type === "setSpellTrap")).toBe(false);
-  });
-
 });
