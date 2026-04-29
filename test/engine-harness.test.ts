@@ -1400,6 +1400,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("base stats " .. c:GetBaseAttack() .. "/" .. c:GetBaseDefense())
       Debug.Message("position checks " .. tostring(c:IsPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(c:IsControler(0)))
       Debug.Message("relation checks " .. tostring(c:IsOnField()) .. "/" .. tostring(c:IsMonster()) .. "/" .. tostring(c:IsSpell()) .. "/" .. tostring(c:IsTrap()) .. "/" .. tostring(c:IsCanBeEffectTarget(nil)))
+      Debug.Message("activity counts " .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_FLIPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_ATTACK))
       Duel.SendtoGrave(c, REASON_EFFECT)
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
       Debug.Message("previous state " .. g:GetPreviousLocation() .. "/" .. g:GetPreviousControler() .. "/" .. g:GetPreviousSequence() .. "/" .. g:GetPreviousPosition())
@@ -1415,6 +1416,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("base stats 1700/1300");
     expect(host.messages).toContain("position checks true/true");
     expect(host.messages).toContain("relation checks true/true/false/false/true");
+    expect(host.messages).toContain("activity counts 1/1/0/0/0");
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous position true");
     expect(host.messages).toContain("grave relation false/true");
@@ -1441,6 +1443,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
       observed_battle_phase = tostring(Duel.IsBattlePhase())
       observed_damage_step = tostring(Duel.IsDamageStep())
       observed_damage_calculated = tostring(Duel.IsDamageCalculated())
+      observed_normal_activity = Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON)
+      observed_summon_activity = Duel.GetActivityCount(0, ACTIVITY_SUMMON)
+      observed_attack_activity = Duel.GetActivityCount(0, ACTIVITY_ATTACK)
       Debug.Message("lua host online")
       `,
       "smoke.lua",
@@ -1456,6 +1461,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalString("observed_battle_phase")).toBe("false");
     expect(host.getGlobalString("observed_damage_step")).toBe("false");
     expect(host.getGlobalString("observed_damage_calculated")).toBe("false");
+    expect(host.getGlobalNumber("observed_normal_activity")).toBe(0);
+    expect(host.getGlobalNumber("observed_summon_activity")).toBe(0);
+    expect(host.getGlobalNumber("observed_attack_activity")).toBe(0);
     expect(host.messages).toContain("lua host online");
   });
 });

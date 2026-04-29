@@ -17,6 +17,7 @@ import {
 import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "./duel-flags.js";
 import { pushCardTable } from "./lua-card-api.js";
 import { duelReason } from "./duel-reasons.js";
+import { installDuelActivityApi } from "./lua-duel-activity-api.js";
 import { installDuelDeckApi } from "./lua-duel-deck-api.js";
 import { availableMonsterZoneCount, installDuelLocationApi } from "./lua-duel-location-api.js";
 import { installDuelLpApi } from "./lua-duel-lp-api.js";
@@ -118,6 +119,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   lua.lua_setfield(L, -2, to_luastring("NegateActivation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushNegateChainLink(state, session));
   lua.lua_setfield(L, -2, to_luastring("NegateEffect"));
+  installDuelActivityApi(L, session);
   installDuelLpApi(L, session);
   installDuelDeckApi(L, session, hostState);
   installPlayerLegalityHelpers(L, session);
