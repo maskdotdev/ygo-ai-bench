@@ -1245,6 +1245,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local clone = g:Clone()
       local selected = clone:Select(0, 1, 2, nil)
       Debug.Message("selected group " .. selected:GetCount())
+      local select_pool = Group.FromCards(c100)
+      local added = all:SelectUnselect(select_pool, true, false, 1, 2)
+      Debug.Message("select unselect add " .. tostring(added and added:GetCode()))
+      select_pool:AddCard(added)
+      local stopped = all:SelectUnselect(select_pool, true, false, 1, 2)
+      Debug.Message("select unselect stop " .. tostring(stopped == nil))
+      local unbounded = all:SelectUnselect(Group.CreateGroup(), true, false, 1, 0)
+      Debug.Message("select unselect unbounded " .. tostring(unbounded and unbounded:GetCode()))
       Debug.Message("exists high " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 2, nil, 1500)))
       Debug.Message("filter group excluded " .. without_c200:GetCount() .. " " .. tostring(without_c200:IsContains(c200)))
       Debug.Message("exists group excluded " .. tostring(all:IsExists(aux.FilterBoolFunction(Card.IsCode, 200), 1, excluded_group)))
@@ -1285,6 +1293,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("sub high 1 true");
     expect(host.messages).toContain("clear group 0");
     expect(host.messages).toContain("selected group 2");
+    expect(host.messages).toContain("select unselect add 200");
+    expect(host.messages).toContain("select unselect stop true");
+    expect(host.messages).toContain("select unselect unbounded 200");
     expect(host.messages).toContain("exists high true");
     expect(host.messages).toContain("filter group excluded 2 false");
     expect(host.messages).toContain("exists group excluded false");

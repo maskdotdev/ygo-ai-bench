@@ -188,7 +188,20 @@ export function installGroupApi(L: unknown): void {
   lua.lua_pushcfunction(L, () => 0);
   lua.lua_setfield(L, -2, to_luastring("DeleteGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    pushGroupTable(state, readGroupUids(state, 1));
+    const selected = readGroupUids(state, 2);
+    const min = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 1;
+    const max = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : min;
+    const limit = max > 0 ? Math.max(Math.max(0, min), max) : readGroupUids(state, 1).length;
+    if (selected.length >= limit) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    const uid = readGroupUids(state, 1).find((candidate) => !selected.includes(candidate));
+    if (!uid) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardTable(state, uid);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SelectUnselect"));
