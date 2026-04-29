@@ -157,6 +157,16 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   lua.lua_setfield(L, -2, to_luastring("IsExists"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
+    const excluded = readCardOrGroupUids(state, 3);
+    const candidates = readGroupUids(state, 1).filter((uid) => !excluded.includes(uid));
+    const matches = filterRef !== undefined && candidates.length > 0 && candidates.every((uid) => groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 4)));
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushboolean(state, matches);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Match"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
     const classes = new Set<number>();
     if (filterRef !== undefined) {
       for (const uid of readGroupUids(state, 1)) {
@@ -474,6 +484,7 @@ const groupFieldNames = [
   "Clone",
   "Select",
   "IsExists",
+  "Match",
   "GetClassCount",
   "GetSum",
   "GetMaxGroup",
