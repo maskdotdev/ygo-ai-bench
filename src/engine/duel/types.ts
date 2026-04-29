@@ -124,6 +124,13 @@ export interface DuelEffectDefinition {
   operation: (ctx: DuelEffectContext) => void;
 }
 
+export interface ChainLimit {
+  expiresAtChainLength?: number;
+  untilChainEnd: boolean;
+  allows(effect: DuelEffectDefinition, player: PlayerId, chainPlayer: PlayerId): boolean;
+  release?: () => void;
+}
+
 export interface DuelEffectContext {
   duel: DuelState;
   source: DuelCardInstance;
@@ -197,6 +204,7 @@ export interface DuelState {
   cards: DuelCardInstance[];
   effects: DuelEffectDefinition[];
   chain: ChainLink[];
+  chainLimits: ChainLimit[];
   chainPasses: PlayerId[];
   pendingTriggers: PendingTrigger[];
   usedCountKeys: string[];

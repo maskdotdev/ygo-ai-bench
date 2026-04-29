@@ -1920,6 +1920,127 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("source resolved");
   });
 
+  it("lets Lua effects block immediate chain responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Limit Source", kind: "monster" },
+      { code: "400", name: "Blocked Quick", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 52, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,c)
+          Duel.SetChainLimit(aux.FALSE)
+          return true
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("limit source resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          return Duel.GetCurrentChain()>0
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("blocked quick resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "chain-limit.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    expect(host.messages).toContain("limit source resolved");
+    expect(host.messages).not.toContain("blocked quick resolved");
+  });
+
+  it("keeps Lua chain limits until the chain resolves", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Persistent Limit Source", kind: "monster" },
+      { code: "400", name: "Allowed Quick", kind: "monster" },
+      { code: "500", name: "Blocked Chain Back", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 53, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "500"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,c)
+          Duel.SetChainLimitTillChainEnd(function(te,rp,tp) return rp==1 end)
+          return true
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("persistent source resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c) return Duel.GetCurrentChain()>0 end)
+        e:SetOperation(function(e,c) Debug.Message("allowed quick resolved") end)
+        c:RegisterEffect(e)
+      end
+      c500={}
+      function c500.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c) return Duel.GetCurrentChain()>0 end)
+        e:SetOperation(function(e,c) Debug.Message("chain back resolved") end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "chain-limit-persistent.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+    const sourceUid = session.state.cards.find((card) => card.code === "100" && card.owner === 0)?.uid;
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sourceUid);
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const allowed = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(allowed).toBeDefined();
+    expect(applyResponse(session, allowed!).ok).toBe(true);
+    expect(host.messages).toContain("allowed quick resolved");
+    expect(host.messages).toContain("persistent source resolved");
+    expect(host.messages).not.toContain("chain back resolved");
+  });
+
   it("detects duplicate card codes in the current Lua chain", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Duplicate Chain Source", kind: "monster" },

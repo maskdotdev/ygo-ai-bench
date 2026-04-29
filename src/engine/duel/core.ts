@@ -51,6 +51,7 @@ import { sameAction } from "#duel/response-match.js";
 import type {
   ApplyDuelResponseResult,
   CardPosition,
+  ChainLimit,
   ChainLink,
   DuelAction,
   DuelCardInstance,
@@ -96,6 +97,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     cards: [],
     effects: [],
     chain: [],
+    chainLimits: [],
     chainPasses: [],
     pendingTriggers: [],
     usedCountKeys: [],
@@ -635,6 +637,7 @@ function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
   const actions: DuelAction[] = [];
   for (const effect of state.effects) {
     if (effect.controller !== player || effect.event !== "quick") continue;
+    if (!chainLimitsAllow(state, effect, player)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!canUseEffectCount(state, effect)) continue;
@@ -670,6 +673,23 @@ function hasChainResponses(state: DuelState, player: PlayerId): boolean {
   return quickEffectActions(state, player).length > 0;
 }
 
+function chainLimitsAllow(state: DuelState, effect: DuelEffectDefinition, player: PlayerId): boolean {
+  const link = state.chain[state.chain.length - 1];
+  if (!link) return true;
+  for (const limit of state.chainLimits) {
+    if (!limit.untilChainEnd && limit.expiresAtChainLength !== state.chain.length) continue;
+    if (!limit.allows(effect, player, link.player)) return false;
+  }
+  return true;
+}
+
+export function addDuelChainLimit(state: DuelState, limit: Omit<ChainLimit, "expiresAtChainLength">): void {
+  state.chainLimits.push({
+    ...limit,
+    ...(limit.untilChainEnd ? {} : { expiresAtChainLength: state.chain.length + 1 }),
+  });
+}
+
 function pushChainLink(
   state: DuelState,
   player: PlayerId,
@@ -695,6 +715,7 @@ function pushChainLink(
     ...(targetParam === undefined ? {} : { targetParam }),
   });
   state.chainPasses = [];
+  clearStaleChainLimits(state);
 }
 
 function passChain(state: DuelState, player: PlayerId): void {
@@ -710,36 +731,53 @@ function passChain(state: DuelState, player: PlayerId): void {
 
 function resolveChain(state: DuelState): void {
   state.status = "resolving";
-  while (state.chain.length) {
-    const link = state.chain.pop();
-    if (!link) continue;
-    if (link.negated) {
-      pushDuelLog(state, "chainNegated", link.player, undefined, link.effectId);
-      continue;
+  try {
+    while (state.chain.length) {
+      const link = state.chain.pop();
+      if (!link) continue;
+      if (link.negated) {
+        pushDuelLog(state, "chainNegated", link.player, undefined, link.effectId);
+        continue;
+      }
+      const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
+      const source = findCard(state, link.sourceUid);
+      if (!effect || !source) continue;
+      const eventCard = link.eventCardUid === undefined ? undefined : findCard(state, link.eventCardUid);
+      const ctx = createEffectContext(
+        state,
+        source,
+        link.player,
+        link.eventName,
+        eventCard,
+        [...(link.targetUids ?? [])],
+        false,
+        link.activationLocation ?? source.location,
+        link.activationSequence ?? source.sequence,
+        link.targetPlayer,
+        link.targetParam,
+        link,
+      );
+      effect.operation(ctx);
     }
-    const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
-    const source = findCard(state, link.sourceUid);
-    if (!effect || !source) continue;
-    const eventCard = link.eventCardUid === undefined ? undefined : findCard(state, link.eventCardUid);
-    const ctx = createEffectContext(
-      state,
-      source,
-      link.player,
-      link.eventName,
-      eventCard,
-      [...(link.targetUids ?? [])],
-      false,
-      link.activationLocation ?? source.location,
-      link.activationSequence ?? source.sequence,
-      link.targetPlayer,
-      link.targetParam,
-      link,
-    );
-    effect.operation(ctx);
+  } finally {
+    clearChainLimits(state);
   }
   state.chainPasses = [];
   state.status = "awaiting";
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+}
+
+function clearStaleChainLimits(state: DuelState): void {
+  clearChainLimits(state, (limit) => !limit.untilChainEnd && (limit.expiresAtChainLength ?? 0) < state.chain.length);
+}
+
+function clearChainLimits(state: DuelState, shouldClear: (limit: ChainLimit) => boolean = () => true): void {
+  const remaining: ChainLimit[] = [];
+  for (const limit of state.chainLimits) {
+    if (shouldClear(limit)) limit.release?.();
+    else remaining.push(limit);
+  }
+  state.chainLimits = remaining;
 }
 
 export function negateDuelChainLink(state: DuelState, chainLinkId: string, player: PlayerId, cardName: string): boolean {
