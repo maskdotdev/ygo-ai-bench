@@ -66,6 +66,8 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("DebugMessage"));
+  lua.lua_pushcfunction(L, () => 0);
+  lua.lua_setfield(L, -2, to_luastring("Hint"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushinteger(state, session.state.chain.length);
     return 1;

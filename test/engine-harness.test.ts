@@ -619,6 +619,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
         e:SetType(EFFECT_TYPE_IGNITION)
         e:SetRange(LOCATION_HAND)
         e:SetTarget(function(e,c)
+          Duel.Hint(HINT_SELECTMSG, 0, HINTMSG_TOHAND)
           local g=Duel.SelectTarget(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, c)
           Duel.SetOperationInfo(0, CATEGORY_TOHAND, g, g:GetCount(), 0, 0)
           return true
@@ -626,6 +627,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
         e:SetOperation(function(e,c)
           local ok,cat,g,count,p,param=Duel.GetOperationInfo(0, CATEGORY_TOHAND)
           Debug.Message("operation info " .. tostring(ok) .. "/" .. cat .. "/" .. g:GetCount() .. "/" .. count .. "/" .. p .. "/" .. param)
+          Debug.Message("target relates " .. tostring(Duel.GetFirstTarget():IsRelateToEffect(e)))
         end)
         c:RegisterEffect(e)
       end
@@ -642,6 +644,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
     applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
     expect(host.messages).toContain("operation info true/8/1/1/0/0");
+    expect(host.messages).toContain("target relates true");
   });
 
   it("provides common aux compatibility helpers", () => {

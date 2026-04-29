@@ -128,6 +128,8 @@ function installStateHelpers(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsAbleToDeck", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "deck")));
   pushBooleanGetter(L, "IsAbleToRemove", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "banished")));
   pushBooleanGetter(L, "IsAbleToExtra", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "extraDeck")));
+  pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
+  pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
@@ -230,4 +232,6 @@ const cardFieldNames = [
   "IsAbleToDeck",
   "IsAbleToRemove",
   "IsAbleToExtra",
+  "IsRelateToEffect",
+  "IsRelateToBattle",
 ];
