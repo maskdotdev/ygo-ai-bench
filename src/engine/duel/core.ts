@@ -256,6 +256,7 @@ export function canSpecialSummonDuelCard(state: DuelState, uid: string, controll
   const card = findCard(state, uid);
   if (!card || !isMonsterLike(card)) return false;
   const summonController = controller ?? card.controller;
+  if (isSpecialSummonPrevented(state, summonController, card)) return false;
   if (!hasZoneSpace(state, summonController, "monsterZone")) return false;
   if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card)) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
@@ -264,8 +265,13 @@ export function canSpecialSummonDuelCard(state: DuelState, uid: string, controll
 function canAttemptSpecialSummonProcedure(state: DuelState, uid: string): boolean {
   const card = findCard(state, uid);
   if (!card || !isMonsterLike(card)) return false;
+  if (isSpecialSummonPrevented(state, card.controller, card)) return false;
   if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card)) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
+}
+
+export function canPlayerSpecialSummon(state: DuelState, player: PlayerId, card?: DuelCardInstance): boolean {
+  return !isSpecialSummonPrevented(state, player, card);
 }
 
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
@@ -667,6 +673,25 @@ function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source:
   if (effect.cost && !effect.cost(ctx)) return false;
   if (effect.target && !effect.target(ctx)) return false;
   return true;
+}
+
+function isSpecialSummonPrevented(state: DuelState, player: PlayerId, card?: DuelCardInstance): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 22) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
+  if ((effect.property ?? 0) === 0 || ((effect.property ?? 0) & 0x800) === 0) return source.controller === player;
+  const [selfTarget = 0, opponentTarget = 0] = effect.targetRange ?? [1, 0];
+  if (source.controller === player) return selfTarget !== 0;
+  return opponentTarget !== 0;
 }
 
 function hasChainResponses(state: DuelState, player: PlayerId): boolean {

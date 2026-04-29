@@ -544,6 +544,71 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
   });
 
+  it("applies Lua continuous special summon restrictions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restricted Procedure Source", kind: "monster" },
+      { code: "900", name: "Special Summon Lock", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 39, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const lock = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "900");
+    expect(lock).toBeTruthy();
+    moveDuelCard(session.state, lock!.uid, "monsterZone", 0);
+    lock!.faceUp = true;
+    lock!.position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        c:RegisterEffect(e)
+      end
+      c900={}
+      function c900.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(1,0)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("special lock checked " .. tp)
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "special-summon-lock.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeTruthy();
+    const canResult = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can special locked " .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, target)))
+      `,
+      "special-summon-lock-check.lua",
+    );
+
+    expect(canResult.ok, canResult.error).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid)).toBe(false);
+    expect(host.messages).toContain("can special locked false");
+    expect(host.messages).toContain("special lock checked 0");
+  });
+
   it("supports Lua special summon procedures from face-up pendulum extra deck cards", () => {
     const cards: DuelCardData[] = [
       { code: "301", name: "Extra Procedure Pendulum", kind: "monster", typeFlags: 0x1000001 },

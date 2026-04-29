@@ -104,6 +104,7 @@ export interface DuelEffectDefinition {
   controller: PlayerId;
   ownerPlayer?: PlayerId;
   event: "ignition" | "trigger" | "quick" | "continuous" | "summonProcedure";
+  code?: number;
   triggerEvent?: DuelEventName;
   range: DuelLocation[];
   oncePerTurn?: boolean;

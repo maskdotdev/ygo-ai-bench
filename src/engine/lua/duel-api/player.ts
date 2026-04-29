@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { canMoveDuelCardToLocation, canSpecialSummonDuelCard } from "#duel/core.js";
+import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard } from "#duel/core.js";
 import { findCard } from "#duel/card-state.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
@@ -65,7 +65,7 @@ function canNormalSet(session: DuelSession, player: PlayerId, uid: string | unde
 function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: PlayerId, positionMask: number, uid: string | undefined): boolean {
   if (!positionFromMask(positionMask)) return false;
   if (availableMonsterZoneCount(session, targetPlayer, []) <= 0) return false;
-  if (!uid) return true;
+  if (!uid) return canPlayerSpecialSummon(session.state, targetPlayer);
   const card = findCard(session.state, uid);
   if (!card || !isMonsterLike(card.kind)) return false;
   if (card.controller !== player && card.owner !== player) return false;
