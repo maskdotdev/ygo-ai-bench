@@ -614,6 +614,19 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("duel sum selected " .. sum_selected:GetCount())
       local vararg_sum = Duel.SelectWithSumEqual(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 0, LOCATION_HAND, 0, 3600, 2, 2, nil, 1500)
       Debug.Message("duel sum vararg " .. vararg_sum:GetCount())
+      local function subgroup_attack(sg,minatk)
+        local total=0
+        local tc=sg:GetFirst()
+        while tc do
+          total=total+tc:GetAttack()
+          tc=sg:GetNext()
+        end
+        return total>=minatk
+      end
+      Debug.Message("duel subgroup check " .. tostring(Duel.CheckSubGroup(subgroup_attack, 0, LOCATION_HAND, 0, 2, 2, nil, 3500)))
+      Debug.Message("duel subgroup miss " .. tostring(Duel.CheckSubGroup(subgroup_attack, 0, LOCATION_HAND, 0, 2, 2, nil, 5000)))
+      local subgroup = Duel.SelectSubGroup(0, subgroup_attack, false, 0, LOCATION_HAND, 0, 2, 2, nil, 3500)
+      Debug.Message("duel subgroup selected " .. subgroup:GetCount())
       `,
       "matching-varargs.lua",
     );
@@ -626,6 +639,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("duel sum miss false");
     expect(host.messages).toContain("duel sum selected 2");
     expect(host.messages).toContain("duel sum vararg 2");
+    expect(host.messages).toContain("duel subgroup check true");
+    expect(host.messages).toContain("duel subgroup miss false");
+    expect(host.messages).toContain("duel subgroup selected 2");
 
     for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
       moveDuelCard(session.state, card.uid, "monsterZone", 0);

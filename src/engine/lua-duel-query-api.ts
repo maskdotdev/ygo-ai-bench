@@ -42,6 +42,10 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("CheckWithSumEqual"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectWithSumEqual(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectWithSumEqual"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckSubGroup(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CheckSubGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectSubGroup(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SelectSubGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session, hostState.activeTargetUids));
@@ -168,6 +172,26 @@ function pushSelectWithSumEqual(L: unknown, session: DuelSession): number {
   return 1;
 }
 
+function pushCheckSubGroup(L: unknown, session: DuelSession): number {
+  const query = readMatchingQuery(L, session, 1, 2, 3, 4, 7, 8);
+  const min = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 1;
+  const max = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : min;
+  const selected = selectSubGroup(L, matchingCardUidsForQuery(session, query), query.filterRef, min, max, query.args);
+  releaseOptionalFunctionRef(L, query.filterRef);
+  lua.lua_pushboolean(L, selected !== undefined);
+  return 1;
+}
+
+function pushSelectSubGroup(L: unknown, session: DuelSession): number {
+  const query = readMatchingQuery(L, session, 2, 4, 5, 6, 9, 10);
+  const min = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : 1;
+  const max = lua.lua_isnumber(L, 8) ? lua.lua_tointeger(L, 8) : min;
+  const selected = selectSubGroup(L, matchingCardUidsForQuery(session, query), query.filterRef, min, max, query.args) ?? [];
+  releaseOptionalFunctionRef(L, query.filterRef);
+  pushGroupTable(L, selected);
+  return 1;
+}
+
 function pushFirstTarget(L: unknown, hostState: LuaDuelQueryApiHostState): number {
   const target = hostState.activeTargetUids?.[0];
   if (!target) {
@@ -251,6 +275,38 @@ function findSumSelection(entries: { uid: string; value: number }[], target: num
     selected.pop();
   }
   return undefined;
+}
+
+function selectSubGroup(L: unknown, uids: string[], filterRef: number | undefined, min: number, max: number, args: LuaFilterArgs): string[] | undefined {
+  if (filterRef === undefined) return undefined;
+  const boundedMin = Math.max(0, min);
+  const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
+  return findSubGroupSelection(L, uids, filterRef, boundedMin, boundedMax, args, 0, []);
+}
+
+function findSubGroupSelection(L: unknown, uids: string[], filterRef: number, min: number, max: number, args: LuaFilterArgs, index: number, selected: string[]): string[] | undefined {
+  if (selected.length >= min && selected.length <= max && groupPredicateMatches(L, selected, filterRef, args)) return [...selected];
+  if (index >= uids.length || selected.length >= max) return undefined;
+  for (let nextIndex = index; nextIndex < uids.length; nextIndex += 1) {
+    const uid = uids[nextIndex];
+    if (!uid) continue;
+    selected.push(uid);
+    const found = findSubGroupSelection(L, uids, filterRef, min, max, args, nextIndex + 1, selected);
+    if (found) return found;
+    selected.pop();
+  }
+  return undefined;
+}
+
+function groupPredicateMatches(L: unknown, uids: string[], filterRef: number, args: LuaFilterArgs): boolean {
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, filterRef);
+  pushGroupTable(L, uids);
+  for (let index = 0; index < args.count; index += 1) lua.lua_pushvalue(L, args.start + index);
+  const status = lua.lua_pcall(L, 1 + args.count, 1, 0);
+  if (status !== lua.LUA_OK) return false;
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
 }
 
 function readFilterArgs(L: unknown, start: number): LuaFilterArgs {
