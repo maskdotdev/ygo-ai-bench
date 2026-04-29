@@ -296,6 +296,7 @@ export function destroyDuelCard(state: DuelState, uid: string, controller?: Play
 }
 
 export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
+  if (shouldRedirectBanishMove(state, uid)) return sendDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect);
   requireMoveAllowed(state, uid, "banished");
   const card = moveDuelCard(state, uid, "banished", controller, reason);
   pushDuelLog(state, "banish", card.controller, card.name, "Banished");
@@ -715,6 +716,19 @@ function shouldRedirectToGraveyardMove(state: DuelState, uid: string): boolean {
   if (!card) return false;
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 63) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || source.uid !== card.uid || !effect.range.includes(source.location)) continue;
+    const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+function shouldRedirectBanishMove(state: DuelState, uid: string): boolean {
+  const card = findCard(state, uid);
+  if (!card) return false;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 64) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || source.uid !== card.uid || !effect.range.includes(source.location)) continue;
     const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
