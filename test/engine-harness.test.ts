@@ -427,6 +427,15 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local third = mixed:GetNext()
       local fourth = mixed:GetNext()
       Debug.Message("mixed codes " .. first:GetCode() .. "," .. second:GetCode() .. "," .. third:GetCode() .. "," .. fourth:GetCode())
+      local own_grave = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
+      local opponent_deck = Duel.GetFieldCard(1, LOCATION_DECK, 0)
+      local empty = Duel.GetFieldCard(0, LOCATION_GRAVE, 3)
+      Debug.Message("field card codes " .. own_grave:GetCode() .. "/" .. opponent_deck:GetCode() .. "/" .. tostring(empty == nil))
+      local function match(c, code)
+        return c:IsCode(code)
+      end
+      local first_match = Duel.GetFirstMatchingCard(match, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, nil, 300)
+      Debug.Message("first matching card " .. first_match:GetCode())
       Debug.Message("onfield count " .. Duel.GetFieldGroupCount(0, LOCATION_ONFIELD, LOCATION_ONFIELD))
       `,
       "field-groups.lua",
@@ -437,6 +446,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("field count 4");
     expect(host.messages).toContain("banished count 1");
     expect(host.messages).toContain("mixed codes 100,200,300,400");
+    expect(host.messages).toContain("field card codes 100/400/true");
+    expect(host.messages).toContain("first matching card 300");
     expect(host.messages).toContain("onfield count 0");
   });
 

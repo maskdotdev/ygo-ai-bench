@@ -321,6 +321,19 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
   });
   lua.lua_setfield(L, -2, to_luastring("GetFieldGroupCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const sequence = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
+    const uid = fieldCardUid(session, player, locationMask, sequence);
+    if (!uid) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardTable(state, uid);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetFieldCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 1);
     const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
     const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
@@ -333,6 +346,22 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsExistingMatchingCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 1);
+    const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
+    const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
+    const opponentMask = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
+    const excluded = readCardUid(state, 5);
+    const uid = matchingCardUidsWithFilter(state, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(state, 6))[0];
+    releaseOptionalFunctionRef(state, filterRef);
+    if (!uid) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardTable(state, uid);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetFirstMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
@@ -579,6 +608,10 @@ function fieldGroupUids(session: DuelSession, player: PlayerId, selfMask: number
     ...matchingCardUids(session, player, selfMask),
     ...matchingCardUids(session, otherPlayer(player), opponentMask),
   ];
+}
+
+function fieldCardUid(session: DuelSession, player: PlayerId, locationMask: number, sequence: number): string | undefined {
+  return matchingCardUids(session, player, locationMask)[sequence];
 }
 
 function availableLocationCount(session: DuelSession, player: PlayerId, locationMask: number): number {
