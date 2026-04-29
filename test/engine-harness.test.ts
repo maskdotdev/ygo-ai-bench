@@ -543,10 +543,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
     const cards: DuelCardData[] = [
       { code: "100", alias: "900", name: "Stat Monster", kind: "monster", typeFlags: 0x21, attack: 2500, defense: 2100, level: 7, race: 0x2, attribute: 0x20 },
       { code: "200", name: "Fixture Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "300", name: "Rank Fixture", kind: "monster", typeFlags: 0x800001, attack: 1800, defense: 1200, level: 4 },
+      { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5 },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 4, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200"] },
+      0: { main: ["100", "200", "300", "400"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -554,12 +556,16 @@ describe("EDOPro compatibility harness scaffolding", () => {
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
       `
-      local monsters = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsType, TYPE_MONSTER), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local monsters = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
       local c = monsters:GetFirst()
       Debug.Message("type " .. c:GetType())
       Debug.Message("stats " .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. c:GetLevel())
       Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsLevel(7)))
       Debug.Message("code checks " .. tostring(c:IsCode(900)) .. "/" .. tostring(c:IsOriginalCode(900)) .. "/" .. tostring(c:IsOriginalCode(100)))
+      local xyz = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local link = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:IsRank(4)))
+      Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)))
       Debug.Message("race " .. c:GetRace() .. " " .. tostring(c:IsRace(RACE_SPELLCASTER)))
       Debug.Message("attribute " .. c:GetAttribute() .. " " .. tostring(c:IsAttribute(ATTRIBUTE_DARK)))
       Debug.Message("spell count " .. Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, nil))
@@ -572,6 +578,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("stats 2500/2100/7");
     expect(host.messages).toContain("stat predicates true/true/true");
     expect(host.messages).toContain("code checks true/false/true");
+    expect(host.messages).toContain("rank 4/4/true");
+    expect(host.messages).toContain("link 2/2/5/true");
     expect(host.messages).toContain("race 2 true");
     expect(host.messages).toContain("attribute 32 true");
     expect(host.messages).toContain("spell count 1");

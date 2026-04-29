@@ -101,6 +101,13 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetLevel", session, (card) => card?.data.level ?? 0);
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
   pushNumberMatcher(L, "IsLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
+  pushNumberGetter(L, "GetRank", session, (card) => cardRank(card));
+  pushNumberGetter(L, "GetOriginalRank", session, (card) => cardRank(card));
+  pushNumberMatcher(L, "IsRank", session, (card, requested) => cardRank(card) === requested);
+  pushNumberGetter(L, "GetLink", session, (card) => cardLink(card));
+  pushNumberGetter(L, "GetOriginalLink", session, (card) => cardLink(card));
+  pushNumberMatcher(L, "IsLink", session, (card, requested) => cardLink(card) === requested);
+  pushNumberGetter(L, "GetLinkMarker", session, (card) => card?.data.linkMarkers ?? 0);
   pushNumberGetter(L, "GetRace", session, (card) => card?.data.race ?? 0);
   pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
   pushNumberMatcher(L, "IsRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
@@ -259,6 +266,14 @@ function cardCodes(card: DuelCardInstance): string[] {
   return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
 
+function cardRank(card: DuelCardInstance | undefined): number {
+  return card && (cardTypeFlags(card) & 0x800000) !== 0 ? card.data.level ?? 0 : 0;
+}
+
+function cardLink(card: DuelCardInstance | undefined): number {
+  return card && (cardTypeFlags(card) & 0x4000000) !== 0 ? card.data.level ?? 0 : 0;
+}
+
 function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
   if (location === "deck") return 0x01;
   if (location === "hand") return 0x02;
@@ -318,6 +333,13 @@ const cardFieldNames = [
   "GetLevel",
   "GetOriginalLevel",
   "IsLevel",
+  "GetRank",
+  "GetOriginalRank",
+  "IsRank",
+  "GetLink",
+  "GetOriginalLink",
+  "IsLink",
+  "GetLinkMarker",
   "GetRace",
   "GetOriginalRace",
   "IsRace",

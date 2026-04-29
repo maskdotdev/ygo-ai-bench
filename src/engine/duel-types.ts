@@ -33,6 +33,7 @@ export interface DuelCardData {
   typeFlags?: number;
   alias?: string;
   level?: number;
+  linkMarkers?: number;
   attack?: number;
   defense?: number;
   race?: number;
