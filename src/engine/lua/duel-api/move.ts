@@ -124,9 +124,10 @@ function moveCardOrGroup(session: DuelSession, L: unknown, mover: LuaCardMover, 
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
+    const before = movementSnapshot(card);
     try {
-      mover(session.state, uid, card.controller, reason);
-      moved.push(uid);
+      const result = mover(session.state, uid, card.controller, reason);
+      if (didMove(result, before)) moved.push(uid);
     } catch {
       // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
     }
@@ -196,6 +197,14 @@ function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
   const value = lua.lua_tointeger(L, index);
   if (value !== 0 && value !== 1) return undefined;
   return value;
+}
+
+function movementSnapshot(card: DuelCardInstance): Pick<DuelCardInstance, "controller" | "location" | "sequence"> {
+  return { controller: card.controller, location: card.location, sequence: card.sequence };
+}
+
+function didMove(card: DuelCardInstance, before: Pick<DuelCardInstance, "controller" | "location" | "sequence">): boolean {
+  return card.controller !== before.controller || card.location !== before.location || card.sequence !== before.sequence;
 }
 
 function otherPlayer(player: PlayerId): PlayerId {

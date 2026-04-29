@@ -1,11 +1,12 @@
 import { findCard, getCards, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
 import { recordAttackActivity } from "#duel/activity.js";
+import { duelReason } from "#duel/reasons.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface DuelBattleCallbacks {
   collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance): void;
   damagePlayer(player: PlayerId, amount: number): number;
-  destroyCard(uid: string, controller?: PlayerId): DuelCardInstance;
+  destroyCard(uid: string, controller?: PlayerId, reason?: number): DuelCardInstance;
 }
 
 export function canDuelCardAttack(state: DuelState, uid: string): boolean {
@@ -135,30 +136,31 @@ function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: Due
 
 function resolveAttackPositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetAttack: number, callbacks: DuelBattleCallbacks): void {
   if (attackerAttack > targetAttack) {
-    callbacks.destroyCard(target.uid, target.controller);
-    callbacks.collectEvent("battleDestroyed", target);
+    if (destroyBattleCard(target, callbacks)) callbacks.collectEvent("battleDestroyed", target);
     callbacks.damagePlayer(target.controller, attackerAttack - targetAttack);
     return;
   }
   if (attackerAttack < targetAttack) {
-    callbacks.destroyCard(attacker.uid, attacker.controller);
-    callbacks.collectEvent("battleDestroyed", attacker);
+    if (destroyBattleCard(attacker, callbacks)) callbacks.collectEvent("battleDestroyed", attacker);
     callbacks.damagePlayer(attacker.controller, targetAttack - attackerAttack);
     return;
   }
-  callbacks.destroyCard(attacker.uid, attacker.controller);
-  callbacks.destroyCard(target.uid, target.controller);
-  callbacks.collectEvent("battleDestroyed", attacker);
-  callbacks.collectEvent("battleDestroyed", target);
+  if (destroyBattleCard(attacker, callbacks)) callbacks.collectEvent("battleDestroyed", attacker);
+  if (destroyBattleCard(target, callbacks)) callbacks.collectEvent("battleDestroyed", target);
 }
 
 function resolveDefensePositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetDefense: number, callbacks: DuelBattleCallbacks): void {
   if (attackerAttack > targetDefense) {
-    callbacks.destroyCard(target.uid, target.controller);
-    callbacks.collectEvent("battleDestroyed", target);
+    if (destroyBattleCard(target, callbacks)) callbacks.collectEvent("battleDestroyed", target);
     return;
   }
   if (attackerAttack < targetDefense) callbacks.damagePlayer(attacker.controller, targetDefense - attackerAttack);
+}
+
+function destroyBattleCard(card: DuelCardInstance, callbacks: DuelBattleCallbacks): boolean {
+  const previousLocation = card.location;
+  const result = callbacks.destroyCard(card.uid, card.controller, duelReason.battle | duelReason.destroy);
+  return result.uid === card.uid && result.location !== previousLocation;
 }
 
 function getBattleAttack(card: DuelCardInstance): number {

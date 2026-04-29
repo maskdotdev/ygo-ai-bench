@@ -49,6 +49,7 @@ import {
 import {
   findDestroyReplacementEffect,
   isAttackPrevented,
+  isDuelCardIndestructible,
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
   shouldRedirectBanishMove,
@@ -300,6 +301,8 @@ export function sendDuelCardToGraveyard(state: DuelState, uid: string, controlle
 }
 
 export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy): DuelCardInstance {
+  const indestructible = applyDestroyPrevention(state, uid, controller, reason);
+  if (indestructible) return indestructible;
   const replacement = applyDestroyReplacement(state, uid, controller, reason);
   if (replacement) return replacement;
   requireMoveAllowed(state, uid, "graveyard");
@@ -414,7 +417,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
     collectEvent: (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
     damagePlayer: (damagedPlayer, amount) => damageDuelPlayer(state, damagedPlayer, amount),
-    destroyCard: (uid, controller) => destroyDuelCard(state, uid, controller),
+    destroyCard: (uid, controller, reason) => destroyDuelCard(state, uid, controller, reason),
   });
 }
 
@@ -620,6 +623,14 @@ function createEffectContext(
 
 function createContinuousEffectContext(state: DuelState): ContinuousEffectContextFactory {
   return (effect, source, card) => createEffectContext(state, source, effect.controller, undefined, card, [], true);
+}
+
+function applyDestroyPrevention(state: DuelState, uid: string, controller: PlayerId | undefined, reason: number): DuelCardInstance | undefined {
+  const card = findCard(state, uid);
+  if (!card) return undefined;
+  if (!isDuelCardIndestructible(state, uid, reason, createContinuousEffectContext(state))) return undefined;
+  pushDuelLog(state, "destroyPrevented", controller ?? card.controller, card.name, "Destruction prevented");
+  return card;
 }
 
 function applyDestroyReplacement(state: DuelState, uid: string, controller: PlayerId | undefined, reason: number): DuelCardInstance | undefined {

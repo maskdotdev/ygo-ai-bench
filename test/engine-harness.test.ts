@@ -764,6 +764,58 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "graveyard" });
   });
 
+  it("applies Lua indestructible effect destruction prevention", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Indestructible Source", kind: "monster" },
+      { code: "200", name: "Protected Monster", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 45, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const protectedCard = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(protectedCard).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("indestructible checked " .. e:GetHandler():GetCode())
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "effect-indestructible.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const destroyResult = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("indestructible destroy " .. Duel.Destroy(c, REASON_EFFECT))
+      `,
+      "effect-indestructible-destroy.lua",
+    );
+
+    expect(destroyResult.ok, destroyResult.error).toBe(true);
+    expect(host.messages).toContain("indestructible checked 100");
+    expect(host.messages).toContain("indestructible destroy 0");
+    expect(session.state.cards.find((card) => card.uid === protectedCard!.uid)).toMatchObject({ location: "hand" });
+  });
+
   it("applies Lua continuous banish redirect effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Banish Redirected Monster", kind: "monster" }];
     const session = createDuel({ seed: 42, startingHandSize: 1, cardReader: createCardReader(cards) });

@@ -1695,6 +1695,37 @@ describe("full duel engine API", () => {
     expect(state.log.some((entry) => entry.action === "destroyReplace" && entry.card === "Normal Test Monster")).toBe(true);
   });
 
+  it("prevents effect destruction with indestructible effects", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "500"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const protectedCard = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(protectedCard).toBeTruthy();
+    expect(source).toBeTruthy();
+
+    registerEffect(session, {
+      id: "effect-indestructible",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 41,
+      property: 0x800,
+      targetRange: [1, 0],
+      range: ["hand"],
+      operation() {},
+    });
+
+    destroyDuelCard(session.state, protectedCard!.uid, 0);
+
+    expect(queryPublicState(session).cards.find((card) => card.uid === protectedCard!.uid)?.location).toBe("hand");
+    expect(queryPublicState(session).log.some((entry) => entry.action === "destroyPrevented" && entry.card === "Normal Test Monster")).toBe(true);
+  });
+
   it("moves pendulum monsters to the extra deck face-up", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -2053,6 +2084,44 @@ describe("full duel engine API", () => {
     expect(result.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("graveyard");
     expect(result.state.players[1].lifePoints).toBe(7100);
     expect(result.state.log.some((entry) => entry.action === "destroy" && entry.card === "Opponent Monster")).toBe(true);
+  });
+
+  it("prevents battle destruction with indestructible effects", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["500"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const target = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(target).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    specialSummonDuelCard(session.state, target!.uid, 1);
+    registerEffect(session, {
+      id: "battle-indestructible",
+      sourceUid: target!.uid,
+      controller: 1,
+      event: "continuous",
+      code: 42,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.targetUid === target!.uid);
+    expect(attack).toBeTruthy();
+    const result = applyResponse(session, attack!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("monsterZone");
+    expect(result.state.players[1].lifePoints).toBe(7100);
+    expect(result.state.pendingTriggers).toHaveLength(0);
+    expect(result.state.log.some((entry) => entry.action === "destroyPrevented" && entry.card === "Opponent Monster")).toBe(true);
   });
 
   it("collects battle destruction trigger effects", () => {
