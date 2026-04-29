@@ -688,6 +688,19 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("sum selected " .. sum_selected:GetCount())
       local vararg_sum = all:SelectWithSumEqual(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 5000, 2, 2, 1500)
       Debug.Message("sum vararg " .. vararg_sum:GetCount())
+      local function subgroup_attack(sg,minatk)
+        local total=0
+        local tc=sg:GetFirst()
+        while tc do
+          total=total+tc:GetAttack()
+          tc=sg:GetNext()
+        end
+        return total>=minatk
+      end
+      Debug.Message("subgroup check " .. tostring(all:CheckSubGroup(subgroup_attack, 2, 2, 4000)))
+      Debug.Message("subgroup miss " .. tostring(all:CheckSubGroup(subgroup_attack, 2, 2, 6000)))
+      local subgroup = all:SelectSubGroup(0, subgroup_attack, false, 2, 2, 4000)
+      Debug.Message("subgroup selected " .. subgroup:GetCount())
       g:RemoveCard(c100)
       g:DeleteGroup()
       Debug.Message("removed " .. g:GetCount() .. " " .. tostring(g:IsContains(c100)))
@@ -710,6 +723,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("sum miss false");
     expect(host.messages).toContain("sum selected 2");
     expect(host.messages).toContain("sum vararg 2");
+    expect(host.messages).toContain("subgroup check true");
+    expect(host.messages).toContain("subgroup miss false");
+    expect(host.messages).toContain("subgroup selected 2");
     expect(host.messages).toContain("removed 2 false");
     expect(host.messages).toContain("filtered high 2");
     expect(host.messages).toContain("vararg high 1");

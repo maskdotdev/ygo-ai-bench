@@ -30,6 +30,8 @@ export function installGroupApi(L: unknown): void {
       lua.lua_pushnil(state);
       return 1;
     }
+    lua.lua_pushinteger(state, 1);
+    lua.lua_setfield(state, 1, to_luastring("__group_cursor"));
     pushCardTable(state, uids[0]);
     return 1;
   });
@@ -161,6 +163,26 @@ export function installGroupApi(L: unknown): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SelectWithSumEqual"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
+    const min = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
+    const max = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : min;
+    const selected = selectSubGroup(state, readGroupUids(state, 1), filterRef, min, max, readFilterArgs(state, 5));
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushboolean(state, selected !== undefined);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CheckSubGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 3);
+    const min = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 1;
+    const max = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : min;
+    const selected = selectSubGroup(state, readGroupUids(state, 1), filterRef, min, max, readFilterArgs(state, 7)) ?? [];
+    releaseOptionalFunctionRef(state, filterRef);
+    pushGroupTable(state, selected);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SelectSubGroup"));
   lua.lua_pushcfunction(L, () => 0);
   lua.lua_setfield(L, -2, to_luastring("KeepAlive"));
   lua.lua_pushcfunction(L, () => 0);
@@ -233,6 +255,38 @@ function findSumSelection(entries: { uid: string; value: number }[], target: num
   return undefined;
 }
 
+function selectSubGroup(L: unknown, uids: string[], filterRef: number | undefined, min: number, max: number, args: LuaFilterArgs): string[] | undefined {
+  if (filterRef === undefined) return undefined;
+  const boundedMin = Math.max(0, min);
+  const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
+  return findSubGroupSelection(L, uids, filterRef, boundedMin, boundedMax, args, 0, []);
+}
+
+function findSubGroupSelection(L: unknown, uids: string[], filterRef: number, min: number, max: number, args: LuaFilterArgs, index: number, selected: string[]): string[] | undefined {
+  if (selected.length >= min && selected.length <= max && groupPredicateMatches(L, selected, filterRef, args)) return [...selected];
+  if (index >= uids.length || selected.length >= max) return undefined;
+  for (let nextIndex = index; nextIndex < uids.length; nextIndex += 1) {
+    const uid = uids[nextIndex];
+    if (!uid) continue;
+    selected.push(uid);
+    const found = findSubGroupSelection(L, uids, filterRef, min, max, args, nextIndex + 1, selected);
+    if (found) return found;
+    selected.pop();
+  }
+  return undefined;
+}
+
+function groupPredicateMatches(L: unknown, uids: string[], filterRef: number, args: LuaFilterArgs): boolean {
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, filterRef);
+  pushGroupTable(L, uids);
+  for (let index = 0; index < args.count; index += 1) lua.lua_pushvalue(L, args.start + index);
+  const status = lua.lua_pcall(L, 1 + args.count, 1, 0);
+  if (status !== lua.LUA_OK) return false;
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
+}
+
 const groupFieldNames = [
   "GetFirst",
   "GetNext",
@@ -251,6 +305,8 @@ const groupFieldNames = [
   "GetClassCount",
   "CheckWithSumEqual",
   "SelectWithSumEqual",
+  "CheckSubGroup",
+  "SelectSubGroup",
   "KeepAlive",
   "DeleteGroup",
   "SelectUnselect",
