@@ -283,6 +283,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("stats " .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. c:GetLevel())
       Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsLevel(7)))
       Debug.Message("code checks " .. tostring(c:IsCode(900)) .. "/" .. tostring(c:IsOriginalCode(900)) .. "/" .. tostring(c:IsOriginalCode(100)))
+      Debug.Message("code rule checks " .. c:GetOriginalCodeRule() .. "/" .. tostring(c:IsOriginalCodeRule(900)) .. "/" .. tostring(c:IsOriginalCodeRule(100)))
       local xyz = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local link = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("original predicates " .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalLevel(7)))
@@ -300,6 +301,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("stats 2500/2100/7");
     expect(host.messages).toContain("stat predicates true/true/true");
     expect(host.messages).toContain("code checks true/false/true");
+    expect(host.messages).toContain("code rule checks 100/false/true");
     expect(host.messages).toContain("original predicates true/true");
     expect(host.messages).toContain("rank 4/4/true/true");
     expect(host.messages).toContain("link 2/2/5/true/true");

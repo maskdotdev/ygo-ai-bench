@@ -70,6 +70,12 @@ function installCodeHelpers(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("GetOriginalCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
+    lua.lua_pushinteger(state, card ? Number(card.code) : 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetOriginalCodeRule"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
     lua.lua_pushboolean(state, Boolean(card && requested && cardCodes(card).includes(requested)));
     return 1;
@@ -82,6 +88,13 @@ function installCodeHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsOriginalCode"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsOriginalCodeRule"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
@@ -368,8 +381,10 @@ const cardFieldNames = [
   "RegisterEffect",
   "GetCode",
   "GetOriginalCode",
+  "GetOriginalCodeRule",
   "IsCode",
   "IsOriginalCode",
+  "IsOriginalCodeRule",
   "IsSetCard",
   "GetOwner",
   "IsOwner",
