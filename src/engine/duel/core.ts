@@ -111,6 +111,7 @@ const activationHandlers: DuelActivationHandlers = {
   hasChainResponses,
   resolveChain,
   canAttemptSpecialSummonProcedure,
+  canSpecialSummonCard: canSpecialSummonDuelCard,
   specialSummonCard: specialSummonDuelCard,
 };
 

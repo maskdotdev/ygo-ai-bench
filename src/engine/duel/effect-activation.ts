@@ -40,6 +40,7 @@ export interface DuelActivationHandlers {
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
   canAttemptSpecialSummonProcedure(state: DuelState, uid: string): boolean;
+  canSpecialSummonCard(state: DuelState, uid: string, player: PlayerId): boolean;
   specialSummonCard(state: DuelState, uid: string, player: PlayerId): DuelCardInstance;
 }
 
@@ -83,7 +84,7 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
     if (effect.operation) effect.operation(ctx);
     const currentSource = requireControlledCard(session.state, player, uid);
     if (!effect.range.includes(currentSource.location)) throw new Error(`${source.name} summon procedure is no longer in range`);
-    if (!handlers.canAttemptSpecialSummonProcedure(session.state, uid)) throw new Error(`${source.name} cannot be Special Summoned`);
+    if (!handlers.canSpecialSummonCard(session.state, uid, player)) throw new Error(`${source.name} cannot be Special Summoned`);
     markEffectUsed(session.state, effect);
     handlers.specialSummonCard(session.state, uid, player);
   } catch (error) {
