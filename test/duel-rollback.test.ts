@@ -390,4 +390,31 @@ describe("duel rollback", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
     expect(session.state.log.some((entry) => entry.action === "linkMaterial")).toBe(false);
   });
+
+  it("rolls back failed ritual summon material moves from responses", () => {
+    const { session, target: ritual, first: firstMaterial, blocked: blockedMaterial } = setupFailedMoveAfterFirstFixture({
+      seed: 92,
+      main: ["940", "100", "300"],
+      target: { location: "hand", code: "940" },
+      first: { location: "hand", code: "100" },
+      blocked: { location: "hand", code: "300" },
+      block: { id: "cannot-send-second-ritual-material", code: 68, range: ["hand"], firstMovedTo: "graveyard" },
+    });
+    expect(ritual).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("ritualSummon");
+    if (!action || action.type !== "ritualSummon") throw new Error("Expected ritual summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === ritual!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
+    expect(session.state.log.some((entry) => entry.action === "ritualMaterial")).toBe(false);
+  });
 });
