@@ -1,6 +1,6 @@
 import type { DuelCardInstance, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
-export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason = 0): DuelCardInstance {
+export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason = 0, reasonPlayer?: PlayerId): DuelCardInstance {
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
   card.previousLocation = card.location;
@@ -9,6 +9,7 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   card.previousPosition = card.position;
   card.previousFaceUp = card.faceUp;
   card.reason = reason;
+  card.reasonPlayer = reasonPlayer ?? controller ?? card.controller;
   card.location = to;
   if (controller !== undefined) card.controller = controller;
   card.sequence = nextSequence(state, card.controller, to);

@@ -67,6 +67,7 @@ export interface DuelCardInstance {
   previousPosition?: CardPosition;
   previousFaceUp?: boolean;
   reason?: number;
+  reasonPlayer?: PlayerId;
   summonType?: DuelSummonType;
   data: DuelCardData;
 }

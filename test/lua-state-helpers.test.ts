@@ -209,6 +209,7 @@ describe("Lua state helpers", () => {
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
       Debug.Message("previous state " .. g:GetPreviousLocation() .. "/" .. g:GetPreviousControler() .. "/" .. g:GetPreviousSequence() .. "/" .. g:GetPreviousPosition())
       Debug.Message("previous position " .. tostring(g:IsPreviousPosition(POS_FACEUP_ATTACK)))
+      Debug.Message("reason player " .. g:GetReasonPlayer() .. "/" .. tostring(g:IsReasonPlayer(0)) .. "/" .. tostring(g:IsReasonPlayer(1)))
       Debug.Message("grave relation " .. tostring(g:IsOnField()) .. "/" .. tostring(g:IsMonster()))
       `,
       "card-state.lua",
@@ -224,6 +225,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous position true");
+    expect(host.messages).toContain("reason player 0/true/false");
     expect(host.messages).toContain("grave relation false/true");
   });
 });

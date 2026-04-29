@@ -178,6 +178,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberMatcher(L, "IsPreviousControler", session, (card, requested) => card.previousController === normalizePlayer(requested));
   pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
   pushNumberMatcher(L, "IsReason", session, (card, requested) => ((card.reason ?? 0) & requested) !== 0);
+  pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
+  pushNumberMatcher(L, "IsReasonPlayer", session, (card, requested) => (card.reasonPlayer ?? card.controller) === normalizePlayer(requested));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const player = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : undefined;
@@ -409,6 +411,8 @@ const cardFieldNames = [
   "IsPreviousControler",
   "GetReason",
   "IsReason",
+  "GetReasonPlayer",
+  "IsReasonPlayer",
   "IsControler",
   "GetSummonType",
   "IsSummonType",
