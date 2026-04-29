@@ -34,6 +34,7 @@ import {
   tributeSummonActions,
   tributeSummonDuelCard as tributeSummonDuelCardWithEvents,
   type DuelMaterialMover,
+  type DuelMaterialPredicate,
   type DuelOverlayMaterialMover,
   xyzSummonActions,
   xyzSummonDuelCard as xyzSummonDuelCardWithEvents,
@@ -191,10 +192,10 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   if (state.phase === "main1" || state.phase === "main2") {
     actions.push(...normalSummonActions(state, player, hand));
     actions.push(...tributeSummonActions(state, player, hand));
-    actions.push(...fusionSummonActions(state, player));
-    actions.push(...synchroSummonActions(state, player));
+    actions.push(...fusionSummonActions(state, player, createMaterialUsePredicate(state, "fusion")));
+    actions.push(...synchroSummonActions(state, player, createMaterialUsePredicate(state, "synchro")));
     actions.push(...xyzSummonActions(state, player, (uid) => !isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))));
-    actions.push(...linkSummonActions(state, player));
+    actions.push(...linkSummonActions(state, player, createMaterialUsePredicate(state, "link")));
     actions.push(...ritualSummonActions(state, player, hand));
     actions.push(...specialSummonProcedureActions(state, player));
     if (hasZoneSpace(state, player, "spellTrapZone")) {
@@ -405,11 +406,11 @@ export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
 }
 
 export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
-  return fusionSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state));
+  return fusionSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "fusion"));
 }
 
 export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
-  return synchroSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state));
+  return synchroSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "synchro"));
 }
 
 export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
@@ -417,7 +418,7 @@ export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: strin
 }
 
 export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
-  return linkSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state));
+  return linkSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "link"));
 }
 
 export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
@@ -437,6 +438,10 @@ function createOverlayMaterialMover(state: DuelState): DuelOverlayMaterialMover 
     requireDuelMoveAllowed(state, uid, "overlay", reason);
     return moveDuelCard(state, uid, "overlay", controller, reason);
   };
+}
+
+function createMaterialUsePredicate(state: DuelState, kind: "fusion" | "synchro" | "xyz" | "link"): DuelMaterialPredicate {
+  return (uid) => !isMaterialUsePrevented(state, uid, kind, createContinuousEffectContext(state));
 }
 
 export function drawDuelCards(state: DuelState, player: PlayerId, count: number, detail = "Effect draw"): number {

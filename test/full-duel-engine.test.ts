@@ -913,6 +913,37 @@ describe("full duel engine API", () => {
     expect(session.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("monsterZone");
   });
 
+  it("blocks fusion summons when material cannot be used as Fusion material", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    const blockedMaterial = materials.find((card) => card.code === "100");
+    expect(fusion).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    expect(blockedMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "cannot-be-fusion-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 235,
+      range: ["hand"],
+      operation() {},
+    });
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid)).toBe(false);
+    expect(() => fusionSummonDuelCard(session.state, 0, fusion!.uid, materials.map((card) => card.uid))).toThrow("cannot be used as fusion material");
+    expect(session.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
+  });
+
   it("does not expose fusion summon actions without all materials or with no monster zone space", () => {
     const missing = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(missing, {
@@ -993,6 +1024,38 @@ describe("full duel engine API", () => {
     });
 
     expect(() => synchroSummonDuelCard(session.state, 0, synchro!.uid, materials.map((card) => card.uid))).toThrow("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
+  });
+
+  it("blocks synchro summons when material cannot be used as Synchro material", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["910"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const synchro = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "910");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(synchro).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+    const blockedMaterial = materials.find((card) => card.code === "100");
+    expect(blockedMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "cannot-be-synchro-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 236,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid)).toBe(false);
+    expect(() => synchroSummonDuelCard(session.state, 0, synchro!.uid, materials.map((card) => card.uid))).toThrow("cannot be used as synchro material");
     expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.location).toBe("extraDeck");
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
   });
@@ -1444,6 +1507,38 @@ describe("full duel engine API", () => {
     expect(redirected?.reason && (redirected.reason & duelReason.link)).toBe(duelReason.link);
     expect(redirected?.reason && (redirected.reason & duelReason.redirect)).toBe(duelReason.redirect);
     expect(session.state.cards.find((card) => card.uid === link!.uid)?.location).toBe("monsterZone");
+  });
+
+  it("blocks link summons when material cannot be used as material", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["930"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const link = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "930");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(link).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+    const blockedMaterial = materials.find((card) => card.code === "100");
+    expect(blockedMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "cannot-be-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 248,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid)).toBe(false);
+    expect(() => linkSummonDuelCard(session.state, 0, link!.uid, materials.map((card) => card.uid))).toThrow("cannot be used as Link material");
+    expect(session.state.cards.find((card) => card.uid === link!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
   });
 
   it("link summons emit special summon triggers", () => {
