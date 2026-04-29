@@ -6,14 +6,14 @@ import { installDuelDeckApi } from "./lua-duel-deck-api.js";
 import { installDuelFlagApi } from "./lua-duel-flag-api.js";
 import { installDuelLpApi } from "./lua-duel-lp-api.js";
 import { installDuelMoveApi } from "./lua-duel-move-api.js";
+import { installDuelOperationApi } from "./lua-duel-operation-api.js";
 import { installDuelPlayerApi } from "./lua-duel-player-api.js";
 import { installDuelQueryApi } from "./lua-duel-query-api.js";
 import { installDuelReleaseApi } from "./lua-duel-release-api.js";
 import { installDuelSummonApi } from "./lua-duel-summon-api.js";
 import { installDuelTurnApi } from "./lua-duel-turn-api.js";
-import { pushGroupTable } from "./lua-group-api.js";
-import { readCardUid, readGroupUids } from "./lua-api-utils.js";
-import type { DuelSession, PlayerId } from "./duel-types.js";
+import type { LuaDuelOperationInfo } from "./lua-duel-operation-api.js";
+import type { DuelSession } from "./duel-types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -23,15 +23,6 @@ export interface LuaDuelApiHostState {
   operationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
   pushEffectTable: (state: unknown, id: number) => void;
-}
-
-export interface LuaDuelOperationInfo {
-  chainIndex: number;
-  category: number;
-  targetUids: string[];
-  count: number;
-  player: PlayerId;
-  parameter: number;
 }
 
 export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
@@ -94,7 +85,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelSummonApi(L, session, hostState);
   installDuelQueryApi(L, session, hostState);
   installDuelReleaseApi(L, session);
-  installOperationInfoHelpers(L, hostState);
+  installDuelOperationApi(L, hostState);
   installDuelFlagApi(L, session);
   lua.lua_setglobal(L, to_luastring("Duel"));
 }
@@ -103,60 +94,4 @@ function pushFirstAnnouncementValue(L: unknown, fallback: number): number {
   const value = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : fallback;
   lua.lua_pushinteger(L, value);
   return 1;
-}
-
-function installOperationInfoHelpers(L: unknown, hostState: LuaDuelApiHostState): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const info: LuaDuelOperationInfo = {
-      chainIndex: lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0,
-      category: lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0,
-      targetUids: readCardOrGroupUids(state, 3),
-      count: lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0,
-      player: readOptionalPlayer(state, 5) ?? 0,
-      parameter: lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : 0,
-    };
-    const existingIndex = hostState.operationInfos.findIndex((candidate) => candidate.chainIndex === info.chainIndex && candidate.category === info.category);
-    if (existingIndex >= 0) hostState.operationInfos[existingIndex] = info;
-    else hostState.operationInfos.push(info);
-    return 0;
-  });
-  lua.lua_setfield(L, -2, to_luastring("SetOperationInfo"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const chainIndex = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0;
-    const category = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const info = findOperationInfo(hostState.operationInfos, chainIndex, category);
-    if (!info) {
-      lua.lua_pushboolean(state, false);
-      return 1;
-    }
-    lua.lua_pushboolean(state, true);
-    lua.lua_pushinteger(state, info.category);
-    pushGroupTable(state, info.targetUids);
-    lua.lua_pushinteger(state, info.count);
-    lua.lua_pushinteger(state, info.player);
-    lua.lua_pushinteger(state, info.parameter);
-    return 6;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetOperationInfo"));
-}
-
-function findOperationInfo(operationInfos: LuaDuelOperationInfo[], chainIndex: number, category: number): LuaDuelOperationInfo | undefined {
-  for (let index = operationInfos.length - 1; index >= 0; index -= 1) {
-    const candidate = operationInfos[index];
-    if (!candidate) continue;
-    if (candidate.chainIndex === chainIndex && candidate.category === category) return candidate;
-  }
-  return undefined;
-}
-
-function readCardOrGroupUids(L: unknown, index: number): string[] {
-  const cardUid = readCardUid(L, index);
-  return cardUid ? [cardUid] : readGroupUids(L, index);
-}
-
-function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
-  if (!lua.lua_isnumber(L, index)) return undefined;
-  const value = lua.lua_tointeger(L, index);
-  if (value !== 0 && value !== 1) return undefined;
-  return value;
 }
