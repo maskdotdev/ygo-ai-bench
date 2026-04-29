@@ -19,6 +19,13 @@ export function installDuelChainApi(L: unknown, session: DuelSession, hostState:
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetCurrentChain"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, session.state.chain.length);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetChainCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushChainPlayer(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("GetChainPlayer"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChainInfo(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetChainInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChainEvent(state, session, hostState));
@@ -60,6 +67,17 @@ function pushChainInfo(L: unknown, session: DuelSession, hostState: LuaDuelChain
     pushed += 1;
   }
   return pushed;
+}
+
+function pushChainPlayer(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
+  const requestedIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.chain.length;
+  const link = chainLinkByLuaIndex(session, requestedIndex, hostState);
+  if (!link) {
+    lua.lua_pushnil(L);
+    return 1;
+  }
+  lua.lua_pushinteger(L, link.player);
+  return 1;
 }
 
 function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState, link: DuelState["chain"][number], info: number): void {
