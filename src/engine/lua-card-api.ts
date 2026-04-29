@@ -127,6 +127,10 @@ function installStateHelpers(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsPosition"));
   pushBooleanGetter(L, "IsAttackPos", session, (card) => Boolean(card && card.position === "faceUpAttack"));
   pushBooleanGetter(L, "IsDefensePos", session, (card) => Boolean(card && (card.position === "faceUpDefense" || card.position === "faceDownDefense")));
+  pushBooleanGetter(L, "IsOnField", session, (card) => Boolean(card && (card.location === "monsterZone" || card.location === "spellTrapZone")));
+  pushBooleanGetter(L, "IsMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0));
+  pushBooleanGetter(L, "IsSpell", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x2) !== 0));
+  pushBooleanGetter(L, "IsTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x4) !== 0));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
@@ -171,6 +175,7 @@ function installStateHelpers(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsAbleToExtra", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "extraDeck")));
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
+  pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
 }
 
 function installFlagHelpers(L: unknown, session: DuelSession): void {
@@ -327,6 +332,10 @@ const cardFieldNames = [
   "IsPosition",
   "IsAttackPos",
   "IsDefensePos",
+  "IsOnField",
+  "IsMonster",
+  "IsSpell",
+  "IsTrap",
   "IsLocation",
   "GetPreviousLocation",
   "GetPreviousSequence",
@@ -347,6 +356,7 @@ const cardFieldNames = [
   "IsAbleToExtra",
   "IsRelateToEffect",
   "IsRelateToBattle",
+  "IsCanBeEffectTarget",
   "RegisterFlagEffect",
   "GetFlagEffect",
   "ResetFlagEffect",

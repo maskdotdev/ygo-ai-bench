@@ -1380,10 +1380,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("original meta " .. c:GetOriginalCode() .. "/" .. c:GetOriginalType() .. "/" .. c:GetOriginalLevel() .. "/" .. c:GetOriginalRace() .. "/" .. c:GetOriginalAttribute())
       Debug.Message("base stats " .. c:GetBaseAttack() .. "/" .. c:GetBaseDefense())
       Debug.Message("position checks " .. tostring(c:IsPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(c:IsControler(0)))
+      Debug.Message("relation checks " .. tostring(c:IsOnField()) .. "/" .. tostring(c:IsMonster()) .. "/" .. tostring(c:IsSpell()) .. "/" .. tostring(c:IsTrap()) .. "/" .. tostring(c:IsCanBeEffectTarget(nil)))
       Duel.SendtoGrave(c, REASON_EFFECT)
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
       Debug.Message("previous state " .. g:GetPreviousLocation() .. "/" .. g:GetPreviousControler() .. "/" .. g:GetPreviousSequence() .. "/" .. g:GetPreviousPosition())
       Debug.Message("previous position " .. tostring(g:IsPreviousPosition(POS_FACEUP_ATTACK)))
+      Debug.Message("grave relation " .. tostring(g:IsOnField()) .. "/" .. tostring(g:IsMonster()))
       `,
       "card-state.lua",
     );
@@ -1393,8 +1395,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("original meta 100/33/4/2/32");
     expect(host.messages).toContain("base stats 1700/1300");
     expect(host.messages).toContain("position checks true/true");
+    expect(host.messages).toContain("relation checks true/true/false/false/true");
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous position true");
+    expect(host.messages).toContain("grave relation false/true");
   });
 
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
