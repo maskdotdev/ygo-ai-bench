@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { duelActivity } from "./duel-activity.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
 
@@ -134,11 +135,11 @@ export function installConstants(L: unknown): void {
     EFFECT_COUNT_CODE_OATH: 0x1,
     EFFECT_COUNT_CODE_DUEL: 0x2,
     EFFECT_COUNT_CODE_SINGLE: 0x4,
-    ACTIVITY_SUMMON: 0x1,
-    ACTIVITY_NORMALSUMMON: 0x2,
-    ACTIVITY_SPSUMMON: 0x4,
-    ACTIVITY_FLIPSUMMON: 0x8,
-    ACTIVITY_ATTACK: 0x10,
+    ACTIVITY_SUMMON: duelActivity.summon,
+    ACTIVITY_NORMALSUMMON: duelActivity.normalSummon,
+    ACTIVITY_SPSUMMON: duelActivity.specialSummon,
+    ACTIVITY_FLIPSUMMON: duelActivity.flipSummon,
+    ACTIVITY_ATTACK: duelActivity.attack,
   };
   for (const [name, value] of Object.entries(constants)) {
     lua.lua_pushinteger(L, value);

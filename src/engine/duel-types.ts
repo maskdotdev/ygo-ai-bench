@@ -81,6 +81,14 @@ export interface DuelPlayerState {
   normalSummonAvailable: boolean;
 }
 
+export interface DuelActivityCounts {
+  summon: number;
+  normalSummon: number;
+  specialSummon: number;
+  flipSummon: number;
+  attack: number;
+}
+
 export interface DuelLogEntry {
   step: number;
   action: string;
@@ -183,6 +191,7 @@ export interface DuelState {
   pendingTriggers: PendingTrigger[];
   usedCountKeys: string[];
   flagEffects: DuelFlagEffect[];
+  activityCounts: Record<PlayerId, DuelActivityCounts>;
   attacksDeclared: string[];
   positionsChanged: string[];
   currentAttack?: {
@@ -252,6 +261,7 @@ export interface PublicDuelState {
   cards: PublicDuelCard[];
   chain: ChainLink[];
   pendingTriggers: PendingTrigger[];
+  activityCounts: Record<PlayerId, DuelActivityCounts>;
   attacksDeclared: string[];
   positionsChanged: string[];
   log: DuelLogEntry[];

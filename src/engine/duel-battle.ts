@@ -1,4 +1,5 @@
 import { findCard, getCards, pushDuelLog, requireControlledCard } from "./duel-card-state.js";
+import { recordAttackActivity } from "./duel-activity.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "./duel-types.js";
 
 export interface DuelBattleCallbacks {
@@ -32,6 +33,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   }
 
   state.attacksDeclared.push(attacker.uid);
+  recordAttackActivity(state, player);
   state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
   if (!target) {
     pushDuelLog(state, "attack", player, attacker.name, "Direct attack");

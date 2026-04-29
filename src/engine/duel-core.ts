@@ -1,5 +1,11 @@
 import { shuffle } from "./rng.js";
 import {
+  copyDuelActivityCounts,
+  createDuelActivityCounts,
+  recordSpecialSummonActivity,
+  resetDuelActivityCounts,
+} from "./duel-activity.js";
+import {
   findCard,
   getCards,
   hasZoneSpace,
@@ -92,6 +98,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     pendingTriggers: [],
     usedCountKeys: [],
     flagEffects: [],
+    activityCounts: createDuelActivityCounts(),
     attacksDeclared: [],
     positionsChanged: [],
     log: [],
@@ -240,6 +247,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
     cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
     chain: state.chain.map(copyChainLink),
     pendingTriggers: state.pendingTriggers.map((trigger) => ({ ...trigger })),
+    activityCounts: copyDuelActivityCounts(state.activityCounts),
     attacksDeclared: [...state.attacksDeclared],
     positionsChanged: [...state.positionsChanged],
     log: state.log.map((entry) => ({ ...entry })),
@@ -262,6 +270,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       pendingTriggers: session.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       usedCountKeys: [...session.state.usedCountKeys],
       flagEffects: session.state.flagEffects.map((flag) => ({ ...flag })),
+      activityCounts: copyDuelActivityCounts(session.state.activityCounts),
       attacksDeclared: [...session.state.attacksDeclared],
       positionsChanged: [...session.state.positionsChanged],
       ...(session.state.currentAttack === undefined ? {} : { currentAttack: { ...session.state.currentAttack } }),
@@ -288,6 +297,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       pendingTriggers: snapshot.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       usedCountKeys: [...snapshot.state.usedCountKeys],
       flagEffects: snapshot.state.flagEffects.map((flag) => ({ ...flag })),
+      activityCounts: copyDuelActivityCounts(snapshot.state.activityCounts),
       attacksDeclared: [...snapshot.state.attacksDeclared],
       positionsChanged: [...snapshot.state.positionsChanged],
       ...(snapshot.state.currentAttack === undefined ? {} : { currentAttack: { ...snapshot.state.currentAttack } }),
@@ -306,6 +316,7 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "special";
+  recordSpecialSummonActivity(state, summonController);
   pushDuelLog(state, "specialSummon", card.controller, card.name, "Special Summoned");
   collectTriggerEffects(state, "specialSummoned", card);
   return card;
@@ -524,6 +535,7 @@ function endTurn(state: DuelState, player: PlayerId): void {
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
   state.positionsChanged = [];
+  for (const activityPlayer of [0, 1] satisfies PlayerId[]) resetDuelActivityCounts(state, activityPlayer);
   delete state.currentAttack;
   state.players[state.turnPlayer].normalSummonAvailable = true;
   draw(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");

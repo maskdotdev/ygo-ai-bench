@@ -1642,6 +1642,42 @@ describe("full duel engine API", () => {
     expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.attacksDeclared).toContain(attacker!.uid);
   });
 
+  it("tracks summon and attack activity counts through snapshots and turn reset", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const flip = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(flip).toBeTruthy();
+    expect(session.state.activityCounts[0]).toEqual({ summon: 0, normalSummon: 0, specialSummon: 0, flipSummon: 0, attack: 0 });
+
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    moveDuelCard(session.state, flip!.uid, "monsterZone", 0).position = "faceDownDefense";
+    session.state.cards.find((card) => card.uid === flip!.uid)!.faceUp = false;
+    flipSummonDuelCard(session.state, 0, flip!.uid);
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid);
+    expect(attack).toBeTruthy();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+
+    expect(session.state.activityCounts[0]).toEqual({ summon: 2, normalSummon: 0, specialSummon: 1, flipSummon: 1, attack: 1 });
+    expect(queryPublicState(session).activityCounts[0]).toEqual(session.state.activityCounts[0]);
+    expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.activityCounts[0]).toEqual(session.state.activityCounts[0]);
+
+    const end = getDuelLegalActions(session, 0).find((action) => action.type === "endTurn");
+    expect(end).toBeTruthy();
+    expect(applyResponse(session, end!).ok).toBe(true);
+    expect(session.state.activityCounts[0]).toEqual({ summon: 0, normalSummon: 0, specialSummon: 0, flipSummon: 0, attack: 0 });
+  });
+
   it("resolves attack-position monster battles with destruction and battle damage", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
