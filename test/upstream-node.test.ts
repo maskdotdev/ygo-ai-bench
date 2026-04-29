@@ -3,9 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createCardReader, createUpstreamSourceConfig, normalizeCdbRows } from "#engine/data-loaders.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 
 const tempRoots: string[] = [];
@@ -92,6 +93,54 @@ describe("Node upstream workspace loader", () => {
     expect(host.messages).toContain("handler player 0");
     expect(result.state.log.some((entry) => entry.detail.includes("Lua effect operation resolved"))).toBe(true);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect")).toBe(false);
+  });
+
+  it("rehydrates Lua effects from restored snapshots", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("restored lua operation " .. c:GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const session = createDuel({ seed: 2, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const snapshot = serializeDuel(session);
+
+    const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
+    expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }]);
+    expect(restored.registeredEffects).toBe(1);
+    expect(restored.session.state.effects.map((effect) => effect.registryKey)).toEqual(["lua:100:lua-1"]);
+
+    const action = getDuelLegalActions(restored.session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeTruthy();
+    const result = applyResponse(restored.session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(restored.host.messages).toContain("restored lua operation 100");
   });
 
   it("lets Lua operations move cards through Duel helpers", () => {

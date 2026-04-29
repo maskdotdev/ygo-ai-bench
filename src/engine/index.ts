@@ -5,6 +5,7 @@ export * from "#engine/core.js";
 export * from "#duel/types.js";
 export * from "#engine/data-loaders.js";
 export * from "#engine/parity.js";
+export * from "#lua/snapshot.js";
 export {
   createDuel,
   loadDecks,
