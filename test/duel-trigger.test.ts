@@ -488,6 +488,93 @@ describe("duel triggers", () => {
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
   });
 
+  it("declines optional trigger buckets without exposing later buckets early", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "500", "300"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstTurnOptional = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const secondTurnOptional = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const opponentOptional = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(firstTurnOptional).toBeTruthy();
+    expect(secondTurnOptional).toBeTruthy();
+    expect(opponentOptional).toBeTruthy();
+
+    registerEffect(session, {
+      id: "first-turn-optional-bucket",
+      sourceUid: firstTurnOptional!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("First turn optional bucket resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "opponent-later-optional-bucket",
+      sourceUid: opponentOptional!.uid,
+      controller: 1,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Opponent later optional bucket resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "second-turn-optional-bucket",
+      sourceUid: secondTurnOptional!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Second turn optional bucket resolved");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    const result = applyResponse(session, summon!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
+      "first-turn-optional-bucket",
+      "second-turn-optional-bucket",
+      "opponent-later-optional-bucket",
+    ]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
+      "first-turn-optional-bucket",
+      "second-turn-optional-bucket",
+    ]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+
+    const declineFirst = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === "first-turn-optional-bucket");
+    expect(declineFirst).toBeTruthy();
+    const afterFirstDecline = applyResponse(session, declineFirst!);
+
+    expect(afterFirstDecline.ok).toBe(true);
+    expect(afterFirstDecline.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-turn-optional-bucket", "opponent-later-optional-bucket"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["second-turn-optional-bucket"]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+
+    const declineSecond = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === "second-turn-optional-bucket");
+    expect(declineSecond).toBeTruthy();
+    const afterSecondDecline = applyResponse(session, declineSecond!);
+
+    expect(afterSecondDecline.ok).toBe(true);
+    expect(afterSecondDecline.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["opponent-later-optional-bucket"]);
+    expect(afterSecondDecline.state.waitingFor).toBe(1);
+    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 1).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["opponent-later-optional-bucket"]);
+  });
+
   it("collects phase and turn-start trigger effects", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
