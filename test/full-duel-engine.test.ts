@@ -35,7 +35,7 @@ import {
 import { moveDuelCard } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import { cards, findPublicCard } from "./full-duel-engine-fixtures.js";
+import { cards, findPublicCard, setupFailedMoveAfterFirstFixture } from "./full-duel-engine-fixtures.js";
 
 describe("full duel engine API", () => {
   it("starts a deterministic two-player duel and exposes legal responses", () => {
@@ -1086,32 +1086,18 @@ describe("full duel engine API", () => {
   });
 
   it("rolls back failed fusion summon material moves from responses", () => {
-    const session = createDuel({ seed: 88, startingHandSize: 2, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300"], extra: ["900"] },
-      1: { main: ["400", "400"] },
+    const { session, target: fusion, first: firstMaterial, blocked: blockedMaterial } = setupFailedMoveAfterFirstFixture({
+      seed: 88,
+      main: ["100", "300"],
+      extra: ["900"],
+      target: { location: "extraDeck", code: "900" },
+      first: { location: "hand", code: "100" },
+      blocked: { location: "hand", code: "300" },
+      block: { id: "cannot-send-second-material", code: 68, range: ["hand"], firstMovedTo: "graveyard" },
     });
-    startDuel(session);
-
-    const fusion = findPublicCard(session, 0, "extraDeck", "900");
-    const firstMaterial = findPublicCard(session, 0, "hand", "100");
-    const blockedMaterial = findPublicCard(session, 0, "hand", "300");
     expect(fusion).toBeTruthy();
     expect(firstMaterial).toBeTruthy();
     expect(blockedMaterial).toBeTruthy();
-
-    registerEffect(session, {
-      id: "cannot-send-second-material",
-      sourceUid: blockedMaterial!.uid,
-      controller: 0,
-      event: "continuous",
-      code: 68,
-      range: ["hand"],
-      canActivate(ctx) {
-        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "graveyard";
-      },
-      operation() {},
-    });
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
     expect(action).toBeTruthy();
@@ -1323,34 +1309,18 @@ describe("full duel engine API", () => {
   });
 
   it("rolls back failed synchro summon material moves from responses", () => {
-    const session = createDuel({ seed: 89, startingHandSize: 2, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300"], extra: ["910"] },
-      1: { main: ["400", "400"] },
+    const { session, target: synchro, first: firstMaterial, blocked: blockedMaterial } = setupFailedMoveAfterFirstFixture({
+      seed: 89,
+      main: ["100", "300"],
+      extra: ["910"],
+      target: { location: "extraDeck", code: "910" },
+      first: { location: "hand", code: "100", moveTo: "monsterZone" },
+      blocked: { location: "hand", code: "300", moveTo: "monsterZone" },
+      block: { id: "cannot-send-second-synchro-material", code: 68, range: ["monsterZone"], firstMovedTo: "graveyard" },
     });
-    startDuel(session);
-
-    const synchro = findPublicCard(session, 0, "extraDeck", "910");
-    const firstMaterial = findPublicCard(session, 0, "hand", "100");
-    const blockedMaterial = findPublicCard(session, 0, "hand", "300");
     expect(synchro).toBeTruthy();
     expect(firstMaterial).toBeTruthy();
     expect(blockedMaterial).toBeTruthy();
-    moveDuelCard(session.state, firstMaterial!.uid, "monsterZone", 0);
-    moveDuelCard(session.state, blockedMaterial!.uid, "monsterZone", 0);
-
-    registerEffect(session, {
-      id: "cannot-send-second-synchro-material",
-      sourceUid: blockedMaterial!.uid,
-      controller: 0,
-      event: "continuous",
-      code: 68,
-      range: ["monsterZone"],
-      canActivate(ctx) {
-        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "graveyard";
-      },
-      operation() {},
-    });
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid);
     expect(action).toBeTruthy();
@@ -1617,34 +1587,18 @@ describe("full duel engine API", () => {
   });
 
   it("rolls back failed Xyz summon material moves from responses", () => {
-    const session = createDuel({ seed: 90, startingHandSize: 2, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300"], extra: ["920"] },
-      1: { main: ["400", "400"] },
+    const { session, target: xyz, first: firstMaterial, blocked: blockedMaterial } = setupFailedMoveAfterFirstFixture({
+      seed: 90,
+      main: ["100", "300"],
+      extra: ["920"],
+      target: { location: "extraDeck", code: "920" },
+      first: { location: "hand", code: "100", moveTo: "monsterZone" },
+      blocked: { location: "hand", code: "300", moveTo: "monsterZone" },
+      block: { id: "cannot-overlay-second-material", code: 238, range: ["monsterZone"], firstMovedTo: "overlay" },
     });
-    startDuel(session);
-
-    const xyz = findPublicCard(session, 0, "extraDeck", "920");
-    const firstMaterial = findPublicCard(session, 0, "hand", "100");
-    const blockedMaterial = findPublicCard(session, 0, "hand", "300");
     expect(xyz).toBeTruthy();
     expect(firstMaterial).toBeTruthy();
     expect(blockedMaterial).toBeTruthy();
-    moveDuelCard(session.state, firstMaterial!.uid, "monsterZone", 0);
-    moveDuelCard(session.state, blockedMaterial!.uid, "monsterZone", 0);
-
-    registerEffect(session, {
-      id: "cannot-overlay-second-material",
-      sourceUid: blockedMaterial!.uid,
-      controller: 0,
-      event: "continuous",
-      code: 238,
-      range: ["monsterZone"],
-      canActivate(ctx) {
-        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "overlay";
-      },
-      operation() {},
-    });
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid);
     expect(action).toBeTruthy();
@@ -1925,34 +1879,18 @@ describe("full duel engine API", () => {
   });
 
   it("rolls back failed link summon material moves from responses", () => {
-    const session = createDuel({ seed: 91, startingHandSize: 2, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300"], extra: ["930"] },
-      1: { main: ["400", "400"] },
+    const { session, target: link, first: firstMaterial, blocked: blockedMaterial } = setupFailedMoveAfterFirstFixture({
+      seed: 91,
+      main: ["100", "300"],
+      extra: ["930"],
+      target: { location: "extraDeck", code: "930" },
+      first: { location: "hand", code: "100", moveTo: "monsterZone" },
+      blocked: { location: "hand", code: "300", moveTo: "monsterZone" },
+      block: { id: "cannot-send-second-link-material", code: 68, range: ["monsterZone"], firstMovedTo: "graveyard" },
     });
-    startDuel(session);
-
-    const link = findPublicCard(session, 0, "extraDeck", "930");
-    const firstMaterial = findPublicCard(session, 0, "hand", "100");
-    const blockedMaterial = findPublicCard(session, 0, "hand", "300");
     expect(link).toBeTruthy();
     expect(firstMaterial).toBeTruthy();
     expect(blockedMaterial).toBeTruthy();
-    moveDuelCard(session.state, firstMaterial!.uid, "monsterZone", 0);
-    moveDuelCard(session.state, blockedMaterial!.uid, "monsterZone", 0);
-
-    registerEffect(session, {
-      id: "cannot-send-second-link-material",
-      sourceUid: blockedMaterial!.uid,
-      controller: 0,
-      event: "continuous",
-      code: 68,
-      range: ["monsterZone"],
-      canActivate(ctx) {
-        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "graveyard";
-      },
-      operation() {},
-    });
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid);
     expect(action).toBeTruthy();
@@ -2222,32 +2160,17 @@ describe("full duel engine API", () => {
   });
 
   it("rolls back failed ritual summon material moves from responses", () => {
-    const session = createDuel({ seed: 92, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["940", "100", "300"] },
-      1: { main: ["400", "400", "400"] },
+    const { session, target: ritual, first: firstMaterial, blocked: blockedMaterial } = setupFailedMoveAfterFirstFixture({
+      seed: 92,
+      main: ["940", "100", "300"],
+      target: { location: "hand", code: "940" },
+      first: { location: "hand", code: "100" },
+      blocked: { location: "hand", code: "300" },
+      block: { id: "cannot-send-second-ritual-material", code: 68, range: ["hand"], firstMovedTo: "graveyard" },
     });
-    startDuel(session);
-
-    const ritual = findPublicCard(session, 0, "hand", "940");
-    const firstMaterial = findPublicCard(session, 0, "hand", "100");
-    const blockedMaterial = findPublicCard(session, 0, "hand", "300");
     expect(ritual).toBeTruthy();
     expect(firstMaterial).toBeTruthy();
     expect(blockedMaterial).toBeTruthy();
-
-    registerEffect(session, {
-      id: "cannot-send-second-ritual-material",
-      sourceUid: blockedMaterial!.uid,
-      controller: 0,
-      event: "continuous",
-      code: 68,
-      range: ["hand"],
-      canActivate(ctx) {
-        return ctx.duel.cards.find((card) => card.uid === firstMaterial!.uid)?.location === "graveyard";
-      },
-      operation() {},
-    });
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
     expect(action).toBeTruthy();
@@ -2826,34 +2749,17 @@ describe("full duel engine API", () => {
   });
 
   it("rolls back failed tribute summon release moves from responses", () => {
-    const session = createDuel({ seed: 93, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["700", "100", "300"] },
-      1: { main: ["400", "400", "400"] },
+    const { session, target: tributeMonster, first: firstTribute, blocked: blockedTribute } = setupFailedMoveAfterFirstFixture({
+      seed: 93,
+      main: ["700", "100", "300"],
+      target: { location: "hand", code: "700" },
+      first: { location: "hand", code: "100", moveTo: "monsterZone" },
+      blocked: { location: "hand", code: "300", moveTo: "monsterZone" },
+      block: { id: "cannot-send-second-tribute", code: 68, range: ["monsterZone"], firstMovedTo: "graveyard" },
     });
-    startDuel(session);
-
-    const tributeMonster = findPublicCard(session, 0, "hand", "700");
-    const firstTribute = findPublicCard(session, 0, "hand", "100");
-    const blockedTribute = findPublicCard(session, 0, "hand", "300");
     expect(tributeMonster).toBeTruthy();
     expect(firstTribute).toBeTruthy();
     expect(blockedTribute).toBeTruthy();
-    moveDuelCard(session.state, firstTribute!.uid, "monsterZone", 0);
-    moveDuelCard(session.state, blockedTribute!.uid, "monsterZone", 0);
-
-    registerEffect(session, {
-      id: "cannot-send-second-tribute",
-      sourceUid: blockedTribute!.uid,
-      controller: 0,
-      event: "continuous",
-      code: 68,
-      range: ["monsterZone"],
-      canActivate(ctx) {
-        return ctx.duel.cards.find((card) => card.uid === firstTribute!.uid)?.location === "graveyard";
-      },
-      operation() {},
-    });
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "tributeSummon" && candidate.uid === tributeMonster!.uid);
     expect(action).toBeTruthy();

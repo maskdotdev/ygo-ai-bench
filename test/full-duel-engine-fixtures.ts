@@ -1,4 +1,12 @@
-import { queryPublicState } from "#duel/core.js";
+import {
+  createDuel,
+  loadDecks,
+  queryPublicState,
+  registerEffect,
+  startDuel,
+} from "#duel/core.js";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 export const cards: DuelCardData[] = [
@@ -28,4 +36,49 @@ export const cards: DuelCardData[] = [
 
 export function findPublicCard(session: DuelSession, player: PlayerId, location: DuelLocation, code: string) {
   return queryPublicState(session).cards.find((card) => card.controller === player && card.location === location && card.code === code);
+}
+
+export interface FailedMoveAfterFirstFixtureOptions {
+  seed: number;
+  main: string[];
+  extra?: string[];
+  target: { location: DuelLocation; code: string };
+  first: { location: DuelLocation; code: string; moveTo?: DuelLocation };
+  blocked: { location: DuelLocation; code: string; moveTo?: DuelLocation };
+  block: {
+    id: string;
+    code: number;
+    range: DuelLocation[];
+    firstMovedTo: DuelLocation;
+  };
+}
+
+export function setupFailedMoveAfterFirstFixture(options: FailedMoveAfterFirstFixtureOptions) {
+  const session = createDuel({ seed: options.seed, startingHandSize: options.main.length, cardReader: createCardReader(cards) });
+  loadDecks(session, {
+    0: { main: options.main, ...(options.extra ? { extra: options.extra } : {}) },
+    1: { main: options.main.map(() => "400") },
+  });
+  startDuel(session);
+
+  const target = findPublicCard(session, 0, options.target.location, options.target.code);
+  const first = findPublicCard(session, 0, options.first.location, options.first.code);
+  const blocked = findPublicCard(session, 0, options.blocked.location, options.blocked.code);
+  if (first && options.first.moveTo) moveDuelCard(session.state, first.uid, options.first.moveTo, 0);
+  if (blocked && options.blocked.moveTo) moveDuelCard(session.state, blocked.uid, options.blocked.moveTo, 0);
+
+  registerEffect(session, {
+    id: options.block.id,
+    sourceUid: blocked?.uid ?? "missing-blocked-card",
+    controller: 0,
+    event: "continuous",
+    code: options.block.code,
+    range: options.block.range,
+    canActivate(ctx) {
+      return ctx.duel.cards.find((card) => card.uid === first?.uid)?.location === options.block.firstMovedTo;
+    },
+    operation() {},
+  });
+
+  return { session, target, first, blocked };
 }
