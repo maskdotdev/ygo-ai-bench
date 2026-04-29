@@ -67,6 +67,42 @@ describe("full duel engine API", () => {
     expect(getDuelLegalActions(session, 1)).toEqual([]);
   });
 
+  it("exposes pending prompts as legal responses and preserves them in snapshots", () => {
+    const session = createDuel({ seed: 71, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    session.state.prompt = { id: "prompt-1", type: "selectOption", player: 1, options: [0, 2], returnTo: 0 };
+    session.state.waitingFor = 1;
+
+    expect(queryPublicState(session).prompt).toEqual({ id: "prompt-1", type: "selectOption", player: 1, options: [0, 2], returnTo: 0 });
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(queryPublicState(restored).prompt).toEqual({ id: "prompt-1", type: "selectOption", player: 1, options: [0, 2], returnTo: 0 });
+    expect(getDuelLegalActions(restored, 0)).toEqual([]);
+
+    const options = getDuelLegalActions(restored, 1);
+    expect(options).toEqual([
+      { type: "selectOption", player: 1, promptId: "prompt-1", option: 0, label: "Select option 0" },
+      { type: "selectOption", player: 1, promptId: "prompt-1", option: 2, label: "Select option 2" },
+    ]);
+    const optionResult = applyResponse(restored, options[1]!);
+    expect(optionResult.ok).toBe(true);
+    expect(optionResult.state.prompt).toBeUndefined();
+    expect(optionResult.state.waitingFor).toBe(0);
+    expect(optionResult.state.log.some((entry) => entry.action === "selectOption" && entry.detail === "Selected option 2")).toBe(true);
+
+    restored.state.prompt = { id: "prompt-2", type: "selectYesNo", player: 0, description: 123 };
+    restored.state.waitingFor = 0;
+    const no = getDuelLegalActions(restored, 0).find((action) => action.type === "selectYesNo" && !action.yes);
+    expect(no).toEqual({ type: "selectYesNo", player: 0, promptId: "prompt-2", yes: false, label: "No" });
+    const yesNoResult = applyResponse(restored, no!);
+    expect(yesNoResult.ok).toBe(true);
+    expect(yesNoResult.state.log.some((entry) => entry.action === "selectYesNo" && entry.detail === "Selected no")).toBe(true);
+  });
+
   it("applies legal responses and preserves zone invariants through serialization", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

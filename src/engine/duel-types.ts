@@ -164,6 +164,10 @@ export interface DuelFlagEffect {
   turn: number;
 }
 
+export type DuelPromptState =
+  | { id: string; type: "selectOption"; player: PlayerId; options: number[]; returnTo?: PlayerId }
+  | { id: string; type: "selectYesNo"; player: PlayerId; description?: number; returnTo?: PlayerId };
+
 export interface DuelState {
   id: string;
   seed: string;
@@ -185,6 +189,7 @@ export interface DuelState {
     attackerUid: string;
     targetUid?: string;
   };
+  prompt?: DuelPromptState;
   waitingFor?: PlayerId;
   log: DuelLogEntry[];
   options: Required<Pick<DuelOptions, "startingLifePoints" | "startingHandSize" | "drawPerTurn">>;
@@ -209,6 +214,8 @@ export type DuelAction =
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
   | { type: "passChain"; player: PlayerId; label: string }
+  | { type: "selectOption"; player: PlayerId; promptId: string; option: number; label: string }
+  | { type: "selectYesNo"; player: PlayerId; promptId: string; yes: boolean; label: string }
   | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
   | { type: "declineTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
   | { type: "flipSummon"; player: PlayerId; uid: string; label: string }
@@ -240,6 +247,7 @@ export interface PublicDuelState {
   turnPlayer: PlayerId;
   phase: DuelPhase;
   waitingFor?: PlayerId;
+  prompt?: DuelPromptState;
   players: Record<PlayerId, DuelPlayerState>;
   cards: PublicDuelCard[];
   chain: ChainLink[];
@@ -271,6 +279,9 @@ export interface ScriptedResponseSelector {
   position?: CardPosition;
   attackerUid?: string;
   targetUid?: string;
+  promptId?: string;
+  option?: number;
+  yes?: boolean;
   effectId?: string;
   triggerId?: string;
   location?: DuelLocation;

@@ -98,6 +98,15 @@ function resolveScriptedStep(step: ScriptedDuelStep, legal: DuelAction[], cards:
     if (selector.targetUid) {
       if (action.type !== "declareAttack" || action.targetUid !== selector.targetUid) return false;
     }
+    if (selector.promptId) {
+      if (!("promptId" in action) || action.promptId !== selector.promptId) return false;
+    }
+    if (selector.option !== undefined) {
+      if (action.type !== "selectOption" || action.option !== selector.option) return false;
+    }
+    if (selector.yes !== undefined) {
+      if (action.type !== "selectYesNo" || action.yes !== selector.yes) return false;
+    }
     if (selector.effectId) {
       if (!("effectId" in action) || action.effectId !== selector.effectId) return false;
     }
@@ -143,6 +152,8 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "activateEffect" && response.type === "activateEffect" && action.effectId !== response.effectId) return false;
   if (action.type === "activateTrigger" && response.type === "activateTrigger" && action.triggerId !== response.triggerId) return false;
   if (action.type === "declineTrigger" && response.type === "declineTrigger" && action.triggerId !== response.triggerId) return false;
+  if (action.type === "selectOption" && response.type === "selectOption" && (action.promptId !== response.promptId || action.option !== response.option)) return false;
+  if (action.type === "selectYesNo" && response.type === "selectYesNo" && (action.promptId !== response.promptId || action.yes !== response.yes)) return false;
   if (action.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringSet(action.tributeUids, response.tributeUids)) return false;
   if (action.type === "fusionSummon" && response.type === "fusionSummon" && !sameStringSet(action.materialUids, response.materialUids)) return false;
   if (action.type === "synchroSummon" && response.type === "synchroSummon" && !sameStringSet(action.materialUids, response.materialUids)) return false;
@@ -167,6 +178,9 @@ function describeStep(step: ScriptedDuelStep): string {
     "position" in step && step.position ? `position=${step.position}` : undefined,
     "attackerUid" in step && step.attackerUid ? `attackerUid=${step.attackerUid}` : undefined,
     "targetUid" in step && step.targetUid ? `targetUid=${step.targetUid}` : undefined,
+    "promptId" in step && step.promptId ? `promptId=${step.promptId}` : undefined,
+    "option" in step && step.option !== undefined ? `option=${step.option}` : undefined,
+    "yes" in step && step.yes !== undefined ? `yes=${step.yes}` : undefined,
     "effectId" in step && step.effectId ? `effectId=${step.effectId}` : undefined,
     "triggerId" in step && step.triggerId ? `triggerId=${step.triggerId}` : undefined,
     "location" in step && step.location ? `location=${step.location}` : undefined,

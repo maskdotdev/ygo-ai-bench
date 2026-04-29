@@ -53,6 +53,7 @@ import type {
   DuelOptions,
   DuelPhase,
   DuelPlayerDeck,
+  DuelPromptState,
   DuelResponse,
   DuelSession,
   DuelState,
@@ -139,6 +140,10 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   const { state } = session;
   if (state.status !== "awaiting" || state.waitingFor !== player) return [];
   const actions: DuelAction[] = [];
+  if (state.prompt) {
+    actions.push(...getPromptResponseActions(state.prompt, player));
+    return actions;
+  }
   if (state.chain.length) {
     actions.push(...getChainResponseActions(state, player));
     return actions;
@@ -204,6 +209,7 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
     else if (response.type === "setSpellTrap") setSpellTrap(session.state, response.player, response.uid);
     else if (response.type === "activateEffect") activateEffect(session, response.player, response.uid, response.effectId);
     else if (response.type === "passChain") passChain(session.state, response.player);
+    else if (response.type === "selectOption" || response.type === "selectYesNo") resolvePrompt(session.state, response);
     else if (response.type === "activateTrigger") activatePendingTrigger(session, response.player, response.triggerId);
     else if (response.type === "declineTrigger") declinePendingTrigger(session, response.player, response.triggerId);
     else if (response.type === "flipSummon") flipSummonDuelCard(session.state, response.player, response.uid);
@@ -226,6 +232,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
     turnPlayer: state.turnPlayer,
     phase: state.phase,
     ...(state.waitingFor === undefined ? {} : { waitingFor: state.waitingFor }),
+    ...(state.prompt === undefined ? {} : { prompt: copyPrompt(state.prompt) }),
     players: {
       0: { ...state.players[0] },
       1: { ...state.players[1] },
@@ -258,6 +265,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       attacksDeclared: [...session.state.attacksDeclared],
       positionsChanged: [...session.state.positionsChanged],
       ...(session.state.currentAttack === undefined ? {} : { currentAttack: { ...session.state.currentAttack } }),
+      ...(session.state.prompt === undefined ? {} : { prompt: copyPrompt(session.state.prompt) }),
       log: session.state.log.map((entry) => ({ ...entry })),
     },
   };
@@ -283,6 +291,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       attacksDeclared: [...snapshot.state.attacksDeclared],
       positionsChanged: [...snapshot.state.positionsChanged],
       ...(snapshot.state.currentAttack === undefined ? {} : { currentAttack: { ...snapshot.state.currentAttack } }),
+      ...(snapshot.state.prompt === undefined ? {} : { prompt: copyPrompt(snapshot.state.prompt) }),
       log: snapshot.state.log.map((entry) => ({ ...entry })),
     },
   };
@@ -603,6 +612,31 @@ function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction
   return actions;
 }
 
+function getPromptResponseActions(prompt: DuelPromptState, player: PlayerId): DuelAction[] {
+  if (prompt.player !== player) return [];
+  if (prompt.type === "selectOption") {
+    return prompt.options.map((option) => ({ type: "selectOption", player, promptId: prompt.id, option, label: `Select option ${option}` }));
+  }
+  return [
+    { type: "selectYesNo", player, promptId: prompt.id, yes: true, label: "Yes" },
+    { type: "selectYesNo", player, promptId: prompt.id, yes: false, label: "No" },
+  ];
+}
+
+function resolvePrompt(state: DuelState, response: Extract<DuelResponse, { type: "selectOption" | "selectYesNo" }>): void {
+  const prompt = state.prompt;
+  if (!prompt || prompt.id !== response.promptId || prompt.player !== response.player || prompt.type !== response.type) throw new Error("Prompt response does not match the pending prompt");
+  if (prompt.type === "selectOption") {
+    if (response.type !== "selectOption" || !prompt.options.includes(response.option)) throw new Error(`Option ${response.type === "selectOption" ? response.option : ""} is not legal`);
+    pushDuelLog(state, "selectOption", response.player, undefined, `Selected option ${response.option}`);
+  } else {
+    if (response.type !== "selectYesNo") throw new Error("Prompt response does not match the pending prompt");
+    pushDuelLog(state, "selectYesNo", response.player, undefined, response.yes ? "Selected yes" : "Selected no");
+  }
+  state.waitingFor = prompt.returnTo ?? state.turnPlayer;
+  delete state.prompt;
+}
+
 function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
   const actions: DuelAction[] = [];
   for (const effect of state.effects) {
@@ -687,6 +721,11 @@ function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][num
   return { ...link, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };
 }
 
+function copyPrompt(prompt: DuelPromptState): DuelPromptState {
+  if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options] };
+  return { ...prompt };
+}
+
 function canUseEffectCount(state: DuelState, effect: DuelEffectDefinition): boolean {
   const limit = effectCountLimit(effect);
   if (limit <= 0) return true;
@@ -718,6 +757,8 @@ function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (a.type === "activateEffect" && b.type === "activateEffect" && a.effectId !== b.effectId) return false;
   if (a.type === "activateTrigger" && b.type === "activateTrigger" && a.triggerId !== b.triggerId) return false;
   if (a.type === "declineTrigger" && b.type === "declineTrigger" && a.triggerId !== b.triggerId) return false;
+  if (a.type === "selectOption" && b.type === "selectOption" && (a.promptId !== b.promptId || a.option !== b.option)) return false;
+  if (a.type === "selectYesNo" && b.type === "selectYesNo" && (a.promptId !== b.promptId || a.yes !== b.yes)) return false;
   if (a.type === "tributeSummon" && b.type === "tributeSummon" && !sameStringSet(a.tributeUids, b.tributeUids)) return false;
   if (a.type === "fusionSummon" && b.type === "fusionSummon" && !sameStringSet(a.materialUids, b.materialUids)) return false;
   if (a.type === "synchroSummon" && b.type === "synchroSummon" && !sameStringSet(a.materialUids, b.materialUids)) return false;
