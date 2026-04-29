@@ -1,5 +1,5 @@
 import { findCard, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
-import { markEffectUsed } from "#duel/effect-counts.js";
+import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import type {
   DuelCardInstance,
@@ -99,6 +99,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
     const trigger = takePendingTrigger(session.state, player, triggerId);
     const effect = session.state.effects.find((candidate) => candidate.sourceUid === trigger.sourceUid && candidate.id === trigger.effectId);
     if (!effect) throw new Error(`Effect ${trigger.effectId} is not registered`);
+    if (!canUseEffectCount(session.state, effect)) throw new Error(`Count limit for ${effect.id} has already been used`);
     const source = findCard(session.state, trigger.sourceUid);
     const eventCard = trigger.eventCardUid === undefined ? undefined : findCard(session.state, trigger.eventCardUid);
     if (!source || (trigger.eventCardUid !== undefined && !eventCard)) throw new Error(`Trigger ${triggerId} lost its source or event card`);
