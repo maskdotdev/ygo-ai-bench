@@ -9,6 +9,7 @@ const { lua, to_luastring } = fengari;
 
 export interface LuaDuelChainApiHostState {
   pushEffectTable: (state: unknown, id: number) => void;
+  getEffectTypeFlags: (id: number) => number | undefined;
   activeContext: DuelEffectContext | undefined;
 }
 
@@ -69,6 +70,8 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
   else if (info === 0x40) pushGroupTable(L, link.targetUids ?? []);
   else if (info === 0x80 && link.targetPlayer !== undefined) lua.lua_pushinteger(L, link.targetPlayer);
   else if (info === 0x100 && link.targetParam !== undefined) lua.lua_pushinteger(L, link.targetParam);
+  else if (info === 0x1000) lua.lua_pushinteger(L, chainEffectTypeFlags(link, hostState));
+  else if (info === 0x2000) lua.lua_pushinteger(L, cardTypeFlags(source));
   else if (info === 0x4000) lua.lua_pushinteger(L, positionMaskFromPosition(source?.position));
   else if (info === 0x8000) lua.lua_pushinteger(L, source ? Number(source.code) : 0);
   else if (info === 0x10000) lua.lua_pushinteger(L, source?.data.alias ? Number(source.data.alias) : 0);
@@ -181,6 +184,11 @@ function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
   const value = lua.lua_tointeger(L, index);
   if (value !== 0 && value !== 1) return undefined;
   return value;
+}
+
+function chainEffectTypeFlags(link: DuelState["chain"][number], hostState: LuaDuelChainApiHostState): number {
+  const id = Number(link.effectId.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(id) ? hostState.getEffectTypeFlags(id) ?? 0 : 0;
 }
 
 function cardRank(card: DuelCardInstance | undefined): number {

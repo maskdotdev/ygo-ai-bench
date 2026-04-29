@@ -69,6 +69,7 @@ interface LuaHostState {
   operatedUids: string[];
   selectedUids: string[];
   pushEffectTable: (state: unknown, id: number) => void;
+  getEffectTypeFlags: (id: number) => number | undefined;
 }
 
 export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
@@ -86,6 +87,9 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
     selectedUids: [],
     pushEffectTable(state, id) {
       pushLuaEffectTable(state, id, hostState);
+    },
+    getEffectTypeFlags(id) {
+      return hostState.effects.get(id)?.typeFlags;
     },
   };
   lualib.luaL_openlibs(L);

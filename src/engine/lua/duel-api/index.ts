@@ -27,6 +27,7 @@ export interface LuaDuelApiHostState {
   operatedUids: string[];
   selectedUids: string[];
   pushEffectTable: (state: unknown, id: number) => void;
+  getEffectTypeFlags: (id: number) => number | undefined;
 }
 
 export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
