@@ -69,6 +69,15 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
   else if (info === 0x40) pushGroupTable(L, link.targetUids ?? []);
   else if (info === 0x80 && link.targetPlayer !== undefined) lua.lua_pushinteger(L, link.targetPlayer);
   else if (info === 0x100 && link.targetParam !== undefined) lua.lua_pushinteger(L, link.targetParam);
+  else if (info === 0x4000) lua.lua_pushinteger(L, positionMaskFromPosition(source?.position));
+  else if (info === 0x8000) lua.lua_pushinteger(L, source ? Number(source.code) : 0);
+  else if (info === 0x10000) lua.lua_pushinteger(L, source?.data.alias ? Number(source.data.alias) : 0);
+  else if (info === 0x40000) lua.lua_pushinteger(L, source?.data.level ?? 0);
+  else if (info === 0x80000) lua.lua_pushinteger(L, cardRank(source));
+  else if (info === 0x100000) lua.lua_pushinteger(L, source?.data.attribute ?? 0);
+  else if (info === 0x200000) lua.lua_pushinteger(L, source?.data.race ?? 0);
+  else if (info === 0x400000) lua.lua_pushinteger(L, source?.data.attack ?? 0);
+  else if (info === 0x800000) lua.lua_pushinteger(L, source?.data.defense ?? 0);
   else lua.lua_pushnil(L);
 }
 
@@ -174,6 +183,18 @@ function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
   return value;
 }
 
+function cardRank(card: DuelCardInstance | undefined): number {
+  return card && (cardTypeFlags(card) & 0x800000) !== 0 ? card.data.level ?? 0 : 0;
+}
+
+function cardTypeFlags(card: DuelCardInstance | undefined): number {
+  if (!card) return 0;
+  if (card.data.typeFlags !== undefined) return card.data.typeFlags;
+  if (card.kind === "spell") return 0x2;
+  if (card.kind === "trap") return 0x4;
+  return 0x1;
+}
+
 function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
   if (location === "deck") return 0x01;
   if (location === "hand") return 0x02;
@@ -182,5 +203,12 @@ function locationMaskFromLocation(location: DuelCardInstance["location"] | undef
   if (location === "graveyard") return 0x10;
   if (location === "banished") return 0x20;
   if (location === "extraDeck") return 0x40;
+  return 0;
+}
+
+function positionMaskFromPosition(position: DuelCardInstance["position"] | undefined): number {
+  if (position === "faceUpAttack") return 0x1;
+  if (position === "faceUpDefense") return 0x4;
+  if (position === "faceDownDefense") return 0x8;
   return 0;
 }

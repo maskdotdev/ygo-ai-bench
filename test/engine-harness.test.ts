@@ -1836,7 +1836,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
 
   it("lets Lua quick effects inspect pending chain info", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Chain Source", kind: "monster" },
+      { code: "100", name: "Chain Source", kind: "monster", alias: "101", level: 4, attack: 1800, defense: 1200, race: 0x2, attribute: 0x20 },
       { code: "200", name: "Chain Target", kind: "monster" },
       { code: "400", name: "Chain Quick", kind: "monster" },
     ];
@@ -1876,6 +1876,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
           Debug.Message("handler ok " .. tostring(ok) .. "/" .. tostring(handler ~= nil))
           if not ok then return false end
           Debug.Message("chain info " .. tp .. "/" .. loc .. "/" .. tc:GetCode() .. "/" .. tg:GetCount() .. "/" .. handler:GetCode())
+          local pos,code,code2,level,rank,attr,race,atk,def=Duel.GetChainInfo(1, CHAININFO_TRIGGERING_POSITION, CHAININFO_TRIGGERING_CODE, CHAININFO_TRIGGERING_CODE2, CHAININFO_TRIGGERING_LEVEL, CHAININFO_TRIGGERING_RANK, CHAININFO_TRIGGERING_ATTRIBUTE, CHAININFO_TRIGGERING_RACE, CHAININFO_TRIGGERING_ATTACK, CHAININFO_TRIGGERING_DEFENSE)
+          Debug.Message("chain stats " .. pos .. "/" .. code .. "/" .. code2 .. "/" .. level .. "/" .. rank .. "/" .. attr .. "/" .. race .. "/" .. atk .. "/" .. def)
           Debug.Message("chain target checks " .. tostring(Duel.CheckChainTarget(1,tg:GetFirst())) .. "/" .. tostring(Duel.CheckChainTarget(1,e:GetHandler())))
           Debug.Message("chain unique " .. tostring(Duel.CheckChainUniqueness()))
           return tp==0 and tc:IsCode(100) and tg:GetCount()==1 and handler:IsCode(100)
@@ -1902,6 +1904,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
     applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
     expect(host.messages).toContain("chain info 0/2/100/1/100");
+    expect(host.messages).toContain("chain stats 0/100/101/4/0/32/2/1800/1200");
     expect(host.messages).toContain("chain target checks true/false");
     expect(host.messages).toContain("chain unique true");
     expect(host.messages).toContain("quick resolved");
