@@ -446,6 +446,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(luaEffect.code === undefined ? {} : { code: luaEffect.code }),
     ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
+    ...(event === "trigger" ? { optional: luaEffectTriggerIsOptional(luaEffect.typeFlags) } : {}),
     range,
     oncePerTurn: (luaEffect.countLimit ?? 0) > 0,
     ...(luaEffect.countLimit === undefined ? {} : { countLimit: luaEffect.countLimit }),
@@ -517,6 +518,10 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
   if ((typeFlags & 0x100) !== 0 || (typeFlags & 0x400) !== 0) return "quick";
   if ((typeFlags & 0x800) !== 0) return "continuous";
   return "ignition";
+}
+
+function luaEffectTriggerIsOptional(typeFlags: number): boolean {
+  return (typeFlags & 0x200) === 0;
 }
 
 function triggerEventFromCode(code: number | undefined): DuelEventName | undefined {
