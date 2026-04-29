@@ -475,6 +475,10 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetMZoneCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SelectDisableField"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SelectField"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const positionMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0x1;
     lua.lua_pushinteger(state, positionMaskFromPosition(positionFromMask(positionMask) ?? "faceUpAttack"));
@@ -747,6 +751,41 @@ function availableLocationCount(session: DuelSession, player: PlayerId, location
 function availableMonsterZoneCount(session: DuelSession, player: PlayerId, excludedUids: string[]): number {
   const occupied = session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && !excludedUids.includes(card.uid)).length;
   return Math.max(0, 5 - occupied);
+}
+
+function pushSelectedFieldZoneMask(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const count = Math.max(1, lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 1);
+  const selfLocations = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
+  const opponentLocations = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0;
+  const filter = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 0;
+  const zones = selectableFieldZones(session, player, selfLocations, opponentLocations, filter).slice(0, count);
+  lua.lua_pushinteger(L, zones.reduce((mask, zone) => mask | zone, 0));
+  return 1;
+}
+
+function selectableFieldZones(session: DuelSession, player: PlayerId, selfLocations: number, opponentLocations: number, filter: number): number[] {
+  return [
+    ...zonesForLocation(session, player, selfLocations, 0, filter),
+    ...zonesForLocation(session, otherPlayer(player), opponentLocations, 16, filter),
+  ];
+}
+
+function zonesForLocation(session: DuelSession, player: PlayerId, locationMask: number, baseShift: number, filter: number): number[] {
+  const zones: number[] = [];
+  if ((locationMask & 0x04) !== 0) zones.push(...openZoneBits(session, player, "monsterZone", baseShift, filter));
+  if ((locationMask & 0x08) !== 0) zones.push(...openZoneBits(session, player, "spellTrapZone", baseShift + 8, filter));
+  return zones;
+}
+
+function openZoneBits(session: DuelSession, player: PlayerId, location: "monsterZone" | "spellTrapZone", baseShift: number, filter: number): number[] {
+  const occupied = new Set(session.state.cards.filter((card) => card.controller === player && card.location === location).map((card) => card.sequence));
+  const zones: number[] = [];
+  for (let sequence = 0; sequence < 5; sequence += 1) {
+    const bit = 1 << (baseShift + sequence);
+    if (!occupied.has(sequence) && (filter === 0 || (filter & bit) !== 0)) zones.push(bit);
+  }
+  return zones;
 }
 
 function topDeckUids(session: DuelSession, player: PlayerId, count: number): string[] {

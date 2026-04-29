@@ -1272,8 +1272,11 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local kind=Duel.AnnounceType(0, TYPE_MONSTER, TYPE_SPELL)
       local race=Duel.AnnounceRace(0, RACE_WARRIOR, RACE_SPELLCASTER)
       local attribute=Duel.AnnounceAttribute(0, ATTRIBUTE_LIGHT, ATTRIBUTE_DARK)
+      local disabled=Duel.SelectDisableField(0, 1, LOCATION_MZONE, 0, 0)
+      local selected=Duel.SelectField(0, 2, LOCATION_SZONE, LOCATION_MZONE, 0)
       Debug.Message("prompt option " .. option .. "/" .. tostring(yes))
       Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute)
+      Debug.Message("prompt zones " .. disabled .. "/" .. selected)
       `,
       "prompt-helpers.lua",
     );
@@ -1281,6 +1284,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("prompt option 0/true");
     expect(host.messages).toContain("prompt announce 4/100/1/1/16");
+    expect(host.messages).toContain("prompt zones 1/768");
   });
 
   it("exposes summon type metadata to Lua card helpers", () => {
