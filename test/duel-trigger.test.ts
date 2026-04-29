@@ -223,6 +223,64 @@ describe("duel triggers", () => {
     expect(secondResult.state.cards.find((card) => card.uid === firstSource!.uid)?.location).toBe("hand");
   });
 
+  it("orders simultaneous cross-player triggers by turn-player priority", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnPlayerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(turnPlayerSource).toBeTruthy();
+    expect(opponentSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "opponent-simultaneous-trigger",
+      sourceUid: opponentSource!.uid,
+      controller: 1,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Opponent simultaneous trigger resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "turn-player-simultaneous-trigger",
+      sourceUid: turnPlayerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Turn-player simultaneous trigger resolved");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    const summonResult = applyResponse(session, summon!);
+
+    expect(summonResult.ok).toBe(true);
+    expect(summonResult.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["turn-player-simultaneous-trigger", "opponent-simultaneous-trigger"]);
+    expect(summonResult.state.waitingFor).toBe(0);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+
+    const decline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === "turn-player-simultaneous-trigger");
+    expect(decline).toBeTruthy();
+    const declined = applyResponse(session, decline!);
+
+    expect(declined.ok).toBe(true);
+    expect(declined.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["opponent-simultaneous-trigger"]);
+    expect(declined.state.waitingFor).toBe(1);
+    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 1).some((action) => action.type === "activateTrigger" && action.effectId === "opponent-simultaneous-trigger")).toBe(true);
+  });
+
   it("collects phase and turn-start trigger effects", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

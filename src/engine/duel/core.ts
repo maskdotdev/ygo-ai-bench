@@ -651,15 +651,22 @@ function createReplacementEffectHandlers(state: DuelState): ReplacementEffectHan
 }
 
 function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
-  for (const effect of state.effects) {
+  const collected: Array<{ effect: DuelEffectDefinition; source: DuelCardInstance; index: number }> = [];
+  for (const [index, effect] of state.effects.entries()) {
     if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
     if (!canUseEffectCount(state, effect)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!canChooseEffect(state, effect, source, effect.controller, eventName, eventCard)) continue;
-    state.pendingTriggers.push(createPendingTrigger(state, effect, source, eventName, eventCard));
+    collected.push({ effect, source, index });
   }
+  collected.sort((a, b) => triggerPlayerPriority(state, a.effect.controller) - triggerPlayerPriority(state, b.effect.controller) || a.index - b.index);
+  for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, eventCard));
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+}
+
+function triggerPlayerPriority(state: DuelState, player: PlayerId): number {
+  return player === state.turnPlayer ? 0 : 1;
 }
 
 function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard?: DuelCardInstance): PendingTrigger {
