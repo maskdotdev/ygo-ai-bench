@@ -408,6 +408,86 @@ describe("duel triggers", () => {
     expect(result.state.waitingFor).toBe(0);
   });
 
+  it("exposes all triggers in the active bucket before later buckets", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "500", "300"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstTurnMandatory = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const secondTurnMandatory = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const opponentMandatory = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(firstTurnMandatory).toBeTruthy();
+    expect(secondTurnMandatory).toBeTruthy();
+    expect(opponentMandatory).toBeTruthy();
+
+    registerEffect(session, {
+      id: "first-turn-mandatory-bucket",
+      sourceUid: firstTurnMandatory!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      optional: false,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("First turn mandatory bucket resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "opponent-later-mandatory-bucket",
+      sourceUid: opponentMandatory!.uid,
+      controller: 1,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      optional: false,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Opponent later mandatory bucket resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "second-turn-mandatory-bucket",
+      sourceUid: secondTurnMandatory!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      optional: false,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Second turn mandatory bucket resolved");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    const result = applyResponse(session, summon!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
+      "first-turn-mandatory-bucket",
+      "second-turn-mandatory-bucket",
+      "opponent-later-mandatory-bucket",
+    ]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([
+      "first-turn-mandatory-bucket",
+      "second-turn-mandatory-bucket",
+    ]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+
+    const activate = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "first-turn-mandatory-bucket");
+    expect(activate).toBeTruthy();
+    const afterFirst = applyResponse(session, activate!);
+
+    expect(afterFirst.ok).toBe(true);
+    expect(afterFirst.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-turn-mandatory-bucket", "opponent-later-mandatory-bucket"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-turn-mandatory-bucket"]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+  });
+
   it("collects phase and turn-start trigger effects", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
