@@ -662,6 +662,13 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("added unique " .. g:GetCount() .. " " .. tostring(g:IsContains(c100)))
       g:Merge(high)
       Debug.Message("merged " .. g:GetCount() .. " " .. tostring(g:IsContains(c200)))
+      local from_cards = Group.FromCards(c100, c200, c100)
+      Debug.Message("from cards " .. from_cards:GetCount() .. " " .. tostring(from_cards:Equal(Group.FromCards(c200, c100))))
+      local without_high = g:Clone()
+      without_high:Sub(high)
+      Debug.Message("sub high " .. without_high:GetCount() .. " " .. tostring(without_high:IsContains(c100)))
+      without_high:Clear()
+      Debug.Message("clear group " .. without_high:GetCount())
       local clone = g:Clone()
       local selected = clone:Select(0, 1, 2, nil)
       Debug.Message("selected group " .. selected:GetCount())
@@ -679,6 +686,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("added unique 1 true");
     expect(host.messages).toContain("merged 3 true");
+    expect(host.messages).toContain("from cards 2 true");
+    expect(host.messages).toContain("sub high 1 true");
+    expect(host.messages).toContain("clear group 0");
     expect(host.messages).toContain("selected group 2");
     expect(host.messages).toContain("exists high true");
     expect(host.messages).toContain("class count 2");

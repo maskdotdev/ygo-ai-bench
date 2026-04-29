@@ -14,6 +14,17 @@ export function installGroupApi(L: unknown): void {
   });
   lua.lua_setfield(L, -2, to_luastring("CreateGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const uids: string[] = [];
+    const top = lua.lua_gettop(state);
+    for (let index = 1; index <= top; index += 1) {
+      const uid = readCardUid(state, index);
+      if (uid) uids.push(uid);
+    }
+    pushGroupTable(state, uniqueUids(uids));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("FromCards"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readGroupUids(state, 1);
     if (!uids[0]) {
       lua.lua_pushnil(state);
@@ -54,6 +65,18 @@ export function installGroupApi(L: unknown): void {
   });
   lua.lua_setfield(L, -2, to_luastring("Merge"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const cardUid = readCardUid(state, 2);
+    const removed = new Set(cardUid ? [cardUid] : readGroupUids(state, 2));
+    setGroupUids(state, 1, readGroupUids(state, 1).filter((uid) => !removed.has(uid)));
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Sub"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    setGroupUids(state, 1, []);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Clear"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 2);
     if (uid) setGroupUids(state, 1, readGroupUids(state, 1).filter((candidate) => candidate !== uid));
     return 0;
@@ -65,6 +88,11 @@ export function installGroupApi(L: unknown): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsContains"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, sameUidSet(readGroupUids(state, 1), readGroupUids(state, 2)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Equal"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
     const excluded = readCardUid(state, 3);
@@ -165,8 +193,11 @@ const groupFieldNames = [
   "GetCount",
   "AddCard",
   "Merge",
+  "Sub",
+  "Clear",
   "RemoveCard",
   "IsContains",
+  "Equal",
   "Filter",
   "Clone",
   "Select",
@@ -176,3 +207,9 @@ const groupFieldNames = [
   "DeleteGroup",
   "SelectUnselect",
 ];
+
+function sameUidSet(a: string[], b: string[]): boolean {
+  const uniqueA = uniqueUids(a);
+  const uniqueB = uniqueUids(b);
+  return uniqueA.length === uniqueB.length && uniqueA.every((uid) => uniqueB.includes(uid));
+}
