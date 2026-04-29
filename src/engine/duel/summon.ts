@@ -9,6 +9,7 @@ export interface DuelMaterialMoveResult {
   collectedSentToGraveyard?: boolean;
 }
 export type DuelMaterialMover = (uid: string, controller: PlayerId, reason: number) => DuelMaterialMoveResult;
+export type DuelOverlayMaterialMover = (uid: string, controller: PlayerId, reason: number) => DuelCardInstance;
 type ExtraDeckSummonType = "fusion" | "synchro" | "Xyz" | "Link";
 
 export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector): void {
@@ -115,12 +116,12 @@ export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: s
   return card;
 }
 
-export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
+export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector, moveMaterial: DuelOverlayMaterialMover = defaultOverlayMaterialMover(state)): DuelCardInstance {
   const { card, materials } = requireXyzSummonMaterials(state, player, uid, materialUids);
   card.overlayUids = [];
   for (const material of materials) {
-    moveDuelCard(state, material.uid, "overlay", player, duelReason.material | duelReason.xyz);
-    card.overlayUids.push(material.uid);
+    const overlay = moveMaterial(material.uid, player, duelReason.material | duelReason.xyz);
+    card.overlayUids.push(overlay.uid);
     pushDuelLog(state, "xyzMaterial", player, material.name, `Attached to ${card.name}`);
   }
 
@@ -186,6 +187,10 @@ function defaultMaterialMover(state: DuelState): DuelMaterialMover {
   return (uid, controller, reason) => ({ card: moveDuelCard(state, uid, "graveyard", controller, reason) });
 }
 
+function defaultOverlayMaterialMover(state: DuelState): DuelOverlayMaterialMover {
+  return (uid, controller, reason) => moveDuelCard(state, uid, "overlay", controller, reason);
+}
+
 function collectSentToGraveyard(result: DuelMaterialMoveResult, collectEvent: DuelEventCollector): void {
   if (!result.collectedSentToGraveyard && result.card.location === "graveyard") collectEvent("sentToGraveyard", result.card);
 }
@@ -240,9 +245,9 @@ export function synchroSummonActions(state: DuelState, player: PlayerId): DuelAc
   return actions;
 }
 
-export function xyzSummonActions(state: DuelState, player: PlayerId): DuelAction[] {
+export function xyzSummonActions(state: DuelState, player: PlayerId, canUseMaterial: (uid: string) => boolean = () => true): DuelAction[] {
   if (!hasZoneSpace(state, player, "monsterZone")) return [];
-  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card));
+  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
     const materialUids = findXyzMaterialUids(materialPool, card);

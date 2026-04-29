@@ -34,6 +34,7 @@ import {
   tributeSummonActions,
   tributeSummonDuelCard as tributeSummonDuelCardWithEvents,
   type DuelMaterialMover,
+  type DuelOverlayMaterialMover,
   xyzSummonActions,
   xyzSummonDuelCard as xyzSummonDuelCardWithEvents,
 } from "#duel/summon.js";
@@ -48,6 +49,7 @@ import {
 } from "#duel/battle.js";
 import {
   isAttackPrevented,
+  isMaterialUsePrevented,
   isMoveToLocationPrevented,
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
@@ -191,7 +193,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...tributeSummonActions(state, player, hand));
     actions.push(...fusionSummonActions(state, player));
     actions.push(...synchroSummonActions(state, player));
-    actions.push(...xyzSummonActions(state, player));
+    actions.push(...xyzSummonActions(state, player, (uid) => !isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))));
     actions.push(...linkSummonActions(state, player));
     actions.push(...ritualSummonActions(state, player, hand));
     actions.push(...specialSummonProcedureActions(state, player));
@@ -411,7 +413,7 @@ export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: s
 }
 
 export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
-  return xyzSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
+  return xyzSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createOverlayMaterialMover(state));
 }
 
 export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
@@ -426,6 +428,14 @@ function createMaterialMover(state: DuelState): DuelMaterialMover {
   return (uid, controller, reason) => {
     const card = sendDuelCardToGraveyard(state, uid, controller, reason);
     return { card, collectedSentToGraveyard: card.location === "graveyard" };
+  };
+}
+
+function createOverlayMaterialMover(state: DuelState): DuelOverlayMaterialMover {
+  return (uid, controller, reason) => {
+    if (isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))) throw new Error(`Card ${uid} cannot be used as Xyz material`);
+    requireDuelMoveAllowed(state, uid, "overlay", reason);
+    return moveDuelCard(state, uid, "overlay", controller, reason);
   };
 }
 

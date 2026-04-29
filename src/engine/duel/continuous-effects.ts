@@ -20,6 +20,8 @@ export interface ContinuousEffectMatch {
   card: DuelCardInstance;
 }
 
+export type MaterialUseKind = "fusion" | "synchro" | "xyz" | "link";
+
 export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card?: DuelCardInstance): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 22) continue;
@@ -155,6 +157,20 @@ export function isMoveToLocationPrevented(state: DuelState, uid: string, to: Due
   return false;
 }
 
+export function isMaterialUsePrevented(state: DuelState, uid: string, kind: MaterialUseKind, createContext: ContinuousEffectContextFactory): boolean {
+  const card = findCard(state, uid);
+  if (!card) return false;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || !isCannotMaterialCodeForKind(effect.code, kind)) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
 function locationFromRedirectValue(value: number | undefined): DuelLocation | undefined {
   if (value === 0x02) return "hand";
   if (value === 0x10) return "graveyard";
@@ -208,5 +224,14 @@ function isCannotMoveCodeForLocation(code: number | undefined, location: DuelLoc
   if (code === 66) return location === "deck";
   if (code === 67) return location === "banished";
   if (code === 68) return location === "graveyard";
+  return false;
+}
+
+function isCannotMaterialCodeForKind(code: number | undefined, kind: MaterialUseKind): boolean {
+  if (code === 248) return true;
+  if (code === 235) return kind === "fusion";
+  if (code === 236) return kind === "synchro";
+  if (code === 238) return kind === "xyz";
+  if (code === 239) return kind === "link";
   return false;
 }

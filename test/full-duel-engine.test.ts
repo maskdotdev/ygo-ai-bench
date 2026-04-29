@@ -1183,6 +1183,38 @@ describe("full duel engine API", () => {
     expect(result.state.log.some((entry) => entry.action === "xyzSummon" && entry.card === "Xyz Test Monster")).toBe(true);
   });
 
+  it("blocks Xyz summons when material cannot be used as Xyz material", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["920"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const xyz = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(xyz).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+    const blockedMaterial = materials.find((card) => card.code === "100");
+    expect(blockedMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "cannot-be-xyz-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 238,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid)).toBe(false);
+    expect(() => xyzSummonDuelCard(session.state, 0, xyz!.uid, materials.map((card) => card.uid))).toThrow("cannot be used as Xyz material");
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
+  });
+
   it("xyz summons emit special summon triggers without sending materials to the graveyard", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
