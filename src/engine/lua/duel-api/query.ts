@@ -142,8 +142,7 @@ function pushSelectedMatchingGroup(L: unknown, session: DuelSession, targetUids?
   const query = readMatchingQuery(L, session, 2, 3, 4, 5, 8, 9);
   const min = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : 1;
   const max = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : min;
-  const limit = max > 0 ? max : Math.max(min, 1);
-  const selected = matchingCardUidsWithFilter(L, session, query).slice(0, limit);
+  const selected = selectMatchingUids(matchingCardUidsWithFilter(L, session, query), min, max);
   releaseOptionalFunctionRef(L, query.filterRef);
   if (targetUids) targetUids.splice(0, targetUids.length, ...selected);
   pushGroupTable(L, selected);
@@ -240,6 +239,13 @@ function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefine
   const result = lua.lua_toboolean(L, -1);
   lua.lua_pop(L, 1);
   return Boolean(result);
+}
+
+function selectMatchingUids(uids: string[], min: number, max: number): string[] {
+  const boundedMin = Math.max(0, min);
+  if (uids.length < boundedMin) return [];
+  const limit = max > 0 ? Math.max(boundedMin, max) : uids.length;
+  return uids.slice(0, limit);
 }
 
 function cardFilterNumberValue(L: unknown, uid: string, filterRef: number, args: LuaFilterArgs): number | undefined {
