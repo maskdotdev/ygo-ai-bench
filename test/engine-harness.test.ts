@@ -466,6 +466,53 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false });
   });
 
+  it("registers Lua special summon procedure effects as legal summon actions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Procedure Source", kind: "monster" },
+      { code: "300", name: "Procedure Cost", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 32, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_HAND, 0, 1, c)
+        end)
+        e:SetOperation(function(e,c)
+          local g=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_HAND, 0, 1, 1, c)
+          Debug.Message("procedure operation cost " .. g:GetCount())
+          Duel.SendtoGrave(g, REASON_COST)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "special-summon-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("procedure operation cost 1");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
+  });
+
   it("lets Lua scripts query monster zones and choose summon positions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Zone Filler A", kind: "monster" },

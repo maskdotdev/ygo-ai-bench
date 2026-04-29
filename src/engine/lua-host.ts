@@ -420,7 +420,7 @@ function getEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef" 
 }
 
 function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unknown, hostState: LuaHostState): DuelEffectDefinition {
-  const event = luaEffectEvent(luaEffect.typeFlags);
+  const event = luaEffectEvent(luaEffect.typeFlags, luaEffect.code);
   const range = luaEffect.range ?? [card.location];
   const triggerEvent = triggerEventFromCode(luaEffect.code);
   luaEffect.sourceUid = card.uid;
@@ -461,7 +461,8 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
   };
 }
 
-function luaEffectEvent(typeFlags: number): DuelEffectDefinition["event"] {
+function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
+  if (code === 30) return "summonProcedure";
   if ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) return "trigger";
   if ((typeFlags & 0x100) !== 0 || (typeFlags & 0x400) !== 0) return "quick";
   if ((typeFlags & 0x800) !== 0) return "continuous";
@@ -469,6 +470,7 @@ function luaEffectEvent(typeFlags: number): DuelEffectDefinition["event"] {
 }
 
 function triggerEventFromCode(code: number | undefined): DuelEventName | undefined {
+  if (code === 30) return undefined;
   if (code === 1001) return "flipSummoned";
   if (code === 0x40) return "normalSummoned";
   if (code === 0x80) return "specialSummoned";

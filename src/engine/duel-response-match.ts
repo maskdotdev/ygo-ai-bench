@@ -4,6 +4,7 @@ export function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (a.type !== b.type || a.player !== b.player) return false;
   if ("uid" in a && "uid" in b && a.uid !== b.uid) return false;
   if (a.type === "activateEffect" && b.type === "activateEffect" && a.effectId !== b.effectId) return false;
+  if (a.type === "specialSummonProcedure" && b.type === "specialSummonProcedure" && a.effectId !== b.effectId) return false;
   if (a.type === "activateTrigger" && b.type === "activateTrigger" && a.triggerId !== b.triggerId) return false;
   if (a.type === "declineTrigger" && b.type === "declineTrigger" && a.triggerId !== b.triggerId) return false;
   if (a.type === "selectOption" && b.type === "selectOption" && (a.promptId !== b.promptId || a.option !== b.option)) return false;

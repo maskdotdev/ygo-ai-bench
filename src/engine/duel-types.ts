@@ -103,7 +103,7 @@ export interface DuelEffectDefinition {
   sourceUid: string;
   controller: PlayerId;
   ownerPlayer?: PlayerId;
-  event: "ignition" | "trigger" | "quick" | "continuous";
+  event: "ignition" | "trigger" | "quick" | "continuous" | "summonProcedure";
   triggerEvent?: DuelEventName;
   range: DuelLocation[];
   oncePerTurn?: boolean;
@@ -223,6 +223,7 @@ export type DuelAction =
   | { type: "setMonster"; player: PlayerId; uid: string; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
+  | { type: "specialSummonProcedure"; player: PlayerId; uid: string; effectId: string; label: string }
   | { type: "passChain"; player: PlayerId; label: string }
   | { type: "selectOption"; player: PlayerId; promptId: string; option: number; label: string }
   | { type: "selectYesNo"; player: PlayerId; promptId: string; yes: boolean; label: string }

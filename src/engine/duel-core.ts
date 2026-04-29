@@ -174,6 +174,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...xyzSummonActions(state, player));
     actions.push(...linkSummonActions(state, player));
     actions.push(...ritualSummonActions(state, player, hand));
+    actions.push(...specialSummonProcedureActions(state, player));
     if (hasZoneSpace(state, player, "spellTrapZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
         actions.push({ type: "setSpellTrap", player, uid: card.uid, label: `Set ${card.name}` });
@@ -213,6 +214,7 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
     else if (response.type === "xyzSummon") xyzSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
     else if (response.type === "linkSummon") linkSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
     else if (response.type === "ritualSummon") ritualSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
+    else if (response.type === "specialSummonProcedure") specialSummonByProcedure(session, response.player, response.uid, response.effectId);
     else if (response.type === "setMonster") setMonster(session.state, response.player, response.uid);
     else if (response.type === "setSpellTrap") setSpellTrap(session.state, response.player, response.uid);
     else if (response.type === "activateEffect") activateEffect(session, response.player, response.uid, response.effectId);
@@ -424,6 +426,21 @@ function activateEffect(session: DuelSession, player: PlayerId, uid: string, eff
   resolveChain(session.state);
 }
 
+function specialSummonByProcedure(session: DuelSession, player: PlayerId, uid: string, effectId: string): void {
+  const effect = session.state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid && candidate.event === "summonProcedure");
+  if (!effect) throw new Error(`Summon procedure ${effectId} is not registered`);
+  const source = requireControlledCard(session.state, player, uid);
+  if (!effect.range.includes(source.location)) throw new Error(`${source.name} summon procedure is not in range`);
+  const ctx = createEffectContext(session.state, source, player);
+  if (!canSpecialSummonDuelCard(session.state, uid, player)) throw new Error(`${source.name} cannot be Special Summoned`);
+  if (effect.canActivate && !effect.canActivate(ctx)) throw new Error(`Condition for ${effectId} is not legal`);
+  if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
+  if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
+  if (effect.operation) effect.operation(ctx);
+  markEffectUsed(session.state, effect);
+  specialSummonDuelCard(session.state, uid, player);
+}
+
 function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
   const trigger = takePendingTrigger(session.state, player, triggerId);
   const effect = session.state.effects.find((candidate) => candidate.sourceUid === trigger.sourceUid && candidate.id === trigger.effectId);
@@ -602,6 +619,20 @@ function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
     if (!canUseEffectCount(state, effect)) continue;
     if (!canChooseEffect(state, effect, source, player)) continue;
     actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
+  }
+  return actions;
+}
+
+function specialSummonProcedureActions(state: DuelState, player: PlayerId): DuelAction[] {
+  const actions: DuelAction[] = [];
+  for (const effect of state.effects) {
+    if (effect.controller !== player || effect.event !== "summonProcedure") continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!canUseEffectCount(state, effect)) continue;
+    if (!canSpecialSummonDuelCard(state, source.uid, player)) continue;
+    if (!canChooseEffect(state, effect, source, player)) continue;
+    actions.push({ type: "specialSummonProcedure", player, uid: source.uid, effectId: effect.id, label: `Special Summon ${source.name}` });
   }
   return actions;
 }
