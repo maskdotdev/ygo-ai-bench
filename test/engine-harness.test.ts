@@ -1245,6 +1245,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local clone = g:Clone()
       local selected = clone:Select(0, 1, 2, nil)
       Debug.Message("selected group " .. selected:GetCount())
+      Debug.Message("selected group too few " .. clone:Select(0, 4, 4, nil):GetCount())
+      Debug.Message("selected group unbounded " .. clone:Select(0, 1, 0, nil):GetCount())
       local select_pool = Group.FromCards(c100)
       local added = all:SelectUnselect(select_pool, true, false, 1, 2)
       Debug.Message("select unselect add " .. tostring(added and added:GetCode()))
@@ -1293,6 +1295,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("sub high 1 true");
     expect(host.messages).toContain("clear group 0");
     expect(host.messages).toContain("selected group 2");
+    expect(host.messages).toContain("selected group too few 0");
+    expect(host.messages).toContain("selected group unbounded 3");
     expect(host.messages).toContain("select unselect add 200");
     expect(host.messages).toContain("select unselect stop true");
     expect(host.messages).toContain("select unselect unbounded 200");

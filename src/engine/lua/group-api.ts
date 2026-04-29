@@ -112,8 +112,7 @@ export function installGroupApi(L: unknown): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const min = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
     const max = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : min;
-    const limit = max > 0 ? max : Math.max(min, 1);
-    pushGroupTable(state, readGroupUids(state, 1).slice(0, limit));
+    pushGroupTable(state, selectGroupUids(readGroupUids(state, 1), min, max));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Select"));
@@ -248,6 +247,13 @@ function readCardOrGroupUids(L: unknown, index: number): string[] {
   const uid = readCardUid(L, index);
   if (uid) return [uid];
   return readGroupUids(L, index);
+}
+
+function selectGroupUids(uids: string[], min: number, max: number): string[] {
+  const boundedMin = Math.max(0, min);
+  if (uids.length < boundedMin) return [];
+  const limit = max > 0 ? Math.max(boundedMin, max) : uids.length;
+  return uids.slice(0, limit);
 }
 
 function selectUidsWithSum(L: unknown, uids: string[], filterRef: number | undefined, sum: number, min: number, max: number, args: LuaFilterArgs): string[] | undefined {
