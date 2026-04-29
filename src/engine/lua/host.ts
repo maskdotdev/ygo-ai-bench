@@ -439,6 +439,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(luaEffect.ownerPlayer === undefined ? {} : { ownerPlayer: luaEffect.ownerPlayer }),
     event,
     ...(luaEffect.code === undefined ? {} : { code: luaEffect.code }),
+    ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
     range,
     oncePerTurn: (luaEffect.countLimit ?? 0) > 0,
@@ -474,7 +475,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
 
 function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
   if (code === 34) return "summonProcedure";
-  if (code === 22 || code === 63 || code === 64 || code === 85) return "continuous";
+  if (code === 22 || code === 60 || code === 63 || code === 64 || code === 85) return "continuous";
   if ((typeFlags & 0x2) !== 0) return "continuous";
   if ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) return "trigger";
   if ((typeFlags & 0x100) !== 0 || (typeFlags & 0x400) !== 0) return "quick";

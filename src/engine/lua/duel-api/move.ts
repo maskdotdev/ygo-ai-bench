@@ -6,6 +6,7 @@ import {
   detachDuelOverlayMaterials,
   destroyDuelCard,
   moveDuelCard,
+  moveDuelCardWithRedirects,
   sendDuelCardToGraveyard,
   specialSummonDuelCard,
 } from "#duel/core.js";
@@ -168,7 +169,7 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, location: D
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || !canMoveDuelCardToLocation(session.state, uid, location)) continue;
-    moveDuelCard(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason);
+    moveDuelCardWithRedirects(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason);
     moved.push(uid);
   }
   return moved;

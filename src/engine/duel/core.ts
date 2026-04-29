@@ -280,6 +280,8 @@ export function canPlayerSpecialSummon(state: DuelState, player: PlayerId, card?
 
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
   if (shouldRedirectToGraveyardMove(state, uid)) return banishDuelCard(state, uid, controller, reason | duelReason.redirect);
+  const redirectLocation = leaveFieldRedirectLocation(state, uid, "graveyard");
+  if (redirectLocation && redirectLocation !== "graveyard") return moveDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason);
   requireMoveAllowed(state, uid, "graveyard");
   const card = moveDuelCard(state, uid, "graveyard", controller, reason);
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
@@ -297,11 +299,18 @@ export function destroyDuelCard(state: DuelState, uid: string, controller?: Play
 
 export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
   if (shouldRedirectBanishMove(state, uid)) return sendDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect);
+  const redirectLocation = leaveFieldRedirectLocation(state, uid, "banished");
+  if (redirectLocation && redirectLocation !== "banished") return moveDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason);
   requireMoveAllowed(state, uid, "banished");
   const card = moveDuelCard(state, uid, "banished", controller, reason);
   pushDuelLog(state, "banish", card.controller, card.name, "Banished");
   collectTriggerEffects(state, "banished", card);
   return card;
+}
+
+export function moveDuelCardWithRedirects(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
+  const redirectLocation = leaveFieldRedirectLocation(state, uid, to);
+  return moveDuelCard(state, uid, redirectLocation ?? to, controller, redirectLocation ? reason | duelReason.redirect : reason);
 }
 
 export function detachDuelOverlayMaterials(state: DuelState, uid: string, count: number, controller?: PlayerId, reason: number = duelReason.cost): DuelCardInstance[] {
@@ -735,6 +744,40 @@ function shouldRedirectBanishMove(state: DuelState, uid: string): boolean {
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
+}
+
+function leaveFieldRedirectLocation(state: DuelState, uid: string, destination: DuelLocation): DuelLocation | undefined {
+  const card = findCard(state, uid);
+  if (!card || !isFieldLocation(card.location) || isFieldLocation(destination)) return undefined;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 60) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || source.uid !== card.uid || !effect.range.includes(source.location)) continue;
+    const redirectLocation = locationFromRedirectValue(effect.value);
+    if (!redirectLocation) continue;
+    const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
+    if (!effect.canActivate || effect.canActivate(ctx)) return redirectLocation;
+  }
+  return undefined;
+}
+
+function moveDuelCardToRedirectedLocation(state: DuelState, uid: string, location: DuelLocation, controller: PlayerId | undefined, reason: number): DuelCardInstance {
+  if (location === "graveyard") return sendDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect);
+  if (location === "banished") return banishDuelCard(state, uid, controller, reason | duelReason.redirect);
+  return moveDuelCard(state, uid, location, controller, reason | duelReason.redirect);
+}
+
+function locationFromRedirectValue(value: number | undefined): DuelLocation | undefined {
+  if (value === 0x02) return "hand";
+  if (value === 0x10) return "graveyard";
+  if (value === 0x20) return "banished";
+  if (value === 0x40) return "extraDeck";
+  if (value === 0x01) return "deck";
+  return undefined;
+}
+
+function isFieldLocation(location: DuelLocation): boolean {
+  return location === "monsterZone" || location === "spellTrapZone";
 }
 
 function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
