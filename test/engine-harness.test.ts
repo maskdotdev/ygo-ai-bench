@@ -1876,6 +1876,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
           Debug.Message("handler ok " .. tostring(ok) .. "/" .. tostring(handler ~= nil))
           if not ok then return false end
           Debug.Message("chain info " .. tp .. "/" .. loc .. "/" .. tc:GetCode() .. "/" .. tg:GetCount() .. "/" .. handler:GetCode())
+          Debug.Message("chain target checks " .. tostring(Duel.CheckChainTarget(1,tg:GetFirst())) .. "/" .. tostring(Duel.CheckChainTarget(1,e:GetHandler())))
+          Debug.Message("chain unique " .. tostring(Duel.CheckChainUniqueness()))
           return tp==0 and tc:IsCode(100) and tg:GetCount()==1 and handler:IsCode(100)
         end)
         e:SetOperation(function(e,c)
@@ -1900,8 +1902,63 @@ describe("EDOPro compatibility harness scaffolding", () => {
     applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
     applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
     expect(host.messages).toContain("chain info 0/2/100/1/100");
+    expect(host.messages).toContain("chain target checks true/false");
+    expect(host.messages).toContain("chain unique true");
     expect(host.messages).toContain("quick resolved");
     expect(host.messages).toContain("source resolved");
+  });
+
+  it("detects duplicate card codes in the current Lua chain", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Duplicate Chain Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 51, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e1=Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_IGNITION)
+        e1:SetRange(LOCATION_HAND)
+        e1:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("duplicate source resolved")
+        end)
+        c:RegisterEffect(e1)
+        local e2=Effect.CreateEffect(c)
+        e2:SetType(EFFECT_TYPE_QUICK_O)
+        e2:SetRange(LOCATION_HAND)
+        e2:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          return Duel.GetCurrentChain()>0
+        end)
+        e2:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("duplicate chain unique " .. tostring(Duel.CheckChainUniqueness()))
+        end)
+        c:RegisterEffect(e2)
+      end
+      `,
+      "duplicate-chain.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceUid = session.state.cards.find((card) => card.code === "100" && card.owner === 0)?.uid;
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sourceUid);
+    expect(sourceAction).toBeDefined();
+    applyResponse(session, sourceAction!);
+    const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(quickAction).toBeDefined();
+    applyResponse(session, quickAction!);
+    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    expect(host.messages).toContain("duplicate chain unique false");
+    expect(host.messages).toContain("duplicate source resolved");
   });
 
   it("lets Lua effects carry target player and parameter metadata", () => {

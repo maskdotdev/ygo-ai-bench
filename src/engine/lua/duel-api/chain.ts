@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { negateDuelChainLink } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
+import { readCardUid } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -29,6 +30,10 @@ export function installDuelChainApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("ChangeTargetPlayer"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangeTargetParam(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ChangeTargetParam"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckChainTarget(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("CheckChainTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckChainUniqueness(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("CheckChainUniqueness"));
 }
 
 function pushChainInfo(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
@@ -102,6 +107,35 @@ function pushChangeTargetParam(L: unknown, session: DuelSession, hostState: LuaD
     if (hostState.activeContext?.chainLink === link) hostState.activeContext.targetParam = parameter;
   }
   return 0;
+}
+
+function pushCheckChainTarget(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
+  const requestedIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.chain.length;
+  const cardUid = readCardUid(L, 2);
+  const link = chainLinkByLuaIndex(session, requestedIndex, hostState);
+  lua.lua_pushboolean(L, Boolean(cardUid && link?.targetUids?.includes(cardUid)));
+  return 1;
+}
+
+function pushCheckChainUniqueness(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
+  const seenCodes = new Set<string>();
+  for (const link of currentChainLinks(session, hostState)) {
+    const source = session.state.cards.find((card) => card.uid === link.sourceUid);
+    if (!source) continue;
+    if (seenCodes.has(source.code)) {
+      lua.lua_pushboolean(L, false);
+      return 1;
+    }
+    seenCodes.add(source.code);
+  }
+  lua.lua_pushboolean(L, true);
+  return 1;
+}
+
+function currentChainLinks(session: DuelSession, hostState: LuaDuelChainApiHostState): DuelState["chain"] {
+  const activeLink = hostState.activeContext?.chainLink;
+  if (!activeLink || session.state.chain.some((link) => link.id === activeLink.id)) return session.state.chain;
+  return [...session.state.chain, activeLink];
 }
 
 function chainLinkByLuaArg(L: unknown, session: DuelSession): DuelState["chain"][number] | undefined {
