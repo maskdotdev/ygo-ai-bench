@@ -1234,6 +1234,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
       g:AddCard(c100)
       g:KeepAlive()
       Debug.Message("added unique " .. g:GetCount() .. " " .. tostring(g:IsContains(c100)))
+      Debug.Message("contains alias " .. tostring(g:Contains(c100)) .. "/" .. tostring(g:Contains(c200)))
       g:Merge(high)
       Debug.Message("merged " .. g:GetCount() .. " " .. tostring(g:IsContains(c200)))
       local from_cards = Group.FromCards(c100, c200, c100)
@@ -1264,6 +1265,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("select unselect unbounded " .. tostring(unbounded and unbounded:GetCode()))
       Debug.Message("exists high " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 2, nil, 1500)))
       Debug.Message("filter group excluded " .. without_c200:GetCount() .. " " .. tostring(without_c200:IsContains(c200)))
+      Debug.Message("filter count alias " .. all:FilterCount(function(tc,minatk) return tc:GetAttack() >= minatk end, excluded_group, 1000))
       Debug.Message("exists group excluded " .. tostring(all:IsExists(aux.FilterBoolFunction(Card.IsCode, 200), 1, excluded_group)))
       Debug.Message("exists group remainder " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 1, excluded_group, 2500)))
       Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
@@ -1303,6 +1305,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("added unique 1 true");
+    expect(host.messages).toContain("contains alias true/false");
     expect(host.messages).toContain("merged 3 true");
     expect(host.messages).toContain("from cards 2 true");
     expect(host.messages).toContain("sub high 1 true");
@@ -1317,6 +1320,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("select unselect unbounded 200");
     expect(host.messages).toContain("exists high true");
     expect(host.messages).toContain("filter group excluded 2 false");
+    expect(host.messages).toContain("filter count alias 2");
     expect(host.messages).toContain("exists group excluded false");
     expect(host.messages).toContain("exists group remainder true");
     expect(host.messages).toContain("class count 2");

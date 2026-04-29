@@ -91,6 +91,12 @@ export function installGroupApi(L: unknown): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsContains"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 2);
+    lua.lua_pushboolean(state, Boolean(uid && readGroupUids(state, 1).includes(uid)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Contains"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushboolean(state, sameUidSet(readGroupUids(state, 1), readGroupUids(state, 2)));
     return 1;
   });
@@ -104,6 +110,15 @@ export function installGroupApi(L: unknown): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Filter"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
+    const excluded = readCardOrGroupUids(state, 3);
+    const count = filterRef === undefined ? readGroupUids(state, 1).filter((uid) => !excluded.includes(uid)).length : readGroupUids(state, 1).filter((uid) => !excluded.includes(uid) && groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 4))).length;
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushinteger(state, count);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("FilterCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const comparatorRef = readOptionalFunctionRef(state, 2);
     if (comparatorRef !== undefined) {
@@ -356,8 +371,10 @@ const groupFieldNames = [
   "Clear",
   "RemoveCard",
   "IsContains",
+  "Contains",
   "Equal",
   "Filter",
+  "FilterCount",
   "Sort",
   "Clone",
   "Select",
