@@ -469,11 +469,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
   it("registers Lua special summon procedure effects as legal summon actions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Procedure Source", kind: "monster" },
+      { code: "200", name: "Blocked Procedure Source", kind: "monster" },
       { code: "300", name: "Procedure Cost", kind: "monster" },
     ];
-    const session = createDuel({ seed: 32, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 32, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "300"] },
+      0: { main: ["100", "200", "300"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -490,10 +491,26 @@ describe("EDOPro compatibility harness scaffolding", () => {
         e:SetCondition(function(e,c)
           return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_HAND, 0, 1, c)
         end)
+        e:SetValue(function(e,c)
+          Debug.Message("procedure value " .. c:GetCode())
+          return c:IsCode(100)
+        end)
         e:SetOperation(function(e,c)
           local g=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_HAND, 0, 1, 1, c)
           Debug.Message("procedure operation cost " .. g:GetCount())
           Duel.SendtoGrave(g, REASON_COST)
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetValue(function(e,c)
+          Debug.Message("blocked procedure value " .. c:GetCode())
+          return false
         end)
         c:RegisterEffect(e)
       end
@@ -502,13 +519,18 @@ describe("EDOPro compatibility harness scaffolding", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.registerInitialEffects()).toBe(1);
-    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure");
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("100"));
+    const blocked = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("200"));
     expect(action).toBeDefined();
+    expect(blocked).toBeUndefined();
     expect(applyResponse(session, action!).ok).toBe(true);
 
+    expect(host.messages).toContain("procedure value 100");
+    expect(host.messages).toContain("blocked procedure value 200");
     expect(host.messages).toContain("procedure operation cost 1");
     expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
   });

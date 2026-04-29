@@ -441,7 +441,9 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(luaEffect.property === undefined ? {} : { property: luaEffect.property }),
     ...(luaEffect.targetRange === undefined ? {} : { targetRange: luaEffect.targetRange }),
     ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
-    canActivate: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, "condition", ctx),
+    canActivate: (ctx) =>
+      callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, "condition", ctx) &&
+      (event !== "summonProcedure" || callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.valueRef, true, "value", ctx)),
     cost: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.costRef, true, "cost", ctx),
     target: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.targetRef, true, "target", ctx),
     operation: (ctx) => {
@@ -547,7 +549,7 @@ function locationMaskFromLocations(locations: DuelLocation[]): number {
   return mask;
 }
 
-type LuaEffectCallbackKind = "condition" | "cost" | "target" | "operation";
+type LuaEffectCallbackKind = "condition" | "cost" | "target" | "operation" | "value";
 
 function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean, kind: LuaEffectCallbackKind, ctx?: DuelEffectContext): boolean {
   if (ref === undefined) return fallback;
