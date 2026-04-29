@@ -1459,13 +1459,16 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalNumber("EVENT_SUMMON_SUCCESS")).toBe(1100);
     expect(host.getGlobalNumber("EVENT_TO_GRAVE")).toBe(1014);
     expect(host.getGlobalNumber("EVENT_CHAINING")).toBe(1027);
+    expect(host.getGlobalNumber("RESETS_STANDARD")).toBe(0x1fe0000);
+    expect(host.getGlobalNumber("RESET_PHASE")).toBe(0x40000000);
+    expect(host.getGlobalNumber("RESET_CHAIN")).toBe(0x80000000);
     expect(host.registerInitialEffects()).toBe(2);
     expect(host.messages).toContain("effect predicates true/true/true");
     expect(host.messages).toContain("effect callbacks true/true/true/true");
     expect(host.messages).toContain("effect value function 107");
     expect(host.messages).toContain("effect getters 64/1100/1234/196608/65552/2");
     expect(host.messages).toContain("effect target range 4/16");
-    expect(host.messages).toContain("effect count reset 2/987/12288/1");
+    expect(host.messages).toContain("effect count reset 2/987/33427456/1");
     expect(host.messages).toContain("effect value number 2500");
     expect(session.state.effects[0]).toMatchObject({
       triggerEvent: "normalSummoned",
@@ -1477,7 +1480,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
       hintTiming: [0x20, 0x4],
       countLimit: 2,
       countLimitCode: 987,
-      reset: { flags: 0x3000, count: 1 },
+      reset: { flags: 0x1fe1000, count: 1 },
     });
   });
 
