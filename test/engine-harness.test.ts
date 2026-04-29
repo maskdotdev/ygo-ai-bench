@@ -1242,6 +1242,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("false count " .. Duel.GetMatchingGroupCount(aux.FALSE, 0, LOCATION_HAND, 0, nil))
       local wrapped = aux.NecroValleyFilter(aux.FilterBoolFunction(Card.IsCode, 100))
       Debug.Message("wrapped count " .. Duel.GetMatchingGroupCount(wrapped, 0, LOCATION_HAND, 0, nil))
+      Debug.Message("target exists " .. tostring(Duel.IsExistingTarget(aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, nil)))
+      Debug.Message("target count " .. Duel.GetTargetCount(aux.TRUE, 0, LOCATION_HAND, 0, nil))
       `,
       "aux-helpers.lua",
     );
@@ -1251,6 +1253,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("true count 2");
     expect(host.messages).toContain("false count 0");
     expect(host.messages).toContain("wrapped count 1");
+    expect(host.messages).toContain("target exists true");
+    expect(host.messages).toContain("target count 2");
   });
 
   it("provides deterministic Lua option prompt helpers", () => {
