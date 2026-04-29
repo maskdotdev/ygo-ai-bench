@@ -183,6 +183,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("IsPreviousPosition"));
   pushNumberGetter(L, "GetPreviousControler", session, (card) => card?.previousController ?? 0);
   pushNumberMatcher(L, "IsPreviousControler", session, (card, requested) => card.previousController === normalizePlayer(requested));
+  pushNumberMatcher(L, "IsPreviousSetCard", session, (card, requested) => Boolean(card.previousLocation && card.data.setcodes?.includes(requested)));
   pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
   pushNumberMatcher(L, "IsReason", session, (card, requested) => ((card.reason ?? 0) & requested) !== 0);
   pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
@@ -423,6 +424,7 @@ const cardFieldNames = [
   "IsPreviousPosition",
   "GetPreviousControler",
   "IsPreviousControler",
+  "IsPreviousSetCard",
   "GetReason",
   "IsReason",
   "GetReasonPlayer",

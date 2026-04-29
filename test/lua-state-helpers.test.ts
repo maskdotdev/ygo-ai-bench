@@ -183,7 +183,7 @@ describe("Lua state helpers", () => {
 
   it("exposes card owner, controller, location, sequence, and position metadata", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "State Probe", kind: "monster", typeFlags: 0x21, attack: 1700, defense: 1300, level: 4, race: 0x2, attribute: 0x20 },
+      { code: "100", name: "State Probe", kind: "monster", typeFlags: 0x21, attack: 1700, defense: 1300, level: 4, race: 0x2, attribute: 0x20, setcodes: [0x123] },
       { code: "900", name: "Hidden Extra", kind: "extra" },
     ];
     const session = createDuel({ seed: 20, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -213,7 +213,7 @@ describe("Lua state helpers", () => {
       Duel.SendtoGrave(c, REASON_EFFECT)
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
       Debug.Message("previous state " .. g:GetPreviousLocation() .. "/" .. g:GetPreviousControler() .. "/" .. g:GetPreviousSequence() .. "/" .. g:GetPreviousPosition())
-      Debug.Message("previous position " .. tostring(g:IsPreviousPosition(POS_FACEUP_ATTACK)))
+      Debug.Message("previous checks " .. tostring(g:IsPreviousLocation(LOCATION_MZONE)) .. "/" .. tostring(g:IsPreviousControler(0)) .. "/" .. tostring(g:IsPreviousPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(g:IsPreviousSetCard(0x123)))
       Debug.Message("reason player " .. g:GetReasonPlayer() .. "/" .. tostring(g:IsReasonPlayer(0)) .. "/" .. tostring(g:IsReasonPlayer(1)))
       Debug.Message("grave relation " .. tostring(g:IsOnField()) .. "/" .. tostring(g:IsMonster()))
       `,
@@ -230,7 +230,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("activity counts 1/1/0/0/0");
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
-    expect(host.messages).toContain("previous position true");
+    expect(host.messages).toContain("previous checks true/true/true/true");
     expect(host.messages).toContain("reason player 0/true/false");
     expect(host.messages).toContain("grave relation false/true");
   });
