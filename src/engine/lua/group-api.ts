@@ -105,6 +105,16 @@ export function installGroupApi(L: unknown): void {
   });
   lua.lua_setfield(L, -2, to_luastring("Filter"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const comparatorRef = readOptionalFunctionRef(state, 2);
+    if (comparatorRef !== undefined) {
+      const args = readFilterArgs(state, 3);
+      setGroupUids(state, 1, readGroupUids(state, 1).sort((a, b) => compareGroupCards(state, a, b, comparatorRef, args)));
+    }
+    releaseOptionalFunctionRef(state, comparatorRef);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Sort"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     pushGroupTable(state, readGroupUids(state, 1));
     return 1;
   });
@@ -250,6 +260,18 @@ function groupCardFilterValue(L: unknown, uid: string, filterRef: number, args: 
   return result;
 }
 
+function compareGroupCards(L: unknown, a: string, b: string, comparatorRef: number, args: LuaFilterArgs): number {
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, comparatorRef);
+  pushCardTable(L, a);
+  pushCardTable(L, b);
+  for (let index = 0; index < args.count; index += 1) lua.lua_pushvalue(L, args.start + index);
+  const status = lua.lua_pcall(L, 2 + args.count, 1, 0);
+  if (status !== lua.LUA_OK) return 0;
+  const result = lua.lua_isnumber(L, -1) ? lua.lua_tonumber(L, -1) : lua.lua_toboolean(L, -1) ? -1 : 1;
+  lua.lua_pop(L, 1);
+  return result;
+}
+
 function readFilterArgs(L: unknown, start: number): LuaFilterArgs {
   const top = lua.lua_gettop(L);
   return { start, count: Math.max(0, top - start + 1) };
@@ -336,6 +358,7 @@ const groupFieldNames = [
   "IsContains",
   "Equal",
   "Filter",
+  "Sort",
   "Clone",
   "Select",
   "IsExists",

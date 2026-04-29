@@ -1226,6 +1226,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local vararg_high = all:Filter(function(tc,minatk) return tc:GetAttack() >= minatk end, nil, 2500)
       local c100 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local c200 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local c300 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local excluded_group = Group.FromCards(c200)
       local without_c200 = all:Filter(function(tc,minatk) return tc:GetAttack() >= minatk end, excluded_group, 1000)
       local g = Group.CreateGroup()
@@ -1247,6 +1248,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("selected group " .. selected:GetCount())
       Debug.Message("selected group too few " .. clone:Select(0, 4, 4, nil):GetCount())
       Debug.Message("selected group unbounded " .. clone:Select(0, 1, 0, nil):GetCount())
+      local sorted = Group.FromCards(c300, c100, c200)
+      sorted:Sort(function(a,b) return a:GetAttack()<b:GetAttack() end)
+      Debug.Message("sorted asc " .. sorted:GetFirst():GetCode() .. "/" .. sorted:GetNext():GetCode() .. "/" .. sorted:GetNext():GetCode())
+      local sorted_desc = Group.FromCards(c100, c200, c300)
+      sorted_desc:Sort(function(a,b,desc) if desc then return a:GetAttack()>b:GetAttack() end return a:GetAttack()<b:GetAttack() end, true)
+      Debug.Message("sorted desc " .. sorted_desc:GetFirst():GetCode() .. "/" .. sorted_desc:GetNext():GetCode() .. "/" .. sorted_desc:GetNext():GetCode())
       local select_pool = Group.FromCards(c100)
       local added = all:SelectUnselect(select_pool, true, false, 1, 2)
       Debug.Message("select unselect add " .. tostring(added and added:GetCode()))
@@ -1303,6 +1310,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("selected group 2");
     expect(host.messages).toContain("selected group too few 0");
     expect(host.messages).toContain("selected group unbounded 3");
+    expect(host.messages).toContain("sorted asc 100/200/300");
+    expect(host.messages).toContain("sorted desc 300/200/100");
     expect(host.messages).toContain("select unselect add 200");
     expect(host.messages).toContain("select unselect stop true");
     expect(host.messages).toContain("select unselect unbounded 200");
