@@ -103,6 +103,7 @@ export interface DuelEffectDefinition {
   sourceUid: string;
   controller: PlayerId;
   ownerPlayer?: PlayerId;
+  registryKey?: string;
   event: "ignition" | "trigger" | "quick" | "continuous" | "summonProcedure";
   code?: number;
   value?: number;

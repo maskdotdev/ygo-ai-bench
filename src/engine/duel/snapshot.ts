@@ -4,6 +4,7 @@ import type {
   DuelCardInstance,
   DuelCardReader,
   DuelEffectDefinition,
+  DuelEffectContext,
   DuelPromptState,
   DuelSession,
   DuelState,
@@ -11,6 +12,9 @@ import type {
   PublicDuelState,
   SerializedDuel,
 } from "#duel/types.js";
+
+export type DuelEffectRestoreFactory = (effect: DuelEffectDefinition) => DuelEffectDefinition;
+export type DuelEffectRestoreRegistry = Record<string, DuelEffectRestoreFactory>;
 
 export function queryPublicState(session: DuelSession): PublicDuelState {
   const state = session.state;
@@ -63,7 +67,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
   };
 }
 
-export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader = fallbackCardReader): DuelSession {
+export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader = fallbackCardReader, effectRegistry: DuelEffectRestoreRegistry = {}): DuelSession {
   if (snapshot.version !== 1) throw new Error(`Unsupported duel snapshot version ${snapshot.version}`);
   return {
     cardReader,
@@ -74,7 +78,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
         1: { ...snapshot.state.players[1] },
       },
       cards: snapshot.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids] })),
-      effects: snapshot.state.effects.map(restoreEffect),
+      effects: snapshot.state.effects.flatMap((effect) => restoreEffect(effect, effectRegistry)),
       chain: snapshot.state.chain.map(copyChainLink),
       chainLimits: [],
       chainPasses: [...snapshot.state.chainPasses],
@@ -92,20 +96,14 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
 }
 
 function serializeEffect(effect: DuelEffectDefinition): DuelEffectDefinition[] {
-  if (!isStaticContinuousEffect(effect)) return [];
-  return [{
-    ...effect,
-    range: [...effect.range],
-    ...(effect.reset ? { reset: { ...effect.reset } } : {}),
-    ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
-    ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
-    operation: noopEffectOperation,
-  }];
+  if (!isStaticContinuousEffect(effect) && effect.registryKey === undefined) return [];
+  return [copySerializedEffect(effect)];
 }
 
-function restoreEffect(effect: DuelEffectDefinition): DuelEffectDefinition {
+function copySerializedEffect(effect: DuelEffectDefinition): DuelEffectDefinition {
+  const { canActivate: _canActivate, cost: _cost, target: _target, operation: _operation, ...metadata } = effect;
   return {
-    ...effect,
+    ...metadata,
     range: [...effect.range],
     ...(effect.reset ? { reset: { ...effect.reset } } : {}),
     ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
@@ -114,11 +112,20 @@ function restoreEffect(effect: DuelEffectDefinition): DuelEffectDefinition {
   };
 }
 
+function restoreEffect(effect: DuelEffectDefinition, effectRegistry: DuelEffectRestoreRegistry): DuelEffectDefinition[] {
+  if (effect.registryKey !== undefined) {
+    const factory = effectRegistry[effect.registryKey];
+    return factory ? [factory(copySerializedEffect(effect))] : [];
+  }
+  if (!isStaticContinuousEffect(effect)) return [];
+  return [copySerializedEffect(effect)];
+}
+
 function isStaticContinuousEffect(effect: DuelEffectDefinition): boolean {
   return effect.event === "continuous" && effect.canActivate === undefined && effect.cost === undefined && effect.target === undefined;
 }
 
-function noopEffectOperation(): void {}
+function noopEffectOperation(_ctx: DuelEffectContext): void {}
 
 function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][number] {
   return { ...link, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };
