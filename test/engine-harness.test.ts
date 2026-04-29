@@ -208,6 +208,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local excluded = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_MZONE, 0, 1, 1, nil)
       Debug.Message("group excluded release check " .. tostring(Duel.CheckReleaseGroup(0, aux.TRUE, 3, excluded)))
       Debug.Message("group excluded release selected " .. Duel.SelectReleaseGroup(0, aux.TRUE, 1, 3, excluded):GetCount())
+      local forced = excluded:GetFirst()
+      Duel.SetSelectedCard(forced)
+      Debug.Message("forced release check " .. tostring(Duel.CheckReleaseGroup(0, filter, 3, nil)))
+      local forced_group = Duel.SelectReleaseGroup(0, filter, 1, 3, nil)
+      Debug.Message("forced release selected " .. forced_group:GetCount() .. " " .. tostring(forced_group:IsContains(forced)))
+      Duel.SetSelectedCard(Group.FromCards(forced, g:GetFirst()))
+      Debug.Message("forced release ex max miss " .. tostring(Duel.CheckReleaseGroupEx(0, filter, 1, 1, nil)))
+      Duel.SetSelectedCard(nil)
       Debug.Message("released " .. Duel.Release(g, REASON_COST))
       local released = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       Debug.Message("previous location " .. tostring(released:IsPreviousLocation(LOCATION_MZONE)))
@@ -226,6 +234,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("selected releases 2");
     expect(host.messages).toContain("group excluded release check false");
     expect(host.messages).toContain("group excluded release selected 2");
+    expect(host.messages).toContain("forced release check true");
+    expect(host.messages).toContain("forced release selected 3 true");
+    expect(host.messages).toContain("forced release ex max miss false");
     expect(host.messages).toContain("released 2");
     expect(host.messages).toContain("previous location true");
     expect(host.messages).toContain("previous controller true");
