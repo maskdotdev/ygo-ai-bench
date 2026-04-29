@@ -20,6 +20,8 @@ export function installDuelChainApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("GetCurrentChain"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChainInfo(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetChainInfo"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushChainEvent(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("GetChainEvent"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsChainNegatable(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsChainNegatable"));
   lua.lua_pushcfunction(L, (state: unknown) => pushNegateChainLink(state, session));
@@ -68,6 +70,23 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
   else if (info === 0x80 && link.targetPlayer !== undefined) lua.lua_pushinteger(L, link.targetPlayer);
   else if (info === 0x100 && link.targetParam !== undefined) lua.lua_pushinteger(L, link.targetParam);
   else lua.lua_pushnil(L);
+}
+
+function pushChainEvent(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
+  const requestedIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.chain.length;
+  const link = chainLinkByLuaIndex(session, requestedIndex, hostState);
+  if (!link) {
+    lua.lua_pushnil(L);
+    return 1;
+  }
+  const eventCard = link.eventCardUid === undefined ? undefined : session.state.cards.find((card) => card.uid === link.eventCardUid);
+  pushGroupTable(L, eventCard ? [eventCard.uid] : []);
+  lua.lua_pushinteger(L, eventCard?.controller ?? link.player);
+  lua.lua_pushinteger(L, 0);
+  lua.lua_pushnil(L);
+  lua.lua_pushinteger(L, eventCard?.reason ?? 0);
+  lua.lua_pushinteger(L, eventCard?.controller ?? link.player);
+  return 6;
 }
 
 function pushIsChainNegatable(L: unknown, session: DuelSession): number {

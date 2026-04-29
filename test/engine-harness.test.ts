@@ -2102,6 +2102,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
         end)
         e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
           Debug.Message("operation args " .. tp .. "/" .. eg:GetFirst():GetCode() .. "/" .. tostring(re==nil))
+          local ceg,cep,cev,cre,cr,crp=Duel.GetChainEvent(0)
+          Debug.Message("chain event " .. ceg:GetCount() .. "/" .. cep .. "/" .. cev .. "/" .. tostring(cre==nil) .. "/" .. cr .. "/" .. crp .. "/" .. ceg:GetFirst():GetCode())
         end)
         c:RegisterEffect(e)
       end
@@ -2121,6 +2123,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("condition args 1/1/0/0/true/16/0/100");
     expect(host.messages).toContain("target args 1/400/100");
     expect(host.messages).toContain("operation args 1/100/true");
+    expect(host.messages).toContain("chain event 1/0/0/true/16/0/100");
   });
 
   it("lets Lua effects register, read, and reset duel and card flags", () => {
