@@ -2183,13 +2183,15 @@ describe("EDOPro compatibility harness scaffolding", () => {
         e:SetType(EFFECT_TYPE_QUICK_O)
         e:SetRange(LOCATION_HAND)
         e:SetCondition(function(e,c)
-          return Duel.GetCurrentChain()>0 and Duel.IsChainNegatable(1)
+          return Duel.GetCurrentChain()>0 and Duel.IsChainNegatable(1) and Duel.IsChainDisablable(1)
         end)
         e:SetOperation(function(e,c)
           Debug.Message("negatable " .. tostring(Duel.IsChainNegatable(1)))
+          Debug.Message("disablable " .. tostring(Duel.IsChainDisablable(1)))
           local before_reason,before_player=Duel.GetChainInfo(1, CHAININFO_DISABLE_REASON, CHAININFO_DISABLE_PLAYER)
           Debug.Message("disable before " .. before_reason .. "/" .. before_player)
           Debug.Message("negated " .. tostring(Duel.NegateEffect(1)))
+          Debug.Message("disablable after " .. tostring(Duel.IsChainDisablable(1)))
           local after_reason,after_player=Duel.GetChainInfo(1, CHAININFO_DISABLE_REASON, CHAININFO_DISABLE_PLAYER)
           Debug.Message("disable after " .. after_reason .. "/" .. after_player)
         end)
@@ -2211,8 +2213,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
     applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
 
     expect(host.messages).toContain("negatable true");
+    expect(host.messages).toContain("disablable true");
     expect(host.messages).toContain("disable before 0/0");
     expect(host.messages).toContain("negated true");
+    expect(host.messages).toContain("disablable after false");
     expect(host.messages).toContain("disable after 64/1");
     expect(host.messages).not.toContain("source resolved");
     expect(session.state.log.some((entry) => entry.action === "chainNegated")).toBe(true);

@@ -43,6 +43,8 @@ export function installDuelChainApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("SetChainLimitTillChainEnd"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsChainNegatable(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsChainNegatable"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsChainNegatable(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsChainDisablable"));
   lua.lua_pushcfunction(L, (state: unknown) => pushNegateChainLink(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("NegateActivation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushNegateChainLink(state, session, hostState));
