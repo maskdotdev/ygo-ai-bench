@@ -239,14 +239,15 @@ describe("EDOPro compatibility harness scaffolding", () => {
       { code: "100", name: "Recoverable Monster", kind: "monster" },
       { code: "300", name: "Illegal Extra Return", kind: "monster" },
       { code: "900", name: "Extra Return", kind: "extra" },
+      { code: "901", name: "Extra Alias Return", kind: "extra" },
     ];
     const session = createDuel({ seed: 9, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "300"], extra: ["900"] },
+      0: { main: ["100", "300"], extra: ["900", "901"] },
       1: { main: ["100", "300"] },
     });
     startDuel(session);
-    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && (candidate.code === "100" || candidate.code === "300" || candidate.code === "900"))) {
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && (candidate.code === "100" || candidate.code === "300" || candidate.code === "900" || candidate.code === "901"))) {
       moveDuelCard(session.state, card.uid, "graveyard", 0);
     }
 
@@ -262,6 +263,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_GRAVE, 0, 1, 1, nil)
       Debug.Message("to extra " .. Duel.SendtoExtraP(extra, 0, REASON_EFFECT))
       Debug.Message("operated extra " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      local extra_alias = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("to extra alias " .. Duel.SendtoExtra(extra_alias, 0, REASON_EFFECT))
+      Debug.Message("operated extra alias " .. Duel.GetOperatedGroup():GetFirst():GetCode())
       local illegal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_GRAVE, 0, 1, 1, nil)
       Debug.Message("illegal extra " .. Duel.SendtoExtraP(illegal, 0, REASON_EFFECT))
       Debug.Message("operated illegal " .. Duel.GetOperatedGroup():GetCount())
@@ -269,13 +273,15 @@ describe("EDOPro compatibility harness scaffolding", () => {
       "movement-helpers.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("to hand 1");
     expect(host.messages).toContain("operated hand 100");
     expect(host.messages).toContain("to deck 1");
     expect(host.messages).toContain("operated deck 100");
     expect(host.messages).toContain("to extra 1");
     expect(host.messages).toContain("operated extra 900");
+    expect(host.messages).toContain("to extra alias 1");
+    expect(host.messages).toContain("operated extra alias 901");
     expect(host.messages).toContain("illegal extra 0");
     expect(host.messages).toContain("operated illegal 0");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "100")?.location).toBe("deck");
