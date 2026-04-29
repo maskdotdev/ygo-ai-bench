@@ -6,6 +6,7 @@ import { installGroupApi } from "./lua-group-api.js";
 import { scriptFilenameForCard } from "./data-loaders.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "./lua-api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession } from "./duel-types.js";
+import type { LuaDuelOperationInfo } from "./lua-duel-api.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
 
@@ -53,11 +54,12 @@ interface LuaHostState {
   effects: Map<number, LuaEffectRecord>;
   messages: string[];
   activeTargetUids: string[] | undefined;
+  operationInfos: LuaDuelOperationInfo[];
 }
 
 export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
   const L = lauxlib.luaL_newstate();
-  const hostState: LuaHostState = { session, nextEffectId: 1, effects: new Map(), messages: [], activeTargetUids: undefined };
+  const hostState: LuaHostState = { session, nextEffectId: 1, effects: new Map(), messages: [], activeTargetUids: undefined, operationInfos: [] };
   lualib.luaL_openlibs(L);
   installConstants(L);
   installDebugApi(L, hostState.messages);

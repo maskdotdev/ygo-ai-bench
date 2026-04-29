@@ -598,6 +598,52 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("label object count 1");
   });
 
+  it("lets Lua effects share operation info between target and operation callbacks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Operation Source", kind: "monster" },
+      { code: "200", name: "Operation Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 20, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,c)
+          local g=Duel.SelectTarget(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, c)
+          Duel.SetOperationInfo(0, CATEGORY_TOHAND, g, g:GetCount(), 0, 0)
+          return true
+        end)
+        e:SetOperation(function(e,c)
+          local ok,cat,g,count,p,param=Duel.GetOperationInfo(0, CATEGORY_TOHAND)
+          Debug.Message("operation info " .. tostring(ok) .. "/" .. cat .. "/" .. g:GetCount() .. "/" .. count .. "/" .. p .. "/" .. param)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "operation-info.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceUid = session.state.cards.find((card) => card.code === "100" && card.owner === 0)?.uid;
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sourceUid);
+    expect(action).toBeDefined();
+    applyResponse(session, action!);
+    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    expect(host.messages).toContain("operation info true/8/1/1/0/0");
+  });
+
   it("provides common aux compatibility helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Aux A", kind: "monster" },
