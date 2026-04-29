@@ -3,6 +3,7 @@ import {
   applyResponse,
   createCardReader,
   createDuel,
+  detachDuelOverlayMaterials,
   getDuelLegalActions,
   loadDecks,
   makeResponseSelector,
@@ -355,6 +356,70 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("empty detach operated 0");
     expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([]);
     expect(materials.every((card) => session.state.cards.find((candidate) => candidate.uid === card.uid)?.location === "graveyard")).toBe(true);
+  });
+
+  it("lets Lua effects pay Xyz overlay detach costs before resolving", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Detach Material A", kind: "monster" },
+      { code: "300", name: "Detach Material B", kind: "monster" },
+      { code: "920", name: "Detach Cost Xyz", kind: "extra", xyzMaterials: ["100", "300"] },
+    ];
+    const session = createDuel({ seed: 30, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["920"] },
+      1: { main: ["100", "300"] },
+    });
+    startDuel(session);
+
+    const xyz = session.state.cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    const materials = session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(xyz).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+    xyzSummonDuelCard(session.state, 0, xyz!.uid, materials.map((card) => card.uid));
+    detachDuelOverlayMaterials(session.state, xyz!.uid, 1, 0);
+
+    const remainingOverlayUid = session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids[0];
+    const remainingOverlayCode = session.state.cards.find((card) => card.uid === remainingOverlayUid)?.code;
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c920={}
+      function c920.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_MZONE)
+        e:SetCost(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          local c=e:GetHandler()
+          if chk==0 then
+            Debug.Message("detach cost check " .. c:GetOverlayCount())
+            return c:GetOverlayCount()>0
+          end
+          Debug.Message("detach cost pay " .. c:GetOverlayCount())
+          return c:RemoveOverlayCard(tp,1,1,REASON_COST)==1
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("detach cost operation " .. e:GetHandler():GetOverlayCount())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "xyz-detach-cost.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(host.messages).toContain("detach cost check 1");
+    const activation = applyResponse(session, action!);
+
+    expect(activation.ok).toBe(true);
+    expect(host.messages).toContain("detach cost pay 1");
+    expect(host.messages).toContain("detach cost operation 0");
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([]);
+    expect(session.state.cards.find((card) => card.uid === remainingOverlayUid)).toMatchObject({ code: remainingOverlayCode, location: "graveyard" });
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect" && candidate.uid === xyz!.uid)).toBe(false);
   });
 
   it("lets Lua scripts query monster zones and choose summon positions", () => {
