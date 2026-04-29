@@ -196,7 +196,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...synchroSummonActions(state, player, createMaterialUsePredicate(state, "synchro")));
     actions.push(...xyzSummonActions(state, player, (uid) => !isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))));
     actions.push(...linkSummonActions(state, player, createMaterialUsePredicate(state, "link")));
-    actions.push(...ritualSummonActions(state, player, hand));
+    actions.push(...ritualSummonActions(state, player, hand, createMaterialUsePredicate(state, "ritual")));
     actions.push(...specialSummonProcedureActions(state, player));
     if (hasZoneSpace(state, player, "spellTrapZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
@@ -422,7 +422,7 @@ export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
 }
 
 export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
-  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state));
+  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "ritual"));
 }
 
 function createMaterialMover(state: DuelState): DuelMaterialMover {
@@ -440,7 +440,7 @@ function createOverlayMaterialMover(state: DuelState): DuelOverlayMaterialMover 
   };
 }
 
-function createMaterialUsePredicate(state: DuelState, kind: "fusion" | "synchro" | "xyz" | "link"): DuelMaterialPredicate {
+function createMaterialUsePredicate(state: DuelState, kind: "fusion" | "synchro" | "xyz" | "link" | "ritual"): DuelMaterialPredicate {
   return (uid) => !isMaterialUsePrevented(state, uid, kind, createContinuousEffectContext(state));
 }
 

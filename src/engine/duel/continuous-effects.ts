@@ -20,7 +20,7 @@ export interface ContinuousEffectMatch {
   card: DuelCardInstance;
 }
 
-export type MaterialUseKind = "fusion" | "synchro" | "xyz" | "link";
+export type MaterialUseKind = "fusion" | "synchro" | "xyz" | "link" | "ritual";
 
 export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card?: DuelCardInstance): boolean {
   for (const effect of state.effects) {

@@ -1794,6 +1794,37 @@ describe("full duel engine API", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
   });
 
+  it("blocks ritual summons when material cannot be used as material", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const ritual = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const blockedMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const otherMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(ritual).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+    expect(otherMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "ritual-cannot-be-material",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 248,
+      range: ["hand"],
+      operation() {},
+    });
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid)).toBe(false);
+    expect(() => ritualSummonDuelCard(session.state, 0, ritual!.uid, [blockedMaterial!.uid, otherMaterial!.uid])).toThrow("cannot be used as ritual material");
+    expect(session.state.cards.find((card) => card.uid === ritual!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
+  });
+
   it("does not expose ritual summon actions without materials or with no monster zone space", () => {
     const missing = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(missing, {

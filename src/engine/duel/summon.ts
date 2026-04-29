@@ -178,7 +178,15 @@ export function linkSummonDuelCard(
   return card;
 }
 
-export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector, moveMaterial: DuelMaterialMover = defaultMaterialMover(state)): DuelCardInstance {
+export function ritualSummonDuelCard(
+  state: DuelState,
+  player: PlayerId,
+  uid: string,
+  materialUids: string[],
+  collectEvent: DuelEventCollector,
+  moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
+  canUseMaterial: DuelMaterialPredicate = () => true,
+): DuelCardInstance {
   const card = requireControlledCard(state, player, uid, "hand");
   const requiredMaterials = card.data.ritualMaterials ?? [];
   if (card.kind !== "monster") throw new Error(`${card.name} is not a ritual monster`);
@@ -189,6 +197,7 @@ export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: st
   if (!sameStringMultiset(materials.map((material) => material.code), requiredMaterials)) throw new Error(`${card.name} ritual materials are not legal`);
   for (const material of materials) {
     if (material.location !== "hand" && material.location !== "monsterZone") throw new Error(`${material.name} cannot be used as ritual material`);
+    if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ritual material`);
   }
   requireZoneSpace(state, player, "monsterZone");
 
@@ -298,9 +307,11 @@ export function linkSummonActions(state: DuelState, player: PlayerId, canUseMate
   return actions;
 }
 
-export function ritualSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {
+export function ritualSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
   if (!hasZoneSpace(state, player, "monsterZone")) return [];
-  const materialPool = hand.filter((card) => card.kind === "monster").concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card)));
+  const materialPool = hand
+    .filter((card) => card.kind === "monster" && canUseMaterial(card.uid))
+    .concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid)));
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster" && candidate.data.ritualMaterials?.length)) {
     const materialUids = findMaterialUids(materialPool.filter((material) => material.uid !== card.uid), card.data.ritualMaterials ?? []);
