@@ -129,7 +129,7 @@ export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: strin
 }
 
 export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
-  const { card, materials } = requireExtraDeckSummonMaterials(state, player, uid, materialUids, cardDataMaterials(state, player, uid, "Link"), "Link", ["monsterZone"]);
+  const { card, materials } = requireLinkSummonMaterials(state, player, uid, materialUids);
   for (const material of materials) {
     moveDuelCard(state, material.uid, "graveyard", player, duelReason.material | duelReason.link);
     pushDuelLog(state, "linkMaterial", player, material.name, `Used for ${card.name}`);
@@ -228,7 +228,14 @@ export function xyzSummonActions(state: DuelState, player: PlayerId): DuelAction
 export function linkSummonActions(state: DuelState, player: PlayerId): DuelAction[] {
   if (!hasZoneSpace(state, player, "monsterZone")) return [];
   const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card));
-  return extraDeckSummonActions(state, player, materialPool, "linkSummon", "Link", (card) => card.data.linkMaterials);
+  const actions: DuelAction[] = [];
+  for (const card of getCards(state, player, "extraDeck")) {
+    const materialUids = findLinkMaterialUids(materialPool, card);
+    if (!materialUids) continue;
+    const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
+    actions.push({ type: "linkSummon", player, uid: card.uid, materialUids, label: `Link Summon ${card.name} using ${materialNames}` });
+  }
+  return actions;
 }
 
 export function ritualSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {
@@ -319,11 +326,84 @@ function requireExtraDeckSummonMaterials(
   return { card, materials };
 }
 
+function requireLinkSummonMaterials(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): { card: DuelCardInstance; materials: DuelCardInstance[] } {
+  const card = requireControlledCard(state, player, uid, "extraDeck");
+  const targetRating = linkRating(card);
+  if (targetRating <= 0) throw new Error(`${card.name} does not define Link materials`);
+  if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} Link materials must be unique`);
+  const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
+  if (!materials.length) throw new Error(`${card.name} Link materials are not legal`);
+  if (!linkMaterialCodesMatch(materials, card.data.linkMaterials)) throw new Error(`${card.name} Link materials are not legal`);
+  if (!canLinkMaterialsMatchRating(materials, targetRating)) throw new Error(`${card.name} Link materials are not legal`);
+  for (const material of materials) {
+    if (material.location !== "monsterZone" || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as Link material`);
+  }
+  requireZoneSpace(state, player, "monsterZone");
+  return { card, materials };
+}
+
 function cardDataMaterials(state: DuelState, player: PlayerId, uid: string, summonType: ExtraDeckSummonType): string[] | undefined {
   const card = requireControlledCard(state, player, uid, "extraDeck");
   if (summonType === "fusion") return card.data.fusionMaterials;
   if (summonType === "Xyz") return card.data.xyzMaterials;
   return card.data.linkMaterials;
+}
+
+function findLinkMaterialUids(materialPool: DuelCardInstance[], card: DuelCardInstance): string[] | undefined {
+  const targetRating = linkRating(card);
+  if (targetRating <= 0) return undefined;
+  if (card.data.linkMaterials?.length) {
+    const materialUids = findMaterialUids(materialPool, card.data.linkMaterials);
+    if (!materialUids) return undefined;
+    const materials = materialUids.map((materialUid) => materialPool.find((material) => material.uid === materialUid)).filter((material): material is DuelCardInstance => Boolean(material));
+    return canLinkMaterialsMatchRating(materials, targetRating) ? materialUids : undefined;
+  }
+  for (let count = 1; count <= materialPool.length; count += 1) {
+    for (const materials of cardCombinations(materialPool, count)) {
+      if (canLinkMaterialsMatchRating(materials, targetRating)) return materials.map((material) => material.uid);
+    }
+  }
+  return undefined;
+}
+
+function linkMaterialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[] | undefined): boolean {
+  return !requiredCodes?.length || sameStringMultiset(materials.map((material) => material.code), requiredCodes);
+}
+
+function canLinkMaterialsMatchRating(materials: DuelCardInstance[], targetRating: number): boolean {
+  if (materials.length === 0 || materials.length > targetRating) return false;
+  return linkRatingChoicesMatch(materials.map(linkMaterialRatings), targetRating, 0, 0);
+}
+
+function linkRatingChoicesMatch(choices: number[][], targetRating: number, index: number, currentRating: number): boolean {
+  if (index >= choices.length) return currentRating === targetRating;
+  for (const rating of choices[index] ?? []) {
+    if (currentRating + rating <= targetRating && linkRatingChoicesMatch(choices, targetRating, index + 1, currentRating + rating)) return true;
+  }
+  return false;
+}
+
+function linkMaterialRatings(card: DuelCardInstance): number[] {
+  const rating = linkRating(card);
+  return rating > 1 ? [1, rating] : [1];
+}
+
+function linkRating(card: DuelCardInstance): number {
+  if (!card.data.linkMaterials?.length && ((card.data.typeFlags ?? 0) & 0x4000000) === 0) return 0;
+  if (card.data.level !== undefined) return card.data.level;
+  return card.data.linkMaterials?.length ?? 0;
+}
+
+function cardCombinations(cards: DuelCardInstance[], count: number): DuelCardInstance[][] {
+  if (count === 0) return [[]];
+  if (cards.length < count) return [];
+  const results: DuelCardInstance[][] = [];
+  for (let index = 0; index <= cards.length - count; index += 1) {
+    const head = cards[index];
+    if (!head) continue;
+    for (const tail of cardCombinations(cards.slice(index + 1), count - 1)) results.push([head, ...tail]);
+  }
+  return results;
 }
 
 function synchroMaterialCodes(card: DuelCardInstance): string[] | undefined {

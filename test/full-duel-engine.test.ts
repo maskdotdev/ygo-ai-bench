@@ -46,6 +46,8 @@ const cards: DuelCardData[] = [
   { code: "910", name: "Synchro Test Monster", kind: "extra", attack: 2500, defense: 2000, synchroMaterials: { tuner: "100", nonTuners: ["300"] } },
   { code: "920", name: "Xyz Test Monster", kind: "extra", attack: 2400, defense: 2000, xyzMaterials: ["100", "300"] },
   { code: "930", name: "Link Test Monster", kind: "extra", attack: 2300, linkMaterials: ["100", "300"] },
+  { code: "950", name: "Generic Link-2", kind: "extra", attack: 1800, typeFlags: 0x4000001, level: 2 },
+  { code: "960", name: "Generic Link-3", kind: "extra", attack: 2400, typeFlags: 0x4000001, level: 3 },
   { code: "940", name: "Ritual Test Monster", kind: "monster", attack: 2500, defense: 2100, ritualMaterials: ["100", "300"] },
 ];
 
@@ -1173,6 +1175,83 @@ describe("full duel engine API", () => {
 
     expect(result.ok).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Link special summoned Link Test Monster")).toBe(true);
+  });
+
+  it("link summons generic links by material rating", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["950"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const link = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "950");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(link).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid);
+    expect(action).toBeTruthy();
+    if (!action || action.type !== "linkSummon") throw new Error("Expected Link summon action");
+    expect(action.materialUids).toHaveLength(2);
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === link!.uid)?.location).toBe("monsterZone");
+    expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
+  });
+
+  it("lets a link material contribute its link rating", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"], extra: ["950", "960"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const link2 = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "950");
+    const link3 = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "960");
+    const firstMaterials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(link2).toBeTruthy();
+    expect(link3).toBeTruthy();
+    for (const material of firstMaterials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    const link2Action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link2!.uid);
+    expect(link2Action).toBeTruthy();
+    expect(applyResponse(session, link2Action!).ok).toBe(true);
+
+    const third = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(third).toBeTruthy();
+    moveDuelCard(session.state, third!.uid, "monsterZone", 0);
+
+    const link3Action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link3!.uid);
+    expect(link3Action).toBeTruthy();
+    if (!link3Action || link3Action.type !== "linkSummon") throw new Error("Expected Link-3 summon action");
+    expect(link3Action.materialUids).toEqual(expect.arrayContaining([link2!.uid, third!.uid]));
+    const result = applyResponse(session, link3Action);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === link3!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === link2!.uid)?.location).toBe("graveyard");
+  });
+
+  it("rejects link summons with invalid material rating totals", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["960"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const link = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "960");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(link).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid)).toBe(false);
+    expect(() => linkSummonDuelCard(session.state, 0, link!.uid, materials.map((material) => material.uid))).toThrow("Link materials are not legal");
   });
 
   it("does not expose link summon actions without field materials or with no monster zone space", () => {
