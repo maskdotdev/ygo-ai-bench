@@ -417,4 +417,31 @@ describe("duel rollback", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
     expect(session.state.log.some((entry) => entry.action === "ritualMaterial")).toBe(false);
   });
+
+  it("rolls back failed tribute summon release moves from responses", () => {
+    const { session, target: tributeMonster, first: firstTribute, blocked: blockedTribute } = setupFailedMoveAfterFirstFixture({
+      seed: 93,
+      main: ["700", "100", "300"],
+      target: { location: "hand", code: "700" },
+      first: { location: "hand", code: "100", moveTo: "monsterZone" },
+      blocked: { location: "hand", code: "300", moveTo: "monsterZone" },
+      block: { id: "cannot-send-second-tribute", code: 68, range: ["monsterZone"], firstMovedTo: "graveyard" },
+    });
+    expect(tributeMonster).toBeTruthy();
+    expect(firstTribute).toBeTruthy();
+    expect(blockedTribute).toBeTruthy();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "tributeSummon" && candidate.uid === tributeMonster!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("tributeSummon");
+    if (!action || action.type !== "tributeSummon") throw new Error("Expected tribute summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === firstTribute!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === blockedTribute!.uid)?.location).toBe("monsterZone");
+    expect(session.state.log.some((entry) => entry.action === "release")).toBe(false);
+  });
 });
