@@ -903,4 +903,60 @@ describe("Lua chain helpers", () => {
     expect(session.state.usedCountKeys).toHaveLength(1);
     expect(host.messages.filter((message) => message === "count limited trigger")).toHaveLength(1);
   });
+
+  it("keeps Lua duel-scoped trigger count codes spent across later turns", () => {
+    const cards: DuelCardData[] = [
+      { code: "12100", name: "Lua Duel Count First Summon", kind: "monster" },
+      { code: "12200", name: "Lua Duel Count Trigger", kind: "monster" },
+      { code: "12300", name: "Lua Duel Count Second Summon", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 92, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["12100", "12200", "12300"] },
+      1: { main: ["12100", "12100", "12100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c12200={}
+      function c12200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SPSUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetCountLimit(1, 0x302)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("duel count limited trigger")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-trigger-duel-count-limit.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const firstSummon = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "12100");
+    const secondSummon = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "12300");
+    expect(firstSummon).toBeDefined();
+    expect(secondSummon).toBeDefined();
+
+    specialSummonDuelCard(session.state, firstSummon!.uid);
+    expect(session.state.pendingTriggers).toHaveLength(1);
+    const effectId = session.state.pendingTriggers[0]!.effectId;
+    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === effectId);
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(session.state.usedCountKeys).toEqual(["duel:0:code-770"]);
+
+    session.state.turn += 1;
+    session.state.waitingFor = 0;
+    specialSummonDuelCard(session.state, secondSummon!.uid);
+
+    expect(session.state.pendingTriggers).toHaveLength(0);
+    expect(session.state.usedCountKeys).toEqual(["duel:0:code-770"]);
+    expect(host.messages.filter((message) => message === "duel count limited trigger")).toHaveLength(1);
+  });
 });
