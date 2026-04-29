@@ -45,6 +45,7 @@ import {
   getDuelAttackTargets as getDuelAttackTargetsRule,
   positionChangeActions,
 } from "./duel-battle.js";
+import { canUseEffectCount, markEffectUsed } from "./duel-effect-counts.js";
 import type {
   ApplyDuelResponseResult,
   CardPosition,
@@ -640,31 +641,6 @@ export function negateDuelChainLink(state: DuelState, chainLinkId: string, playe
   link.negated = true;
   pushDuelLog(state, "negate", player, cardName, link.effectId);
   return true;
-}
-
-function canUseEffectCount(state: DuelState, effect: DuelEffectDefinition): boolean {
-  const limit = effectCountLimit(effect);
-  if (limit <= 0) return true;
-  return state.usedCountKeys.filter((key) => key === effectCountKey(state, effect)).length < limit;
-}
-
-function effectCountLimit(effect: DuelEffectDefinition): number {
-  if (effect.countLimit !== undefined) return effect.countLimit;
-  return effect.oncePerTurn ? 1 : 0;
-}
-
-function effectCountKey(state: DuelState, effect: DuelEffectDefinition): string {
-  if (effect.countLimitCode !== undefined) {
-    const scope = (effect.countLimitCode & 0x2) !== 0 ? "duel" : `turn-${state.turn}`;
-    return `${scope}:${effect.controller}:code-${effect.countLimitCode}`;
-  }
-  return `turn-${state.turn}:${effect.controller}:${effect.sourceUid}:${effect.id}`;
-}
-
-function markEffectUsed(state: DuelState, effect: DuelEffectDefinition): void {
-  if (effectCountLimit(effect) <= 0) return;
-  const key = effectCountKey(state, effect);
-  state.usedCountKeys.push(key);
 }
 
 function sameAction(a: DuelAction, b: DuelResponse): boolean {
