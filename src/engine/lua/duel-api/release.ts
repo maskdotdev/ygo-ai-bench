@@ -2,7 +2,7 @@ import fengari from "fengari";
 import { canMoveDuelCardToLocation } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
-import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import { readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -25,7 +25,7 @@ function pushCheckReleaseGroup(L: unknown, session: DuelSession, hasMax: boolean
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const minimum = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
   const excludedIndex = hasMax ? 5 : 4;
-  const excluded = readCardUid(L, excludedIndex);
+  const excluded = readCardOrGroupUids(L, excludedIndex);
   const count = releasableMonsterUids(L, session, filterRef, player, excluded, readFilterArgs(L, excludedIndex + 1)).length;
   releaseOptionalFunctionRef(L, filterRef);
   lua.lua_pushboolean(L, count >= minimum);
@@ -37,14 +37,14 @@ function pushSelectReleaseGroup(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const min = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
   const max = Math.max(min, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min);
-  const excluded = readCardUid(L, 5);
+  const excluded = readCardOrGroupUids(L, 5);
   const uids = releasableMonsterUids(L, session, filterRef, player, excluded, readFilterArgs(L, 6));
   releaseOptionalFunctionRef(L, filterRef);
   pushGroupTable(L, uids.slice(0, max > 0 ? max : Math.max(min, 1)));
   return 1;
 }
 
-function releasableMonsterUids(L: unknown, session: DuelSession, filterRef: number | undefined, player: PlayerId, excluded: string | undefined, args: LuaFilterArgs): string[] {
+function releasableMonsterUids(L: unknown, session: DuelSession, filterRef: number | undefined, player: PlayerId, excluded: string[], args: LuaFilterArgs): string[] {
   return session.state.cards
     .filter((card) => isReleasableMonster(session, card, player, excluded))
     .sort((a, b) => a.sequence - b.sequence)
@@ -52,11 +52,17 @@ function releasableMonsterUids(L: unknown, session: DuelSession, filterRef: numb
     .filter((uid) => cardMatchesFilter(L, uid, filterRef, args));
 }
 
-function isReleasableMonster(session: DuelSession, card: DuelCardInstance, player: PlayerId, excluded: string | undefined): boolean {
-  if (card.uid === excluded) return false;
+function isReleasableMonster(session: DuelSession, card: DuelCardInstance, player: PlayerId, excluded: string[]): boolean {
+  if (excluded.includes(card.uid)) return false;
   if (card.controller !== player || card.location !== "monsterZone") return false;
   if (card.kind !== "monster" && card.kind !== "extra") return false;
   return canMoveDuelCardToLocation(session.state, card.uid, "graveyard");
+}
+
+function readCardOrGroupUids(L: unknown, index: number): string[] {
+  const cardUid = readCardUid(L, index);
+  if (cardUid) return [cardUid];
+  return readGroupUids(L, index);
 }
 
 function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefined, args: LuaFilterArgs): boolean {

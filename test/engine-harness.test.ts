@@ -205,6 +205,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("selected releases ex " .. gx:GetCount())
       local g = Duel.SelectReleaseGroup(0, filter, 1, 2, nil)
       Debug.Message("selected releases " .. g:GetCount())
+      local excluded = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("group excluded release check " .. tostring(Duel.CheckReleaseGroup(0, aux.TRUE, 3, excluded)))
+      Debug.Message("group excluded release selected " .. Duel.SelectReleaseGroup(0, aux.TRUE, 1, 3, excluded):GetCount())
       Debug.Message("released " .. Duel.Release(g, REASON_COST))
       local released = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       Debug.Message("previous location " .. tostring(released:IsPreviousLocation(LOCATION_MZONE)))
@@ -221,6 +224,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("can release ex three false");
     expect(host.messages).toContain("selected releases ex 1");
     expect(host.messages).toContain("selected releases 2");
+    expect(host.messages).toContain("group excluded release check false");
+    expect(host.messages).toContain("group excluded release selected 2");
     expect(host.messages).toContain("released 2");
     expect(host.messages).toContain("previous location true");
     expect(host.messages).toContain("previous controller true");
@@ -735,6 +740,85 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
+  });
+
+  it("lets Lua special summon procedure costs release material before summoning", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Release Procedure Source", kind: "monster" },
+      { code: "200", name: "Blocked Release Procedure", kind: "monster" },
+      { code: "300", name: "Release Procedure Material", kind: "monster" },
+      { code: "400", name: "Release Filler A", kind: "monster" },
+      { code: "500", name: "Release Filler B", kind: "monster" },
+      { code: "600", name: "Release Filler C", kind: "monster" },
+      { code: "700", name: "Release Filler D", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 36, startingHandSize: 7, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500", "600", "700"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    for (const code of ["300", "400", "500", "600", "700"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockedSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const material = session.state.cards.find((card) => card.controller === 0 && card.location === "monsterZone" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(blockedSource).toBeTruthy();
+    expect(material).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCost(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.CheckReleaseGroup(tp, aux.FilterBoolFunction(Card.IsCode, 300), 1, e:GetHandler()) end
+          local g=Duel.SelectReleaseGroup(tp, aux.FilterBoolFunction(Card.IsCode, 300), 1, 1, e:GetHandler())
+          Debug.Message("procedure release cost " .. g:GetCount() .. "/" .. Duel.GetLocationCountFromEx(tp, tp, nil, g))
+          Duel.Release(g, REASON_COST)
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetCost(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.CheckReleaseGroup(tp, aux.FilterBoolFunction(Card.IsCode, 999), 1, e:GetHandler()) end
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "release-cost-special-summon-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const actions = getDuelLegalActions(session, 0);
+    const action = actions.find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    const blocked = actions.find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === blockedSource!.uid);
+    expect(action).toBeDefined();
+    expect(blocked).toBeUndefined();
+    expect(host.messages).not.toContain("procedure release cost 1/1");
+    expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("procedure release cost 1/1");
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.uid === blockedSource!.uid)).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard" });
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
   });
 
