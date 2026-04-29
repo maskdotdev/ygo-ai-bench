@@ -529,17 +529,23 @@ function activateEffect(session: DuelSession, player: PlayerId, uid: string, eff
   const source = requireControlledCard(session.state, player, uid);
   const targetUids: string[] = [];
   const ctx = createEffectContext(session.state, source, player, undefined, undefined, targetUids);
-  if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
-  if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
-  pushChainLink(session.state, player, uid, effectId, undefined, undefined, targetUids, ctx.targetPlayer, ctx.targetParam);
-  pushDuelLog(session.state, "activate", player, source.name, effect.id);
-  markEffectUsed(session.state, effect);
-  const responsePlayer = otherPlayer(player);
-  if (hasChainResponses(session.state, responsePlayer)) {
-    session.state.waitingFor = responsePlayer;
-    return;
+  const rollback = captureDuelState(session.state);
+  try {
+    if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
+    if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
+    pushChainLink(session.state, player, uid, effectId, undefined, undefined, targetUids, ctx.targetPlayer, ctx.targetParam);
+    pushDuelLog(session.state, "activate", player, source.name, effect.id);
+    markEffectUsed(session.state, effect);
+    const responsePlayer = otherPlayer(player);
+    if (hasChainResponses(session.state, responsePlayer)) {
+      session.state.waitingFor = responsePlayer;
+      return;
+    }
+    resolveChain(session.state);
+  } catch (error) {
+    restoreDuelState(session.state, rollback);
+    throw error;
   }
-  resolveChain(session.state);
 }
 
 function specialSummonByProcedure(session: DuelSession, player: PlayerId, uid: string, effectId: string): void {
@@ -564,25 +570,31 @@ function specialSummonByProcedure(session: DuelSession, player: PlayerId, uid: s
 }
 
 function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
-  const trigger = takePendingTrigger(session.state, player, triggerId);
-  const effect = session.state.effects.find((candidate) => candidate.sourceUid === trigger.sourceUid && candidate.id === trigger.effectId);
-  if (!effect) throw new Error(`Effect ${trigger.effectId} is not registered`);
-  const source = findCard(session.state, trigger.sourceUid);
-  const eventCard = trigger.eventCardUid === undefined ? undefined : findCard(session.state, trigger.eventCardUid);
-  if (!source || (trigger.eventCardUid !== undefined && !eventCard)) throw new Error(`Trigger ${triggerId} lost its source or event card`);
-  const targetUids: string[] = [];
-  const ctx = createEffectContext(session.state, source, trigger.player, trigger.eventName, eventCard, targetUids);
-  if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
-  if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
-  pushChainLink(session.state, trigger.player, source.uid, effect.id, trigger.eventName, eventCard, targetUids, ctx.targetPlayer, ctx.targetParam);
-  pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
-  markEffectUsed(session.state, effect);
-  const responsePlayer = otherPlayer(trigger.player);
-  if (hasChainResponses(session.state, responsePlayer)) {
-    session.state.waitingFor = responsePlayer;
-    return;
+  const rollback = captureDuelState(session.state);
+  try {
+    const trigger = takePendingTrigger(session.state, player, triggerId);
+    const effect = session.state.effects.find((candidate) => candidate.sourceUid === trigger.sourceUid && candidate.id === trigger.effectId);
+    if (!effect) throw new Error(`Effect ${trigger.effectId} is not registered`);
+    const source = findCard(session.state, trigger.sourceUid);
+    const eventCard = trigger.eventCardUid === undefined ? undefined : findCard(session.state, trigger.eventCardUid);
+    if (!source || (trigger.eventCardUid !== undefined && !eventCard)) throw new Error(`Trigger ${triggerId} lost its source or event card`);
+    const targetUids: string[] = [];
+    const ctx = createEffectContext(session.state, source, trigger.player, trigger.eventName, eventCard, targetUids);
+    if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
+    if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
+    pushChainLink(session.state, trigger.player, source.uid, effect.id, trigger.eventName, eventCard, targetUids, ctx.targetPlayer, ctx.targetParam);
+    pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
+    markEffectUsed(session.state, effect);
+    const responsePlayer = otherPlayer(trigger.player);
+    if (hasChainResponses(session.state, responsePlayer)) {
+      session.state.waitingFor = responsePlayer;
+      return;
+    }
+    resolveChain(session.state);
+  } catch (error) {
+    restoreDuelState(session.state, rollback);
+    throw error;
   }
-  resolveChain(session.state);
 }
 
 function declinePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
