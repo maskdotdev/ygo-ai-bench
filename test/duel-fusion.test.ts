@@ -82,6 +82,40 @@ describe("duel fusion summons", () => {
     expect(result.state.log.some((entry) => entry.detail === "Fusion special summoned Fusion Test Monster")).toBe(true);
   });
 
+  it("matches explicit fusion materials through card aliases", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 2,
+      cardReader: createCardReader([
+        { code: "100", alias: "101", name: "Aliased Material", kind: "monster" },
+        { code: "300", name: "Second Material", kind: "monster" },
+        { code: "900", name: "Alias Fusion", kind: "extra", fusionMaterials: ["101", "300"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["300", "300"] },
+    });
+    startDuel(session);
+
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    const aliasMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const otherMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(fusion).toBeTruthy();
+    expect(aliasMaterial).toBeTruthy();
+    expect(otherMaterial).toBeTruthy();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
+    expect(action).toBeTruthy();
+    expect(action).toMatchObject({ materialUids: [aliasMaterial!.uid, otherMaterial!.uid] });
+
+    fusionSummonDuelCard(session.state, 0, fusion!.uid, [aliasMaterial!.uid, otherMaterial!.uid]);
+
+    expect(session.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === aliasMaterial!.uid)?.location).toBe("graveyard");
+    expect(session.state.cards.find((card) => card.uid === otherMaterial!.uid)?.location).toBe("graveyard");
+  });
+
   it("applies graveyard redirects to fusion materials", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

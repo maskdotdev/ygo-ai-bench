@@ -364,14 +364,15 @@ function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind
 
 function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {
   if (!target) return true;
-  if (kind === "fusion") return !target.data.fusionMaterials?.length || target.data.fusionMaterials.includes(card.code);
-  if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.includes(card.code);
+  const codes = cardCodes(card);
+  if (kind === "fusion") return !target.data.fusionMaterials?.length || target.data.fusionMaterials.some((code) => codes.includes(code));
+  if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
   if (kind === "synchro") {
     const materials = target.data.synchroMaterials;
-    return !materials || [materials.tuner, ...materials.nonTuners].includes(card.code);
+    return !materials || [materials.tuner, ...materials.nonTuners].some((code) => codes.includes(code));
   }
-  if (kind === "xyz") return !target.data.xyzMaterials?.length ? cardRank(target) === (card.data.level ?? 0) : target.data.xyzMaterials.includes(card.code);
-  if (kind === "link") return !target.data.linkMaterials?.length ? linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.includes(card.code);
+  if (kind === "xyz") return !target.data.xyzMaterials?.length ? cardRank(target) === (card.data.level ?? 0) : target.data.xyzMaterials.some((code) => codes.includes(code));
+  if (kind === "link") return !target.data.linkMaterials?.length ? linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
   return true;
 }
 

@@ -315,14 +315,14 @@ describe("Lua field and query helpers", () => {
 
   it("checks Lua material predicates against an optional summon target", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Target Material A", kind: "monster", level: 4 },
+      { code: "100", alias: "101", name: "Target Material A", kind: "monster", level: 4 },
       { code: "200", name: "Wrong Material", kind: "monster", level: 3 },
       { code: "300", name: "Target Tuner", kind: "monster", typeFlags: 0x1001, level: 2 },
-      { code: "900", name: "Target Fusion", kind: "extra", fusionMaterials: ["100"] },
-      { code: "910", name: "Target Synchro", kind: "extra", synchroMaterials: { tuner: "300", nonTuners: ["100"] } },
+      { code: "900", name: "Target Fusion", kind: "extra", fusionMaterials: ["101"] },
+      { code: "910", name: "Target Synchro", kind: "extra", synchroMaterials: { tuner: "300", nonTuners: ["101"] } },
       { code: "920", name: "Target Xyz", kind: "extra", typeFlags: 0x800001, level: 4 },
       { code: "930", name: "Target Link", kind: "extra", typeFlags: 0x4000001, level: 2 },
-      { code: "940", name: "Target Ritual", kind: "monster", ritualMaterials: ["100"] },
+      { code: "940", name: "Target Ritual", kind: "monster", ritualMaterials: ["101"] },
     ];
     const session = createDuel({ seed: 58, startingHandSize: 4, cardReader: createCardReader(cards) });
     loadDecks(session, {

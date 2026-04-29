@@ -205,7 +205,7 @@ export function ritualSummonDuelCard(
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} ritual materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (materials.some((material) => material.uid === card.uid)) throw new Error(`${card.name} cannot use itself as ritual material`);
-  if (!sameStringMultiset(materials.map((material) => material.code), requiredMaterials)) throw new Error(`${card.name} ritual materials are not legal`);
+  if (!materialCodesMatch(materials, requiredMaterials)) throw new Error(`${card.name} ritual materials are not legal`);
   for (const material of materials) {
     if (material.location !== "hand" && material.location !== "monsterZone") throw new Error(`${material.name} cannot be used as ritual material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ritual material`);
@@ -379,7 +379,7 @@ function findMaterialUids(cards: DuelCardInstance[], requiredCodes: string[]): s
   const used = new Set<string>();
   const selected: string[] = [];
   for (const code of requiredCodes) {
-    const material = cards.find((card) => card.code === code && !used.has(card.uid));
+    const material = cards.find((card) => cardMatchesCode(card, code) && !used.has(card.uid));
     if (!material) return undefined;
     used.add(material.uid);
     selected.push(material.uid);
@@ -401,7 +401,7 @@ function requireExtraDeckSummonMaterials(
   if (!requiredMaterials?.length) throw new Error(`${card.name} does not define ${summonType} materials`);
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} ${summonType} materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
-  if (!sameStringMultiset(materials.map((material) => material.code), requiredMaterials)) throw new Error(`${card.name} ${summonType} materials are not legal`);
+  if (!materialCodesMatch(materials, requiredMaterials)) throw new Error(`${card.name} ${summonType} materials are not legal`);
   for (const material of materials) {
     if (!allowedLocations.includes(material.location)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
@@ -417,7 +417,7 @@ function requireSynchroSummonMaterials(state: DuelState, player: PlayerId, uid: 
   if (!materials.length) throw new Error(`${card.name} synchro materials are not legal`);
   const requiredCodes = synchroMaterialCodes(card);
   if (requiredCodes?.length) {
-    if (!sameStringMultiset(materials.map((material) => material.code), requiredCodes)) throw new Error(`${card.name} synchro materials are not legal`);
+    if (!materialCodesMatch(materials, requiredCodes)) throw new Error(`${card.name} synchro materials are not legal`);
   } else if (!canGenericSynchroMaterialsMatch(card, materials)) {
     throw new Error(`${card.name} synchro materials are not legal`);
   }
@@ -435,7 +435,7 @@ function requireXyzSummonMaterials(state: DuelState, player: PlayerId, uid: stri
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length) throw new Error(`${card.name} Xyz materials are not legal`);
   if (card.data.xyzMaterials?.length) {
-    if (!sameStringMultiset(materials.map((material) => material.code), card.data.xyzMaterials)) throw new Error(`${card.name} Xyz materials are not legal`);
+    if (!materialCodesMatch(materials, card.data.xyzMaterials)) throw new Error(`${card.name} Xyz materials are not legal`);
   } else if (!canGenericXyzMaterialsMatch(card, materials)) {
     throw new Error(`${card.name} Xyz materials are not legal`);
   }
@@ -531,7 +531,7 @@ function isTuner(card: DuelCardInstance): boolean {
 }
 
 function linkMaterialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[] | undefined): boolean {
-  return !requiredCodes?.length || sameStringMultiset(materials.map((material) => material.code), requiredCodes);
+  return !requiredCodes?.length || materialCodesMatch(materials, requiredCodes);
 }
 
 function canLinkMaterialsMatchRating(materials: DuelCardInstance[], targetRating: number): boolean {
@@ -575,15 +575,19 @@ function synchroMaterialCodes(card: DuelCardInstance): string[] | undefined {
   return materials ? [materials.tuner, ...materials.nonTuners] : undefined;
 }
 
-function sameStringMultiset(actual: string[], expected: string[]): boolean {
-  if (actual.length !== expected.length) return false;
-  const remaining = [...expected];
-  for (const value of actual) {
-    const index = remaining.indexOf(value);
-    if (index < 0) return false;
-    remaining.splice(index, 1);
+function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
+  if (materials.length !== requiredCodes.length) return false;
+  const used = new Set<string>();
+  for (const code of requiredCodes) {
+    const material = materials.find((candidate) => !used.has(candidate.uid) && cardMatchesCode(candidate, code));
+    if (!material) return false;
+    used.add(material.uid);
   }
-  return remaining.length === 0;
+  return used.size === materials.length;
+}
+
+function cardMatchesCode(card: DuelCardInstance, code: string): boolean {
+  return card.code === code || card.data.alias === code;
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {
