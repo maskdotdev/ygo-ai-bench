@@ -6,7 +6,11 @@ const { lua, to_luastring } = fengari;
 
 type LuaFilterArgs = { start: number; count: number };
 
-export function installGroupApi(L: unknown): void {
+export interface LuaGroupApiState {
+  selectedUids: string[];
+}
+
+export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selectedUids: [] }): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
     pushGroupTable(state, []);
@@ -170,7 +174,7 @@ export function installGroupApi(L: unknown): void {
     const sum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
     const min = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 1;
     const max = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : min;
-    const selected = selectUidsWithSum(state, readGroupUids(state, 1), filterRef, sum, min, max, readFilterArgs(state, 6));
+    const selected = selectUidsWithSum(state, readGroupUids(state, 1), filterRef, sum, min, max, readFilterArgs(state, 6), apiState.selectedUids);
     releaseOptionalFunctionRef(state, filterRef);
     lua.lua_pushboolean(state, selected !== undefined);
     return 1;
@@ -181,7 +185,7 @@ export function installGroupApi(L: unknown): void {
     const sum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
     const min = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 1;
     const max = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : min;
-    const selected = selectUidsWithSumGreater(state, readGroupUids(state, 1), filterRef, sum, min, max, readFilterArgs(state, 6));
+    const selected = selectUidsWithSumGreater(state, readGroupUids(state, 1), filterRef, sum, min, max, readFilterArgs(state, 6), apiState.selectedUids);
     releaseOptionalFunctionRef(state, filterRef);
     lua.lua_pushboolean(state, selected !== undefined);
     return 1;
@@ -192,7 +196,7 @@ export function installGroupApi(L: unknown): void {
     const sum = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
     const min = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 1;
     const max = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : min;
-    const selected = selectUidsWithSum(state, readGroupUids(state, 1), filterRef, sum, min, max, readFilterArgs(state, 7)) ?? [];
+    const selected = selectUidsWithSum(state, readGroupUids(state, 1), filterRef, sum, min, max, readFilterArgs(state, 7), apiState.selectedUids) ?? [];
     releaseOptionalFunctionRef(state, filterRef);
     pushGroupTable(state, selected);
     return 1;
@@ -203,7 +207,7 @@ export function installGroupApi(L: unknown): void {
     const sum = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
     const min = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 1;
     const max = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : min;
-    const selected = selectUidsWithSumGreater(state, readGroupUids(state, 1), filterRef, sum, min, max, readFilterArgs(state, 7)) ?? [];
+    const selected = selectUidsWithSumGreater(state, readGroupUids(state, 1), filterRef, sum, min, max, readFilterArgs(state, 7), apiState.selectedUids) ?? [];
     releaseOptionalFunctionRef(state, filterRef);
     pushGroupTable(state, selected);
     return 1;
@@ -213,7 +217,7 @@ export function installGroupApi(L: unknown): void {
     const filterRef = readOptionalFunctionRef(state, 2);
     const min = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
     const max = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : min;
-    const selected = selectSubGroup(state, readGroupUids(state, 1), filterRef, min, max, readFilterArgs(state, 5));
+    const selected = selectSubGroup(state, readGroupUids(state, 1), filterRef, min, max, readFilterArgs(state, 5), apiState.selectedUids);
     releaseOptionalFunctionRef(state, filterRef);
     lua.lua_pushboolean(state, selected !== undefined);
     return 1;
@@ -223,7 +227,7 @@ export function installGroupApi(L: unknown): void {
     const filterRef = readOptionalFunctionRef(state, 3);
     const min = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 1;
     const max = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : min;
-    const selected = selectSubGroup(state, readGroupUids(state, 1), filterRef, min, max, readFilterArgs(state, 7)) ?? [];
+    const selected = selectSubGroup(state, readGroupUids(state, 1), filterRef, min, max, readFilterArgs(state, 7), apiState.selectedUids) ?? [];
     releaseOptionalFunctionRef(state, filterRef);
     pushGroupTable(state, selected);
     return 1;
@@ -327,24 +331,32 @@ function selectGroupUids(uids: string[], min: number, max: number): string[] {
   return uids.slice(0, limit);
 }
 
-function selectUidsWithSum(L: unknown, uids: string[], filterRef: number | undefined, sum: number, min: number, max: number, args: LuaFilterArgs): string[] | undefined {
+function selectUidsWithSum(L: unknown, uids: string[], filterRef: number | undefined, sum: number, min: number, max: number, args: LuaFilterArgs, selectedUids: string[] = []): string[] | undefined {
   if (filterRef === undefined) return undefined;
   const boundedMin = Math.max(0, min);
   const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
   const entries = uids
     .map((uid) => ({ uid, value: groupCardFilterValue(L, uid, filterRef, args) }))
     .filter((entry): entry is { uid: string; value: number } => entry.value !== undefined);
-  return findSumSelection(entries, sum, boundedMin, boundedMax, 0, [], 0);
+  const selected = selectedEntries(entries, selectedUids);
+  return findSumSelection(entries.filter((entry) => !selected.some((candidate) => candidate.uid === entry.uid)), sum, boundedMin, boundedMax, 0, selected.map((entry) => entry.uid), selected.reduce((total, entry) => total + entry.value, 0));
 }
 
-function selectUidsWithSumGreater(L: unknown, uids: string[], filterRef: number | undefined, sum: number, min: number, max: number, args: LuaFilterArgs): string[] | undefined {
+function selectUidsWithSumGreater(L: unknown, uids: string[], filterRef: number | undefined, sum: number, min: number, max: number, args: LuaFilterArgs, selectedUids: string[] = []): string[] | undefined {
   if (filterRef === undefined) return undefined;
   const boundedMin = Math.max(0, min);
   const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
   const entries = uids
     .map((uid) => ({ uid, value: groupCardFilterValue(L, uid, filterRef, args) }))
     .filter((entry): entry is { uid: string; value: number } => entry.value !== undefined);
-  return findSumGreaterSelection(entries, sum, boundedMin, boundedMax, 0, [], 0);
+  const selected = selectedEntries(entries, selectedUids);
+  return findSumGreaterSelection(entries.filter((entry) => !selected.some((candidate) => candidate.uid === entry.uid)), sum, boundedMin, boundedMax, 0, selected.map((entry) => entry.uid), selected.reduce((total, entry) => total + entry.value, 0));
+}
+
+function selectedEntries(entries: { uid: string; value: number }[], selectedUids: string[]): { uid: string; value: number }[] {
+  return uniqueUids(selectedUids)
+    .map((uid) => entries.find((entry) => entry.uid === uid))
+    .filter((entry): entry is { uid: string; value: number } => entry !== undefined);
 }
 
 function findSumSelection(entries: { uid: string; value: number }[], target: number, min: number, max: number, index: number, selected: string[], current: number): string[] | undefined {
@@ -375,11 +387,12 @@ function findSumGreaterSelection(entries: { uid: string; value: number }[], targ
   return undefined;
 }
 
-function selectSubGroup(L: unknown, uids: string[], filterRef: number | undefined, min: number, max: number, args: LuaFilterArgs): string[] | undefined {
+function selectSubGroup(L: unknown, uids: string[], filterRef: number | undefined, min: number, max: number, args: LuaFilterArgs, selectedUids: string[] = []): string[] | undefined {
   if (filterRef === undefined) return undefined;
   const boundedMin = Math.max(0, min);
   const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
-  return findSubGroupSelection(L, uids, filterRef, boundedMin, boundedMax, args, 0, []);
+  const selected = uniqueUids(selectedUids).filter((uid) => uids.includes(uid));
+  return findSubGroupSelection(L, uids.filter((uid) => !selected.includes(uid)), filterRef, boundedMin, boundedMax, args, 0, selected);
 }
 
 function findSubGroupSelection(L: unknown, uids: string[], filterRef: number, min: number, max: number, args: LuaFilterArgs, index: number, selected: string[]): string[] | undefined {

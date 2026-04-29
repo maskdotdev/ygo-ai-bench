@@ -1287,6 +1287,15 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("sum selected " .. sum_selected:GetCount())
       local sum_greater_selected = all:SelectWithSumGreater(0, Card.GetAttack, 3500, 2, 2)
       Debug.Message("sum greater selected " .. sum_greater_selected:GetCount())
+      Duel.SetSelectedCard(c300)
+      Debug.Message("forced sum exact miss " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 3000, 2, 2)))
+      Duel.SetSelectedCard(c100)
+      Debug.Message("forced sum greater miss " .. tostring(all:CheckWithSumGreater(Card.GetAttack, 4500, 2, 2)))
+      Duel.SetSelectedCard(c200)
+      local forced_sum = all:SelectWithSumGreater(0, Card.GetAttack, 4500, 2, 2)
+      Debug.Message("forced sum greater selected " .. forced_sum:GetCount() .. " " .. tostring(forced_sum:IsContains(c200)))
+      Duel.SetSelectedCard(nil)
+      Debug.Message("forced sum cleared " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 3000, 2, 2)))
       local vararg_sum = all:SelectWithSumEqual(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 5000, 2, 2, 1500)
       Debug.Message("sum vararg " .. vararg_sum:GetCount())
       local vararg_greater_sum = all:SelectWithSumGreater(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 4500, 2, 2, 1500)
@@ -1304,6 +1313,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("subgroup miss " .. tostring(all:CheckSubGroup(subgroup_attack, 2, 2, 6000)))
       local subgroup = all:SelectSubGroup(0, subgroup_attack, false, 2, 2, 4000)
       Debug.Message("subgroup selected " .. subgroup:GetCount())
+      Duel.SetSelectedCard(c300)
+      local forced_subgroup = all:SelectSubGroup(0, subgroup_attack, false, 2, 2, 4000)
+      Debug.Message("forced subgroup selected " .. forced_subgroup:GetCount() .. " " .. tostring(forced_subgroup:IsContains(c300)))
+      Duel.SetSelectedCard(nil)
       local picked_subgroup = all:SelectUnselectSubGroup(Group.FromCards(c100), 0, false, 2, 2, subgroup_attack, 5000)
       Debug.Message("select unselect subgroup " .. picked_subgroup:GetCount() .. " " .. tostring(picked_subgroup:IsContains(c100)))
       local missed_subgroup = all:SelectUnselectSubGroup(Group.FromCards(c100), 0, false, 2, 2, subgroup_attack, 6000)
@@ -1346,11 +1359,16 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("sum greater miss false");
     expect(host.messages).toContain("sum selected 2");
     expect(host.messages).toContain("sum greater selected 2");
+    expect(host.messages).toContain("forced sum exact miss false");
+    expect(host.messages).toContain("forced sum greater miss false");
+    expect(host.messages).toContain("forced sum greater selected 2 true");
+    expect(host.messages).toContain("forced sum cleared true");
     expect(host.messages).toContain("sum vararg 2");
     expect(host.messages).toContain("sum greater vararg 2");
     expect(host.messages).toContain("subgroup check true");
     expect(host.messages).toContain("subgroup miss false");
     expect(host.messages).toContain("subgroup selected 2");
+    expect(host.messages).toContain("forced subgroup selected 2 true");
     expect(host.messages).toContain("select unselect subgroup 2 false");
     expect(host.messages).toContain("select unselect subgroup miss 0");
     expect(host.messages).toContain("select unselect subgroup plain 2 false");

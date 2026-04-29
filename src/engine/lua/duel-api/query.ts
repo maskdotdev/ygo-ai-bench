@@ -12,6 +12,7 @@ type LuaFilterArgs = { start: number; count: number };
 export interface LuaDuelQueryApiHostState {
   activeTargetUids: string[] | undefined;
   operatedUids: string[];
+  selectedUids: string[];
 }
 
 export function installDuelQueryApi(L: unknown, session: DuelSession, hostState: LuaDuelQueryApiHostState): void {
@@ -66,6 +67,11 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetOperatedGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    hostState.selectedUids.splice(0, hostState.selectedUids.length, ...uniqueUids(readCardOrGroupUids(state, 1)));
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SetSelectedCard"));
 }
 
 function pushMatchingGroup(L: unknown, session: DuelSession): number {
@@ -372,6 +378,10 @@ function readFilterArgs(L: unknown, start: number): LuaFilterArgs {
 function readCardOrGroupUids(L: unknown, index: number): string[] {
   const cardUid = readCardUid(L, index);
   return cardUid ? [cardUid] : readGroupUids(L, index);
+}
+
+function uniqueUids(uids: string[]): string[] {
+  return [...new Set(uids)];
 }
 
 function fieldGroupUids(session: DuelSession, player: PlayerId, selfMask: number, opponentMask: number): string[] {

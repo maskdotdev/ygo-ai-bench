@@ -66,6 +66,7 @@ interface LuaHostState {
   activeContext: DuelEffectContext | undefined;
   operationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
+  selectedUids: string[];
   pushEffectTable: (state: unknown, id: number) => void;
 }
 
@@ -80,6 +81,7 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
     activeContext: undefined,
     operationInfos: [],
     operatedUids: [],
+    selectedUids: [],
     pushEffectTable(state, id) {
       pushLuaEffectTable(state, id, hostState);
     },
@@ -91,7 +93,7 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
   installDuelApi(L, session, hostState);
   installEffectApi(L, hostState);
   installCardApi(L, session, hostState, (card, luaEffect, state) => toDuelEffect(card, luaEffect, state, hostState));
-  installGroupApi(L);
+  installGroupApi(L, hostState);
 
   return {
     messages: hostState.messages,

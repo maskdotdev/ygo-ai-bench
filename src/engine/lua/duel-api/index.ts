@@ -23,6 +23,7 @@ export interface LuaDuelApiHostState {
   activeTargetUids: string[] | undefined;
   operationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
+  selectedUids: string[];
   pushEffectTable: (state: unknown, id: number) => void;
 }
 
