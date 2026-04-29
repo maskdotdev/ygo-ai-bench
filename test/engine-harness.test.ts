@@ -6,6 +6,7 @@ import {
   destroyDuelCard,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  serializeDuel,
   startDuel,
   xyzSummonDuelCard,
 } from "#duel/core.js";
@@ -2426,6 +2427,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("effect count reset 2/987/33427456/1");
     expect(host.messages).toContain("effect value number 2500");
     expect(session.state.effects[0]).toMatchObject({
+      registryKey: "lua:100:lua-1-1100",
       triggerEvent: "normalSummoned",
       range: ["hand"],
       description: 1234,
@@ -2436,6 +2438,11 @@ describe("EDOPro compatibility harness scaffolding", () => {
       countLimit: 2,
       countLimitCode: 987,
       reset: { flags: 0x1fe1000, count: 1 },
+    });
+    expect(serializeDuel(session).state.effects[0]).toMatchObject({
+      id: "lua-1-1100",
+      registryKey: "lua:100:lua-1-1100",
+      sourceUid: session.state.effects[0]?.sourceUid,
     });
   });
 
@@ -2484,8 +2491,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.registerInitialEffects()).toBe(1);
     expect(host.messages).toContain("clone initial 111/5/10/2/100/2/0");
     expect(session.state.effects).toHaveLength(2);
-    expect(session.state.effects[0]).toMatchObject({ description: 111, range: ["hand"] });
-    expect(session.state.effects[1]).toMatchObject({ description: 222, range: ["hand"] });
+    expect(session.state.effects[0]).toMatchObject({ description: 111, range: ["hand"], registryKey: "lua:100:lua-1" });
+    expect(session.state.effects[1]).toMatchObject({ description: 222, range: ["hand"], registryKey: "lua:100:lua-2" });
 
     const baseAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === session.state.effects[0]?.id);
     expect(baseAction).toBeDefined();

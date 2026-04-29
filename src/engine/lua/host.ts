@@ -374,6 +374,10 @@ function luaEffectDuelId(effect: LuaEffectRecord): string {
   return `lua-${effect.id}${effect.code === undefined ? "" : `-${effect.code}`}`;
 }
 
+function luaEffectRegistryKey(card: DuelCardInstance, effect: LuaEffectRecord): string {
+  return `lua:${card.code}:${luaEffectDuelId(effect)}`;
+}
+
 function setEffectNumberField(field: "typeFlags" | "code" | "description" | "category" | "property") {
   return (state: unknown, effect: LuaEffectRecord): number => {
     if (lua.lua_isnumber(state, 2)) effect[field] = lua.lua_tointeger(state, 2);
@@ -434,6 +438,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
   luaEffect.sourceUid = card.uid;
   return {
     id: luaEffectDuelId(luaEffect),
+    registryKey: luaEffectRegistryKey(card, luaEffect),
     sourceUid: card.uid,
     controller: luaEffect.ownerPlayer ?? card.controller,
     ...(luaEffect.ownerPlayer === undefined ? {} : { ownerPlayer: luaEffect.ownerPlayer }),
