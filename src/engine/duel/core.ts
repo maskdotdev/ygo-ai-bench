@@ -39,7 +39,13 @@ import {
   xyzSummonActions,
   xyzSummonDuelCard as xyzSummonDuelCardWithEvents,
 } from "#duel/summon.js";
-import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
+import {
+  activateDuelEffect,
+  activateDuelPendingTrigger,
+  declineDuelPendingTrigger,
+  specialSummonDuelByProcedure,
+  type DuelActivationHandlers,
+} from "#duel/effect-activation.js";
 import {
   attackActions,
   canChangeDuelCardPosition as canChangeDuelCardPositionRule,
@@ -61,7 +67,7 @@ import {
   shouldRedirectToGraveyardMove,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
-import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
+import { canUseEffectCount } from "#duel/effect-counts.js";
 import {
   applyDestroyPrevention,
   applyDestroyReplacement,
@@ -98,6 +104,15 @@ export { moveDuelCard } from "#duel/card-state.js";
 export { queryPublicState, serializeDuel, restoreDuel } from "#duel/snapshot.js";
 
 const phaseOrder: DuelPhase[] = ["draw", "standby", "main1", "battle", "main2", "end"];
+
+const activationHandlers: DuelActivationHandlers = {
+  createEffectContext,
+  pushChainLink,
+  hasChainResponses,
+  resolveChain,
+  canAttemptSpecialSummonProcedure,
+  specialSummonCard: specialSummonDuelCard,
+};
 
 export interface CreateDuelOptions extends DuelOptions {
   cardReader?: DuelCardReader;
@@ -243,14 +258,14 @@ export function applyResponse(session: DuelSession, response: DuelResponse): App
     else if (response.type === "xyzSummon") xyzSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
     else if (response.type === "linkSummon") linkSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
     else if (response.type === "ritualSummon") ritualSummonDuelCard(session.state, response.player, response.uid, response.materialUids);
-    else if (response.type === "specialSummonProcedure") specialSummonByProcedure(session, response.player, response.uid, response.effectId);
+    else if (response.type === "specialSummonProcedure") specialSummonDuelByProcedure(session, response.player, response.uid, response.effectId, activationHandlers);
     else if (response.type === "setMonster") setMonster(session.state, response.player, response.uid);
     else if (response.type === "setSpellTrap") setSpellTrap(session.state, response.player, response.uid);
-    else if (response.type === "activateEffect") activateEffect(session, response.player, response.uid, response.effectId);
+    else if (response.type === "activateEffect") activateDuelEffect(session, response.player, response.uid, response.effectId, activationHandlers);
     else if (response.type === "passChain") passChain(session.state, response.player);
     else if (response.type === "selectOption" || response.type === "selectYesNo") resolvePrompt(session.state, response);
-    else if (response.type === "activateTrigger") activatePendingTrigger(session, response.player, response.triggerId);
-    else if (response.type === "declineTrigger") declinePendingTrigger(session, response.player, response.triggerId);
+    else if (response.type === "activateTrigger") activateDuelPendingTrigger(session, response.player, response.triggerId, activationHandlers);
+    else if (response.type === "declineTrigger") declineDuelPendingTrigger(session, response.player, response.triggerId);
     else if (response.type === "flipSummon") flipSummonDuelCard(session.state, response.player, response.uid);
     else if (response.type === "changePosition") changeDuelCardPosition(session.state, response.player, response.uid, response.position);
     else if (response.type === "declareAttack") declareDuelAttack(session.state, response.player, response.attackerUid, response.targetUid);
@@ -521,95 +536,6 @@ function setSpellTrap(state: DuelState, player: PlayerId, uid: string): void {
   card.position = "faceDown";
   card.faceUp = false;
   pushDuelLog(state, "set", player, card.name, "Set from hand");
-}
-
-function activateEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string): void {
-  const effect = session.state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid);
-  if (!effect) throw new Error(`Effect ${effectId} is not registered`);
-  const source = requireControlledCard(session.state, player, uid);
-  const targetUids: string[] = [];
-  const ctx = createEffectContext(session.state, source, player, undefined, undefined, targetUids);
-  const rollback = captureDuelState(session.state);
-  try {
-    if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
-    if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
-    pushChainLink(session.state, player, uid, effectId, undefined, undefined, targetUids, ctx.targetPlayer, ctx.targetParam);
-    pushDuelLog(session.state, "activate", player, source.name, effect.id);
-    markEffectUsed(session.state, effect);
-    const responsePlayer = otherPlayer(player);
-    if (hasChainResponses(session.state, responsePlayer)) {
-      session.state.waitingFor = responsePlayer;
-      return;
-    }
-    resolveChain(session.state);
-  } catch (error) {
-    restoreDuelState(session.state, rollback);
-    throw error;
-  }
-}
-
-function specialSummonByProcedure(session: DuelSession, player: PlayerId, uid: string, effectId: string): void {
-  const effect = session.state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid && candidate.event === "summonProcedure");
-  if (!effect) throw new Error(`Summon procedure ${effectId} is not registered`);
-  const source = requireControlledCard(session.state, player, uid);
-  if (!effect.range.includes(source.location)) throw new Error(`${source.name} summon procedure is not in range`);
-  const ctx = createEffectContext(session.state, source, player);
-  if (!canAttemptSpecialSummonProcedure(session.state, uid)) throw new Error(`${source.name} cannot be Special Summoned`);
-  if (effect.canActivate && !effect.canActivate(ctx)) throw new Error(`Condition for ${effectId} is not legal`);
-  const rollback = captureDuelState(session.state);
-  try {
-    if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
-    if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
-    if (effect.operation) effect.operation(ctx);
-    markEffectUsed(session.state, effect);
-    specialSummonDuelCard(session.state, uid, player);
-  } catch (error) {
-    restoreDuelState(session.state, rollback);
-    throw error;
-  }
-}
-
-function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
-  const rollback = captureDuelState(session.state);
-  try {
-    const trigger = takePendingTrigger(session.state, player, triggerId);
-    const effect = session.state.effects.find((candidate) => candidate.sourceUid === trigger.sourceUid && candidate.id === trigger.effectId);
-    if (!effect) throw new Error(`Effect ${trigger.effectId} is not registered`);
-    const source = findCard(session.state, trigger.sourceUid);
-    const eventCard = trigger.eventCardUid === undefined ? undefined : findCard(session.state, trigger.eventCardUid);
-    if (!source || (trigger.eventCardUid !== undefined && !eventCard)) throw new Error(`Trigger ${triggerId} lost its source or event card`);
-    const targetUids: string[] = [];
-    const ctx = createEffectContext(session.state, source, trigger.player, trigger.eventName, eventCard, targetUids);
-    if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
-    if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
-    pushChainLink(session.state, trigger.player, source.uid, effect.id, trigger.eventName, eventCard, targetUids, ctx.targetPlayer, ctx.targetParam);
-    pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
-    markEffectUsed(session.state, effect);
-    const responsePlayer = otherPlayer(trigger.player);
-    if (hasChainResponses(session.state, responsePlayer)) {
-      session.state.waitingFor = responsePlayer;
-      return;
-    }
-    resolveChain(session.state);
-  } catch (error) {
-    restoreDuelState(session.state, rollback);
-    throw error;
-  }
-}
-
-function declinePendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
-  const trigger = takePendingTrigger(session.state, player, triggerId);
-  const source = findCard(session.state, trigger.sourceUid);
-  pushDuelLog(session.state, "declineTrigger", player, source?.name, trigger.effectId);
-  session.state.waitingFor = session.state.pendingTriggers[0]?.player ?? session.state.turnPlayer;
-}
-
-function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: string): PendingTrigger {
-  const triggerIndex = state.pendingTriggers.findIndex((candidate) => candidate.id === triggerId && candidate.player === player);
-  if (triggerIndex < 0) throw new Error(`Trigger ${triggerId} is not pending for player ${player}`);
-  const [trigger] = state.pendingTriggers.splice(triggerIndex, 1);
-  if (!trigger) throw new Error(`Trigger ${triggerId} is not pending`);
-  return trigger;
 }
 
 function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void {
