@@ -15,6 +15,7 @@ import {
   upstreamBanlistPath,
   upstreamDatabasePath,
   upstreamScriptPath,
+  xyzSummonDuelCard,
 } from "../src/engine/index.js";
 import type { DuelCardData, ScriptedDuelFixture } from "../src/engine/index.js";
 import { createLuaScriptHost } from "../src/engine/lua-host.js";
@@ -298,6 +299,44 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "900")?.location).toBe("extraDeck");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "301")).toMatchObject({ location: "extraDeck", faceUp: true });
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("graveyard");
+  });
+
+  it("lets Lua scripts inspect Xyz overlay materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Overlay Material A", kind: "monster" },
+      { code: "300", name: "Overlay Material B", kind: "monster" },
+      { code: "920", name: "Overlay Xyz", kind: "extra", xyzMaterials: ["100", "300"] },
+    ];
+    const session = createDuel({ seed: 21, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["920"] },
+      1: { main: ["100", "300"] },
+    });
+    startDuel(session);
+
+    const xyz = session.state.cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    const materials = session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(xyz).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+    xyzSummonDuelCard(session.state, 0, xyz!.uid, materials.map((card) => card.uid));
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local xyz = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 920), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local overlays = xyz:GetOverlayGroup()
+      local first = overlays:GetFirst()
+      local second = overlays:GetNext()
+      Debug.Message("overlay count " .. xyz:GetOverlayCount() .. "/" .. overlays:GetCount())
+      Debug.Message("overlay codes " .. first:GetCode() .. "/" .. second:GetCode())
+      `,
+      "overlay-helpers.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("overlay count 2/2");
+    expect(host.messages).toContain("overlay codes 100/300");
   });
 
   it("lets Lua scripts query monster zones and choose summon positions", () => {

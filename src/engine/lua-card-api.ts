@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation, registerEffect } from "./duel-core.js";
 import { getDuelFlagEffectCount, registerDuelFlagEffect, resetDuelFlagEffect } from "./duel-flags.js";
+import { pushGroupTable } from "./lua-group-api.js";
 import {
   copyGlobalFunctionToField,
   locationsFromMask,
@@ -123,6 +124,13 @@ function installStateHelpers(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetLocation", session, (card) => locationMaskFromLocation(card?.location));
   pushNumberGetter(L, "GetSequence", session, (card) => card?.sequence ?? 0);
   pushNumberGetter(L, "GetPosition", session, (card) => positionMaskFromPosition(card?.position));
+  pushNumberGetter(L, "GetOverlayCount", session, (card) => card?.overlayUids.length ?? 0);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    pushGroupTable(state, card?.overlayUids ?? []);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetOverlayGroup"));
   pushBooleanGetter(L, "IsFaceup", session, (card) => Boolean(card?.faceUp));
   pushBooleanGetter(L, "IsFacedown", session, (card) => Boolean(card && !card.faceUp));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -351,6 +359,8 @@ const cardFieldNames = [
   "GetLocation",
   "GetSequence",
   "GetPosition",
+  "GetOverlayCount",
+  "GetOverlayGroup",
   "IsPosition",
   "IsAttackPos",
   "IsDefensePos",
