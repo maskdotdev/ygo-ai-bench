@@ -627,6 +627,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
         e:SetCategory(CATEGORY_DRAW + CATEGORY_SEARCH)
         e:SetProperty(EFFECT_FLAG_CARD_TARGET + EFFECT_FLAG_DELAY)
         e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(LOCATION_MZONE, LOCATION_GRAVE)
         e:SetHintTiming(TIMING_END_PHASE, TIMING_MAIN_END)
         e:SetCountLimit(2, 987)
         e:SetReset(RESET_EVENT + RESETS_STANDARD, 1)
@@ -634,9 +635,11 @@ describe("EDOPro compatibility harness scaffolding", () => {
         local value_fn=e:GetValue()
         Debug.Message("effect value function " .. value_fn(e,c))
         e:SetValue(2500)
+        local own_range,opponent_range=e:GetTargetRange()
         local limit,limit_code=e:GetCountLimit()
         local reset,reset_count=e:GetReset()
         Debug.Message("effect getters " .. e:GetType() .. "/" .. e:GetCode() .. "/" .. e:GetDescription() .. "/" .. e:GetCategory() .. "/" .. e:GetProperty() .. "/" .. e:GetRange())
+        Debug.Message("effect target range " .. own_range .. "/" .. opponent_range)
         Debug.Message("effect count reset " .. limit .. "/" .. limit_code .. "/" .. reset .. "/" .. reset_count)
         Debug.Message("effect value number " .. e:GetValue())
         c:RegisterEffect(e)
@@ -649,6 +652,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.registerInitialEffects()).toBe(2);
     expect(host.messages).toContain("effect value function 107");
     expect(host.messages).toContain("effect getters 16/64/1234/384/65552/2");
+    expect(host.messages).toContain("effect target range 4/16");
     expect(host.messages).toContain("effect count reset 2/987/12288/1");
     expect(host.messages).toContain("effect value number 2500");
     expect(session.state.effects[0]).toMatchObject({
@@ -657,6 +661,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
       description: 1234,
       category: 0x180,
       property: 0x10010,
+      targetRange: [0x04, 0x10],
       hintTiming: [0x20, 0x4],
       countLimit: 2,
       countLimitCode: 987,

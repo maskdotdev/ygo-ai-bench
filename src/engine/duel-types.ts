@@ -106,6 +106,7 @@ export interface DuelEffectDefinition {
   description?: number;
   category?: number;
   property?: number;
+  targetRange?: [number, number?];
   hintTiming?: [number, number?];
   canActivate?: (ctx: DuelEffectContext) => boolean;
   cost?: (ctx: DuelEffectContext) => boolean;

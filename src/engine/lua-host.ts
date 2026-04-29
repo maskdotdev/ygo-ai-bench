@@ -39,6 +39,7 @@ interface LuaEffectRecord {
   description?: number;
   category?: number;
   property?: number;
+  targetRange?: [number, number?];
   hintTiming?: [number, number?];
   countLimitCode?: number;
   reset?: {
@@ -239,6 +240,17 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
     else lua.lua_pushinteger(state, effect.value ?? 0);
     return 1;
   });
+  pushEffectMethod(L, effects, "SetTargetRange", (state, effect) => {
+    const selfRange = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const opponentRange = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
+    effect.targetRange = opponentRange === undefined ? [selfRange] : [selfRange, opponentRange];
+    return 0;
+  });
+  pushEffectMethod(L, effects, "GetTargetRange", (state, effect) => {
+    lua.lua_pushinteger(state, effect.targetRange?.[0] ?? 0);
+    lua.lua_pushinteger(state, effect.targetRange?.[1] ?? 0);
+    return 2;
+  });
   pushEffectMethod(L, effects, "SetRange", (state, effect) => {
     const firstRange = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
     if (firstRange !== undefined) effect.range = locationsFromMask(firstRange);
@@ -300,6 +312,7 @@ function cloneLuaEffectRecord(hostState: LuaHostState, effect: LuaEffectRecord):
   hostState.nextEffectId += 1;
   const clone: LuaEffectRecord = { ...effect, id };
   if (effect.range) clone.range = [...effect.range];
+  if (effect.targetRange) clone.targetRange = [...effect.targetRange];
   if (effect.hintTiming) clone.hintTiming = [...effect.hintTiming];
   if (effect.reset) clone.reset = { ...effect.reset };
   hostState.effects.set(id, clone);
@@ -348,6 +361,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(luaEffect.description === undefined ? {} : { description: luaEffect.description }),
     ...(luaEffect.category === undefined ? {} : { category: luaEffect.category }),
     ...(luaEffect.property === undefined ? {} : { property: luaEffect.property }),
+    ...(luaEffect.targetRange === undefined ? {} : { targetRange: luaEffect.targetRange }),
     ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
     canActivate: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, ctx),
     cost: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.costRef, true, ctx),
