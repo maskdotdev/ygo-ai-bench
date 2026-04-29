@@ -528,6 +528,72 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
   });
 
+  it("supports Lua special summon procedures from face-up pendulum extra deck cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "301", name: "Extra Procedure Pendulum", kind: "monster", typeFlags: 0x1000001 },
+      { code: "920", name: "Blocked Extra Procedure", kind: "extra", typeFlags: 0x800001, level: 4 },
+    ];
+    const session = createDuel({ seed: 33, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["301"], extra: ["920"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const pendulum = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "301");
+    const extra = session.state.cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    expect(pendulum).toBeTruthy();
+    expect(extra).toBeTruthy();
+    moveDuelCard(session.state, pendulum!.uid, "extraDeck", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c301={}
+      function c301.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_EXTRA)
+        e:SetValue(function(e,c)
+          Debug.Message("extra procedure value " .. tostring(c:IsFaceup()) .. "/" .. c:GetLocation())
+          return c:IsFaceup()
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("extra procedure operation " .. c:GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      c920={}
+      function c920.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_EXTRA)
+        e:SetValue(function(e,c)
+          Debug.Message("blocked extra procedure value " .. tostring(c:IsFaceup()) .. "/" .. c:GetLocation())
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "extra-special-summon-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === pendulum!.uid);
+    const blocked = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === extra!.uid);
+    expect(action).toBeDefined();
+    expect(blocked).toBeUndefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("extra procedure value true/64");
+    expect(host.messages).toContain("extra procedure operation 301");
+    expect(session.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false });
+  });
+
   it("lets Lua scripts query monster zones and choose summon positions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Zone Filler A", kind: "monster" },
