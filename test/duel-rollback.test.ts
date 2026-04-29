@@ -333,4 +333,33 @@ describe("duel rollback", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
     expect(session.state.log.some((entry) => entry.action === "synchroMaterial")).toBe(false);
   });
+
+  it("rolls back failed Xyz summon material moves from responses", () => {
+    const { session, target: xyz, first: firstMaterial, blocked: blockedMaterial } = setupFailedMoveAfterFirstFixture({
+      seed: 90,
+      main: ["100", "300"],
+      extra: ["920"],
+      target: { location: "extraDeck", code: "920" },
+      first: { location: "hand", code: "100", moveTo: "monsterZone" },
+      blocked: { location: "hand", code: "300", moveTo: "monsterZone" },
+      block: { id: "cannot-overlay-second-material", code: 238, range: ["monsterZone"], firstMovedTo: "overlay" },
+    });
+    expect(xyz).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("xyzSummon");
+    if (!action || action.type !== "xyzSummon") throw new Error("Expected Xyz summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cannot be used as Xyz material");
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([]);
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
+    expect(session.state.log.some((entry) => entry.action === "xyzMaterial")).toBe(false);
+  });
 });
