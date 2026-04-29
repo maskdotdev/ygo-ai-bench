@@ -463,6 +463,8 @@ describe("Lua field and query helpers", () => {
       Debug.Message("exists group excluded " .. tostring(all:IsExists(aux.FilterBoolFunction(Card.IsCode, 200), 1, excluded_group)))
       Debug.Message("exists group remainder " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 1, excluded_group, 2500)))
       Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
+      Debug.Message("attack sum " .. all:GetSum(Card.GetAttack))
+      Debug.Message("attack sum vararg " .. all:GetSum(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 1500))
       Debug.Message("sum exact " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 3000, 2, 2)))
       Debug.Message("sum miss " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 4500, 2, 2)))
       Debug.Message("sum greater " .. tostring(all:CheckWithSumGreater(Card.GetAttack, 3500, 2, 2)))
@@ -537,6 +539,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("exists group excluded false");
     expect(host.messages).toContain("exists group remainder true");
     expect(host.messages).toContain("class count 2");
+    expect(host.messages).toContain("attack sum 6000");
+    expect(host.messages).toContain("attack sum vararg 5000");
     expect(host.messages).toContain("sum exact true");
     expect(host.messages).toContain("sum miss false");
     expect(host.messages).toContain("sum greater true");

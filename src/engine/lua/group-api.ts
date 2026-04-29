@@ -171,6 +171,18 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   lua.lua_setfield(L, -2, to_luastring("GetClassCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
+    let sum = 0;
+    if (filterRef !== undefined) {
+      const args = readFilterArgs(state, 3);
+      for (const uid of readGroupUids(state, 1)) sum += groupCardFilterValue(state, uid, filterRef, args) ?? 0;
+    }
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushinteger(state, sum);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetSum"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
     const sum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
     const min = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 1;
     const max = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : min;
@@ -439,6 +451,7 @@ const groupFieldNames = [
   "Select",
   "IsExists",
   "GetClassCount",
+  "GetSum",
   "CheckWithSumEqual",
   "SelectWithSumEqual",
   "CheckWithSumGreater",
