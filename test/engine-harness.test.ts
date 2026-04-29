@@ -303,6 +303,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("location count " .. Duel.GetLocationCount(0, LOCATION_MZONE))
       Debug.Message("mzone count " .. Duel.GetMZoneCount(0))
       Debug.Message("mzone with excluded " .. Duel.GetMZoneCount(0, excluded))
+      Debug.Message("ex count " .. Duel.GetLocationCountFromEx(0, 0, nil, excluded))
+      Debug.Message("mzone seq0 open " .. tostring(Duel.CheckLocation(0, LOCATION_MZONE, 0)))
+      Debug.Message("szone seq0 open " .. tostring(Duel.CheckLocation(0, LOCATION_SZONE, 0)))
       local selected = Duel.SelectPosition(0, nil, POS_FACEUP_DEFENSE + POS_FACEDOWN_DEFENSE)
       Debug.Message("selected position " .. selected)
       local summon = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil)
@@ -315,6 +318,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("location count 0");
     expect(host.messages).toContain("mzone count 0");
     expect(host.messages).toContain("mzone with excluded 1");
+    expect(host.messages).toContain("ex count 1");
+    expect(host.messages).toContain("mzone seq0 open false");
+    expect(host.messages).toContain("szone seq0 open true");
     expect(host.messages).toContain("selected position 4");
     expect(host.messages).toContain("summoned 1");
     const summoned = session.state.cards.find((card) => card.code === "600");

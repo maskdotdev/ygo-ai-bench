@@ -488,11 +488,25 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
   });
   lua.lua_setfield(L, -2, to_luastring("GetLocationCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    lua.lua_pushinteger(state, availableMonsterZoneCount(session, player, readAnyCardOrGroupUids(state, 3, 5)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetLocationCountFromEx"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     lua.lua_pushinteger(state, availableMonsterZoneCount(session, player, readCardOrGroupUids(state, 2)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetMZoneCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const sequence = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
+    lua.lua_pushboolean(state, isLocationSequenceOpen(session, player, locationMask, sequence));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CheckLocation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectDisableField"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
@@ -690,6 +704,12 @@ function readCardOrGroupUids(L: unknown, index: number): string[] {
   return cardUid ? [cardUid] : readGroupUids(L, index);
 }
 
+function readAnyCardOrGroupUids(L: unknown, start: number, end: number): string[] {
+  const uids: string[] = [];
+  for (let index = start; index <= end; index += 1) uids.push(...readCardOrGroupUids(L, index));
+  return [...new Set(uids)];
+}
+
 function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefined, args: LuaFilterArgs): boolean {
   if (filterRef === undefined) return true;
   lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, filterRef);
@@ -794,6 +814,13 @@ function availableLocationCount(session: DuelSession, player: PlayerId, location
 function availableMonsterZoneCount(session: DuelSession, player: PlayerId, excludedUids: string[]): number {
   const occupied = session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && !excludedUids.includes(card.uid)).length;
   return Math.max(0, 5 - occupied);
+}
+
+function isLocationSequenceOpen(session: DuelSession, player: PlayerId, locationMask: number, sequence: number): boolean {
+  const location = (locationMask & 0x04) !== 0 ? "monsterZone" : (locationMask & 0x08) !== 0 ? "spellTrapZone" : undefined;
+  if (!location) return true;
+  if (sequence < 0 || sequence >= 5) return false;
+  return !session.state.cards.some((card) => card.controller === player && card.location === location && card.sequence === sequence);
 }
 
 function pushSelectedFieldZoneMask(L: unknown, session: DuelSession): number {
