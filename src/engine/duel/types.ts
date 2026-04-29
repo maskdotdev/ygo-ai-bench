@@ -134,11 +134,16 @@ export interface DuelEffectContext {
   eventName?: DuelEventName;
   checkOnly?: boolean;
   targetUids: string[];
+  targetPlayer?: PlayerId;
+  targetParam?: number;
+  chainLink?: ChainLink;
   log(detail: string): void;
   moveCard(uid: string, to: DuelLocation, controller?: PlayerId): DuelCardInstance;
   negateChainLink(chainLinkId: string): boolean;
   setTargets(uids: string[]): void;
   getTargets(): DuelCardInstance[];
+  setTargetPlayer(player: PlayerId): void;
+  setTargetParam(parameter: number): void;
 }
 
 export interface ChainLink {
@@ -151,6 +156,8 @@ export interface ChainLink {
   eventName?: DuelEventName;
   eventCardUid?: string;
   targetUids?: string[];
+  targetPlayer?: PlayerId;
+  targetParam?: number;
   negated?: boolean;
 }
 

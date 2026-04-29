@@ -1897,6 +1897,54 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("source resolved");
   });
 
+  it("lets Lua effects carry target player and parameter metadata", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Target Metadata Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 50, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return true end
+          Duel.SetTargetPlayer(1-tp)
+          Duel.SetTargetParam(700)
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          local p,d=Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)
+          Debug.Message("target metadata " .. p .. "/" .. d)
+          Duel.ChangeTargetPlayer(0,tp)
+          Duel.ChangeTargetParam(0,900)
+          local p2,d2=Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)
+          Debug.Message("target metadata changed " .. p2 .. "/" .. d2)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "target-metadata.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    applyResponse(session, action!);
+    expect(host.messages).toContain("target metadata 1/700");
+    expect(host.messages).toContain("target metadata changed 0/900");
+  });
+
   it("lets Lua quick effects negate pending chain links", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Negated Source", kind: "monster" },

@@ -51,6 +51,7 @@ import { sameAction } from "#duel/response-match.js";
 import type {
   ApplyDuelResponseResult,
   CardPosition,
+  ChainLink,
   DuelAction,
   DuelCardInstance,
   DuelCardReader,
@@ -422,7 +423,7 @@ function activateEffect(session: DuelSession, player: PlayerId, uid: string, eff
   const ctx = createEffectContext(session.state, source, player, undefined, undefined, targetUids);
   if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
   if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
-  pushChainLink(session.state, player, uid, effectId, undefined, undefined, targetUids);
+  pushChainLink(session.state, player, uid, effectId, undefined, undefined, targetUids, ctx.targetPlayer, ctx.targetParam);
   pushDuelLog(session.state, "activate", player, source.name, effect.id);
   markEffectUsed(session.state, effect);
   const responsePlayer = otherPlayer(player);
@@ -459,7 +460,7 @@ function activatePendingTrigger(session: DuelSession, player: PlayerId, triggerI
   const ctx = createEffectContext(session.state, source, trigger.player, trigger.eventName, eventCard, targetUids);
   if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
   if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
-  pushChainLink(session.state, trigger.player, source.uid, effect.id, trigger.eventName, eventCard, targetUids);
+  pushChainLink(session.state, trigger.player, source.uid, effect.id, trigger.eventName, eventCard, targetUids, ctx.targetPlayer, ctx.targetParam);
   pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
   markEffectUsed(session.state, effect);
   const responsePlayer = otherPlayer(trigger.player);
@@ -534,8 +535,11 @@ function createEffectContext(
   checkOnly = false,
   activationLocation: DuelLocation = source.location,
   activationSequence: number = source.sequence,
+  targetPlayer?: PlayerId,
+  targetParam?: number,
+  chainLink?: ChainLink,
 ): DuelEffectContext {
-  return {
+  const ctx: DuelEffectContext = {
     duel: state,
     source,
     player,
@@ -545,6 +549,9 @@ function createEffectContext(
     ...(eventCard === undefined ? {} : { eventCard }),
     ...(checkOnly ? { checkOnly } : {}),
     targetUids,
+    ...(targetPlayer === undefined ? {} : { targetPlayer }),
+    ...(targetParam === undefined ? {} : { targetParam }),
+    ...(chainLink === undefined ? {} : { chainLink }),
     log(detail) {
       pushDuelLog(state, "effect", player, source.name, detail);
     },
@@ -560,7 +567,14 @@ function createEffectContext(
     getTargets() {
       return targetUids.map((uid) => findCard(state, uid)).filter((card): card is DuelCardInstance => Boolean(card));
     },
+    setTargetPlayer(target) {
+      ctx.targetPlayer = target;
+    },
+    setTargetParam(parameter) {
+      ctx.targetParam = parameter;
+    },
   };
+  return ctx;
 }
 
 function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
@@ -656,7 +670,17 @@ function hasChainResponses(state: DuelState, player: PlayerId): boolean {
   return quickEffectActions(state, player).length > 0;
 }
 
-function pushChainLink(state: DuelState, player: PlayerId, sourceUid: string, effectId: string, eventName?: DuelEventName, eventCard?: DuelCardInstance, targetUids: string[] = []): void {
+function pushChainLink(
+  state: DuelState,
+  player: PlayerId,
+  sourceUid: string,
+  effectId: string,
+  eventName?: DuelEventName,
+  eventCard?: DuelCardInstance,
+  targetUids: string[] = [],
+  targetPlayer?: PlayerId,
+  targetParam?: number,
+): void {
   const source = findCard(state, sourceUid);
   state.chain.push({
     id: `chain-${state.log.length + 1}`,
@@ -667,6 +691,8 @@ function pushChainLink(state: DuelState, player: PlayerId, sourceUid: string, ef
     ...(eventName === undefined ? {} : { eventName }),
     ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
     ...(targetUids.length === 0 ? {} : { targetUids: [...targetUids] }),
+    ...(targetPlayer === undefined ? {} : { targetPlayer }),
+    ...(targetParam === undefined ? {} : { targetParam }),
   });
   state.chainPasses = [];
 }
@@ -695,7 +721,20 @@ function resolveChain(state: DuelState): void {
     const source = findCard(state, link.sourceUid);
     if (!effect || !source) continue;
     const eventCard = link.eventCardUid === undefined ? undefined : findCard(state, link.eventCardUid);
-    const ctx = createEffectContext(state, source, link.player, link.eventName, eventCard, [...(link.targetUids ?? [])], false, link.activationLocation ?? source.location, link.activationSequence ?? source.sequence);
+    const ctx = createEffectContext(
+      state,
+      source,
+      link.player,
+      link.eventName,
+      eventCard,
+      [...(link.targetUids ?? [])],
+      false,
+      link.activationLocation ?? source.location,
+      link.activationSequence ?? source.sequence,
+      link.targetPlayer,
+      link.targetParam,
+      link,
+    );
     effect.operation(ctx);
   }
   state.chainPasses = [];

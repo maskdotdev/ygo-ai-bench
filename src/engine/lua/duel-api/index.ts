@@ -14,13 +14,14 @@ import { installDuelReleaseApi } from "#lua/duel-api/release.js";
 import { installDuelSummonApi } from "#lua/duel-api/summon.js";
 import { installDuelTurnApi } from "#lua/duel-api/turn.js";
 import type { LuaDuelOperationInfo } from "#lua/duel-api/operation.js";
-import type { DuelSession } from "#duel/types.js";
+import type { DuelEffectContext, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
 export interface LuaDuelApiHostState {
   messages: string[];
   activeTargetUids: string[] | undefined;
+  activeContext: DuelEffectContext | undefined;
   operationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
   selectedUids: string[];

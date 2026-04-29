@@ -3,7 +3,7 @@ import { pushCardTable } from "#lua/card-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
-import type { DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelEffectContext, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -11,6 +11,7 @@ type LuaFilterArgs = { start: number; count: number };
 
 export interface LuaDuelQueryApiHostState {
   activeTargetUids: string[] | undefined;
+  activeContext: DuelEffectContext | undefined;
   operatedUids: string[];
   selectedUids: string[];
 }
@@ -72,6 +73,17 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ClearTargetCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const target = readOptionalPlayer(state, 1);
+    if (target !== undefined) hostState.activeContext?.setTargetPlayer(target);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SetTargetPlayer"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    if (lua.lua_isnumber(state, 1)) hostState.activeContext?.setTargetParam(lua.lua_tointeger(state, 1));
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SetTargetParam"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     pushGroupTable(state, hostState.operatedUids);
     return 1;
@@ -411,6 +423,13 @@ function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: 
 
 function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
+}
+
+function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
+  if (!lua.lua_isnumber(L, index)) return undefined;
+  const value = lua.lua_tointeger(L, index);
+  if (value !== 0 && value !== 1) return undefined;
+  return value;
 }
 
 function otherPlayer(player: PlayerId): PlayerId {
