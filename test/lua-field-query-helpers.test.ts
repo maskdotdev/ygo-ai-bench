@@ -466,6 +466,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("match miss " .. tostring(all:Match(function(tc,minatk) return tc:GetAttack() >= minatk end, nil, 1500)))
       Debug.Message("match excluded " .. tostring(all:Match(function(tc,minatk) return tc:GetAttack() >= minatk end, excluded_group, 1000)))
       Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
+      Debug.Message("bin class count " .. all:GetBinClassCount(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetCode()/100 or 0 end, 1500))
       Debug.Message("attack sum " .. all:GetSum(Card.GetAttack))
       Debug.Message("attack sum vararg " .. all:GetSum(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 1500))
       local max_group,max_attack = all:GetMaxGroup(Card.GetAttack)
@@ -551,6 +552,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("match miss false");
     expect(host.messages).toContain("match excluded true");
     expect(host.messages).toContain("class count 2");
+    expect(host.messages).toContain("bin class count 2");
     expect(host.messages).toContain("attack sum 6000");
     expect(host.messages).toContain("attack sum vararg 5000");
     expect(host.messages).toContain("max group 1/3000/300");

@@ -181,6 +181,18 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   lua.lua_setfield(L, -2, to_luastring("GetClassCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
+    let mask = 0;
+    if (filterRef !== undefined) {
+      const args = readFilterArgs(state, 3);
+      for (const uid of readGroupUids(state, 1)) mask |= groupCardFilterValue(state, uid, filterRef, args) ?? 0;
+    }
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushinteger(state, bitCount(mask));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetBinClassCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
     let sum = 0;
     if (filterRef !== undefined) {
       const args = readFilterArgs(state, 3);
@@ -350,6 +362,16 @@ function readCardOrGroupUids(L: unknown, index: number): string[] {
   return readGroupUids(L, index);
 }
 
+function bitCount(value: number): number {
+  let remaining = value >>> 0;
+  let count = 0;
+  while (remaining !== 0) {
+    remaining &= remaining - 1;
+    count += 1;
+  }
+  return count;
+}
+
 function selectGroupUids(uids: string[], min: number, max: number): string[] {
   const boundedMin = Math.max(0, min);
   if (uids.length < boundedMin) return [];
@@ -486,6 +508,7 @@ const groupFieldNames = [
   "IsExists",
   "Match",
   "GetClassCount",
+  "GetBinClassCount",
   "GetSum",
   "GetMaxGroup",
   "GetMinGroup",
