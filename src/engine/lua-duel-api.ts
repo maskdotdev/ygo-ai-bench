@@ -339,7 +339,7 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
     const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
     const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
     const opponentMask = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
-    const excluded = readCardUid(state, 5);
+    const excluded = readCardOrGroupUids(state, 5);
     const uids = matchingCardUidsWithFilter(state, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(state, 6));
     releaseOptionalFunctionRef(state, filterRef);
     pushGroupTable(state, uids);
@@ -351,7 +351,7 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
     const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
     const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
     const opponentMask = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
-    const excluded = readCardUid(state, 5);
+    const excluded = readCardOrGroupUids(state, 5);
     const count = matchingCardUidsWithFilter(state, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(state, 6)).length;
     releaseOptionalFunctionRef(state, filterRef);
     lua.lua_pushinteger(state, count);
@@ -398,7 +398,7 @@ function installQueryHelpers(L: unknown, session: DuelSession, hostState: LuaDue
     const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
     const selfMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
     const opponentMask = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
-    const excluded = readCardUid(state, 5);
+    const excluded = readCardOrGroupUids(state, 5);
     const uid = matchingCardUidsWithFilter(state, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(state, 6))[0];
     releaseOptionalFunctionRef(state, filterRef);
     if (!uid) {
@@ -570,7 +570,7 @@ function pushIsExistingMatchingCard(L: unknown, session: DuelSession): number {
   const selfMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
   const opponentMask = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0;
   const minimum = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 1;
-  const excluded = readCardUid(L, 6);
+  const excluded = readCardOrGroupUids(L, 6);
   const count = matchingCardUidsWithFilter(L, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(L, 7)).length;
   releaseOptionalFunctionRef(L, filterRef);
   lua.lua_pushboolean(L, count >= minimum);
@@ -582,7 +582,7 @@ function pushTargetCount(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : session.state.turnPlayer);
   const selfMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
   const opponentMask = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0;
-  const excluded = readCardUid(L, 5);
+  const excluded = readCardOrGroupUids(L, 5);
   const count = matchingCardUidsWithFilter(L, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(L, 6)).length;
   releaseOptionalFunctionRef(L, filterRef);
   lua.lua_pushinteger(L, count);
@@ -596,7 +596,7 @@ function pushSelectedMatchingGroup(L: unknown, session: DuelSession, targetUids?
   const opponentMask = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 0;
   const min = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : 1;
   const max = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : min;
-  const excluded = readCardUid(L, 8);
+  const excluded = readCardOrGroupUids(L, 8);
   const uids = matchingCardUidsWithFilter(L, session, filterRef, player, selfMask, opponentMask, excluded, readFilterArgs(L, 9));
   releaseOptionalFunctionRef(L, filterRef);
   const limit = max > 0 ? max : Math.max(min, 1);
@@ -613,10 +613,10 @@ function matchingCardUidsWithFilter(
   player: PlayerId,
   selfMask: number,
   opponentMask: number,
-  excluded: string | undefined,
+  excluded: string[],
   args: LuaFilterArgs,
 ): string[] {
-  return fieldGroupUids(session, player, selfMask, opponentMask).filter((uid) => uid !== excluded && cardMatchesFilter(L, uid, filterRef, args));
+  return fieldGroupUids(session, player, selfMask, opponentMask).filter((uid) => !excluded.includes(uid) && cardMatchesFilter(L, uid, filterRef, args));
 }
 
 function readFilterArgs(L: unknown, start: number): LuaFilterArgs {

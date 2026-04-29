@@ -502,6 +502,13 @@ describe("EDOPro compatibility harness scaffolding", () => {
       end
       local first_match = Duel.GetFirstMatchingCard(match, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, nil, 300)
       Debug.Message("first matching card " .. first_match:GetCode())
+      local excluded = Duel.GetMatchingGroup(function(c) return c:IsCode(100) or c:IsCode(300) end, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, nil)
+      local group_excluded = Duel.GetMatchingGroup(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded)
+      Debug.Message("group excluded count " .. group_excluded:GetCount())
+      Debug.Message("group excluded matching count " .. Duel.GetMatchingGroupCount(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded))
+      Debug.Message("group excluded exists " .. tostring(Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 1, excluded)))
+      Debug.Message("group excluded first " .. Duel.GetFirstMatchingCard(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded):GetCode())
+      Debug.Message("group excluded selected " .. Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 1, 3, excluded):GetCount())
       Debug.Message("onfield count " .. Duel.GetFieldGroupCount(0, LOCATION_ONFIELD, LOCATION_ONFIELD))
       `,
       "field-groups.lua",
@@ -514,6 +521,11 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("mixed codes 100,200,300,400");
     expect(host.messages).toContain("field card codes 100/400/true");
     expect(host.messages).toContain("first matching card 300");
+    expect(host.messages).toContain("group excluded count 2");
+    expect(host.messages).toContain("group excluded matching count 2");
+    expect(host.messages).toContain("group excluded exists false");
+    expect(host.messages).toContain("group excluded first 200");
+    expect(host.messages).toContain("group excluded selected 2");
     expect(host.messages).toContain("onfield count 0");
   });
 
