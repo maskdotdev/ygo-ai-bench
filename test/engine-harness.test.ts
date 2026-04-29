@@ -785,6 +785,76 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("target relates true");
   });
 
+  it("lets Lua quick effects inspect pending chain info", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Source", kind: "monster" },
+      { code: "200", name: "Chain Target", kind: "monster" },
+      { code: "400", name: "Chain Quick", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 24, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["400", "200"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,c)
+          local g=Duel.SelectTarget(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, c)
+          Duel.SetOperationInfo(0, CATEGORY_TOHAND, g, g:GetCount(), 0, 0)
+          return true
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("source resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          local te,tp,loc,tc,tg=Duel.GetChainInfo(1, CHAININFO_TRIGGERING_EFFECT, CHAININFO_TRIGGERING_PLAYER, CHAININFO_TRIGGERING_LOCATION, CHAININFO_TRIGGERING_CARD, CHAININFO_TARGET_CARDS)
+          local ok,handler=pcall(function() return te:GetHandler() end)
+          Debug.Message("handler ok " .. tostring(ok) .. "/" .. tostring(handler ~= nil))
+          if not ok then return false end
+          Debug.Message("chain info " .. tp .. "/" .. loc .. "/" .. tc:GetCode() .. "/" .. tg:GetCount() .. "/" .. handler:GetCode())
+          return tp==0 and tc:IsCode(100) and tg:GetCount()==1 and handler:IsCode(100)
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("quick resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "chain-info.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceUid = session.state.cards.find((card) => card.code === "100" && card.owner === 0)?.uid;
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sourceUid);
+    expect(sourceAction).toBeDefined();
+    const opened = applyResponse(session, sourceAction!);
+    expect(opened.ok).toBe(true);
+    const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(quickAction).toBeDefined();
+    applyResponse(session, quickAction!);
+    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    expect(host.messages).toContain("chain info 0/2/100/1/100");
+    expect(host.messages).toContain("quick resolved");
+    expect(host.messages).toContain("source resolved");
+  });
+
   it("lets Lua effects register, read, and reset duel and card flags", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Flag Source", kind: "monster" }];
     const session = createDuel({ seed: 22, startingHandSize: 1, cardReader: createCardReader(cards) });

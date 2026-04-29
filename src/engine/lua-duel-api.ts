@@ -43,6 +43,7 @@ export interface LuaDuelApiHostState {
   activeTargetUids: string[] | undefined;
   operationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
+  pushEffectTable: (state: unknown, id: number) => void;
 }
 
 export interface LuaDuelOperationInfo {
@@ -79,6 +80,8 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetCurrentChain"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushChainInfo(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("GetChainInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const attackerUid = session.state.currentAttack?.attackerUid;
     if (!attackerUid) {
@@ -188,6 +191,38 @@ function installFlagHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ResetFlagEffect"));
+}
+
+function pushChainInfo(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): number {
+  const requestedIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.chain.length;
+  const chainIndex = requestedIndex <= 0 ? session.state.chain.length - 1 : requestedIndex - 1;
+  const link = session.state.chain[chainIndex];
+  if (!link) {
+    lua.lua_pushnil(L);
+    return 1;
+  }
+  let pushed = 0;
+  const top = lua.lua_gettop(L);
+  for (let argIndex = 2; argIndex <= top; argIndex += 1) {
+    const info = lua.lua_isnumber(L, argIndex) ? lua.lua_tointeger(L, argIndex) : 0;
+    pushChainInfoValue(L, session, hostState, link, info);
+    pushed += 1;
+  }
+  return pushed;
+}
+
+function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState, link: DuelState["chain"][number], info: number): void {
+  const source = session.state.cards.find((card) => card.uid === link.sourceUid);
+  if (info === 0x1) {
+    const id = Number(link.effectId.match(/^lua-(\d+)/)?.[1]);
+    if (Number.isFinite(id)) hostState.pushEffectTable(L, id);
+    else lua.lua_pushnil(L);
+  }
+  else if (info === 0x2 || info === 0x4) lua.lua_pushinteger(L, link.player);
+  else if (info === 0x8) lua.lua_pushinteger(L, locationMaskFromLocation(source?.location));
+  else if (info === 0x10 && source) pushCardTable(L, source.uid);
+  else if (info === 0x20) pushGroupTable(L, link.targetUids ?? []);
+  else lua.lua_pushnil(L);
 }
 
 function installMoveHelpers(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
@@ -645,6 +680,17 @@ function fieldGroupUids(session: DuelSession, player: PlayerId, selfMask: number
 
 function fieldCardUid(session: DuelSession, player: PlayerId, locationMask: number, sequence: number): string | undefined {
   return matchingCardUids(session, player, locationMask)[sequence];
+}
+
+function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
+  if (location === "deck") return 0x01;
+  if (location === "hand") return 0x02;
+  if (location === "monsterZone") return 0x04;
+  if (location === "spellTrapZone") return 0x08;
+  if (location === "graveyard") return 0x10;
+  if (location === "banished") return 0x20;
+  if (location === "extraDeck") return 0x40;
+  return 0;
 }
 
 function availableLocationCount(session: DuelSession, player: PlayerId, locationMask: number): number {

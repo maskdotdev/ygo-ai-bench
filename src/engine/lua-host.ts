@@ -61,11 +61,23 @@ interface LuaHostState {
   activeTargetUids: string[] | undefined;
   operationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
+  pushEffectTable: (state: unknown, id: number) => void;
 }
 
 export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
   const L = lauxlib.luaL_newstate();
-  const hostState: LuaHostState = { session, nextEffectId: 1, effects: new Map(), messages: [], activeTargetUids: undefined, operationInfos: [], operatedUids: [] };
+  const hostState: LuaHostState = {
+    session,
+    nextEffectId: 1,
+    effects: new Map(),
+    messages: [],
+    activeTargetUids: undefined,
+    operationInfos: [],
+    operatedUids: [],
+    pushEffectTable(state, id) {
+      pushLuaEffectTable(state, id, hostState.effects, hostState.session);
+    },
+  };
   lualib.luaL_openlibs(L);
   installConstants(L);
   installDebugApi(L, hostState.messages);
@@ -133,7 +145,7 @@ function installEffectApi(L: unknown, hostState: LuaHostState): void {
     hostState.nextEffectId += 1;
     const sourceUid = readCardUid(state, 1);
     hostState.effects.set(id, { id, typeFlags: 0, ...(sourceUid === undefined ? {} : { sourceUid }) });
-    pushEffectTable(state, id, hostState.effects, hostState.session);
+    pushLuaEffectTable(state, id, hostState.effects, hostState.session);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("CreateEffect"));
@@ -146,7 +158,7 @@ function readLuaError(L: unknown): string {
   return message;
 }
 
-function pushEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectRecord>, session: DuelSession): void {
+function pushLuaEffectTable(L: unknown, id: number, effects: Map<number, LuaEffectRecord>, session: DuelSession): void {
   lua.lua_newtable(L);
   lua.lua_pushinteger(L, id);
   lua.lua_setfield(L, -2, to_luastring("__effect_id"));
@@ -286,7 +298,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
       }
       withActiveTargets(hostState, ctx.targetUids, () => {
         lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.operationRef);
-        pushEffectTable(L, luaEffect.id, hostState.effects, hostState.session);
+        pushLuaEffectTable(L, luaEffect.id, hostState.effects, hostState.session);
         pushCardTable(L, card.uid);
         const status = lua.lua_pcall(L, 2, 0, 0);
         if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
@@ -311,7 +323,7 @@ function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: Lu
   if (ref === undefined) return fallback;
   return withActiveTargets(hostState, ctx?.targetUids, () => {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
-    pushEffectTable(L, luaEffect.id, hostState.effects, hostState.session);
+    pushLuaEffectTable(L, luaEffect.id, hostState.effects, hostState.session);
     pushCardTable(L, card.uid);
     const status = lua.lua_pcall(L, 2, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
