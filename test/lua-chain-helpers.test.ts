@@ -566,7 +566,8 @@ describe("Lua chain helpers", () => {
 
     expect(summoned.ok).toBe(true);
     expect(summoned.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["lua-2-1100", "lua-1-1100"]);
-    expect(getDuelLegalActions(session, 0).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === "lua-1-1100").map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
+    expect(summoned.state.pendingTriggers.map((trigger) => session.state.effects.find((effect) => effect.id === trigger.effectId)?.optional)).toEqual([false, true]);
+    expect(getDuelLegalActions(session, 0).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === "lua-1-1100").map((action) => action.type)).toEqual([]);
     expect(getDuelLegalActions(session, 0).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === "lua-2-1100").map((action) => action.type)).toEqual(["activateTrigger"]);
   });
 
@@ -650,5 +651,29 @@ describe("Lua chain helpers", () => {
     expect(summoned.state.waitingFor).toBe(0);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
     expect(getDuelLegalActions(session, 0).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === summoned.state.pendingTriggers[0]?.effectId).map((action) => action.type)).toEqual(["activateTrigger"]);
+
+    const turnMandatory = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === summoned.state.pendingTriggers[0]?.effectId);
+    expect(turnMandatory).toBeDefined();
+    const afterTurnMandatory = applyResponse(session, turnMandatory!);
+    expect(afterTurnMandatory.ok).toBe(true);
+    expect(afterTurnMandatory.state.pendingTriggers.map((trigger) => afterTurnMandatory.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["8400", "8200", "8500"]);
+    expect(afterTurnMandatory.state.waitingFor).toBe(1);
+    expect(getDuelLegalActions(session, 1).map((action) => action.type)).toEqual(["activateTrigger"]);
+
+    const opponentMandatory = getDuelLegalActions(session, 1).find((action) => action.type === "activateTrigger" && action.effectId === afterTurnMandatory.state.pendingTriggers[0]?.effectId);
+    expect(opponentMandatory).toBeDefined();
+    const afterOpponentMandatory = applyResponse(session, opponentMandatory!);
+    expect(afterOpponentMandatory.ok).toBe(true);
+    expect(afterOpponentMandatory.state.pendingTriggers.map((trigger) => afterOpponentMandatory.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["8200", "8500"]);
+    expect(afterOpponentMandatory.state.waitingFor).toBe(0);
+    expect(getDuelLegalActions(session, 0).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === afterOpponentMandatory.state.pendingTriggers[0]?.effectId).map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
+
+    const turnOptionalDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === afterOpponentMandatory.state.pendingTriggers[0]?.effectId);
+    expect(turnOptionalDecline).toBeDefined();
+    const afterTurnOptional = applyResponse(session, turnOptionalDecline!);
+    expect(afterTurnOptional.ok).toBe(true);
+    expect(afterTurnOptional.state.pendingTriggers.map((trigger) => afterTurnOptional.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["8500"]);
+    expect(afterTurnOptional.state.waitingFor).toBe(1);
+    expect(getDuelLegalActions(session, 1).filter((action) => (action.type === "activateTrigger" || action.type === "declineTrigger") && action.effectId === afterTurnOptional.state.pendingTriggers[0]?.effectId).map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
   });
 });

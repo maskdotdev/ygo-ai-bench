@@ -230,9 +230,13 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     return actions;
   }
   if (state.pendingTriggers.length) {
+    const firstTrigger = state.pendingTriggers[0];
+    const firstEffect = firstTrigger ? state.effects.find((candidate) => candidate.id === firstTrigger.effectId && candidate.sourceUid === firstTrigger.sourceUid) : undefined;
+    const firstOptional = firstEffect?.optional !== false;
     for (const trigger of state.pendingTriggers.filter((candidate) => candidate.player === player)) {
-      const source = findCard(state, trigger.sourceUid);
       const effect = state.effects.find((candidate) => candidate.id === trigger.effectId && candidate.sourceUid === trigger.sourceUid);
+      if (trigger.player !== firstTrigger?.player || (effect?.optional !== false) !== firstOptional) continue;
+      const source = findCard(state, trigger.sourceUid);
       if (!source) continue;
       actions.push({ type: "activateTrigger", player, triggerId: trigger.id, uid: source.uid, effectId: trigger.effectId, label: `${source.name}: ${trigger.effectId}` });
       if (effect?.optional !== false) actions.push({ type: "declineTrigger", player, triggerId: trigger.id, uid: source.uid, effectId: trigger.effectId, label: `Decline ${source.name}: ${trigger.effectId}` });
