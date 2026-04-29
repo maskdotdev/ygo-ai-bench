@@ -609,6 +609,50 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("special lock checked 0");
   });
 
+  it("applies Lua continuous attack restrictions", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Locked Attacker", kind: "monster", attack: 1600 }];
+    const session = createDuel({ seed: 40, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeTruthy();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0);
+    attacker!.faceUp = true;
+    attacker!.position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_CANNOT_ATTACK)
+        e:SetRange(LOCATION_MZONE)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("attack lock checked " .. e:GetHandler():GetCode())
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "attack-lock.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)).toBe(false);
+    expect(host.messages).toContain("attack lock checked 100");
+  });
+
   it("supports Lua special summon procedures from face-up pendulum extra deck cards", () => {
     const cards: DuelCardData[] = [
       { code: "301", name: "Extra Procedure Pendulum", kind: "monster", typeFlags: 0x1000001 },

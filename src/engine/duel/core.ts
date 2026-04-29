@@ -196,7 +196,11 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...flipSummonActions(state, player));
   }
   if (state.phase === "battle") {
-    actions.push(...attackActions(state, player));
+    for (const action of attackActions(state, player)) {
+      if (action.type !== "declareAttack") continue;
+      const attacker = findCard(state, action.attackerUid);
+      if (attacker && !isAttackPrevented(state, attacker)) actions.push(action);
+    }
   }
   const nextPhase = phaseOrder[phaseOrder.indexOf(state.phase) + 1];
   if (nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
@@ -370,14 +374,19 @@ export function drawDuelCards(state: DuelState, player: PlayerId, count: number,
 }
 
 export function canDuelCardAttack(state: DuelState, uid: string): boolean {
-  return canDuelCardAttackRule(state, uid);
+  const card = findCard(state, uid);
+  return Boolean(card && !isAttackPrevented(state, card) && canDuelCardAttackRule(state, uid));
 }
 
 export function getDuelAttackTargets(state: DuelState, attackerUid: string): DuelCardInstance[] {
+  const card = findCard(state, attackerUid);
+  if (!card || isAttackPrevented(state, card)) return [];
   return getDuelAttackTargetsRule(state, attackerUid);
 }
 
 export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {
+  const attacker = findCard(state, attackerUid);
+  if (attacker && isAttackPrevented(state, attacker)) throw new Error(`${attacker.name} cannot attack`);
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
     collectEvent: (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
     damagePlayer: (damagedPlayer, amount) => damageDuelPlayer(state, damagedPlayer, amount),
@@ -681,6 +690,19 @@ function isSpecialSummonPrevented(state: DuelState, player: PlayerId, card?: Due
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+function isAttackPrevented(state: DuelState, card: DuelCardInstance): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 85) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const affectsCard = source.uid === card.uid || (((effect.property ?? 0) & 0x800) !== 0 && continuousEffectTargetsPlayer(effect, source, card.controller));
+    if (!affectsCard) continue;
     const ctx = createEffectContext(state, source, effect.controller, undefined, card, [], true);
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
