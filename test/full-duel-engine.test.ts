@@ -1536,6 +1536,36 @@ describe("full duel engine API", () => {
     expect(result.state.log.some((entry) => entry.detail === "Ritual special summoned Ritual Test Monster")).toBe(true);
   });
 
+  it("blocks ritual summons when material cannot be sent to the graveyard", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const ritual = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const blockedMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const otherMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(ritual).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+    expect(otherMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "ritual-material-grave-block",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 68,
+      range: ["hand"],
+      operation() {},
+    });
+
+    expect(() => ritualSummonDuelCard(session.state, 0, ritual!.uid, [blockedMaterial!.uid, otherMaterial!.uid])).toThrow("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === ritual!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
+  });
+
   it("does not expose ritual summon actions without materials or with no monster zone space", () => {
     const missing = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(missing, {
@@ -1977,6 +2007,39 @@ describe("full duel engine API", () => {
     expect(result.state.players[0].normalSummonAvailable).toBe(false);
     expect(result.state.log.some((entry) => entry.action === "release" && entry.card === "Normal Test Monster")).toBe(true);
     expect(result.state.log.some((entry) => entry.action === "tributeSummon" && entry.card === "One Tribute Monster")).toBe(true);
+  });
+
+  it("applies graveyard redirects to tribute summon releases", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["600", "100", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const tributeMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "600");
+    const tribute = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(tributeMonster).toBeTruthy();
+    expect(tribute).toBeTruthy();
+    moveDuelCard(session.state, tribute!.uid, "monsterZone", 0);
+
+    registerEffect(session, {
+      id: "tribute-grave-redirect",
+      sourceUid: tribute!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 63,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    tributeSummonDuelCard(session.state, 0, tributeMonster!.uid, [tribute!.uid]);
+
+    const released = session.state.cards.find((card) => card.uid === tribute!.uid);
+    expect(released?.location).toBe("banished");
+    expect(released?.reason && (released.reason & duelReason.release)).toBe(duelReason.release);
+    expect(released?.reason && (released.reason & duelReason.redirect)).toBe(duelReason.redirect);
+    expect(session.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("monsterZone");
   });
 
   it("tribute summons a level 7 or higher monster with two tributes even from a full monster zone", () => {

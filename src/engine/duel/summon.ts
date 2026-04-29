@@ -4,6 +4,11 @@ import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 export type DuelEventCollector = (eventName: DuelEventName, eventCard?: DuelCardInstance) => void;
+export interface DuelMaterialMoveResult {
+  card: DuelCardInstance;
+  collectedSentToGraveyard?: boolean;
+}
+export type DuelMaterialMover = (uid: string, controller: PlayerId, reason: number) => DuelMaterialMoveResult;
 type ExtraDeckSummonType = "fusion" | "synchro" | "Xyz" | "Link";
 
 export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector): void {
@@ -34,7 +39,7 @@ export function setMonster(state: DuelState, player: PlayerId, uid: string): voi
   pushDuelLog(state, "setMonster", player, card.name, "Set from hand");
 }
 
-export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[], collectEvent: DuelEventCollector): void {
+export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[], collectEvent: DuelEventCollector, moveMaterial: DuelMaterialMover = defaultMaterialMover(state)): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
@@ -46,9 +51,10 @@ export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: s
   if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
   for (const tributeUid of uniqueTributes) requireControlledCard(state, player, tributeUid, "monsterZone");
   for (const tributeUid of uniqueTributes) {
-    const tribute = moveDuelCard(state, tributeUid, "graveyard", player, duelReason.release | duelReason.summon);
+    const result = moveMaterial(tributeUid, player, duelReason.release | duelReason.summon);
+    const tribute = result.card;
     pushDuelLog(state, "release", player, tribute.name, `Tributed for ${card.name}`);
-    collectEvent("sentToGraveyard", tribute);
+    collectSentToGraveyard(result, collectEvent);
   }
 
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
@@ -146,7 +152,7 @@ export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
   return card;
 }
 
-export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
+export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector, moveMaterial: DuelMaterialMover = defaultMaterialMover(state)): DuelCardInstance {
   const card = requireControlledCard(state, player, uid, "hand");
   const requiredMaterials = card.data.ritualMaterials ?? [];
   if (card.kind !== "monster") throw new Error(`${card.name} is not a ritual monster`);
@@ -161,9 +167,9 @@ export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: st
   requireZoneSpace(state, player, "monsterZone");
 
   for (const material of materials) {
-    moveDuelCard(state, material.uid, "graveyard", player, duelReason.material | duelReason.ritual);
+    const result = moveMaterial(material.uid, player, duelReason.material | duelReason.ritual);
     pushDuelLog(state, "ritualMaterial", player, material.name, `Used for ${card.name}`);
-    collectEvent("sentToGraveyard", material);
+    collectSentToGraveyard(result, collectEvent);
   }
 
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.ritual);
@@ -174,6 +180,14 @@ export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: st
   pushDuelLog(state, "ritualSummon", player, card.name, `Ritual Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);
   return card;
+}
+
+function defaultMaterialMover(state: DuelState): DuelMaterialMover {
+  return (uid, controller, reason) => ({ card: moveDuelCard(state, uid, "graveyard", controller, reason) });
+}
+
+function collectSentToGraveyard(result: DuelMaterialMoveResult, collectEvent: DuelEventCollector): void {
+  if (!result.collectedSentToGraveyard && result.card.location === "graveyard") collectEvent("sentToGraveyard", result.card);
 }
 
 export function normalSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {

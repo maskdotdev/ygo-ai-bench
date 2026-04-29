@@ -33,6 +33,7 @@ import {
   synchroSummonDuelCard as synchroSummonDuelCardWithEvents,
   tributeSummonActions,
   tributeSummonDuelCard as tributeSummonDuelCardWithEvents,
+  type DuelMaterialMover,
   xyzSummonActions,
   xyzSummonDuelCard as xyzSummonDuelCardWithEvents,
 } from "#duel/summon.js";
@@ -394,7 +395,7 @@ export function setDuelPlayerLifePoints(state: DuelState, player: PlayerId, life
 }
 
 export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
-  tributeSummonDuelCardWithEvents(state, player, uid, tributeUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
+  tributeSummonDuelCardWithEvents(state, player, uid, tributeUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state));
 }
 
 export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: string): DuelCardInstance {
@@ -418,7 +419,14 @@ export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
 }
 
 export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
-  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
+  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state));
+}
+
+function createMaterialMover(state: DuelState): DuelMaterialMover {
+  return (uid, controller, reason) => {
+    const card = sendDuelCardToGraveyard(state, uid, controller, reason);
+    return { card, collectedSentToGraveyard: card.location === "graveyard" };
+  };
 }
 
 export function drawDuelCards(state: DuelState, player: PlayerId, count: number, detail = "Effect draw"): number {
