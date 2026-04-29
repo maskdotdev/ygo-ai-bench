@@ -878,6 +878,41 @@ describe("full duel engine API", () => {
     expect(result.state.log.some((entry) => entry.detail === "Fusion special summoned Fusion Test Monster")).toBe(true);
   });
 
+  it("applies graveyard redirects to fusion materials", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    const redirectedMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const otherMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(fusion).toBeTruthy();
+    expect(redirectedMaterial).toBeTruthy();
+    expect(otherMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "fusion-material-grave-redirect",
+      sourceUid: redirectedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 63,
+      range: ["hand"],
+      operation() {},
+    });
+
+    fusionSummonDuelCard(session.state, 0, fusion!.uid, [redirectedMaterial!.uid, otherMaterial!.uid]);
+
+    const redirected = session.state.cards.find((card) => card.uid === redirectedMaterial!.uid);
+    expect(redirected?.location).toBe("banished");
+    expect(redirected?.reason && (redirected.reason & duelReason.fusion)).toBe(duelReason.fusion);
+    expect(redirected?.reason && (redirected.reason & duelReason.redirect)).toBe(duelReason.redirect);
+    expect(session.state.cards.find((card) => card.uid === otherMaterial!.uid)?.location).toBe("graveyard");
+    expect(session.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("monsterZone");
+  });
+
   it("does not expose fusion summon actions without all materials or with no monster zone space", () => {
     const missing = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(missing, {
@@ -929,6 +964,37 @@ describe("full duel engine API", () => {
     expect(result.state.cards.find((card) => card.uid === synchro!.uid)?.location).toBe("monsterZone");
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
     expect(result.state.log.some((entry) => entry.action === "synchroSummon" && entry.card === "Synchro Test Monster")).toBe(true);
+  });
+
+  it("blocks synchro summons when material cannot be sent to the graveyard", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["910"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const synchro = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "910");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(synchro).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+    const blockedMaterial = materials.find((card) => card.code === "100");
+    expect(blockedMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "synchro-material-grave-block",
+      sourceUid: blockedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 68,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    expect(() => synchroSummonDuelCard(session.state, 0, synchro!.uid, materials.map((card) => card.uid))).toThrow("cannot move to graveyard");
+    expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("monsterZone");
   });
 
   it("synchro summons emit special summon triggers", () => {
@@ -1311,6 +1377,41 @@ describe("full duel engine API", () => {
     expect(result.state.cards.find((card) => card.uid === link!.uid)?.position).toBe("faceUpAttack");
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
     expect(result.state.log.some((entry) => entry.action === "linkSummon" && entry.card === "Link Test Monster")).toBe(true);
+  });
+
+  it("applies graveyard redirects to link materials", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["930"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const link = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "930");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+    expect(link).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+    const redirectedMaterial = materials.find((card) => card.code === "100");
+    expect(redirectedMaterial).toBeTruthy();
+
+    registerEffect(session, {
+      id: "link-material-grave-redirect",
+      sourceUid: redirectedMaterial!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 63,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    linkSummonDuelCard(session.state, 0, link!.uid, materials.map((card) => card.uid));
+
+    const redirected = session.state.cards.find((card) => card.uid === redirectedMaterial!.uid);
+    expect(redirected?.location).toBe("banished");
+    expect(redirected?.reason && (redirected.reason & duelReason.link)).toBe(duelReason.link);
+    expect(redirected?.reason && (redirected.reason & duelReason.redirect)).toBe(duelReason.redirect);
+    expect(session.state.cards.find((card) => card.uid === link!.uid)?.location).toBe("monsterZone");
   });
 
   it("link summons emit special summon triggers", () => {

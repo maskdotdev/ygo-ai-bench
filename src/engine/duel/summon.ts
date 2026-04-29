@@ -79,12 +79,12 @@ export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
   return card;
 }
 
-export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
+export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector, moveMaterial: DuelMaterialMover = defaultMaterialMover(state)): DuelCardInstance {
   const { card, materials } = requireExtraDeckSummonMaterials(state, player, uid, materialUids, cardDataMaterials(state, player, uid, "fusion"), "fusion", ["hand", "monsterZone"]);
   for (const material of materials) {
-    moveDuelCard(state, material.uid, "graveyard", player, duelReason.material | duelReason.fusion);
+    const result = moveMaterial(material.uid, player, duelReason.material | duelReason.fusion);
     pushDuelLog(state, "fusionMaterial", player, material.name, `Used for ${card.name}`);
-    collectEvent("sentToGraveyard", material);
+    collectSentToGraveyard(result, collectEvent);
   }
 
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.fusion);
@@ -97,12 +97,12 @@ export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: st
   return card;
 }
 
-export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
+export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector, moveMaterial: DuelMaterialMover = defaultMaterialMover(state)): DuelCardInstance {
   const { card, materials } = requireSynchroSummonMaterials(state, player, uid, materialUids);
   for (const material of materials) {
-    moveDuelCard(state, material.uid, "graveyard", player, duelReason.material | duelReason.synchro);
+    const result = moveMaterial(material.uid, player, duelReason.material | duelReason.synchro);
     pushDuelLog(state, "synchroMaterial", player, material.name, `Used for ${card.name}`);
-    collectEvent("sentToGraveyard", material);
+    collectSentToGraveyard(result, collectEvent);
   }
 
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.synchro);
@@ -134,12 +134,12 @@ export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: strin
   return card;
 }
 
-export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector): DuelCardInstance {
+export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], collectEvent: DuelEventCollector, moveMaterial: DuelMaterialMover = defaultMaterialMover(state)): DuelCardInstance {
   const { card, materials } = requireLinkSummonMaterials(state, player, uid, materialUids);
   for (const material of materials) {
-    moveDuelCard(state, material.uid, "graveyard", player, duelReason.material | duelReason.link);
+    const result = moveMaterial(material.uid, player, duelReason.material | duelReason.link);
     pushDuelLog(state, "linkMaterial", player, material.name, `Used for ${card.name}`);
-    collectEvent("sentToGraveyard", material);
+    collectSentToGraveyard(result, collectEvent);
   }
 
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.link);
