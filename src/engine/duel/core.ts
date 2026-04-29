@@ -50,6 +50,7 @@ import {
   findDestroyReplacementEffect,
   findIndestructibleEffect,
   findReleaseReplacementEffect,
+  findSendReplacementEffect,
   isAttackPrevented,
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
@@ -292,6 +293,8 @@ export function canPlayerSpecialSummon(state: DuelState, player: PlayerId, card?
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect): DuelCardInstance {
   const replacement = applyReleaseReplacement(state, uid, controller, reason);
   if (replacement) return replacement;
+  const sendReplacement = applySendReplacement(state, uid, controller, reason);
+  if (sendReplacement) return sendReplacement;
   const createContext = createContinuousEffectContext(state);
   if (shouldRedirectToGraveyardMove(state, uid, createContext)) return banishDuelCard(state, uid, controller, reason | duelReason.redirect);
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "graveyard", createContext);
@@ -651,6 +654,12 @@ function applyReleaseReplacement(state: DuelState, uid: string, controller: Play
   if ((reason & duelReason.release) === 0 || (reason & duelReason.replace) !== 0) return undefined;
   const match = findReleaseReplacementEffect(state, uid, createContinuousEffectContext(state));
   return applyReplacementEffect(state, match, controller, "releaseReplace", "Release replaced");
+}
+
+function applySendReplacement(state: DuelState, uid: string, controller: PlayerId | undefined, reason: number): DuelCardInstance | undefined {
+  if ((reason & duelReason.replace) !== 0) return undefined;
+  const match = findSendReplacementEffect(state, uid, createContinuousEffectContext(state));
+  return applyReplacementEffect(state, match, controller, "sendReplace", "Send replaced");
 }
 
 function applyReplacementEffect(

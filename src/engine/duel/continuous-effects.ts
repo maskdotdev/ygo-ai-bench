@@ -101,6 +101,10 @@ export function findReleaseReplacementEffect(state: DuelState, uid: string, crea
   return findReplacementEffect(state, uid, 51, undefined, createContext);
 }
 
+export function findSendReplacementEffect(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
+  return findReplacementEffect(state, uid, 52, undefined, createContext);
+}
+
 function findReplacementEffect(
   state: DuelState,
   uid: string,
