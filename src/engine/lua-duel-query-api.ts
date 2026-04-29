@@ -38,6 +38,10 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_pushcfunction(L, (state: unknown) => pushFirstMatchingCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetFirstMatchingCard"));
   installDuelLocationApi(L, session);
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckWithSumEqual(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CheckWithSumEqual"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectWithSumEqual(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SelectWithSumEqual"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session, hostState.activeTargetUids));
@@ -142,6 +146,28 @@ function pushSelectedMatchingGroup(L: unknown, session: DuelSession, targetUids?
   return 1;
 }
 
+function pushCheckWithSumEqual(L: unknown, session: DuelSession): number {
+  const query = readMatchingQuery(L, session, 1, 2, 3, 4, 8, 9);
+  const sum = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 0;
+  const min = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : 1;
+  const max = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : min;
+  const selected = selectUidsWithSum(L, matchingCardUidsForQuery(session, query), query.filterRef, sum, min, max, query.args);
+  releaseOptionalFunctionRef(L, query.filterRef);
+  lua.lua_pushboolean(L, selected !== undefined);
+  return 1;
+}
+
+function pushSelectWithSumEqual(L: unknown, session: DuelSession): number {
+  const query = readMatchingQuery(L, session, 2, 3, 4, 5, 9, 10);
+  const sum = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : 0;
+  const min = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : 1;
+  const max = lua.lua_isnumber(L, 8) ? lua.lua_tointeger(L, 8) : min;
+  const selected = selectUidsWithSum(L, matchingCardUidsForQuery(session, query), query.filterRef, sum, min, max, query.args) ?? [];
+  releaseOptionalFunctionRef(L, query.filterRef);
+  pushGroupTable(L, selected);
+  return 1;
+}
+
 function pushFirstTarget(L: unknown, hostState: LuaDuelQueryApiHostState): number {
   const target = hostState.activeTargetUids?.[0];
   if (!target) {
@@ -173,7 +199,11 @@ interface MatchingQuery {
 }
 
 function matchingCardUidsWithFilter(L: unknown, session: DuelSession, query: MatchingQuery): string[] {
-  return fieldGroupUids(session, query.player, query.selfMask, query.opponentMask).filter((uid) => !query.excluded.includes(uid) && cardMatchesFilter(L, uid, query.filterRef, query.args));
+  return matchingCardUidsForQuery(session, query).filter((uid) => cardMatchesFilter(L, uid, query.filterRef, query.args));
+}
+
+function matchingCardUidsForQuery(session: DuelSession, query: MatchingQuery): string[] {
+  return fieldGroupUids(session, query.player, query.selfMask, query.opponentMask).filter((uid) => !query.excluded.includes(uid));
 }
 
 function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefined, args: LuaFilterArgs): boolean {
@@ -186,6 +216,41 @@ function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefine
   const result = lua.lua_toboolean(L, -1);
   lua.lua_pop(L, 1);
   return Boolean(result);
+}
+
+function cardFilterNumberValue(L: unknown, uid: string, filterRef: number, args: LuaFilterArgs): number | undefined {
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, filterRef);
+  pushCardTable(L, uid);
+  for (let index = 0; index < args.count; index += 1) lua.lua_pushvalue(L, args.start + index);
+  const status = lua.lua_pcall(L, 1 + args.count, 1, 0);
+  if (status !== lua.LUA_OK) return undefined;
+  const result = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : lua.lua_toboolean(L, -1) ? 1 : 0;
+  lua.lua_pop(L, 1);
+  return result;
+}
+
+function selectUidsWithSum(L: unknown, uids: string[], filterRef: number | undefined, sum: number, min: number, max: number, args: LuaFilterArgs): string[] | undefined {
+  if (filterRef === undefined) return undefined;
+  const boundedMin = Math.max(0, min);
+  const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
+  const entries = uids
+    .map((uid) => ({ uid, value: cardFilterNumberValue(L, uid, filterRef, args) }))
+    .filter((entry): entry is { uid: string; value: number } => entry.value !== undefined);
+  return findSumSelection(entries, sum, boundedMin, boundedMax, 0, [], 0);
+}
+
+function findSumSelection(entries: { uid: string; value: number }[], target: number, min: number, max: number, index: number, selected: string[], current: number): string[] | undefined {
+  if (current === target && selected.length >= min && selected.length <= max) return [...selected];
+  if (index >= entries.length || selected.length >= max) return undefined;
+  for (let nextIndex = index; nextIndex < entries.length; nextIndex += 1) {
+    const entry = entries[nextIndex];
+    if (!entry) continue;
+    selected.push(entry.uid);
+    const found = findSumSelection(entries, target, min, max, nextIndex + 1, selected, current + entry.value);
+    if (found) return found;
+    selected.pop();
+  }
+  return undefined;
 }
 
 function readFilterArgs(L: unknown, start: number): LuaFilterArgs {

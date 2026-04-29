@@ -608,6 +608,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("vararg selected " .. selected:GetFirst():GetCode())
       Debug.Message("vararg count " .. Duel.GetMatchingGroupCount(match, 0, LOCATION_HAND, 0, nil, 300, 1800))
       Debug.Message("vararg existing " .. tostring(Duel.IsExistingMatchingCard(match, 0, LOCATION_HAND, 0, 1, nil, 200, 1000)))
+      Debug.Message("duel sum check " .. tostring(Duel.CheckWithSumEqual(Card.GetAttack, 0, LOCATION_HAND, 0, 2500, 2, 2, nil)))
+      Debug.Message("duel sum miss " .. tostring(Duel.CheckWithSumEqual(Card.GetAttack, 0, LOCATION_HAND, 0, 4500, 2, 2, nil)))
+      local sum_selected = Duel.SelectWithSumEqual(0, Card.GetAttack, 0, LOCATION_HAND, 0, 3600, 2, 2, nil)
+      Debug.Message("duel sum selected " .. sum_selected:GetCount())
+      local vararg_sum = Duel.SelectWithSumEqual(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 0, LOCATION_HAND, 0, 3600, 2, 2, nil, 1500)
+      Debug.Message("duel sum vararg " .. vararg_sum:GetCount())
       `,
       "matching-varargs.lua",
     );
@@ -616,6 +622,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("vararg selected 100");
     expect(host.messages).toContain("vararg count 1");
     expect(host.messages).toContain("vararg existing false");
+    expect(host.messages).toContain("duel sum check true");
+    expect(host.messages).toContain("duel sum miss false");
+    expect(host.messages).toContain("duel sum selected 2");
+    expect(host.messages).toContain("duel sum vararg 2");
 
     for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
       moveDuelCard(session.state, card.uid, "monsterZone", 0);
