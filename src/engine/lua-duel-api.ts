@@ -77,6 +77,26 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   });
   lua.lua_setfield(L, -2, to_luastring("GetCurrentPhase"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, session.state.phase === "main1" || session.state.phase === "main2");
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsMainPhase"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, session.state.phase === "battle");
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsBattlePhase"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, false);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsDamageStep"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, false);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsDamageCalculated"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const message = lua.lua_isstring(state, 1) ? lua.lua_tojsstring(state, 1) : "";
     hostState.messages.push(message);
     return 0;

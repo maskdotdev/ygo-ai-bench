@@ -1437,6 +1437,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
       observed_phase = Duel.GetCurrentPhase()
       observed_turn_player = tostring(Duel.IsTurnPlayer(0))
       observed_not_turn_player = tostring(Duel.IsTurnPlayer(1))
+      observed_main_phase = tostring(Duel.IsMainPhase())
+      observed_battle_phase = tostring(Duel.IsBattlePhase())
+      observed_damage_step = tostring(Duel.IsDamageStep())
+      observed_damage_calculated = tostring(Duel.IsDamageCalculated())
       Debug.Message("lua host online")
       `,
       "smoke.lua",
@@ -1448,6 +1452,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalString("observed_phase")).toBe("main1");
     expect(host.getGlobalString("observed_turn_player")).toBe("true");
     expect(host.getGlobalString("observed_not_turn_player")).toBe("false");
+    expect(host.getGlobalString("observed_main_phase")).toBe("true");
+    expect(host.getGlobalString("observed_battle_phase")).toBe("false");
+    expect(host.getGlobalString("observed_damage_step")).toBe("false");
+    expect(host.getGlobalString("observed_damage_calculated")).toBe("false");
     expect(host.messages).toContain("lua host online");
   });
 });
