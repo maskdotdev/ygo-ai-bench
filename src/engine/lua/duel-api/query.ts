@@ -67,6 +67,11 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("SetTargetCard"));
+  lua.lua_pushcfunction(L, () => {
+    if (hostState.activeTargetUids) hostState.activeTargetUids.splice(0, hostState.activeTargetUids.length);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ClearTargetCard"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     pushGroupTable(state, hostState.operatedUids);
     return 1;
