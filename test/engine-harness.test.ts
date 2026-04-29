@@ -309,6 +309,11 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local selected = Duel.SelectPosition(0, nil, POS_FACEUP_DEFENSE + POS_FACEDOWN_DEFENSE)
       Debug.Message("selected position " .. selected)
       local summon = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local summon_card = summon:GetFirst()
+      Debug.Message("can normal full " .. tostring(Duel.IsPlayerCanSummon(0, summon_card)))
+      Debug.Message("can mset full " .. tostring(Duel.IsPlayerCanMSet(0, summon_card)))
+      Debug.Message("can special full " .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, selected, 0, summon_card)))
+      Debug.Message("can special opponent " .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, selected, 1, summon_card)))
       Debug.Message("summoned " .. Duel.SpecialSummon(summon, 0, 0, 1, false, false, selected))
       `,
       "summon-position.lua",
@@ -322,6 +327,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("mzone seq0 open false");
     expect(host.messages).toContain("szone seq0 open true");
     expect(host.messages).toContain("selected position 4");
+    expect(host.messages).toContain("can normal full false");
+    expect(host.messages).toContain("can mset full false");
+    expect(host.messages).toContain("can special full false");
+    expect(host.messages).toContain("can special opponent true");
     expect(host.messages).toContain("summoned 1");
     const summoned = session.state.cards.find((card) => card.code === "600");
     expect(summoned?.controller).toBe(1);
@@ -1405,6 +1414,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("position checks " .. tostring(c:IsPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(c:IsControler(0)))
       Debug.Message("relation checks " .. tostring(c:IsOnField()) .. "/" .. tostring(c:IsMonster()) .. "/" .. tostring(c:IsSpell()) .. "/" .. tostring(c:IsTrap()) .. "/" .. tostring(c:IsCanBeEffectTarget(nil)))
       Debug.Message("activity counts " .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_FLIPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_ATTACK))
+      Debug.Message("used summon legality " .. tostring(Duel.IsPlayerCanSummon(0, c)) .. "/" .. tostring(Duel.IsPlayerCanMSet(0, c)) .. "/" .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, c)))
       Duel.SendtoGrave(c, REASON_EFFECT)
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
       Debug.Message("previous state " .. g:GetPreviousLocation() .. "/" .. g:GetPreviousControler() .. "/" .. g:GetPreviousSequence() .. "/" .. g:GetPreviousPosition())
@@ -1421,6 +1431,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("position checks true/true");
     expect(host.messages).toContain("relation checks true/true/false/false/true");
     expect(host.messages).toContain("activity counts 1/1/0/0/0");
+    expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous position true");
     expect(host.messages).toContain("grave relation false/true");
@@ -1450,6 +1461,11 @@ describe("EDOPro compatibility harness scaffolding", () => {
       observed_normal_activity = Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON)
       observed_summon_activity = Duel.GetActivityCount(0, ACTIVITY_SUMMON)
       observed_attack_activity = Duel.GetActivityCount(0, ACTIVITY_ATTACK)
+      local hand = Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      observed_can_summon = tostring(Duel.IsPlayerCanSummon(0, hand))
+      observed_can_mset = tostring(Duel.IsPlayerCanMSet(0, hand))
+      observed_can_special = tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, hand))
+      observed_bad_special_position = tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEDOWN_ATTACK, 0, hand))
       Debug.Message("lua host online")
       `,
       "smoke.lua",
@@ -1468,6 +1484,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalNumber("observed_normal_activity")).toBe(0);
     expect(host.getGlobalNumber("observed_summon_activity")).toBe(0);
     expect(host.getGlobalNumber("observed_attack_activity")).toBe(0);
+    expect(host.getGlobalString("observed_can_summon")).toBe("true");
+    expect(host.getGlobalString("observed_can_mset")).toBe("true");
+    expect(host.getGlobalString("observed_can_special")).toBe("true");
+    expect(host.getGlobalString("observed_bad_special_position")).toBe("false");
     expect(host.messages).toContain("lua host online");
   });
 });
