@@ -238,16 +238,17 @@ describe("EDOPro compatibility harness scaffolding", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Recoverable Monster", kind: "monster" },
       { code: "300", name: "Illegal Extra Return", kind: "monster" },
+      { code: "301", name: "Pendulum Extra Return", kind: "monster", typeFlags: 0x1000001 },
       { code: "900", name: "Extra Return", kind: "extra" },
       { code: "901", name: "Extra Alias Return", kind: "extra" },
     ];
-    const session = createDuel({ seed: 9, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 9, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "300"], extra: ["900", "901"] },
+      0: { main: ["100", "300", "301"], extra: ["900", "901"] },
       1: { main: ["100", "300"] },
     });
     startDuel(session);
-    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && (candidate.code === "100" || candidate.code === "300" || candidate.code === "900" || candidate.code === "901"))) {
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && (candidate.code === "100" || candidate.code === "300" || candidate.code === "301" || candidate.code === "900" || candidate.code === "901"))) {
       moveDuelCard(session.state, card.uid, "graveyard", 0);
     }
 
@@ -263,9 +264,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
       local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_GRAVE, 0, 1, 1, nil)
       Debug.Message("to extra " .. Duel.SendtoExtraP(extra, 0, REASON_EFFECT))
       Debug.Message("operated extra " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("extra faceup " .. tostring(Duel.GetOperatedGroup():GetFirst():IsFaceup()))
       local extra_alias = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_GRAVE, 0, 1, 1, nil)
       Debug.Message("to extra alias " .. Duel.SendtoExtra(extra_alias, 0, REASON_EFFECT))
       Debug.Message("operated extra alias " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      local pendulum = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("pendulum able extra " .. tostring(pendulum:GetFirst():IsAbleToExtra()))
+      Debug.Message("to pendulum extra " .. Duel.SendtoExtraP(pendulum, 0, REASON_EFFECT))
+      Debug.Message("pendulum extra faceup " .. tostring(Duel.GetOperatedGroup():GetFirst():IsFaceup()))
       local illegal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_GRAVE, 0, 1, 1, nil)
       Debug.Message("illegal extra " .. Duel.SendtoExtraP(illegal, 0, REASON_EFFECT))
       Debug.Message("operated illegal " .. Duel.GetOperatedGroup():GetCount())
@@ -280,12 +286,17 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("operated deck 100");
     expect(host.messages).toContain("to extra 1");
     expect(host.messages).toContain("operated extra 900");
+    expect(host.messages).toContain("extra faceup false");
     expect(host.messages).toContain("to extra alias 1");
     expect(host.messages).toContain("operated extra alias 901");
+    expect(host.messages).toContain("pendulum able extra true");
+    expect(host.messages).toContain("to pendulum extra 1");
+    expect(host.messages).toContain("pendulum extra faceup true");
     expect(host.messages).toContain("illegal extra 0");
     expect(host.messages).toContain("operated illegal 0");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "100")?.location).toBe("deck");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "900")?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "301")).toMatchObject({ location: "extraDeck", faceUp: true });
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("graveyard");
   });
 

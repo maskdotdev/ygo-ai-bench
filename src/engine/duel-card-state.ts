@@ -13,6 +13,10 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   if (controller !== undefined) card.controller = controller;
   card.sequence = nextSequence(state, card.controller, to);
   if (to === "hand" || to === "overlay") card.faceUp = false;
+  if (to === "extraDeck") {
+    card.faceUp = isPendulumCard(card);
+    card.position = "faceDown";
+  }
   if (to === "graveyard" || to === "banished" || to === "monsterZone" || to === "spellTrapZone") card.faceUp = true;
   resequence(state, card.controller, to);
   return card;
@@ -21,7 +25,7 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
 export function canMoveDuelCardToLocation(state: DuelState, uid: string, to: DuelLocation): boolean {
   const card = findCard(state, uid);
   if (!card || card.location === to) return false;
-  if (to === "extraDeck") return card.kind === "extra";
+  if (to === "extraDeck") return card.kind === "extra" || isPendulumCard(card);
   return true;
 }
 
@@ -64,4 +68,8 @@ export function pushDuelLog(state: DuelState, action: string, player: PlayerId |
 
 function nextSequence(state: DuelState, player: PlayerId, location: DuelLocation): number {
   return getCards(state, player, location).length;
+}
+
+function isPendulumCard(card: DuelCardInstance): boolean {
+  return ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
 }

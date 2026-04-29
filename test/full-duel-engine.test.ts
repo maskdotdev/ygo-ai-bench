@@ -43,6 +43,7 @@ const cards: DuelCardData[] = [
   { code: "320", name: "Level Three Non-Tuner", kind: "monster", typeFlags: 0x1, level: 3, attack: 1300, defense: 900 },
   { code: "330", name: "Second Level Four Non-Tuner", kind: "monster", typeFlags: 0x1, level: 4, attack: 1400, defense: 1100 },
   { code: "340", name: "Level One Non-Tuner", kind: "monster", typeFlags: 0x1, level: 1, attack: 500, defense: 500 },
+  { code: "350", name: "Pendulum Test Monster", kind: "monster", typeFlags: 0x1000001, level: 4, attack: 1500, defense: 1500 },
   { code: "400", name: "Opponent Monster", kind: "monster", attack: 1500, defense: 1600 },
   { code: "500", name: "Third Monster", kind: "monster", attack: 2400, defense: 2000 },
   { code: "600", name: "One Tribute Monster", kind: "monster", level: 6, attack: 2300, defense: 1800 },
@@ -1625,6 +1626,32 @@ describe("full duel engine API", () => {
     expect(canMoveDuelCardToLocation(session.state, banished!.uid, "banished")).toBe(false);
     expect(() => sendDuelCardToGraveyard(session.state, destroyed!.uid, 0)).toThrow("cannot move to graveyard");
     expect(() => banishDuelCard(session.state, banished!.uid, 0)).toThrow("cannot move to banished");
+  });
+
+  it("moves pendulum monsters to the extra deck face-up", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["350", "100"], extra: ["980"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const pendulum = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "350");
+    const normal = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const extra = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "980");
+    expect(pendulum).toBeTruthy();
+    expect(normal).toBeTruthy();
+    expect(extra).toBeTruthy();
+
+    moveDuelCard(session.state, pendulum!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, pendulum!.uid, "extraDeck", 0);
+    moveDuelCard(session.state, extra!.uid, "graveyard", 0);
+    moveDuelCard(session.state, extra!.uid, "extraDeck", 0);
+
+    const state = queryPublicState(session);
+    expect(canMoveDuelCardToLocation(session.state, normal!.uid, "extraDeck")).toBe(false);
+    expect(state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "extraDeck", faceUp: true, position: "faceDown" });
+    expect(state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false, position: "faceDown" });
   });
 
   it("hides normal summon actions when the monster zone is full", () => {
