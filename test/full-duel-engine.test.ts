@@ -41,6 +41,7 @@ const cards: DuelCardData[] = [
   { code: "300", name: "Second Monster", kind: "monster", attack: 1000, defense: 1000 },
   { code: "310", name: "Level Four Non-Tuner", kind: "monster", typeFlags: 0x1, level: 4, attack: 1600, defense: 1000 },
   { code: "320", name: "Level Three Non-Tuner", kind: "monster", typeFlags: 0x1, level: 3, attack: 1300, defense: 900 },
+  { code: "330", name: "Second Level Four Non-Tuner", kind: "monster", typeFlags: 0x1, level: 4, attack: 1400, defense: 1100 },
   { code: "400", name: "Opponent Monster", kind: "monster", attack: 1500, defense: 1600 },
   { code: "500", name: "Third Monster", kind: "monster", attack: 2400, defense: 2000 },
   { code: "600", name: "One Tribute Monster", kind: "monster", level: 6, attack: 2300, defense: 1800 },
@@ -52,6 +53,7 @@ const cards: DuelCardData[] = [
   { code: "950", name: "Generic Link-2", kind: "extra", attack: 1800, typeFlags: 0x4000001, level: 2 },
   { code: "960", name: "Generic Link-3", kind: "extra", attack: 2400, typeFlags: 0x4000001, level: 3 },
   { code: "970", name: "Generic Level 7 Synchro", kind: "extra", attack: 2600, defense: 2100, typeFlags: 0x2001, level: 7 },
+  { code: "980", name: "Generic Rank 4 Xyz", kind: "extra", attack: 2200, defense: 1800, typeFlags: 0x800001, level: 4 },
   { code: "940", name: "Ritual Test Monster", kind: "monster", attack: 2500, defense: 2100, ritualMaterials: ["100", "300"] },
 ];
 
@@ -1133,6 +1135,70 @@ describe("full duel engine API", () => {
 
     expect(result.ok).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Xyz special summoned Xyz Test Monster")).toBe(true);
+  });
+
+  it("xyz summons generic monsters with two matching-level materials", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["310", "330"], extra: ["980"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const xyz = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "980");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "310" || card.code === "330"));
+    expect(xyz).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("xyzSummon");
+    if (!action || action.type !== "xyzSummon") throw new Error("Expected Xyz summon action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === xyz!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === xyz!.uid)?.overlayCount).toBe(2);
+    expect(action.materialUids.every((materialUid) => result.state.cards.find((card) => card.uid === materialUid)?.location === "overlay")).toBe(true);
+  });
+
+  it("rejects generic xyz materials with mismatched levels", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["310", "320"], extra: ["980"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const xyz = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "980");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "310" || card.code === "320"));
+    expect(xyz).toBeTruthy();
+    expect(materials).toHaveLength(2);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid)).toBe(false);
+    expect(() => xyzSummonDuelCard(session.state, 0, xyz!.uid, materials.map((card) => card.uid))).toThrow("Xyz materials are not legal");
+  });
+
+  it("rejects generic xyz summons without exactly two materials", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["310", "330", "310"], extra: ["980"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const xyz = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "980");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "310" || card.code === "330"));
+    expect(xyz).toBeTruthy();
+    expect(materials).toHaveLength(3);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid);
+    expect(action).toBeTruthy();
+    expect(action).toMatchObject({ type: "xyzSummon", materialUids: [materials[0]!.uid, materials[1]!.uid] });
+    expect(() => xyzSummonDuelCard(session.state, 0, xyz!.uid, materials.map((card) => card.uid))).toThrow("Xyz materials are not legal");
   });
 
   it("does not expose xyz summon actions without field materials or with no monster zone space", () => {
