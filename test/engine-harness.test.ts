@@ -682,6 +682,12 @@ describe("EDOPro compatibility harness scaffolding", () => {
       Debug.Message("selected group " .. selected:GetCount())
       Debug.Message("exists high " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 2, nil, 1500)))
       Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
+      Debug.Message("sum exact " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 3000, 2, 2)))
+      Debug.Message("sum miss " .. tostring(all:CheckWithSumEqual(Card.GetAttack, 4500, 2, 2)))
+      local sum_selected = all:SelectWithSumEqual(0, Card.GetAttack, 3000, 2, 2)
+      Debug.Message("sum selected " .. sum_selected:GetCount())
+      local vararg_sum = all:SelectWithSumEqual(0, function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 5000, 2, 2, 1500)
+      Debug.Message("sum vararg " .. vararg_sum:GetCount())
       g:RemoveCard(c100)
       g:DeleteGroup()
       Debug.Message("removed " .. g:GetCount() .. " " .. tostring(g:IsContains(c100)))
@@ -700,6 +706,10 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.messages).toContain("selected group 2");
     expect(host.messages).toContain("exists high true");
     expect(host.messages).toContain("class count 2");
+    expect(host.messages).toContain("sum exact true");
+    expect(host.messages).toContain("sum miss false");
+    expect(host.messages).toContain("sum selected 2");
+    expect(host.messages).toContain("sum vararg 2");
     expect(host.messages).toContain("removed 2 false");
     expect(host.messages).toContain("filtered high 2");
     expect(host.messages).toContain("vararg high 1");
