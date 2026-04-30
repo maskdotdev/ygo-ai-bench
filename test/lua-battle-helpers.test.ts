@@ -225,6 +225,68 @@ describe("Lua battle helpers", () => {
     expect(session.state.players[1].lifePoints).toBe(6200);
     expect(session.state.pendingBattle).toBeUndefined();
   });
+
+  it("lets Lua damage-calculation quick effects override final battle damage", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Damage Attacker", kind: "monster", attack: 1800 },
+      { code: "300", name: "Lua Damage Override", kind: "monster" },
+      { code: "500", name: "Lua Damage Filler", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 48, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["500", "500"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetProperty(EFFECT_FLAG_DAMAGE_CAL)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("lua damage before " .. Duel.GetBattleDamage(1))
+          Debug.Message("lua damage changed " .. Duel.ChangeBattleDamage(1, 600, false))
+          Debug.Message("lua damage after " .. Duel.GetBattleDamage(1))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-damage-override.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.battleStep).toBe("damageCalculation");
+
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(legalEffectCodes(session, 0)).toEqual(["300"]);
+    expect(applyResponse(session, activateEffectByCode(session, 0, "300")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+    expect(session.state.battleDamage[1]).toBe(600);
+    expect(session.state.pendingBattle?.battleDamageOverrides).toEqual({ 1: 600 });
+    expect(host.messages).toEqual(["lua damage before 0", "lua damage changed 600", "lua damage after 600"]);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.players[1].lifePoints).toBe(7400);
+    expect(session.state.battleDamage[1]).toBe(600);
+    expect(session.state.pendingBattle).toBeUndefined();
+  });
 });
 
 function legalEffectCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
