@@ -147,6 +147,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
               event: "quick",
               range: ["hand"],
               oncePerTurn: true,
+              property: 0x4000,
               logMessage: "Fixture damage-window quick resolved",
             },
           ],

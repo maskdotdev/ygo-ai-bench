@@ -784,6 +784,7 @@ function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
   const actions: DuelAction[] = [];
   for (const effect of state.effects) {
     if (effect.controller !== player || effect.event !== "quick") continue;
+    if (!quickEffectTimingAllows(state, effect)) continue;
     if (!chainLimitsAllow(state, effect, player)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
@@ -824,6 +825,11 @@ function moveDuelCardToRedirectedLocation(state: DuelState, uid: string, locatio
 
 function hasChainResponses(state: DuelState, player: PlayerId): boolean {
   return quickEffectActions(state, player).length > 0;
+}
+
+function quickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition): boolean {
+  if (state.battleStep !== "damage") return true;
+  return Boolean((effect.property ?? 0) & (0x4000 | 0x8000));
 }
 
 function stampActions(actions: DuelAction[], windowId: number): DuelAction[] {

@@ -370,6 +370,7 @@ export interface ScriptedFixtureEffect {
   event: DuelEffectDefinition["event"];
   range: DuelLocation[];
   oncePerTurn?: boolean;
+  property?: number;
   logMessage?: string;
   occurrence?: number;
 }

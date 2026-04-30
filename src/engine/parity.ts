@@ -175,6 +175,7 @@ function applyFixtureEffects(session: DuelSession, effects: ScriptedFixtureEffec
       event: effect.event,
       range: effect.range,
       ...(effect.oncePerTurn === undefined ? {} : { oncePerTurn: effect.oncePerTurn }),
+      ...(effect.property === undefined ? {} : { property: effect.property }),
       operation(ctx) {
         if (effect.logMessage) ctx.log(effect.logMessage);
       },

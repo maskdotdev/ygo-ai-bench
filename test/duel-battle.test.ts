@@ -172,8 +172,19 @@ describe("duel battle", () => {
       event: "quick",
       range: ["hand"],
       oncePerTurn: true,
+      property: 0x4000,
       operation(ctx) {
         ctx.log("Damage window quick resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "damage-window-unflagged-quick",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Unflagged damage quick resolved");
       },
     });
 
@@ -191,6 +202,7 @@ describe("duel battle", () => {
     const quick = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "damage-window-quick");
     expect(quick).toBeUndefined();
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "damage-window-unflagged-quick")).toBe(false);
     const turnPlayerQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "damage-window-quick");
     expect(turnPlayerQuick).toBeTruthy();
     expect(applyResponse(session, turnPlayerQuick!).ok).toBe(true);
