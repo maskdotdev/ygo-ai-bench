@@ -690,6 +690,11 @@ describe("Lua state helpers", () => {
       Debug.Message("faceup runtime count " .. Duel.GetMatchingGroupCount(aux.FaceupFilter(function(c, minatk) return c:GetAttack() >= minatk end), 0, LOCATION_MZONE, 0, nil, 900))
       local faceup_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local facedown_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local necrovalley_effect=Effect.CreateEffect(faceup_monster)
+      necrovalley_effect:SetType(EFFECT_TYPE_SINGLE)
+      necrovalley_effect:SetCode(EFFECT_NECRO_VALLEY)
+      faceup_monster:RegisterEffect(necrovalley_effect)
+      Debug.Message("nvfilter " .. tostring(aux.nvfilter(faceup_monster)) .. "/" .. tostring(aux.nvfilter(facedown_monster)))
       local same_turn_grave = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       local grave_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       Debug.Message("sp elim grave " .. tostring(aux.SpElimFilter(grave_monster)))
@@ -803,6 +808,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("true count 1");
     expect(host.messages).toContain("false count 0");
     expect(host.messages).toContain("wrapped count 0");
+    expect(host.messages).toContain("nvfilter false/true");
     expect(host.messages).toContain("wrapped ex count 1");
     expect(host.messages).toContain("wrapped ex2 true/false");
     expect(host.messages).toContain("target bool count 1");

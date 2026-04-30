@@ -50,6 +50,8 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setfield(L, -2, to_luastring("GlobalCheck"));
   lua.lua_pushcfunction(L, (state: unknown) => pushNecroValleyFilter(state, readLuaError));
   lua.lua_setfield(L, -2, to_luastring("NecroValleyFilter"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushNecroValleyPredicate(state, readLuaError));
+  lua.lua_setfield(L, -2, to_luastring("nvfilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
   installEquipProcedure(L, readLuaError);
 }
@@ -441,6 +443,11 @@ function pushNecroValleyFilter(L: unknown, readLuaError: (state: unknown) => str
     if (status !== lua.LUA_OK) return lauxlib.luaL_error(state, to_luastring(readLuaError(state)));
     return 1;
   });
+  return 1;
+}
+
+function pushNecroValleyPredicate(L: unknown, readLuaError: (state: unknown) => string): number {
+  lua.lua_pushboolean(L, !callLuaBooleanMethod(L, 1, "IsHasEffect", readLuaError, 291));
   return 1;
 }
 
