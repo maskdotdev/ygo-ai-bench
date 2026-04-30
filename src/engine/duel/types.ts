@@ -232,6 +232,10 @@ export interface DuelState {
     attackerUid: string;
     targetUid?: string;
   };
+  pendingBattle?: {
+    attackerUid: string;
+    targetUid?: string;
+  };
   prompt?: DuelPromptState;
   waitingFor?: PlayerId;
   log: DuelLogEntry[];

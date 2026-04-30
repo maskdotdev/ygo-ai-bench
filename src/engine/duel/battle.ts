@@ -36,16 +36,15 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   state.attacksDeclared.push(attacker.uid);
   recordAttackActivity(state, player);
   state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
+  state.pendingBattle = { ...state.currentAttack };
   if (!target) {
     pushDuelLog(state, "attack", player, attacker.name, "Direct attack");
     callbacks.collectEvent("attackDeclared", attacker);
-    callbacks.damagePlayer(otherPlayer(player), getBattleAttack(attacker));
     return;
   }
 
   pushDuelLog(state, "attack", player, attacker.name, `Attacked ${target.name}`);
   callbacks.collectEvent("attackDeclared", attacker);
-  resolveBattle(state, attacker, target, callbacks);
 }
 
 export function negateDuelAttack(state: DuelState): boolean {
@@ -53,7 +52,27 @@ export function negateDuelAttack(state: DuelState): boolean {
   if (!attack) return false;
   const attacker = findCard(state, attack.attackerUid);
   delete state.currentAttack;
+  delete state.pendingBattle;
   pushDuelLog(state, "attack", attacker?.controller ?? state.turnPlayer, attacker?.name, "Negated attack");
+  return true;
+}
+
+export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattleCallbacks): boolean {
+  const pending = state.pendingBattle;
+  if (!pending) return false;
+  const attacker = findCard(state, pending.attackerUid);
+  if (!attacker || attacker.location !== "monsterZone") {
+    delete state.pendingBattle;
+    delete state.currentAttack;
+    return false;
+  }
+  const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
+  delete state.pendingBattle;
+  if (!target) {
+    callbacks.damagePlayer(otherPlayer(attacker.controller), getBattleAttack(attacker));
+    return true;
+  }
+  if (target.location === "monsterZone") resolveBattle(state, attacker, target, callbacks);
   return true;
 }
 

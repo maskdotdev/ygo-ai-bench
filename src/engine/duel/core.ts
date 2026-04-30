@@ -56,6 +56,7 @@ import {
   getDuelAttackTargets as getDuelAttackTargetsRule,
   negateDuelAttack as negateDuelAttackRule,
   positionChangeActions,
+  resolvePendingDuelBattle as resolvePendingDuelBattleRule,
 } from "#duel/battle.js";
 import {
   isAttackPrevented,
@@ -143,7 +144,10 @@ const responseHandlers: DuelResponseHandlers = {
   activateTrigger(session, player, triggerId) {
     activateDuelPendingTrigger(session, player, triggerId, activationHandlers);
   },
-  declineTrigger: declineDuelPendingTrigger,
+  declineTrigger(session, player, triggerId) {
+    declineDuelPendingTrigger(session, player, triggerId);
+    resolvePendingBattleIfReady(session.state);
+  },
   flipSummon: flipSummonDuelCard,
   changePosition: changeDuelCardPosition,
   declareAttack: declareDuelAttack,
@@ -516,6 +520,7 @@ export function getDuelAttackTargets(state: DuelState, attackerUid: string): Due
 export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {
   const attacker = findCard(state, attackerUid);
   if (attacker && isAttackPrevented(state, attacker, createContinuousEffectContext(state))) throw new Error(`${attacker.name} cannot attack`);
+  const pendingTriggerCount = state.pendingTriggers.length;
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
     collectEvent: (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
     damagePlayer: (damagedPlayer, amount) => {
@@ -524,6 +529,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
     },
     destroyCard: (uid, controller, reason) => destroyDuelCard(state, uid, controller, reason),
   });
+  if (state.pendingTriggers.length === pendingTriggerCount) resolvePendingBattle(state);
 }
 
 export function negateDuelAttack(state: DuelState): boolean {
@@ -577,7 +583,10 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
   pruneResetEffectsAfterPhase(state, phase);
   pruneDuelFlagEffectsAfterPhase(state, phase);
   if (phase === "battle") state.attacksDeclared = [];
-  else delete state.currentAttack;
+  else {
+    delete state.currentAttack;
+    delete state.pendingBattle;
+  }
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
   collectTriggerEffects(state, "phaseChanged");
 }
@@ -596,6 +605,7 @@ function endTurn(state: DuelState, player: PlayerId): void {
   state.positionsChanged = [];
   for (const activityPlayer of [0, 1] satisfies PlayerId[]) resetDuelActivityCounts(state, activityPlayer);
   delete state.currentAttack;
+  delete state.pendingBattle;
   state.players[state.turnPlayer].normalSummonAvailable = true;
   draw(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");
   state.phase = "main1";
@@ -895,6 +905,24 @@ function resolveChain(state: DuelState): void {
   state.chainPasses = [];
   state.status = "awaiting";
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+  resolvePendingBattleIfReady(state);
+}
+
+function resolvePendingBattle(state: DuelState): void {
+  resolvePendingDuelBattleRule(state, {
+    collectEvent: (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
+    damagePlayer: (damagedPlayer, amount) => {
+      changeDuelBattleDamage(state, damagedPlayer, amount);
+      return damageDuelPlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
+    },
+    destroyCard: (uid, controller, reason) => destroyDuelCard(state, uid, controller, reason),
+  });
+  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+}
+
+function resolvePendingBattleIfReady(state: DuelState): void {
+  if (!state.pendingBattle || state.chain.length || state.pendingTriggers.length) return;
+  resolvePendingBattle(state);
 }
 
 function clearStaleChainLimits(state: DuelState): void {
