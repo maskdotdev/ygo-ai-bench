@@ -581,10 +581,11 @@ describe("Lua field and query helpers", () => {
       { code: "200", name: "Fixture Spell", kind: "spell", typeFlags: 0x2 },
       { code: "300", name: "Rank Fixture", kind: "monster", typeFlags: 0x800001, attack: 1800, defense: 1200, level: 4 },
       { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5 },
+      { code: "500", name: "Infinity Alias", kind: "monster", alias: "1378" },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 4, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 5, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400"] },
+      0: { main: ["100", "200", "300", "400", "500"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -603,6 +604,8 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not code checks " .. tostring(c:IsNotCode(900)) .. "/" .. tostring(c:IsNotCode(901)))
       Debug.Message("code rule checks " .. c:GetOriginalCodeRule() .. "/" .. tostring(c:IsOriginalCodeRule(900)) .. "/" .. tostring(c:IsOriginalCodeRule(100)))
       Debug.Message("set checks " .. tostring(c:IsSetCard(0x123)) .. "/" .. tostring(c:IsNotSetCard(0x123)) .. "/" .. tostring(c:IsNotSetCard(0x456)))
+      local infinity = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("infinity checks " .. tostring(infinity:IsInfinity()) .. "/" .. tostring(c:IsInfinity()))
       local xyz = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local link = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("original predicates " .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalLevel(7)))
@@ -652,6 +655,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not code checks false/true");
     expect(host.messages).toContain("code rule checks 100/false/true");
     expect(host.messages).toContain("set checks true/false/true");
+    expect(host.messages).toContain("infinity checks true/false");
     expect(host.messages).toContain("original predicates true/true");
     expect(host.messages).toContain("not type false/true");
     expect(host.messages).toContain("not original type false/true");

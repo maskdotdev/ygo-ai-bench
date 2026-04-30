@@ -130,6 +130,7 @@ function installCodeHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsNotSetCard"));
+  pushBooleanGetter(L, "IsInfinity", session, (card) => Boolean(card && cardCodes(card).includes("1378")));
 }
 
 function installStatHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
