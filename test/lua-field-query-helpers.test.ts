@@ -642,12 +642,13 @@ describe("Lua field and query helpers", () => {
       { code: "600", name: "Multi Attribute", kind: "monster", attribute: 0x30 },
       { code: "700", name: "Ritual Fixture", kind: "monster", typeFlags: 0x81, level: 6, ritualMaterials: ["100"] },
       { code: "800", name: "Normal Fixture", kind: "monster", typeFlags: 0x11, level: 4 },
+      { code: "801", name: "Synchro Fixture", kind: "extra", typeFlags: 0x2001, level: 7 },
       { code: "901", name: "Pendulum Fixture", kind: "monster", typeFlags: 0x1000021, level: 4, leftScale: 3, rightScale: 8 },
       { code: "902", name: "Material Listing Fusion", kind: "extra", fusionMaterials: ["100", "800"] },
     ];
     const session = createDuel({ seed: 14, startingHandSize: 12, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "201", "202", "203", "300", "400", "500", "600", "700", "800", "901"], extra: ["902"] },
+      0: { main: ["100", "200", "201", "202", "203", "300", "400", "500", "600", "700", "800", "901"], extra: ["801", "902"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -673,13 +674,14 @@ describe("Lua field and query helpers", () => {
       local link = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local ritual = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 700), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local normal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local synchro = Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 801), 0, LOCATION_EXTRA, 0, nil):GetFirst()
       local pendulum = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local material_fusion = Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 902), 0, LOCATION_EXTRA, 0, nil):GetFirst()
       Debug.Message("material listed checks " .. tostring(material_fusion:ListsCodeAsMaterial(100)) .. "/" .. tostring(material_fusion:ListsCodeAsMaterial(700,800)) .. "/" .. tostring(material_fusion:ListsCodeAsMaterial(300)) .. "/" .. tostring(ritual:ListsCodeAsMaterial(100)))
       Debug.Message("original predicates " .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalLevel(7)))
       Debug.Message("not type " .. tostring(c:IsNotType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotType(TYPE_SPELL)))
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
-      Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()) .. "/" .. tostring(c:IsEffectMonster()) .. "/" .. tostring(normal:IsEffectMonster()) .. "/" .. tostring(c:IsForbidden()))
+      Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(synchro:IsSynchroMonster()) .. "/" .. tostring(c:IsSynchroMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()) .. "/" .. tostring(c:IsEffectMonster()) .. "/" .. tostring(normal:IsEffectMonster()) .. "/" .. tostring(c:IsForbidden()))
       Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
       Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()))
@@ -750,7 +752,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("original predicates true/true");
     expect(host.messages).toContain("not type false/true");
     expect(host.messages).toContain("not original type false/true");
-    expect(host.messages).toContain("named type predicates true/false/true/false/true/false/false");
+    expect(host.messages).toContain("named type predicates true/false/true/false/true/false/true/false/false");
     expect(host.messages).toContain("rank 4/4/true/true");
     expect(host.messages).toContain("has level true/false/false/false");
     expect(host.messages).toContain("main card types 1/2/2/5");

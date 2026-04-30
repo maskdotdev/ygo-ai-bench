@@ -124,6 +124,7 @@ export const cardFieldNames = [
   "IsEquipSpell",
   "IsFieldSpell",
   "IsRitualMonster",
+  "IsSynchroMonster",
   "IsEffectMonster",
   "IsNonEffectMonster",
   "IsForbidden",
