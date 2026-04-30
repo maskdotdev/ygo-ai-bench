@@ -35,6 +35,26 @@ describe("Lua random helpers", () => {
     expect(first.state.log.some((entry) => entry.action === "callCoin" && entry.detail.includes("/"))).toBe(true);
   });
 
+  it("lets Lua scripts count heads in coin results", () => {
+    const session = setupSession(159);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local a,b,c=Duel.TossCoin(0,3)
+      Debug.Message("count heads toss " .. Duel.CountHeads(a,b,c))
+      Debug.Message("count heads constants " .. Duel.CountHeads(COIN_HEADS,COIN_TAILS,COIN_HEADS,7,nil))
+      Debug.Message("count heads empty " .. Duel.CountHeads())
+      `,
+      "coin-count-heads.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages[0]).toMatch(/^count heads toss [0-3]$/);
+    expect(host.messages).toContain("count heads constants 2");
+    expect(host.messages).toContain("count heads empty 0");
+    expect(session.state.randomCounter).toBe(3);
+  });
+
   it("preserves coin-call progression across snapshots", () => {
     const original = setupSession(156);
     const firstHost = createLuaScriptHost(original);
