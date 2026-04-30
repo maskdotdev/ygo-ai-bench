@@ -51,7 +51,9 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     battleStep: state.battleStep,
     positionsChanged: [...state.positionsChanged],
     currentAttack: state.currentAttack ? { ...state.currentAttack } : undefined,
-    pendingBattle: state.pendingBattle ? { ...state.pendingBattle } : undefined,
+    pendingBattle: state.pendingBattle
+      ? { ...state.pendingBattle, ...(state.pendingBattle.battleDamageOverrides ? { battleDamageOverrides: { ...state.pendingBattle.battleDamageOverrides } } : {}) }
+      : undefined,
     prompt: state.prompt ? { ...state.prompt } : undefined,
     waitingFor: state.waitingFor,
     log: state.log.map((entry) => ({ ...entry })),

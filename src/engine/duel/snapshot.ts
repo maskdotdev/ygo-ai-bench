@@ -69,7 +69,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       ...(session.state.battleStep === undefined ? {} : { battleStep: session.state.battleStep }),
       positionsChanged: [...session.state.positionsChanged],
       ...(session.state.currentAttack === undefined ? {} : { currentAttack: { ...session.state.currentAttack } }),
-      ...(session.state.pendingBattle === undefined ? {} : { pendingBattle: { ...session.state.pendingBattle } }),
+      ...(session.state.pendingBattle === undefined ? {} : { pendingBattle: copyPendingBattle(session.state.pendingBattle) }),
       ...(session.state.prompt === undefined ? {} : { prompt: copyPrompt(session.state.prompt) }),
       log: session.state.log.map((entry) => ({ ...entry })),
     },
@@ -103,7 +103,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       ...(snapshot.state.battleStep === undefined ? {} : { battleStep: snapshot.state.battleStep }),
       positionsChanged: [...snapshot.state.positionsChanged],
       ...(snapshot.state.currentAttack === undefined ? {} : { currentAttack: { ...snapshot.state.currentAttack } }),
-      ...(snapshot.state.pendingBattle === undefined ? {} : { pendingBattle: { ...snapshot.state.pendingBattle } }),
+      ...(snapshot.state.pendingBattle === undefined ? {} : { pendingBattle: copyPendingBattle(snapshot.state.pendingBattle) }),
       ...(snapshot.state.prompt === undefined ? {} : { prompt: copyPrompt(snapshot.state.prompt) }),
       log: snapshot.state.log.map((entry) => ({ ...entry })),
     },
@@ -144,6 +144,13 @@ function noopEffectOperation(_ctx: DuelEffectContext): void {}
 
 function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][number] {
   return { ...link, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };
+}
+
+function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {
+  return {
+    ...pendingBattle,
+    ...(pendingBattle.battleDamageOverrides === undefined ? {} : { battleDamageOverrides: { ...pendingBattle.battleDamageOverrides } }),
+  };
 }
 
 function copyPrompt(prompt: DuelPromptState): DuelPromptState {

@@ -457,6 +457,9 @@ export function getDuelBattleDamage(state: DuelState, player: PlayerId): number 
 export function changeDuelBattleDamage(state: DuelState, player: PlayerId, amount: number): number {
   const value = Math.max(0, Math.floor(amount));
   state.battleDamage[player] = value;
+  if (state.pendingBattle && (state.battleStep === "damage" || state.battleStep === "damageCalculation")) {
+    state.pendingBattle.battleDamageOverrides = { ...state.pendingBattle.battleDamageOverrides, [player]: value };
+  }
   pushDuelLog(state, "battleDamage", player, undefined, String(value));
   return value;
 }
@@ -544,6 +547,7 @@ export function getDuelAttackTargets(state: DuelState, attackerUid: string): Due
 export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {
   const attacker = findCard(state, attackerUid);
   if (attacker && isAttackPrevented(state, attacker, createContinuousEffectContext(state))) throw new Error(`${attacker.name} cannot attack`);
+  state.battleDamage = { 0: 0, 1: 0 };
   const pendingTriggerCount = state.pendingTriggers.length;
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
     collectEvent: (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),

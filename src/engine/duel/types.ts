@@ -240,6 +240,7 @@ export interface DuelState {
   pendingBattle?: {
     attackerUid: string;
     targetUid?: string;
+    battleDamageOverrides?: Partial<Record<PlayerId, number>>;
   };
   prompt?: DuelPromptState;
   waitingFor?: PlayerId;

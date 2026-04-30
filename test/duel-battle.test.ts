@@ -3,6 +3,7 @@ import {
   applyResponse,
   canDuelCardAttack,
   createDuel,
+  changeDuelBattleDamage,
   damageDuelPlayer,
   declareDuelAttack,
   flipSummonDuelCard,
@@ -234,6 +235,55 @@ describe("duel battle", () => {
     expect(session.state.log.some((entry) => entry.detail === "Damage calculation quick resolved")).toBe(true);
     passAttackResponses(session);
     expect(queryPublicState(session).players[1].lifePoints).toBe(6200);
+  });
+
+  it("applies battle damage overrides from damage calculation effects", () => {
+    const session = createDuel({ seed: 36, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, {
+      id: "damage-calculation-override",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      property: 0x8000,
+      operation(ctx) {
+        changeDuelBattleDamage(session.state, 1, 600);
+        ctx.log("Damage calculation override resolved");
+      },
+    });
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.battleStep).toBe("damageCalculation");
+
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "damage-calculation-override");
+    expect(quick).toBeTruthy();
+    expect(applyResponse(session, quick!).ok).toBe(true);
+    expect(session.state.battleDamage[1]).toBe(600);
+    expect(session.state.pendingBattle?.battleDamageOverrides).toEqual({ 1: 600 });
+
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(queryPublicState(session).players[1].lifePoints).toBe(7400);
+    expect(session.state.battleDamage[1]).toBe(600);
+    expect(session.state.log.some((entry) => entry.detail === "Damage calculation override resolved")).toBe(true);
   });
 
   it("skips battle resolution when the attack target leaves before damage", () => {

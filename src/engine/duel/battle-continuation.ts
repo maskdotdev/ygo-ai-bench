@@ -9,10 +9,11 @@ export interface BattleContinuationHandlers {
 }
 
 export function resolvePendingBattle(state: DuelState, handlers: BattleContinuationHandlers): void {
+  const battleDamageOverrides = state.pendingBattle?.battleDamageOverrides;
   resolvePendingDuelBattle(state, {
     collectEvent: (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard),
     damagePlayer: (damagedPlayer, amount) => {
-      handlers.changeBattleDamage(state, damagedPlayer, amount);
+      handlers.changeBattleDamage(state, damagedPlayer, battleDamageOverrides?.[damagedPlayer] ?? amount);
       return handlers.damagePlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
     },
     destroyCard: (uid, controller, reason) => handlers.destroyCard(state, uid, controller, reason),
