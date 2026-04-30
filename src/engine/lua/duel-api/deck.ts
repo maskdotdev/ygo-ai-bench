@@ -25,6 +25,11 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
   });
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDraw"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, session.state.options.drawPerTurn);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetDrawCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
     lua.lua_pushboolean(state, topDeckUids(session, player, count).length >= count);

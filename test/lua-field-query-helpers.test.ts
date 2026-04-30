@@ -258,6 +258,31 @@ describe("Lua field and query helpers", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === discardedCode)?.location).toBe("graveyard");
   });
 
+  it("lets Lua scripts query turn draw counts", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Draw Count Card", kind: "monster" }];
+    const session = createDuel({ seed: 71, startingHandSize: 0, drawPerTurn: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("draw count self " .. Duel.GetDrawCount(0))
+      Debug.Message("draw count opponent " .. Duel.GetDrawCount(1))
+      Debug.Message("draw count default " .. Duel.GetDrawCount())
+      `,
+      "draw-count.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("draw count self 2");
+    expect(host.messages).toContain("draw count opponent 2");
+    expect(host.messages).toContain("draw count default 2");
+  });
+
   it("lets Lua scripts query field groups across both players and locations", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Self Grave", kind: "monster" },
