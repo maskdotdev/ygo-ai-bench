@@ -31,6 +31,8 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("GetMatchingTargetCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFieldGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetFieldGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushFusionMaterial(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetFusionMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFieldGroupCount(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetFieldGroupCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFieldGroupCount(state, session));
@@ -144,6 +146,12 @@ function pushFieldGroup(L: unknown, session: DuelSession): number {
   const selfMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const opponentMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
   pushGroupTable(L, fieldGroupUids(session, player, selfMask, opponentMask));
+  return 1;
+}
+
+function pushFusionMaterial(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  pushGroupTable(L, fieldGroupUids(session, player, 0x02 | 0x04, 0));
   return 1;
 }
 

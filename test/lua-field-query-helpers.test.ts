@@ -801,6 +801,7 @@ describe("Lua field and query helpers", () => {
       local c500 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local c600 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local c700 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 700), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("fusion material pool before " .. Duel.GetFusionMaterial(0):GetCount() .. "/" .. Duel.GetFusionMaterial(0):FilterCount(Card.IsOnField,nil))
       local fusion = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
       local synchro = Duel.GetFieldCard(0, LOCATION_EXTRA, 1)
       local xyz = Duel.GetFieldCard(0, LOCATION_EXTRA, 2)
@@ -816,6 +817,7 @@ describe("Lua field and query helpers", () => {
       Duel.SpecialSummon(c200, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
       Duel.SpecialSummon(c300, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
       Duel.SpecialSummon(c700, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
+      Debug.Message("fusion material pool after " .. Duel.GetFusionMaterial(0):GetCount() .. "/" .. Duel.GetFusionMaterial(0):FilterCount(Card.IsOnField,nil))
       Debug.Message("synchro target material " .. tostring(c300:IsCanBeSynchroMaterial(synchro)) .. "/" .. tostring(c200:IsCanBeSynchroMaterial(synchro)))
       Debug.Message("generic synchro target material " .. tostring(c100:IsCanBeSynchroMaterial(generic_synchro)) .. "/" .. tostring(c300:IsCanBeSynchroMaterial(generic_synchro)) .. "/" .. tostring(c500:IsCanBeSynchroMaterial(generic_synchro)))
       Debug.Message("synchro summonable " .. tostring(synchro:IsSynchroSummonable()) .. "/" .. tostring(synchro:IsSynchroSummonable(c300)) .. "/" .. tostring(synchro:IsSynchroSummonable(c200)))
@@ -837,12 +839,14 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("fusion self target material false");
     expect(host.messages).toContain("ritual target material true/false");
     expect(host.messages).toContain("ritual self target material false");
+    expect(host.messages).toContain("fusion material pool before 7/0");
     expect(host.messages).toContain("xyz target hand material false");
     expect(host.messages).toContain("synchro target material true/false");
     expect(host.messages).toContain("generic synchro target material true/true/false");
     expect(host.messages).toContain("synchro summonable true/true/false");
     expect(host.messages).toContain("generic synchro summonable true/false");
     expect(host.messages).toContain("xyz target field material true/false");
+    expect(host.messages).toContain("fusion material pool after 7/4");
     expect(host.messages).toContain("xyz summonable true/true/false");
     expect(host.messages).toContain("fielded xyz target material true/false");
     expect(host.messages).toContain("fielded xyz summonable false/false");
