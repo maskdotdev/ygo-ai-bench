@@ -395,10 +395,15 @@ describe("Lua continuous effects", () => {
       `
       local self_effect=Duel.IsPlayerAffectedByEffect(0,777001)
       local opp_effect=Duel.IsPlayerAffectedByEffect(1,777002)
+      local self_get=Duel.GetPlayerEffect(0,777001)
+      local opp_get=Duel.GetPlayerEffect(1,777002)
       Debug.Message("affected self " .. tostring(self_effect ~= nil) .. "/" .. self_effect:GetLabel())
       Debug.Message("affected opp " .. tostring(opp_effect ~= nil) .. "/" .. opp_effect:GetLabel())
+      Debug.Message("get player self " .. tostring(self_get ~= nil) .. "/" .. self_get:GetLabel())
+      Debug.Message("get player opp " .. tostring(opp_get ~= nil) .. "/" .. opp_get:GetLabel())
       Debug.Message("affected excluded " .. tostring(Duel.IsPlayerAffectedByEffect(1,777001)))
       Debug.Message("affected missing " .. tostring(Duel.IsPlayerAffectedByEffect(0,777003)))
+      Debug.Message("get player missing " .. tostring(Duel.GetPlayerEffect(0,777003)))
       `,
       "player-affected-check.lua",
     );
@@ -406,8 +411,22 @@ describe("Lua continuous effects", () => {
     expect(check.ok, check.error).toBe(true);
     expect(host.messages).toContain("affected self true/11");
     expect(host.messages).toContain("affected opp true/22");
+    expect(host.messages).toContain("get player self true/11");
+    expect(host.messages).toContain("get player opp true/22");
     expect(host.messages).toContain("affected excluded nil");
     expect(host.messages).toContain("affected missing nil");
+    expect(host.messages).toContain("get player missing nil");
+
+    moveDuelCard(session.state, source!.uid, "graveyard", 0);
+    const inactive = host.loadScript(
+      `
+      Debug.Message("get player inactive " .. tostring(Duel.GetPlayerEffect(0,777001)))
+      `,
+      "player-effect-inactive.lua",
+    );
+
+    expect(inactive.ok, inactive.error).toBe(true);
+    expect(host.messages).toContain("get player inactive nil");
   });
 
   it("registers Lua duel-level player effects", () => {

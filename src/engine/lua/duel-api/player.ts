@@ -28,6 +28,8 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummonMonster"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsPlayerAffectedByEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerAffectedByEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsPlayerAffectedByEffect(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("GetPlayerEffect"));
 }
 
 function pushCanNormalSummon(L: unknown, session: DuelSession): number {
