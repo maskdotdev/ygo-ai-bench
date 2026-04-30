@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { hasZoneSpace } from "#duel/card-state.js";
+import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { canChangeDuelCardPosition, canMoveDuelCardToLocation, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
 import { findIndestructibleEffect, isCardDisabled, isMaterialUsePrevented, type ContinuousEffectContextFactory, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
@@ -231,6 +231,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetEquipTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushEquipByEffectAndLimitRegister(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("EquipByEffectAndLimitRegister"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveOverlayCard(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckRemoveOverlayCard(state, session));
@@ -514,6 +516,34 @@ function pushCheckRemoveOverlayCard(L: unknown, session: DuelSession): number {
   const count = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
   lua.lua_pushboolean(L, Boolean(card && card.overlayUids.length >= count));
   return 1;
+}
+
+function pushEquipByEffectAndLimitRegister<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const target = readCard(L, session);
+  const player = lua.lua_isnumber(L, 3) ? normalizePlayer(lua.lua_tointeger(L, 3)) : target?.controller ?? session.state.turnPlayer;
+  const equipUid = readCardUid(L, 4);
+  const equip = equipUid ? session.state.cards.find((candidate) => candidate.uid === equipUid) : undefined;
+  const code = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : undefined;
+  if (!target || !equip || target.location !== "monsterZone" || !hasZoneSpace(session.state, player, "spellTrapZone")) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  try {
+    moveDuelCard(session.state, equip.uid, "spellTrapZone", player, duelReason.effect, player);
+    equip.equippedToUid = target.uid;
+    equip.position = "faceUpAttack";
+    equip.faceUp = true;
+    if (code !== undefined) registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: equip.uid }, code, 0x1fe0000, 0, 0);
+    pushDuelLog(session.state, "equip", player, equip.name, `Equipped to ${target.name}`);
+    setOperatedUids(hostState, [equip.uid]);
+    lua.lua_pushboolean(L, true);
+    return 1;
+  } catch {
+    setOperatedUids(hostState, []);
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
 }
 
 function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
