@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { hasZoneSpace } from "#duel/card-state.js";
 import { canMoveDuelCardToLocation, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
@@ -286,6 +287,10 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "normalSummon" && action.uid === card.uid)),
   );
   pushBooleanGetter(L, "IsSpecialSummonable", session, (card) => Boolean(card && canSpecialSummonDuelCard(session.state, card.uid, card.controller)));
+  pushBooleanGetter(L, "IsMSetable", session, (card) =>
+    Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "setMonster" && action.uid === card.uid)),
+  );
+  pushBooleanGetter(L, "IsSSetable", session, (card) => Boolean(card && card.location === "hand" && (card.kind === "spell" || card.kind === "trap") && hasZoneSpace(session.state, card.controller, "spellTrapZone")));
   pushMaterialPredicate(L, "IsCanBeFusionMaterial", session, "fusion");
   pushMaterialPredicate(L, "IsCanBeSynchroMaterial", session, "synchro");
   pushMaterialPredicate(L, "IsCanBeXyzMaterial", session, "xyz");
@@ -670,6 +675,8 @@ const cardFieldNames = [
   "IsCanBeEffectTarget",
   "IsSummonableCard",
   "IsSpecialSummonable",
+  "IsMSetable",
+  "IsSSetable",
   "IsCanBeFusionMaterial",
   "IsCanBeSynchroMaterial",
   "IsCanBeXyzMaterial",

@@ -415,10 +415,11 @@ describe("Lua field and query helpers", () => {
       { code: "200", name: "Fixture Spell", kind: "spell", typeFlags: 0x2 },
       { code: "300", name: "Tribute Monster", kind: "monster", level: 7 },
       { code: "400", name: "Extra Deck Monster", kind: "extra", typeFlags: 0x4000001, level: 2 },
+      { code: "500", name: "Fixture Trap", kind: "trap", typeFlags: 0x4 },
     ];
-    const session = createDuel({ seed: 87, startingHandSize: 3, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 87, startingHandSize: 4, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300"], extra: ["400"] },
+      0: { main: ["100", "200", "300", "500"], extra: ["400"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -429,9 +430,11 @@ describe("Lua field and query helpers", () => {
       local normal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local trap = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local extra = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
       Debug.Message("summonable predicates " .. tostring(normal:IsSummonableCard()) .. "/" .. tostring(spell:IsSummonableCard()) .. "/" .. tostring(tribute:IsSummonableCard()))
       Debug.Message("special summonable predicates " .. tostring(normal:IsSpecialSummonable()) .. "/" .. tostring(spell:IsSpecialSummonable()) .. "/" .. tostring(extra:IsSpecialSummonable()))
+      Debug.Message("setable predicates " .. tostring(normal:IsMSetable()) .. "/" .. tostring(spell:IsMSetable()) .. "/" .. tostring(tribute:IsMSetable()) .. "/" .. tostring(normal:IsSSetable()) .. "/" .. tostring(spell:IsSSetable()) .. "/" .. tostring(trap:IsSSetable()))
       `,
       "card-summon-predicates.lua",
     );
@@ -439,6 +442,7 @@ describe("Lua field and query helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("summonable predicates true/false/false");
     expect(host.messages).toContain("special summonable predicates true/false/false");
+    expect(host.messages).toContain("setable predicates true/false/true/false/true/true");
   });
 
   it("passes extra filter arguments through Lua matching helpers", () => {
