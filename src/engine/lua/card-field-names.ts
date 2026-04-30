@@ -78,6 +78,7 @@ export const cardFieldNames = [
   "IsNotAttribute",
   "IsOriginalAttribute",
   "IsNotOriginalAttribute",
+  "IsStatus",
   "IsFaceup",
   "IsFacedown",
   "GetLocation",

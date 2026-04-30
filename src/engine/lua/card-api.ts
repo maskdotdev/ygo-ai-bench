@@ -207,6 +207,7 @@ function installStatHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unkn
   pushNumberMatcher(L, "IsNotAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
   pushNumberMatcher(L, "IsNotOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
+  pushNumberMatcher(L, "IsStatus", session, (card, requested) => (cardStatusMask(session.state, card) & requested) !== 0);
 }
 
 function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
@@ -849,6 +850,21 @@ function cardTypeFlags(card: DuelCardInstance | undefined): number {
   if (card.kind === "spell") return 0x2;
   if (card.kind === "trap") return 0x4;
   return 0x1;
+}
+
+function cardStatusMask(state: DuelState, card: DuelCardInstance): number {
+  let mask = 0;
+  if (isCardDisabled(state, card, createMaterialCheckContext(state))) mask |= 0x1;
+  if (card.faceUp && (card.location === "monsterZone" || card.location === "spellTrapZone")) mask |= 0x400;
+  if ((card.data.level ?? 0) <= 0 && cardRank(card) === 0 && cardLink(card) === 0 && isMonsterLike(card)) mask |= 0x20;
+  if (card.summonType === "normal" || card.summonType === "tribute") mask |= 0x800;
+  if (card.summonType === "flip") mask |= 0x20000000;
+  if (card.summonType && card.summonType !== "normal" && card.summonType !== "tribute" && card.summonType !== "flip") mask |= 0x40000000;
+  if (card.summonType) mask |= 0x8;
+  if ((card.reason ?? 0) & duelReason.battle) mask |= 0x4000;
+  if (state.currentAttack?.targetUid === card.uid) mask |= 0x10000000;
+  if (state.chain.some((link) => link.sourceUid === card.uid)) mask |= 0x10000;
+  return mask;
 }
 
 function canTurnSet(card: DuelCardInstance): boolean {
