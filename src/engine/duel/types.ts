@@ -60,6 +60,7 @@ export interface DuelCardInstance {
   sequence: number;
   position: CardPosition;
   overlayUids: string[];
+  counters?: Record<number, number>;
   faceUp: boolean;
   previousLocation?: DuelLocation;
   previousController?: PlayerId;
@@ -303,6 +304,7 @@ export interface PublicDuelCard {
   position: CardPosition;
   faceUp: boolean;
   overlayCount: number;
+  counters?: Record<number, number>;
 }
 
 export interface PublicDuelState {

@@ -2,14 +2,16 @@ import fengari from "fengari";
 import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard } from "#duel/core.js";
 import { findCard, moveDuelCard } from "#duel/card-state.js";
 import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import { canRemoveDuelCounters, removeDuelCounters } from "#duel/counters.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
-import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
 export interface LuaDuelPlayerApiHostState {
   pushEffectTable: (state: unknown, id: number) => void;
+  operatedUids?: string[];
 }
 
 export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState): void {
@@ -30,6 +32,10 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("IsPlayerAffectedByEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsPlayerAffectedByEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetPlayerEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsCanRemoveCounter(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsCanRemoveCounter"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushRemoveCounter(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("RemoveCounter"));
 }
 
 function pushCanNormalSummon(L: unknown, session: DuelSession): number {
@@ -86,6 +92,20 @@ function pushIsPlayerAffectedByEffect(L: unknown, session: DuelSession, hostStat
     return 1;
   }
   return pushed;
+}
+
+function pushIsCanRemoveCounter(L: unknown, session: DuelSession): number {
+  const query = readCounterQuery(L, session);
+  lua.lua_pushboolean(L, canRemoveDuelCounters(session.state, query.player, query.selfLocations, query.opponentLocations, query.counterType, query.count));
+  return 1;
+}
+
+function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState): number {
+  const query = readCounterQuery(L, session);
+  const removed = removeDuelCounters(session.state, query.player, query.selfLocations, query.opponentLocations, query.counterType, query.count);
+  hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...removed);
+  lua.lua_pushinteger(L, removed.length > 0 ? query.count : 0);
+  return 1;
 }
 
 function canNormalSummon(session: DuelSession, player: PlayerId, uid: string | undefined, ignoreCount: boolean): boolean {
@@ -175,6 +195,27 @@ function pushPlayerMoveMatcher(L: unknown, fieldName: string, session: DuelSessi
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function readCounterQuery(L: unknown, session: DuelSession): {
+  player: PlayerId;
+  selfLocations: DuelLocation[];
+  opponentLocations: DuelLocation[];
+  counterType: number;
+  count: number;
+} {
+  return {
+    player: normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer),
+    selfLocations: counterLocations(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0),
+    opponentLocations: counterLocations(lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0),
+    counterType: lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0,
+    count: Math.max(0, lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 1),
+  };
+}
+
+function counterLocations(mask: number): DuelLocation[] {
+  if (mask === 1) return ["monsterZone", "spellTrapZone"];
+  return locationsFromMask(mask);
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {

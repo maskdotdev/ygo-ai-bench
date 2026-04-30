@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
 import { canChangeDuelCardPosition, canMoveDuelCardToLocation, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
 import { findIndestructibleEffect, isCardDisabled, isMaterialUsePrevented, type ContinuousEffectContextFactory, type MaterialUseKind } from "#duel/continuous-effects.js";
+import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
 import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions } from "#duel/summon.js";
@@ -221,6 +222,15 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("GetEquipTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveOverlayCard(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetCounter(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetCounter"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAddCounter(state, session));
+  lua.lua_setfield(L, -2, to_luastring("AddCounter"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushRemoveCounter(state, session));
+  lua.lua_setfield(L, -2, to_luastring("RemoveCounter"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsCanAddCounter(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsCanAddCounter"));
+  pushBooleanGetter(L, "HasCounter", session, (card) => Boolean(card && totalCounters(card) > 0));
   pushBooleanGetter(L, "IsFaceup", session, (card) => Boolean(card?.faceUp));
   pushBooleanGetter(L, "IsFacedown", session, (card) => Boolean(card && !card.faceUp));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -485,6 +495,39 @@ function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   return effects.length;
 }
 
+function pushGetCounter(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const counterType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  lua.lua_pushinteger(L, getDuelCardCounter(card, counterType));
+  return 1;
+}
+
+function pushAddCounter(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const counterType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const count = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
+  lua.lua_pushboolean(L, addDuelCardCounter(card, counterType, count));
+  return 1;
+}
+
+function pushRemoveCounter(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const hasPlayerArgument = lua.lua_gettop(L) >= 4;
+  const counterTypeIndex = hasPlayerArgument ? 3 : 2;
+  const countIndex = hasPlayerArgument ? 4 : 3;
+  const counterType = lua.lua_isnumber(L, counterTypeIndex) ? lua.lua_tointeger(L, counterTypeIndex) : 0;
+  const count = lua.lua_isnumber(L, countIndex) ? lua.lua_tointeger(L, countIndex) : 1;
+  lua.lua_pushboolean(L, removeDuelCardCounter(card, counterType, count));
+  return 1;
+}
+
+function pushIsCanAddCounter(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const count = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
+  lua.lua_pushboolean(L, canAddDuelCardCounter(card, count));
+  return 1;
+}
+
 function detachOverlayRange(session: DuelSession, card: DuelCardInstance, min: number, max: number, player: PlayerId, reason: number): DuelCardInstance[] {
   const count = Math.min(Math.max(min, 0), Math.max(max, 0), card.overlayUids.length);
   if (count < min) return [];
@@ -568,6 +611,10 @@ function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer
 
 function isMonsterLike(card: DuelCardInstance): boolean {
   return (cardTypeFlags(card) & 0x1) !== 0;
+}
+
+function totalCounters(card: DuelCardInstance): number {
+  return Object.values(card.counters ?? {}).reduce((total, count) => total + Math.max(0, count), 0);
 }
 
 function isPendulumCard(card: DuelCardInstance): boolean {
@@ -792,6 +839,11 @@ const cardFieldNames = [
   "GetEquipGroup",
   "GetEquipTarget",
   "RemoveOverlayCard",
+  "GetCounter",
+  "AddCounter",
+  "RemoveCounter",
+  "IsCanAddCounter",
+  "HasCounter",
   "IsPosition",
   "IsAttackPos",
   "IsDefensePos",

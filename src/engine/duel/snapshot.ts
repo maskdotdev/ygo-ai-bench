@@ -52,7 +52,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
         0: { ...session.state.players[0] },
         1: { ...session.state.players[1] },
       },
-      cards: session.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids] })),
+      cards: session.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids], ...(card.counters ? { counters: { ...card.counters } } : {}) })),
       effects: session.state.effects.flatMap(serializeEffect),
       chain: session.state.chain.map(copyChainLink),
       chainLimits: [],
@@ -87,7 +87,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
         0: { ...snapshot.state.players[0] },
         1: { ...snapshot.state.players[1] },
       },
-      cards: snapshot.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids] })),
+      cards: snapshot.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids], ...(card.counters ? { counters: { ...card.counters } } : {}) })),
       effects: snapshot.state.effects.flatMap((effect) => restoreEffect(effect, effectRegistry)),
       chain: snapshot.state.chain.map(copyChainLink),
       chainLimits: [],
@@ -173,5 +173,6 @@ function toPublicCard(card: DuelCardInstance): PublicDuelCard {
     position: card.position,
     faceUp: card.faceUp,
     overlayCount: card.overlayUids.length,
+    ...(card.counters ? { counters: { ...card.counters } } : {}),
   };
 }

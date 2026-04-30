@@ -947,6 +947,62 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("missing attack false");
   });
 
+  it("lets Lua scripts add and remove card counters", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Self Counter", kind: "monster" },
+      { code: "200", name: "Opponent Counter", kind: "monster" },
+      { code: "300", name: "Deck Counter", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 77, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const self = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const opponent = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    const deck = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    expect(self).toBeDefined();
+    expect(opponent).toBeDefined();
+    expect(deck).toBeDefined();
+    moveDuelCard(session.state, self!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, opponent!.uid, "monsterZone", 1);
+    moveDuelCard(session.state, deck!.uid, "deck", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local self = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local opp = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      local deck = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_DECK, 0, 1, 1, nil):GetFirst()
+      Debug.Message("add self " .. tostring(self:AddCounter(99, 2)) .. "/" .. self:GetCounter(99) .. "/" .. tostring(self:HasCounter()))
+      Debug.Message("add opp " .. tostring(opp:AddCounter(99, 1)) .. "/" .. opp:GetCounter(99))
+      Debug.Message("can add deck " .. tostring(deck:IsCanAddCounter(99, 1)) .. "/" .. tostring(deck:AddCounter(99, 1)))
+      Debug.Message("can remove self " .. tostring(Duel.IsCanRemoveCounter(0, 1, 0, 99, 2, REASON_COST)))
+      Debug.Message("can remove both " .. tostring(Duel.IsCanRemoveCounter(0, 1, 1, 99, 3, REASON_COST)))
+      Debug.Message("remove one " .. tostring(self:RemoveCounter(0, 99, 1, REASON_COST)) .. "/" .. self:GetCounter(99))
+      Debug.Message("duel remove " .. Duel.RemoveCounter(0, 1, 1, 99, 2, REASON_COST))
+      Debug.Message("duel operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("after counters " .. self:GetCounter(99) .. "/" .. opp:GetCounter(99))
+      `,
+      "card-counters.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("add self true/2/true");
+    expect(host.messages).toContain("add opp true/1");
+    expect(host.messages).toContain("can add deck false/false");
+    expect(host.messages).toContain("can remove self true");
+    expect(host.messages).toContain("can remove both true");
+    expect(host.messages).toContain("remove one true/1");
+    expect(host.messages).toContain("duel remove 2");
+    expect(host.messages).toContain("duel operated 2");
+    expect(host.messages).toContain("after counters 0/0");
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.cards.find((card) => card.uid === self!.uid)?.counters).toBeUndefined();
+  });
+
   it("lets Lua scripts check whether cards can change battle position", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Face-up Monster", kind: "monster" },
