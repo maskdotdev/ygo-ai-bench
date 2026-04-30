@@ -37,6 +37,11 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   pushBasicSummonHelper(L, "SSet", session, hostState, "setSpellTrap");
   lua.lua_pushcfunction(L, (state: unknown) => pushSummonOrSetResult(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SummonOrSet"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, true);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSummonCancelable"));
   pushSummonHelper(L, "FusionSummon", session, hostState, "FusionSummon");
   pushSummonHelper(L, "SynchroSummon", session, hostState, "SynchroSummon");
   pushSummonHelper(L, "XyzSummon", session, hostState, "XyzSummon");

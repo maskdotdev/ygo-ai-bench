@@ -6,6 +6,20 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua summon and release helpers", () => {
+  it("lets Lua scripts query whether summon selection can be cancelled", () => {
+    const session = createDuel({ seed: 156, startingHandSize: 0 });
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("summon cancelable " .. tostring(Duel.IsSummonCancelable()))
+      `,
+      "summon-cancelable.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("summon cancelable true");
+  });
+
   it("lets Lua scripts negate summoned cards", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Negated Summon", kind: "monster" },
