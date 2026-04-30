@@ -361,6 +361,15 @@ describe("Lua state helpers", () => {
       Debug.Message("sp elim grave " .. tostring(aux.SpElimFilter(grave_monster)))
       Debug.Message("sp elim faceup mzone " .. tostring(aux.SpElimFilter(faceup_monster, true)) .. "/" .. tostring(aux.SpElimFilter(faceup_monster, true, true)))
       Debug.Message("sp elim facedown mzone " .. tostring(aux.SpElimFilter(facedown_monster, true, true)) .. "/" .. tostring(aux.SpElimFilter(facedown_monster, false, true)))
+      local global_state={}
+      local global_count=0
+      aux.GlobalCheck(global_state,function()
+        global_count=global_count+1
+      end)
+      aux.GlobalCheck(global_state,function()
+        global_count=global_count+1
+      end)
+      Debug.Message("global check " .. tostring(global_state.global_check) .. "/" .. global_count)
       local all_cards = Duel.GetFieldGroup(0, LOCATION_HAND + LOCATION_MZONE, 0)
       local iter_count=0
       local iter_sum=0
@@ -414,6 +423,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("sp elim grave true");
     expect(host.messages).toContain("sp elim faceup mzone false/true");
     expect(host.messages).toContain("sp elim facedown mzone false/true");
+    expect(host.messages).toContain("global check true/1");
     expect(host.messages).toContain("aux next 3/600");
     expect(host.messages).toContain("aux next empty 0");
     expect(host.messages).toContain("aux select plain 2");

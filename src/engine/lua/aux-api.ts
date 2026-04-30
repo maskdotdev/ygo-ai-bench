@@ -35,9 +35,25 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setfield(L, -2, to_luastring("Next"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpElimFilter(state, readLuaError));
   lua.lua_setfield(L, -2, to_luastring("SpElimFilter"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGlobalCheck(state, readLuaError));
+  lua.lua_setfield(L, -2, to_luastring("GlobalCheck"));
   lua.lua_pushcfunction(L, (state: unknown) => pushNecroValleyFilter(state, readLuaError));
   lua.lua_setfield(L, -2, to_luastring("NecroValleyFilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
+}
+
+function pushGlobalCheck(L: unknown, readLuaError: (state: unknown) => string): number {
+  if (!lua.lua_istable(L, 1) || !lua.lua_isfunction(L, 2)) return 0;
+  lua.lua_getfield(L, 1, to_luastring("global_check"));
+  const alreadyChecked = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  if (alreadyChecked) return 0;
+  lua.lua_pushboolean(L, true);
+  lua.lua_setfield(L, 1, to_luastring("global_check"));
+  lua.lua_pushvalue(L, 2);
+  const status = lua.lua_pcall(L, 0, 0, 0);
+  if (status !== lua.LUA_OK) return lauxlib.luaL_error(L, to_luastring(readLuaError(L)));
+  return 0;
 }
 
 function pushFilterBoolFunction(L: unknown, readLuaError: (state: unknown) => string): number {
