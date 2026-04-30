@@ -204,6 +204,38 @@ describe("Lua field and query helpers", () => {
     expect(after).not.toEqual(before);
   });
 
+  it("lets Lua scripts shuffle a player's extra deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "900", name: "Extra A", kind: "extra" },
+      { code: "910", name: "Extra B", kind: "extra" },
+      { code: "920", name: "Extra C", kind: "extra" },
+      { code: "930", name: "Extra D", kind: "extra" },
+      { code: "940", name: "Extra E", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 93, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: [], extra: ["900", "910", "920", "930", "940"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const before = extraCodes(session, 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.ShuffleExtra(0)
+      Debug.Message("extra shuffled")
+      `,
+      "shuffle-extra.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("extra shuffled");
+    const after = extraCodes(session, 0);
+    expect([...after].sort()).toEqual([...before].sort());
+    expect(after).not.toEqual(before);
+  });
+
   it("lets Lua scripts create and summon tokens", () => {
     const cards: DuelCardData[] = [{ code: "123456", name: "Generated Token", kind: "monster", attack: 500, defense: 500 }];
     const session = createDuel({ seed: 13, startingHandSize: 0, cardReader: createCardReader(cards) });
@@ -1597,6 +1629,13 @@ describe("Lua field and query helpers", () => {
 function handCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
   return session.state.cards
     .filter((card) => card.controller === player && card.location === "hand")
+    .sort((a, b) => a.sequence - b.sequence)
+    .map((card) => card.code);
+}
+
+function extraCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
+  return session.state.cards
+    .filter((card) => card.controller === player && card.location === "extraDeck")
     .sort((a, b) => a.sequence - b.sequence)
     .map((card) => card.code);
 }

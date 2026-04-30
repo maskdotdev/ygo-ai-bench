@@ -124,6 +124,12 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ShuffleHand"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    shuffleExtra(session, player);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ShuffleExtra"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSortDeckSegment(state, session, hostState, "top"));
   lua.lua_setfield(L, -2, to_luastring("SortDecktop"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSortDeckSegment(state, session, hostState, "bottom"));
@@ -204,6 +210,12 @@ function shuffleDeck(session: DuelSession, player: PlayerId): void {
 function shuffleHand(session: DuelSession, player: PlayerId): void {
   const handCards = session.state.cards.filter((card) => card.controller === player && card.location === "hand").sort((a, b) => a.sequence - b.sequence);
   const shuffled = shuffle(handCards, `${session.state.seed}:lua-shuffle-hand:${player}:${session.state.log.length}`);
+  for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
+}
+
+function shuffleExtra(session: DuelSession, player: PlayerId): void {
+  const extraCards = session.state.cards.filter((card) => card.controller === player && card.location === "extraDeck").sort((a, b) => a.sequence - b.sequence);
+  const shuffled = shuffle(extraCards, `${session.state.seed}:lua-shuffle-extra:${player}:${session.state.log.length}`);
   for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
 }
 
