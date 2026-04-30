@@ -766,6 +766,41 @@ describe("Lua field and query helpers", () => {
     expect(failureSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "hand" });
   });
 
+  it("lets Lua scripts special summon through step and complete", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Step Summon A", kind: "monster", level: 4 },
+      { code: "200", name: "Step Summon B", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 94, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local first = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local second = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("step first " .. tostring(Duel.SpecialSummonStep(first, 0, 0, 0, false, false, POS_FACEUP_DEFENSE)))
+      Debug.Message("step second " .. tostring(Duel.SpecialSummonStep(second, 0, 0, 0, false, false, POS_FACEUP_ATTACK)))
+      Duel.SpecialSummonComplete()
+      Debug.Message("step operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("step repeat " .. tostring(Duel.SpecialSummonStep(first, 0, 0, 0, false, false, POS_FACEUP_ATTACK)))
+      `,
+      "special-summon-step-complete.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("step first true");
+    expect(host.messages).toContain("step second true");
+    expect(host.messages).toContain("step operated 2/100");
+    expect(host.messages).toContain("step repeat false");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", position: "faceUpDefense", summonType: "special" });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "monsterZone", position: "faceUpAttack", summonType: "special" });
+  });
+
   it("lets Lua scripts change battle positions for cards and groups", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Position A", kind: "monster" },

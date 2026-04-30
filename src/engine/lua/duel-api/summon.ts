@@ -4,11 +4,12 @@ import {
   fusionSummonDuelCard,
   linkSummonDuelCard,
   ritualSummonDuelCard,
+  specialSummonDuelCard,
   synchroSummonDuelCard,
   xyzSummonDuelCard,
 } from "#duel/core.js";
-import { readCardUid, readGroupUids } from "#lua/api-utils.js";
-import type { DuelSession } from "#duel/types.js";
+import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import type { CardPosition, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -16,6 +17,7 @@ type LuaSummonType = "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummo
 
 export interface LuaDuelSummonApiHostState {
   operatedUids: string[];
+  pendingSpecialSummonUids?: string[];
 }
 
 export function installDuelSummonApi(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): void {
@@ -27,6 +29,10 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   pushSummonHelper(L, "XyzSummon", session, hostState, "XyzSummon");
   pushSummonHelper(L, "LinkSummon", session, hostState, "LinkSummon");
   pushSummonHelper(L, "RitualSummon", session, hostState, "RitualSummon");
+  lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonStep(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("SpecialSummonStep"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonComplete(state, hostState));
+  lua.lua_setfield(L, -2, to_luastring("SpecialSummonComplete"));
 }
 
 function pushBasicSummonHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelSummonApiHostState, type: "normalSummon" | "setMonster" | "setSpellTrap"): void {
@@ -86,6 +92,34 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
   return 1;
 }
 
+function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  const uid = readCardUid(L, 1);
+  const target = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+  const targetPlayer = readOptionalPlayer(L, 4) ?? target?.controller;
+  const requestedPosition = lua.lua_isnumber(L, 7) ? positionFromMask(lua.lua_tointeger(L, 7)) : undefined;
+  if (!uid || !target || targetPlayer === undefined) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  try {
+    const summoned = specialSummonDuelCard(session.state, uid, targetPlayer);
+    if (requestedPosition) applySummonPosition(summoned, requestedPosition);
+    hostState.pendingSpecialSummonUids = [...(hostState.pendingSpecialSummonUids ?? []), uid];
+    setOperatedUids(hostState, hostState.pendingSpecialSummonUids);
+    lua.lua_pushboolean(L, true);
+    return 1;
+  } catch {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+}
+
+function pushSpecialSummonComplete(L: unknown, hostState: LuaDuelSummonApiHostState): number {
+  setOperatedUids(hostState, hostState.pendingSpecialSummonUids ?? []);
+  hostState.pendingSpecialSummonUids = [];
+  return 0;
+}
+
 function readFirstCardOrGroupUid(L: unknown, index: number): string | undefined {
   return readCardUid(L, index) ?? readGroupUids(L, index)[0];
 }
@@ -107,6 +141,18 @@ function readCardCollectionUids(L: unknown, index: number): string[] {
     lua.lua_pop(L, 1);
   }
   return uids;
+}
+
+function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
+  if (!lua.lua_isnumber(L, index)) return undefined;
+  const value = lua.lua_tointeger(L, index);
+  if (value !== 0 && value !== 1) return undefined;
+  return value;
+}
+
+function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, position: CardPosition): void {
+  card.position = position;
+  card.faceUp = position !== "faceDownDefense";
 }
 
 function setOperatedUids(hostState: LuaDuelSummonApiHostState, uids: string[]): void {
