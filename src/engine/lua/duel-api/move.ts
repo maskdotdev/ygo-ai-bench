@@ -33,6 +33,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   pushMoveToLocationHelper(L, "SendtoDeck", session, hostState, "deck", 4);
   pushMoveToLocationHelper(L, "SendtoExtraP", session, hostState, "extraDeck", 3);
   pushMoveToLocationHelper(L, "SendtoExtra", session, hostState, "extraDeck", 3);
+  lua.lua_pushcfunction(L, (state: unknown) => pushOverlay(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("Overlay"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveOverlayCard(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummon(state, session, hostState));
@@ -209,6 +211,34 @@ function pushMoveSequence(L: unknown, session: DuelSession, hostState: LuaDuelMo
   return 1;
 }
 
+function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const targetUid = readCardUid(L, 1);
+  const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
+  if (!target || target.location !== "monsterZone") {
+    setOperatedUids(hostState, []);
+    return 0;
+  }
+
+  const moved: string[] = [];
+  for (const uid of readCardOrGroupUids(L, 2)) {
+    if (uid === target.uid || target.overlayUids.includes(uid)) continue;
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!card || !canMoveDuelCardToLocation(session.state, uid, "overlay", duelReason.effect)) continue;
+    try {
+      removeOverlayReference(session.state, uid);
+      moveDuelCard(session.state, uid, "overlay", target.controller, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+      target.overlayUids.push(uid);
+      moved.push(uid);
+    } catch {
+      // EDOPro-style helpers expose successful moves through GetOperatedGroup.
+    }
+  }
+
+  setOperatedUids(hostState, moved);
+  if (moved.length > 0) pushDuelLog(session.state, "overlay", target.controller, target.name, `Attached ${moved.length} material(s)`);
+  return 0;
+}
+
 function pushRemoveOverlayCard(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
   const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
   const selfLocations = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
@@ -337,6 +367,12 @@ function swappableSequencePair(first: DuelCardInstance | undefined, second: Duel
 
 function canReorderFieldZone(location: DuelLocation): boolean {
   return location === "monsterZone" || location === "spellTrapZone";
+}
+
+function removeOverlayReference(state: DuelState, uid: string): void {
+  for (const card of state.cards) {
+    card.overlayUids = card.overlayUids.filter((materialUid) => materialUid !== uid);
+  }
 }
 
 function setOperatedUids(hostState: LuaDuelMoveApiHostState, uids: string[]): void {

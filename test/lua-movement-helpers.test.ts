@@ -218,6 +218,52 @@ describe("Lua movement helpers", () => {
     expect(materials.every((card) => session.state.cards.find((candidate) => candidate.uid === card.uid)?.location === "graveyard")).toBe(true);
   });
 
+  it("lets Lua scripts attach Xyz overlay materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Attach Material A", kind: "monster" },
+      { code: "300", name: "Attach Material B", kind: "monster" },
+      { code: "920", name: "Attach Xyz", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 31, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["920"] },
+      1: { main: ["100", "300"] },
+    });
+    startDuel(session);
+
+    const xyz = session.state.cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    const fieldMaterial = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(xyz).toBeTruthy();
+    expect(fieldMaterial).toBeTruthy();
+    moveDuelCard(session.state, xyz!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, fieldMaterial!.uid, "monsterZone", 0);
+    xyz!.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local xyz = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 920), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local materials = Duel.SelectMatchingCard(0, function(c) return c:IsCode(100) or c:IsCode(300) end, 0, LOCATION_HAND + LOCATION_MZONE, 0, 1, 2, nil)
+      Duel.Overlay(xyz, materials)
+      local overlays = xyz:GetOverlayGroup()
+      Debug.Message("attach overlay count " .. xyz:GetOverlayCount() .. "/" .. overlays:GetCount())
+      Debug.Message("attach operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("attach has 100 " .. tostring(overlays:IsExists(aux.FilterBoolFunction(Card.IsCode, 100), 1, nil)))
+      Debug.Message("attach has 300 " .. tostring(overlays:IsExists(aux.FilterBoolFunction(Card.IsCode, 300), 1, nil)))
+      `,
+      "overlay-attach.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("attach overlay count 2/2");
+    expect(host.messages).toContain("attach operated 2");
+    expect(host.messages).toContain("attach has 100 true");
+    expect(host.messages).toContain("attach has 300 true");
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toHaveLength(2);
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "100")?.location).toBe("overlay");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("overlay");
+  });
+
   it("lets Lua effects pay Xyz overlay detach costs before resolving", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Detach Material A", kind: "monster" },
