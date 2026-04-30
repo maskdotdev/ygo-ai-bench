@@ -113,12 +113,18 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberGetter(L, "GetBaseAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberMatcher(L, "IsAttack", session, (card, requested) => (card.data.attack ?? 0) === requested);
+  pushNumberMatcher(L, "IsAttackAbove", session, (card, requested) => (card.data.attack ?? 0) >= requested);
+  pushNumberMatcher(L, "IsAttackBelow", session, (card, requested) => (card.data.attack ?? 0) <= requested);
   pushNumberGetter(L, "GetDefense", session, (card) => card?.data.defense ?? 0);
   pushNumberGetter(L, "GetBaseDefense", session, (card) => card?.data.defense ?? 0);
   pushNumberMatcher(L, "IsDefense", session, (card, requested) => (card.data.defense ?? 0) === requested);
+  pushNumberMatcher(L, "IsDefenseAbove", session, (card, requested) => (card.data.defense ?? 0) >= requested);
+  pushNumberMatcher(L, "IsDefenseBelow", session, (card, requested) => (card.data.defense ?? 0) <= requested);
   pushNumberGetter(L, "GetLevel", session, (card) => card?.data.level ?? 0);
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
   pushNumberMatcher(L, "IsLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
+  pushNumberMatcher(L, "IsLevelAbove", session, (card, requested) => (card.data.level ?? 0) >= requested);
+  pushNumberMatcher(L, "IsLevelBelow", session, (card, requested) => (card.data.level ?? 0) <= requested);
   pushNumberMatcher(L, "IsOriginalLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
   pushNumberGetter(L, "GetRank", session, (card) => cardRank(card));
   pushNumberGetter(L, "GetOriginalRank", session, (card) => cardRank(card));
@@ -503,12 +509,18 @@ const cardFieldNames = [
   "GetAttack",
   "GetBaseAttack",
   "IsAttack",
+  "IsAttackAbove",
+  "IsAttackBelow",
   "GetDefense",
   "GetBaseDefense",
   "IsDefense",
+  "IsDefenseAbove",
+  "IsDefenseBelow",
   "GetLevel",
   "GetOriginalLevel",
   "IsLevel",
+  "IsLevelAbove",
+  "IsLevelBelow",
   "IsOriginalLevel",
   "GetRank",
   "GetOriginalRank",
