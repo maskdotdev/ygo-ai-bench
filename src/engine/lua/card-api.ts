@@ -89,6 +89,7 @@ function installStatHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unkn
   pushNumberMatcher(L, "IsOriginalAttackBelow", session, (card, requested) => (card.data.attack ?? 0) <= requested);
   pushNumberGetter(L, "GetDefense", session, (card) => card?.data.defense ?? 0);
   pushNumberGetter(L, "GetBaseDefense", session, (card) => card?.data.defense ?? 0);
+  pushBooleanGetter(L, "HasNonZeroDefense", session, (card) => Boolean(card && (card.data.defense ?? 0) !== 0));
   pushNumberMatcher(L, "IsDefense", session, (card, requested) => (card.data.defense ?? 0) === requested);
   pushNumberMatcher(L, "IsOriginalDefense", session, (card, requested) => (card.data.defense ?? 0) === requested);
   pushNumberMatcher(L, "IsDefenseAbove", session, (card, requested) => (card.data.defense ?? 0) >= requested);

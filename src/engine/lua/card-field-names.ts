@@ -32,6 +32,7 @@ export const cardFieldNames = [
   "IsOriginalAttackBelow",
   "GetDefense",
   "GetBaseDefense",
+  "HasNonZeroDefense",
   "IsDefense",
   "IsOriginalDefense",
   "IsDefenseAbove",

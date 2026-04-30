@@ -1180,8 +1180,8 @@ describe("Lua state helpers", () => {
 
   it("lets Lua scripts check whether cards have non-zero attack", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Nonzero Attack", kind: "monster", attack: 1500 },
-      { code: "200", name: "Zero Attack", kind: "monster", attack: 0 },
+      { code: "100", name: "Nonzero Attack", kind: "monster", attack: 1500, defense: 1200 },
+      { code: "200", name: "Zero Attack", kind: "monster", attack: 0, defense: 0 },
       { code: "300", name: "Missing Attack", kind: "monster" },
     ];
     const session = createDuel({ seed: 70, startingHandSize: 3, cardReader: createCardReader(cards) });
@@ -1200,6 +1200,9 @@ describe("Lua state helpers", () => {
       Debug.Message("nonzero attack " .. tostring(positive:HasNonZeroAttack()))
       Debug.Message("zero attack " .. tostring(zero:HasNonZeroAttack()))
       Debug.Message("missing attack " .. tostring(missing:HasNonZeroAttack()))
+      Debug.Message("nonzero defense " .. tostring(positive:HasNonZeroDefense()))
+      Debug.Message("zero defense " .. tostring(zero:HasNonZeroDefense()))
+      Debug.Message("missing defense " .. tostring(missing:HasNonZeroDefense()))
       `,
       "has-nonzero-attack.lua",
     );
@@ -1208,6 +1211,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("nonzero attack true");
     expect(host.messages).toContain("zero attack false");
     expect(host.messages).toContain("missing attack false");
+    expect(host.messages).toContain("nonzero defense true");
+    expect(host.messages).toContain("zero defense false");
+    expect(host.messages).toContain("missing defense false");
   });
 
   it("lets Lua scripts add and remove card counters", () => {
