@@ -1223,6 +1223,7 @@ describe("Lua state helpers", () => {
       Debug.Message("add self " .. tostring(self:AddCounter(99, 2)) .. "/" .. self:GetCounter(99) .. "/" .. tostring(self:HasCounter()))
       Debug.Message("add opp " .. tostring(opp:AddCounter(99, 1)) .. "/" .. opp:GetCounter(99))
       Debug.Message("can add deck " .. tostring(deck:IsCanAddCounter(99, 1)) .. "/" .. tostring(deck:AddCounter(99, 1)))
+      Debug.Message("duel can add " .. tostring(Duel.IsCanAddCounter(0, 99, 1, self)) .. "/" .. tostring(Duel.IsCanAddCounter(0, 99, 1, deck)) .. "/" .. tostring(Duel.IsCanAddCounter(0, 99, 1)))
       Debug.Message("can remove self " .. tostring(Duel.IsCanRemoveCounter(0, 1, 0, 99, 2, REASON_COST)))
       Debug.Message("can remove both " .. tostring(Duel.IsCanRemoveCounter(0, 1, 1, 99, 3, REASON_COST)))
       Debug.Message("duel counter totals " .. Duel.GetCounter(0, 1, 0, 99) .. "/" .. Duel.GetCounter(0, 1, 1, 99))
@@ -1238,6 +1239,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("add self true/2/true");
     expect(host.messages).toContain("add opp true/1");
     expect(host.messages).toContain("can add deck false/false");
+    expect(host.messages).toContain("duel can add true/false/true");
     expect(host.messages).toContain("can remove self true");
     expect(host.messages).toContain("can remove both true");
     expect(host.messages).toContain("duel counter totals 2/3");

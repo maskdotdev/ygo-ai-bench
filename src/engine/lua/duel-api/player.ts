@@ -2,7 +2,7 @@ import fengari from "fengari";
 import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard } from "#duel/core.js";
 import { findCard, moveDuelCard } from "#duel/card-state.js";
 import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
-import { canRemoveDuelCounters, getDuelCardCounter, removeDuelCounters } from "#duel/counters.js";
+import { canAddDuelCardCounter, canRemoveDuelCounters, getDuelCardCounter, removeDuelCounters } from "#duel/counters.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
@@ -39,6 +39,8 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("GetPlayerEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsCanRemoveCounter(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsCanRemoveCounter"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsCanAddCounter(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsCanAddCounter"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveCounter(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RemoveCounter"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetCounter(state, session));
@@ -117,6 +119,18 @@ function pushIsPlayerAffectedByEffect(L: unknown, session: DuelSession, hostStat
 function pushIsCanRemoveCounter(L: unknown, session: DuelSession): number {
   const query = readCounterQuery(L, session);
   lua.lua_pushboolean(L, canRemoveDuelCounters(session.state, query.player, query.selfLocations, query.opponentLocations, query.counterType, query.count));
+  return 1;
+}
+
+function pushIsCanAddCounter(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const count = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
+  const uids = readCardOrGroupUids(L, 4);
+  const cards =
+    uids.length > 0
+      ? uids.map((uid) => findCard(session.state, uid)).filter((card): card is DuelCardInstance => card !== undefined)
+      : session.state.cards.filter((card) => card.controller === player && (card.location === "monsterZone" || card.location === "spellTrapZone"));
+  lua.lua_pushboolean(L, cards.some((card) => canAddDuelCardCounter(card, count)));
   return 1;
 }
 
