@@ -8,12 +8,64 @@ import {
   startDuel,
   xyzSummonDuelCard,
 } from "#duel/core.js";
-import { moveDuelCard } from "#duel/card-state.js";
+import { getCards, moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua movement helpers", () => {
+  it("lets Lua scripts move cards to the deck bottom", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Bottom A", kind: "monster" },
+      { code: "200", name: "Bottom B", kind: "monster" },
+      { code: "300", name: "Bottom C", kind: "monster" },
+      { code: "400", name: "Bottom D", kind: "monster" },
+      { code: "500", name: "Bottom E", kind: "monster" },
+      { code: "900", name: "Bottom Grave", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 72, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500", "900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const graveCard = session.state.cards.find((card) => card.code === "900");
+    expect(graveCard).toBeDefined();
+    moveDuelCard(session.state, graveCard!.uid, "graveyard", 0);
+    const initialDeckOrder = getCards(session.state, 0, "deck").map((card) => card.code);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("bottom number " .. Duel.MoveToDeckBottom(1, 0))
+      Debug.Message("bottom number operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      local top2 = Duel.GetDecktopGroup(0, 2)
+      Debug.Message("bottom group " .. Duel.MoveToDeckBottom(top2, 0))
+      Debug.Message("bottom group operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      local grave = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("bottom grave " .. Duel.MoveToDeckBottom(grave, 0, REASON_EFFECT))
+      Debug.Message("bottom grave operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "move-to-deck-bottom.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("bottom number 1");
+    expect(host.messages).toContain(`bottom number operated ${initialDeckOrder[0]}`);
+    expect(host.messages).toContain("bottom group 2");
+    expect(host.messages).toContain(`bottom group operated 2/${initialDeckOrder[1]}`);
+    expect(host.messages).toContain("bottom grave 1");
+    expect(host.messages).toContain("bottom grave operated 900");
+    expect(getCards(session.state, 0, "deck").map((card) => card.code)).toEqual([
+      ...initialDeckOrder.slice(3),
+      initialDeckOrder[0]!,
+      initialDeckOrder[1]!,
+      initialDeckOrder[2]!,
+      "900",
+    ]);
+  });
+
   it("registers Lua equip spell procedures", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Procedure Target", kind: "monster" },
