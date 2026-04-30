@@ -9,6 +9,7 @@ import {
   restoreDuel,
   serializeDuel,
   sendDuelCardToGraveyard,
+  specialSummonDuelCard,
   startDuel,
 } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
@@ -232,6 +233,67 @@ describe("duel rollback", () => {
     expect(session.state.cards.find((card) => card.uid === triggerSource!.uid)?.location).toBe("hand");
     expect(session.state.cards.find((card) => card.uid === moved!.uid)?.location).toBe("hand");
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateTrigger" && action.effectId === "failed-trigger-operation")).toBe(true);
+  });
+
+  it("rolls back mandatory trigger count pruning after failed activation", () => {
+    const session = createDuel({ seed: 95, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const secondSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(summoned).toBeTruthy();
+    expect(firstSource).toBeTruthy();
+    expect(secondSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "failed-mandatory-shared-count",
+      sourceUid: firstSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      optional: false,
+      range: ["hand"],
+      countLimit: 1,
+      countLimitCode: 0x5350,
+      operation() {
+        throw new Error("mandatory shared count operation failed");
+      },
+    });
+    registerEffect(session, {
+      id: "sibling-mandatory-shared-count",
+      sourceUid: secondSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      optional: false,
+      range: ["hand"],
+      countLimit: 1,
+      countLimitCode: 0x5350,
+      operation(ctx) {
+        ctx.log("Sibling mandatory shared count resolved");
+      },
+    });
+
+    specialSummonDuelCard(session.state, summoned!.uid);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["failed-mandatory-shared-count", "sibling-mandatory-shared-count"]);
+    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "failed-mandatory-shared-count");
+    expect(trigger).toBeTruthy();
+    const result = applyResponse(session, trigger!);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("mandatory shared count operation failed");
+    expect(session.state.usedCountKeys).toHaveLength(0);
+    expect(session.state.chain).toHaveLength(0);
+    expect(session.state.pendingTriggers.map((pending) => pending.effectId)).toEqual(["failed-mandatory-shared-count", "sibling-mandatory-shared-count"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([
+      "failed-mandatory-shared-count",
+      "sibling-mandatory-shared-count",
+    ]);
   });
 
   it("rolls back failed fusion summon material moves from responses", () => {
