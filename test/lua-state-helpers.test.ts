@@ -693,6 +693,7 @@ describe("Lua state helpers", () => {
     const result = host.loadScript(
       `
       observed_stringid = aux.Stringid(100, 2)
+      Debug.Message("players count " .. Duel.GetPlayersCount(0) .. "/" .. Duel.GetPlayersCount(1))
       Debug.Message("true count " .. Duel.GetMatchingGroupCount(aux.TRUE, 0, LOCATION_HAND, 0, nil))
       Debug.Message("false count " .. Duel.GetMatchingGroupCount(aux.FALSE, 0, LOCATION_HAND, 0, nil))
       local wrapped = aux.NecroValleyFilter(aux.FilterBoolFunction(Card.IsCode, 100))
@@ -848,6 +849,7 @@ describe("Lua state helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.getGlobalNumber("observed_stringid")).toBe(1602);
+    expect(host.messages).toContain("players count 1/1");
     expect(host.messages).toContain("true count 1");
     expect(host.messages).toContain("false count 0");
     expect(host.messages).toContain("wrapped count 0");
