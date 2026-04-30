@@ -13,6 +13,98 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua continuous effects", () => {
+  it("returns active Lua effect tables from Card.IsHasEffect", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Has Effect Field Source", kind: "monster" },
+      { code: "200", name: "Has Effect Self Source", kind: "monster" },
+      { code: "300", name: "Has Effect Target", kind: "monster" },
+      { code: "400", name: "Has Effect Hand Card", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 69, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const self = session.state.cards.find((card) => card.code === "200");
+    const target = session.state.cards.find((card) => card.code === "300");
+    const hand = session.state.cards.find((card) => card.code === "400");
+    expect(source).toBeTruthy();
+    expect(self).toBeTruthy();
+    expect(target).toBeTruthy();
+    expect(hand).toBeTruthy();
+    for (const card of [source!, self!, target!]) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+      card.faceUp = true;
+      card.position = "faceUpAttack";
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_CANNOT_ATTACK)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(1,0)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("has effect condition " .. e:GetHandler():GetCode())
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+      `,
+      "has-effect-register.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const check = host.loadScript(
+      `
+      local self=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local self_effect=self:IsHasEffect(EFFECT_INDESTRUCTABLE_EFFECT)
+      local field_effect=target:IsHasEffect(EFFECT_CANNOT_ATTACK)
+      local missing_effect=hand:IsHasEffect(EFFECT_INDESTRUCTABLE_EFFECT)
+      Debug.Message("self effect handler " .. self_effect:GetHandler():GetCode())
+      Debug.Message("field effect handler " .. field_effect:GetHandler():GetCode())
+      Debug.Message("missing effect " .. tostring(missing_effect))
+      `,
+      "has-effect-check.lua",
+    );
+    expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain("self effect handler 200");
+    expect(host.messages).toContain("field effect handler 100");
+    expect(host.messages).toContain("missing effect nil");
+    expect(host.messages).toContain("has effect condition 100");
+
+    moveDuelCard(session.state, source!.uid, "graveyard", 0);
+    const inactive = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local inactive_effect=target:IsHasEffect(EFFECT_CANNOT_ATTACK)
+      Debug.Message("inactive field effect " .. tostring(inactive_effect))
+      `,
+      "has-effect-inactive.lua",
+    );
+    expect(inactive.ok, inactive.error).toBe(true);
+    expect(host.messages).toContain("inactive field effect nil");
+  });
+
   it("applies Lua continuous special summon restrictions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Restricted Procedure Source", kind: "monster" },

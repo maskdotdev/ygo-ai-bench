@@ -20,11 +20,15 @@ const { lua, to_luastring } = fengari;
 
 export interface LuaCardApiEffectRecord {
   id: number;
+  typeFlags?: number;
+  sourceUid?: string;
+  code?: number;
 }
 
 export interface LuaCardApiState<EffectRecord extends LuaCardApiEffectRecord> {
   effects: Map<number, EffectRecord>;
   operatedUids?: string[];
+  pushEffectTable: (state: unknown, id: number) => void;
 }
 
 export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
@@ -318,6 +322,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsHasEffect(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("IsHasEffect"));
   pushBooleanGetter(L, "IsNegatable", session, (card) => Boolean(card && isNegatableCard(session.state, card)));
   pushBooleanGetter(L, "IsNegatableMonster", session, (card) => Boolean(card && isMonsterLike(card) && isNegatableCard(session.state, card)));
   pushBooleanGetter(L, "IsSummonableCard", session, (card) =>
@@ -460,6 +466,19 @@ function pushRemoveOverlayCard<EffectRecord extends LuaCardApiEffectRecord>(L: u
   return 1;
 }
 
+function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const card = readCard(L, session);
+  const code = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  if (!card || code === undefined) return 0;
+  const effects = matchingLuaEffects(session.state, card, code, hostState);
+  if (effects.length === 0) {
+    lua.lua_pushnil(L);
+    return 1;
+  }
+  for (const effect of effects) hostState.pushEffectTable(L, effect.id);
+  return effects.length;
+}
+
 function detachOverlayRange(session: DuelSession, card: DuelCardInstance, min: number, max: number, player: PlayerId, reason: number): DuelCardInstance[] {
   const count = Math.min(Math.max(min, 0), Math.max(max, 0), card.overlayUids.length);
   if (count < min) return [];
@@ -496,6 +515,43 @@ function canMoveCardToDeckOrExtraAsCost(state: DuelState, card: DuelCardInstance
 
 function isNegatableCard(state: DuelState, card: DuelCardInstance): boolean {
   return card.faceUp && (card.location === "monsterZone" || card.location === "spellTrapZone") && !isCardDisabled(state, card, createMaterialCheckContext(state));
+}
+
+function matchingLuaEffects<EffectRecord extends LuaCardApiEffectRecord>(
+  state: DuelState,
+  card: DuelCardInstance,
+  code: number,
+  hostState: LuaCardApiState<EffectRecord>,
+): EffectRecord[] {
+  const matches: EffectRecord[] = [];
+  const seen = new Set<number>();
+  for (const luaEffect of hostState.effects.values()) {
+    if (luaEffect.code !== code || seen.has(luaEffect.id)) continue;
+    const duelEffect = state.effects.find((candidate) => candidate.id === luaEffectDuelId(luaEffect) && candidate.sourceUid === luaEffect.sourceUid);
+    const source = duelEffect ? state.cards.find((candidate) => candidate.uid === duelEffect.sourceUid) : undefined;
+    if (!duelEffect || !source || !isEffectActiveForCard(duelEffect, luaEffect, source, card, state)) continue;
+    seen.add(luaEffect.id);
+    matches.push(luaEffect);
+  }
+  return matches;
+}
+
+function luaEffectDuelId(effect: LuaCardApiEffectRecord): string {
+  return `lua-${effect.id}${effect.code === undefined ? "" : `-${effect.code}`}`;
+}
+
+function isEffectActiveForCard(effect: DuelEffectDefinition, luaEffect: LuaCardApiEffectRecord, source: DuelCardInstance, card: DuelCardInstance, state: DuelState): boolean {
+  if (!effect.range.includes(source.location)) return false;
+  if (!continuousEffectAffectsCard(effect, luaEffect, source, card)) return false;
+  return !effect.canActivate || effect.canActivate(createMaterialCheckContext(state)(effect, source, card));
+}
+
+function continuousEffectAffectsCard(effect: DuelEffectDefinition, luaEffect: LuaCardApiEffectRecord, source: DuelCardInstance, card: DuelCardInstance): boolean {
+  if (source.uid === card.uid) return true;
+  if (((luaEffect.typeFlags ?? 0) & 0x1) !== 0) return false;
+  if ((effect.property ?? 0) === 0 || ((effect.property ?? 0) & 0x800) === 0) return source.controller === card.controller;
+  const [selfTarget = 0, opponentTarget = 0] = effect.targetRange ?? [1, 0];
+  return source.controller === card.controller ? selfTarget !== 0 : opponentTarget !== 0;
 }
 
 function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer: PlayerId): boolean {
@@ -788,6 +844,7 @@ const cardFieldNames = [
   "IsRelateToEffect",
   "IsRelateToBattle",
   "IsCanBeEffectTarget",
+  "IsHasEffect",
   "IsNegatable",
   "IsNegatableMonster",
   "IsSummonableCard",
