@@ -22,6 +22,11 @@ export function installDuelFlagApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsDeckMaster"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushnil(state);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetDeckMaster"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const flag = lua.lua_isnumber(state, 1) ? Math.trunc(lua.lua_tonumber(state, 1)) : 0;
     if (flag > 0) session.state.globalFlags = Number(BigInt(session.state.globalFlags) | BigInt(flag));
     return 0;
