@@ -56,8 +56,8 @@ import {
   getDuelAttackTargets as getDuelAttackTargetsRule,
   negateDuelAttack as negateDuelAttackRule,
   positionChangeActions,
-  resolvePendingDuelBattle as resolvePendingDuelBattleRule,
 } from "#duel/battle.js";
+import { resolvePendingBattle, resolvePendingBattleIfReady, type BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
   isAttackPrevented,
   isMaterialUsePrevented,
@@ -120,6 +120,13 @@ const activationHandlers: DuelActivationHandlers = {
   specialSummonCard: specialSummonDuelCard,
 };
 
+const battleContinuationHandlers: BattleContinuationHandlers = {
+  collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
+  changeBattleDamage: changeDuelBattleDamage,
+  damagePlayer: damageDuelPlayer,
+  destroyCard: destroyDuelCard,
+};
+
 const responseHandlers: DuelResponseHandlers = {
   getLegalActions,
   normalSummon(state, player, uid) {
@@ -146,7 +153,7 @@ const responseHandlers: DuelResponseHandlers = {
   },
   declineTrigger(session, player, triggerId) {
     declineDuelPendingTrigger(session, player, triggerId);
-    resolvePendingBattleIfReady(session.state);
+    resolvePendingBattleIfReady(session.state, battleContinuationHandlers);
   },
   flipSummon: flipSummonDuelCard,
   changePosition: changeDuelCardPosition,
@@ -529,7 +536,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
     },
     destroyCard: (uid, controller, reason) => destroyDuelCard(state, uid, controller, reason),
   });
-  if (state.pendingTriggers.length === pendingTriggerCount) resolvePendingBattle(state);
+  if (state.pendingTriggers.length === pendingTriggerCount) resolvePendingBattle(state, battleContinuationHandlers);
 }
 
 export function negateDuelAttack(state: DuelState): boolean {
@@ -905,24 +912,7 @@ function resolveChain(state: DuelState): void {
   state.chainPasses = [];
   state.status = "awaiting";
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
-  resolvePendingBattleIfReady(state);
-}
-
-function resolvePendingBattle(state: DuelState): void {
-  resolvePendingDuelBattleRule(state, {
-    collectEvent: (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
-    damagePlayer: (damagedPlayer, amount) => {
-      changeDuelBattleDamage(state, damagedPlayer, amount);
-      return damageDuelPlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
-    },
-    destroyCard: (uid, controller, reason) => destroyDuelCard(state, uid, controller, reason),
-  });
-  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
-}
-
-function resolvePendingBattleIfReady(state: DuelState): void {
-  if (!state.pendingBattle || state.chain.length || state.pendingTriggers.length) return;
-  resolvePendingBattle(state);
+  resolvePendingBattleIfReady(state, battleContinuationHandlers);
 }
 
 function clearStaleChainLimits(state: DuelState): void {
