@@ -309,7 +309,7 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
     return 2;
   });
   pushEffectMethod(L, effects, "SetReset", (state, effect) => {
-    const flags = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const flags = lua.lua_isnumber(state, 2) ? Math.trunc(lua.lua_tonumber(state, 2)) : 0;
     const count = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
     effect.reset = count === undefined ? { flags } : { flags, count };
     return 0;

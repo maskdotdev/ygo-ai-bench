@@ -69,7 +69,7 @@ import {
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
-import { pruneResetEffectsAfterPhase } from "#duel/effect-reset.js";
+import { pruneResetEffectsAfterChain, pruneResetEffectsAfterPhase } from "#duel/effect-reset.js";
 import {
   applyDestroyPrevention,
   applyDestroyReplacement,
@@ -836,6 +836,7 @@ function resolveChain(state: DuelState): void {
   } finally {
     clearChainLimits(state);
   }
+  pruneResetEffectsAfterChain(state);
   state.chainPasses = [];
   state.status = "awaiting";
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;

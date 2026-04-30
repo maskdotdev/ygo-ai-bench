@@ -7,6 +7,7 @@ const resetToHand = 0x200000;
 const resetToDeck = 0x400000;
 const resetLeave = 0x800000;
 const resetPhase = 0x40000000;
+const resetChain = 0x80000000;
 const destinationResetFlags = resetToGrave | resetRemove | resetToHand | resetToDeck;
 const phaseFlags: Record<DuelPhase, number> = {
   draw: 0x1,
@@ -20,7 +21,7 @@ const phaseFlags: Record<DuelPhase, number> = {
 export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInstance): void {
   state.effects = state.effects.filter((effect) => {
     if (effect.sourceUid !== card.uid) return true;
-    const flags = effect.reset?.flags ?? 0;
+    const flags = normalizeResetFlags(effect.reset?.flags ?? 0);
     if ((flags & resetEvent) === 0) return true;
     if ((flags & resetLeave) !== 0 && card.previousLocation !== card.location) return false;
     if ((flags & destinationResetFlags) !== 0) return !matchesDestinationReset(flags, card);
@@ -33,13 +34,31 @@ export function pruneResetEffectsAfterPhase(state: DuelState, phase: DuelPhase):
   const phaseFlag = phaseFlags[phase];
   state.effects = state.effects.filter((effect) => {
     const reset = effect.reset;
-    if (!reset || (reset.flags & resetPhase) === 0 || (reset.flags & phaseFlag) === 0) return true;
+    const flags = normalizeResetFlags(reset?.flags ?? 0);
+    if (!reset || (flags & resetPhase) === 0 || (flags & phaseFlag) === 0) return true;
     if (reset.count !== undefined && reset.count > 1) {
       reset.count -= 1;
       return true;
     }
     return false;
   });
+}
+
+export function pruneResetEffectsAfterChain(state: DuelState): void {
+  state.effects = state.effects.filter((effect) => {
+    const reset = effect.reset;
+    const flags = normalizeResetFlags(reset?.flags ?? 0);
+    if (!reset || (flags & resetChain) === 0) return true;
+    if (reset.count !== undefined && reset.count > 1) {
+      reset.count -= 1;
+      return true;
+    }
+    return false;
+  });
+}
+
+function normalizeResetFlags(flags: number): number {
+  return flags >>> 0;
 }
 
 function matchesDestinationReset(flags: number, card: DuelCardInstance): boolean {

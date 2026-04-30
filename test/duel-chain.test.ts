@@ -46,6 +46,93 @@ describe("duel chains", () => {
     expect(result.state.log.some((entry) => entry.detail.includes("Sent itself"))).toBe(true);
   });
 
+  it("removes reset-chain effects after their chain resolves", () => {
+    const session = createDuel({ seed: 127, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "reset-after-chain",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      reset: { flags: 0x80000000 },
+      operation(ctx) {
+        ctx.log("Reset chain effect resolved");
+      },
+    });
+
+    const effect = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "reset-after-chain");
+    expect(effect).toBeTruthy();
+    const result = applyResponse(session, effect!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.chain).toHaveLength(0);
+    expect(result.state.log.some((entry) => entry.detail === "Reset chain effect resolved")).toBe(true);
+    expect(session.state.effects).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "reset-after-chain")).toBe(false);
+  });
+
+  it("counts resolved chains before removing reset-chain effects", () => {
+    const session = createDuel({ seed: 128, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const counted = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const starter = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(counted).toBeTruthy();
+    expect(starter).toBeTruthy();
+    registerEffect(session, {
+      id: "counted-reset-chain",
+      sourceUid: counted!.uid,
+      controller: 0,
+      event: "continuous",
+      range: ["hand"],
+      reset: { flags: 0x80000000, count: 2 },
+      operation() {},
+    });
+    registerEffect(session, {
+      id: "first-chain-starter",
+      sourceUid: starter!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("First reset chain counter");
+      },
+    });
+
+    const starterAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "first-chain-starter");
+    expect(starterAction).toBeTruthy();
+    expect(applyResponse(session, starterAction!).ok).toBe(true);
+    expect(session.state.effects.find((effect) => effect.id === "counted-reset-chain")).toMatchObject({ reset: { count: 1 } });
+
+    registerEffect(session, {
+      id: "second-chain-starter",
+      sourceUid: starter!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Second reset chain counter");
+      },
+    });
+    const secondAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "second-chain-starter");
+    expect(secondAction).toBeTruthy();
+    expect(applyResponse(session, secondAction!).ok).toBe(true);
+
+    expect(session.state.effects.some((effect) => effect.id === "counted-reset-chain")).toBe(false);
+  });
+
   it("lets an opponent quick effect chain before the original operation resolves", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
