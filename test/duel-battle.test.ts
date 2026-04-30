@@ -9,6 +9,7 @@ import {
   getDuelAttackTargets,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  negateDuelAttack,
   queryPublicState,
   recoverDuelPlayer,
   registerEffect,
@@ -100,6 +101,54 @@ describe("duel battle", () => {
     expect(session.state.log.some((entry) => entry.detail === "Attack window quick resolved")).toBe(true);
     passAttackResponses(session);
     expect(queryPublicState(session).players[1].lifePoints).toBe(6200);
+  });
+
+  it("lets quick effects negate attacks from the attack response window", () => {
+    const session = createDuel({ seed: 32, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, {
+      id: "attack-window-negate",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      operation(ctx) {
+        ctx.log(`Negate attack quick ${negateDuelAttack(session.state)}`);
+      },
+    });
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
+    expect(attack).toBeTruthy();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+
+    const opponentPass = getDuelLegalActions(session, 1).find((action) => action.type === "passAttack");
+    expect(opponentPass).toBeTruthy();
+    expect(applyResponse(session, opponentPass!).ok).toBe(true);
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "attack-window-negate");
+    expect(quick).toBeTruthy();
+    expect(applyResponse(session, quick!).ok).toBe(true);
+
+    expect(session.state.pendingBattle).toBeUndefined();
+    expect(session.state.currentAttack).toBeUndefined();
+    expect(session.state.attackPasses).toEqual([]);
+    expect(session.state.players[1].lifePoints).toBe(8000);
+    expect(session.state.log.some((entry) => entry.detail === "Negate attack quick true")).toBe(true);
+    expect(session.state.log.some((entry) => entry.action === "attack" && entry.detail === "Negated attack")).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "passAttack")).toBe(false);
   });
 
   it("tracks summon and attack activity counts through snapshots and turn reset", () => {

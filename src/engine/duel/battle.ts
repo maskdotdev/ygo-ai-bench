@@ -53,6 +53,7 @@ export function negateDuelAttack(state: DuelState): boolean {
   const attacker = findCard(state, attack.attackerUid);
   delete state.currentAttack;
   delete state.pendingBattle;
+  state.attackPasses = [];
   pushDuelLog(state, "attack", attacker?.controller ?? state.turnPlayer, attacker?.name, "Negated attack");
   return true;
 }
