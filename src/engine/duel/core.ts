@@ -260,6 +260,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     return stampActions(actions, state.actionWindowId);
   }
   if (state.pendingBattle) {
+    actions.push(...quickEffectActions(state, player));
     actions.push({ type: "passAttack", player, label: "Pass attack response" });
     return stampActions(actions, state.actionWindowId);
   }
@@ -863,6 +864,7 @@ function pushChainLink(
     ...(targetParam === undefined ? {} : { targetParam }),
   });
   state.chainPasses = [];
+  if (state.pendingBattle) state.attackPasses = [];
   clearStaleChainLimits(state);
 }
 

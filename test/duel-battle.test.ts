@@ -55,6 +55,53 @@ describe("duel battle", () => {
     expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.attacksDeclared).toContain(attacker!.uid);
   });
 
+  it("offers quick effects during the attack response window before battle resolves", () => {
+    const session = createDuel({ seed: 31, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, {
+      id: "attack-window-quick",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      operation(ctx) {
+        ctx.log("Attack window quick resolved");
+      },
+    });
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
+    expect(attack).toBeTruthy();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+
+    const opponentPass = getDuelLegalActions(session, 1).find((action) => action.type === "passAttack");
+    expect(opponentPass).toBeTruthy();
+    expect(applyResponse(session, opponentPass!).ok).toBe(true);
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "attack-window-quick");
+    expect(quick).toBeTruthy();
+    expect(applyResponse(session, quick!).ok).toBe(true);
+
+    expect(session.state.pendingBattle).toBeDefined();
+    expect(session.state.waitingFor).toBe(1);
+    expect(session.state.players[1].lifePoints).toBe(8000);
+    expect(session.state.log.some((entry) => entry.detail === "Attack window quick resolved")).toBe(true);
+    passAttackResponses(session);
+    expect(queryPublicState(session).players[1].lifePoints).toBe(6200);
+  });
+
   it("tracks summon and attack activity counts through snapshots and turn reset", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
