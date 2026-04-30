@@ -374,9 +374,13 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("IsHasEffect"));
   pushBooleanGetter(L, "IsNegatable", session, (card) => Boolean(card && isNegatableCard(session.state, card)));
   pushBooleanGetter(L, "IsNegatableMonster", session, (card) => Boolean(card && isMonsterLike(card) && isNegatableCard(session.state, card)));
-  pushBooleanGetter(L, "IsSummonableCard", session, (card) =>
-    Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "normalSummon" && action.uid === card.uid)),
-  );
+  const canNormalSummonCard = (card: DuelCardInstance | undefined): boolean =>
+    Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "normalSummon" && action.uid === card.uid));
+  const canSetMonsterCard = (card: DuelCardInstance | undefined): boolean =>
+    Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "setMonster" && action.uid === card.uid));
+  pushBooleanGetter(L, "IsSummonable", session, canNormalSummonCard);
+  pushBooleanGetter(L, "IsSummonableCard", session, canNormalSummonCard);
+  pushBooleanGetter(L, "CanSummonOrSet", session, (card) => canNormalSummonCard(card) || canSetMonsterCard(card));
   pushBooleanGetter(L, "IsSpecialSummonable", session, (card) => Boolean(card && canSpecialSummonDuelCard(session.state, card.uid, card.controller)));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsSynchroSummonable(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsSynchroSummonable"));
@@ -389,9 +393,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCanBeSpecialSummoned"));
-  pushBooleanGetter(L, "IsMSetable", session, (card) =>
-    Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "setMonster" && action.uid === card.uid)),
-  );
+  pushBooleanGetter(L, "IsMSetable", session, canSetMonsterCard);
   pushBooleanGetter(L, "IsCanTurnSet", session, (card) => Boolean(card && canTurnSet(card)));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);

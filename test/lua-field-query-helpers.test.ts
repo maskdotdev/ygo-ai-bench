@@ -809,6 +809,7 @@ describe("Lua field and query helpers", () => {
       local trap = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local extra = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
       Debug.Message("summonable predicates " .. tostring(normal:IsSummonableCard()) .. "/" .. tostring(spell:IsSummonableCard()) .. "/" .. tostring(tribute:IsSummonableCard()))
+      Debug.Message("summon or set predicates " .. tostring(normal:CanSummonOrSet()) .. "/" .. tostring(spell:CanSummonOrSet()) .. "/" .. tostring(tribute:CanSummonOrSet()) .. "/" .. tostring(normal:IsSummonable()))
       Debug.Message("special summonable predicates " .. tostring(normal:IsSpecialSummonable()) .. "/" .. tostring(spell:IsSpecialSummonable()) .. "/" .. tostring(extra:IsSpecialSummonable()))
       Debug.Message("setable predicates " .. tostring(normal:IsMSetable()) .. "/" .. tostring(spell:IsMSetable()) .. "/" .. tostring(tribute:IsMSetable()) .. "/" .. tostring(normal:IsSSetable()) .. "/" .. tostring(spell:IsSSetable()) .. "/" .. tostring(trap:IsSSetable()))
       `,
@@ -817,6 +818,7 @@ describe("Lua field and query helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("summonable predicates true/false/false");
+    expect(host.messages).toContain("summon or set predicates true/false/true/true");
     expect(host.messages).toContain("special summonable predicates true/false/false");
     expect(host.messages).toContain("setable predicates true/false/true/false/true/true");
 
