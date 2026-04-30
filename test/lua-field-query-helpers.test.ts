@@ -499,6 +499,84 @@ describe("Lua field and query helpers", () => {
     expect(spellTrapHost.messages).toContain("szone blocked predicates false/false");
   });
 
+  it("lets Lua scripts normal summon and set monsters", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Normal Summon Source", kind: "monster", level: 4 },
+      { code: "200", name: "Count Blocked Source", kind: "monster", level: 4 },
+      { code: "300", name: "Set Source", kind: "monster", level: 4 },
+      { code: "400", name: "Zone Blocked Source", kind: "monster", level: 4 },
+      { code: "500", name: "Zone Filler A", kind: "monster" },
+      { code: "600", name: "Zone Filler B", kind: "monster" },
+      { code: "700", name: "Zone Filler C", kind: "monster" },
+      { code: "800", name: "Zone Filler D", kind: "monster" },
+      { code: "900", name: "Zone Filler E", kind: "monster" },
+    ];
+    const summonSession = createDuel({ seed: 88, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(summonSession, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(summonSession);
+
+    const summonHost = createLuaScriptHost(summonSession);
+    const summonResult = summonHost.loadScript(
+      `
+      local first = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local second = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("summon result " .. Duel.Summon(first, true, nil))
+      Debug.Message("summon count blocked " .. Duel.Summon(second, true, nil))
+      `,
+      "basic-normal-summon.lua",
+    );
+    expect(summonResult.ok, summonResult.error).toBe(true);
+    expect(summonHost.messages).toContain("summon result 1");
+    expect(summonHost.messages).toContain("summon count blocked 0");
+    const summoned = summonSession.state.cards.find((card) => card.code === "100");
+    expect(summoned).toMatchObject({ location: "monsterZone", position: "faceUpAttack", summonType: "normal" });
+
+    const setSession = createDuel({ seed: 89, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(setSession, {
+      0: { main: ["300"] },
+      1: { main: [] },
+    });
+    startDuel(setSession);
+    const setHost = createLuaScriptHost(setSession);
+    const setResult = setHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("mset result " .. Duel.MSet(target, true, nil))
+      `,
+      "basic-monster-set.lua",
+    );
+    expect(setResult.ok, setResult.error).toBe(true);
+    expect(setHost.messages).toContain("mset result 1");
+    const setMonster = setSession.state.cards.find((card) => card.code === "300");
+    expect(setMonster).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
+
+    const fullSession = createDuel({ seed: 90, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(fullSession, {
+      0: { main: ["400", "500", "600", "700", "800", "900"] },
+      1: { main: [] },
+    });
+    startDuel(fullSession);
+    for (const code of ["500", "600", "700", "800", "900"]) {
+      const filler = fullSession.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === code);
+      moveDuelCard(fullSession.state, filler!.uid, "monsterZone", 0);
+    }
+    const fullHost = createLuaScriptHost(fullSession);
+    const fullResult = fullHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("summon zone blocked " .. Duel.Summon(target, true, nil))
+      Debug.Message("mset zone blocked " .. Duel.MSet(target, true, nil))
+      `,
+      "basic-summon-zone-block.lua",
+    );
+    expect(fullResult.ok, fullResult.error).toBe(true);
+    expect(fullHost.messages).toContain("summon zone blocked 0");
+    expect(fullHost.messages).toContain("mset zone blocked 0");
+  });
+
   it("passes extra filter arguments through Lua matching helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Vararg A", kind: "monster", attack: 1600 },
