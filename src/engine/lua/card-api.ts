@@ -105,6 +105,12 @@ function installCodeHelpers(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsNotCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
+    lua.lua_pushboolean(state, Boolean(card && listedCodes(card).some((code) => readRequestedCodes(state, 2).includes(code))));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ListsCode"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
     lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
     return 1;
@@ -274,7 +280,9 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x4) !== 0));
   pushBooleanGetter(L, "IsSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x6) !== 0));
   pushBooleanGetter(L, "IsRitualMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x81) === 0x81));
+  pushBooleanGetter(L, "IsEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x21) === 0x21));
   pushBooleanGetter(L, "IsNonEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x20) === 0));
+  pushBooleanGetter(L, "IsForbidden", session, () => false);
   pushBooleanGetter(L, "IsMaximumMode", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeCenter", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeSide", session, () => false);
@@ -885,6 +893,18 @@ function canChangePosition(state: DuelState, card: DuelCardInstance, requested: 
 
 function cardCodes(card: DuelCardInstance): string[] {
   return card.data.alias ? [card.code, card.data.alias] : [card.code];
+}
+
+function listedCodes(card: DuelCardInstance): string[] {
+  return [...(card.data.listedNames ?? []), ...(card.data.fitMonster ?? [])].map(String);
+}
+
+function readRequestedCodes(L: unknown, start: number): string[] {
+  const codes: string[] = [];
+  for (let index = start; index <= lua.lua_gettop(L); index += 1) {
+    if (lua.lua_isnumber(L, index)) codes.push(String(lua.lua_tointeger(L, index)));
+  }
+  return codes;
 }
 
 function matchesAnyCodeAtOrAfter(L: unknown, card: DuelCardInstance, start: number): boolean {

@@ -50,6 +50,8 @@ export interface DuelCardData {
   xyzMaterials?: string[];
   linkMaterials?: string[];
   ritualMaterials?: string[];
+  listedNames?: string[];
+  fitMonster?: string[];
 }
 
 export interface DuelCardInstance {

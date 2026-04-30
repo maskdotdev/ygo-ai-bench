@@ -581,7 +581,7 @@ describe("Lua field and query helpers", () => {
 
   it("lets Lua scripts read card type, stats, race, and attribute", () => {
     const cards: DuelCardData[] = [
-      { code: "100", alias: "900", name: "Stat Monster", kind: "monster", typeFlags: 0x21, attack: 2500, defense: 2100, level: 7, race: 0x2, attribute: 0x20, setcodes: [0x123] },
+      { code: "100", alias: "900", name: "Stat Monster", kind: "monster", typeFlags: 0x21, attack: 2500, defense: 2100, level: 7, race: 0x2, attribute: 0x20, setcodes: [0x123], listedNames: ["700"], fitMonster: ["800"] },
       { code: "200", name: "Fixture Spell", kind: "spell", typeFlags: 0x2 },
       { code: "300", name: "Rank Fixture", kind: "monster", typeFlags: 0x800001, attack: 1800, defense: 1200, level: 4 },
       { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5 },
@@ -611,6 +611,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not code checks " .. tostring(c:IsNotCode(900)) .. "/" .. tostring(c:IsNotCode(901)))
       Debug.Message("code rule checks " .. c:GetOriginalCodeRule() .. "/" .. tostring(c:IsOriginalCodeRule(900)) .. "/" .. tostring(c:IsOriginalCodeRule(100)))
       Debug.Message("set checks " .. tostring(c:IsSetCard(0x123)) .. "/" .. tostring(c:IsNotSetCard(0x123)) .. "/" .. tostring(c:IsNotSetCard(0x456)))
+      Debug.Message("listed checks " .. tostring(c:ListsCode(700)) .. "/" .. tostring(c:ListsCode(800)) .. "/" .. tostring(c:ListsCode(900)) .. "/" .. tostring(c:ListsCode(600,700)))
       local infinity = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("infinity checks " .. tostring(infinity:IsInfinity()) .. "/" .. tostring(c:IsInfinity()))
       local xyz = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -620,7 +621,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("original predicates " .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalLevel(7)))
       Debug.Message("not type " .. tostring(c:IsNotType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotType(TYPE_SPELL)))
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
-      Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()))
+      Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()) .. "/" .. tostring(c:IsEffectMonster()) .. "/" .. tostring(normal:IsEffectMonster()) .. "/" .. tostring(c:IsForbidden()))
       Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
       Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()))
@@ -667,11 +668,12 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not code checks false/true");
     expect(host.messages).toContain("code rule checks 100/false/true");
     expect(host.messages).toContain("set checks true/false/true");
+    expect(host.messages).toContain("listed checks true/true/false/true");
     expect(host.messages).toContain("infinity checks true/false");
     expect(host.messages).toContain("original predicates true/true");
     expect(host.messages).toContain("not type false/true");
     expect(host.messages).toContain("not original type false/true");
-    expect(host.messages).toContain("named type predicates true/false/true/false");
+    expect(host.messages).toContain("named type predicates true/false/true/false/true/false/false");
     expect(host.messages).toContain("rank 4/4/true/true");
     expect(host.messages).toContain("has level true/false/false/false");
     expect(host.messages).toContain("rank comparisons true/false/true/true");
