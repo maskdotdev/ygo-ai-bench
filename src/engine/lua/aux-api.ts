@@ -201,6 +201,15 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         return not f(...)
       end
     end
+    function aux.OR(...)
+      local funs={...}
+      return function(...)
+        for _,f in ipairs(funs) do
+          if f(...) then return true end
+        end
+        return false
+      end
+    end
     function aux.ChkfMMZ(sumcount)
       return function(sg,e,tp,mg)
         return Duel.GetMZoneCount(tp,sg)>=sumcount

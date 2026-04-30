@@ -699,6 +699,7 @@ describe("Lua state helpers", () => {
       Debug.Message("maximum side count " .. Duel.GetMatchingGroupCount(aux.FilterMaximumSideFunction(function(c) return c:IsFaceup() end), 0, LOCATION_MZONE, 0, nil))
       Debug.Message("not count " .. Duel.GetMatchingGroupCount(aux.NOT(Card.IsCode), 0, LOCATION_HAND, 0, nil, 100))
       Debug.Message("and count " .. Duel.GetMatchingGroupCount(aux.AND(Card.IsFaceup, Card.IsAttackAbove), 0, LOCATION_MZONE, 0, nil, 900))
+      Debug.Message("or count " .. Duel.GetMatchingGroupCount(aux.OR(Card.IsFacedown, Card.IsAttackAbove), 0, LOCATION_MZONE, 0, nil, 900))
       Debug.Message("chkf mmz " .. tostring(aux.ChkfMMZ(1)(Group.CreateGroup(), nil, 0)) .. "/" .. tostring(aux.ChkfMMZ(6)(Group.CreateGroup(), nil, 0)))
       Debug.Message("ritlimit " .. tostring(aux.ritlimit(nil,nil,0,SUMMON_TYPE_RITUAL)) .. "/" .. tostring(aux.ritlimit(nil,nil,0,SUMMON_TYPE_FUSION)))
       local value_effect=Effect.CreateEffect(faceup_monster)
@@ -799,6 +800,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("maximum side count 0");
     expect(host.messages).toContain("not count 1");
     expect(host.messages).toContain("and count 1");
+    expect(host.messages).toContain("or count 2");
     expect(host.messages).toContain("chkf mmz true/false");
     expect(host.messages).toContain("ritlimit true/false");
     expect(host.messages).toContain("value helpers own false/true/false");
