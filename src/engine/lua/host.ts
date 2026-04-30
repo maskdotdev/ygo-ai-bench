@@ -572,6 +572,7 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
     code === 236 ||
     code === 238 ||
     code === 239 ||
+    code === 241 ||
     code === 248
   )
     return "continuous";

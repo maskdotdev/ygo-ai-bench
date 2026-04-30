@@ -579,6 +579,18 @@ describe("Lua field and query helpers", () => {
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
       Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()))
       Debug.Message("link comparisons " .. tostring(link:IsLinkAbove(2)) .. "/" .. tostring(link:IsLinkBelow(1)) .. "/" .. tostring(link:IsOriginalLinkAbove(3)) .. "/" .. tostring(link:IsOriginalLinkBelow(2)))
+      local fixed_ritual=Effect.CreateEffect(c)
+      fixed_ritual:SetType(EFFECT_TYPE_SINGLE)
+      fixed_ritual:SetCode(EFFECT_RITUAL_LEVEL)
+      fixed_ritual:SetValue(5)
+      c:RegisterEffect(fixed_ritual)
+      Debug.Message("ritual fixed level " .. c:GetRitualLevel())
+      local function_ritual=Effect.CreateEffect(link)
+      function_ritual:SetType(EFFECT_TYPE_SINGLE)
+      function_ritual:SetCode(EFFECT_RITUAL_LEVEL)
+      function_ritual:SetValue(function(e,mat,rc) return mat:GetLevel()+rc:GetLevel() end)
+      link:RegisterEffect(function_ritual)
+      Debug.Message("ritual function level " .. link:GetRitualLevel(c))
       Debug.Message("race " .. c:GetRace() .. " " .. tostring(c:IsRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsOriginalRace(RACE_SPELLCASTER)))
       Debug.Message("not race " .. tostring(c:IsNotRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotRace(RACE_DRAGON)))
       Debug.Message("not original race " .. tostring(c:IsNotOriginalRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotOriginalRace(RACE_DRAGON)))
@@ -615,6 +627,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("rank comparisons true/false/true/true");
     expect(host.messages).toContain("link 2/2/5/true/true/true/false");
     expect(host.messages).toContain("link comparisons true/false/false/true");
+    expect(host.messages).toContain("ritual fixed level 5");
+    expect(host.messages).toContain("ritual function level 9");
     expect(host.messages).toContain("race 2 true/true");
     expect(host.messages).toContain("not race false/true");
     expect(host.messages).toContain("attribute 32 true/true");

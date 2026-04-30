@@ -28,6 +28,8 @@ export interface LuaCardApiEffectRecord {
   typeFlags?: number;
   sourceUid?: string;
   code?: number;
+  value?: number;
+  valueRef?: number;
 }
 
 export interface LuaCardApiState<EffectRecord extends LuaCardApiEffectRecord> {
@@ -54,7 +56,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   });
   lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));
   installCodeHelpers(L, session);
-  installStatHelpers(L, session);
+  installStatHelpers(L, session, hostState);
   installStateHelpers(L, session, hostState);
   installFlagHelpers(L, session);
   lua.lua_setglobal(L, to_luastring("Card"));
@@ -130,7 +132,7 @@ function installCodeHelpers(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsNotSetCard"));
 }
 
-function installStatHelpers(L: unknown, session: DuelSession): void {
+function installStatHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
   pushNumberGetter(L, "GetType", session, (card) => cardTypeFlags(card));
   pushNumberGetter(L, "GetOriginalType", session, (card) => cardTypeFlags(card));
   pushNumberMatcher(L, "IsType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
@@ -156,6 +158,8 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsOriginalDefenseBelow", session, (card, requested) => (card.data.defense ?? 0) <= requested);
   pushNumberGetter(L, "GetLevel", session, (card) => card?.data.level ?? 0);
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
+  lua.lua_pushcfunction(L, (state: unknown) => pushRitualLevel(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("GetRitualLevel"));
   pushBooleanGetter(L, "HasLevel", session, (card) => Boolean(card && (card.data.level ?? 0) > 0 && cardRank(card) === 0 && cardLink(card) === 0));
   pushNumberMatcher(L, "IsLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
   pushNumberMatcher(L, "IsLevelAbove", session, (card, requested) => (card.data.level ?? 0) >= requested);
@@ -521,6 +525,37 @@ function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   }
   for (const effect of effects) hostState.pushEffectTable(L, effect.id);
   return effects.length;
+}
+
+function pushRitualLevel<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const card = readCard(L, session);
+  if (!card) {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const ritualTargetUid = readCardUid(L, 2);
+  const ritualTarget = ritualTargetUid ? session.state.cards.find((candidate) => candidate.uid === ritualTargetUid) : undefined;
+  const effect = matchingLuaEffects(session.state, card, 241, hostState)[0];
+  lua.lua_pushinteger(L, effect ? ritualLevelFromEffect(L, effect, card, ritualTarget, hostState) : card.data.level ?? 0);
+  return 1;
+}
+
+function ritualLevelFromEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, effect: EffectRecord, card: DuelCardInstance, ritualTarget: DuelCardInstance | undefined, hostState: LuaCardApiState<EffectRecord>): number {
+  if (effect.valueRef !== undefined) {
+    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, effect.valueRef);
+    hostState.pushEffectTable(L, effect.id);
+    pushCardTable(L, card.uid);
+    if (ritualTarget) pushCardTable(L, ritualTarget.uid);
+    else lua.lua_pushnil(L);
+    const status = lua.lua_pcall(L, 3, 1, 0);
+    if (status === lua.LUA_OK) {
+      const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : card.data.level ?? 0;
+      lua.lua_pop(L, 1);
+      return value;
+    }
+    lua.lua_pop(L, 1);
+  }
+  return effect.value ?? card.data.level ?? 0;
 }
 
 function pushGetCounter(L: unknown, session: DuelSession): number {
