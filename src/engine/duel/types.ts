@@ -70,6 +70,7 @@ export interface DuelCardInstance {
   reason?: number;
   reasonPlayer?: PlayerId;
   summonType?: DuelSummonType;
+  summonPlayer?: PlayerId;
   data: DuelCardData;
 }
 

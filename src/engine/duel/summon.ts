@@ -22,6 +22,7 @@ export function normalSummon(state: DuelState, player: PlayerId, uid: string, co
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
   card.position = "faceUpAttack";
   card.summonType = "normal";
+  card.summonPlayer = player;
   state.players[player].normalSummonAvailable = false;
   recordNormalSummonActivity(state, player);
   pushDuelLog(state, "normalSummon", player, card.name, "Normal Summoned from hand");
@@ -74,6 +75,7 @@ export function tributeSummonDuelCard(
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "tribute";
+  card.summonPlayer = player;
   state.players[player].normalSummonAvailable = false;
   recordNormalSummonActivity(state, player);
   pushDuelLog(state, "tributeSummon", player, card.name, `Tribute Summoned with ${requiredTributes} tribute(s)`);
@@ -86,6 +88,7 @@ export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "flip";
+  card.summonPlayer = player;
   recordFlipSummonActivity(state, player);
   pushDuelLog(state, "flipSummon", player, card.name, "Flip Summoned");
   collectEvent("flipSummoned", card);
@@ -112,6 +115,7 @@ export function fusionSummonDuelCard(
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "fusion";
+  card.summonPlayer = player;
   recordSpecialSummonActivity(state, player);
   pushDuelLog(state, "fusionSummon", player, card.name, `Fusion Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);
@@ -138,6 +142,7 @@ export function synchroSummonDuelCard(
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "synchro";
+  card.summonPlayer = player;
   recordSpecialSummonActivity(state, player);
   pushDuelLog(state, "synchroSummon", player, card.name, `Synchro Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);
@@ -157,6 +162,7 @@ export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: strin
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "xyz";
+  card.summonPlayer = player;
   recordSpecialSummonActivity(state, player);
   pushDuelLog(state, "xyzSummon", player, card.name, `Xyz Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);
@@ -183,6 +189,7 @@ export function linkSummonDuelCard(
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "link";
+  card.summonPlayer = player;
   recordSpecialSummonActivity(state, player);
   pushDuelLog(state, "linkSummon", player, card.name, `Link Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);
@@ -222,6 +229,7 @@ export function ritualSummonDuelCard(
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "ritual";
+  card.summonPlayer = player;
   recordSpecialSummonActivity(state, player);
   pushDuelLog(state, "ritualSummon", player, card.name, `Ritual Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -235,6 +235,58 @@ describe("Lua state helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("check moved true");
+  });
+
+  it("lets Lua scripts query a card's summon player", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summon Player Normal", kind: "monster" },
+      { code: "200", name: "Summon Player Special", kind: "monster" },
+      { code: "300", name: "Summon Player Unsummoned", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 147, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const normal = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const special = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    const unsummoned = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(normal).toBeTruthy();
+    expect(special).toBeTruthy();
+    expect(unsummoned).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const before = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("summon player unsummoned " .. tostring(c:IsSummonPlayer(0)) .. "/" .. tostring(c:IsSummonPlayer(1)))
+      `,
+      "summon-player-before.lua",
+    );
+    expect(before.ok, before.error).toBe(true);
+    expect(host.messages).toContain("summon player unsummoned false/false");
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === normal!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    specialSummonDuelCard(session.state, special!.uid, 1);
+
+    const after = host.loadScript(
+      `
+      local normal=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local special=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 1, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("summon player normal " .. tostring(normal:IsSummonPlayer(0)) .. "/" .. tostring(normal:IsSummonPlayer(1)))
+      Debug.Message("summon player special " .. tostring(special:IsSummonPlayer(0)) .. "/" .. tostring(special:IsSummonPlayer(1)))
+      `,
+      "summon-player-after.lua",
+    );
+    expect(after.ok, after.error).toBe(true);
+    expect(session.state.cards.find((card) => card.uid === normal!.uid)?.summonPlayer).toBe(0);
+    expect(session.state.cards.find((card) => card.uid === special!.uid)?.summonPlayer).toBe(1);
+    expect(host.messages).toContain("summon player normal true/false");
+    expect(host.messages).toContain("summon player special false/true");
   });
 
   it("lets Lua effects register, read, and reset duel and card flags", () => {
