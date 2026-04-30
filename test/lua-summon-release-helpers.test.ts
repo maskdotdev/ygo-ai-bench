@@ -6,6 +6,46 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua summon and release helpers", () => {
+  it("lets Lua scripts negate summoned cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Negated Summon", kind: "monster" },
+      { code: "200", name: "Unsummoned Card", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 75, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local summoned = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local hand = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("summon before negate " .. Duel.Summon(summoned, true, nil))
+      Debug.Message("negate summon " .. Duel.NegateSummon(summoned))
+      Debug.Message("negate operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("negate hand " .. Duel.NegateSummon(hand))
+      Debug.Message("negate hand operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "negate-summon.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("summon before negate 1");
+    expect(host.messages).toContain("negate summon 1");
+    expect(host.messages).toContain("negate operated 1/100");
+    expect(host.messages).toContain("negate hand 0");
+    expect(host.messages).toContain("negate hand operated 0");
+    const negated = session.state.cards.find((card) => card.code === "100");
+    const unsummoned = session.state.cards.find((card) => card.code === "200");
+    expect(negated).toMatchObject({ location: "graveyard", reason: 0x1000 });
+    expect(negated?.summonType).toBeUndefined();
+    expect(negated?.summonPlayer).toBeUndefined();
+    expect(unsummoned).toMatchObject({ location: "hand" });
+  });
+
   it("lets Lua scripts invoke scaffolded summon helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Material A", kind: "monster" },

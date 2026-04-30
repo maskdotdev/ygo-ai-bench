@@ -6,8 +6,10 @@ import {
   ritualSummonDuelCard,
   specialSummonDuelCard,
   synchroSummonDuelCard,
+  moveDuelCard,
   xyzSummonDuelCard,
 } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import type { CardPosition, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -33,6 +35,8 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("SpecialSummonStep"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonComplete(state, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummonComplete"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushNegateSummon(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("NegateSummon"));
 }
 
 function pushBasicSummonHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelSummonApiHostState, type: "normalSummon" | "setMonster" | "setSpellTrap"): void {
@@ -118,6 +122,25 @@ function pushSpecialSummonComplete(L: unknown, hostState: LuaDuelSummonApiHostSt
   setOperatedUids(hostState, hostState.pendingSpecialSummonUids ?? []);
   hostState.pendingSpecialSummonUids = [];
   return 0;
+}
+
+function pushNegateSummon(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  const negated: string[] = [];
+  for (const uid of readCardOrGroupUids(L, 1)) {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!card || card.location !== "monsterZone" || card.summonType === undefined) continue;
+    try {
+      moveDuelCard(session.state, card.uid, "graveyard", card.controller, duelReason.disSummon, session.state.turnPlayer);
+      delete card.summonType;
+      delete card.summonPlayer;
+      negated.push(uid);
+    } catch {
+      // EDOPro-style helpers report successful negations only.
+    }
+  }
+  setOperatedUids(hostState, negated);
+  lua.lua_pushinteger(L, negated.length);
+  return 1;
 }
 
 function readFirstCardOrGroupUid(L: unknown, index: number): string | undefined {
