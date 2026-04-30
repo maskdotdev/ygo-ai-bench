@@ -26,6 +26,14 @@ export function installDuelFlagApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const minimum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
+    lua.lua_pushboolean(state, getDuelFlagEffectCount(session.state, { ownerType: "player", ownerId: player }, code) >= minimum);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("HasFlagEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     lua.lua_pushinteger(state, getDuelFlagEffectLabel(session.state, { ownerType: "player", ownerId: player }, code));
     return 1;
   });

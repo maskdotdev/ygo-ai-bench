@@ -348,6 +348,14 @@ function installFlagHelpers(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const minimum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
+    lua.lua_pushboolean(state, Boolean(uid && getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: uid }, code) >= minimum));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("HasFlagEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     lua.lua_pushinteger(state, uid ? getDuelFlagEffectLabel(session.state, { ownerType: "card", ownerId: uid }, code) : 0);
     return 1;
   });
@@ -722,6 +730,7 @@ const cardFieldNames = [
   "IsCanBeRitualMaterial",
   "RegisterFlagEffect",
   "GetFlagEffect",
+  "HasFlagEffect",
   "GetFlagEffectLabel",
   "SetFlagEffectLabel",
   "ResetFlagEffect",

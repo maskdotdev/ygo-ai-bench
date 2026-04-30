@@ -26,6 +26,12 @@ describe("Lua state helpers", () => {
         e:SetTarget(function(e,c)
           Debug.Message("duel flag register " .. Duel.RegisterFlagEffect(0, 901, RESET_EVENT, 0, 3))
           Debug.Message("card flag register " .. c:RegisterFlagEffect(902, RESET_EVENT, 0, 4))
+          Duel.RegisterFlagEffect(0, 903, RESET_EVENT, EFFECT_FLAG_REPEAT, 1)
+          Duel.RegisterFlagEffect(0, 903, RESET_EVENT, EFFECT_FLAG_REPEAT, 1)
+          c:RegisterFlagEffect(904, RESET_EVENT, EFFECT_FLAG_REPEAT, 1)
+          c:RegisterFlagEffect(904, RESET_EVENT, EFFECT_FLAG_REPEAT, 1)
+          Debug.Message("duel has flag " .. tostring(Duel.HasFlagEffect(0, 901)) .. "/" .. tostring(Duel.HasFlagEffect(0, 901, 2)) .. "/" .. tostring(Duel.HasFlagEffect(0, 903, 2)))
+          Debug.Message("card has flag " .. tostring(c:HasFlagEffect(902)) .. "/" .. tostring(c:HasFlagEffect(902, 2)) .. "/" .. tostring(c:HasFlagEffect(904, 2)))
           return true
         end)
         e:SetOperation(function(e,c)
@@ -33,6 +39,8 @@ describe("Lua state helpers", () => {
           Debug.Message("card flag count " .. c:GetFlagEffect(902))
           Debug.Message("duel flag reset " .. Duel.ResetFlagEffect(0, 901))
           Debug.Message("card flag reset " .. c:ResetFlagEffect(902))
+          Duel.ResetFlagEffect(0, 903)
+          c:ResetFlagEffect(904)
           Debug.Message("duel flag after " .. Duel.GetFlagEffect(0, 901))
           Debug.Message("card flag after " .. c:GetFlagEffect(902))
         end)
@@ -51,6 +59,8 @@ describe("Lua state helpers", () => {
     applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
     expect(host.messages).toContain("duel flag register 1");
     expect(host.messages).toContain("card flag register 1");
+    expect(host.messages).toContain("duel has flag true/false/true");
+    expect(host.messages).toContain("card has flag true/false/true");
     expect(host.messages).toContain("duel flag count 1");
     expect(host.messages).toContain("card flag count 1");
     expect(host.messages).toContain("duel flag reset 1");
