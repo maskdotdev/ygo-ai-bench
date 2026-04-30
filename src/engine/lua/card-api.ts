@@ -3,10 +3,11 @@ import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { canChangeDuelCardPosition, canDuelCardAttack, canMoveDuelCardToLocation, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
 import { findIndestructibleEffect, isCardDisabled, isMaterialUsePrevented, type ContinuousEffectContextFactory, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
-import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
+import { registerDuelFlagEffect } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions } from "#duel/summon.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
+import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { cardFieldNames } from "#lua/card-field-names.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { canLuaSynchroSummonCard } from "#lua/synchro-summonable.js";
@@ -60,7 +61,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   installCardCodeApi(L, session);
   installStatHelpers(L, session, hostState);
   installStateHelpers(L, session, hostState);
-  installFlagHelpers(L, session);
+  installCardFlagApi(L, session);
   lua.lua_setglobal(L, to_luastring("Card"));
 }
 
@@ -359,61 +360,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushMaterialPredicate(L, "IsCanBeXyzMaterial", session, "xyz");
   pushMaterialPredicate(L, "IsCanBeLinkMaterial", session, "link");
   pushMaterialPredicate(L, "IsCanBeRitualMaterial", session, "ritual");
-}
-
-function installFlagHelpers(L: unknown, session: DuelSession): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const uid = readCardUid(state, 1);
-    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const reset = lua.lua_isnumber(state, 3) ? Math.trunc(lua.lua_tonumber(state, 3)) : 0;
-    const property = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
-    const value = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0;
-    if (!uid) {
-      lua.lua_pushinteger(state, 0);
-      return 1;
-    }
-    registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: uid }, code, reset, property, value);
-    lua.lua_pushinteger(state, getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: uid }, code));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("RegisterFlagEffect"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const uid = readCardUid(state, 1);
-    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushinteger(state, uid ? getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: uid }, code) : 0);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetFlagEffect"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const uid = readCardUid(state, 1);
-    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const minimum = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
-    lua.lua_pushboolean(state, Boolean(uid && getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: uid }, code) >= minimum));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("HasFlagEffect"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const uid = readCardUid(state, 1);
-    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushinteger(state, uid ? getDuelFlagEffectLabel(session.state, { ownerType: "card", ownerId: uid }, code) : 0);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetFlagEffectLabel"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const uid = readCardUid(state, 1);
-    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const value = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
-    lua.lua_pushinteger(state, uid ? setDuelFlagEffectLabel(session.state, { ownerType: "card", ownerId: uid }, code, value) : 0);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("SetFlagEffectLabel"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const uid = readCardUid(state, 1);
-    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushinteger(state, uid ? resetDuelFlagEffect(session.state, { ownerType: "card", ownerId: uid }, code) : 0);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("ResetFlagEffect"));
 }
 
 function equippedCards(session: DuelSession, uid: string): DuelCardInstance[] {
