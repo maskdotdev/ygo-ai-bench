@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
 import { createRng } from "#engine/rng.js";
-import type { DuelSession } from "#duel/types.js";
+import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -20,6 +20,8 @@ export function installDuelRandomApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("CountTails"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetRandomNumber(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetRandomNumber"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushRockPaperScissors(state, session));
+  lua.lua_setfield(L, -2, to_luastring("RockPaperScissors"));
 }
 
 function pushTossDice(L: unknown, session: DuelSession): number {
@@ -105,4 +107,11 @@ function randomInteger(session: DuelSession, min: number, max: number): number {
   const rng = createRng(`${session.state.seed}:number:${session.state.randomCounter}`);
   session.state.randomCounter += 1;
   return Math.floor(rng() * (max - min + 1)) + min;
+}
+
+function pushRockPaperScissors(L: unknown, session: DuelSession): number {
+  const winner: PlayerId = randomInteger(session, 0, 1) === 1 ? 1 : 0;
+  pushDuelLog(session.state, "rockPaperScissors", winner, undefined, String(lua.lua_toboolean(L, 1)));
+  lua.lua_pushinteger(L, winner);
+  return 1;
 }

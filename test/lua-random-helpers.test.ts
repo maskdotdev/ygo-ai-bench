@@ -155,6 +155,19 @@ describe("Lua random helpers", () => {
     expect(first.state.randomCounter).toBe(3);
   });
 
+  it("lets Lua scripts resolve deterministic rock paper scissors", () => {
+    const first = setupSession(160);
+    const second = setupSession(160);
+
+    const firstMessages = rockPaperScissorsMessages(first);
+    const secondMessages = rockPaperScissorsMessages(second);
+
+    expect(firstMessages).toEqual(secondMessages);
+    expect(firstMessages[0]).toMatch(/^rps [01]\/[01]$/);
+    expect(first.state.randomCounter).toBe(2);
+    expect(first.state.log.some((entry) => entry.action === "rockPaperScissors" && /^[01]$/.test(String(entry.player)))).toBe(true);
+  });
+
   it("preserves random-number progression across snapshots", () => {
     const original = setupSession(158);
     const firstHost = createLuaScriptHost(original);
@@ -254,6 +267,20 @@ function randomNumberMessages(session: DuelSession): string[] {
     Debug.Message("random reversed " .. c)
     `,
     "random-number.lua",
+  );
+  expect(result.ok, result.error).toBe(true);
+  return host.messages;
+}
+
+function rockPaperScissorsMessages(session: DuelSession): string[] {
+  const host = createLuaScriptHost(session);
+  const result = host.loadScript(
+    `
+    local a=Duel.RockPaperScissors()
+    local b=Duel.RockPaperScissors(false)
+    Debug.Message("rps " .. a .. "/" .. b)
+    `,
+    "rock-paper-scissors.lua",
   );
   expect(result.ok, result.error).toBe(true);
   return host.messages;
