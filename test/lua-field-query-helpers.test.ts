@@ -375,7 +375,9 @@ describe("Lua field and query helpers", () => {
       local generic_synchro = Duel.GetFieldCard(0, LOCATION_EXTRA, 4)
       local ritual = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 940), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("fusion target material " .. tostring(c100:IsCanBeFusionMaterial(fusion)) .. "/" .. tostring(c200:IsCanBeFusionMaterial(fusion)))
+      Debug.Message("fusion self target material " .. tostring(fusion:IsCanBeFusionMaterial(fusion)))
       Debug.Message("ritual target material " .. tostring(c100:IsCanBeRitualMaterial(ritual)) .. "/" .. tostring(c200:IsCanBeRitualMaterial(ritual)))
+      Debug.Message("ritual self target material " .. tostring(ritual:IsCanBeRitualMaterial(ritual)))
       Debug.Message("xyz target hand material " .. tostring(c100:IsCanBeXyzMaterial(xyz)))
       Duel.SpecialSummon(c100, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
       Duel.SpecialSummon(c200, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
@@ -395,7 +397,9 @@ describe("Lua field and query helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("fusion target material true/false");
+    expect(host.messages).toContain("fusion self target material false");
     expect(host.messages).toContain("ritual target material true/false");
+    expect(host.messages).toContain("ritual self target material false");
     expect(host.messages).toContain("xyz target hand material false");
     expect(host.messages).toContain("synchro target material true/false");
     expect(host.messages).toContain("generic synchro target material true/true/false");
