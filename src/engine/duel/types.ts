@@ -191,6 +191,7 @@ export interface ChainLink {
   negated?: boolean;
   disableReason?: number;
   disablePlayer?: PlayerId;
+  operationOverride?: (ctx: DuelEffectContext) => void;
 }
 
 export interface PendingTrigger {

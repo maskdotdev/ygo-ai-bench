@@ -858,7 +858,7 @@ function resolveChain(state: DuelState): void {
         link.targetParam,
         link,
       );
-      effect.operation(ctx);
+      (link.operationOverride ?? effect.operation)(ctx);
     }
   } catch (error) {
     restoreDuelState(state, rollback);

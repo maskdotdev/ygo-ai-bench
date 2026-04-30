@@ -365,6 +365,60 @@ describe("Lua chain helpers", () => {
     expect(host.messages).toContain("duplicate source resolved");
   });
 
+  it("lets Lua scripts replace a pending chain operation", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Changed Chain Source", kind: "monster" },
+      { code: "400", name: "Chain Operation Replacer", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 154, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("original chain operation")
+        end)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c) return Duel.GetCurrentChain()>0 end)
+        e:SetOperation(function(e,c)
+          Duel.ChangeChainOperation(1,function(re,tp,eg,ep,ev)
+            Debug.Message("changed chain operation " .. tp)
+          end)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "change-chain-operation.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const replacement = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(replacement).toBeDefined();
+    expect(applyResponse(session, replacement!).ok).toBe(true);
+    expect(host.messages).toContain("changed chain operation 0");
+    expect(host.messages).not.toContain("original chain operation");
+  });
+
   it("lets Lua effects carry target player and parameter metadata", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Target Metadata Source", kind: "monster" },

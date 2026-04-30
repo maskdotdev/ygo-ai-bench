@@ -76,6 +76,7 @@ interface LuaHostState {
   currentScriptCardCode: string | undefined;
   pushEffectTable: (state: unknown, id: number) => void;
   getEffectTypeFlags: (id: number) => number | undefined;
+  changeChainOperation: (state: unknown, chainIndex: number, operationRef: number) => boolean;
   registerEffect: (state: unknown, id: number, player: PlayerId) => boolean;
   loadScriptFile: (name: string, forced?: boolean) => LuaScriptLoadResult;
 }
@@ -101,6 +102,9 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     },
     getEffectTypeFlags(id) {
       return hostState.effects.get(id)?.typeFlags;
+    },
+    changeChainOperation(state, chainIndex, operationRef) {
+      return changeLuaChainOperation(state, hostState, chainIndex, operationRef);
     },
     registerEffect(state, id, player) {
       return registerLuaEffect(state, hostState, id, player);
@@ -654,6 +658,30 @@ function locationMaskFromLocations(locations: DuelLocation[]): number {
 }
 
 type LuaEffectCallbackKind = "condition" | "cost" | "target" | "operation" | "value";
+
+function changeLuaChainOperation(L: unknown, hostState: LuaHostState, chainIndex: number, operationRef: number): boolean {
+  const link = chainLinkByLuaIndex(hostState.session, chainIndex);
+  const id = Number(link?.effectId.match(/^lua-(\d+)/)?.[1]);
+  const luaEffect = Number.isFinite(id) ? hostState.effects.get(id) : undefined;
+  const source = link ? hostState.session.state.cards.find((card) => card.uid === link.sourceUid) : undefined;
+  if (!link || !luaEffect || !source) return false;
+  link.operationOverride = (ctx) => {
+    withLuaCallbackContext(hostState, ctx, () => {
+      lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, operationRef);
+      const legacyArgs = secondParameterName(L, -1) === "c";
+      const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, source, "operation", legacyArgs, ctx);
+      const status = lua.lua_pcall(L, argCount, 0, 0);
+      if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+      ctx.log("Lua chain operation changed");
+    });
+  };
+  return true;
+}
+
+function chainLinkByLuaIndex(session: DuelSession, requestedIndex: number): DuelSession["state"]["chain"][number] | undefined {
+  if (requestedIndex <= 0) return session.state.chain[session.state.chain.length - 1];
+  return session.state.chain[requestedIndex - 1];
+}
 
 function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean, kind: LuaEffectCallbackKind, ctx?: DuelEffectContext): boolean {
   if (ref === undefined) return fallback;

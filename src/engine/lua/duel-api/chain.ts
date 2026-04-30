@@ -10,6 +10,7 @@ const { lua, to_luastring } = fengari;
 export interface LuaDuelChainApiHostState {
   pushEffectTable: (state: unknown, id: number) => void;
   getEffectTypeFlags: (id: number) => number | undefined;
+  changeChainOperation: (state: unknown, chainIndex: number, operationRef: number) => boolean;
   activeContext: DuelEffectContext | undefined;
 }
 
@@ -55,6 +56,8 @@ export function installDuelChainApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("ChangeTargetPlayer"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangeTargetParam(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ChangeTargetParam"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushChangeChainOperation(state, hostState));
+  lua.lua_setfield(L, -2, to_luastring("ChangeChainOperation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckChainTarget(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("CheckChainTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckChainUniqueness(state, session, hostState));
@@ -235,6 +238,14 @@ function pushChangeTargetParam(L: unknown, session: DuelSession, hostState: LuaD
     link.targetParam = parameter;
     if (hostState.activeContext?.chainLink === link) hostState.activeContext.targetParam = parameter;
   }
+  return 0;
+}
+
+function pushChangeChainOperation(L: unknown, hostState: LuaDuelChainApiHostState): number {
+  const chainIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0;
+  const operationRef = readOptionalFunctionRef(L, 2);
+  if (operationRef === undefined) return 0;
+  if (!hostState.changeChainOperation(L, chainIndex, operationRef)) releaseOptionalFunctionRef(L, operationRef);
   return 0;
 }
 
