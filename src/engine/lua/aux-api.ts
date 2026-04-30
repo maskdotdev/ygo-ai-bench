@@ -231,6 +231,26 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         return not fun2 or fun2(e,tp,eg,ep,ev,re,r,rp,chk,c,...)
       end
     end
+    local function get_multi(tab,key,...)
+      if not key then return nil end
+      return (tab[key]~=nil and tab[key]) or get_multi(tab,...)
+    end
+    function aux.ParamsFromTable(tab,key,...)
+      if key then
+        local val
+        if type(key)=="table" then val=get_multi(tab,table.unpack(key)) else val=tab[key] end
+        if ... then return val,aux.ParamsFromTable(tab,...) end
+        if key=="vaargs" and type(val)=="table" then return table.unpack(val) end
+        return val
+      end
+    end
+    function aux.FunctionWithNamedArgs(f,...)
+      local args={...}
+      return function(tab,...)
+        if type(tab)=="table" then return f(aux.ParamsFromTable(tab,table.unpack(args))) end
+        return f(tab,...)
+      end
+    end
     function aux.cannotmatfilter(val1,...)
       local allowed=val1
       if type(val1)~="table" then allowed={val1,...} end
