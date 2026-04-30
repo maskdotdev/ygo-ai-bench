@@ -1111,6 +1111,56 @@ describe("Lua field and query helpers", () => {
     expect(session.state.cards.find((card) => card.code === "900")).toMatchObject({ controller: 0, location: "hand" });
   });
 
+  it("lets Lua scripts return cards to their previous field zones", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Return Monster", kind: "monster" },
+      { code: "200", name: "Return Override", kind: "monster" },
+      { code: "300", name: "No Previous Field", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 100, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const first = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === "100");
+    const second = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === "200");
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    moveDuelCard(session.state, first!.uid, "monsterZone", 0).position = "faceUpDefense";
+    moveDuelCard(session.state, first!.uid, "banished", 0);
+    moveDuelCard(session.state, second!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, second!.uid, "banished", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local first = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_REMOVED, 0, 1, 1, nil):GetFirst()
+      local second = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_REMOVED, 0, 1, 1, nil):GetFirst()
+      local invalid = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("return field first " .. tostring(Duel.ReturnToField(first)))
+      Debug.Message("return operated first " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("return field second " .. tostring(Duel.ReturnToField(second, POS_FACEUP_DEFENSE)))
+      Debug.Message("return operated second " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("return invalid " .. tostring(Duel.ReturnToField(invalid)))
+      Debug.Message("return operated invalid " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "return-to-field.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("return field first true");
+    expect(host.messages).toContain("return operated first 1/100");
+    expect(host.messages).toContain("return field second true");
+    expect(host.messages).toContain("return operated second 1/200");
+    expect(host.messages).toContain("return invalid false");
+    expect(host.messages).toContain("return operated invalid 0");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ controller: 0, location: "monsterZone", position: "faceUpDefense", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ controller: 0, location: "monsterZone", position: "faceUpDefense", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ controller: 0, location: "hand" });
+  });
+
   it("passes extra filter arguments through Lua matching helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Vararg A", kind: "monster", attack: 1600 },

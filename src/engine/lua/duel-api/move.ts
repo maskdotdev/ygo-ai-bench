@@ -47,6 +47,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("ChangePosition"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMoveToField(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("MoveToField"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushReturnToField(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("ReturnToField"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSwapSequence(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SwapSequence"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMoveSequence(state, session, hostState));
@@ -194,6 +196,30 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
   } catch {
     setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+}
+
+function pushReturnToField(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const uid = readCardUid(L, 1);
+  const requestedPosition = lua.lua_isnumber(L, 2) ? positionFromMask(lua.lua_tointeger(L, 2)) : undefined;
+  const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+  const destination = card?.previousLocation === "monsterZone" || card?.previousLocation === "spellTrapZone" ? card.previousLocation : undefined;
+  const controller = card?.previousController;
+  if (!uid || !card || !destination || controller === undefined || !hasZoneSpace(session.state, controller, destination) || !canMoveDuelCardToLocation(session.state, uid, destination, duelReason.effect)) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  try {
+    const moved = moveDuelCardWithRedirects(session.state, uid, destination, controller, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+    applySummonPosition(moved, requestedPosition ?? card.previousPosition ?? moved.position);
+    setOperatedUids(hostState, [uid]);
+    lua.lua_pushboolean(L, true);
+    return 1;
+  } catch {
+    setOperatedUids(hostState, []);
+    lua.lua_pushboolean(L, false);
     return 1;
   }
 }
