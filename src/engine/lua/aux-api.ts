@@ -169,6 +169,15 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
     function aux.ritlimit(e,se,sp,st)
       return aux.sumlimit(SUMMON_TYPE_RITUAL)(e,se,sp,st)
     end
+    function aux.tgoval(e,re,rp)
+      return rp~=e:GetHandlerPlayer()
+    end
+    function aux.indsval(e,re,rp)
+      return rp==e:GetHandlerPlayer()
+    end
+    function aux.indoval(e,re,rp)
+      return rp==1-e:GetHandlerPlayer()
+    end
     function aux.fuslimit(e,se,sp,st)
       return aux.sumlimit(SUMMON_TYPE_FUSION)(e,se,sp,st)
     end
