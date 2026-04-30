@@ -148,6 +148,10 @@ describe("Lua field and query helpers", () => {
       local second = top:GetNext()
       Debug.Message("first top " .. first:GetCode())
       Debug.Message("second top " .. second:GetCode())
+      Duel.SortDecktop(0, 0, 2)
+      Debug.Message("sort top operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Duel.SortDeckbottom(0, 0, 2)
+      Debug.Message("sort bottom operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Duel.ConfirmCards(1, top)
       Duel.ConfirmDecktop(0, 3)
       Debug.Message("sent top " .. Duel.SendtoHand(top, 0, REASON_EFFECT))
@@ -160,6 +164,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("top count 2");
     expect(host.messages).toContain(`first top ${expectedTop[0]}`);
     expect(host.messages).toContain(`second top ${expectedTop[1]}`);
+    expect(host.messages).toContain(`sort top operated 2/${expectedTop[0]}`);
+    expect(host.messages).toContain(`sort bottom operated 2/${expectedDeck[expectedDeck.length - 2]}`);
     expect(host.messages).toContain(`confirmed 1: ${expectedTop.join(",")}`);
     expect(host.messages).toContain(`confirmed decktop 0: ${expectedDeck.slice(0, 3).join(",")}`);
     expect(host.messages).toContain("sent top 2");

@@ -124,6 +124,19 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ShuffleHand"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSortDeckSegment(state, session, hostState, "top"));
+  lua.lua_setfield(L, -2, to_luastring("SortDecktop"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSortDeckSegment(state, session, hostState, "bottom"));
+  lua.lua_setfield(L, -2, to_luastring("SortDeckbottom"));
+}
+
+function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDuelDeckApiHostState, edge: "top" | "bottom"): number {
+  const deckPlayer = normalizePlayer(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const count = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
+  const sorted = deckSegmentUids(session, deckPlayer, count, edge);
+  resequenceDeck(session, deckPlayer, sorted, edge);
+  setOperatedUids(hostState, sorted);
+  return 0;
 }
 
 function discardDeckCards(session: DuelSession, player: PlayerId, count: number, reason: number): string[] {
@@ -162,6 +175,24 @@ function discardHandCards(session: DuelSession, L: unknown): string[] {
 
 function topDeckUids(session: DuelSession, player: PlayerId, count: number): string[] {
   return matchingCardUids(session, player, 0x01).slice(0, count);
+}
+
+function deckSegmentUids(session: DuelSession, player: PlayerId, count: number, edge: "top" | "bottom"): string[] {
+  const deck = matchingCardUids(session, player, 0x01);
+  return edge === "top" ? deck.slice(0, count) : deck.slice(Math.max(0, deck.length - count));
+}
+
+function resequenceDeck(session: DuelSession, player: PlayerId, segmentUids: string[], edge: "top" | "bottom"): void {
+  if (segmentUids.length === 0) return;
+  const segment = new Set(segmentUids);
+  const rest = session.state.cards
+    .filter((card) => card.controller === player && card.location === "deck" && !segment.has(card.uid))
+    .sort((left, right) => left.sequence - right.sequence);
+  const orderedUids = edge === "top" ? [...segmentUids, ...rest.map((card) => card.uid)] : [...rest.map((card) => card.uid), ...segmentUids];
+  for (const [sequence, uid] of orderedUids.entries()) {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (card) card.sequence = sequence;
+  }
 }
 
 function shuffleDeck(session: DuelSession, player: PlayerId): void {
