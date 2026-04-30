@@ -14,6 +14,51 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua movement helpers", () => {
+  it("registers Lua equip spell procedures", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Procedure Target", kind: "monster" },
+      { code: "501", name: "Procedure Equip", kind: "spell", typeFlags: 0x40002 },
+    ];
+    const session = createDuel({ seed: 40, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "501"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const equip = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "501");
+    expect(target).toBeDefined();
+    expect(equip).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c501={}
+      function c501.initial_effect(c)
+        aux.AddEquipProcedure(c,nil,aux.FilterBoolFunction(Card.IsCode,100),nil,nil,nil,function(e,tp)
+          Debug.Message("equip procedure op " .. e:GetHandler():GetEquipTarget():GetCode())
+        end)
+      end
+      `,
+      "equip-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(session.state.effects.filter((effectRecord) => effectRecord.sourceUid === equip!.uid)).toHaveLength(2);
+    const actions = getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "activateEffect" && candidate.uid === equip!.uid);
+    expect(actions).toHaveLength(1);
+    expect(applyResponse(session, actions[0]!).ok).toBe(true);
+    while (session.state.chain.length > 0) {
+      const player = session.state.waitingFor ?? session.state.turnPlayer;
+      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+    }
+
+    expect(host.messages).toContain("equip procedure op 100");
+    expect(session.state.cards.find((card) => card.uid === equip!.uid)).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
+  });
+
   it("lets Lua scripts equip cards to field monsters", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Equip Target", kind: "monster" },

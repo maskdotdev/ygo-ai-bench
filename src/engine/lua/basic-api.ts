@@ -626,6 +626,7 @@ export function installConstants(L: unknown): void {
     ACTIVITY_SPSUMMON: duelActivity.specialSummon,
     ACTIVITY_FLIPSUMMON: duelActivity.flipSummon,
     ACTIVITY_ATTACK: duelActivity.attack,
+    PLAYER_ALL: 2,
   };
   for (const [name, value] of Object.entries(constants)) {
     pushLuaNumericConstant(L, value);

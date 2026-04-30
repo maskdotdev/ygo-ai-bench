@@ -10,6 +10,7 @@ const registrationPattern = /to_luastring\("([A-Za-z_][A-Za-z0-9_]*)"\)/g;
 const quotedApiNamePattern = /"([A-Z][A-Za-z0-9_]*)"/g;
 const globalPattern = /\b(Duel|Card|Effect|Group|aux)\s*=\s*\{([^}]*)\}/gs;
 const tableFunctionPattern = /\b(Duel|Card|Effect|Group|aux)\.([A-Za-z_][A-Za-z0-9_]*)\s*=/g;
+const namedTableFunctionPattern = /\bfunction\s+(Duel|Card|Effect|Group|aux)\.([A-Za-z_][A-Za-z0-9_]*)\s*\(/g;
 
 function main(argv) {
   const options = parseArgs(argv);
@@ -92,6 +93,10 @@ function scanImplementedApis(root) {
       }
     }
     for (const match of text.matchAll(tableFunctionPattern)) {
+      const [, globalName, name] = match;
+      if (globalName && name && !isInternalApiName(name)) implemented[globalName].add(name);
+    }
+    for (const match of text.matchAll(namedTableFunctionPattern)) {
       const [, globalName, name] = match;
       if (globalName && name && !isInternalApiName(name)) implemented[globalName].add(name);
     }

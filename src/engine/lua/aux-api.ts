@@ -40,6 +40,74 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_pushcfunction(L, (state: unknown) => pushNecroValleyFilter(state, readLuaError));
   lua.lua_setfield(L, -2, to_luastring("NecroValleyFilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
+  installEquipProcedure(L, readLuaError);
+}
+
+function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => string): void {
+  const source = `
+    local player_all_value = PLAYER_ALL or 2
+    function aux.EquipLimit(f)
+      return function(e,c)
+        return not f or f(c,e,e:GetHandlerPlayer())
+      end
+    end
+    function aux.EquipFilter(c,p,f,e,tp)
+      return (p==player_all_value or c:IsControler(p)) and c:IsFaceup() and (not f or f(c,e,tp))
+    end
+    function aux.EquipTarget(tg,p,f)
+      return function(e,tp,eg,ep,ev,re,r,rp,chk,chkc)
+        local player=nil
+        if p==0 then
+          player=tp
+        elseif p==1 then
+          player=1-tp
+        elseif p==player_all_value or p==nil then
+          player=player_all_value
+        end
+        if chkc then return chkc:IsLocation(LOCATION_MZONE) and chkc:IsFaceup() and aux.EquipFilter(chkc,player,f,e,tp) end
+        if chk==0 then return player~=nil and Duel.IsExistingTarget(aux.EquipFilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil,player,f,e,tp) end
+        local g=Duel.SelectTarget(tp,aux.EquipFilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil,player,f,e,tp)
+        if tg then tg(e,tp,eg,ep,ev,re,r,rp,g:GetFirst()) end
+        Duel.SetOperationInfo(0,CATEGORY_EQUIP,e:GetHandler(),1,0,0)
+      end
+    end
+    function aux.EquipOperation(op)
+      return function(e,tp,eg,ep,ev,re,r,rp)
+        local tc=Duel.GetFirstTarget()
+        if tc and tc:IsRelateToEffect(e) and tc:IsFaceup() then
+          Duel.Equip(tp,e:GetHandler(),tc)
+        end
+        if op then op(e,tp,eg,ep,ev,re,r,rp) end
+      end
+    end
+    function aux.AddEquipProcedure(c,p,f,eqlimit,cost,tg,op,con,prop)
+      local property=prop or 0
+      local e1=Effect.CreateEffect(c)
+      e1:SetDescription(1068)
+      e1:SetCategory(CATEGORY_EQUIP)
+      e1:SetType(EFFECT_TYPE_ACTIVATE)
+      e1:SetCode(EVENT_FREE_CHAIN)
+      e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_CONTINUOUS_TARGET+property)
+      if con then e1:SetCondition(con) end
+      if cost then e1:SetCost(cost) end
+      e1:SetTarget(aux.EquipTarget(tg,p,f))
+      e1:SetOperation(aux.EquipOperation(op))
+      c:RegisterEffect(e1)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_SINGLE)
+      e2:SetCode(EFFECT_EQUIP_LIMIT)
+      e2:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
+      if eqlimit then
+        e2:SetValue(eqlimit)
+      else
+        e2:SetValue(aux.EquipLimit(f))
+      end
+      c:RegisterEffect(e2)
+      return e1
+    end
+  `;
+  const status = lauxlib.luaL_dostring(L, to_luastring(source));
+  if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
 }
 
 function pushGlobalCheck(L: unknown, readLuaError: (state: unknown) => string): number {

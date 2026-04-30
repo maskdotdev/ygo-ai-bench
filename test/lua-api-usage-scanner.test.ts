@@ -20,6 +20,7 @@ describe("Lua API usage scanner", () => {
         Duel.Draw(0,1,REASON_EFFECT)
         Duel.Draw(0,1,REASON_EFFECT)
         Duel.HelperRegistered()
+        Duel.NamedRegistered()
         Duel.MissingDuelCall()
         Card.IsCode(c,100)
         Card.MissingCardCall(c)
@@ -30,6 +31,7 @@ describe("Lua API usage scanner", () => {
     );
     fs.writeFileSync(path.join(source, "duel-api", "deck.ts"), `lua.lua_setfield(L, -2, to_luastring("Draw"));`);
     fs.writeFileSync(path.join(source, "duel-api", "helper.ts"), `pushHelper(L, "HelperRegistered", session);`);
+    fs.writeFileSync(path.join(source, "duel-api", "named.ts"), `function Duel.NamedRegistered() end`);
     fs.writeFileSync(path.join(source, "card-api.ts"), `lua.lua_setfield(L, -2, to_luastring("IsCode"));`);
     fs.writeFileSync(path.join(source, "aux-api.ts"), `lua.lua_setfield(L, -2, to_luastring("FilterBoolFunction"));`);
 
@@ -40,6 +42,7 @@ describe("Lua API usage scanner", () => {
     expect(output).toContain("     1  Duel.MissingDuelCall");
     expect(output).not.toContain("Duel.Draw");
     expect(output).not.toContain("Duel.HelperRegistered");
+    expect(output).not.toContain("Duel.NamedRegistered");
     expect(output).not.toContain("Card.IsCode");
     expect(output).not.toContain("Duel.CommentedCall");
   });

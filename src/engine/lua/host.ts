@@ -505,6 +505,7 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
     code === 66 ||
     code === 67 ||
     code === 68 ||
+    code === 76 ||
     code === 85 ||
     code === 235 ||
     code === 236 ||
