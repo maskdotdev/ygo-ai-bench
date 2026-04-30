@@ -387,6 +387,107 @@ describe("duel chains", () => {
     expect(resolved.state.log.filter((entry) => entry.detail === "Opponent quick resolved")).toHaveLength(1);
   });
 
+  it("rejects stale chain pass responses after the chain resolves", () => {
+    const session = createDuel({ seed: 96, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(source).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    registerEffect(session, {
+      id: "stale-pass-source",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Stale pass source resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "stale-pass-quick",
+      sourceUid: quickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Stale pass quick resolved");
+      },
+    });
+
+    const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "stale-pass-source");
+    expect(sourceAction).toBeTruthy();
+    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(1);
+    const stalePass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(stalePass).toBeTruthy();
+
+    expect(applyResponse(session, stalePass!).ok).toBe(true);
+    const replay = applyResponse(session, stalePass!);
+
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    expect(session.state.chain).toHaveLength(0);
+    expect(session.state.log.filter((entry) => entry.detail === "Stale pass source resolved")).toHaveLength(1);
+  });
+
+  it("rejects stale quick responses after their chain window closes", () => {
+    const session = createDuel({ seed: 97, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    registerEffect(session, {
+      id: "stale-quick-source",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Stale quick source resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "stale-self-quick",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Stale self quick resolved");
+      },
+    });
+
+    const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "stale-quick-source");
+    expect(sourceAction).toBeTruthy();
+    const opened = applyResponse(session, sourceAction!);
+    expect(opened.ok).toBe(true);
+    expect(opened.state.waitingFor).toBe(0);
+    const staleQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "stale-self-quick");
+    const pass = getDuelLegalActions(session, 0).find((action) => action.type === "passChain");
+    expect(staleQuick).toBeTruthy();
+    expect(pass).toBeTruthy();
+    expect(applyResponse(session, pass!).ok).toBe(true);
+
+    const replay = applyResponse(session, staleQuick!);
+
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    expect(session.state.chain).toHaveLength(0);
+    expect(session.state.log.filter((entry) => entry.detail === "Stale self quick resolved")).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "stale-self-quick")).toBe(true);
+  });
+
   it("resets once-per-turn effect usage on a later turn", () => {
     const session = createDuel({ seed: 3, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

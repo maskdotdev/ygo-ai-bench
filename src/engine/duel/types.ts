@@ -201,6 +201,7 @@ export type DuelPromptState =
 export interface DuelState {
   id: string;
   seed: string;
+  actionWindowId: number;
   status: DuelStatus;
   turn: number;
   turnPlayer: PlayerId;
@@ -234,7 +235,7 @@ export interface DuelSession {
 
 export type DuelCardReader = (code: string) => DuelCardData | undefined;
 
-export type DuelAction =
+export type DuelAction = (
   | { type: "normalSummon"; player: PlayerId; uid: string; label: string }
   | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; label: string }
   | { type: "fusionSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
@@ -255,7 +256,8 @@ export type DuelAction =
   | { type: "changePosition"; player: PlayerId; uid: string; position: CardPosition; label: string }
   | { type: "declareAttack"; player: PlayerId; attackerUid: string; targetUid?: string; label: string }
   | { type: "changePhase"; player: PlayerId; phase: DuelPhase; label: string }
-  | { type: "endTurn"; player: PlayerId; label: string };
+  | { type: "endTurn"; player: PlayerId; label: string }
+) & { windowId?: number };
 
 export type DuelResponse = DuelAction;
 

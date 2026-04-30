@@ -157,6 +157,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
   const state: DuelState = {
     id: `duel-${seed}-${Date.now().toString(36)}`,
     seed,
+    actionWindowId: 0,
     status: "setup",
     turn: 0,
     turnPlayer: 0,
@@ -224,15 +225,15 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   const actions: DuelAction[] = [];
   if (state.prompt) {
     actions.push(...getPromptResponseActions(state.prompt, player));
-    return actions;
+    return stampActions(actions, state.actionWindowId);
   }
   if (state.chain.length) {
     actions.push(...getChainResponseActions(state, player));
-    return actions;
+    return stampActions(actions, state.actionWindowId);
   }
   if (state.pendingTriggers.length) {
     actions.push(...getPendingTriggerActions(state, player));
-    return actions;
+    return stampActions(actions, state.actionWindowId);
   }
   const hand = getCards(state, player, "hand");
   if (state.phase === "main1" || state.phase === "main2") {
@@ -271,7 +272,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   const nextPhase = phaseOrder[phaseOrder.indexOf(state.phase) + 1];
   if (nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
   actions.push({ type: "endTurn", player, label: "End turn" });
-  return actions;
+  return stampActions(actions, state.actionWindowId);
 }
 
 export function applyResponse(session: DuelSession, response: DuelResponse): ApplyDuelResponseResult {
@@ -725,6 +726,10 @@ function moveDuelCardToRedirectedLocation(state: DuelState, uid: string, locatio
 
 function hasChainResponses(state: DuelState, player: PlayerId): boolean {
   return quickEffectActions(state, player).length > 0;
+}
+
+function stampActions(actions: DuelAction[], windowId: number): DuelAction[] {
+  return actions.map((action) => ({ ...action, windowId }));
 }
 
 function chainLimitsAllow(state: DuelState, effect: DuelEffectDefinition, player: PlayerId): boolean {

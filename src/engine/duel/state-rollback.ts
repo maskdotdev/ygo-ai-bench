@@ -2,6 +2,7 @@ import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelFlagEffect,
 
 export interface DuelStateRollback {
   status: DuelState["status"];
+  actionWindowId: number;
   turn: number;
   turnPlayer: PlayerId;
   phase: DuelState["phase"];
@@ -25,6 +26,7 @@ export interface DuelStateRollback {
 export function captureDuelState(state: DuelState): DuelStateRollback {
   return {
     status: state.status,
+    actionWindowId: state.actionWindowId,
     turn: state.turn,
     turnPlayer: state.turnPlayer,
     phase: state.phase,
@@ -48,6 +50,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
 
 export function restoreDuelState(state: DuelState, rollback: DuelStateRollback): void {
   state.status = rollback.status;
+  state.actionWindowId = rollback.actionWindowId;
   state.turn = rollback.turn;
   state.turnPlayer = rollback.turnPlayer;
   state.phase = rollback.phase;

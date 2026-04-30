@@ -43,6 +43,7 @@ export function applyDuelResponse(session: DuelSession, response: DuelResponse, 
   const rollback = captureDuelState(session.state);
   try {
     dispatchDuelResponse(session, response, handlers);
+    session.state.actionWindowId += 1;
     return result(session, handlers, true);
   } catch (error) {
     restoreDuelState(session.state, rollback);
