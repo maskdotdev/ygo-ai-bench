@@ -35,6 +35,55 @@ describe("Lua state helpers", () => {
     expect(session.state.skippedPhases).toEqual([]);
   });
 
+  it("lets Lua scripts raise events for trigger effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Raised Event Card", kind: "monster" },
+      { code: "200", name: "Raised Event Trigger", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 143, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const register = host.loadScript(
+      `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_TO_GRAVE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          Debug.Message("raised trigger " .. eg:GetFirst():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "raise-event-register.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Duel.RaiseEvent(target, EVENT_TO_GRAVE, nil, REASON_EFFECT, 0, 0, 0)
+      `,
+      "raise-event.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(session.state.pendingTriggers).toHaveLength(1);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCardUid: session.state.cards.find((card) => card.code === "100")?.uid });
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("raised trigger 100");
+  });
+
   it("lets Lua effects register, read, and reset duel and card flags", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Flag Source", kind: "monster" }];
     const session = createDuel({ seed: 22, startingHandSize: 1, cardReader: createCardReader(cards) });

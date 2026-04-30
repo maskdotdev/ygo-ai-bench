@@ -417,6 +417,10 @@ export function recoverDuelPlayer(state: DuelState, player: PlayerId, amount: nu
   return value;
 }
 
+export function raiseDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
+  collectTriggerEffects(state, eventName, eventCard);
+}
+
 export function setDuelPlayerLifePoints(state: DuelState, player: PlayerId, lifePoints: number): void {
   state.players[player].lifePoints = Math.max(0, Math.floor(lifePoints));
   pushDuelLog(state, "setLifePoints", player, undefined, String(state.players[player].lifePoints));

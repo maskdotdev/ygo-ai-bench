@@ -6,6 +6,7 @@ import { installGroupApi, pushGroupTable } from "#lua/group-api.js";
 import { scriptFilenameForCard } from "#engine/data-loaders.js";
 import { registerEffect } from "#duel/core.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "#lua/api-utils.js";
+import { triggerEventFromCode } from "#lua/event-code.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaDuelOperationInfo } from "#lua/duel-api/operation.js";
 
@@ -537,18 +538,6 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
 
 function luaEffectTriggerIsOptional(typeFlags: number): boolean {
   return (typeFlags & 0x200) === 0;
-}
-
-function triggerEventFromCode(code: number | undefined): DuelEventName | undefined {
-  if (code === 34) return undefined;
-  if (code === 1001) return "flipSummoned";
-  if (code === 1100) return "normalSummoned";
-  if (code === 1102) return "specialSummoned";
-  if (code === 1014) return "sentToGraveyard";
-  if (code === 1016) return "positionChanged";
-  if (code === 1130) return "attackDeclared";
-  if (code === 1140) return "battleDestroyed";
-  return undefined;
 }
 
 function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, kind: LuaEffectCallbackKind, legacyArgs: boolean, ctx?: DuelEffectContext): number {
