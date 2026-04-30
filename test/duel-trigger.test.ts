@@ -203,6 +203,70 @@ describe("duel triggers", () => {
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-held-trigger"]);
   });
 
+  it("offers the trigger controller quick responses when the opponent cannot chain", () => {
+    const session = createDuel({ seed: 3, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(summoned).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "self-chainable-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Self chainable trigger resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "self-quick-response",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Self quick response resolved");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+
+    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "self-chainable-trigger");
+    expect(trigger).toBeTruthy();
+    const opened = applyResponse(session, trigger!);
+
+    expect(opened.ok).toBe(true);
+    expect(opened.state.chain).toHaveLength(1);
+    expect(opened.state.waitingFor).toBe(0);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).map((action) => action.type)).toEqual(["activateEffect", "passChain"]);
+
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "self-quick-response");
+    expect(quick).toBeTruthy();
+    const resolved = applyResponse(session, quick!);
+    const quickLog = resolved.state.log.find((entry) => entry.detail === "Self quick response resolved");
+    const triggerLog = resolved.state.log.find((entry) => entry.detail === "Self chainable trigger resolved");
+
+    expect(resolved.ok).toBe(true);
+    expect(resolved.state.chain).toHaveLength(0);
+    expect(quickLog).toBeTruthy();
+    expect(triggerLog).toBeTruthy();
+    expect(quickLog!.step).toBeLessThan(triggerLog!.step);
+  });
+
   it("allows optional trigger effects to be declined", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

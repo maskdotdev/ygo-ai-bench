@@ -59,8 +59,9 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
     pushDuelLog(session.state, "activate", player, source.name, effect.id);
     markEffectUsed(session.state, effect);
     const responsePlayer = otherPlayer(player);
-    if (handlers.hasChainResponses(session.state, responsePlayer)) {
-      session.state.waitingFor = responsePlayer;
+    const chainPlayer = nextChainResponsePlayer(session.state, player, responsePlayer, handlers);
+    if (chainPlayer !== undefined) {
+      session.state.waitingFor = chainPlayer;
       return;
     }
     handlers.resolveChain(session.state);
@@ -113,8 +114,9 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
     markEffectUsed(session.state, effect);
     pruneSpentMandatoryPendingTriggers(session.state);
     const responsePlayer = otherPlayer(trigger.player);
-    if (handlers.hasChainResponses(session.state, responsePlayer)) {
-      session.state.waitingFor = responsePlayer;
+    const chainPlayer = nextChainResponsePlayer(session.state, trigger.player, responsePlayer, handlers);
+    if (chainPlayer !== undefined) {
+      session.state.waitingFor = chainPlayer;
       return;
     }
     handlers.resolveChain(session.state);
@@ -141,4 +143,10 @@ function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: strin
 
 function otherPlayer(player: PlayerId): PlayerId {
   return player === 0 ? 1 : 0;
+}
+
+function nextChainResponsePlayer(state: DuelState, activatingPlayer: PlayerId, firstResponder: PlayerId, handlers: DuelActivationHandlers): PlayerId | undefined {
+  if (handlers.hasChainResponses(state, firstResponder)) return firstResponder;
+  if (state.chain.length === 1 && handlers.hasChainResponses(state, activatingPlayer)) return activatingPlayer;
+  return undefined;
 }
