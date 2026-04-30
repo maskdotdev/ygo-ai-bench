@@ -6,6 +6,7 @@ import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDu
 import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions } from "#duel/summon.js";
+import { installCardCodeApi } from "#lua/card-code-api.js";
 import { cardFieldNames } from "#lua/card-field-names.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { canLuaSynchroSummonCard } from "#lua/synchro-summonable.js";
@@ -56,7 +57,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));
-  installCodeHelpers(L, session);
+  installCardCodeApi(L, session);
   installStatHelpers(L, session, hostState);
   installStateHelpers(L, session, hostState);
   installFlagHelpers(L, session);
@@ -68,83 +69,6 @@ export function pushCardTable(L: unknown, uid: string): void {
   lua.lua_pushliteral(L, uid);
   lua.lua_setfield(L, -2, to_luastring("__duel_uid"));
   for (const fieldName of cardFieldNames) copyGlobalFunctionToField(L, "Card", fieldName);
-}
-
-function installCodeHelpers(L: unknown, session: DuelSession): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    lua.lua_pushinteger(state, card ? Number(card.code) : 0);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetCode"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    lua.lua_pushinteger(state, card ? Number(card.code) : 0);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetOriginalCode"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    lua.lua_pushinteger(state, card ? Number(card.code) : 0);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetOriginalCodeRule"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested && cardCodes(card).includes(requested)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsCode"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested && !cardCodes(card).includes(requested)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsNotCode"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    lua.lua_pushboolean(state, Boolean(card && listedCodes(card).some((code) => readRequestedCodes(state, 2).includes(code))));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("ListsCode"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsOriginalCode"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsOriginalCodeRule"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const firstCodeIndex = lua.lua_isnumber(state, 4) ? 4 : 2;
-    lua.lua_pushboolean(state, Boolean(card && matchesAnyCodeAtOrAfter(state, card, firstCodeIndex)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsSummonCode"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && card.data.setcodes?.includes(requested)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsSetCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && !card.data.setcodes?.includes(requested)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsNotSetCard"));
-  pushBooleanGetter(L, "IsInfinity", session, (card) => Boolean(card && cardCodes(card).includes("1378")));
 }
 
 function installStatHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
@@ -353,6 +277,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushCanChangeControler(L, "IsAbleToChangeControler", session);
   pushCanChangeControler(L, "IsControlerCanBeChanged", session);
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
+  pushBooleanGetter(L, "IsTributeSummoned", session, (card) => Boolean(card && card.summonType === "tribute"));
   pushNumberMatcher(L, "IsSummonType", session, (card, requested) => isSummonTypeMatch(summonTypeMask(card), requested));
   pushNumberMatcher(L, "IsSummonLocation", session, (card, requested) => Boolean(card.summonType && (locationMaskFromLocation(card.previousLocation) & requested) !== 0));
   pushNumberMatcher(L, "IsSummonPlayer", session, (card, requested) => card.summonPlayer !== undefined && card.summonPlayer === normalizePlayer(requested));
@@ -931,26 +856,6 @@ function canChangePosition(state: DuelState, card: DuelCardInstance, requested: 
 
 function cardCodes(card: DuelCardInstance): string[] {
   return card.data.alias ? [card.code, card.data.alias] : [card.code];
-}
-
-function listedCodes(card: DuelCardInstance): string[] {
-  return [...(card.data.listedNames ?? []), ...(card.data.fitMonster ?? [])].map(String);
-}
-
-function readRequestedCodes(L: unknown, start: number): string[] {
-  const codes: string[] = [];
-  for (let index = start; index <= lua.lua_gettop(L); index += 1) {
-    if (lua.lua_isnumber(L, index)) codes.push(String(lua.lua_tointeger(L, index)));
-  }
-  return codes;
-}
-
-function matchesAnyCodeAtOrAfter(L: unknown, card: DuelCardInstance, start: number): boolean {
-  const codes = cardCodes(card);
-  for (let index = start; index <= lua.lua_gettop(L); index += 1) {
-    if (lua.lua_isnumber(L, index) && codes.includes(String(lua.lua_tointeger(L, index)))) return true;
-  }
-  return false;
 }
 
 function cardRank(card: DuelCardInstance | undefined): number {

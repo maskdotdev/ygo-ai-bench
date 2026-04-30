@@ -1166,12 +1166,14 @@ describe("Lua field and query helpers", () => {
       local tributes = Duel.SelectMatchingCard(0, function(c) return c:IsCode(200) or c:IsCode(300) end, 0, LOCATION_MZONE, 0, 2, 2, nil)
       Debug.Message("tribute summon result " .. Duel.Summon(target, true, tributes))
       Debug.Message("tribute summon operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("tribute summoned predicate " .. tostring(Duel.GetOperatedGroup():GetFirst():IsTributeSummoned()))
       `,
       "basic-tribute-summon.lua",
     );
     expect(successResult.ok, successResult.error).toBe(true);
     expect(successHost.messages).toContain("tribute summon result 1");
     expect(successHost.messages).toContain("tribute summon operated 1/100");
+    expect(successHost.messages).toContain("tribute summoned predicate true");
     expect(successSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", position: "faceUpAttack", summonType: "tribute" });
     expect(successSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
     expect(successSession.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });

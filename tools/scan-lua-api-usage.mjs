@@ -158,7 +158,7 @@ function stripLuaComments(text) {
 
 function tableForLocalFile(file) {
   const normalized = file.split(path.sep).join("/");
-  if (normalized.endsWith("/card-api.ts")) return "Card";
+  if (normalized.endsWith("/card-api.ts") || /\/card-[a-z0-9-]+-api\.ts$/.test(normalized)) return "Card";
   if (normalized.endsWith("/group-api.ts")) return "Group";
   if (normalized.endsWith("/basic-api.ts") || normalized.endsWith("/aux-api.ts")) return "aux";
   if (normalized.endsWith("/host.ts")) return "Effect";

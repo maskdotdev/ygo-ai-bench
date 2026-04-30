@@ -152,6 +152,7 @@ export const cardFieldNames = [
   "IsAbleToChangeControler",
   "IsControlerCanBeChanged",
   "GetSummonType",
+  "IsTributeSummoned",
   "IsSummonType",
   "IsSummonLocation",
   "IsSummonPlayer",
