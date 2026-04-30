@@ -102,6 +102,11 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ConfirmDecktop"));
+  lua.lua_pushcfunction(L, () => {
+    session.state.shuffleCheckDisabled = true;
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("DisableShuffleCheck"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     shuffleDeck(session, player);

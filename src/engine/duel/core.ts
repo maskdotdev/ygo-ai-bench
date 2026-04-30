@@ -177,6 +177,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     pendingTriggers: [],
     usedCountKeys: [],
     flagEffects: [],
+    shuffleCheckDisabled: false,
     activityCounts: createDuelActivityCounts(),
     attacksDeclared: [],
     positionsChanged: [],

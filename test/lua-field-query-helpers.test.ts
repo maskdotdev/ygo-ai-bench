@@ -92,6 +92,7 @@ describe("Lua field and query helpers", () => {
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
       `
+      Duel.DisableShuffleCheck()
       local top = Duel.GetDecktopGroup(0, 2)
       Debug.Message("top count " .. top:GetCount())
       local first = top:GetNext()
@@ -113,6 +114,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain(`confirmed 1: ${expectedTop.join(",")}`);
     expect(host.messages).toContain(`confirmed decktop 0: ${expectedDeck.slice(0, 3).join(",")}`);
     expect(host.messages).toContain("sent top 2");
+    expect(session.state.shuffleCheckDisabled).toBe(true);
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && expectedTop.includes(card.code))).toHaveLength(2);
   });
 

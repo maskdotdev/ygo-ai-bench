@@ -216,6 +216,7 @@ export interface DuelState {
   pendingTriggers: PendingTrigger[];
   usedCountKeys: string[];
   flagEffects: DuelFlagEffect[];
+  shuffleCheckDisabled: boolean;
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   attacksDeclared: string[];
   positionsChanged: string[];
