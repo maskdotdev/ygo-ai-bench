@@ -215,6 +215,8 @@ describe("Lua field and query helpers", () => {
       Debug.Message("search operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("can discard one " .. tostring(Duel.IsPlayerCanDiscardDeck(0, 1)))
       Debug.Message("can discard two " .. tostring(Duel.IsPlayerCanDiscardDeck(0, 2)))
+      Debug.Message("can discard cost one " .. tostring(Duel.IsPlayerCanDiscardDeckAsCost(0, 1)))
+      Debug.Message("can discard cost two " .. tostring(Duel.IsPlayerCanDiscardDeckAsCost(0, 2)))
       Debug.Message("discarded " .. Duel.DiscardDeck(0, 2, REASON_EFFECT))
       Debug.Message("discard operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("can hand discard three " .. tostring(Duel.IsPlayerCanDiscardHand(0, 3)))
@@ -240,6 +242,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain(`search operated ${searchCode}`);
     expect(host.messages).toContain("can discard one true");
     expect(host.messages).toContain("can discard two false");
+    expect(host.messages).toContain("can discard cost one true");
+    expect(host.messages).toContain("can discard cost two false");
     expect(host.messages).toContain("discarded 1");
     expect(host.messages).toContain(`discard operated 1/${discardedCode}`);
     expect(host.messages).toContain("can hand discard three true");

@@ -34,6 +34,13 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
+    lua.lua_pushboolean(state, topDeckUids(session, player, count).length >= count);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDiscardDeckAsCost"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
     lua.lua_pushboolean(state, matchingCardUids(session, player, 0x02).length >= count);
     return 1;
   });
