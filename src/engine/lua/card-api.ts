@@ -74,6 +74,7 @@ export function pushCardTable(L: unknown, uid: string): void {
 function installStatHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
   pushNumberGetter(L, "GetType", session, (card) => cardTypeFlags(card));
   pushNumberGetter(L, "GetOriginalType", session, (card) => cardTypeFlags(card));
+  pushNumberGetter(L, "GetMainCardType", session, (card) => cardMainTypeFlags(card));
   pushNumberMatcher(L, "IsType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
   pushNumberMatcher(L, "IsNotType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
@@ -834,6 +835,10 @@ function cardTypeFlags(card: DuelCardInstance | undefined): number {
   if (card.kind === "spell") return 0x2;
   if (card.kind === "trap") return 0x4;
   return 0x1;
+}
+
+function cardMainTypeFlags(card: DuelCardInstance | undefined): number {
+  return cardTypeFlags(card) & 0x7;
 }
 
 function cardStatusMask(state: DuelState, card: DuelCardInstance): number {

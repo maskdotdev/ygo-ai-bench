@@ -18,6 +18,7 @@ export const cardFieldNames = [
   "GetControler",
   "GetType",
   "GetOriginalType",
+  "GetMainCardType",
   "IsType",
   "IsNotType",
   "IsOriginalType",
