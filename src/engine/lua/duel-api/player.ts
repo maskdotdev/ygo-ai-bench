@@ -23,6 +23,8 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
   pushPlayerMoveMatcher(L, "IsPlayerCanSendtoExtra", session, "extraDeck");
   lua.lua_pushcfunction(L, (state: unknown) => pushCanNormalSummon(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanAdditionalSummon(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanAdditionalSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanNormalSet(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanMSet"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummon(state, session));
@@ -48,6 +50,12 @@ function pushCanNormalSummon(L: unknown, session: DuelSession): number {
   const uid = readCardUid(L, 2);
   const ignoreCount = lua.lua_toboolean(L, 3);
   lua.lua_pushboolean(L, canNormalSummon(session, player, uid, ignoreCount));
+  return 1;
+}
+
+function pushCanAdditionalSummon(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  lua.lua_pushboolean(L, canAdditionalSummon(session, player));
   return 1;
 }
 
@@ -135,6 +143,12 @@ function canNormalSummon(session: DuelSession, player: PlayerId, uid: string | u
   const card = uid ? findCard(session.state, uid) : undefined;
   if (card && (card.controller !== player || card.location !== "hand" || !isMonsterLike(card.kind))) return false;
   return availableMonsterZoneCount(session, player, []) > 0;
+}
+
+function canAdditionalSummon(session: DuelSession, player: PlayerId): boolean {
+  if (!isMainPhaseForPlayer(session, player)) return false;
+  if (availableMonsterZoneCount(session, player, []) <= 0) return false;
+  return matchingPlayerEffects(session.state, player, 29, createPlayerCheckContext(session)).length === 0;
 }
 
 function canNormalSet(session: DuelSession, player: PlayerId, uid: string | undefined, ignoreCount: boolean): boolean {

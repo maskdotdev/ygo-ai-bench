@@ -827,6 +827,74 @@ describe("Lua state helpers", () => {
     expect(hintLogs[1]?.detail).toMatch(/^1 selected: (100|200)$/);
   });
 
+  it("lets Lua scripts check additional summon availability", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Extra Summon Source", kind: "monster" },
+      { code: "200", name: "Zone Filler A", kind: "monster" },
+      { code: "300", name: "Zone Filler B", kind: "monster" },
+      { code: "400", name: "Zone Filler C", kind: "monster" },
+      { code: "500", name: "Zone Filler D", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 31, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const before = host.loadScript(
+      `
+      Debug.Message("additional before " .. tostring(Duel.IsPlayerCanAdditionalSummon(0)) .. "/" .. tostring(Duel.IsPlayerCanAdditionalSummon(1)))
+      `,
+      "additional-summon-before.lua",
+    );
+    expect(before.ok, before.error).toBe(true);
+
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_EXTRA_SUMMON_COUNT)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+      `,
+      "additional-summon-effect.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const withEffect = host.loadScript(
+      `
+      Debug.Message("additional with effect " .. tostring(Duel.IsPlayerCanAdditionalSummon(0)))
+      `,
+      "additional-summon-with-effect.lua",
+    );
+    expect(withEffect.ok, withEffect.error).toBe(true);
+
+    for (const code of ["200", "300", "400", "500"]) {
+      const card = session.state.cards.find((candidate) => candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+    const fullZone = host.loadScript(
+      `
+      Debug.Message("additional full zone " .. tostring(Duel.IsPlayerCanAdditionalSummon(0)))
+      `,
+      "additional-summon-full-zone.lua",
+    );
+
+    expect(fullZone.ok, fullZone.error).toBe(true);
+    expect(host.messages).toContain("additional before true/false");
+    expect(host.messages).toContain("additional with effect false");
+    expect(host.messages).toContain("additional full zone false");
+  });
+
   it("exposes summon type metadata to Lua card helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Summon A", kind: "monster" },
