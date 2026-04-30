@@ -57,6 +57,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("ActivateFieldSpell"));
   lua.lua_pushcfunction(L, (state: unknown) => pushReturnToField(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ReturnToField"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushMoveToDeckTop(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("MoveToDeckTop"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMoveToDeckBottom(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("MoveToDeckBottom"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSwapSequence(state, session, hostState));
@@ -299,6 +301,13 @@ function pushMoveToDeckBottom(L: unknown, session: DuelSession, hostState: LuaDu
   return 1;
 }
 
+function pushMoveToDeckTop(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const moved = lua.lua_isnumber(L, 1) ? moveDecktopCardsToTop(L, session) : moveCardsToDeckTop(L, session, hostState);
+  setOperatedUids(hostState, moved);
+  lua.lua_pushinteger(L, moved.length);
+  return 1;
+}
+
 function moveDecktopCardsToBottom(L: unknown, session: DuelSession): string[] {
   const count = Math.max(0, lua.lua_tointeger(L, 1));
   const player = readOptionalPlayer(L, 2) ?? session.state.turnPlayer;
@@ -310,6 +319,12 @@ function moveDecktopCardsToBottom(L: unknown, session: DuelSession): string[] {
     moved.push(card.uid);
   }
   return moved;
+}
+
+function moveDecktopCardsToTop(L: unknown, session: DuelSession): string[] {
+  const count = Math.max(0, lua.lua_tointeger(L, 1));
+  const player = readOptionalPlayer(L, 2) ?? session.state.turnPlayer;
+  return getCards(session.state, player, "deck").slice(0, count).map((card) => card.uid);
 }
 
 function moveCardsToDeckBottom(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): string[] {
@@ -334,6 +349,39 @@ function moveCardsToDeckBottom(L: unknown, session: DuelSession, hostState: LuaD
     }
   }
   return moved;
+}
+
+function moveCardsToDeckTop(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): string[] {
+  const targetPlayer = readOptionalPlayer(L, 2);
+  const reason = readMoveReason(L, 3, 0);
+  const moved: string[] = [];
+  for (const uid of readCardOrGroupUids(L, 1)) {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!card) continue;
+    if (card.location === "deck") {
+      moveDeckCardToTop(session.state, card);
+      moved.push(uid);
+      continue;
+    }
+    if (!canMoveDuelCardToLocation(session.state, uid, "deck", reason)) continue;
+    const before = movementSnapshot(card);
+    try {
+      const result = moveDuelCardWithRedirects(session.state, uid, "deck", targetPlayer ?? card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      if (didMove(result, before)) {
+        moveDeckCardToTop(session.state, result);
+        moved.push(uid);
+      }
+    } catch {
+      // EDOPro-style helpers report successful movements only.
+    }
+  }
+  return moved;
+}
+
+function moveDeckCardToTop(state: DuelState, card: DuelCardInstance): void {
+  const cards = getCards(state, card.controller, "deck").filter((candidate) => candidate.uid !== card.uid);
+  cards.unshift(card);
+  for (const [sequence, candidate] of cards.entries()) candidate.sequence = sequence;
 }
 
 function moveDeckCardToBottom(state: DuelState, card: DuelCardInstance): void {

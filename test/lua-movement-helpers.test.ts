@@ -14,6 +14,55 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua movement helpers", () => {
+  it("lets Lua scripts move cards to the deck top", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Top A", kind: "monster" },
+      { code: "200", name: "Top B", kind: "monster" },
+      { code: "300", name: "Top C", kind: "monster" },
+      { code: "400", name: "Top D", kind: "monster" },
+      { code: "900", name: "Top Hand", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 74, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["900", "100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const initialDeckOrder = getCards(session.state, 0, "deck").map((card) => card.code);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local top3 = Duel.GetDecktopGroup(0, 3)
+      local third = top3:GetFirst()
+      third = top3:GetNext()
+      third = top3:GetNext()
+      Debug.Message("top card " .. Duel.MoveToDeckTop(third, 0))
+      Debug.Message("top card operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      local hand = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("top hand " .. Duel.MoveToDeckTop(hand, 0, REASON_EFFECT))
+      Debug.Message("top hand operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("draw top " .. Duel.Draw(0, 1, REASON_EFFECT))
+      Debug.Message("drawn card " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "move-to-deck-top.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("top card 1");
+    expect(host.messages).toContain(`top card operated ${initialDeckOrder[2]}`);
+    expect(host.messages).toContain("top hand 1");
+    expect(host.messages).toContain("top hand operated 900");
+    expect(host.messages).toContain("draw top 1");
+    expect(host.messages).toContain("drawn card 900");
+    expect(getCards(session.state, 0, "deck").map((card) => card.code)).toEqual([
+      initialDeckOrder[2]!,
+      initialDeckOrder[0]!,
+      initialDeckOrder[1]!,
+      initialDeckOrder[3]!,
+    ]);
+  });
+
   it("lets Lua scripts move cards to the deck bottom", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Bottom A", kind: "monster" },
