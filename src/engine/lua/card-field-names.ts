@@ -7,6 +7,7 @@ export const cardFieldNames = [
   "IsNotCode",
   "IsOriginalCode",
   "IsOriginalCodeRule",
+  "IsSummonCode",
   "IsSetCard",
   "IsNotSetCard",
   "IsInfinity",

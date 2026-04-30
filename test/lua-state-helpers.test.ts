@@ -1179,4 +1179,35 @@ describe("Lua state helpers", () => {
       "change attacked any false",
     ]);
   });
+
+  it("lets Lua scripts build summon-code filters", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", alias: "101", name: "Aliased Summon Material", kind: "monster" },
+      { code: "300", name: "Other Summon Material", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 164, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local aliased = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local other = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local filter = aux.FilterSummonCode(101, 500)
+      Debug.Message("summon code direct " .. tostring(aliased:IsSummonCode(nil, 0, 0, 101)))
+      Debug.Message("summon code filter alias " .. tostring(filter(aliased, nil, 0, 0)))
+      Debug.Message("summon code filter miss " .. tostring(filter(other, nil, 0, 0)))
+      `,
+      "summon-code-filter.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("summon code direct true");
+    expect(host.messages).toContain("summon code filter alias true");
+    expect(host.messages).toContain("summon code filter miss false");
+  });
 });

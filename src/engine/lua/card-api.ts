@@ -118,6 +118,13 @@ function installCodeHelpers(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsOriginalCodeRule"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
+    const firstCodeIndex = lua.lua_isnumber(state, 4) ? 4 : 2;
+    lua.lua_pushboolean(state, Boolean(card && matchesAnyCodeAtOrAfter(state, card, firstCodeIndex)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSummonCode"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
     lua.lua_pushboolean(state, Boolean(card && requested !== undefined && card.data.setcodes?.includes(requested)));
     return 1;
@@ -822,6 +829,14 @@ function canChangePosition(state: DuelState, card: DuelCardInstance, requested: 
 
 function cardCodes(card: DuelCardInstance): string[] {
   return card.data.alias ? [card.code, card.data.alias] : [card.code];
+}
+
+function matchesAnyCodeAtOrAfter(L: unknown, card: DuelCardInstance, start: number): boolean {
+  const codes = cardCodes(card);
+  for (let index = start; index <= lua.lua_gettop(L); index += 1) {
+    if (lua.lua_isnumber(L, index) && codes.includes(String(lua.lua_tointeger(L, index)))) return true;
+  }
+  return false;
 }
 
 function cardRank(card: DuelCardInstance | undefined): number {
