@@ -250,7 +250,7 @@ function installFlagHelpers(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const reset = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
+    const reset = lua.lua_isnumber(state, 3) ? Math.trunc(lua.lua_tonumber(state, 3)) : 0;
     const property = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
     const value = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0;
     if (!uid) {

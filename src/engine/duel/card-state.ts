@@ -1,4 +1,5 @@
 import { pruneResetEffectsAfterMove } from "#duel/effect-reset.js";
+import { pruneDuelFlagEffectsAfterMove } from "#duel/flags.js";
 import type { DuelCardInstance, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason = 0, reasonPlayer?: PlayerId): DuelCardInstance {
@@ -22,6 +23,7 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   if (to === "graveyard" || to === "banished" || to === "monsterZone" || to === "spellTrapZone") card.faceUp = true;
   resequence(state, card.controller, to);
   pruneResetEffectsAfterMove(state, card);
+  pruneDuelFlagEffectsAfterMove(state, card);
   return card;
 }
 

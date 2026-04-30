@@ -70,6 +70,7 @@ import {
 } from "#duel/continuous-effects.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
 import { pruneResetEffectsAfterChain, pruneResetEffectsAfterPhase } from "#duel/effect-reset.js";
+import { pruneDuelFlagEffectsAfterChain, pruneDuelFlagEffectsAfterPhase } from "#duel/flags.js";
 import {
   applyDestroyPrevention,
   applyDestroyReplacement,
@@ -546,6 +547,7 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
   if (phaseOrder.indexOf(phase) <= phaseOrder.indexOf(state.phase)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
   state.phase = phase;
   pruneResetEffectsAfterPhase(state, phase);
+  pruneDuelFlagEffectsAfterPhase(state, phase);
   if (phase === "battle") state.attacksDeclared = [];
   else delete state.currentAttack;
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
@@ -555,10 +557,12 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
 function endTurn(state: DuelState, player: PlayerId): void {
   if (state.turnPlayer !== player) throw new Error("Only the turn player can end the turn");
   pruneResetEffectsAfterPhase(state, "end");
+  pruneDuelFlagEffectsAfterPhase(state, "end");
   state.turn += 1;
   state.turnPlayer = otherPlayer(player);
   state.phase = "draw";
   pruneResetEffectsAfterPhase(state, "draw");
+  pruneDuelFlagEffectsAfterPhase(state, "draw");
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
   state.positionsChanged = [];
@@ -568,6 +572,7 @@ function endTurn(state: DuelState, player: PlayerId): void {
   draw(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");
   state.phase = "main1";
   pruneResetEffectsAfterPhase(state, "main1");
+  pruneDuelFlagEffectsAfterPhase(state, "main1");
   pushDuelLog(state, "turn", state.turnPlayer, undefined, `Turn ${state.turn} started`);
   collectTriggerEffects(state, "turnStarted");
 }
@@ -837,6 +842,7 @@ function resolveChain(state: DuelState): void {
     clearChainLimits(state);
   }
   pruneResetEffectsAfterChain(state);
+  pruneDuelFlagEffectsAfterChain(state);
   state.chainPasses = [];
   state.status = "awaiting";
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;

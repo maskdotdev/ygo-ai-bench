@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -56,6 +57,90 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("card flag reset 1");
     expect(host.messages).toContain("duel flag after 0");
     expect(host.messages).toContain("card flag after 0");
+    expect(session.state.flagEffects).toHaveLength(0);
+  });
+
+  it("expires Lua flag effects at chain reset boundaries", () => {
+    const cards: DuelCardData[] = [{ code: "101", name: "Flag Chain Source", kind: "monster" }];
+    const session = createDuel({ seed: 137, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101"] },
+      1: { main: ["101"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c101={}
+      function c101.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("duel flag chain " .. Duel.RegisterFlagEffect(0, 911, RESET_CHAIN, 0, 1))
+          Debug.Message("card flag chain " .. c:RegisterFlagEffect(912, RESET_CHAIN, 0, 1))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flag-chain-reset.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("duel flag chain 1");
+    expect(host.messages).toContain("card flag chain 1");
+    expect(session.state.flagEffects).toHaveLength(0);
+  });
+
+  it("expires Lua flag effects at phase and card movement reset boundaries", () => {
+    const cards: DuelCardData[] = [{ code: "102", name: "Flag Phase Source", kind: "monster" }];
+    const session = createDuel({ seed: 138, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["102"] },
+      1: { main: ["102"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "102");
+    expect(source).toBeDefined();
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c102={}
+      function c102.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("duel flag phase " .. Duel.RegisterFlagEffect(0, 921, RESET_PHASE + PHASE_BATTLE, 0, 1))
+          Debug.Message("card flag field " .. c:RegisterFlagEffect(922, RESET_EVENT + RESET_TOFIELD, 0, 1))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flag-phase-move-reset.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(session.state.flagEffects).toHaveLength(2);
+
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([921]);
+
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+
     expect(session.state.flagEffects).toHaveLength(0);
   });
 
