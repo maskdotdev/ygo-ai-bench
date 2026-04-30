@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
-import { canMoveDuelCardToLocation, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
+import { canChangeDuelCardPosition, canMoveDuelCardToLocation, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
@@ -315,6 +315,13 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "setMonster" && action.uid === card.uid)),
   );
   pushBooleanGetter(L, "IsCanTurnSet", session, (card) => Boolean(card && canTurnSet(card)));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && canChangePosition(session.state, card, requested)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsCanChangePosition"));
   pushBooleanGetter(L, "IsSSetable", session, (card) => Boolean(card && card.location === "hand" && (card.kind === "spell" || card.kind === "trap") && hasZoneSpace(session.state, card.controller, "spellTrapZone")));
   pushMaterialPredicate(L, "IsCanBeFusionMaterial", session, "fusion");
   pushMaterialPredicate(L, "IsCanBeSynchroMaterial", session, "synchro");
@@ -534,6 +541,13 @@ function canTurnSet(card: DuelCardInstance): boolean {
   return (cardTypeFlags(card) & 0x4000000) === 0;
 }
 
+function canChangePosition(state: DuelState, card: DuelCardInstance, requested: CardPosition | undefined): boolean {
+  if (requested) return canChangeDuelCardPosition(state, card.uid, requested);
+  if (card.position === "faceUpAttack") return canChangeDuelCardPosition(state, card.uid, "faceUpDefense");
+  if (card.position === "faceUpDefense" || card.position === "faceDownDefense") return canChangeDuelCardPosition(state, card.uid, "faceUpAttack");
+  return false;
+}
+
 function cardCodes(card: DuelCardInstance): string[] {
   return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
@@ -725,6 +739,7 @@ const cardFieldNames = [
   "IsSpecialSummonable",
   "IsMSetable",
   "IsCanTurnSet",
+  "IsCanChangePosition",
   "IsSSetable",
   "IsSpellTrap",
   "IsMaximumMode",
