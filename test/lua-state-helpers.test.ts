@@ -794,6 +794,13 @@ describe("Lua state helpers", () => {
         global_count=global_count+1
       end)
       Debug.Message("global check " .. tostring(global_state.global_check) .. "/" .. global_count)
+      local extra_rules_state={}
+      local extra_rules_effect=aux.EnableExtraRules(faceup_monster,extra_rules_state,function(c,minatk)
+        Debug.Message("extra rules init " .. c:GetCode() .. "/" .. minatk)
+        return c:GetAttack()>=minatk
+      end,900)
+      Debug.Message("extra rules effect " .. extra_rules_effect:GetType() .. "/" .. extra_rules_effect:GetCode() .. "/" .. extra_rules_effect:GetProperty() .. "/" .. tostring(extra_rules_state.global_active_check))
+      Debug.Message("extra rules op " .. tostring(extra_rules_effect:GetOperation()(extra_rules_effect,0,Group.CreateGroup(),0,0,nil,0,0)) .. "/" .. tostring(extra_rules_state.global_active_check))
       local all_cards = Duel.GetFieldGroup(0, LOCATION_HAND + LOCATION_MZONE, 0)
       local iter_count=0
       local iter_sum=0
@@ -890,6 +897,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("client hint 777/1/0/2/true/true");
     expect(host.messages).toContain("client hint default nil true");
     expect(host.messages).toContain("global check true/1");
+    expect(host.messages).toContain("extra rules effect 2050/1040/263168/nil");
+    expect(host.messages).toContain("extra rules init 100/900");
+    expect(host.messages).toContain("extra rules op true/true");
     expect(host.messages).toContain("aux next 3/600");
     expect(host.messages).toContain("aux next empty 0");
     expect(host.messages).toContain("aux select plain 2");

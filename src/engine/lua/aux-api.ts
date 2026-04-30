@@ -378,6 +378,22 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
       Duel.RegisterEffect(eff,tp or 0)
       return eff
     end
+    function aux.EnableExtraRulesOperation(card,init,...)
+      local args={...}
+      return function(e,tp,eg,ep,ev,re,r,rp)
+        if card then card.global_active_check=true end
+        if init then return init(e:GetOwner(),table.unpack(args)) end
+      end
+    end
+    function aux.EnableExtraRules(c,card,init,...)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_FIELD|EFFECT_TYPE_CONTINUOUS)
+      e1:SetCode(EVENT_ADJUST)
+      e1:SetProperty(EFFECT_FLAG_UNCOPYABLE|EFFECT_FLAG_CANNOT_DISABLE)
+      e1:SetOperation(aux.EnableExtraRulesOperation(card,init,...))
+      Duel.RegisterEffect(e1,0)
+      return e1
+    end
     function aux.RemoveUntil(card_or_group,pos,reason,phase,flag,e,tp,oper,cond,reset,reset_count,hint,effect_desc)
       local g
       if type(card_or_group)=="table" and card_or_group.GetCount then
