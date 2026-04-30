@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
 import { canChangeDuelCardPosition, canMoveDuelCardToLocation, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
-import { isMaterialUsePrevented, type ContinuousEffectContextFactory, type MaterialUseKind } from "#duel/continuous-effects.js";
+import { findIndestructibleEffect, isMaterialUsePrevented, type ContinuousEffectContextFactory, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions } from "#duel/summon.js";
@@ -303,6 +303,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsAbleToDeck", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "deck")));
   pushBooleanGetter(L, "IsAbleToRemove", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "banished")));
   pushBooleanGetter(L, "IsAbleToExtra", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "extraDeck")));
+  pushBooleanGetter(L, "IsDestructable", session, (_, uid) => Boolean(uid && canDestroyCard(session.state, uid)));
   pushBooleanGetter(L, "IsDiscardable", session, (card, uid) => Boolean(card && uid && card.location === "hand" && canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.cost)));
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
@@ -462,6 +463,11 @@ function canBeMaterial(state: DuelState, card: DuelCardInstance | undefined, kin
       targetAllowsMaterial(target, card, kind) &&
       !isMaterialUsePrevented(state, card.uid, kind, createMaterialCheckContext(state)),
   );
+}
+
+function canDestroyCard(state: DuelState, uid: string): boolean {
+  const reason = duelReason.effect | duelReason.destroy;
+  return canMoveDuelCardToLocation(state, uid, "graveyard", reason) && !findIndestructibleEffect(state, uid, reason, createMaterialCheckContext(state));
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {
@@ -731,6 +737,7 @@ const cardFieldNames = [
   "IsAbleToDeck",
   "IsAbleToRemove",
   "IsAbleToExtra",
+  "IsDestructable",
   "IsDiscardable",
   "IsRelateToEffect",
   "IsRelateToBattle",
