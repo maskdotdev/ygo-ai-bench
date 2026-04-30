@@ -279,10 +279,12 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsSpell", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x2) !== 0));
   pushBooleanGetter(L, "IsTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x4) !== 0));
   pushBooleanGetter(L, "IsSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x6) !== 0));
+  pushBooleanGetter(L, "IsEquipSpell", session, (card) => cardTypeFlags(card) === 0x40002);
   pushBooleanGetter(L, "IsRitualMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x81) === 0x81));
   pushBooleanGetter(L, "IsEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x21) === 0x21));
   pushBooleanGetter(L, "IsNonEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x20) === 0));
   pushBooleanGetter(L, "IsForbidden", session, () => false);
+  pushBooleanGetter(L, "CheckAdjacent", session, (card) => Boolean(card && hasAdjacentMonsterZone(session.state, card)));
   pushBooleanGetter(L, "IsMaximumMode", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeCenter", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeSide", session, () => false);
@@ -886,6 +888,16 @@ function canTurnSet(card: DuelCardInstance): boolean {
   if (card.location !== "monsterZone" || !card.faceUp) return false;
   if (card.kind !== "monster" && card.kind !== "extra") return false;
   return (cardTypeFlags(card) & 0x4000000) === 0;
+}
+
+function hasAdjacentMonsterZone(state: DuelState, card: DuelCardInstance): boolean {
+  if (card.location !== "monsterZone" || card.sequence > 4) return false;
+  return [card.sequence - 1, card.sequence + 1].some(
+    (sequence) =>
+      sequence >= 0 &&
+      sequence <= 4 &&
+      !state.cards.some((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && candidate.sequence === sequence),
+  );
 }
 
 function canChangePosition(state: DuelState, card: DuelCardInstance, requested: CardPosition | undefined): boolean {

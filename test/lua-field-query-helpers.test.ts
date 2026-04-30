@@ -70,6 +70,56 @@ describe("Lua field and query helpers", () => {
     expect(summoned?.position).toBe("faceUpDefense");
   });
 
+  it("lets Lua scripts check adjacent open monster zones", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Center Monster", kind: "monster" },
+      { code: "200", name: "Left Filler", kind: "monster" },
+      { code: "300", name: "Right Filler", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 154, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const center = session.state.cards.find((card) => card.code === "100");
+    const left = session.state.cards.find((card) => card.code === "200");
+    const right = session.state.cards.find((card) => card.code === "300");
+    expect(center).toBeDefined();
+    expect(left).toBeDefined();
+    expect(right).toBeDefined();
+    moveDuelCard(session.state, center!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, left!.uid, "monsterZone", 0);
+    center!.sequence = 2;
+    left!.sequence = 1;
+
+    const host = createLuaScriptHost(session);
+    const open = host.loadScript(
+      `
+      local center = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("adjacent open " .. tostring(center:CheckAdjacent()))
+      `,
+      "adjacent-open.lua",
+    );
+    expect(open.ok, open.error).toBe(true);
+    expect(host.messages).toContain("adjacent open true");
+
+    moveDuelCard(session.state, right!.uid, "monsterZone", 0);
+    center!.sequence = 2;
+    left!.sequence = 1;
+    right!.sequence = 3;
+    const blocked = host.loadScript(
+      `
+      local center = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("adjacent blocked " .. tostring(center:CheckAdjacent()))
+      `,
+      "adjacent-blocked.lua",
+    );
+    expect(blocked.ok, blocked.error).toBe(true);
+    expect(host.messages).toContain("adjacent blocked false");
+  });
+
   it("lets Lua scripts check pendulum zone availability", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Pendulum Zone Left", kind: "spell" },
@@ -583,6 +633,7 @@ describe("Lua field and query helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", alias: "900", name: "Stat Monster", kind: "monster", typeFlags: 0x21, attack: 2500, defense: 2100, level: 7, race: 0x2, attribute: 0x20, setcodes: [0x123], listedNames: ["700"], fitMonster: ["800"] },
       { code: "200", name: "Fixture Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "201", name: "Fixture Equip Spell", kind: "spell", typeFlags: 0x40002 },
       { code: "300", name: "Rank Fixture", kind: "monster", typeFlags: 0x800001, attack: 1800, defense: 1200, level: 4 },
       { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5 },
       { code: "500", name: "Infinity Alias", kind: "monster", alias: "1378" },
@@ -590,9 +641,9 @@ describe("Lua field and query helpers", () => {
       { code: "700", name: "Ritual Fixture", kind: "monster", typeFlags: 0x81, level: 6 },
       { code: "800", name: "Normal Fixture", kind: "monster", typeFlags: 0x11, level: 4 },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 8, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 9, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500", "600", "700", "800"] },
+      0: { main: ["100", "200", "201", "300", "400", "500", "600", "700", "800"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -648,8 +699,9 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not original attribute " .. tostring(c:IsNotOriginalAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsNotOriginalAttribute(ATTRIBUTE_LIGHT)))
       Debug.Message("spell count " .. Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, nil))
       local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local equip = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 201), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("has level " .. tostring(c:HasLevel()) .. "/" .. tostring(xyz:HasLevel()) .. "/" .. tostring(link:HasLevel()) .. "/" .. tostring(spell:HasLevel()))
-      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()))
+      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()) .. "/" .. tostring(spell:IsEquipSpell()) .. "/" .. tostring(equip:IsEquipSpell()))
       Debug.Message("cost checks " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
       Duel.SendtoGrave(c, REASON_EFFECT)
       Debug.Message("cost after move " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
@@ -688,8 +740,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not attribute false/true");
     expect(host.messages).toContain("not original race false/true");
     expect(host.messages).toContain("not original attribute false/true");
-    expect(host.messages).toContain("spell count 1");
-    expect(host.messages).toContain("spell trap checks false/true");
+    expect(host.messages).toContain("spell count 2");
+    expect(host.messages).toContain("spell trap checks false/true/false/true");
     expect(host.messages).toContain("cost checks true/true");
     expect(host.messages).toContain("cost after move false/false");
     expect(host.messages).toContain("spell material checks false/false");
