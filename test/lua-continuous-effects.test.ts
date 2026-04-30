@@ -1226,16 +1226,16 @@ describe("Lua continuous effects", () => {
       local monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
       local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      Debug.Message("monster negatable " .. tostring(monster:IsNegatable()) .. "/" .. tostring(monster:IsNegatableMonster()))
-      Debug.Message("spell negatable " .. tostring(spell:IsNegatable()) .. "/" .. tostring(spell:IsNegatableMonster()))
-      Debug.Message("hand negatable " .. tostring(hand:IsNegatable()) .. "/" .. tostring(hand:IsNegatableMonster()))
+      Debug.Message("monster negatable " .. tostring(monster:IsNegatable()) .. "/" .. tostring(monster:IsNegatableMonster()) .. "/" .. tostring(monster:IsNegatableSpellTrap()))
+      Debug.Message("spell negatable " .. tostring(spell:IsNegatable()) .. "/" .. tostring(spell:IsNegatableMonster()) .. "/" .. tostring(spell:IsNegatableSpellTrap()))
+      Debug.Message("hand negatable " .. tostring(hand:IsNegatable()) .. "/" .. tostring(hand:IsNegatableMonster()) .. "/" .. tostring(hand:IsNegatableSpellTrap()))
       `,
       "negatable-before.lua",
     );
     expect(before.ok, before.error).toBe(true);
-    expect(host.messages).toContain("monster negatable true/true");
-    expect(host.messages).toContain("spell negatable true/false");
-    expect(host.messages).toContain("hand negatable false/false");
+    expect(host.messages).toContain("monster negatable true/true/false");
+    expect(host.messages).toContain("spell negatable true/false/true");
+    expect(host.messages).toContain("hand negatable false/false/false");
 
     const register = host.loadScript(
       `
