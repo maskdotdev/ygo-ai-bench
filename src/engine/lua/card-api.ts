@@ -137,11 +137,19 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetRank", session, (card) => cardRank(card));
   pushNumberGetter(L, "GetOriginalRank", session, (card) => cardRank(card));
   pushNumberMatcher(L, "IsRank", session, (card, requested) => cardRank(card) === requested);
+  pushNumberMatcher(L, "IsRankAbove", session, (card, requested) => cardRank(card) >= requested);
+  pushNumberMatcher(L, "IsRankBelow", session, (card, requested) => cardRank(card) <= requested);
   pushNumberMatcher(L, "IsOriginalRank", session, (card, requested) => cardRank(card) === requested);
+  pushNumberMatcher(L, "IsOriginalRankAbove", session, (card, requested) => cardRank(card) >= requested);
+  pushNumberMatcher(L, "IsOriginalRankBelow", session, (card, requested) => cardRank(card) <= requested);
   pushNumberGetter(L, "GetLink", session, (card) => cardLink(card));
   pushNumberGetter(L, "GetOriginalLink", session, (card) => cardLink(card));
   pushNumberMatcher(L, "IsLink", session, (card, requested) => cardLink(card) === requested);
+  pushNumberMatcher(L, "IsLinkAbove", session, (card, requested) => cardLink(card) >= requested);
+  pushNumberMatcher(L, "IsLinkBelow", session, (card, requested) => cardLink(card) <= requested);
   pushNumberMatcher(L, "IsOriginalLink", session, (card, requested) => cardLink(card) === requested);
+  pushNumberMatcher(L, "IsOriginalLinkAbove", session, (card, requested) => cardLink(card) >= requested);
+  pushNumberMatcher(L, "IsOriginalLinkBelow", session, (card, requested) => cardLink(card) <= requested);
   pushNumberGetter(L, "GetLinkMarker", session, (card) => card?.data.linkMarkers ?? 0);
   pushNumberGetter(L, "GetRace", session, (card) => card?.data.race ?? 0);
   pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
@@ -541,11 +549,19 @@ const cardFieldNames = [
   "GetRank",
   "GetOriginalRank",
   "IsRank",
+  "IsRankAbove",
+  "IsRankBelow",
   "IsOriginalRank",
+  "IsOriginalRankAbove",
+  "IsOriginalRankBelow",
   "GetLink",
   "GetOriginalLink",
   "IsLink",
+  "IsLinkAbove",
+  "IsLinkBelow",
   "IsOriginalLink",
+  "IsOriginalLinkAbove",
+  "IsOriginalLinkBelow",
   "GetLinkMarker",
   "GetRace",
   "GetOriginalRace",
