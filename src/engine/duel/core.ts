@@ -89,6 +89,7 @@ import {
   type ReplacementEffectHandlers,
 } from "#duel/replacement-effects.js";
 import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
+import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import type {
@@ -781,18 +782,7 @@ function resolvePrompt(state: DuelState, response: Extract<DuelResponse, { type:
 }
 
 function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
-  const actions: DuelAction[] = [];
-  for (const effect of state.effects) {
-    if (effect.controller !== player || effect.event !== "quick") continue;
-    if (!quickEffectTimingAllows(state, effect)) continue;
-    if (!chainLimitsAllow(state, effect, player)) continue;
-    const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
-    if (!canUseEffectCount(state, effect)) continue;
-    if (!canChooseEffect(state, effect, source, player)) continue;
-    actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
-  }
-  return actions;
+  return getQuickEffectActions(state, player, canChooseEffect);
 }
 
 function specialSummonProcedureActions(state: DuelState, player: PlayerId): DuelAction[] {
@@ -824,26 +814,11 @@ function moveDuelCardToRedirectedLocation(state: DuelState, uid: string, locatio
 }
 
 function hasChainResponses(state: DuelState, player: PlayerId): boolean {
-  return quickEffectActions(state, player).length > 0;
-}
-
-function quickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition): boolean {
-  if (state.battleStep !== "damage") return true;
-  return Boolean((effect.property ?? 0) & (0x4000 | 0x8000));
+  return hasQuickEffectResponses(state, player, canChooseEffect);
 }
 
 function stampActions(actions: DuelAction[], windowId: number): DuelAction[] {
   return actions.map((action) => ({ ...action, windowId }));
-}
-
-function chainLimitsAllow(state: DuelState, effect: DuelEffectDefinition, player: PlayerId): boolean {
-  const link = state.chain[state.chain.length - 1];
-  if (!link) return true;
-  for (const limit of state.chainLimits) {
-    if (!limit.untilChainEnd && limit.expiresAtChainLength !== state.chain.length) continue;
-    if (!limit.allows(effect, player, link.player)) return false;
-  }
-  return true;
 }
 
 export function addDuelChainLimit(state: DuelState, limit: Omit<ChainLimit, "expiresAtChainLength">): void {
