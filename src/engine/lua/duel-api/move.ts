@@ -49,6 +49,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("ChangePosition"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMoveToField(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("MoveToField"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushActivateFieldSpell(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("ActivateFieldSpell"));
   lua.lua_pushcfunction(L, (state: unknown) => pushReturnToField(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ReturnToField"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMoveToDeckBottom(state, session, hostState));
@@ -202,6 +204,47 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
     lua.lua_pushinteger(L, 0);
     return 1;
   }
+}
+
+function pushActivateFieldSpell(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const uid = readCardUid(L, 1);
+  const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+  const activatingPlayer = readOptionalPlayer(L, 3) ?? card?.controller ?? session.state.turnPlayer;
+  const targetPlayer = readOptionalPlayer(L, 10) ?? activatingPlayer;
+  if (!uid || !card || !isFieldSpell(card) || !canMoveDuelCardToLocation(session.state, uid, "spellTrapZone", duelReason.rule)) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+
+  const previousFieldSpell = activeFieldSpell(session.state, targetPlayer, uid);
+  const sharedField = isDuelType(session.state, 0x400);
+  const opponentFieldSpell = sharedField ? activeFieldSpell(session.state, otherPlayer(targetPlayer), uid) : undefined;
+  for (const replacement of [previousFieldSpell, opponentFieldSpell]) {
+    if (!replacement) continue;
+    try {
+      moveDuelCardWithRedirects(session.state, replacement.uid, "graveyard", replacement.controller, duelReason.rule, activatingPlayer);
+    } catch {
+      moveDuelCardWithRedirects(session.state, uid, "graveyard", card.controller, duelReason.rule, activatingPlayer);
+      setOperatedUids(hostState, []);
+      lua.lua_pushboolean(L, false);
+      return 1;
+    }
+  }
+
+  if (!hasZoneSpace(session.state, targetPlayer, "spellTrapZone")) {
+    moveDuelCardWithRedirects(session.state, uid, "graveyard", card.controller, duelReason.rule, activatingPlayer);
+    setOperatedUids(hostState, []);
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+
+  const moved = moveDuelCardWithRedirects(session.state, uid, "spellTrapZone", targetPlayer, duelReason.rule, activatingPlayer);
+  moved.position = "faceUpAttack";
+  moved.faceUp = true;
+  setOperatedUids(hostState, [uid]);
+  lua.lua_pushboolean(L, true);
+  return 1;
 }
 
 function pushReturnToField(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
@@ -482,6 +525,18 @@ function movementSnapshot(card: DuelCardInstance): Pick<DuelCardInstance, "contr
 
 function didMove(card: DuelCardInstance, before: Pick<DuelCardInstance, "controller" | "location" | "sequence">): boolean {
   return card.controller !== before.controller || card.location !== before.location || card.sequence !== before.sequence;
+}
+
+function activeFieldSpell(state: DuelState, player: PlayerId, exceptUid?: string): DuelCardInstance | undefined {
+  return getCards(state, player, "spellTrapZone").find((card) => card.uid !== exceptUid && isFieldSpell(card));
+}
+
+function isFieldSpell(card: DuelCardInstance): boolean {
+  return card.kind === "spell" && ((card.data.typeFlags ?? 0) & 0x80000) !== 0;
+}
+
+function isDuelType(state: DuelState, mask: number): boolean {
+  return (BigInt(Math.trunc(state.duelTypeFlags)) & BigInt(mask)) === BigInt(mask);
 }
 
 function otherPlayer(player: PlayerId): PlayerId {

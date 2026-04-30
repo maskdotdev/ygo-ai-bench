@@ -409,6 +409,46 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("environment missing false");
   });
 
+  it("lets Lua scripts activate and replace field spells", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Old Field", kind: "spell", typeFlags: 0x80002 },
+      { code: "200", name: "New Field", kind: "spell", typeFlags: 0x80002 },
+      { code: "300", name: "Normal Spell", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 74, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const oldField = session.state.cards.find((card) => card.code === "100");
+    expect(oldField).toBeDefined();
+    moveDuelCard(session.state, oldField!.uid, "spellTrapZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local field=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local normal=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("activate normal field " .. tostring(Duel.ActivateFieldSpell(normal,nil,0)))
+      Debug.Message("activate field spell " .. tostring(Duel.ActivateFieldSpell(field,nil,0)))
+      Debug.Message("activate operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("activate environment " .. tostring(Duel.IsEnvironment(200, 0, LOCATION_FZONE)))
+      `,
+      "activate-field-spell.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("activate normal field false");
+    expect(host.messages).toContain("activate field spell true");
+    expect(host.messages).toContain("activate operated 1/200");
+    expect(host.messages).toContain("activate environment true");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "spellTrapZone", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "hand" });
+  });
+
   it("lets Lua scripts query field groups across both players and locations", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Self Grave", kind: "monster" },
