@@ -12,6 +12,35 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua effect metadata helpers", () => {
+  it("creates and registers Lua global effects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Global Anchor", kind: "monster" }];
+    const session = createDuel({ seed: 94, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local e=Effect.GlobalEffect()
+      Debug.Message("global handler nil " .. tostring(e:GetHandler()==nil))
+      e:SetType(EFFECT_TYPE_FIELD)
+      e:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)
+      e:SetTargetRange(1,0)
+      Debug.Message("global registered " .. tostring(Duel.RegisterEffect(e,0)))
+      `,
+      "global-effect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["global handler nil true", "global registered true"]);
+    expect(session.state.effects).toHaveLength(1);
+    expect(session.state.effects[0]).toMatchObject({ controller: 0, ownerPlayer: 0, event: "continuous", code: 22 });
+    expect(session.state.effects[0]?.registryKey).toBe("lua:global:lua-1-22");
+  });
+
   it("stores Lua effect metadata setters on registered effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Metadata Source", kind: "monster" }];
     const session = createDuel({ seed: 16, startingHandSize: 1, cardReader: createCardReader(cards) });

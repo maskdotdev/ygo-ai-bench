@@ -35,6 +35,7 @@ interface LuaEffectRecord {
   id: number;
   typeFlags: number;
   sourceUid?: string;
+  isGlobal?: boolean;
   ownerPlayer?: PlayerId;
   code?: number;
   range?: DuelLocation[];
@@ -199,6 +200,14 @@ function installEffectApi(L: unknown, hostState: LuaHostState): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("CreateEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const id = hostState.nextEffectId;
+    hostState.nextEffectId += 1;
+    hostState.effects.set(id, { id, typeFlags: 0, isGlobal: true });
+    pushLuaEffectTable(state, id, hostState);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GlobalEffect"));
   lua.lua_setglobal(L, to_luastring("Effect"));
 }
 
@@ -403,7 +412,10 @@ function cloneLuaEffectRecord(hostState: LuaHostState, effect: LuaEffectRecord):
 }
 
 function deleteRegisteredLuaEffects(session: DuelSession, effect: LuaEffectRecord): void {
-  session.state.effects = session.state.effects.filter((candidate) => candidate.id !== luaEffectDuelId(effect) || candidate.sourceUid !== effect.sourceUid);
+  session.state.effects = session.state.effects.filter((candidate) => {
+    if (candidate.id !== luaEffectDuelId(effect)) return true;
+    return effect.sourceUid === undefined ? false : candidate.sourceUid !== effect.sourceUid;
+  });
 }
 
 function luaEffectDuelId(effect: LuaEffectRecord): string {
@@ -411,12 +423,16 @@ function luaEffectDuelId(effect: LuaEffectRecord): string {
 }
 
 function luaEffectRegistryKey(card: DuelCardInstance, effect: LuaEffectRecord): string {
+  if (effect.isGlobal) return `lua:global:${luaEffectDuelId(effect)}`;
   return `lua:${card.code}:${luaEffectDuelId(effect)}`;
 }
 
 function registerLuaEffect(L: unknown, hostState: LuaHostState, id: number, player: PlayerId): boolean {
   const luaEffect = hostState.effects.get(id);
-  const source = luaEffect?.sourceUid === undefined ? undefined : hostState.session.state.cards.find((card) => card.uid === luaEffect.sourceUid);
+  const source =
+    luaEffect?.sourceUid === undefined
+      ? hostState.session.state.cards.find((card) => card.controller === player) ?? hostState.session.state.cards[0]
+      : hostState.session.state.cards.find((card) => card.uid === luaEffect.sourceUid);
   if (!luaEffect || !source) return false;
   luaEffect.ownerPlayer = player;
   registerEffect(hostState.session, toDuelEffect(source, luaEffect, L, hostState));
@@ -480,7 +496,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
   const event = luaEffectEvent(luaEffect.typeFlags, luaEffect.code);
   const range = luaEffect.range ?? [card.location];
   const triggerEvent = triggerEventFromCode(luaEffect.code);
-  luaEffect.sourceUid = card.uid;
+  if (!luaEffect.isGlobal) luaEffect.sourceUid = card.uid;
   return {
     id: luaEffectDuelId(luaEffect),
     registryKey: luaEffectRegistryKey(card, luaEffect),
