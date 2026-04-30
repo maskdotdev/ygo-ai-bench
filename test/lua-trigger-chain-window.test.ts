@@ -154,4 +154,93 @@ describe("Lua trigger chain windows", () => {
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([resolved.state.pendingTriggers[0]?.effectId]);
     expect(host.messages).toEqual(["lua first held trigger resolved"]);
   });
+
+  it("keeps later optional Lua trigger bucket activations behind the open chain window", () => {
+    const { session, host } = setupLuaChainFixture({
+      seed: 93,
+      startingHandSize: 3,
+      cards: [
+        { code: "13100", name: "Lua Optional Window Summon", kind: "monster" },
+        { code: "13200", name: "Lua First Optional Window", kind: "monster" },
+        { code: "13300", name: "Lua Second Optional Window", kind: "monster" },
+        { code: "13400", name: "Lua Optional Window Quick", kind: "monster" },
+        { code: "13500", name: "Lua Optional Window Filler", kind: "monster" },
+      ],
+      decks: {
+        0: { main: ["13100", "13200", "13300"] },
+        1: { main: ["13400", "13500", "13500"] },
+      },
+      expectedEffects: 3,
+      scriptName: "lua-optional-trigger-chain-window.lua",
+      script: `
+      c13200={}
+      function c13200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua first optional window resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c13300={}
+      function c13300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua second optional window resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c13400={}
+      function c13400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          return Duel.GetCurrentChain()>0
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua optional window quick resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+    const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "13100");
+    expect(summonSource).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["13200", "13300"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([
+      session.state.pendingTriggers[0]?.effectId,
+      session.state.pendingTriggers[1]?.effectId,
+    ]);
+
+    const firstActivation = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
+    expect(firstActivation).toBeDefined();
+    const opened = applyResponse(session, firstActivation!);
+
+    expect(opened.ok).toBe(true);
+    expect(opened.state.chain).toHaveLength(1);
+    expect(opened.state.waitingFor).toBe(1);
+    expect(opened.state.pendingTriggers.map((trigger) => opened.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["13300"]);
+    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 1).map((action) => action.type)).toEqual(["activateEffect", "passChain"]);
+
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyResponse(session, pass!);
+
+    expect(resolved.ok).toBe(true);
+    expect(resolved.state.chain).toHaveLength(0);
+    expect(resolved.state.pendingTriggers.map((trigger) => resolved.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["13300"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([resolved.state.pendingTriggers[0]?.effectId]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([resolved.state.pendingTriggers[0]?.effectId]);
+    expect(host.messages).toEqual(["lua first optional window resolved"]);
+  });
 });
