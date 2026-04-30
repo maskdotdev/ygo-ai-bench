@@ -6,6 +6,37 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { setupLuaChainFixture } from "./lua-chain-fixtures.js";
 
 describe("Lua effect reset", () => {
+  it("lets Lua scripts clear summon assumptions without clearing reset metadata", () => {
+    const { session } = setupLuaChainFixture({
+      seed: 124,
+      startingHandSize: 1,
+      cards: [
+        { code: "23100", name: "Lua Assume Reset Source", kind: "monster" },
+        { code: "23200", name: "Lua Assume Reset Filler", kind: "monster" },
+      ],
+      decks: {
+        0: { main: ["23100"] },
+        1: { main: ["23200"] },
+      },
+      expectedEffects: 1,
+      scriptName: "lua-assume-reset.lua",
+      script: `
+      c23100={}
+      function c23100.initial_effect(c)
+        Duel.AssumeReset()
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetReset(RESET_CHAIN)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+
+    expect(session.state.effects).toHaveLength(1);
+    expect(session.state.effects[0]).toMatchObject({ reset: { flags: 0x80000000 } });
+  });
+
   it("removes Lua RESET_TOGRAVE effects when their source goes to the Graveyard", () => {
     const { session } = setupLuaChainFixture({
       seed: 119,
