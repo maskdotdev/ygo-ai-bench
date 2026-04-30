@@ -219,8 +219,16 @@ describe("Lua movement helpers", () => {
       local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local equip = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local e = Effect.CreateEffect(target)
+      local marker = Effect.CreateEffect(target)
+      marker:SetType(EFFECT_TYPE_SINGLE)
+      marker:SetCode(89785779 + EFFECT_EQUIP_LIMIT)
+      target:RegisterEffect(marker)
       Debug.Message("effect equip result " .. tostring(target:EquipByEffectAndLimitRegister(e, 0, equip, 777001, true)))
       Debug.Message("effect equip target " .. equip:GetEquipTarget():GetCode())
+      local limit = Effect.CreateEffect(target)
+      limit:SetLabelObject(marker)
+      local other = Effect.CreateEffect(target)
+      Debug.Message("effect equip limit " .. tostring(Card.EquipByEffectLimit(limit,target)) .. "/" .. tostring(Card.EquipByEffectLimit(limit,equip)) .. "/" .. tostring(Card.EquipByEffectLimit(other,target)))
       Debug.Message("effect equip flag " .. equip:GetFlagEffect(777001))
       Debug.Message("effect equip operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
       `,
@@ -230,6 +238,7 @@ describe("Lua movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("effect equip result true");
     expect(host.messages).toContain("effect equip target 100");
+    expect(host.messages).toContain("effect equip limit true/false/false");
     expect(host.messages).toContain("effect equip flag 1");
     expect(host.messages).toContain("effect equip operated 500");
     expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });

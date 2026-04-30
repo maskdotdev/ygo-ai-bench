@@ -104,6 +104,7 @@ export const cardFieldNames = [
   "GetEquipGroup",
   "GetEquipTarget",
   "EquipByEffectAndLimitRegister",
+  "EquipByEffectLimit",
   "RemoveOverlayCard",
   "CheckRemoveOverlayCard",
   "GetCounter",

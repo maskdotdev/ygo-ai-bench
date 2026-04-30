@@ -33,6 +33,7 @@ export interface LuaCardApiEffectRecord {
   property?: number;
   value?: number;
   valueRef?: number;
+  labelObjectId?: number;
 }
 
 export interface LuaCardApiState<EffectRecord extends LuaCardApiEffectRecord> {
@@ -187,6 +188,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("GetEquipTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushEquipByEffectAndLimitRegister(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("EquipByEffectAndLimitRegister"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushEquipByEffectLimit(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("EquipByEffectLimit"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveOverlayCard(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckRemoveOverlayCard(state, session));
@@ -461,6 +464,20 @@ function pushEquipByEffectAndLimitRegister<EffectRecord extends LuaCardApiEffect
     lua.lua_pushboolean(L, false);
     return 1;
   }
+}
+
+function pushEquipByEffectLimit<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const effectId = readTableNumberField(L, 1, "__effect_id");
+  const cardUid = readCardUid(L, 2);
+  const effect = effectId === undefined ? undefined : hostState.effects.get(effectId);
+  const card = cardUid ? session.state.cards.find((candidate) => candidate.uid === cardUid) : undefined;
+  if (!effect || !card || effect.sourceUid !== cardUid) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  const matches = effect.labelObjectId !== undefined && matchingLuaEffects(session.state, card, 89785855, hostState).some((candidate) => candidate.id === effect.labelObjectId);
+  lua.lua_pushboolean(L, matches);
+  return 1;
 }
 
 function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {

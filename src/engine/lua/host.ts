@@ -51,6 +51,7 @@ interface LuaEffectRecord {
     count?: number;
   };
   label?: number;
+  labelObjectId?: number;
   labelObjectRef?: number;
   value?: number;
   valueRef?: number;
@@ -355,10 +356,13 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
   });
   pushEffectMethod(L, effects, "SetLabelObject", (state, effect) => {
     if (effect.labelObjectRef !== undefined) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, effect.labelObjectRef);
+    delete effect.labelObjectId;
     if (lua.lua_isnoneornil(state, 2)) {
       delete effect.labelObjectRef;
       return 0;
     }
+    const labelObjectId = readTableNumberField(state, 2, "__effect_id");
+    if (labelObjectId !== undefined) effect.labelObjectId = labelObjectId;
     lua.lua_pushvalue(state, 2);
     effect.labelObjectRef = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
     return 0;
