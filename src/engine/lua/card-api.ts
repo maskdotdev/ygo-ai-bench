@@ -85,6 +85,13 @@ function installCodeHelpers(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requested && !cardCodes(card).includes(requested)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsNotCode"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
     lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
     return 1;
   });
@@ -103,12 +110,20 @@ function installCodeHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSetCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && !card.data.setcodes?.includes(requested)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsNotSetCard"));
 }
 
 function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetType", session, (card) => cardTypeFlags(card));
   pushNumberGetter(L, "GetOriginalType", session, (card) => cardTypeFlags(card));
   pushNumberMatcher(L, "IsType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
+  pushNumberMatcher(L, "IsNotType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
   pushNumberGetter(L, "GetAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberGetter(L, "GetBaseAttack", session, (card) => card?.data.attack ?? 0);
@@ -154,10 +169,12 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetRace", session, (card) => card?.data.race ?? 0);
   pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
   pushNumberMatcher(L, "IsRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
+  pushNumberMatcher(L, "IsNotRace", session, (card, requested) => ((card.data.race ?? 0) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
   pushNumberGetter(L, "GetAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberGetter(L, "GetOriginalAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberMatcher(L, "IsAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
+  pushNumberMatcher(L, "IsNotAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
 }
 
@@ -512,15 +529,18 @@ const cardFieldNames = [
   "GetOriginalCode",
   "GetOriginalCodeRule",
   "IsCode",
+  "IsNotCode",
   "IsOriginalCode",
   "IsOriginalCodeRule",
   "IsSetCard",
+  "IsNotSetCard",
   "GetOwner",
   "IsOwner",
   "GetControler",
   "GetType",
   "GetOriginalType",
   "IsType",
+  "IsNotType",
   "IsOriginalType",
   "GetAttack",
   "GetBaseAttack",
@@ -566,10 +586,12 @@ const cardFieldNames = [
   "GetRace",
   "GetOriginalRace",
   "IsRace",
+  "IsNotRace",
   "IsOriginalRace",
   "GetAttribute",
   "GetOriginalAttribute",
   "IsAttribute",
+  "IsNotAttribute",
   "IsOriginalAttribute",
   "IsFaceup",
   "IsFacedown",
