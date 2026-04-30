@@ -444,6 +444,10 @@ describe("Lua effect metadata helpers", () => {
           local committed_draw=Duel.GetOperationInfo(0, CATEGORY_DRAW)
           Debug.Message("possible separate " .. tostring(committed_draw))
           Debug.Message("target relates " .. tostring(Duel.GetFirstTarget():IsRelateToEffect(e)))
+          Duel.ClearOperationInfo(0, CATEGORY_TOHAND)
+          Debug.Message("operation info cleared " .. tostring(Duel.GetOperationInfo(0, CATEGORY_TOHAND)))
+          local possible_after_clear=Duel.GetPossibleOperationInfo(0, CATEGORY_DRAW)
+          Debug.Message("possible still present " .. tostring(possible_after_clear))
         end)
         c:RegisterEffect(e)
       end
@@ -463,6 +467,8 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("possible operation info true/65536/0/0/1/2");
     expect(host.messages).toContain("possible separate false");
     expect(host.messages).toContain("target relates true");
+    expect(host.messages).toContain("operation info cleared false");
+    expect(host.messages).toContain("possible still present true");
   });
 
   it("lets Lua effects seed target cards without selecting", () => {

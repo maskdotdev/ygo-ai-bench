@@ -27,6 +27,8 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("SetOperationInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, hostState.operationInfos));
   lua.lua_setfield(L, -2, to_luastring("GetOperationInfo"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushClearOperationInfo(state, hostState.operationInfos));
+  lua.lua_setfield(L, -2, to_luastring("ClearOperationInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSetOperationInfo(state, hostState.possibleOperationInfos));
   lua.lua_setfield(L, -2, to_luastring("SetPossibleOperationInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, hostState.possibleOperationInfos));
@@ -110,6 +112,17 @@ function pushGetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]
   lua.lua_pushinteger(L, info.player);
   lua.lua_pushinteger(L, info.parameter);
   return 6;
+}
+
+function pushClearOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {
+  const chainIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0;
+  const category = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  for (let index = operationInfos.length - 1; index >= 0; index -= 1) {
+    const candidate = operationInfos[index];
+    if (!candidate || candidate.chainIndex !== chainIndex) continue;
+    if (category === undefined || candidate.category === category) operationInfos.splice(index, 1);
+  }
+  return 0;
 }
 
 function findOperationInfo(operationInfos: LuaDuelOperationInfo[], chainIndex: number, category: number): LuaDuelOperationInfo | undefined {
