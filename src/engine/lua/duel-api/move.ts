@@ -38,6 +38,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangePosition(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ChangePosition"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSwapSequence(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("SwapSequence"));
 }
 
 function pushMoveHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0): void {
@@ -102,6 +104,26 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
   }
   setOperatedUids(hostState, changed);
   lua.lua_pushinteger(L, changed.length);
+  return 1;
+}
+
+function pushSwapSequence(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const firstUid = readCardUid(L, 1);
+  const secondUid = readCardUid(L, 2);
+  const first = firstUid ? session.state.cards.find((candidate) => candidate.uid === firstUid) : undefined;
+  const second = secondUid ? session.state.cards.find((candidate) => candidate.uid === secondUid) : undefined;
+  const pair = swappableSequencePair(first, second);
+  if (!pair) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const [left, right] = pair;
+  const firstSequence = left.sequence;
+  left.sequence = right.sequence;
+  right.sequence = firstSequence;
+  setOperatedUids(hostState, [left.uid, right.uid]);
+  lua.lua_pushinteger(L, 1);
   return 1;
 }
 
@@ -215,6 +237,12 @@ function didMove(card: DuelCardInstance, before: Pick<DuelCardInstance, "control
 
 function otherPlayer(player: PlayerId): PlayerId {
   return player === 0 ? 1 : 0;
+}
+
+function swappableSequencePair(first: DuelCardInstance | undefined, second: DuelCardInstance | undefined): [DuelCardInstance, DuelCardInstance] | undefined {
+  if (!first || !second || first.uid === second.uid) return undefined;
+  if (first.controller !== second.controller || first.location !== second.location) return undefined;
+  return first.location === "monsterZone" || first.location === "spellTrapZone" ? [first, second] : undefined;
 }
 
 function setOperatedUids(hostState: LuaDuelMoveApiHostState, uids: string[]): void {
