@@ -76,6 +76,11 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("SetTargetCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    changeTargetCard(hostState, uniqueUids(readCardOrGroupUids(state, 1)));
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ChangeTargetCard"));
   lua.lua_pushcfunction(L, () => {
     if (hostState.activeTargetUids) hostState.activeTargetUids.splice(0, hostState.activeTargetUids.length);
     return 0;
@@ -284,6 +289,15 @@ function effectiveTargetUids(session: DuelSession, hostState: LuaDuelQueryApiHos
   if (hostState.activeContext?.chainLink) return hostState.activeContext.targetUids;
   const chainTargetUids = session.state.chain[session.state.chain.length - 1]?.targetUids;
   return chainTargetUids ?? [];
+}
+
+function changeTargetCard(hostState: LuaDuelQueryApiHostState, uids: string[]): void {
+  if (hostState.activeTargetUids) hostState.activeTargetUids.splice(0, hostState.activeTargetUids.length, ...uids);
+  if (hostState.activeContext) hostState.activeContext.setTargets(uids);
+  const link = hostState.activeContext?.chainLink;
+  if (!link) return;
+  if (uids.length) link.targetUids = [...uids];
+  else delete link.targetUids;
 }
 
 function readMatchingQuery(L: unknown, session: DuelSession, filterIndex: number, playerIndex: number, selfIndex: number, opponentIndex: number, excludedIndex: number, argsIndex: number): MatchingQuery {

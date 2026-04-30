@@ -476,6 +476,9 @@ describe("Lua effect metadata helpers", () => {
         e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
           local tg=Duel.GetTargetCards()
           Debug.Message("manual target cards " .. tg:GetCount() .. "/" .. Duel.GetFirstTarget():GetCode())
+          local changed=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 300), tp, LOCATION_HAND, 0, e:GetHandler())
+          Duel.ChangeTargetCard(changed)
+          Debug.Message("manual target changed " .. Duel.GetTargetCards():GetCount() .. "/" .. Duel.GetFirstTarget():GetCode())
         end)
         c:RegisterEffect(e)
       end
@@ -495,5 +498,6 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("manual target clear alias 0/true");
     expect(host.messages).toContain("manual target cleared 0/true");
     expect(host.messages.join("\n")).toContain("manual target cards 2/");
+    expect(host.messages).toContain("manual target changed 1/300");
   });
 });
