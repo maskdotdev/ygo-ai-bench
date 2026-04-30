@@ -577,6 +577,66 @@ describe("Lua field and query helpers", () => {
     expect(fullHost.messages).toContain("mset zone blocked 0");
   });
 
+  it("lets Lua scripts set spells and traps", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Set Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "200", name: "Set Trap", kind: "trap", typeFlags: 0x4 },
+      { code: "300", name: "Rejected Monster", kind: "monster" },
+      { code: "400", name: "Zone Blocked Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "500", name: "Zone Filler A", kind: "spell", typeFlags: 0x2 },
+      { code: "600", name: "Zone Filler B", kind: "spell", typeFlags: 0x2 },
+      { code: "700", name: "Zone Filler C", kind: "spell", typeFlags: 0x2 },
+      { code: "800", name: "Zone Filler D", kind: "spell", typeFlags: 0x2 },
+      { code: "900", name: "Zone Filler E", kind: "spell", typeFlags: 0x2 },
+    ];
+    const setSession = createDuel({ seed: 91, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(setSession, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(setSession);
+
+    const setHost = createLuaScriptHost(setSession);
+    const setResult = setHost.loadScript(
+      `
+      local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local trap = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("sset spell result " .. Duel.SSet(spell))
+      Debug.Message("sset trap result " .. Duel.SSet(trap))
+      Debug.Message("sset monster rejected " .. Duel.SSet(monster))
+      `,
+      "basic-spell-trap-set.lua",
+    );
+    expect(setResult.ok, setResult.error).toBe(true);
+    expect(setHost.messages).toContain("sset spell result 1");
+    expect(setHost.messages).toContain("sset trap result 1");
+    expect(setHost.messages).toContain("sset monster rejected 0");
+    expect(setSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
+    expect(setSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
+
+    const fullSession = createDuel({ seed: 92, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(fullSession, {
+      0: { main: ["400", "500", "600", "700", "800", "900"] },
+      1: { main: [] },
+    });
+    startDuel(fullSession);
+    for (const code of ["500", "600", "700", "800", "900"]) {
+      const filler = fullSession.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === code);
+      moveDuelCard(fullSession.state, filler!.uid, "spellTrapZone", 0);
+    }
+    const fullHost = createLuaScriptHost(fullSession);
+    const fullResult = fullHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("sset zone blocked " .. Duel.SSet(target))
+      `,
+      "basic-spell-trap-set-zone-block.lua",
+    );
+    expect(fullResult.ok, fullResult.error).toBe(true);
+    expect(fullHost.messages).toContain("sset zone blocked 0");
+  });
+
   it("passes extra filter arguments through Lua matching helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Vararg A", kind: "monster", attack: 1600 },
