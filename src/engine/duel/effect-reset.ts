@@ -1,4 +1,4 @@
-import type { DuelCardInstance, DuelState } from "#duel/types.js";
+import type { DuelCardInstance, DuelPhase, DuelState } from "#duel/types.js";
 
 const resetEvent = 0x1000;
 const resetToGrave = 0x40000;
@@ -6,7 +6,16 @@ const resetRemove = 0x80000;
 const resetToHand = 0x200000;
 const resetToDeck = 0x400000;
 const resetLeave = 0x800000;
+const resetPhase = 0x40000000;
 const destinationResetFlags = resetToGrave | resetRemove | resetToHand | resetToDeck;
+const phaseFlags: Record<DuelPhase, number> = {
+  draw: 0x1,
+  standby: 0x2,
+  main1: 0x4,
+  battle: 0x80,
+  main2: 0x100,
+  end: 0x200,
+};
 
 export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInstance): void {
   state.effects = state.effects.filter((effect) => {
@@ -17,6 +26,19 @@ export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInsta
     if ((flags & destinationResetFlags) !== 0) return !matchesDestinationReset(flags, card);
     const previousLocation = card.previousLocation ?? card.location;
     return !effect.range.includes(previousLocation) || effect.range.includes(card.location);
+  });
+}
+
+export function pruneResetEffectsAfterPhase(state: DuelState, phase: DuelPhase): void {
+  const phaseFlag = phaseFlags[phase];
+  state.effects = state.effects.filter((effect) => {
+    const reset = effect.reset;
+    if (!reset || (reset.flags & resetPhase) === 0 || (reset.flags & phaseFlag) === 0) return true;
+    if (reset.count !== undefined && reset.count > 1) {
+      reset.count -= 1;
+      return true;
+    }
+    return false;
   });
 }
 

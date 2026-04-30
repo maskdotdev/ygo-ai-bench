@@ -69,6 +69,7 @@ import {
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
+import { pruneResetEffectsAfterPhase } from "#duel/effect-reset.js";
 import {
   applyDestroyPrevention,
   applyDestroyReplacement,
@@ -544,6 +545,7 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
   if (state.turnPlayer !== player) throw new Error("Only the turn player can change phases");
   if (phaseOrder.indexOf(phase) <= phaseOrder.indexOf(state.phase)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
   state.phase = phase;
+  pruneResetEffectsAfterPhase(state, phase);
   if (phase === "battle") state.attacksDeclared = [];
   else delete state.currentAttack;
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
@@ -552,9 +554,11 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
 
 function endTurn(state: DuelState, player: PlayerId): void {
   if (state.turnPlayer !== player) throw new Error("Only the turn player can end the turn");
+  pruneResetEffectsAfterPhase(state, "end");
   state.turn += 1;
   state.turnPlayer = otherPlayer(player);
   state.phase = "draw";
+  pruneResetEffectsAfterPhase(state, "draw");
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
   state.positionsChanged = [];
@@ -563,6 +567,7 @@ function endTurn(state: DuelState, player: PlayerId): void {
   state.players[state.turnPlayer].normalSummonAvailable = true;
   draw(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");
   state.phase = "main1";
+  pruneResetEffectsAfterPhase(state, "main1");
   pushDuelLog(state, "turn", state.turnPlayer, undefined, `Turn ${state.turn} started`);
   collectTriggerEffects(state, "turnStarted");
 }

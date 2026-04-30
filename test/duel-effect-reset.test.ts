@@ -197,4 +197,95 @@ describe("duel effect reset", () => {
     expect(session.state.effects.some((effect) => effect.id === "rollback-reset-pruned-effect")).toBe(true);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "rollback-reset-pruned-effect")).toBe(true);
   });
+
+  it("removes reset-phase effects when entering their target phase", () => {
+    const session = createDuel({ seed: 123, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    registerEffect(session, {
+      id: "reset-on-battle-phase",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      reset: { flags: 0x40000000 + 0x80 },
+      operation(ctx) {
+        ctx.log("Phase reset effect should not resolve");
+      },
+    });
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "reset-on-battle-phase")).toBe(true);
+
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+
+    expect(session.state.effects).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "reset-on-battle-phase")).toBe(false);
+  });
+
+  it("counts matching reset phases before removing effects", () => {
+    const session = createDuel({ seed: 124, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    registerEffect(session, {
+      id: "reset-after-two-phases",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      range: ["hand"],
+      reset: { flags: 0x40000000 + 0x80 + 0x100, count: 2 },
+      operation() {},
+    });
+
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    expect(session.state.effects[0]).toMatchObject({ id: "reset-after-two-phases", reset: { count: 1 } });
+
+    const main2 = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "main2");
+    expect(main2).toBeDefined();
+    expect(applyResponse(session, main2!).ok).toBe(true);
+
+    expect(session.state.effects).toHaveLength(0);
+  });
+
+  it("removes end-phase reset effects when ending the turn directly", () => {
+    const session = createDuel({ seed: 126, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    registerEffect(session, {
+      id: "reset-on-direct-end-turn",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      range: ["hand"],
+      reset: { flags: 0x40000000 + 0x200 },
+      operation() {},
+    });
+
+    const endTurn = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
+    expect(endTurn).toBeDefined();
+    expect(applyResponse(session, endTurn!).ok).toBe(true);
+
+    expect(session.state.turnPlayer).toBe(1);
+    expect(session.state.effects).toHaveLength(0);
+  });
 });
