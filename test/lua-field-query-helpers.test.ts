@@ -409,6 +409,38 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("fielded link target material true/false");
   });
 
+  it("checks Lua card summon predicates", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summonable Monster", kind: "monster", level: 4 },
+      { code: "200", name: "Fixture Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "300", name: "Tribute Monster", kind: "monster", level: 7 },
+      { code: "400", name: "Extra Deck Monster", kind: "extra", typeFlags: 0x4000001, level: 2 },
+    ];
+    const session = createDuel({ seed: 87, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"], extra: ["400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local normal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local extra = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
+      Debug.Message("summonable predicates " .. tostring(normal:IsSummonableCard()) .. "/" .. tostring(spell:IsSummonableCard()) .. "/" .. tostring(tribute:IsSummonableCard()))
+      Debug.Message("special summonable predicates " .. tostring(normal:IsSpecialSummonable()) .. "/" .. tostring(spell:IsSpecialSummonable()) .. "/" .. tostring(extra:IsSpecialSummonable()))
+      `,
+      "card-summon-predicates.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("summonable predicates true/false/false");
+    expect(host.messages).toContain("special summonable predicates true/false/false");
+  });
+
   it("passes extra filter arguments through Lua matching helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Vararg A", kind: "monster", attack: 1600 },
