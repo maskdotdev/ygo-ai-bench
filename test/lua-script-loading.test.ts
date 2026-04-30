@@ -3,6 +3,26 @@ import { createDuel } from "#duel/core.js";
 import { createLuaScriptHost, type LuaScriptSource } from "#lua/host.js";
 
 describe("Lua script loading", () => {
+  it("lets Lua scripts extend unofficial race and attribute masks", () => {
+    const session = createDuel({ seed: 155, startingHandSize: 0 });
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      RACE_ALL=0x3
+      ATTRIBUTE_ALL=0x5
+      Duel.EnableUnofficialRace(0x40)
+      Duel.EnableUnofficialAttribute(0x80)
+      Debug.Message("unofficial masks " .. RACE_ALL .. "/" .. ATTRIBUTE_ALL)
+      `,
+      "unofficial-masks.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["unofficial masks 67/133"]);
+    expect(host.getGlobalNumber("RACE_ALL")).toBe(0x43);
+    expect(host.getGlobalNumber("ATTRIBUTE_ALL")).toBe(0x85);
+  });
+
   it("lets Lua scripts load other configured scripts once unless forced", () => {
     const session = createDuel({ seed: 91, startingHandSize: 0 });
     const scripts = new Map<string, string>([

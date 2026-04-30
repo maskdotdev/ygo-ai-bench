@@ -10,6 +10,10 @@ export interface LuaDuelScriptApiHostState {
 }
 
 export function installDuelScriptApi(L: unknown, hostState: LuaDuelScriptApiHostState): void {
+  lua.lua_pushcfunction(L, (state: unknown) => pushEnableUnofficialMask(state, "RACE_ALL"));
+  lua.lua_setfield(L, -2, to_luastring("EnableUnofficialRace"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushEnableUnofficialMask(state, "ATTRIBUTE_ALL"));
+  lua.lua_setfield(L, -2, to_luastring("EnableUnofficialAttribute"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const name = lua.lua_isstring(state, 1) ? lua.lua_tojsstring(state, 1) : undefined;
     if (!name) {
@@ -43,6 +47,16 @@ export function installDuelScriptApi(L: unknown, hostState: LuaDuelScriptApiHost
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("LoadCardScriptAlias"));
+}
+
+function pushEnableUnofficialMask(L: unknown, globalName: string): number {
+  const value = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0;
+  lua.lua_getglobal(L, to_luastring(globalName));
+  const existing = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : 0;
+  lua.lua_pop(L, 1);
+  lua.lua_pushinteger(L, existing | value);
+  lua.lua_setglobal(L, to_luastring(globalName));
+  return 0;
 }
 
 function readCardScriptName(L: unknown): string | undefined {
