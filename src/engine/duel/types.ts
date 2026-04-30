@@ -15,6 +15,7 @@ export type DuelEventName =
   | "banished"
   | "phaseChanged"
   | "turnStarted"
+  | "adjust"
   | "attackDeclared"
   | "battleDestroyed"
   | "positionChanged"

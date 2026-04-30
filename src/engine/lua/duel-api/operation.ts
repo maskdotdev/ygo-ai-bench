@@ -39,10 +39,20 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("CheckEvent"));
   lua.lua_pushcfunction(L, () => pushBreakEffect(session));
   lua.lua_setfield(L, -2, to_luastring("BreakEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAdjustInstantly(state, session));
+  lua.lua_setfield(L, -2, to_luastring("AdjustInstantly"));
 }
 
 function pushBreakEffect(session: DuelSession): number {
   pushDuelLog(session.state, "breakEffect", session.state.turnPlayer, undefined, "Effect operation break");
+  return 0;
+}
+
+function pushAdjustInstantly(L: unknown, session: DuelSession): number {
+  const uid = readCardUid(L, 1);
+  const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+  raiseDuelEvent(session.state, "adjust", card);
+  pushDuelLog(session.state, "adjust", card?.controller ?? session.state.turnPlayer, card?.name, "Instant adjust");
   return 0;
 }
 
