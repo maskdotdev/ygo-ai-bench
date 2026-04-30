@@ -243,4 +243,104 @@ describe("Lua trigger chain windows", () => {
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([resolved.state.pendingTriggers[0]?.effectId]);
     expect(host.messages).toEqual(["lua first optional window resolved"]);
   });
+
+  it("declines optional Lua trigger buckets without exposing later player buckets early", () => {
+    const { session, host } = setupLuaChainFixture({
+      seed: 94,
+      startingHandSize: 3,
+      cards: [
+        { code: "14100", name: "Lua Decline Window Summon", kind: "monster" },
+        { code: "14200", name: "Lua First Decline Window", kind: "monster" },
+        { code: "14300", name: "Lua Second Decline Window", kind: "monster" },
+        { code: "14400", name: "Lua Opponent Decline Window", kind: "monster" },
+        { code: "14500", name: "Lua Decline Window Quick", kind: "monster" },
+        { code: "14600", name: "Lua Decline Window Filler", kind: "monster" },
+      ],
+      decks: {
+        0: { main: ["14100", "14200", "14300"] },
+        1: { main: ["14400", "14500", "14600"] },
+      },
+      expectedEffects: 4,
+      scriptName: "lua-optional-trigger-decline-window.lua",
+      script: `
+      c14200={}
+      function c14200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua first decline window resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c14300={}
+      function c14300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua second decline window resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c14400={}
+      function c14400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua opponent decline window resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c14500={}
+      function c14500.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          return Duel.GetCurrentChain()>0
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua decline quick resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+    const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "14100");
+    expect(summonSource).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["14200", "14300", "14400"]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
+      session.state.pendingTriggers[0]?.effectId,
+      session.state.pendingTriggers[1]?.effectId,
+    ]);
+
+    const firstDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
+    expect(firstDecline).toBeDefined();
+    const afterFirstDecline = applyResponse(session, firstDecline!);
+
+    expect(afterFirstDecline.ok).toBe(true);
+    expect(afterFirstDecline.state.pendingTriggers.map((trigger) => afterFirstDecline.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["14300", "14400"]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([afterFirstDecline.state.pendingTriggers[0]?.effectId]);
+
+    const secondDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === afterFirstDecline.state.pendingTriggers[0]?.effectId);
+    expect(secondDecline).toBeDefined();
+    const afterSecondDecline = applyResponse(session, secondDecline!);
+
+    expect(afterSecondDecline.ok).toBe(true);
+    expect(afterSecondDecline.state.pendingTriggers.map((trigger) => afterSecondDecline.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["14400"]);
+    expect(afterSecondDecline.state.waitingFor).toBe(1);
+    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 1).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([afterSecondDecline.state.pendingTriggers[0]?.effectId]);
+    expect(host.messages).toEqual([]);
+  });
 });
