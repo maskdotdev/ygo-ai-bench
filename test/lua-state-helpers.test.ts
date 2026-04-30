@@ -796,6 +796,7 @@ describe("Lua state helpers", () => {
       local race=Duel.AnnounceRace(0, RACE_WARRIOR, RACE_SPELLCASTER)
       local attribute=Duel.AnnounceAttribute(0, ATTRIBUTE_LIGHT, ATTRIBUTE_DARK)
       local level=Duel.AnnounceLevel(0, 3, 5, 7)
+      local ranged=Duel.AnnounceNumberRange(0, 2, 5, 2, 3)
       local disabled=Duel.SelectDisableField(0, 1, LOCATION_MZONE, 0, 0)
       local selected=Duel.SelectField(0, 2, LOCATION_SZONE, LOCATION_MZONE, 0)
       local group=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 2, nil)
@@ -804,7 +805,7 @@ describe("Lua state helpers", () => {
       local card_hint_result=Duel.HintSelection(single)
       Debug.Message("prompt option " .. option .. "/" .. tostring(yes))
       Debug.Message("prompt effect " .. tostring(effect_yes) .. "/" .. tostring(effect_choice) .. "/" .. tostring(effect_none))
-      Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. level)
+      Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. level .. "/" .. ranged)
       Debug.Message("prompt zones " .. disabled .. "/" .. selected .. "/" .. ZONES_MMZ .. "/" .. ZONES_EMZ)
       Debug.Message("hint return " .. tostring(group_hint_result == nil) .. "/" .. tostring(card_hint_result == nil))
       `,
@@ -814,7 +815,7 @@ describe("Lua state helpers", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("prompt option 0/true");
     expect(host.messages).toContain("prompt effect true/2/nil");
-    expect(host.messages).toContain("prompt announce 4/100/1/1/16/3");
+    expect(host.messages).toContain("prompt announce 4/100/1/1/16/3/4");
     expect(host.messages).toContain("prompt zones 1/768/31/96");
     expect(host.messages).toContain("hint return true/true");
     const hintLogs = session.state.log.filter((entry) => entry.action === "hintSelection");

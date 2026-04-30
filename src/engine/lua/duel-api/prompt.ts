@@ -38,6 +38,8 @@ export function installDuelPromptApi(L: unknown, session: DuelSession, hostState
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectEffect(state));
   lua.lua_setfield(L, -2, to_luastring("SelectEffect"));
   pushAnnouncementHelper(L, "AnnounceNumber");
+  lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceNumberRange(state));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceNumberRange"));
   pushAnnouncementHelper(L, "AnnounceCard");
   pushAnnouncementHelper(L, "AnnounceType");
   pushAnnouncementHelper(L, "AnnounceRace");
@@ -83,5 +85,24 @@ function pushAnnouncementHelper(L: unknown, fieldName: string): void {
 function pushFirstAnnouncementValue(L: unknown, fallback: number): number {
   const value = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : fallback;
   lua.lua_pushinteger(L, value);
+  return 1;
+}
+
+function pushAnnounceNumberRange(L: unknown): number {
+  const min = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const max = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : min;
+  const exceptions = new Set<number>();
+  for (let index = 4; index <= lua.lua_gettop(L); index += 1) {
+    if (lua.lua_isnumber(L, index)) exceptions.add(lua.lua_tointeger(L, index));
+  }
+  const low = Math.min(min, max);
+  const high = Math.max(min, max);
+  for (let value = low; value <= high; value += 1) {
+    if (!exceptions.has(value)) {
+      lua.lua_pushinteger(L, value);
+      return 1;
+    }
+  }
+  lua.lua_pushinteger(L, low);
   return 1;
 }
