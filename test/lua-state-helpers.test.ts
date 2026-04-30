@@ -730,6 +730,12 @@ describe("Lua state helpers", () => {
       Debug.Message("aux next empty " .. empty_iter_count)
       local plain_selected = aux.SelectUnselectGroup(all_cards, 0, 1, 2, false, false)
       Debug.Message("aux select plain " .. plain_selected:GetCount())
+      local unique_names = Duel.GetMatchingGroup(aux.TRUE, 0, LOCATION_HAND + LOCATION_MZONE, 0, nil)
+      Debug.Message("dpcheck unique " .. tostring(aux.dpcheck(Card.GetCode)(unique_names)))
+      Debug.Message("dncheck unique " .. tostring(aux.dncheck(unique_names)))
+      local duplicate_names = Group.FromCards(faceup_monster,Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 1, LOCATION_HAND, 0, 1, 1, nil):GetFirst())
+      local duplicate_ok,duplicate_has_repeat = aux.dncheck(duplicate_names)
+      Debug.Message("dncheck duplicate " .. tostring(duplicate_ok) .. "/" .. tostring(duplicate_has_repeat))
       local filtered_selected = aux.SelectUnselectGroup(all_cards, 0, 2, 2, false, false, function(sg,minatk)
         local total=0
         local tc=sg:GetFirst()
@@ -786,6 +792,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("aux next 3/600");
     expect(host.messages).toContain("aux next empty 0");
     expect(host.messages).toContain("aux select plain 2");
+    expect(host.messages).toContain("dpcheck unique true");
+    expect(host.messages).toContain("dncheck unique true");
+    expect(host.messages).toContain("dncheck duplicate false/true");
     expect(host.messages).toContain("aux select filtered 2");
     expect(host.messages).toContain("aux select missed 0");
     expect(host.messages).toContain("target exists true");

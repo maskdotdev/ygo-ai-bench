@@ -212,6 +212,16 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
     function aux.ReleaseCheckTarget(sg,tp,exg,dg)
       return dg and dg:IsExists(aux.TRUE,1,sg)
     end
+    function aux.dpcheck(fun)
+      return function(sg,e,tp,mg)
+        local c1=sg:GetClassCount(fun)
+        local c2=sg:GetCount()
+        return c1==c2,c1~=c2
+      end
+    end
+    function aux.dncheck(sg,e,tp,mg)
+      return aux.dpcheck(Card.GetCode)(sg,e,tp,mg)
+    end
     function aux.GetMustBeMaterialGroup(tp,eg,sump,sc,g,r)
       local effects={Duel.GetPlayerEffect(tp,EFFECT_MUST_BE_MATERIAL)}
       local sg=Group.CreateGroup()
