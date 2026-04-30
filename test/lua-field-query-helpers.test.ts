@@ -416,10 +416,20 @@ describe("Lua field and query helpers", () => {
       { code: "300", name: "Tribute Monster", kind: "monster", level: 7 },
       { code: "400", name: "Extra Deck Monster", kind: "extra", typeFlags: 0x4000001, level: 2 },
       { code: "500", name: "Fixture Trap", kind: "trap", typeFlags: 0x4 },
+      { code: "600", name: "Zone Filler A", kind: "monster" },
+      { code: "700", name: "Zone Filler B", kind: "monster" },
+      { code: "800", name: "Zone Filler C", kind: "monster" },
+      { code: "810", name: "Zone Filler D", kind: "monster" },
+      { code: "820", name: "Zone Filler E", kind: "monster" },
+      { code: "830", name: "Set Filler A", kind: "spell", typeFlags: 0x2 },
+      { code: "840", name: "Set Filler B", kind: "spell", typeFlags: 0x2 },
+      { code: "850", name: "Set Filler C", kind: "spell", typeFlags: 0x2 },
+      { code: "860", name: "Set Filler D", kind: "spell", typeFlags: 0x2 },
+      { code: "870", name: "Set Filler E", kind: "spell", typeFlags: 0x2 },
     ];
-    const session = createDuel({ seed: 87, startingHandSize: 4, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 87, startingHandSize: 14, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "500"], extra: ["400"] },
+      0: { main: ["100", "200", "300", "500", "600", "700", "800", "810", "820", "830", "840", "850", "860", "870"], extra: ["400"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -443,6 +453,50 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("summonable predicates true/false/false");
     expect(host.messages).toContain("special summonable predicates true/false/false");
     expect(host.messages).toContain("setable predicates true/false/true/false/true/true");
+
+    session.state.players[0].normalSummonAvailable = false;
+    const countHost = createLuaScriptHost(session);
+    const countResult = countHost.loadScript(
+      `
+      local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("count blocked predicates " .. tostring(tribute:IsSummonableCard()) .. "/" .. tostring(tribute:IsMSetable()))
+      `,
+      "card-summon-predicate-count-block.lua",
+    );
+    expect(countResult.ok, countResult.error).toBe(true);
+    expect(countHost.messages).toContain("count blocked predicates false/false");
+    session.state.players[0].normalSummonAvailable = true;
+
+    for (const code of ["600", "700", "800", "810", "820"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+    const zoneHost = createLuaScriptHost(session);
+    const zoneResult = zoneHost.loadScript(
+      `
+      local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("mzone blocked predicates " .. tostring(tribute:IsSummonableCard()) .. "/" .. tostring(tribute:IsMSetable()) .. "/" .. tostring(tribute:IsSpecialSummonable()))
+      `,
+      "card-summon-predicate-mzone-block.lua",
+    );
+    expect(zoneResult.ok, zoneResult.error).toBe(true);
+    expect(zoneHost.messages).toContain("mzone blocked predicates false/false/false");
+
+    for (const code of ["830", "840", "850", "860", "870"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "spellTrapZone", 0);
+    }
+    const spellTrapHost = createLuaScriptHost(session);
+    const spellTrapResult = spellTrapHost.loadScript(
+      `
+      local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local trap = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("szone blocked predicates " .. tostring(spell:IsSSetable()) .. "/" .. tostring(trap:IsSSetable()))
+      `,
+      "card-summon-predicate-szone-block.lua",
+    );
+    expect(spellTrapResult.ok, spellTrapResult.error).toBe(true);
+    expect(spellTrapHost.messages).toContain("szone blocked predicates false/false");
   });
 
   it("passes extra filter arguments through Lua matching helpers", () => {
