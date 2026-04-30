@@ -587,10 +587,12 @@ describe("Lua field and query helpers", () => {
       { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5 },
       { code: "500", name: "Infinity Alias", kind: "monster", alias: "1378" },
       { code: "600", name: "Multi Attribute", kind: "monster", attribute: 0x30 },
+      { code: "700", name: "Ritual Fixture", kind: "monster", typeFlags: 0x81, level: 6 },
+      { code: "800", name: "Normal Fixture", kind: "monster", typeFlags: 0x11, level: 4 },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 6, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 8, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500", "600"] },
+      0: { main: ["100", "200", "300", "400", "500", "600", "700", "800"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -613,9 +615,12 @@ describe("Lua field and query helpers", () => {
       Debug.Message("infinity checks " .. tostring(infinity:IsInfinity()) .. "/" .. tostring(c:IsInfinity()))
       local xyz = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local link = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local ritual = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 700), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local normal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("original predicates " .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalLevel(7)))
       Debug.Message("not type " .. tostring(c:IsNotType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotType(TYPE_SPELL)))
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
+      Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()))
       Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
       Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()))
@@ -666,6 +671,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("original predicates true/true");
     expect(host.messages).toContain("not type false/true");
     expect(host.messages).toContain("not original type false/true");
+    expect(host.messages).toContain("named type predicates true/false/true/false");
     expect(host.messages).toContain("rank 4/4/true/true");
     expect(host.messages).toContain("has level true/false/false/false");
     expect(host.messages).toContain("rank comparisons true/false/true/true");
