@@ -10,86 +10,8 @@ import {
   startDuel,
 } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelSession, PlayerId, PublicDuelCard } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
-
-interface TriggerBucketFixture {
-  session: DuelSession;
-  summoned: PublicDuelCard;
-  turnFirst: PublicDuelCard;
-  turnSecond: PublicDuelCard;
-  opponent: PublicDuelCard;
-}
-
-interface TriggerCountFixture {
-  session: DuelSession;
-  firstSummon: PublicDuelCard;
-  triggerSource: PublicDuelCard;
-  secondSummon: PublicDuelCard;
-}
-
-function setupTriggerBucketFixture(): TriggerBucketFixture {
-  const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
-  loadDecks(session, {
-    0: { main: ["100", "300", "500"] },
-    1: { main: ["400", "500", "300"] },
-  });
-  startDuel(session);
-
-  const summoned = findPublicCard(session, 0, "100");
-  const turnFirst = findPublicCard(session, 0, "300");
-  const turnSecond = findPublicCard(session, 0, "500");
-  const opponent = findPublicCard(session, 1, "400");
-  expect(summoned).toBeTruthy();
-  expect(turnFirst).toBeTruthy();
-  expect(turnSecond).toBeTruthy();
-  expect(opponent).toBeTruthy();
-
-  return { session, summoned: summoned!, turnFirst: turnFirst!, turnSecond: turnSecond!, opponent: opponent! };
-}
-
-function setupTriggerCountFixture(): TriggerCountFixture {
-  const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
-  loadDecks(session, {
-    0: { main: ["100", "300", "500"] },
-    1: { main: ["400", "400", "400"] },
-  });
-  startDuel(session);
-
-  const firstSummon = findPublicCard(session, 0, "100");
-  const triggerSource = findPublicCard(session, 0, "300");
-  const secondSummon = findPublicCard(session, 0, "500");
-  expect(firstSummon).toBeTruthy();
-  expect(triggerSource).toBeTruthy();
-  expect(secondSummon).toBeTruthy();
-
-  return { session, firstSummon: firstSummon!, triggerSource: triggerSource!, secondSummon: secondSummon! };
-}
-
-function findPublicCard(session: DuelSession, controller: PlayerId, code: string) {
-  return queryPublicState(session).cards.find((card) => card.controller === controller && card.location === "hand" && card.code === code);
-}
-
-function activateTriggerByEffect(session: DuelSession, effectId: string): void {
-  const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === effectId);
-  expect(trigger).toBeTruthy();
-  expect(applyResponse(session, trigger!).ok).toBe(true);
-}
-
-function registerBucketTrigger(session: DuelSession, id: string, source: Pick<PublicDuelCard, "uid">, controller: PlayerId, optional = true): void {
-  registerEffect(session, {
-    id,
-    sourceUid: source.uid,
-    controller,
-    event: "trigger",
-    triggerEvent: "normalSummoned",
-    ...(optional ? {} : { optional: false }),
-    range: ["hand"],
-    operation(ctx) {
-      ctx.log(`${id} resolved`);
-    },
-  });
-}
+import { activateTriggerByEffect, registerBucketTrigger, setupTriggerBucketFixture, setupTriggerCountFixture } from "./duel-trigger-fixtures.js";
 
 describe("duel triggers", () => {
   it("exposes trigger effects as pending legal responses after a normal summon", () => {
@@ -203,6 +125,82 @@ describe("duel triggers", () => {
     expect(quickLog).toBeTruthy();
     expect(triggerLog).toBeTruthy();
     expect(quickLog!.step).toBeLessThan(triggerLog!.step);
+  });
+
+  it("holds sibling pending triggers behind the open trigger chain window", () => {
+    const session = createDuel({ seed: 2, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const secondSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(firstSource).toBeTruthy();
+    expect(secondSource).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+
+    registerEffect(session, {
+      id: "first-chain-window-trigger",
+      sourceUid: firstSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("First chain window trigger resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "second-held-trigger",
+      sourceUid: secondSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Second held trigger resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "opponent-chain-window-quick",
+      sourceUid: quickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Opponent chain window quick resolved");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["first-chain-window-trigger", "second-held-trigger"]);
+
+    const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "first-chain-window-trigger");
+    expect(firstTrigger).toBeTruthy();
+    const opened = applyResponse(session, firstTrigger!);
+
+    expect(opened.ok).toBe(true);
+    expect(opened.state.chain).toHaveLength(1);
+    expect(opened.state.waitingFor).toBe(1);
+    expect(opened.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-held-trigger"]);
+    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
+    expect(getDuelLegalActions(session, 1).map((action) => action.type)).toEqual(["activateEffect", "passChain"]);
+
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeTruthy();
+    const resolved = applyResponse(session, pass!);
+
+    expect(resolved.ok).toBe(true);
+    expect(resolved.state.chain).toHaveLength(0);
+    expect(resolved.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-held-trigger"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-held-trigger"]);
   });
 
   it("allows optional trigger effects to be declined", () => {
