@@ -149,6 +149,7 @@ export const cardFieldNames = [
   "IsAbleToRemove",
   "IsAbleToRemoveAsCost",
   "IsAbleToExtra",
+  "IsReleasable",
   "IsReleasableByEffect",
   "IsDestructable",
   "IsDiscardable",

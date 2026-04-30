@@ -871,12 +871,14 @@ describe("Lua continuous effects", () => {
       `
       local protected_card = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local free = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("releasable cost " .. tostring(protected_card:IsReleasable()) .. "/" .. tostring(free:IsReleasable()))
       Debug.Message("releasable by effect " .. tostring(protected_card:IsReleasableByEffect()) .. "/" .. tostring(free:IsReleasableByEffect()))
       `,
       "release-by-effect-check.lua",
     );
 
     expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain("releasable cost false/true");
     expect(host.messages).toContain("releasable by effect false/true");
   });
 
