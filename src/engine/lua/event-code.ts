@@ -8,6 +8,7 @@ export function triggerEventFromCode(code: number | undefined): DuelEventName | 
   if (code === 1014) return "sentToGraveyard";
   if (code === 1016) return "positionChanged";
   if (code === 1130) return "attackDeclared";
+  if (code === 1139) return "battleDestroyed";
   if (code === 1140) return "battleDestroyed";
   return undefined;
 }

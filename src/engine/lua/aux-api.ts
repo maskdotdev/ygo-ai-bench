@@ -29,6 +29,10 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   pushFixedFilterWrapper(L, "FilterBoolFunctionEx", readLuaError, false);
   pushFixedFilterWrapper(L, "TargetBoolFunction", readLuaError, false);
   pushFixedFilterWrapper(L, "FaceupFilter", readLuaError, true);
+  lua.lua_pushcfunction(L, (state: unknown) => pushBattleDestroyedCondition(state, false));
+  lua.lua_setfield(L, -2, to_luastring("bdcon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushBattleDestroyedCondition(state, true));
+  lua.lua_setfield(L, -2, to_luastring("bdocon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectUnselectGroup(state));
   lua.lua_setfield(L, -2, to_luastring("SelectUnselectGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAuxNext(state));
@@ -41,6 +45,20 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setfield(L, -2, to_luastring("NecroValleyFilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
   installEquipProcedure(L, readLuaError);
+}
+
+function pushBattleDestroyedCondition(L: unknown, requireOpponent: boolean): number {
+  const triggerPlayer = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  const eventUids = readGroupUids(L, 3);
+  const eventPlayer = readEventPlayer(L, 4);
+  const matches = eventUids.length > 0;
+  lua.lua_pushboolean(L, matches && (!requireOpponent || triggerPlayer === undefined || eventPlayer === undefined || eventPlayer !== triggerPlayer));
+  return 1;
+}
+
+function readEventPlayer(L: unknown, index: number): number | undefined {
+  if (!lua.lua_isnumber(L, index)) return undefined;
+  return lua.lua_tointeger(L, index);
 }
 
 function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => string): void {

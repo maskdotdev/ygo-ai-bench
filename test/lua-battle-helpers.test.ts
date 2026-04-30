@@ -142,6 +142,69 @@ describe("Lua battle helpers", () => {
     expect(session.state.pendingBattle).toBeUndefined();
   });
 
+  it("lets Lua scripts use aux.bdocon for opponent battle destruction", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Aux Battle Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Aux Battle Target", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 55, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_BATTLE_DESTROYING)
+        e:SetRange(LOCATION_MZONE)
+        e:SetCondition(aux.bdocon)
+        e:SetOperation(function(e,tp)
+          Debug.Message("aux bdocon attacker resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_BATTLE_DESTROYING)
+        e:SetRange(LOCATION_MZONE)
+        e:SetCondition(aux.bdocon)
+        e:SetOperation(function(e,tp)
+          Debug.Message("aux bdocon target should not resolve")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-aux-bdocon.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateTrigger")).toBe(false);
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toEqual(["aux bdocon attacker resolved"]);
+  });
+
   it("lets Lua scripts inspect each player's battle monster", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Lua Battle Attacker", kind: "monster", attack: 1800 },
