@@ -1024,6 +1024,10 @@ describe("Lua field and query helpers", () => {
       Debug.Message("duel sum miss " .. tostring(Duel.CheckWithSumEqual(Card.GetAttack, 0, LOCATION_HAND, 0, 4500, 2, 2, nil)))
       Debug.Message("duel sum greater check " .. tostring(Duel.CheckWithSumGreater(Card.GetAttack, 0, LOCATION_HAND, 0, 3500, 2, 2, nil)))
       Debug.Message("duel sum greater miss " .. tostring(Duel.CheckWithSumGreater(Card.GetAttack, 0, LOCATION_HAND, 0, 5500, 2, 2, nil)))
+      Debug.Message("duel sum vararg check " .. tostring(Duel.CheckWithSumEqual(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 0, LOCATION_HAND, 0, 3600, 2, 2, nil, 1500)))
+      Debug.Message("duel sum vararg miss " .. tostring(Duel.CheckWithSumEqual(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 0, LOCATION_HAND, 0, 4500, 2, 2, nil, 1500)))
+      Debug.Message("duel sum greater vararg check " .. tostring(Duel.CheckWithSumGreater(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 0, LOCATION_HAND, 0, 3500, 2, 2, nil, 1500)))
+      Debug.Message("duel sum greater vararg miss " .. tostring(Duel.CheckWithSumGreater(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 0, LOCATION_HAND, 0, 4500, 2, 2, nil, 1500)))
       local sum_selected = Duel.SelectWithSumEqual(0, Card.GetAttack, 0, LOCATION_HAND, 0, 3600, 2, 2, nil)
       Debug.Message("duel sum selected " .. sum_selected:GetCount())
       local sum_greater_selected = Duel.SelectWithSumGreater(0, Card.GetAttack, 0, LOCATION_HAND, 0, 3500, 2, 2, nil)
@@ -1057,6 +1061,10 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("duel sum miss false");
     expect(host.messages).toContain("duel sum greater check true");
     expect(host.messages).toContain("duel sum greater miss false");
+    expect(host.messages).toContain("duel sum vararg check true");
+    expect(host.messages).toContain("duel sum vararg miss false");
+    expect(host.messages).toContain("duel sum greater vararg check true");
+    expect(host.messages).toContain("duel sum greater vararg miss false");
     expect(host.messages).toContain("duel sum selected 2");
     expect(host.messages).toContain("duel sum greater selected 2");
     expect(host.messages).toContain("duel sum vararg 2");
