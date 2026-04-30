@@ -421,6 +421,7 @@ function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind
 
 function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {
   if (!target) return true;
+  if (target.uid === card.uid) return false;
   const codes = cardCodes(card);
   if (kind === "fusion") return !target.data.fusionMaterials?.length || target.data.fusionMaterials.some((code) => codes.includes(code));
   if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
@@ -432,7 +433,7 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
     return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
   }
   if (kind === "xyz") return !target.data.xyzMaterials?.length ? cardRank(target) === (card.data.level ?? 0) : target.data.xyzMaterials.some((code) => codes.includes(code));
-  if (kind === "link") return !target.data.linkMaterials?.length ? linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
+  if (kind === "link") return !target.data.linkMaterials?.length ? cardLink(target) > 0 && linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
   return true;
 }
 

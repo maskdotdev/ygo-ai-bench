@@ -343,6 +343,7 @@ describe("Lua field and query helpers", () => {
       { code: "200", name: "Wrong Material", kind: "monster", level: 3 },
       { code: "300", name: "Target Tuner", kind: "monster", typeFlags: 0x1001, level: 2 },
       { code: "500", name: "Too Large Synchro Material", kind: "monster", level: 8 },
+      { code: "600", name: "Fielded Link Target", kind: "monster", typeFlags: 0x4000001, level: 2 },
       { code: "900", name: "Target Fusion", kind: "extra", fusionMaterials: ["101"] },
       { code: "910", name: "Target Synchro", kind: "extra", synchroMaterials: { tuner: "300", nonTuners: ["101"] } },
       { code: "920", name: "Target Xyz", kind: "extra", typeFlags: 0x800001, level: 4 },
@@ -350,9 +351,9 @@ describe("Lua field and query helpers", () => {
       { code: "940", name: "Target Ritual", kind: "monster", ritualMaterials: ["101"] },
       { code: "950", name: "Generic Synchro", kind: "extra", typeFlags: 0x2001, level: 6 },
     ];
-    const session = createDuel({ seed: 58, startingHandSize: 5, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 58, startingHandSize: 6, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "500", "940"], extra: ["900", "910", "920", "930", "950"] },
+      0: { main: ["100", "200", "300", "500", "600", "940"], extra: ["900", "910", "920", "930", "950"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -364,6 +365,7 @@ describe("Lua field and query helpers", () => {
       local c200 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local c300 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local c500 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local c600 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local fusion = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
       local synchro = Duel.GetFieldCard(0, LOCATION_EXTRA, 1)
       local xyz = Duel.GetFieldCard(0, LOCATION_EXTRA, 2)
@@ -377,10 +379,12 @@ describe("Lua field and query helpers", () => {
       Duel.SpecialSummon(c200, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
       Duel.SpecialSummon(c300, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
       Duel.SpecialSummon(c500, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
+      Duel.SpecialSummon(c600, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
       Debug.Message("synchro target material " .. tostring(c300:IsCanBeSynchroMaterial(synchro)) .. "/" .. tostring(c200:IsCanBeSynchroMaterial(synchro)))
       Debug.Message("generic synchro target material " .. tostring(c100:IsCanBeSynchroMaterial(generic_synchro)) .. "/" .. tostring(c300:IsCanBeSynchroMaterial(generic_synchro)) .. "/" .. tostring(c500:IsCanBeSynchroMaterial(generic_synchro)))
       Debug.Message("xyz target field material " .. tostring(c100:IsCanBeXyzMaterial(xyz)) .. "/" .. tostring(c200:IsCanBeXyzMaterial(xyz)))
       Debug.Message("link target material " .. tostring(c100:IsCanBeLinkMaterial(link)) .. "/" .. tostring(link:IsCanBeLinkMaterial(link)))
+      Debug.Message("fielded link target material " .. tostring(c100:IsCanBeLinkMaterial(c600)) .. "/" .. tostring(c600:IsCanBeLinkMaterial(c600)))
       `,
       "target-material-predicates.lua",
     );
@@ -393,6 +397,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("generic synchro target material true/true/false");
     expect(host.messages).toContain("xyz target field material true/false");
     expect(host.messages).toContain("link target material true/false");
+    expect(host.messages).toContain("fielded link target material true/false");
   });
 
   it("passes extra filter arguments through Lua matching helpers", () => {
