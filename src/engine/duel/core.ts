@@ -54,6 +54,7 @@ import {
   changeDuelCardPosition as changeDuelCardPositionRule,
   declareDuelAttack as declareDuelAttackRule,
   getDuelAttackTargets as getDuelAttackTargetsRule,
+  negateDuelAttack as negateDuelAttackRule,
   positionChangeActions,
 } from "#duel/battle.js";
 import {
@@ -502,6 +503,10 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
     damagePlayer: (damagedPlayer, amount) => damageDuelPlayer(state, damagedPlayer, amount),
     destroyCard: (uid, controller, reason) => destroyDuelCard(state, uid, controller, reason),
   });
+}
+
+export function negateDuelAttack(state: DuelState): boolean {
+  return negateDuelAttackRule(state);
 }
 
 export function canChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition): boolean {

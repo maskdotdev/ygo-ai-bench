@@ -48,6 +48,15 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   resolveBattle(state, attacker, target, callbacks);
 }
 
+export function negateDuelAttack(state: DuelState): boolean {
+  const attack = state.currentAttack;
+  if (!attack) return false;
+  const attacker = findCard(state, attack.attackerUid);
+  delete state.currentAttack;
+  pushDuelLog(state, "attack", attacker?.controller ?? state.turnPlayer, attacker?.name, "Negated attack");
+  return true;
+}
+
 export function canChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition): boolean {
   const card = findCard(state, uid);
   if (!card || card.location !== "monsterZone") return false;

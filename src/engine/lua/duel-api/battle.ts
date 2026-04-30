@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { negateDuelAttack } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
 import type { DuelSession } from "#duel/types.js";
 
@@ -25,4 +26,9 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetAttackTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, negateDuelAttack(session.state));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("NegateAttack"));
 }
