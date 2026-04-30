@@ -122,6 +122,68 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("attack lock checked 100");
   });
 
+  it("returns Lua player affected-by-effect matches", () => {
+    const cards: DuelCardData[] = [{ code: "900", name: "Player Effect Source", kind: "monster" }];
+    const session = createDuel({ seed: 41, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "900");
+    expect(source).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    source!.faceUp = true;
+    source!.position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c900={}
+      function c900.initial_effect(c)
+        local e1=Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_FIELD)
+        e1:SetCode(777001)
+        e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e1:SetRange(LOCATION_MZONE)
+        e1:SetTargetRange(1,0)
+        e1:SetLabel(11)
+        c:RegisterEffect(e1)
+        local e2=Effect.CreateEffect(c)
+        e2:SetType(EFFECT_TYPE_FIELD)
+        e2:SetCode(777002)
+        e2:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e2:SetRange(LOCATION_MZONE)
+        e2:SetTargetRange(0,1)
+        e2:SetLabel(22)
+        c:RegisterEffect(e2)
+      end
+      `,
+      "player-affected.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const check = host.loadScript(
+      `
+      local self_effect=Duel.IsPlayerAffectedByEffect(0,777001)
+      local opp_effect=Duel.IsPlayerAffectedByEffect(1,777002)
+      Debug.Message("affected self " .. tostring(self_effect ~= nil) .. "/" .. self_effect:GetLabel())
+      Debug.Message("affected opp " .. tostring(opp_effect ~= nil) .. "/" .. opp_effect:GetLabel())
+      Debug.Message("affected excluded " .. tostring(Duel.IsPlayerAffectedByEffect(1,777001)))
+      Debug.Message("affected missing " .. tostring(Duel.IsPlayerAffectedByEffect(0,777003)))
+      `,
+      "player-affected-check.lua",
+    );
+
+    expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain("affected self true/11");
+    expect(host.messages).toContain("affected opp true/22");
+    expect(host.messages).toContain("affected excluded nil");
+    expect(host.messages).toContain("affected missing nil");
+  });
+
   it("applies Lua continuous material restrictions to card material predicates", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Fusion Locked Material", kind: "monster" },

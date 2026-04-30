@@ -34,6 +34,24 @@ export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, cre
   return false;
 }
 
+export function matchingPlayerEffects(
+  state: DuelState,
+  player: PlayerId,
+  code: number,
+  createContext: ContinuousEffectContextFactory,
+): ContinuousEffectMatch[] {
+  const matches: ContinuousEffectMatch[] = [];
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== code) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createContext(effect, source);
+    if (!effect.canActivate || effect.canActivate(ctx)) matches.push({ effect, source, card: source });
+  }
+  return matches;
+}
+
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 85) continue;

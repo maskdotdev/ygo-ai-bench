@@ -39,7 +39,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelActivityApi(L, session);
   installDuelLpApi(L, session);
   installDuelDeckApi(L, session, hostState);
-  installDuelPlayerApi(L, session);
+  installDuelPlayerApi(L, session, hostState);
   installDuelMoveApi(L, session, hostState);
   installDuelSummonApi(L, session, hostState);
   installDuelQueryApi(L, session, hostState);

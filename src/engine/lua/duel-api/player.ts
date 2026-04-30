@@ -1,13 +1,18 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard } from "#duel/core.js";
-import { findCard } from "#duel/card-state.js";
+import { findCard, moveDuelCard } from "#duel/card-state.js";
+import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
-import type { DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installDuelPlayerApi(L: unknown, session: DuelSession): void {
+export interface LuaDuelPlayerApiHostState {
+  pushEffectTable: (state: unknown, id: number) => void;
+}
+
+export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState): void {
   pushPlayerMoveMatcher(L, "IsPlayerCanSendtoGrave", session, "graveyard");
   pushPlayerMoveMatcher(L, "IsPlayerCanSendtoHand", session, "hand");
   pushPlayerMoveMatcher(L, "IsPlayerCanSendtoDeck", session, "deck");
@@ -19,6 +24,8 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanMSet"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummon(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsPlayerAffectedByEffect(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerAffectedByEffect"));
 }
 
 function pushCanNormalSummon(L: unknown, session: DuelSession): number {
@@ -44,6 +51,28 @@ function pushCanSpecialSummon(L: unknown, session: DuelSession): number {
   const uid = readCardUid(L, 5) ?? readCardUid(L, 2);
   lua.lua_pushboolean(L, canSpecialSummon(session, player, targetPlayer, positionMask, uid));
   return 1;
+}
+
+function pushIsPlayerAffectedByEffect(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const code = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const matches = matchingPlayerEffects(session.state, player, code, createPlayerCheckContext(session));
+  if (matches.length === 0) {
+    lua.lua_pushnil(L);
+    return 1;
+  }
+  let pushed = 0;
+  for (const match of matches) {
+    const effectId = luaEffectId(match.effect);
+    if (effectId === undefined) continue;
+    hostState.pushEffectTable(L, effectId);
+    pushed += 1;
+  }
+  if (pushed === 0) {
+    lua.lua_pushnil(L);
+    return 1;
+  }
+  return pushed;
 }
 
 function canNormalSummon(session: DuelSession, player: PlayerId, uid: string | undefined, ignoreCount: boolean): boolean {
@@ -72,6 +101,29 @@ function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: 
   return canSpecialSummonDuelCard(session.state, uid, targetPlayer);
 }
 
+function createPlayerCheckContext(session: DuelSession): ContinuousEffectContextFactory {
+  return (effect, source) => ({
+    duel: session.state,
+    source,
+    player: effect.controller,
+    checkOnly: true,
+    targetUids: [],
+    log() {},
+    moveCard(uid, to, controller) {
+      return moveDuelCard(session.state, uid, to, controller);
+    },
+    negateChainLink() {
+      return false;
+    },
+    setTargets() {},
+    getTargets() {
+      return [];
+    },
+    setTargetPlayer() {},
+    setTargetParam() {},
+  });
+}
+
 function pushPlayerMoveMatcher(L: unknown, fieldName: string, session: DuelSession, location: DuelLocation): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readCardOrGroupUids(state, 2);
@@ -92,6 +144,11 @@ function isMainPhaseForPlayer(session: DuelSession, player: PlayerId): boolean {
 
 function isMonsterLike(kind: string): boolean {
   return kind === "monster" || kind === "extra";
+}
+
+function luaEffectId(effect: DuelEffectDefinition): number | undefined {
+  const id = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(id) ? id : undefined;
 }
 
 function normalizePlayer(value: number): PlayerId {
