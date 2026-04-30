@@ -353,6 +353,18 @@ describe("Lua state helpers", () => {
       Debug.Message("faceup count " .. Duel.GetMatchingGroupCount(faceup_filter, 0, LOCATION_MZONE, 0, nil))
       Debug.Message("faceup runtime count " .. Duel.GetMatchingGroupCount(aux.FaceupFilter(function(c, minatk) return c:GetAttack() >= minatk end), 0, LOCATION_MZONE, 0, nil, 900))
       local all_cards = Duel.GetFieldGroup(0, LOCATION_HAND + LOCATION_MZONE, 0)
+      local iter_count=0
+      local iter_sum=0
+      for tc in aux.Next(all_cards) do
+        iter_count=iter_count+1
+        iter_sum=iter_sum+tc:GetCode()
+      end
+      Debug.Message("aux next " .. iter_count .. "/" .. iter_sum)
+      local empty_iter_count=0
+      for tc in aux.Next(Group.CreateGroup()) do
+        empty_iter_count=empty_iter_count+1
+      end
+      Debug.Message("aux next empty " .. empty_iter_count)
       local plain_selected = aux.SelectUnselectGroup(all_cards, 0, 1, 2, false, false)
       Debug.Message("aux select plain " .. plain_selected:GetCount())
       local filtered_selected = aux.SelectUnselectGroup(all_cards, 0, 2, 2, false, false, function(sg,minatk)
@@ -390,6 +402,8 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("target bool count 1");
     expect(host.messages).toContain("faceup count 1");
     expect(host.messages).toContain("faceup runtime count 1");
+    expect(host.messages).toContain("aux next 3/600");
+    expect(host.messages).toContain("aux next empty 0");
     expect(host.messages).toContain("aux select plain 2");
     expect(host.messages).toContain("aux select filtered 2");
     expect(host.messages).toContain("aux select missed 0");

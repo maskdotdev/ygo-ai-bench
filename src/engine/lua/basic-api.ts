@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { duelActivity } from "#duel/activity.js";
+import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 
@@ -697,6 +698,8 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   pushFixedFilterWrapper(L, "FaceupFilter", readLuaError, true);
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectUnselectGroup(state));
   lua.lua_setfield(L, -2, to_luastring("SelectUnselectGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAuxNext(state));
+  lua.lua_setfield(L, -2, to_luastring("Next"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     if (!lua.lua_isfunction(state, 1)) {
       lua.lua_pushnil(state);
@@ -716,6 +719,22 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   });
   lua.lua_setfield(L, -2, to_luastring("NecroValleyFilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
+}
+
+function pushAuxNext(L: unknown): number {
+  const uids = readGroupUids(L, 1);
+  let index = 0;
+  lua.lua_pushjsfunction(L, (state: unknown) => {
+    const uid = uids[index];
+    index += 1;
+    if (!uid) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardTable(state, uid);
+    return 1;
+  });
+  return 1;
 }
 
 function pushSelectUnselectGroup(L: unknown): number {
