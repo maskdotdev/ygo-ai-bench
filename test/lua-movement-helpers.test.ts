@@ -291,6 +291,10 @@ describe("Lua movement helpers", () => {
       local second = overlays:GetNext()
       Debug.Message("overlay count " .. xyz:GetOverlayCount() .. "/" .. overlays:GetCount())
       Debug.Message("overlay codes " .. first:GetCode() .. "/" .. second:GetCode())
+      Debug.Message("card can detach one " .. tostring(xyz:CheckRemoveOverlayCard(0, 1, REASON_COST)))
+      Debug.Message("card can detach three " .. tostring(xyz:CheckRemoveOverlayCard(0, 3, REASON_COST)))
+      Debug.Message("duel can detach one " .. tostring(Duel.CheckRemoveOverlayCard(0, 1, 0, 1, REASON_COST)))
+      Debug.Message("duel can detach three " .. tostring(Duel.CheckRemoveOverlayCard(0, 1, 0, 3, REASON_COST)))
       Debug.Message("card detach " .. xyz:RemoveOverlayCard(0, 1, 1, REASON_COST))
       Debug.Message("card detach operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("overlay after card detach " .. xyz:GetOverlayCount())
@@ -306,6 +310,10 @@ describe("Lua movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("overlay count 2/2");
     expect(host.messages).toContain("overlay codes 100/300");
+    expect(host.messages).toContain("card can detach one true");
+    expect(host.messages).toContain("card can detach three false");
+    expect(host.messages).toContain("duel can detach one true");
+    expect(host.messages).toContain("duel can detach three false");
     expect(host.messages).toContain("card detach 1");
     expect(host.messages).toContain("card detach operated 1/100");
     expect(host.messages).toContain("overlay after card detach 1");

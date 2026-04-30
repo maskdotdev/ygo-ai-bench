@@ -37,6 +37,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("Overlay"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveOverlayCard(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckRemoveOverlayCard(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CheckRemoveOverlayCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummon(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushEquip(state, session, hostState));
@@ -361,6 +363,16 @@ function pushRemoveOverlayCard(L: unknown, session: DuelSession, hostState: LuaD
   return 1;
 }
 
+function pushCheckRemoveOverlayCard(L: unknown, session: DuelSession): number {
+  const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
+  const selfLocations = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const opponentLocations = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
+  const count = Math.max(0, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 1);
+  const holders = overlayHolders(session, player, selfLocations, opponentLocations);
+  lua.lua_pushboolean(L, countOverlayMaterials(holders) >= count);
+  return 1;
+}
+
 function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0): string[] {
   const reason = readMoveReason(L, 2, extraReason);
   const moved: string[] = [];
@@ -386,13 +398,13 @@ function overlayHolders(session: DuelSession, player: PlayerId, selfMask: number
 }
 
 function overlayHoldersForPlayer(session: DuelSession, player: PlayerId, locationMask: number): DuelCardInstance[] {
-  const locations = locationsFromMask(locationMask);
+  const locations = overlayLocationsFromMask(locationMask);
   if (locations.length === 0) return [];
   return session.state.cards.filter((card) => card.controller === player && locations.includes(card.location) && card.overlayUids.length > 0);
 }
 
 function detachOverlayRange(session: DuelSession, holders: DuelCardInstance[], min: number, max: number, player: PlayerId, reason: number): string[] {
-  const available = holders.reduce((total, holder) => total + holder.overlayUids.length, 0);
+  const available = countOverlayMaterials(holders);
   const count = Math.min(Math.max(min, 0), Math.max(max, 0), available);
   if (count < min) return [];
   const detached: string[] = [];
@@ -405,6 +417,15 @@ function detachOverlayRange(session: DuelSession, holders: DuelCardInstance[], m
     remaining -= holderCount;
   }
   return detached;
+}
+
+function countOverlayMaterials(holders: DuelCardInstance[]): number {
+  return holders.reduce((total, holder) => total + holder.overlayUids.length, 0);
+}
+
+function overlayLocationsFromMask(mask: number): DuelLocation[] {
+  if (mask === 1) return ["monsterZone"];
+  return locationsFromMask(mask);
 }
 
 function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: LuaDuelMoveApiHostState, location: DuelLocation, reasonIndex: number): string[] {

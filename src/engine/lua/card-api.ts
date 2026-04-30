@@ -222,6 +222,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("GetEquipTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveOverlayCard(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckRemoveOverlayCard(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CheckRemoveOverlayCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetCounter(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetCounter"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAddCounter(state, session));
@@ -479,6 +481,13 @@ function pushRemoveOverlayCard<EffectRecord extends LuaCardApiEffectRecord>(L: u
   const detached = card ? detachOverlayRange(session, card, min, max, player, reason) : [];
   setOperatedUids(hostState, detached.map((material) => material.uid));
   lua.lua_pushinteger(L, detached.length);
+  return 1;
+}
+
+function pushCheckRemoveOverlayCard(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const count = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
+  lua.lua_pushboolean(L, Boolean(card && card.overlayUids.length >= count));
   return 1;
 }
 
@@ -839,6 +848,7 @@ const cardFieldNames = [
   "GetEquipGroup",
   "GetEquipTarget",
   "RemoveOverlayCard",
+  "CheckRemoveOverlayCard",
   "GetCounter",
   "AddCounter",
   "RemoveCounter",
