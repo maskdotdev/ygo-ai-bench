@@ -30,6 +30,7 @@ describe("Lua field and query helpers", () => {
     const result = host.loadScript(
       `
       local excluded = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("phase checks " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsPhase(PHASE_MAIN1)) .. "/" .. tostring(Duel.IsPhase(PHASE_BATTLE + PHASE_END)))
       Debug.Message("location count " .. Duel.GetLocationCount(0, LOCATION_MZONE))
       Debug.Message("mzone count " .. Duel.GetMZoneCount(0))
       Debug.Message("mzone with excluded " .. Duel.GetMZoneCount(0, excluded))
@@ -50,6 +51,7 @@ describe("Lua field and query helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("phase checks 4/true/false");
     expect(host.messages).toContain("location count 0");
     expect(host.messages).toContain("mzone count 0");
     expect(host.messages).toContain("mzone with excluded 1");

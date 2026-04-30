@@ -26,6 +26,12 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetCurrentPhase"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const phase = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0;
+    lua.lua_pushboolean(state, (phaseMask(session.state.phase) & phase) !== 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPhase"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushboolean(state, session.state.phase === "main1" || session.state.phase === "main2");
     return 1;
   });
