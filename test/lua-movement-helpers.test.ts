@@ -363,6 +363,9 @@ describe("Lua movement helpers", () => {
       Debug.Message("take blocked operated " .. Duel.GetOperatedGroup():GetCount())
       Debug.Message("self mzone count " .. Duel.GetFieldGroupCount(0, LOCATION_MZONE, 0))
       Debug.Message("opponent mzone count " .. Duel.GetFieldGroupCount(1, LOCATION_MZONE, 0))
+      Debug.Message("self usable mzone " .. Duel.GetUsableMZoneCount(0))
+      Debug.Message("self usable excluding taken " .. Duel.GetUsableMZoneCount(0, taken))
+      Debug.Message("opponent usable mzone " .. Duel.GetUsableMZoneCount(1))
       `,
       "get-control.lua",
     );
@@ -375,6 +378,9 @@ describe("Lua movement helpers", () => {
     expect(host.messages).toContain("take blocked operated 0");
     expect(host.messages).toContain("self mzone count 5");
     expect(host.messages).toContain("opponent mzone count 1");
+    expect(host.messages).toContain("self usable mzone 0");
+    expect(host.messages).toContain("self usable excluding taken 2");
+    expect(host.messages).toContain("opponent usable mzone 4");
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
     expect(session.state.cards.find((card) => card.code === "800")).toMatchObject({ controller: 1, location: "monsterZone", sequence: 0 });
   });

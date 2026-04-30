@@ -26,6 +26,12 @@ export function installDuelLocationApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("GetMZoneCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    lua.lua_pushinteger(state, availableMonsterZoneCount(session, player, readCardOrGroupUids(state, 2)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetUsableMZoneCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const sequence = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
     lua.lua_pushboolean(state, isLocationSequenceOpen(session, player, locationMask, sequence));
