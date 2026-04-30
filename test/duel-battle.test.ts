@@ -152,6 +152,55 @@ describe("duel battle", () => {
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "passAttack")).toBe(false);
   });
 
+  it("offers quick effects during the damage response window before battle resolves", () => {
+    const session = createDuel({ seed: 35, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, {
+      id: "damage-window-quick",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      operation(ctx) {
+        ctx.log("Damage window quick resolved");
+      },
+    });
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
+    expect(attack).toBeTruthy();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!).ok).toBe(true);
+
+    expect(session.state.battleStep).toBe("damage");
+    expect(session.state.players[1].lifePoints).toBe(8000);
+    const quick = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "damage-window-quick");
+    expect(quick).toBeUndefined();
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    const turnPlayerQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "damage-window-quick");
+    expect(turnPlayerQuick).toBeTruthy();
+    expect(applyResponse(session, turnPlayerQuick!).ok).toBe(true);
+    expect(session.state.pendingBattle).toBeDefined();
+    expect(session.state.battleStep).toBe("attack");
+    expect(session.state.log.some((entry) => entry.detail === "Damage window quick resolved")).toBe(true);
+    passAttackResponses(session);
+    expect(queryPublicState(session).players[1].lifePoints).toBe(6200);
+  });
+
   it("skips battle resolution when the attack target leaves before damage", () => {
     const session = createDuel({ seed: 33, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

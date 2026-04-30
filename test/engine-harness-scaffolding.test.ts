@@ -129,6 +129,49 @@ describe("EDOPro compatibility harness scaffolding", () => {
           logIncludes: ["Fixture attack-window quick resolved", "Direct attack"],
         },
       },
+      {
+        name: "damage window quick fixture",
+        options: { seed: 43, startingHandSize: 2 },
+        decks: {
+          0: { main: ["100", "300"] },
+          1: { main: ["400", "400"] },
+        },
+        setup: {
+          moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
+          effects: [
+            {
+              id: "fixture-damage-window-quick",
+              player: 0,
+              code: "300",
+              location: "hand",
+              event: "quick",
+              range: ["hand"],
+              oncePerTurn: true,
+              logMessage: "Fixture damage-window quick resolved",
+            },
+          ],
+        },
+        responses: [
+          makeResponseSelector("changePhase", 0, { phase: "battle" }),
+          makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }),
+          makeResponseSelector("passAttack", 1),
+          makeResponseSelector("passAttack", 0),
+          makeResponseSelector("passDamage", 1),
+          makeResponseSelector("activateEffect", 0, { effectId: "fixture-damage-window-quick" }),
+          makeResponseSelector("passAttack", 1),
+          makeResponseSelector("passAttack", 0),
+          makeResponseSelector("passDamage", 1),
+          makeResponseSelector("passDamage", 0),
+        ],
+        expected: {
+          phase: "battle",
+          lifePoints: { 1: 6200 },
+          pendingBattle: false,
+          currentAttack: false,
+          locations: { monsterZone: ["100"] },
+          logIncludes: ["Fixture damage-window quick resolved", "Direct attack"],
+        },
+      },
     ];
 
     for (const fixture of fixtures) {
