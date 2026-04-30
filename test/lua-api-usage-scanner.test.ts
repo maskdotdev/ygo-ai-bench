@@ -31,7 +31,7 @@ describe("Lua API usage scanner", () => {
     fs.writeFileSync(path.join(source, "duel-api", "deck.ts"), `lua.lua_setfield(L, -2, to_luastring("Draw"));`);
     fs.writeFileSync(path.join(source, "duel-api", "helper.ts"), `pushHelper(L, "HelperRegistered", session);`);
     fs.writeFileSync(path.join(source, "card-api.ts"), `lua.lua_setfield(L, -2, to_luastring("IsCode"));`);
-    fs.writeFileSync(path.join(source, "basic-api.ts"), `lua.lua_setfield(L, -2, to_luastring("FilterBoolFunction"));`);
+    fs.writeFileSync(path.join(source, "aux-api.ts"), `lua.lua_setfield(L, -2, to_luastring("FilterBoolFunction"));`);
 
     const output = execFileSync(process.execPath, [scannerPath, "--scripts", scripts, "--source", source, "--limit", "5"], { encoding: "utf8" });
 

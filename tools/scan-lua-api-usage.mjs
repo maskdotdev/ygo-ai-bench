@@ -155,7 +155,7 @@ function tableForLocalFile(file) {
   const normalized = file.split(path.sep).join("/");
   if (normalized.endsWith("/card-api.ts")) return "Card";
   if (normalized.endsWith("/group-api.ts")) return "Group";
-  if (normalized.endsWith("/basic-api.ts")) return "aux";
+  if (normalized.endsWith("/basic-api.ts") || normalized.endsWith("/aux-api.ts")) return "aux";
   if (normalized.endsWith("/host.ts")) return "Effect";
   if (normalized.includes("/duel-api/")) return "Duel";
   return undefined;
