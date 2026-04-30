@@ -88,6 +88,8 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetDecktopGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGoatConfirm(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("GoatConfirm"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const confirmed = readCardOrGroupUids(state, 2)
@@ -134,6 +136,25 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
   lua.lua_setfield(L, -2, to_luastring("SortDecktop"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSortDeckSegment(state, session, hostState, "bottom"));
   lua.lua_setfield(L, -2, to_luastring("SortDeckbottom"));
+}
+
+function pushGoatConfirm(L: unknown, session: DuelSession, hostState: LuaDuelDeckApiHostState): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const locationMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const deckUids = (locationMask & 0x01) === 0 ? [] : matchingCardUids(session, player, 0x01);
+  const handUids = (locationMask & 0x02) === 0 ? [] : matchingCardUids(session, player, 0x02);
+  confirmUids(session, hostState, player, deckUids);
+  confirmUids(session, hostState, otherPlayer(player), handUids);
+  if (handUids.length > 0) shuffleHand(session, player);
+  if (deckUids.length > 0) shuffleDeck(session, player);
+  return 0;
+}
+
+function confirmUids(session: DuelSession, hostState: LuaDuelDeckApiHostState, player: PlayerId, uids: string[]): void {
+  const confirmed = uids
+    .map((uid) => session.state.cards.find((card) => card.uid === uid)?.code)
+    .filter((code): code is string => Boolean(code));
+  hostState.messages.push(`confirmed ${player}: ${confirmed.join(",")}`);
 }
 
 function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDuelDeckApiHostState, edge: "top" | "bottom"): number {

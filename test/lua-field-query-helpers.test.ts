@@ -204,6 +204,39 @@ describe("Lua field and query helpers", () => {
     expect(after).not.toEqual(before);
   });
 
+  it("lets Lua scripts goat-confirm hand and deck cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Goat Hand A", kind: "monster" },
+      { code: "200", name: "Goat Hand B", kind: "monster" },
+      { code: "300", name: "Goat Deck A", kind: "monster" },
+      { code: "400", name: "Goat Deck B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 13, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const beforeHand = handCodes(session, 0);
+    const beforeDeck = deckCodes(session, 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.GoatConfirm(0, LOCATION_HAND + LOCATION_DECK)
+      Debug.Message("goat confirm done")
+      `,
+      "goat-confirm.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain(`confirmed 0: ${beforeDeck.join(",")}`);
+    expect(host.messages).toContain(`confirmed 1: ${beforeHand.join(",")}`);
+    expect(host.messages).toContain("goat confirm done");
+    expect([...handCodes(session, 0)].sort()).toEqual([...beforeHand].sort());
+    expect([...deckCodes(session, 0)].sort()).toEqual([...beforeDeck].sort());
+  });
+
   it("lets Lua scripts shuffle a player's extra deck", () => {
     const cards: DuelCardData[] = [
       { code: "900", name: "Extra A", kind: "extra" },
@@ -1693,6 +1726,13 @@ describe("Lua field and query helpers", () => {
 function handCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
   return session.state.cards
     .filter((card) => card.controller === player && card.location === "hand")
+    .sort((a, b) => a.sequence - b.sequence)
+    .map((card) => card.code);
+}
+
+function deckCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
+  return session.state.cards
+    .filter((card) => card.controller === player && card.location === "deck")
     .sort((a, b) => a.sequence - b.sequence)
     .map((card) => card.code);
 }
