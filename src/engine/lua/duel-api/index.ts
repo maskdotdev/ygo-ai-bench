@@ -13,6 +13,7 @@ import { installDuelPromptApi } from "#lua/duel-api/prompt.js";
 import { installDuelQueryApi } from "#lua/duel-api/query.js";
 import { installDuelRandomApi } from "#lua/duel-api/random.js";
 import { installDuelReleaseApi } from "#lua/duel-api/release.js";
+import { installDuelScriptApi, type LuaDuelScriptApiHostState } from "#lua/duel-api/script.js";
 import { installDuelSummonApi } from "#lua/duel-api/summon.js";
 import { installDuelTokenApi } from "#lua/duel-api/token.js";
 import { installDuelTurnApi } from "#lua/duel-api/turn.js";
@@ -21,7 +22,7 @@ import type { DuelEffectContext, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
-export interface LuaDuelApiHostState {
+export interface LuaDuelApiHostState extends LuaDuelScriptApiHostState {
   messages: string[];
   activeTargetUids: string[] | undefined;
   activeContext: DuelEffectContext | undefined;
@@ -53,5 +54,6 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelOperationApi(L, session, hostState);
   installDuelTokenApi(L, session);
   installDuelFlagApi(L, session);
+  installDuelScriptApi(L, hostState);
   lua.lua_setglobal(L, to_luastring("Duel"));
 }

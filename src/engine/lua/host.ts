@@ -70,12 +70,15 @@ interface LuaHostState {
   possibleOperationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
   selectedUids: string[];
+  scriptSource: LuaScriptSource | undefined;
+  loadedScripts: Set<string>;
   pushEffectTable: (state: unknown, id: number) => void;
   getEffectTypeFlags: (id: number) => number | undefined;
   registerEffect: (state: unknown, id: number, player: PlayerId) => boolean;
+  loadScriptFile: (name: string, forced?: boolean) => LuaScriptLoadResult;
 }
 
-export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
+export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScriptSource): LuaScriptHost {
   const L = lauxlib.luaL_newstate();
   const hostState: LuaHostState = {
     session,
@@ -88,6 +91,8 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
     possibleOperationInfos: [],
     operatedUids: [],
     selectedUids: [],
+    scriptSource,
+    loadedScripts: new Set(),
     pushEffectTable(state, id) {
       pushLuaEffectTable(state, id, hostState);
     },
@@ -96,6 +101,9 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
     },
     registerEffect(state, id, player) {
       return registerLuaEffect(state, hostState, id, player);
+    },
+    loadScriptFile(name, forced = false) {
+      return loadLuaScriptFile(L, hostState, name, forced);
     },
   };
   lualib.luaL_openlibs(L);
@@ -110,17 +118,13 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
   return {
     messages: hostState.messages,
     loadScript(code, name) {
-      const loadStatus = lauxlib.luaL_loadbuffer(L, to_luastring(code), code.length, to_luastring(name));
-      if (loadStatus !== lua.LUA_OK) return { ok: false, name, error: readLuaError(L) };
-      const callStatus = lua.lua_pcall(L, 0, lua.LUA_MULTRET, 0);
-      if (callStatus !== lua.LUA_OK) return { ok: false, name, error: readLuaError(L) };
-      return { ok: true, name };
+      return runLuaScript(L, code, name);
     },
     loadCardScript(cardCode, source) {
       const name = scriptFilenameForCard(cardCode);
       const code = source.readScript(name);
       if (code === undefined) return { ok: false, name, error: `Script ${name} was not found` };
-      return this.loadScript(code, name);
+      return runLuaScript(L, code, name);
     },
     registerInitialEffects() {
       let count = 0;
@@ -156,6 +160,23 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
       return value;
     },
   };
+}
+
+function loadLuaScriptFile(L: unknown, hostState: LuaHostState, name: string, forced: boolean): LuaScriptLoadResult {
+  if (!forced && hostState.loadedScripts.has(name)) return { ok: true, name };
+  const code = hostState.scriptSource?.readScript(name);
+  if (code === undefined) return { ok: false, name, error: `Script ${name} was not found` };
+  const result = runLuaScript(L, code, name);
+  if (result.ok) hostState.loadedScripts.add(name);
+  return result;
+}
+
+function runLuaScript(L: unknown, code: string, name: string): LuaScriptLoadResult {
+  const loadStatus = lauxlib.luaL_loadbuffer(L, to_luastring(code), code.length, to_luastring(name));
+  if (loadStatus !== lua.LUA_OK) return { ok: false, name, error: readLuaError(L) };
+  const callStatus = lua.lua_pcall(L, 0, lua.LUA_MULTRET, 0);
+  if (callStatus !== lua.LUA_OK) return { ok: false, name, error: readLuaError(L) };
+  return { ok: true, name };
 }
 
 function installEffectApi(L: unknown, hostState: LuaHostState): void {
