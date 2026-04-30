@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory, type MaterialUseKind } from "#duel/continuous-effects.js";
-import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect } from "#duel/flags.js";
+import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import {
@@ -276,6 +276,14 @@ function installFlagHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetFlagEffectLabel"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const value = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
+    lua.lua_pushinteger(state, uid ? setDuelFlagEffectLabel(session.state, { ownerType: "card", ownerId: uid }, code, value) : 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SetFlagEffectLabel"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
@@ -587,5 +595,6 @@ const cardFieldNames = [
   "RegisterFlagEffect",
   "GetFlagEffect",
   "GetFlagEffectLabel",
+  "SetFlagEffectLabel",
   "ResetFlagEffect",
 ];

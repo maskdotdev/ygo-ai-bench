@@ -203,6 +203,55 @@ describe("Lua state helpers", () => {
     expect(session.state.flagEffects.filter((flag) => flag.code === 932)).toHaveLength(2);
   });
 
+  it("updates Lua flag effect labels", () => {
+    const cards: DuelCardData[] = [{ code: "104", name: "Flag Label Source", kind: "monster" }];
+    const session = createDuel({ seed: 140, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["104"] },
+      1: { main: ["104"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c104={}
+      function c104.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Duel.RegisterFlagEffect(0, 941, RESET_EVENT, 0, 31)
+          c:RegisterFlagEffect(942, RESET_EVENT, 0, 41)
+          Debug.Message("duel set label " .. Duel.SetFlagEffectLabel(0, 941, 32))
+          Debug.Message("card set label " .. c:SetFlagEffectLabel(942, 42))
+          Debug.Message("duel updated label " .. Duel.GetFlagEffectLabel(0, 941))
+          Debug.Message("card updated label " .. c:GetFlagEffectLabel(942))
+          Debug.Message("missing label " .. Duel.SetFlagEffectLabel(0, 999, 1) .. "/" .. c:SetFlagEffectLabel(999, 1))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flag-label-setters.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toEqual(
+      expect.arrayContaining([
+        "duel set label 1",
+        "card set label 1",
+        "duel updated label 32",
+        "card updated label 42",
+        "missing label 0/0",
+      ]),
+    );
+  });
+
   it("provides common aux compatibility helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Aux A", kind: "monster" },

@@ -38,6 +38,13 @@ export function getDuelFlagEffectLabel(state: DuelState, owner: DuelFlagOwner, c
   return state.flagEffects.find((flag) => flag.ownerType === owner.ownerType && flag.ownerId === String(owner.ownerId) && flag.code === code)?.value ?? 0;
 }
 
+export function setDuelFlagEffectLabel(state: DuelState, owner: DuelFlagOwner, code: number, value: number): number {
+  const flag = state.flagEffects.find((candidate) => candidate.ownerType === owner.ownerType && candidate.ownerId === String(owner.ownerId) && candidate.code === code);
+  if (!flag) return 0;
+  flag.value = value;
+  return 1;
+}
+
 export function resetDuelFlagEffect(state: DuelState, owner: DuelFlagOwner, code: number): number {
   const before = state.flagEffects.length;
   state.flagEffects = state.flagEffects.filter((flag) => flag.ownerType !== owner.ownerType || flag.ownerId !== String(owner.ownerId) || flag.code !== code);

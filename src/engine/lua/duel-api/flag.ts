@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect } from "#duel/flags.js";
+import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -30,6 +30,14 @@ export function installDuelFlagApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetFlagEffectLabel"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const value = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
+    lua.lua_pushinteger(state, setDuelFlagEffectLabel(session.state, { ownerType: "player", ownerId: player }, code, value));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SetFlagEffectLabel"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
