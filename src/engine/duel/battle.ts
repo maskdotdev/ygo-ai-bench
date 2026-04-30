@@ -37,6 +37,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   recordAttackActivity(state, player);
   state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
   state.pendingBattle = { ...state.currentAttack };
+  state.battleStep = "attack";
   if (!target) {
     pushDuelLog(state, "attack", player, attacker.name, "Direct attack");
     callbacks.collectEvent("attackDeclared", attacker);
@@ -54,6 +55,8 @@ export function negateDuelAttack(state: DuelState): boolean {
   delete state.currentAttack;
   delete state.pendingBattle;
   state.attackPasses = [];
+  state.damagePasses = [];
+  delete state.battleStep;
   pushDuelLog(state, "attack", attacker?.controller ?? state.turnPlayer, attacker?.name, "Negated attack");
   return true;
 }
@@ -65,11 +68,17 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   if (!attacker || attacker.location !== "monsterZone") {
     delete state.pendingBattle;
     delete state.currentAttack;
+    state.attackPasses = [];
+    state.damagePasses = [];
+    delete state.battleStep;
     return false;
   }
   const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
   delete state.pendingBattle;
   delete state.currentAttack;
+  state.attackPasses = [];
+  state.damagePasses = [];
+  delete state.battleStep;
   if (!target) {
     callbacks.damagePlayer(otherPlayer(attacker.controller), getBattleAttack(attacker));
     return true;

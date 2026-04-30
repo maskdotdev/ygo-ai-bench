@@ -76,6 +76,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }),
           makeResponseSelector("passAttack", 1),
           makeResponseSelector("passAttack", 0),
+          makeResponseSelector("passDamage", 1),
+          makeResponseSelector("passDamage", 0),
         ],
         expected: {
           phase: "battle",
@@ -115,6 +117,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeResponseSelector("activateEffect", 0, { effectId: "fixture-attack-window-quick" }),
           makeResponseSelector("passAttack", 1),
           makeResponseSelector("passAttack", 0),
+          makeResponseSelector("passDamage", 1),
+          makeResponseSelector("passDamage", 0),
         ],
         expected: {
           phase: "battle",

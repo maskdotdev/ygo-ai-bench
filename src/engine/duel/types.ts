@@ -205,6 +205,8 @@ export type DuelPromptState =
   | { id: string; type: "selectOption"; player: PlayerId; options: number[]; returnTo?: PlayerId }
   | { id: string; type: "selectYesNo"; player: PlayerId; description?: number; returnTo?: PlayerId };
 
+export type BattleStep = "attack" | "damage";
+
 export interface DuelState {
   id: string;
   seed: string;
@@ -228,6 +230,8 @@ export interface DuelState {
   battleDamage: Record<PlayerId, number>;
   attacksDeclared: string[];
   attackPasses: PlayerId[];
+  damagePasses: PlayerId[];
+  battleStep?: BattleStep;
   positionsChanged: string[];
   currentAttack?: {
     attackerUid: string;
@@ -264,6 +268,7 @@ export type DuelAction = (
   | { type: "specialSummonProcedure"; player: PlayerId; uid: string; effectId: string; label: string }
   | { type: "passChain"; player: PlayerId; label: string }
   | { type: "passAttack"; player: PlayerId; label: string }
+  | { type: "passDamage"; player: PlayerId; label: string }
   | { type: "selectOption"; player: PlayerId; promptId: string; option: number; label: string }
   | { type: "selectYesNo"; player: PlayerId; promptId: string; yes: boolean; label: string }
   | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
@@ -306,6 +311,8 @@ export interface PublicDuelState {
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   attacksDeclared: string[];
   attackPasses: PlayerId[];
+  damagePasses: PlayerId[];
+  battleStep?: BattleStep;
   positionsChanged: string[];
   log: DuelLogEntry[];
 }

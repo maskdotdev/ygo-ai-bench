@@ -4,6 +4,8 @@ import type { DuelState, PlayerId } from "#duel/types.js";
 
 export function openAttackResponseWindow(state: DuelState, attackingPlayer: PlayerId): void {
   state.attackPasses = [];
+  state.damagePasses = [];
+  state.battleStep = "attack";
   state.waitingFor = otherPlayer(attackingPlayer);
 }
 
@@ -16,13 +18,32 @@ export function passAttackResponseWindow(state: DuelState, player: PlayerId, han
     return;
   }
   state.attackPasses = [];
+  openDamageResponseWindow(state, player);
+}
+
+export function passDamageResponseWindow(state: DuelState, player: PlayerId, handlers: BattleContinuationHandlers): void {
+  if (!state.pendingBattle || state.battleStep !== "damage") throw new Error("No damage response window is pending");
+  if (!state.damagePasses.includes(player)) state.damagePasses.push(player);
+  const nextPlayer = otherPlayer(player);
+  if (!state.damagePasses.includes(nextPlayer)) {
+    state.waitingFor = nextPlayer;
+    return;
+  }
+  state.damagePasses = [];
   resolvePendingBattle(state, handlers);
 }
 
 export function continueAttackResponseWindow(state: DuelState, handlers: BattleContinuationHandlers): void {
   if (!state.pendingBattle || state.chain.length || state.pendingTriggers.length || state.attackPasses.length > 0) return;
+  if (state.battleStep === "damage") return;
   const attacker = findCard(state, state.pendingBattle.attackerUid);
   openAttackResponseWindow(state, attacker?.controller ?? state.turnPlayer);
+}
+
+function openDamageResponseWindow(state: DuelState, lastAttackResponder: PlayerId): void {
+  state.damagePasses = [];
+  state.battleStep = "damage";
+  state.waitingFor = otherPlayer(lastAttackResponder);
 }
 
 function otherPlayer(player: PlayerId): PlayerId {

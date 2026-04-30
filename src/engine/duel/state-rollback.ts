@@ -18,6 +18,8 @@ export interface DuelStateRollback {
   battleDamage: DuelState["battleDamage"];
   attacksDeclared: string[];
   attackPasses: PlayerId[];
+  damagePasses: PlayerId[];
+  battleStep: DuelState["battleStep"] | undefined;
   positionsChanged: string[];
   currentAttack: DuelState["currentAttack"] | undefined;
   pendingBattle: DuelState["pendingBattle"] | undefined;
@@ -45,6 +47,8 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     battleDamage: { ...state.battleDamage },
     attacksDeclared: [...state.attacksDeclared],
     attackPasses: [...state.attackPasses],
+    damagePasses: [...state.damagePasses],
+    battleStep: state.battleStep,
     positionsChanged: [...state.positionsChanged],
     currentAttack: state.currentAttack ? { ...state.currentAttack } : undefined,
     pendingBattle: state.pendingBattle ? { ...state.pendingBattle } : undefined,
@@ -72,6 +76,9 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.battleDamage = rollback.battleDamage;
   state.attacksDeclared = rollback.attacksDeclared;
   state.attackPasses = rollback.attackPasses;
+  state.damagePasses = rollback.damagePasses;
+  if (rollback.battleStep) state.battleStep = rollback.battleStep;
+  else delete state.battleStep;
   state.positionsChanged = rollback.positionsChanged;
   if (rollback.currentAttack) state.currentAttack = rollback.currentAttack;
   else delete state.currentAttack;

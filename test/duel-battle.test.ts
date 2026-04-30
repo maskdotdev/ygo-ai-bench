@@ -96,6 +96,7 @@ describe("duel battle", () => {
     expect(applyResponse(session, quick!).ok).toBe(true);
 
     expect(session.state.pendingBattle).toBeDefined();
+    expect(session.state.battleStep).toBe("attack");
     expect(session.state.waitingFor).toBe(1);
     expect(session.state.players[1].lifePoints).toBe(8000);
     expect(session.state.log.some((entry) => entry.detail === "Attack window quick resolved")).toBe(true);
@@ -470,7 +471,7 @@ describe("duel battle", () => {
 function passAttackResponses(session: ReturnType<typeof createDuel>): void {
   while (session.state.pendingBattle) {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
-    const pass = getDuelLegalActions(session, player).find((action) => action.type === "passAttack");
+    const pass = getDuelLegalActions(session, player).find((action) => action.type === (session.state.battleStep === "damage" ? "passDamage" : "passAttack"));
     expect(pass).toBeTruthy();
     expect(applyResponse(session, pass!).ok).toBe(true);
   }

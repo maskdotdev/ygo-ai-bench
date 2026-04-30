@@ -61,6 +61,7 @@ import {
   continueAttackResponseWindow,
   openAttackResponseWindow,
   passAttackResponseWindow,
+  passDamageResponseWindow,
 } from "#duel/attack-response-window.js";
 import type { BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
@@ -153,6 +154,7 @@ const responseHandlers: DuelResponseHandlers = {
   },
   passChain,
   passAttack: (state, player) => passAttackResponseWindow(state, player, battleContinuationHandlers),
+  passDamage: (state, player) => passDamageResponseWindow(state, player, battleContinuationHandlers),
   resolvePrompt,
   activateTrigger(session, player, triggerId) {
     activateDuelPendingTrigger(session, player, triggerId, activationHandlers);
@@ -200,6 +202,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     battleDamage: { 0: 0, 1: 0 },
     attacksDeclared: [],
     attackPasses: [],
+    damagePasses: [],
     positionsChanged: [],
     log: [],
     options: {
@@ -260,6 +263,10 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     return stampActions(actions, state.actionWindowId);
   }
   if (state.pendingBattle) {
+    if (state.battleStep === "damage") {
+      actions.push({ type: "passDamage", player, label: "Pass damage response" });
+      return stampActions(actions, state.actionWindowId);
+    }
     actions.push(...quickEffectActions(state, player));
     actions.push({ type: "passAttack", player, label: "Pass attack response" });
     return stampActions(actions, state.actionWindowId);
@@ -606,6 +613,8 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
     delete state.currentAttack;
     delete state.pendingBattle;
     state.attackPasses = [];
+    state.damagePasses = [];
+    delete state.battleStep;
   }
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
   collectTriggerEffects(state, "phaseChanged");
@@ -623,10 +632,12 @@ function endTurn(state: DuelState, player: PlayerId): void {
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
   state.attackPasses = [];
+  state.damagePasses = [];
   state.positionsChanged = [];
   for (const activityPlayer of [0, 1] satisfies PlayerId[]) resetDuelActivityCounts(state, activityPlayer);
   delete state.currentAttack;
   delete state.pendingBattle;
+  delete state.battleStep;
   state.players[state.turnPlayer].normalSummonAvailable = true;
   draw(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");
   state.phase = "main1";
@@ -864,7 +875,11 @@ function pushChainLink(
     ...(targetParam === undefined ? {} : { targetParam }),
   });
   state.chainPasses = [];
-  if (state.pendingBattle) state.attackPasses = [];
+  if (state.pendingBattle) {
+    state.attackPasses = [];
+    state.damagePasses = [];
+    state.battleStep = "attack";
+  }
   clearStaleChainLimits(state);
 }
 
