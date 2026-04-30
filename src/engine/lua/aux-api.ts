@@ -208,6 +208,13 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
       if handler and Duel.IsPlayerAffectedByEffect(player, skill_dark_unity) and handler:IsCode(card_super_polymerization) then return true end
       return Duel.IsPlayerAffectedByEffect(player, effect_supreme_castle) and ((st or 0) & SUMMON_TYPE_FUSION)==SUMMON_TYPE_FUSION
     end
+    local card_fossil_fusion = CARD_FOSSIL_FUSION or 59419719
+    function aux.FossilLimit(e,se,sp,st)
+      local summon_card = e and e.GetHandler and e:GetHandler() or nil
+      if not summon_card or not summon_card:IsLocation(LOCATION_EXTRA) then return true end
+      local handler = se and se.GetHandler and se:GetHandler() or nil
+      return handler and handler:IsCode(card_fossil_fusion)
+    end
     function aux.AND(...)
       local funs={...}
       return function(...)
