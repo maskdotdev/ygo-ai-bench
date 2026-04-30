@@ -57,4 +57,48 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalString("observed_bad_special_position")).toBe("false");
     expect(host.messages).toContain("lua host online");
   });
+
+  it("exposes split battle damage timing through Lua phase helpers", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const session = createDuel({ seed: 2, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+    session.state.phase = "battle";
+
+    const host = createLuaScriptHost(session);
+    session.state.battleStep = "damage";
+    const damageResult = host.loadScript(
+      `
+      damage_phase = Duel.GetCurrentPhase()
+      damage_step = tostring(Duel.IsDamageStep())
+      damage_calculated = tostring(Duel.IsDamageCalculated())
+      damage_is_phase = tostring(Duel.IsPhase(PHASE_DAMAGE))
+      `,
+      "damage-step-phase.lua",
+    );
+    expect(damageResult.ok, damageResult.error).toBe(true);
+    expect(host.getGlobalNumber("damage_phase")).toBe(0x20);
+    expect(host.getGlobalString("damage_step")).toBe("true");
+    expect(host.getGlobalString("damage_calculated")).toBe("false");
+    expect(host.getGlobalString("damage_is_phase")).toBe("true");
+
+    session.state.battleStep = "damageCalculation";
+    const calculationResult = host.loadScript(
+      `
+      calculation_phase = Duel.GetCurrentPhase()
+      calculation_step = tostring(Duel.IsDamageStep())
+      calculation_calculated = tostring(Duel.IsDamageCalculated())
+      calculation_is_phase = tostring(Duel.IsPhase(PHASE_DAMAGE_CAL))
+      `,
+      "damage-calculation-phase.lua",
+    );
+    expect(calculationResult.ok, calculationResult.error).toBe(true);
+    expect(host.getGlobalNumber("calculation_phase")).toBe(0x40);
+    expect(host.getGlobalString("calculation_step")).toBe("true");
+    expect(host.getGlobalString("calculation_calculated")).toBe("true");
+    expect(host.getGlobalString("calculation_is_phase")).toBe("true");
+  });
 });

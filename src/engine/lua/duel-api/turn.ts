@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import type { DuelPhase, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -21,13 +21,13 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsTurnPlayer"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, phaseMask(session.state.phase));
+    lua.lua_pushinteger(state, currentPhaseMask(session.state));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetCurrentPhase"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const phase = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0;
-    lua.lua_pushboolean(state, (phaseMask(session.state.phase) & phase) !== 0);
+    lua.lua_pushboolean(state, (currentPhaseMask(session.state) & phase) !== 0);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPhase"));
@@ -42,12 +42,12 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsBattlePhase"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, false);
+    lua.lua_pushboolean(state, session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation");
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDamageStep"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, false);
+    lua.lua_pushboolean(state, session.state.battleStep === "damageCalculation");
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDamageCalculated"));
@@ -63,6 +63,12 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
 
 function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
+}
+
+function currentPhaseMask(state: DuelState): number {
+  if (state.phase === "battle" && state.battleStep === "damage") return 0x20;
+  if (state.phase === "battle" && state.battleStep === "damageCalculation") return 0x40;
+  return phaseMask(state.phase);
 }
 
 function phaseMask(phase: DuelPhase): number {
