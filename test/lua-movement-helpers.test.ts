@@ -162,6 +162,54 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("graveyard");
   });
 
+  it("lets Lua scripts take control of field cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Self A", kind: "monster" },
+      { code: "200", name: "Self B", kind: "monster" },
+      { code: "300", name: "Self C", kind: "monster" },
+      { code: "600", name: "Taken A", kind: "monster" },
+      { code: "700", name: "Taken B", kind: "monster" },
+      { code: "800", name: "Blocked", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 41, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: ["600", "700", "800"] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", card.controller);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local taken = Duel.SelectMatchingCard(0, function(c) return c:IsCode(600) or c:IsCode(700) end, 0, 0, LOCATION_MZONE, 1, 2, nil)
+      Debug.Message("take group " .. Duel.GetControl(taken, 0, 0, 0, LOCATION_MZONE))
+      Debug.Message("take operated " .. Duel.GetOperatedGroup():GetCount())
+      local first = Duel.GetOperatedGroup():GetFirst()
+      Debug.Message("take first controller " .. first:GetControler())
+      local blocked = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, 0, LOCATION_MZONE, 1, 1, nil)
+      Debug.Message("take blocked " .. Duel.GetControl(blocked, 0, 0, 0, LOCATION_MZONE))
+      Debug.Message("take blocked operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("self mzone count " .. Duel.GetFieldGroupCount(0, LOCATION_MZONE, 0))
+      Debug.Message("opponent mzone count " .. Duel.GetFieldGroupCount(1, LOCATION_MZONE, 0))
+      `,
+      "get-control.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("take group 2");
+    expect(host.messages).toContain("take operated 2");
+    expect(host.messages).toContain("take first controller 0");
+    expect(host.messages).toContain("take blocked 0");
+    expect(host.messages).toContain("take blocked operated 0");
+    expect(host.messages).toContain("self mzone count 5");
+    expect(host.messages).toContain("opponent mzone count 1");
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
+    expect(session.state.cards.find((card) => card.code === "800")).toMatchObject({ controller: 1, location: "monsterZone", sequence: 0 });
+  });
+
   it("lets Lua scripts inspect Xyz overlay materials", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Overlay Material A", kind: "monster" },

@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { getCards, hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
+import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-state.js";
 import {
   banishDuelCard,
   canMoveDuelCardToLocation,
@@ -41,6 +41,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushEquip(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("Equip"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetControl(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("GetControl"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangePosition(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ChangePosition"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMoveToField(state, session, hostState));
@@ -117,6 +119,34 @@ function pushEquip(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHo
     lua.lua_pushboolean(L, false);
     return 1;
   }
+}
+
+function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const targetPlayer = readOptionalPlayer(L, 2);
+  if (targetPlayer === undefined) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const allowedLocations = lua.lua_isnumber(L, 5) ? locationsFromMask(lua.lua_tointeger(L, 5)) : undefined;
+  const controlled: string[] = [];
+  for (const uid of readCardOrGroupUids(L, 1)) {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!card || card.controller === targetPlayer || !canChangeControl(card, allowedLocations)) continue;
+    if (!hasZoneSpace(session.state, targetPlayer, card.location)) continue;
+    const previousController = card.controller;
+    try {
+      moveDuelCard(session.state, uid, card.location, targetPlayer, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+      resequence(session.state, previousController, card.location);
+      pushDuelLog(session.state, "control", targetPlayer, card.name, `Took control from player ${previousController}`);
+      controlled.push(uid);
+    } catch {
+      // EDOPro-style helpers report successful control changes only.
+    }
+  }
+  setOperatedUids(hostState, controlled);
+  lua.lua_pushinteger(L, controlled.length);
+  return 1;
 }
 
 function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
@@ -367,6 +397,11 @@ function swappableSequencePair(first: DuelCardInstance | undefined, second: Duel
 
 function canReorderFieldZone(location: DuelLocation): boolean {
   return location === "monsterZone" || location === "spellTrapZone";
+}
+
+function canChangeControl(card: DuelCardInstance, allowedLocations: DuelLocation[] | undefined): boolean {
+  if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
+  return !allowedLocations || allowedLocations.includes(card.location);
 }
 
 function removeOverlayReference(state: DuelState, uid: string): void {
