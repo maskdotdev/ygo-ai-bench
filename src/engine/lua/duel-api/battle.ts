@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { changeDuelBattleDamage, getDuelBattleDamage, negateDuelAttack } from "#duel/core.js";
+import { readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
 
@@ -38,6 +39,11 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetBattleMonster"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, changeAttackTarget(session, readCardUid(state, 1)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ChangeAttackTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushboolean(state, negateDuelAttack(session.state));
     return 1;
   });
@@ -55,6 +61,23 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ChangeBattleDamage"));
+}
+
+function changeAttackTarget(session: DuelSession, targetUid: string | undefined): boolean {
+  const attack = session.state.currentAttack;
+  const pending = session.state.pendingBattle;
+  if (!attack || !pending) return false;
+  if (targetUid === undefined) {
+    delete attack.targetUid;
+    delete pending.targetUid;
+    return true;
+  }
+  const attacker = session.state.cards.find((card) => card.uid === attack.attackerUid);
+  const target = session.state.cards.find((card) => card.uid === targetUid);
+  if (!attacker || !target || target.location !== "monsterZone" || target.controller === attacker.controller || target.uid === attacker.uid) return false;
+  attack.targetUid = target.uid;
+  pending.targetUid = target.uid;
+  return true;
 }
 
 function battleMonsterUid(session: DuelSession, player: PlayerId): string | undefined {

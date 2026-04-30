@@ -237,6 +237,120 @@ describe("Lua battle helpers", () => {
     expect(host.messages).toEqual(["direct battle monster self 100", "direct battle monster opponent nil true"]);
   });
 
+  it("lets Lua scripts change the current attack target", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Retarget Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Lua Original Target", kind: "monster", attack: 1000 },
+      { code: "250", name: "Lua New Target", kind: "monster", attack: 500 },
+      { code: "300", name: "Lua Retarget Probe", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 51, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200", "250"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const originalTarget = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    const newTarget = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "250");
+    expect(attacker).toBeDefined();
+    expect(originalTarget).toBeDefined();
+    expect(newTarget).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, originalTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, newTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local target=Duel.GetFieldCard(1,LOCATION_MZONE,1)
+          Debug.Message("change target result " .. tostring(Duel.ChangeAttackTarget(target)))
+          Debug.Message("changed target " .. Duel.GetAttackTarget():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-change-attack-target.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === originalTarget!.uid)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, activateEffectByCode(session, 0, "300")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+
+    expect(host.messages).toEqual(["change target result true", "changed target 250"]);
+    expect(session.state.currentAttack?.targetUid).toBe(newTarget!.uid);
+    expect(session.state.pendingBattle?.targetUid).toBe(newTarget!.uid);
+    passBattleResponses(session);
+    expect(session.state.cards.find((card) => card.uid === originalTarget!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === newTarget!.uid)?.location).toBe("graveyard");
+    expect(session.state.players[1].lifePoints).toBe(6700);
+  });
+
+  it("lets Lua scripts change the current attack to direct", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Direct Retarget Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Lua Direct Original Target", kind: "monster", attack: 1000 },
+      { code: "300", name: "Lua Direct Retarget Probe", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 52, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200", "200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const originalTarget = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(originalTarget).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, originalTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("change direct result " .. tostring(Duel.ChangeAttackTarget(nil)))
+          Debug.Message("changed target nil " .. tostring(Duel.GetAttackTarget()==nil))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-change-attack-direct.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === originalTarget!.uid)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, activateEffectByCode(session, 0, "300")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+
+    expect(host.messages).toEqual(["change direct result true", "changed target nil true"]);
+    expect(session.state.currentAttack?.targetUid).toBeUndefined();
+    expect(session.state.pendingBattle?.targetUid).toBeUndefined();
+    passBattleResponses(session);
+    expect(session.state.cards.find((card) => card.uid === originalTarget!.uid)?.location).toBe("monsterZone");
+    expect(session.state.players[1].lifePoints).toBe(6200);
+  });
+
   it("offers Lua quick effects in their matching damage timing windows", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Lua Timing Attacker", kind: "monster", attack: 1800 },
@@ -395,4 +509,14 @@ function activateEffectByCode(session: ReturnType<typeof createDuel>, player: 0 
   return getDuelLegalActions(session, player).find(
     (candidate) => candidate.type === "activateEffect" && session.state.cards.find((card) => card.uid === candidate.uid)?.code === code,
   );
+}
+
+function passBattleResponses(session: ReturnType<typeof createDuel>): void {
+  while (session.state.pendingBattle) {
+    const player = session.state.waitingFor ?? session.state.turnPlayer;
+    const passType = session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
+    const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === passType);
+    expect(pass).toBeDefined();
+    expect(applyResponse(session, pass!).ok).toBe(true);
+  }
 }
