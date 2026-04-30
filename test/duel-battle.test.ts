@@ -195,7 +195,7 @@ describe("duel battle", () => {
     expect(turnPlayerQuick).toBeTruthy();
     expect(applyResponse(session, turnPlayerQuick!).ok).toBe(true);
     expect(session.state.pendingBattle).toBeDefined();
-    expect(session.state.battleStep).toBe("attack");
+    expect(session.state.battleStep).toBe("damage");
     expect(session.state.log.some((entry) => entry.detail === "Damage window quick resolved")).toBe(true);
     passAttackResponses(session);
     expect(queryPublicState(session).players[1].lifePoints).toBe(6200);

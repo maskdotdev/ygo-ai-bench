@@ -872,9 +872,8 @@ function pushChainLink(
   });
   state.chainPasses = [];
   if (state.pendingBattle) {
-    state.attackPasses = [];
-    state.damagePasses = [];
-    state.battleStep = "attack";
+    if (state.battleStep === "damage") state.damagePasses = [];
+    else state.attackPasses = [];
   }
   clearStaleChainLimits(state);
 }

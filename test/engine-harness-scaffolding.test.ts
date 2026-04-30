@@ -158,8 +158,6 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeResponseSelector("passAttack", 0),
           makeResponseSelector("passDamage", 1),
           makeResponseSelector("activateEffect", 0, { effectId: "fixture-damage-window-quick" }),
-          makeResponseSelector("passAttack", 1),
-          makeResponseSelector("passAttack", 0),
           makeResponseSelector("passDamage", 1),
           makeResponseSelector("passDamage", 0),
         ],
