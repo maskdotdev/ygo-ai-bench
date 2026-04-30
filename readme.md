@@ -84,6 +84,13 @@ bun run test
 bun run build
 ```
 
+To rank missing EDOPro Lua APIs against a local Project Ignis card-script checkout, clone scripts into the ignored upstream workspace and run the scanner:
+
+```bash
+git clone --depth 1 https://github.com/ProjectIgnis/CardScripts .upstream/ignis/script
+npm run scan:lua-api -- --limit 50
+```
+
 `bun run build` emits the React playtest page and `dist/playtest-engine.js`, which exposes `window.duelDeckPlaytest` in the browser. If that bundle is loaded, the existing `window.duelDeckAgent.playtest` bridge can start, inspect, step, and auto-run playtest sessions from the current deck.
 
 ## Duel snapshot persistence
