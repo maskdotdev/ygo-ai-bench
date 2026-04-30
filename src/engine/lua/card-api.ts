@@ -426,7 +426,10 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
   if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
   if (kind === "synchro") {
     const materials = target.data.synchroMaterials;
-    return !materials || [materials.tuner, ...materials.nonTuners].some((code) => codes.includes(code));
+    if (materials) return [materials.tuner, ...materials.nonTuners].some((code) => codes.includes(code));
+    const targetLevel = cardTypeFlags(target) & 0x2000 ? target.data.level ?? 0 : 0;
+    const materialLevel = card.data.level ?? 0;
+    return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
   }
   if (kind === "xyz") return !target.data.xyzMaterials?.length ? cardRank(target) === (card.data.level ?? 0) : target.data.xyzMaterials.some((code) => codes.includes(code));
   if (kind === "link") return !target.data.linkMaterials?.length ? linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
