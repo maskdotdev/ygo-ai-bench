@@ -150,6 +150,47 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("ritual material spell 0");
   });
 
+  it("lets Lua scripts release ritual materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Hand Ritual Material", kind: "monster" },
+      { code: "300", name: "Field Ritual Material", kind: "monster" },
+      { code: "940", name: "Lua Ritual", kind: "monster", ritualMaterials: ["100", "300"] },
+    ];
+    const session = createDuel({ seed: 86, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const fieldMaterial = session.state.cards.find((card) => card.code === "300");
+    expect(fieldMaterial).toBeTruthy();
+    moveDuelCard(session.state, fieldMaterial!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local ritual = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 940), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local materials = Duel.GetRitualMaterial(0, ritual)
+      Debug.Message("release ritual material " .. Duel.ReleaseRitualMaterial(materials))
+      Debug.Message("release ritual operated " .. Duel.GetOperatedGroup():GetCount())
+      local hand_mat = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local field_mat = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("release ritual hand previous " .. tostring(hand_mat:IsPreviousLocation(LOCATION_HAND)))
+      Debug.Message("release ritual field previous " .. tostring(field_mat:IsPreviousLocation(LOCATION_MZONE)))
+      Debug.Message("release ritual reason " .. tostring(hand_mat:IsReason(REASON_RELEASE)) .. "/" .. tostring(hand_mat:IsReason(REASON_MATERIAL)) .. "/" .. tostring(hand_mat:IsReason(REASON_RITUAL)))
+      `,
+      "release-ritual-material.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("release ritual material 2");
+    expect(host.messages).toContain("release ritual operated 2");
+    expect(host.messages).toContain("release ritual hand previous true");
+    expect(host.messages).toContain("release ritual field previous true");
+    expect(host.messages).toContain("release ritual reason true/true/true");
+    expect(session.state.cards.filter((card) => card.location === "graveyard" && (card.code === "100" || card.code === "300"))).toHaveLength(2);
+  });
+
   it("lets Lua scripts check, select, and release monster-zone groups", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Release A", kind: "monster" },

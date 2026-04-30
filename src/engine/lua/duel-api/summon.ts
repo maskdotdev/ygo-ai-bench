@@ -9,6 +9,7 @@ import {
   fusionSummonDuelCard,
   linkSummonDuelCard,
   ritualSummonDuelCard,
+  sendDuelCardToGraveyard,
   specialSummonDuelCard,
   synchroSummonDuelCard,
   moveDuelCard,
@@ -39,6 +40,8 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   pushSummonHelper(L, "RitualSummon", session, hostState, "RitualSummon");
   lua.lua_pushcfunction(L, (state: unknown) => pushRitualMaterial(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetRitualMaterial"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushReleaseRitualMaterial(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("ReleaseRitualMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonStep(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummonStep"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonComplete(state, hostState));
@@ -112,6 +115,24 @@ function pushRitualMaterial(L: unknown, session: DuelSession): number {
     L,
     ritualMaterialCandidates(session.state, player, target).map((card) => card.uid),
   );
+  return 1;
+}
+
+function pushReleaseRitualMaterial(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  const reason = duelReason.release | duelReason.material | duelReason.ritual;
+  const moved: string[] = [];
+  for (const uid of readCardOrGroupUids(L, 1)) {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!card) continue;
+    try {
+      const result = sendDuelCardToGraveyard(session.state, uid, card.controller, reason, session.state.turnPlayer);
+      if (result.location === "graveyard") moved.push(uid);
+    } catch {
+      // EDOPro-style helpers report successful material releases only.
+    }
+  }
+  setOperatedUids(hostState, moved);
+  lua.lua_pushinteger(L, moved.length);
   return 1;
 }
 
