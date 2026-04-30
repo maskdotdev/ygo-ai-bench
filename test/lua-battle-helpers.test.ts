@@ -141,4 +141,101 @@ describe("Lua battle helpers", () => {
     expect(session.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("monsterZone");
     expect(session.state.pendingBattle).toBeUndefined();
   });
+
+  it("offers Lua quick effects in their matching damage timing windows", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Timing Attacker", kind: "monster", attack: 1800 },
+      { code: "300", name: "Lua Damage Step Quick", kind: "monster" },
+      { code: "400", name: "Lua Damage Calculation Quick", kind: "monster" },
+      { code: "500", name: "Lua Timing Filler", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 47, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "400"] },
+      1: { main: ["500", "500", "500"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetProperty(EFFECT_FLAG_DAMAGE_STEP)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("lua damage step quick " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageCalculated()))
+        end)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetProperty(EFFECT_FLAG_DAMAGE_CAL)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("lua damage calculation quick " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageCalculated()))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-damage-timing-quick.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined);
+    expect(attack).toBeDefined();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
+    expect(session.state.battleStep).toBe("damage");
+
+    expect(legalEffectCodes(session, 1)).toEqual([]);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(legalEffectCodes(session, 0)).toEqual(["300"]);
+    expect(applyResponse(session, activateEffectByCode(session, 0, "300")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+    expect(host.messages).toContain("lua damage step quick 32/true/false");
+    expect(session.state.battleStep).toBe("damage");
+
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.battleStep).toBe("damageCalculation");
+
+    expect(legalEffectCodes(session, 1)).toEqual([]);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(legalEffectCodes(session, 0)).toEqual(["400"]);
+    expect(applyResponse(session, activateEffectByCode(session, 0, "400")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+    expect(host.messages).toContain("lua damage calculation quick 64/true/true");
+
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.players[1].lifePoints).toBe(6200);
+    expect(session.state.pendingBattle).toBeUndefined();
+  });
 });
+
+function legalEffectCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
+  return getDuelLegalActions(session, player)
+    .filter((candidate) => candidate.type === "activateEffect")
+    .map((candidate) => session.state.cards.find((card) => card.uid === candidate.uid)?.code)
+    .filter((code): code is string => code !== undefined);
+}
+
+function activateEffectByCode(session: ReturnType<typeof createDuel>, player: 0 | 1, code: string) {
+  return getDuelLegalActions(session, player).find(
+    (candidate) => candidate.type === "activateEffect" && session.state.cards.find((card) => card.uid === candidate.uid)?.code === code,
+  );
+}
