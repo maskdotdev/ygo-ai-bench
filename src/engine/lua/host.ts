@@ -112,7 +112,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   lualib.luaL_openlibs(L);
   installConstants(L);
   installDebugApi(L, hostState.messages);
-  installAuxApi(L, readLuaError);
+  installAuxApi(L, readLuaError, session);
   installDuelApi(L, session, hostState);
   installEffectApi(L, hostState);
   installCardApi(L, session, hostState, (card, luaEffect, state) => toDuelEffect(card, luaEffect, state, hostState));

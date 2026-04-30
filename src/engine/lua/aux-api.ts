@@ -2,10 +2,11 @@ import fengari from "fengari";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import type { DuelSession } from "#duel/types.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
 
-export function installAuxApi(L: unknown, readLuaError: (state: unknown) => string): void {
+export function installAuxApi(L: unknown, readLuaError: (state: unknown) => string, session?: DuelSession): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const code = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0;
@@ -29,10 +30,14 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   pushFixedFilterWrapper(L, "FilterBoolFunctionEx", readLuaError, false);
   pushFixedFilterWrapper(L, "TargetBoolFunction", readLuaError, false);
   pushFixedFilterWrapper(L, "FaceupFilter", readLuaError, true);
-  lua.lua_pushcfunction(L, (state: unknown) => pushBattleDestroyedCondition(state, false));
+  lua.lua_pushcfunction(L, (state: unknown) => pushBattleDestroyedCondition(state, session, false, false));
   lua.lua_setfield(L, -2, to_luastring("bdcon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushBattleDestroyedCondition(state, true));
+  lua.lua_pushcfunction(L, (state: unknown) => pushBattleDestroyedCondition(state, session, true, false));
   lua.lua_setfield(L, -2, to_luastring("bdocon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushBattleDestroyedCondition(state, session, false, true));
+  lua.lua_setfield(L, -2, to_luastring("bdgcon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushBattleDestroyedCondition(state, session, true, true));
+  lua.lua_setfield(L, -2, to_luastring("bdogcon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectUnselectGroup(state));
   lua.lua_setfield(L, -2, to_luastring("SelectUnselectGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAuxNext(state));
@@ -47,13 +52,22 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   installEquipProcedure(L, readLuaError);
 }
 
-function pushBattleDestroyedCondition(L: unknown, requireOpponent: boolean): number {
+function pushBattleDestroyedCondition(L: unknown, session: DuelSession | undefined, requireOpponent: boolean, requireGraveMonster: boolean): number {
   const triggerPlayer = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
   const eventUids = readGroupUids(L, 3);
   const eventPlayer = readEventPlayer(L, 4);
-  const matches = eventUids.length > 0;
+  const matches = requireGraveMonster ? eventUids.some((uid) => isBattleDestroyedMonster(session, uid)) : eventUids.length > 0;
   lua.lua_pushboolean(L, matches && (!requireOpponent || triggerPlayer === undefined || eventPlayer === undefined || eventPlayer !== triggerPlayer));
   return 1;
+}
+
+function isBattleDestroyedMonster(session: DuelSession | undefined, uid: string): boolean {
+  const card = session?.state.cards.find((candidate) => candidate.uid === uid);
+  return !session || Boolean(card && isMonsterCard(card));
+}
+
+function isMonsterCard(card: NonNullable<DuelSession["state"]["cards"][number]>): boolean {
+  return card.kind === "monster" || card.kind === "extra" || ((card.data.typeFlags ?? 0x1) & 0x1) !== 0;
 }
 
 function readEventPlayer(L: unknown, index: number): number | undefined {

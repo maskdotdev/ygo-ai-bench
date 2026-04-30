@@ -247,7 +247,7 @@ describe("Lua battle helpers", () => {
     expect(session.state.pendingBattle).toBeUndefined();
   });
 
-  it("lets Lua scripts use aux.bdocon for opponent battle destruction", () => {
+  it("lets Lua scripts use aux battle destruction opponent conditions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Aux Battle Attacker", kind: "monster", attack: 1800 },
       { code: "200", name: "Aux Battle Target", kind: "monster", attack: 1000 },
@@ -280,6 +280,15 @@ describe("Lua battle helpers", () => {
           Debug.Message("aux bdocon attacker resolved")
         end)
         c:RegisterEffect(e)
+        local e2=Effect.CreateEffect(c)
+        e2:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e2:SetCode(EVENT_BATTLE_DESTROYING)
+        e2:SetRange(LOCATION_MZONE)
+        e2:SetCondition(aux.bdogcon)
+        e2:SetOperation(function(e,tp)
+          Debug.Message("aux bdogcon attacker resolved")
+        end)
+        c:RegisterEffect(e2)
       end
       c200={}
       function c200.initial_effect(c)
@@ -307,7 +316,10 @@ describe("Lua battle helpers", () => {
     expect(trigger).toBeDefined();
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateTrigger")).toBe(false);
     expect(applyResponse(session, trigger!).ok).toBe(true);
-    expect(host.messages).toEqual(["aux bdocon attacker resolved"]);
+    const secondTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(secondTrigger).toBeDefined();
+    expect(applyResponse(session, secondTrigger!).ok).toBe(true);
+    expect(host.messages).toEqual(["aux bdocon attacker resolved", "aux bdogcon attacker resolved"]);
   });
 
   it("lets Lua scripts inspect each player's battle monster", () => {
