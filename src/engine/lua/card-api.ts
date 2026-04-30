@@ -9,6 +9,7 @@ import { normalSummonActions } from "#duel/summon.js";
 import { cardFieldNames } from "#lua/card-field-names.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { canLuaSynchroSummonCard } from "#lua/synchro-summonable.js";
+import { canLuaXyzSummonCard } from "#lua/xyz-summonable.js";
 import {
   copyGlobalFunctionToField,
   locationsFromMask,
@@ -347,6 +348,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsSpecialSummonable", session, (card) => Boolean(card && canSpecialSummonDuelCard(session.state, card.uid, card.controller)));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsSynchroSummonable(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsSynchroSummonable"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsXyzSummonable(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsXyzSummonable"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const player = lua.lua_isnumber(state, 4) ? normalizePlayer(lua.lua_tointeger(state, 4)) : card?.controller;
@@ -557,6 +560,13 @@ function pushIsSynchroSummonable(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
   const suppliedUids = [...readCardOrGroupUids(L, 2), ...readCardOrGroupUids(L, 3)];
   lua.lua_pushboolean(L, Boolean(card && canLuaSynchroSummonCard(session, card, suppliedUids)));
+  return 1;
+}
+
+function pushIsXyzSummonable(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const suppliedUids = [...readCardOrGroupUids(L, 2), ...readCardOrGroupUids(L, 3)];
+  lua.lua_pushboolean(L, Boolean(card && canLuaXyzSummonCard(session, card, suppliedUids)));
   return 1;
 }
 

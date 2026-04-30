@@ -1,0 +1,95 @@
+import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
+import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import type { DuelCardInstance, DuelSession } from "#duel/types.js";
+
+export function canLuaXyzSummonCard(session: DuelSession, card: DuelCardInstance, suppliedUids: string[]): boolean {
+  if (card.location !== "extraDeck" || !isMonsterLike(card) || !hasZoneSpace(session.state, card.controller, "monsterZone")) return false;
+  const supplied = new Set(suppliedUids);
+  const materialPool = session.state.cards.filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && canBeXyzMaterial(session, candidate, card));
+  if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return false;
+  const count = card.data.xyzMaterials?.length || 2;
+  if (supplied.size > count) return false;
+  for (const materials of cardCombinations(materialPool, count)) {
+    if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
+    if (card.data.xyzMaterials?.length ? materialCodesMatch(materials, card.data.xyzMaterials) : canGenericXyzMaterialsMatch(card, materials)) return true;
+  }
+  return false;
+}
+
+function canBeXyzMaterial(session: DuelSession, card: DuelCardInstance, target: DuelCardInstance): boolean {
+  if (!isMonsterLike(card) || card.uid === target.uid) return false;
+  return targetAllowsMaterial(target, card) && !isMaterialUsePrevented(session.state, card.uid, "xyz", createMaterialCheckContext(session));
+}
+
+function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance): boolean {
+  if (target.data.xyzMaterials?.length) return target.data.xyzMaterials.some((code) => cardCodes(card).includes(code));
+  const targetRank = cardRank(target);
+  return targetRank > 0 && (card.data.level ?? 0) === targetRank;
+}
+
+function canGenericXyzMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
+  const targetRank = cardRank(card);
+  return targetRank > 0 && materials.length === 2 && materials.every((material) => (material.data.level ?? 0) === targetRank);
+}
+
+function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
+  if (materials.length !== requiredCodes.length) return false;
+  const used = new Set<string>();
+  for (const code of requiredCodes) {
+    const material = materials.find((candidate) => !used.has(candidate.uid) && cardCodes(candidate).includes(code));
+    if (!material) return false;
+    used.add(material.uid);
+  }
+  return used.size === materials.length;
+}
+
+function cardCombinations(cards: DuelCardInstance[], count: number): DuelCardInstance[][] {
+  if (count === 0) return [[]];
+  if (cards.length < count) return [];
+  const results: DuelCardInstance[][] = [];
+  for (let index = 0; index <= cards.length - count; index += 1) {
+    const head = cards[index];
+    if (!head) continue;
+    for (const tail of cardCombinations(cards.slice(index + 1), count - 1)) results.push([head, ...tail]);
+  }
+  return results;
+}
+
+function cardCodes(card: DuelCardInstance): string[] {
+  return [card.code, ...(card.data.alias ? [card.data.alias] : [])];
+}
+
+function cardRank(card: DuelCardInstance): number {
+  return (cardTypeFlags(card) & 0x800000) !== 0 ? card.data.level ?? 0 : 0;
+}
+
+function cardTypeFlags(card: DuelCardInstance): number {
+  return card.data.typeFlags ?? (card.kind === "spell" ? 0x2 : card.kind === "trap" ? 0x4 : 0x1);
+}
+
+function isMonsterLike(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x1) !== 0;
+}
+
+function createMaterialCheckContext(session: DuelSession): ContinuousEffectContextFactory {
+  return (effect, source) => ({
+    duel: session.state,
+    source,
+    player: effect.controller,
+    checkOnly: true,
+    targetUids: [],
+    log() {},
+    moveCard(uid, to, controller) {
+      return moveDuelCard(session.state, uid, to, controller);
+    },
+    negateChainLink() {
+      return false;
+    },
+    setTargets() {},
+    getTargets() {
+      return [];
+    },
+    setTargetPlayer() {},
+    setTargetParam() {},
+  });
+}

@@ -159,6 +159,7 @@ export const cardFieldNames = [
   "IsSummonableCard",
   "IsSpecialSummonable",
   "IsSynchroSummonable",
+  "IsXyzSummonable",
   "IsCanBeSpecialSummoned",
   "IsMSetable",
   "IsCanTurnSet",
