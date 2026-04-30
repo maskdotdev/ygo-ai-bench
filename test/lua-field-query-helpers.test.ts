@@ -114,6 +114,37 @@ describe("Lua field and query helpers", () => {
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && expectedTop.includes(card.code))).toHaveLength(2);
   });
 
+  it("lets Lua scripts shuffle a player's hand", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Hand A", kind: "monster" },
+      { code: "200", name: "Hand B", kind: "monster" },
+      { code: "300", name: "Hand C", kind: "monster" },
+      { code: "400", name: "Hand D", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 12, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const before = handCodes(session, 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.ShuffleHand(0)
+      Debug.Message("hand shuffled")
+      `,
+      "shuffle-hand.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("hand shuffled");
+    const after = handCodes(session, 0);
+    expect([...after].sort()).toEqual([...before].sort());
+    expect(after).not.toEqual(before);
+  });
+
   it("lets Lua scripts draw and search deck cards", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Draw A", kind: "monster" },
@@ -1350,3 +1381,10 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("vararg high 1");
   });
 });
+
+function handCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
+  return session.state.cards
+    .filter((card) => card.controller === player && card.location === "hand")
+    .sort((a, b) => a.sequence - b.sequence)
+    .map((card) => card.code);
+}

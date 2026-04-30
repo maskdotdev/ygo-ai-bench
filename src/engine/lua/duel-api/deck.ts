@@ -91,6 +91,12 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ShuffleDeck"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    shuffleHand(session, player);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ShuffleHand"));
 }
 
 function discardDeckCards(session: DuelSession, player: PlayerId, count: number, reason: number): string[] {
@@ -134,6 +140,12 @@ function topDeckUids(session: DuelSession, player: PlayerId, count: number): str
 function shuffleDeck(session: DuelSession, player: PlayerId): void {
   const deckCards = session.state.cards.filter((card) => card.controller === player && card.location === "deck").sort((a, b) => a.sequence - b.sequence);
   const shuffled = shuffle(deckCards, `${session.state.seed}:lua-shuffle:${player}:${session.state.log.length}`);
+  for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
+}
+
+function shuffleHand(session: DuelSession, player: PlayerId): void {
+  const handCards = session.state.cards.filter((card) => card.controller === player && card.location === "hand").sort((a, b) => a.sequence - b.sequence);
+  const shuffled = shuffle(handCards, `${session.state.seed}:lua-shuffle-hand:${player}:${session.state.log.length}`);
   for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
 }
 
