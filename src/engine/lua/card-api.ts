@@ -197,6 +197,23 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetOverlayGroup"));
+  pushNumberGetter(L, "GetEquipCount", session, (card) => (card ? equippedCards(session, card.uid).length : 0));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    pushGroupTable(state, card ? equippedCards(session, card.uid).map((equip) => equip.uid) : []);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetEquipGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    if (!card?.equippedToUid) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardTable(state, card.equippedToUid);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetEquipTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveOverlayCard(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
   pushBooleanGetter(L, "IsFaceup", session, (card) => Boolean(card?.faceUp));
@@ -346,6 +363,10 @@ function installFlagHelpers(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ResetFlagEffect"));
+}
+
+function equippedCards(session: DuelSession, uid: string): DuelCardInstance[] {
+  return session.state.cards.filter((card) => card.equippedToUid === uid && card.location === "spellTrapZone");
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
@@ -623,6 +644,9 @@ const cardFieldNames = [
   "GetPosition",
   "GetOverlayCount",
   "GetOverlayGroup",
+  "GetEquipCount",
+  "GetEquipGroup",
+  "GetEquipTarget",
   "RemoveOverlayCard",
   "IsPosition",
   "IsAttackPos",

@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { getCards, hasZoneSpace } from "#duel/card-state.js";
+import { getCards, hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import {
   banishDuelCard,
   canMoveDuelCardToLocation,
@@ -37,6 +37,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummon(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushEquip(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("Equip"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangePosition(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ChangePosition"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMoveToField(state, session, hostState));
@@ -86,6 +88,33 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
   setOperatedUids(hostState, moved);
   lua.lua_pushinteger(L, moved.length);
   return 1;
+}
+
+function pushEquip(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
+  const equipUid = readCardUid(L, 2);
+  const targetUid = readCardUid(L, 3);
+  const equipCard = equipUid ? session.state.cards.find((candidate) => candidate.uid === equipUid) : undefined;
+  const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
+  if (!equipUid || !equipCard || !target || target.location !== "monsterZone" || !hasZoneSpace(session.state, player, "spellTrapZone")) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  try {
+    moveDuelCard(session.state, equipUid, "spellTrapZone", player, duelReason.effect, hostState.activeContext?.player ?? player);
+    equipCard.equippedToUid = target.uid;
+    equipCard.position = "faceUpAttack";
+    equipCard.faceUp = true;
+    pushDuelLog(session.state, "equip", player, equipCard.name, `Equipped to ${target.name}`);
+    setOperatedUids(hostState, [equipUid]);
+    lua.lua_pushboolean(L, true);
+    return 1;
+  } catch {
+    setOperatedUids(hostState, []);
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
 }
 
 function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {

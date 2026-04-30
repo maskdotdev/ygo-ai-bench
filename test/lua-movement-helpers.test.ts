@@ -14,6 +14,43 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua movement helpers", () => {
+  it("lets Lua scripts equip cards to field monsters", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Equip Target", kind: "monster" },
+      { code: "500", name: "Equip Spell", kind: "spell", typeFlags: 0x40002 },
+    ];
+    const session = createDuel({ seed: 39, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "500"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local equip = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("equip result " .. tostring(Duel.Equip(0, equip, target)))
+      Debug.Message("equip operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("equip target " .. equip:GetEquipTarget():GetCode())
+      Debug.Message("equip count " .. target:GetEquipCount() .. "/" .. target:GetEquipGroup():GetFirst():GetCode())
+      `,
+      "equip-helper.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("equip result true");
+    expect(host.messages).toContain("equip operated 500");
+    expect(host.messages).toContain("equip target 100");
+    expect(host.messages).toContain("equip count 1/500");
+    expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
+    expect(session.state.log.some((entry) => entry.action === "equip" && entry.detail === "Equipped to Equip Target")).toBe(true);
+  });
+
   it("lets Lua scripts move cards to hand, deck, and extra deck", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Recoverable Monster", kind: "monster" },
