@@ -640,10 +640,11 @@ describe("Lua field and query helpers", () => {
       { code: "600", name: "Multi Attribute", kind: "monster", attribute: 0x30 },
       { code: "700", name: "Ritual Fixture", kind: "monster", typeFlags: 0x81, level: 6 },
       { code: "800", name: "Normal Fixture", kind: "monster", typeFlags: 0x11, level: 4 },
+      { code: "901", name: "Pendulum Fixture", kind: "monster", typeFlags: 0x1000021, level: 4, leftScale: 3, rightScale: 8 },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 9, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 10, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "201", "300", "400", "500", "600", "700", "800"] },
+      0: { main: ["100", "200", "201", "300", "400", "500", "600", "700", "800", "901"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -669,6 +670,7 @@ describe("Lua field and query helpers", () => {
       local link = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local ritual = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 700), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local normal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local pendulum = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("original predicates " .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalLevel(7)))
       Debug.Message("not type " .. tostring(c:IsNotType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotType(TYPE_SPELL)))
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
@@ -700,6 +702,9 @@ describe("Lua field and query helpers", () => {
       function_synchro:SetValue(function(e,sc) return sc:GetLevel()+1 end)
       normal:RegisterEffect(function_synchro)
       Debug.Message("synchro levels " .. xyz:GetSynchroLevel() .. "/" .. c:GetSynchroLevel() .. "/" .. normal:GetSynchroLevel(c))
+      Debug.Message("scale hand " .. pendulum:GetScale() .. "/" .. pendulum:GetLeftScale() .. "/" .. pendulum:GetRightScale() .. "/" .. pendulum:GetOriginalLeftScale() .. "/" .. pendulum:GetOriginalRightScale() .. "/" .. tostring(pendulum:IsScale(3)) .. "/" .. tostring(pendulum:IsOddScale()) .. "/" .. tostring(pendulum:IsEvenScale()))
+      Duel.MoveToField(pendulum,0,0,LOCATION_PZONE,POS_FACEUP,true,1)
+      Debug.Message("scale pzone " .. pendulum:GetSequence() .. "/" .. pendulum:GetScale() .. "/" .. tostring(pendulum:IsOddScale()) .. "/" .. tostring(pendulum:IsEvenScale()))
       Debug.Message("race " .. c:GetRace() .. " " .. tostring(c:IsRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsOriginalRace(RACE_SPELLCASTER)))
       Debug.Message("not race " .. tostring(c:IsNotRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotRace(RACE_DRAGON)))
       Debug.Message("not original race " .. tostring(c:IsNotOriginalRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotOriginalRace(RACE_DRAGON)))
@@ -745,6 +750,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("ritual fixed level 5");
     expect(host.messages).toContain("ritual function level 9");
     expect(host.messages).toContain("synchro levels 4/5/8");
+    expect(host.messages).toContain("scale hand 3/3/8/3/8/true/true/false");
+    expect(host.messages).toContain("scale pzone 0/3/true/false");
     expect(host.messages).toContain("race 2 true/true");
     expect(host.messages).toContain("not race false/true");
     expect(host.messages).toContain("attribute 32 true/true");

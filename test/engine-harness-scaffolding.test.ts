@@ -7,7 +7,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
   it("normalizes card database rows and banlist entries", () => {
     const cards = normalizeCdbRows(
       [
-        { id: 100, type: 1, atk: 2500, def: 2100, level: 4, setcode: 0, race: 0x2, attribute: 0x20 },
+        { id: 100, type: 1, atk: 2500, def: 2100, level: 4 | (8 << 16) | (3 << 24), setcode: 0, race: 0x2, attribute: 0x20 },
         { id: 200, type: 2 },
         { id: 300, type: 4 },
       ],
@@ -21,6 +21,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(cards[0]?.name).toBe("Fixture Monster");
     expect(cards[0]?.race).toBe(0x2);
     expect(cards[0]?.attribute).toBe(0x20);
+    expect(cards[0]).toMatchObject({ level: 4, leftScale: 3, rightScale: 8 });
     expect(scriptFilenameForCard(100)).toBe("c100.lua");
     const upstream = { root: ".upstream/ignis", coreUrl: "core", scriptsUrl: "scripts", databaseUrl: "db", lflistUrl: "lists" };
     expect(upstreamScriptPath(upstream, 100)).toBe(".upstream/ignis/script/c100.lua");

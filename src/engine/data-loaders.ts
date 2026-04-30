@@ -84,7 +84,11 @@ export function normalizeCdbRows(datas: RawCdbDataRow[], texts: RawCdbTextRow[])
     const defense = toNumber(row.def);
     const race = toNumber(row.race);
     const attribute = toNumber(row.attribute);
-    if (level !== undefined) card.level = level;
+    if (level !== undefined) {
+      card.level = level & 0xff;
+      card.rightScale = (level >> 16) & 0xff;
+      card.leftScale = (level >> 24) & 0xff;
+    }
     if (attack !== undefined) card.attack = attack;
     if (defense !== undefined) card.defense = defense;
     if (race !== undefined) card.race = race;

@@ -97,6 +97,14 @@ function installStatHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unkn
   pushNumberMatcher(L, "IsOriginalDefenseBelow", session, (card, requested) => (card.data.defense ?? 0) <= requested);
   pushNumberGetter(L, "GetLevel", session, (card) => card?.data.level ?? 0);
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
+  pushNumberGetter(L, "GetLeftScale", session, (card) => card?.data.leftScale ?? 0);
+  pushNumberGetter(L, "GetRightScale", session, (card) => card?.data.rightScale ?? 0);
+  pushNumberGetter(L, "GetOriginalLeftScale", session, (card) => card?.data.leftScale ?? 0);
+  pushNumberGetter(L, "GetOriginalRightScale", session, (card) => card?.data.rightScale ?? 0);
+  pushNumberGetter(L, "GetScale", session, (card) => cardScale(card));
+  pushNumberMatcher(L, "IsScale", session, (card, requested) => cardScale(card) === requested);
+  pushBooleanGetter(L, "IsOddScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 !== 0);
+  pushBooleanGetter(L, "IsEvenScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 === 0);
   lua.lua_pushcfunction(L, (state: unknown) => pushRitualLevel(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetRitualLevel"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSynchroLevel(state, session, hostState));
@@ -738,6 +746,16 @@ function totalCounters(card: DuelCardInstance): number {
 
 function isPendulumCard(card: DuelCardInstance): boolean {
   return (cardTypeFlags(card) & 0x1000000) !== 0;
+}
+
+function isPendulumCardData(card: DuelCardInstance | undefined): card is DuelCardInstance {
+  return Boolean(card && isPendulumCard(card));
+}
+
+function cardScale(card: DuelCardInstance | undefined): number {
+  if (!isPendulumCardData(card)) return 0;
+  if (card.location !== "spellTrapZone") return card.data.leftScale ?? 0;
+  return card.sequence === 0 || card.sequence === 1 || card.sequence === 6 ? card.data.leftScale ?? 0 : card.data.rightScale ?? 0;
 }
 
 function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind): boolean {
