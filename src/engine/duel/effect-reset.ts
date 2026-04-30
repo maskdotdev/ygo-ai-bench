@@ -1,4 +1,5 @@
-import type { DuelCardInstance, DuelPhase, DuelState } from "#duel/types.js";
+import { clearEffectCountUsage } from "#duel/effect-counts.js";
+import type { DuelCardInstance, DuelEffectDefinition, DuelPhase, DuelState } from "#duel/types.js";
 
 const resetEvent = 0x1000;
 const resetToGrave = 0x40000;
@@ -23,10 +24,10 @@ export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInsta
     if (effect.sourceUid !== card.uid) return true;
     const flags = normalizeResetFlags(effect.reset?.flags ?? 0);
     if ((flags & resetEvent) === 0) return true;
-    if ((flags & resetLeave) !== 0 && card.previousLocation !== card.location) return false;
-    if ((flags & destinationResetFlags) !== 0) return !matchesDestinationReset(flags, card);
+    if ((flags & resetLeave) !== 0 && card.previousLocation !== card.location) return removeResetEffect(state, effect);
+    if ((flags & destinationResetFlags) !== 0) return matchesDestinationReset(flags, card) ? removeResetEffect(state, effect) : true;
     const previousLocation = card.previousLocation ?? card.location;
-    return !effect.range.includes(previousLocation) || effect.range.includes(card.location);
+    return !effect.range.includes(previousLocation) || effect.range.includes(card.location) || removeResetEffect(state, effect);
   });
 }
 
@@ -40,7 +41,7 @@ export function pruneResetEffectsAfterPhase(state: DuelState, phase: DuelPhase):
       reset.count -= 1;
       return true;
     }
-    return false;
+    return removeResetEffect(state, effect);
   });
 }
 
@@ -53,12 +54,17 @@ export function pruneResetEffectsAfterChain(state: DuelState): void {
       reset.count -= 1;
       return true;
     }
-    return false;
+    return removeResetEffect(state, effect);
   });
 }
 
 function normalizeResetFlags(flags: number): number {
   return flags >>> 0;
+}
+
+function removeResetEffect(state: DuelState, effect: DuelEffectDefinition): false {
+  clearEffectCountUsage(state, effect);
+  return false;
 }
 
 function matchesDestinationReset(flags: number, card: DuelCardInstance): boolean {

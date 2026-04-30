@@ -288,4 +288,40 @@ describe("duel effect reset", () => {
     expect(session.state.turnPlayer).toBe(1);
     expect(session.state.effects).toHaveLength(0);
   });
+
+  it("clears effect count usage when reset-phase removes an effect", () => {
+    const session = createDuel({ seed: 131, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    registerEffect(session, {
+      id: "reset-phase-count-limited",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      countLimit: 1,
+      reset: { flags: 0x40000000 + 0x80 },
+      operation(ctx) {
+        ctx.log("Reset phase count-limited effect resolved");
+      },
+    });
+
+    const effect = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "reset-phase-count-limited");
+    expect(effect).toBeDefined();
+    expect(applyResponse(session, effect!).ok).toBe(true);
+    expect(session.state.usedCountKeys).toHaveLength(1);
+
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+
+    expect(session.state.effects).toHaveLength(0);
+    expect(session.state.usedCountKeys).toHaveLength(0);
+  });
 });

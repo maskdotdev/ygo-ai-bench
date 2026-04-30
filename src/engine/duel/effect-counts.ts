@@ -12,6 +12,12 @@ export function markEffectUsed(state: DuelState, effect: DuelEffectDefinition): 
   state.usedCountKeys.push(key);
 }
 
+export function clearEffectCountUsage(state: DuelState, effect: DuelEffectDefinition): void {
+  if (effectCountLimit(effect) <= 0) return;
+  const key = effectCountKey(state, effect);
+  state.usedCountKeys = state.usedCountKeys.filter((usedKey) => usedKey !== key);
+}
+
 function effectCountLimit(effect: DuelEffectDefinition): number {
   if (effect.countLimit !== undefined) return effect.countLimit;
   return effect.oncePerTurn ? 1 : 0;

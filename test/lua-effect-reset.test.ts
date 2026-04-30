@@ -202,4 +202,41 @@ describe("Lua effect reset", () => {
     expect(session.state.effects).toHaveLength(0);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect")).toBe(false);
   });
+
+  it("clears Lua count-limit usage when RESET_CHAIN removes an effect", () => {
+    const { session } = setupLuaChainFixture({
+      seed: 132,
+      startingHandSize: 1,
+      cards: [
+        { code: "25100", name: "Lua Reset Count Source", kind: "monster" },
+        { code: "25200", name: "Lua Reset Count Filler", kind: "monster" },
+      ],
+      decks: {
+        0: { main: ["25100"] },
+        1: { main: ["25200"] },
+      },
+      expectedEffects: 1,
+      scriptName: "lua-effect-reset-chain-count.lua",
+      script: `
+      c25100={}
+      function c25100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetCountLimit(1)
+        e:SetReset(RESET_CHAIN)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua reset count resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(session.state.effects).toHaveLength(0);
+    expect(session.state.usedCountKeys).toHaveLength(0);
+  });
 });

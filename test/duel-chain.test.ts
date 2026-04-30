@@ -133,6 +133,37 @@ describe("duel chains", () => {
     expect(session.state.effects.some((effect) => effect.id === "counted-reset-chain")).toBe(false);
   });
 
+  it("clears effect count usage when reset-chain removes an effect", () => {
+    const session = createDuel({ seed: 130, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "reset-chain-count-limited",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      countLimit: 1,
+      reset: { flags: 0x80000000 },
+      operation(ctx) {
+        ctx.log("Reset chain count-limited effect resolved");
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "reset-chain-count-limited");
+    expect(action).toBeTruthy();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(session.state.effects).toHaveLength(0);
+    expect(session.state.usedCountKeys).toHaveLength(0);
+  });
+
   it("lets an opponent quick effect chain before the original operation resolves", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
