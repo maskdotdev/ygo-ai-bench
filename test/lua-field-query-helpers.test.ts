@@ -537,7 +537,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
       Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
-      Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)))
+      Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()))
       Debug.Message("link comparisons " .. tostring(link:IsLinkAbove(2)) .. "/" .. tostring(link:IsLinkBelow(1)) .. "/" .. tostring(link:IsOriginalLinkAbove(3)) .. "/" .. tostring(link:IsOriginalLinkBelow(2)))
       Debug.Message("race " .. c:GetRace() .. " " .. tostring(c:IsRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsOriginalRace(RACE_SPELLCASTER)))
       Debug.Message("not race " .. tostring(c:IsNotRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotRace(RACE_DRAGON)))
@@ -573,7 +573,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("rank 4/4/true/true");
     expect(host.messages).toContain("has level true/false/false/false");
     expect(host.messages).toContain("rank comparisons true/false/true/true");
-    expect(host.messages).toContain("link 2/2/5/true/true");
+    expect(host.messages).toContain("link 2/2/5/true/true/true/false");
     expect(host.messages).toContain("link comparisons true/false/false/true");
     expect(host.messages).toContain("race 2 true/true");
     expect(host.messages).toContain("not race false/true");

@@ -177,6 +177,7 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsOriginalLink", session, (card, requested) => cardLink(card) === requested);
   pushNumberMatcher(L, "IsOriginalLinkAbove", session, (card, requested) => cardLink(card) >= requested);
   pushNumberMatcher(L, "IsOriginalLinkBelow", session, (card, requested) => cardLink(card) <= requested);
+  pushBooleanGetter(L, "IsLinkMonster", session, (card) => cardLink(card) > 0);
   pushNumberGetter(L, "GetLinkMarker", session, (card) => card?.data.linkMarkers ?? 0);
   pushNumberGetter(L, "GetRace", session, (card) => card?.data.race ?? 0);
   pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
@@ -851,6 +852,7 @@ const cardFieldNames = [
   "IsOriginalLink",
   "IsOriginalLinkAbove",
   "IsOriginalLinkBelow",
+  "IsLinkMonster",
   "GetLinkMarker",
   "GetRace",
   "GetOriginalRace",
