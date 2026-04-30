@@ -33,6 +33,7 @@ export interface LuaDuelApiHostState extends LuaDuelScriptApiHostState {
   pushEffectTable: (state: unknown, id: number) => void;
   getEffectTypeFlags: (id: number) => number | undefined;
   registerEffect: (state: unknown, id: number, player: 0 | 1) => boolean;
+  currentScriptCardCode: string | undefined;
 }
 
 export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {

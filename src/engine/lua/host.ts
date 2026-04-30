@@ -72,6 +72,7 @@ interface LuaHostState {
   selectedUids: string[];
   scriptSource: LuaScriptSource | undefined;
   loadedScripts: Set<string>;
+  currentScriptCardCode: string | undefined;
   pushEffectTable: (state: unknown, id: number) => void;
   getEffectTypeFlags: (id: number) => number | undefined;
   registerEffect: (state: unknown, id: number, player: PlayerId) => boolean;
@@ -93,6 +94,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     selectedUids: [],
     scriptSource,
     loadedScripts: new Set(),
+    currentScriptCardCode: undefined,
     pushEffectTable(state, id) {
       pushLuaEffectTable(state, id, hostState);
     },
@@ -166,9 +168,16 @@ function loadLuaScriptFile(L: unknown, hostState: LuaHostState, name: string, fo
   if (!forced && hostState.loadedScripts.has(name)) return { ok: true, name };
   const code = hostState.scriptSource?.readScript(name);
   if (code === undefined) return { ok: false, name, error: `Script ${name} was not found` };
+  const previousCode = hostState.currentScriptCardCode;
+  hostState.currentScriptCardCode = cardCodeFromScriptName(name) ?? previousCode;
   const result = runLuaScript(L, code, name);
+  hostState.currentScriptCardCode = previousCode;
   if (result.ok) hostState.loadedScripts.add(name);
   return result;
+}
+
+function cardCodeFromScriptName(name: string): string | undefined {
+  return /^c(\d+)\.lua$/.exec(name)?.[1];
 }
 
 function runLuaScript(L: unknown, code: string, name: string): LuaScriptLoadResult {

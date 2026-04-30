@@ -49,16 +49,40 @@ describe("Lua script loading", () => {
     const host = createLuaScriptHost(session, source);
     const result = host.loadScript(
       `
-      Duel.LoadCardScript(100)
+      local first=Duel.LoadCardScript(100)
       Duel.LoadCardScript("c100.lua")
-      Duel.LoadCardScript("200")
+      local second=Duel.LoadCardScript("200")
       Duel.LoadCardScript("missing.lua")
-      Debug.Message("card scripts " .. tostring(c100.loaded) .. "/" .. tostring(c200.loaded))
+      Debug.Message("card scripts " .. tostring(c100.loaded) .. "/" .. tostring(c200.loaded) .. "/" .. tostring(first.loaded) .. "/" .. tostring(second.loaded))
       `,
       "main-card-loader.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["loaded c100", "loaded c200", "card scripts true/true"]);
+    expect(host.messages).toEqual(["loaded c100", "loaded c200", "card scripts true/true/true/true"]);
+  });
+
+  it("lets Lua card scripts alias their current script table to another card script", () => {
+    const session = createDuel({ seed: 93, startingHandSize: 0 });
+    const scripts = new Map<string, string>([
+      ["c100.lua", "c100={aliased=true}; Debug.Message('loaded alias source')"],
+      ["c999.lua", "Duel.LoadCardScriptAlias(100); Debug.Message('loaded alias wrapper')"],
+    ]);
+    const source: LuaScriptSource = {
+      readScript(name) {
+        return scripts.get(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    const result = host.loadScript(
+      `
+      Duel.LoadCardScript(999)
+      Debug.Message("alias tables " .. tostring(c999.aliased) .. "/" .. tostring(c100.aliased) .. "/" .. tostring(c999==c100))
+      `,
+      "main-card-alias-loader.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["loaded alias source", "loaded alias wrapper", "alias tables true/true/true"]);
   });
 });
