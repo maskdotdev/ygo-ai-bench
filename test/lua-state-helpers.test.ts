@@ -1126,7 +1126,9 @@ describe("Lua state helpers", () => {
       Debug.Message("turn set link " .. tostring(link:IsCanTurnSet()))
       Debug.Message("turn set hand " .. tostring(hand:IsCanTurnSet()))
       Debug.Message("change faceup any " .. tostring(faceup:IsCanChangePosition()))
+      Debug.Message("change rush faceup any " .. tostring(faceup:IsCanChangePositionRush()))
       Debug.Message("change faceup defense " .. tostring(faceup:IsCanChangePosition(POS_FACEUP_DEFENSE)))
+      Debug.Message("change rush faceup defense " .. tostring(faceup:IsCanChangePositionRush(POS_FACEUP_DEFENSE)))
       Debug.Message("change faceup attack " .. tostring(faceup:IsCanChangePosition(POS_FACEUP_ATTACK)))
       Debug.Message("change facedown any " .. tostring(facedown:IsCanChangePosition()))
       Debug.Message("change link any " .. tostring(link:IsCanChangePosition()))
@@ -1143,7 +1145,9 @@ describe("Lua state helpers", () => {
       "turn set link false",
       "turn set hand false",
       "change faceup any true",
+      "change rush faceup any true",
       "change faceup defense true",
+      "change rush faceup defense true",
       "change faceup attack false",
       "change facedown any true",
       "change link any true",

@@ -363,6 +363,13 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCanChangePosition"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && canChangePosition(session.state, card, requested)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsCanChangePositionRush"));
   pushBooleanGetter(L, "IsSSetable", session, (card) => Boolean(card && card.location === "hand" && (card.kind === "spell" || card.kind === "trap") && hasZoneSpace(session.state, card.controller, "spellTrapZone")));
   pushMaterialPredicate(L, "IsCanBeFusionMaterial", session, "fusion");
   pushMaterialPredicate(L, "IsCanBeSynchroMaterial", session, "synchro");
@@ -946,6 +953,7 @@ const cardFieldNames = [
   "IsMSetable",
   "IsCanTurnSet",
   "IsCanChangePosition",
+  "IsCanChangePositionRush",
   "IsSSetable",
   "IsSpellTrap",
   "IsMaximumMode",
