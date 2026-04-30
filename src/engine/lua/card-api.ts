@@ -319,6 +319,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushCanChangeControler(L, "IsControlerCanBeChanged", session);
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
   pushNumberMatcher(L, "IsSummonType", session, (card, requested) => isSummonTypeMatch(summonTypeMask(card), requested));
+  pushNumberMatcher(L, "IsSummonLocation", session, (card, requested) => Boolean(card.summonType && (locationMaskFromLocation(card.previousLocation) & requested) !== 0));
   pushNumberMatcher(L, "IsSummonPlayer", session, (card, requested) => card.summonPlayer !== undefined && card.summonPlayer === normalizePlayer(requested));
   pushBooleanGetter(L, "IsAbleToGrave", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "graveyard")));
   pushBooleanGetter(L, "IsAbleToGraveAsCost", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.cost)));
@@ -919,6 +920,7 @@ const cardFieldNames = [
   "IsControlerCanBeChanged",
   "GetSummonType",
   "IsSummonType",
+  "IsSummonLocation",
   "IsSummonPlayer",
   "IsAbleToGrave",
   "IsAbleToGraveAsCost",
