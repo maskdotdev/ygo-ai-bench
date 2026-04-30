@@ -6,6 +6,61 @@ import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua battle helpers", () => {
+  it("lets Lua scripts calculate battle damage", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Damage Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Attack Target", kind: "monster", attack: 1000 },
+      { code: "300", name: "Defense Attacker", kind: "monster", attack: 1500 },
+      { code: "400", name: "Defense Target", kind: "monster", defense: 2000 },
+    ];
+    const session = createDuel({ seed: 76, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200", "400"] },
+    });
+    startDuel(session);
+
+    const attackAttacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const attackTarget = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    const defenseAttacker = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    const defenseTarget = session.state.cards.find((card) => card.controller === 1 && card.code === "400");
+    expect(attackAttacker).toBeDefined();
+    expect(attackTarget).toBeDefined();
+    expect(defenseAttacker).toBeDefined();
+    expect(defenseTarget).toBeDefined();
+    moveDuelCard(session.state, attackAttacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, attackTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, defenseAttacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, defenseTarget!.uid, "monsterZone", 1).position = "faceUpDefense";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local atk_a = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local atk_t = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      local def_a = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local def_t = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("calc attack " .. Duel.CalculateDamage(atk_a, atk_t))
+      Debug.Message("calc attack damage " .. Duel.GetBattleDamage(1) .. "/" .. Duel.GetLP(1))
+      Debug.Message("calc defense " .. Duel.CalculateDamage(def_a, def_t))
+      Debug.Message("calc defense damage " .. Duel.GetBattleDamage(0) .. "/" .. Duel.GetLP(0))
+      Debug.Message("calc override " .. Duel.CalculateDamage(atk_a, atk_t, 900, 1200))
+      Debug.Message("calc override damage " .. Duel.GetBattleDamage(0) .. "/" .. Duel.GetLP(0))
+      `,
+      "calculate-damage.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("calc attack 800");
+    expect(host.messages).toContain("calc attack damage 800/7200");
+    expect(host.messages).toContain("calc defense 500");
+    expect(host.messages).toContain("calc defense damage 500/7500");
+    expect(host.messages).toContain("calc override 300");
+    expect(host.messages).toContain("calc override damage 300/7200");
+    expect(session.state.players[0].lifePoints).toBe(7200);
+    expect(session.state.players[1].lifePoints).toBe(7200);
+  });
+
   it("lets Lua scripts negate the active attack", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Attacker", kind: "monster", attack: 1800 },

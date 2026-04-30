@@ -1,8 +1,8 @@
 import fengari from "fengari";
-import { changeDuelBattleDamage, getDuelBattleDamage, negateDuelAttack } from "#duel/core.js";
+import { changeDuelBattleDamage, damageDuelPlayer, getDuelBattleDamage, negateDuelAttack } from "#duel/core.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
-import type { DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -66,6 +66,24 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ChangeBattleDamage"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCalculateDamage(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CalculateDamage"));
+}
+
+function pushCalculateDamage(L: unknown, session: DuelSession): number {
+  const attacker = readBattleCard(L, session, 1);
+  const defender = readBattleCard(L, session, 2);
+  if (!attacker || attacker.location !== "monsterZone") {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const result = calculateBattleDamage(attacker, defender, readOptionalStat(L, 3), readOptionalStat(L, 4));
+  if (result.damage > 0) {
+    changeDuelBattleDamage(session.state, result.player, result.damage);
+    damageDuelPlayer(session.state, result.player, result.damage);
+  }
+  lua.lua_pushinteger(L, result.damage);
+  return 1;
 }
 
 function changeAttackTarget(session: DuelSession, targetUid: string | undefined): boolean {
@@ -120,9 +138,48 @@ function battleMonsterUid(session: DuelSession, player: PlayerId): string | unde
   return undefined;
 }
 
+function readBattleCard(L: unknown, session: DuelSession, index: number): DuelCardInstance | undefined {
+  const uid = readCardUid(L, index);
+  return uid ? session.state.cards.find((card) => card.uid === uid) : undefined;
+}
+
+function readOptionalStat(L: unknown, index: number): number | undefined {
+  return lua.lua_isnumber(L, index) ? Math.max(0, lua.lua_tointeger(L, index)) : undefined;
+}
+
+function calculateBattleDamage(
+  attacker: DuelCardInstance,
+  defender: DuelCardInstance | undefined,
+  attackerAttackOverride: number | undefined,
+  defenderStatOverride: number | undefined,
+): { player: PlayerId; damage: number } {
+  const attackerAttack = attackerAttackOverride ?? battleAttack(attacker);
+  if (!defender || defender.location !== "monsterZone") return { player: otherPlayer(attacker.controller), damage: attackerAttack };
+  const defenderStat = defenderStatOverride ?? (defender.position === "faceUpAttack" ? battleAttack(defender) : battleDefense(defender));
+  if (defender.position === "faceUpAttack") {
+    if (attackerAttack > defenderStat) return { player: defender.controller, damage: attackerAttack - defenderStat };
+    if (attackerAttack < defenderStat) return { player: attacker.controller, damage: defenderStat - attackerAttack };
+    return { player: defender.controller, damage: 0 };
+  }
+  if (attackerAttack < defenderStat) return { player: attacker.controller, damage: defenderStat - attackerAttack };
+  return { player: defender.controller, damage: 0 };
+}
+
+function battleAttack(card: DuelCardInstance): number {
+  return Math.max(0, card.data.attack ?? 0);
+}
+
+function battleDefense(card: DuelCardInstance): number {
+  return Math.max(0, card.data.defense ?? 0);
+}
+
 function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
   if (!lua.lua_isnumber(L, index)) return undefined;
   const value = lua.lua_tointeger(L, index);
   if (value !== 0 && value !== 1) return undefined;
   return value;
+}
+
+function otherPlayer(player: PlayerId): PlayerId {
+  return player === 0 ? 1 : 0;
 }
