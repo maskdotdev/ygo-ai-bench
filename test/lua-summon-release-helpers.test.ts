@@ -262,11 +262,17 @@ describe("Lua summon and release helpers", () => {
       local two = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local free = Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(300) or tc:IsCode(400) end, 0, LOCATION_MZONE, 0, 2, 2, nil)
       local locked = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      local tribute_group = Duel.GetTributeGroup(one)
+      local limited_group = Duel.GetTributeGroup(two, 0, free)
+      local locked_group = Duel.GetTributeGroup(one, 0, locked)
       Debug.Message("tribute full zero " .. tostring(Duel.CheckTribute(one, 0, 0, nil)))
       Debug.Message("tribute full one " .. tostring(Duel.CheckTribute(one, 1, 1, nil)))
       Debug.Message("tribute full two " .. tostring(Duel.CheckTribute(two, 2, 2, nil)))
       Debug.Message("tribute limited two " .. tostring(Duel.CheckTribute(two, 2, 2, free)))
       Debug.Message("tribute locked only " .. tostring(Duel.CheckTribute(one, 1, 1, locked)))
+      Debug.Message("tribute group " .. tribute_group:GetCount() .. "/" .. tribute_group:FilterCount(function(c) return c:IsCode(500) end, nil))
+      Debug.Message("tribute limited group " .. limited_group:GetCount() .. "/" .. limited_group:FilterCount(function(c) return c:IsCode(300) or c:IsCode(400) end, nil))
+      Debug.Message("tribute locked group " .. locked_group:GetCount())
       `,
       "check-tribute-full-zone.lua",
     );
@@ -279,6 +285,9 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("tribute full two true");
     expect(host.messages).toContain("tribute limited two true");
     expect(host.messages).toContain("tribute locked only false");
+    expect(host.messages).toContain("tribute group 4/0");
+    expect(host.messages).toContain("tribute limited group 2/2");
+    expect(host.messages).toContain("tribute locked group 0");
   });
 
   it("lets Lua scripts select tribute summon materials", () => {

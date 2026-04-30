@@ -22,6 +22,8 @@ export function installDuelReleaseApi(L: unknown, session: DuelSession, hostStat
   lua.lua_setfield(L, -2, to_luastring("GetReleaseGroupCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckTribute(state, session));
   lua.lua_setfield(L, -2, to_luastring("CheckTribute"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushTributeGroup(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetTributeGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectTribute(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectTribute"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckReleaseGroup(state, session, hostState, false));
@@ -66,6 +68,16 @@ function pushCheckTribute(L: unknown, session: DuelSession): number {
   const selected = Math.min(available, maximum);
   const openZones = monsterZoneCapacity(session, player) - monsterZoneCount(session, player);
   lua.lua_pushboolean(L, Boolean(target && selected >= minimum && (openZones > 0 || selected > 0)));
+  return 1;
+}
+
+function pushTributeGroup(L: unknown, session: DuelSession): number {
+  const targetUid = readCardUid(L, 1);
+  const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
+  const player = readOptionalPlayer(L, 2) ?? target?.controller ?? session.state.turnPlayer;
+  const materials = readCardOrGroupUids(L, 3);
+  const materialSet = materials.length > 0 ? new Set(materials) : undefined;
+  pushGroupTable(L, tributeCandidateUids(session, player, target?.uid, materialSet));
   return 1;
 }
 
