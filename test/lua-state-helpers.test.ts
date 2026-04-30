@@ -352,6 +352,29 @@ describe("Lua state helpers", () => {
       local faceup_filter = aux.FaceupFilter(function(c, minatk) return c:GetAttack() >= minatk end, 900)
       Debug.Message("faceup count " .. Duel.GetMatchingGroupCount(faceup_filter, 0, LOCATION_MZONE, 0, nil))
       Debug.Message("faceup runtime count " .. Duel.GetMatchingGroupCount(aux.FaceupFilter(function(c, minatk) return c:GetAttack() >= minatk end), 0, LOCATION_MZONE, 0, nil, 900))
+      local all_cards = Duel.GetFieldGroup(0, LOCATION_HAND + LOCATION_MZONE, 0)
+      local plain_selected = aux.SelectUnselectGroup(all_cards, 0, 1, 2, false, false)
+      Debug.Message("aux select plain " .. plain_selected:GetCount())
+      local filtered_selected = aux.SelectUnselectGroup(all_cards, 0, 2, 2, false, false, function(sg,minatk)
+        local total=0
+        local tc=sg:GetFirst()
+        while tc do
+          total=total+tc:GetAttack()
+          tc=sg:GetNext()
+        end
+        return total>=minatk
+      end, 5000)
+      Debug.Message("aux select filtered " .. filtered_selected:GetCount())
+      local missed_selected = aux.SelectUnselectGroup(all_cards, 0, 2, 2, false, false, function(sg,minatk)
+        local total=0
+        local tc=sg:GetFirst()
+        while tc do
+          total=total+tc:GetAttack()
+          tc=sg:GetNext()
+        end
+        return total>=minatk
+      end, 7000)
+      Debug.Message("aux select missed " .. missed_selected:GetCount())
       Debug.Message("target exists " .. tostring(Duel.IsExistingTarget(aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, nil)))
       Debug.Message("target count " .. Duel.GetTargetCount(aux.TRUE, 0, LOCATION_HAND, 0, nil))
       `,
@@ -367,6 +390,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("target bool count 1");
     expect(host.messages).toContain("faceup count 1");
     expect(host.messages).toContain("faceup runtime count 1");
+    expect(host.messages).toContain("aux select plain 2");
+    expect(host.messages).toContain("aux select filtered 2");
+    expect(host.messages).toContain("aux select missed 0");
     expect(host.messages).toContain("target exists true");
     expect(host.messages).toContain("target count 1");
   });

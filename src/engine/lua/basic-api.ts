@@ -1,5 +1,7 @@
 import fengari from "fengari";
 import { duelActivity } from "#duel/activity.js";
+import { pushGroupTable } from "#lua/group-api.js";
+import { readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
 
@@ -693,6 +695,8 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   pushFixedFilterWrapper(L, "FilterBoolFunctionEx", readLuaError, false);
   pushFixedFilterWrapper(L, "TargetBoolFunction", readLuaError, false);
   pushFixedFilterWrapper(L, "FaceupFilter", readLuaError, true);
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectUnselectGroup(state));
+  lua.lua_setfield(L, -2, to_luastring("SelectUnselectGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     if (!lua.lua_isfunction(state, 1)) {
       lua.lua_pushnil(state);
@@ -712,6 +716,56 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   });
   lua.lua_setfield(L, -2, to_luastring("NecroValleyFilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
+}
+
+function pushSelectUnselectGroup(L: unknown): number {
+  const uids = readGroupUids(L, 1);
+  const min = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
+  const max = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min;
+  const filterRef = readOptionalFunctionRef(L, 7);
+  const selected = filterRef === undefined ? selectGroupUids(uids, min, max) : selectSubGroup(L, uids, filterRef, min, max, 8) ?? [];
+  releaseOptionalFunctionRef(L, filterRef);
+  pushGroupTable(L, selected);
+  return 1;
+}
+
+function selectGroupUids(uids: string[], min: number, max: number): string[] {
+  const boundedMin = Math.max(0, min);
+  if (uids.length < boundedMin) return [];
+  const limit = max > 0 ? Math.max(boundedMin, max) : uids.length;
+  return uids.slice(0, limit);
+}
+
+function selectSubGroup(L: unknown, uids: string[], filterRef: number, min: number, max: number, argsStart: number): string[] | undefined {
+  const boundedMin = Math.max(0, min);
+  const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
+  return findSubGroupSelection(L, uids, filterRef, boundedMin, boundedMax, argsStart, 0, []);
+}
+
+function findSubGroupSelection(L: unknown, uids: string[], filterRef: number, min: number, max: number, argsStart: number, index: number, selected: string[]): string[] | undefined {
+  if (selected.length >= min && selected.length <= max && auxGroupPredicateMatches(L, selected, filterRef, argsStart)) return [...selected];
+  if (index >= uids.length || selected.length >= max) return undefined;
+  for (let nextIndex = index; nextIndex < uids.length; nextIndex += 1) {
+    const uid = uids[nextIndex];
+    if (!uid) continue;
+    selected.push(uid);
+    const found = findSubGroupSelection(L, uids, filterRef, min, max, argsStart, nextIndex + 1, selected);
+    if (found) return found;
+    selected.pop();
+  }
+  return undefined;
+}
+
+function auxGroupPredicateMatches(L: unknown, uids: string[], filterRef: number, argsStart: number): boolean {
+  const top = lua.lua_gettop(L);
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, filterRef);
+  pushGroupTable(L, uids);
+  for (let index = argsStart; index <= top; index += 1) lua.lua_pushvalue(L, index);
+  const status = lua.lua_pcall(L, Math.max(1, top - argsStart + 2), 1, 0);
+  if (status !== lua.LUA_OK) return false;
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
 }
 
 function pushFixedFilterWrapper(L: unknown, fieldName: string, readLuaError: (state: unknown) => string, requireFaceup: boolean): void {
