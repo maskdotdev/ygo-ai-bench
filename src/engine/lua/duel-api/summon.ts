@@ -1,5 +1,10 @@
 import fengari from "fengari";
 import {
+  isMaterialUsePrevented,
+  type ContinuousEffectContextFactory,
+  type MaterialUseKind,
+} from "#duel/continuous-effects.js";
+import {
   applyResponse,
   fusionSummonDuelCard,
   linkSummonDuelCard,
@@ -11,7 +16,8 @@ import {
 } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
-import type { CardPosition, DuelSession, PlayerId } from "#duel/types.js";
+import { pushGroupTable } from "#lua/group-api.js";
+import type { CardPosition, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -31,6 +37,8 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   pushSummonHelper(L, "XyzSummon", session, hostState, "XyzSummon");
   pushSummonHelper(L, "LinkSummon", session, hostState, "LinkSummon");
   pushSummonHelper(L, "RitualSummon", session, hostState, "RitualSummon");
+  lua.lua_pushcfunction(L, (state: unknown) => pushRitualMaterial(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetRitualMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonStep(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummonStep"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonComplete(state, hostState));
@@ -93,6 +101,17 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
   }
+  return 1;
+}
+
+function pushRitualMaterial(L: unknown, session: DuelSession): number {
+  const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
+  const targetUid = readCardUid(L, 2);
+  const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
+  pushGroupTable(
+    L,
+    ritualMaterialCandidates(session.state, player, target).map((card) => card.uid),
+  );
   return 1;
 }
 
@@ -171,6 +190,73 @@ function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
   const value = lua.lua_tointeger(L, index);
   if (value !== 0 && value !== 1) return undefined;
   return value;
+}
+
+function ritualMaterialCandidates(state: DuelState, player: PlayerId, target: DuelCardInstance | undefined): DuelCardInstance[] {
+  return state.cards
+    .filter((card) => card.controller === player && canBeRitualMaterial(state, card, target))
+    .sort((a, b) => locationSort(a.location) - locationSort(b.location) || a.sequence - b.sequence);
+}
+
+function canBeRitualMaterial(state: DuelState, card: DuelCardInstance, target: DuelCardInstance | undefined): boolean {
+  return (
+    isMonsterLike(card) &&
+    (card.location === "hand" || card.location === "monsterZone") &&
+    targetAllowsMaterial(target, card, "ritual") &&
+    !isMaterialUsePrevented(state, card.uid, "ritual", createMaterialCheckContext(state))
+  );
+}
+
+function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {
+  if (!target) return true;
+  if (target.uid === card.uid) return false;
+  const codes = cardCodes(card);
+  if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
+  return true;
+}
+
+function locationSort(location: DuelLocation): number {
+  if (location === "hand") return 0;
+  if (location === "monsterZone") return 1;
+  return 2;
+}
+
+function createMaterialCheckContext(state: DuelState): ContinuousEffectContextFactory {
+  return (effect, source, card) => ({
+    duel: state,
+    source,
+    player: effect.controller,
+    checkOnly: true,
+    targetUids: card ? [card.uid] : [],
+    log() {},
+    moveCard(uid, to, controller) {
+      return moveDuelCard(state, uid, to, controller);
+    },
+    negateChainLink() {
+      return false;
+    },
+    setTargets() {},
+    getTargets() {
+      return card ? [card] : [];
+    },
+    setTargetPlayer() {},
+    setTargetParam() {},
+  });
+}
+
+function isMonsterLike(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x1) !== 0;
+}
+
+function cardTypeFlags(card: DuelCardInstance): number {
+  if (card.data.typeFlags !== undefined) return card.data.typeFlags;
+  if (card.kind === "spell") return 0x2;
+  if (card.kind === "trap") return 0x4;
+  return 0x1;
+}
+
+function cardCodes(card: DuelCardInstance): string[] {
+  return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
 
 function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, position: CardPosition): void {

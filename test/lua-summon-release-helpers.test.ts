@@ -93,6 +93,63 @@ describe("Lua summon and release helpers", () => {
     }
   });
 
+  it("lets Lua scripts query legal ritual material candidates", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", alias: "101", name: "Aliased Ritual Material", kind: "monster" },
+      { code: "200", name: "Off-Recipe Monster", kind: "monster" },
+      { code: "300", name: "Field Ritual Material", kind: "monster" },
+      { code: "500", name: "Locked Ritual Material", kind: "monster" },
+      { code: "600", name: "Material-Code Spell", kind: "spell" },
+      { code: "940", name: "Lua Ritual", kind: "monster", ritualMaterials: ["101", "300", "500", "600"] },
+    ];
+    const session = createDuel({ seed: 6, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300", "200", "500", "600"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const fieldMaterial = session.state.cards.find((card) => card.code === "300");
+    expect(fieldMaterial).toBeTruthy();
+    moveDuelCard(session.state, fieldMaterial!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const register = host.loadScript(
+      `
+      c500={}
+      function c500.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_CANNOT_BE_MATERIAL)
+        e:SetRange(LOCATION_HAND)
+        c:RegisterEffect(e)
+      end
+      `,
+      "ritual-material-lock.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const result = host.loadScript(
+      `
+      local ritual = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 940), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local materials = Duel.GetRitualMaterial(0, ritual)
+      Debug.Message("ritual material count " .. materials:GetCount())
+      Debug.Message("ritual material aliases " .. materials:FilterCount(aux.FilterBoolFunction(Card.IsCode, 101), nil))
+      Debug.Message("ritual material field " .. materials:FilterCount(aux.FilterBoolFunction(Card.IsCode, 300), nil))
+      Debug.Message("ritual material blocked " .. materials:FilterCount(aux.FilterBoolFunction(Card.IsCode, 500), nil))
+      Debug.Message("ritual material spell " .. materials:FilterCount(aux.FilterBoolFunction(Card.IsCode, 600), nil))
+      `,
+      "ritual-material-query.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("ritual material count 2");
+    expect(host.messages).toContain("ritual material aliases 1");
+    expect(host.messages).toContain("ritual material field 1");
+    expect(host.messages).toContain("ritual material blocked 0");
+    expect(host.messages).toContain("ritual material spell 0");
+  });
+
   it("lets Lua scripts check, select, and release monster-zone groups", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Release A", kind: "monster" },
