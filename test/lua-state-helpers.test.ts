@@ -845,6 +845,54 @@ describe("Lua state helpers", () => {
     expect(host.getGlobalNumber("cost_reason")).toBe(0x80);
   });
 
+  it("lets Lua scripts count custom filtered activities", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Allowed Special", kind: "monster" },
+      { code: "200", name: "Blocked Special", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 97, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      Duel.AddCustomActivityCounter(9700, ACTIVITY_SPSUMMON, aux.FilterBoolFunction(Card.IsCode, 100))
+      Debug.Message("custom initial " .. Duel.GetCustomActivityCount(9700, 0, ACTIVITY_SPSUMMON))
+      `,
+      "custom-activity-setup.lua",
+    );
+
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.messages).toContain("custom initial 0");
+    specialSummonDuelCard(session.state, session.state.cards.find((card) => card.code === "100")!.uid, 0);
+
+    const afterAllowed = host.loadScript(
+      `
+      Debug.Message("custom allowed " .. Duel.GetCustomActivityCount(9700, 0, ACTIVITY_SPSUMMON))
+      `,
+      "custom-activity-allowed.lua",
+    );
+
+    expect(afterAllowed.ok, afterAllowed.error).toBe(true);
+    expect(host.messages).toContain("custom allowed 0");
+    specialSummonDuelCard(session.state, session.state.cards.find((card) => card.code === "200")!.uid, 0);
+
+    const afterBlocked = host.loadScript(
+      `
+      Debug.Message("custom blocked " .. Duel.GetCustomActivityCount(9700, 0, ACTIVITY_SPSUMMON))
+      `,
+      "custom-activity-blocked.lua",
+    );
+
+    expect(afterBlocked.ok, afterBlocked.error).toBe(true);
+    expect(host.messages).toContain("custom blocked 1");
+    expect(session.state.activityHistory.filter((record) => record.activity === 0x4)).toHaveLength(2);
+  });
+
   it("exposes card owner, controller, location, sequence, and position metadata", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "State Probe", kind: "monster", typeFlags: 0x21, attack: 1700, defense: 1300, level: 4, race: 0x2, attribute: 0x20, setcodes: [0x123] },

@@ -19,6 +19,7 @@ export interface DuelStateRollback {
   usedCountKeys: string[];
   flagEffects: DuelFlagEffect[];
   activityCounts: DuelState["activityCounts"];
+  activityHistory: DuelState["activityHistory"];
   battleDamage: DuelState["battleDamage"];
   attacksDeclared: string[];
   attackPasses: PlayerId[];
@@ -52,6 +53,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     usedCountKeys: [...state.usedCountKeys],
     flagEffects: state.flagEffects.map((effect) => ({ ...effect })),
     activityCounts: { 0: { ...state.activityCounts[0] }, 1: { ...state.activityCounts[1] } },
+    activityHistory: state.activityHistory.map((record) => ({ ...record })),
     battleDamage: { ...state.battleDamage },
     attacksDeclared: [...state.attacksDeclared],
     attackPasses: [...state.attackPasses],
@@ -89,6 +91,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.usedCountKeys = rollback.usedCountKeys;
   state.flagEffects = rollback.flagEffects;
   state.activityCounts = rollback.activityCounts;
+  state.activityHistory = rollback.activityHistory;
   state.battleDamage = rollback.battleDamage;
   state.attacksDeclared = rollback.attacksDeclared;
   state.attackPasses = rollback.attackPasses;

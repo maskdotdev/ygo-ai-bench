@@ -205,6 +205,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     shuffleCheckDisabled: false,
     skippedPhases: [],
     activityCounts: createDuelActivityCounts(),
+    activityHistory: [],
     battleDamage: { 0: 0, 1: 0 },
     attacksDeclared: [],
     attackPasses: [],
@@ -327,7 +328,7 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   card.faceUp = true;
   card.summonType = "special";
   card.summonPlayer = summonController;
-  recordSpecialSummonActivity(state, summonController);
+  recordSpecialSummonActivity(state, summonController, card);
   pushDuelLog(state, "specialSummon", card.controller, card.name, "Special Summoned");
   collectTriggerEffects(state, "specialSummoned", card);
   return card;

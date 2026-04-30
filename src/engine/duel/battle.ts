@@ -34,7 +34,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   }
 
   state.attacksDeclared.push(attacker.uid);
-  recordAttackActivity(state, player);
+  recordAttackActivity(state, player, attacker);
   state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
   state.pendingBattle = { ...state.currentAttack };
   state.battleStep = "attack";

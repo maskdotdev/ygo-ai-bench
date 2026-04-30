@@ -629,6 +629,7 @@ export function installConstants(L: unknown): void {
     ACTIVITY_SPSUMMON: duelActivity.specialSummon,
     ACTIVITY_FLIPSUMMON: duelActivity.flipSummon,
     ACTIVITY_ATTACK: duelActivity.attack,
+    ACTIVITY_CHAIN: duelActivity.chain,
     WIN_REASON_EXODIA: 0x10,
     WIN_REASON_FINAL_COUNTDOWN: 0x11,
     WIN_REASON_VENNOMINAGA: 0x12,

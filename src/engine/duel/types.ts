@@ -96,6 +96,12 @@ export interface DuelActivityCounts {
   attack: number;
 }
 
+export interface DuelActivityRecord {
+  player: PlayerId;
+  activity: number;
+  cardUid?: string;
+}
+
 export interface DuelLogEntry {
   step: number;
   action: string;
@@ -240,6 +246,7 @@ export interface DuelState {
   shuffleCheckDisabled: boolean;
   skippedPhases: SkippedDuelPhase[];
   activityCounts: Record<PlayerId, DuelActivityCounts>;
+  activityHistory: DuelActivityRecord[];
   battleDamage: Record<PlayerId, number>;
   attacksDeclared: string[];
   attackPasses: PlayerId[];
