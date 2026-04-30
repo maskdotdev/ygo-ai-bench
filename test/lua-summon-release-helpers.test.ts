@@ -448,6 +448,46 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("cost contains hand true");
   });
 
+  it("lets Lua release cost checks use aux release predicates", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Release Cost A", kind: "monster" },
+      { code: "300", name: "Release Cost B", kind: "monster" },
+      { code: "500", name: "Release Cost C", kind: "monster" },
+      { code: "700", name: "Release Cost D", kind: "monster" },
+      { code: "900", name: "Release Cost E", kind: "monster" },
+      { code: "1100", name: "Target Group Card", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 19, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500", "700", "900", "1100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["100", "300", "500", "700", "900"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 1100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("release check mmz " .. tostring(Duel.CheckReleaseGroupCost(0, nil, 1, false, aux.ReleaseCheckMMZ, nil)))
+      local mmz_group = Duel.SelectReleaseGroupCost(0, nil, 1, 1, false, aux.ReleaseCheckMMZ, nil)
+      Debug.Message("release select mmz " .. mmz_group:GetCount() .. "/" .. Duel.GetMZoneCount(0, mmz_group))
+      Debug.Message("release check target hit " .. tostring(Duel.CheckReleaseGroupCost(0, nil, 1, false, aux.ReleaseCheckTarget, nil, target)))
+      Debug.Message("release check target miss " .. tostring(Duel.CheckReleaseGroupCost(0, nil, 1, false, aux.ReleaseCheckTarget, nil, mmz_group)))
+      `,
+      "release-cost-aux-checks.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("release check mmz true");
+    expect(host.messages).toContain("release select mmz 1/1");
+    expect(host.messages).toContain("release check target miss false");
+    expect(host.messages).toContain("release check target hit true");
+  });
+
   it("excludes unreleasable cards from Lua release group helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Unreleasable Cost", kind: "monster" },

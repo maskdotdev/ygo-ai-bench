@@ -9,6 +9,7 @@ import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 const { lua, to_luastring } = fengari;
 
 type LuaFilterArgs = { start: number; count: number };
+type ReleaseCostQuery = { player: PlayerId; filterRef: number | undefined; minimum: number; maximum: number; useHand: boolean; checkRef: number | undefined; excluded: string[]; args: LuaFilterArgs };
 
 export interface LuaDuelReleaseApiHostState {
   selectedUids: string[];
@@ -110,32 +111,61 @@ function pushSelectReleaseGroup(L: unknown, session: DuelSession, hostState: Lua
 }
 
 function pushCheckReleaseGroupCost(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState): number {
-  const filterRef = readOptionalFunctionRef(L, 2);
-  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
-  const minimum = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
-  const maximum = lua.lua_isnumber(L, 4) ? Math.max(minimum, lua.lua_tointeger(L, 4)) : minimum;
-  const useHand = lua.lua_toboolean(L, 5);
-  const excluded = readCardOrGroupUids(L, 7);
-  const selected = selectedReleasableMonsterUids(session, player, excluded, hostState.selectedUids, useHand);
-  const available = releasableMonsterUids(L, session, filterRef, player, [...excluded, ...selected], readFilterArgs(L, 8), useHand);
-  releaseOptionalFunctionRef(L, filterRef);
+  const query = readReleaseCostQuery(L, session, false);
+  const selected = selectedReleasableMonsterUids(session, query.player, query.excluded, hostState.selectedUids, query.useHand);
+  const available = releasableMonsterUids(L, session, query.filterRef, query.player, [...query.excluded, ...selected], query.args, query.useHand);
+  const candidate = [...selected, ...available].slice(0, query.maximum);
+  releaseOptionalFunctionRef(L, query.filterRef);
+  const matchesCheck = candidate.length >= query.minimum && releaseCostCheckMatches(L, query.checkRef, candidate, query.player, query.excluded, query.args);
+  releaseOptionalFunctionRef(L, query.checkRef);
   const count = selected.length + available.length;
-  lua.lua_pushboolean(L, count >= minimum && selected.length <= maximum);
+  lua.lua_pushboolean(L, count >= query.minimum && selected.length <= query.maximum && matchesCheck);
   return 1;
 }
 
 function pushSelectReleaseGroupCost(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState): number {
-  const filterRef = readOptionalFunctionRef(L, 2);
-  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
-  const min = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
-  const max = Math.max(min, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min);
-  const useHand = lua.lua_toboolean(L, 5);
-  const excluded = readCardOrGroupUids(L, 7);
-  const selected = selectedReleasableMonsterUids(session, player, excluded, hostState.selectedUids, useHand);
-  const uids = selected.length > max ? [] : [...selected, ...releasableMonsterUids(L, session, filterRef, player, [...excluded, ...selected], readFilterArgs(L, 8), useHand)];
-  releaseOptionalFunctionRef(L, filterRef);
-  pushGroupTable(L, uids.slice(0, max > 0 ? max : Math.max(min, 1)));
+  const query = readReleaseCostQuery(L, session, true);
+  const selected = selectedReleasableMonsterUids(session, query.player, query.excluded, hostState.selectedUids, query.useHand);
+  const candidates = selected.length > query.maximum ? [] : [...selected, ...releasableMonsterUids(L, session, query.filterRef, query.player, [...query.excluded, ...selected], query.args, query.useHand)];
+  const limit = query.maximum > 0 ? query.maximum : Math.max(query.minimum, 1);
+  const uids = candidates.slice(0, limit);
+  releaseOptionalFunctionRef(L, query.filterRef);
+  const checked = uids.length >= query.minimum && releaseCostCheckMatches(L, query.checkRef, uids, query.player, query.excluded, query.args) ? uids : [];
+  releaseOptionalFunctionRef(L, query.checkRef);
+  pushGroupTable(L, checked);
   return 1;
+}
+
+function readReleaseCostQuery(L: unknown, session: DuelSession, hasMax: boolean): ReleaseCostQuery {
+  const upstreamShape = !hasMax && !lua.lua_isnumber(L, 4);
+  const useHandIndex = upstreamShape ? 4 : 5;
+  const checkIndex = upstreamShape ? 5 : 6;
+  const excludedIndex = upstreamShape ? 6 : 7;
+  const minimum = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
+  return {
+    player: normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer),
+    filterRef: readOptionalFunctionRef(L, 2),
+    minimum,
+    maximum: hasMax || !upstreamShape ? Math.max(minimum, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : minimum) : minimum,
+    useHand: lua.lua_toboolean(L, useHandIndex),
+    checkRef: readOptionalFunctionRef(L, checkIndex),
+    excluded: readCardOrGroupUids(L, excludedIndex),
+    args: readFilterArgs(L, excludedIndex + 1),
+  };
+}
+
+function releaseCostCheckMatches(L: unknown, checkRef: number | undefined, uids: string[], player: PlayerId, excluded: string[], args: LuaFilterArgs): boolean {
+  if (checkRef === undefined) return true;
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, checkRef);
+  pushGroupTable(L, uids);
+  lua.lua_pushinteger(L, player);
+  pushGroupTable(L, excluded);
+  for (let index = 0; index < args.count; index += 1) lua.lua_pushvalue(L, args.start + index);
+  const status = lua.lua_pcall(L, 3 + args.count, 1, 0);
+  if (status !== lua.LUA_OK) return false;
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
 }
 
 interface ReleaseQuery {

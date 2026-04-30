@@ -180,6 +180,12 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         return Duel.GetMZoneCount(tp,sg)>=sumcount
       end
     end
+    function aux.ReleaseCheckMMZ(sg,tp)
+      return Duel.GetMZoneCount(tp,sg)>0
+    end
+    function aux.ReleaseCheckTarget(sg,tp,exg,dg)
+      return dg and dg:IsExists(aux.TRUE,1,sg)
+    end
     function aux.CheckStealEquip(c,e,tp)
       if c:IsFacedown() or not c:IsControlerCanBeChanged() or not c:IsControler(1-tp) then return false end
       if e:GetHandler():IsLocation(LOCATION_SZONE) then return true end
