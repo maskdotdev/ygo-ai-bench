@@ -202,6 +202,7 @@ function installStatHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unkn
   pushNumberGetter(L, "GetAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberGetter(L, "GetOriginalAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberMatcher(L, "IsAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
+  pushNumberMatcher(L, "IsAttributeExcept", session, (card, requested) => ((card.data.attribute ?? 0) & ~requested) !== 0);
   pushNumberMatcher(L, "IsNotAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
   pushNumberMatcher(L, "IsNotOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);

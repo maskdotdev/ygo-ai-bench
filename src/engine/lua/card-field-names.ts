@@ -74,6 +74,7 @@ export const cardFieldNames = [
   "GetAttribute",
   "GetOriginalAttribute",
   "IsAttribute",
+  "IsAttributeExcept",
   "IsNotAttribute",
   "IsOriginalAttribute",
   "IsNotOriginalAttribute",
