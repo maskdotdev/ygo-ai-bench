@@ -717,6 +717,61 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("extra deck cost blocked false");
   });
 
+  it("lets Lua scripts check whether cards can be banished as cost", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cannot Banish Source", kind: "monster" },
+      { code: "200", name: "Banish Cost Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 49, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const before = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("remove cost " .. tostring(c:IsAbleToRemoveAsCost()))
+      `,
+      "remove-cost-before.lua",
+    );
+    expect(before.ok, before.error).toBe(true);
+    expect(host.messages).toContain("remove cost true");
+
+    const register = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_CANNOT_REMOVE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "cannot-remove.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const after = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("remove cost blocked " .. tostring(c:IsAbleToRemoveAsCost()))
+      `,
+      "remove-cost-after.lua",
+    );
+    expect(after.ok, after.error).toBe(true);
+    expect(host.messages).toContain("remove cost blocked false");
+  });
+
   it("applies Lua indestructible effect destruction prevention", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Indestructible Source", kind: "monster" },
