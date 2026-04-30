@@ -236,6 +236,12 @@ describe("Lua field and query helpers", () => {
       Debug.Message("group excluded selected " .. Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 1, 3, excluded):GetCount())
       Debug.Message("group excluded selected too few " .. Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 3, 3, excluded):GetCount())
       Debug.Message("group excluded selected unbounded " .. Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 1, 0, excluded):GetCount())
+      local excluded_card = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
+      Debug.Message("card excluded group " .. Duel.GetMatchingGroup(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded_card):GetCount())
+      Debug.Message("card excluded count " .. Duel.GetMatchingGroupCount(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded_card))
+      Debug.Message("card excluded exists " .. tostring(Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 1, excluded_card)))
+      Debug.Message("card excluded first " .. Duel.GetFirstMatchingCard(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded_card):GetCode())
+      Debug.Message("card excluded selected " .. Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 1, 4, excluded_card):GetCount())
       Debug.Message("onfield count " .. Duel.GetFieldGroupCount(0, LOCATION_ONFIELD, LOCATION_ONFIELD))
       Debug.Message("hand field count " .. Duel.GetFieldGroup(0, LOCATION_HAND + LOCATION_GRAVE, LOCATION_DECK):GetCount())
       Debug.Message("empty field count " .. Duel.GetFieldGroup(0, 0, 0):GetCount() .. "/" .. Duel.GetFieldGroupCount(0, 0, 0))
@@ -259,6 +265,11 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("group excluded selected 2");
     expect(host.messages).toContain("group excluded selected too few 0");
     expect(host.messages).toContain("group excluded selected unbounded 2");
+    expect(host.messages).toContain("card excluded group 3");
+    expect(host.messages).toContain("card excluded count 3");
+    expect(host.messages).toContain("card excluded exists false");
+    expect(host.messages).toContain("card excluded first 200");
+    expect(host.messages).toContain("card excluded selected 3");
     expect(host.messages).toContain("onfield count 0");
     expect(host.messages).toContain("hand field count 2");
     expect(host.messages).toContain("empty field count 0/0");
