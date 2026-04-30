@@ -197,6 +197,17 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
     function aux.xyzlimit(e,se,sp,st)
       return aux.sumlimit(SUMMON_TYPE_XYZ)(e,se,sp,st)
     end
+    local card_dark_fusion = CARD_DARK_FUSION or 94820406
+    local card_super_polymerization = CARD_SUPER_POLYMERIZATION or 48130397
+    local skill_dark_unity = SKILL_DARK_UNITY or 300306009
+    local effect_supreme_castle = EFFECT_SUPREME_CASTLE or 72043279
+    function aux.EvilHeroLimit(e,se,sp,st)
+      local handler = se and se.GetHandler and se:GetHandler() or nil
+      if handler and handler:IsCode(card_dark_fusion) then return true end
+      local player = e and e.GetHandlerPlayer and e:GetHandlerPlayer() or 0
+      if handler and Duel.IsPlayerAffectedByEffect(player, skill_dark_unity) and handler:IsCode(card_super_polymerization) then return true end
+      return Duel.IsPlayerAffectedByEffect(player, effect_supreme_castle) and ((st or 0) & SUMMON_TYPE_FUSION)==SUMMON_TYPE_FUSION
+    end
     function aux.AND(...)
       local funs={...}
       return function(...)

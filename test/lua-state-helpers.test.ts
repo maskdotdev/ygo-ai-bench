@@ -660,10 +660,12 @@ describe("Lua state helpers", () => {
       { code: "300", name: "Aux C", kind: "monster", attack: 3000 },
       { code: "400", name: "Aux D", kind: "monster", attack: 4000 },
       { code: "500", name: "Aux E", kind: "monster", attack: 5000 },
+      { code: "94820406", name: "Dark Fusion", kind: "spell" },
+      { code: "48130397", name: "Super Polymerization", kind: "spell" },
     ];
-    const session = createDuel({ seed: 18, startingHandSize: 5, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 18, startingHandSize: 7, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500"] },
+      0: { main: ["100", "200", "300", "400", "500", "94820406", "48130397"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -671,12 +673,16 @@ describe("Lua state helpers", () => {
     const facedown = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
     const sameTurn = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
     const graveyard = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "400");
+    const darkFusion = session.state.cards.find((card) => card.controller === 0 && card.code === "94820406");
+    const superPoly = session.state.cards.find((card) => card.controller === 0 && card.code === "48130397");
     moveDuelCard(session.state, faceup!.uid, "monsterZone", 0).position = "faceUpAttack";
     const setCard = moveDuelCard(session.state, facedown!.uid, "monsterZone", 0);
     setCard.position = "faceDownDefense";
     setCard.faceUp = false;
     sendDuelCardToGraveyard(session.state, sameTurn!.uid, 0, duelReason.effect);
     moveDuelCard(session.state, graveyard!.uid, "graveyard", 0);
+    moveDuelCard(session.state, darkFusion!.uid, "graveyard", 0);
+    moveDuelCard(session.state, superPoly!.uid, "graveyard", 0);
     graveyard!.turnId = 0;
 
     const host = createLuaScriptHost(session);
@@ -734,6 +740,8 @@ describe("Lua state helpers", () => {
       Debug.Message("value helpers own " .. tostring(aux.tgoval(value_effect,nil,0)) .. "/" .. tostring(aux.indsval(value_effect,nil,0)) .. "/" .. tostring(aux.indoval(value_effect,nil,0)))
       Debug.Message("value helpers opponent " .. tostring(aux.tgoval(value_effect,nil,1)) .. "/" .. tostring(aux.indsval(value_effect,nil,1)) .. "/" .. tostring(aux.indoval(value_effect,nil,1)))
       local opponent_card = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 1, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local dark_fusion = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 94820406), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local super_poly = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 48130397), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       Debug.Message("imval helpers " .. tostring(aux.imval1(value_effect,faceup_monster)) .. "/" .. tostring(aux.imval2(value_effect,faceup_monster)) .. "/" .. tostring(aux.imval2(value_effect,opponent_card)))
       aux.chainreg(value_effect,0,Group.CreateGroup(),0,0,nil,0,0)
       aux.chainreg(value_effect,0,Group.CreateGroup(),0,0,nil,0,0)
@@ -744,6 +752,24 @@ describe("Lua state helpers", () => {
       Debug.Message("extra limits " .. tostring(aux.fuslimit(nil,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(aux.synlimit(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(aux.xyzlimit(nil,nil,0,SUMMON_TYPE_XYZ)))
       Debug.Message("extra misses " .. tostring(aux.fuslimit(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(aux.synlimit(nil,nil,0,SUMMON_TYPE_XYZ)) .. "/" .. tostring(aux.xyzlimit(nil,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("sumlimit " .. tostring(aux.sumlimit(SUMMON_TYPE_RITUAL)(nil,nil,0,SUMMON_TYPE_RITUAL)))
+      local evil_effect=Effect.CreateEffect(faceup_monster)
+      local dark_fusion_effect=Effect.CreateEffect(dark_fusion)
+      local super_poly_effect=Effect.CreateEffect(super_poly)
+      Debug.Message("evil hero direct " .. tostring(aux.EvilHeroLimit(evil_effect,dark_fusion_effect,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(aux.EvilHeroLimit(evil_effect,value_effect,0,SUMMON_TYPE_FUSION)))
+      local dark_unity=Effect.CreateEffect(faceup_monster)
+      dark_unity:SetType(EFFECT_TYPE_FIELD)
+      dark_unity:SetCode(300306009)
+      dark_unity:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+      dark_unity:SetTargetRange(1,0)
+      Duel.RegisterEffect(dark_unity,0)
+      Debug.Message("evil hero skill " .. tostring(aux.EvilHeroLimit(evil_effect,super_poly_effect,0,SUMMON_TYPE_FUSION)))
+      local supreme_castle=Effect.CreateEffect(faceup_monster)
+      supreme_castle:SetType(EFFECT_TYPE_FIELD)
+      supreme_castle:SetCode(72043279)
+      supreme_castle:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+      supreme_castle:SetTargetRange(1,0)
+      Duel.RegisterEffect(supreme_castle,0)
+      Debug.Message("evil hero castle " .. tostring(aux.EvilHeroLimit(evil_effect,value_effect,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(aux.EvilHeroLimit(evil_effect,value_effect,0,SUMMON_TYPE_SYNCHRO)))
       local hint=aux.RegisterClientHint(faceup_monster,EFFECT_FLAG_OATH,0,1,0,777,RESET_SELF_TURN,2)
       local hint_range_self,hint_range_opp=hint:GetTargetRange()
       local hint_reset,hint_reset_count=hint:GetReset()
@@ -846,6 +872,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("extra limits true/true/true");
     expect(host.messages).toContain("extra misses false/false/false");
     expect(host.messages).toContain("sumlimit true");
+    expect(host.messages).toContain("evil hero direct true/nil");
+    expect(host.messages).toContain("evil hero skill true");
+    expect(host.messages).toContain("evil hero castle true/false");
     expect(host.messages).toContain("client hint 777/1/0/2/true/true");
     expect(host.messages).toContain("client hint default nil true");
     expect(host.messages).toContain("global check true/1");
