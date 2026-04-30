@@ -1023,12 +1023,16 @@ describe("Lua continuous effects", () => {
       `
       local main=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local extra=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("main deck only cost " .. tostring(main:IsAbleToDeckAsCost()))
+      Debug.Message("extra deck only cost " .. tostring(extra:IsAbleToDeckAsCost()))
       Debug.Message("main deck cost " .. tostring(main:IsAbleToDeckOrExtraAsCost()))
       Debug.Message("extra deck cost " .. tostring(extra:IsAbleToDeckOrExtraAsCost()))
       `,
       "deck-or-extra-cost-before.lua",
     );
     expect(before.ok, before.error).toBe(true);
+    expect(host.messages).toContain("main deck only cost true");
+    expect(host.messages).toContain("extra deck only cost true");
     expect(host.messages).toContain("main deck cost true");
     expect(host.messages).toContain("extra deck cost true");
 
@@ -1057,12 +1061,16 @@ describe("Lua continuous effects", () => {
       `
       local main=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local extra=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("main deck only cost blocked " .. tostring(main:IsAbleToDeckAsCost()))
+      Debug.Message("extra deck only cost blocked " .. tostring(extra:IsAbleToDeckAsCost()))
       Debug.Message("main deck cost blocked " .. tostring(main:IsAbleToDeckOrExtraAsCost()))
       Debug.Message("extra deck cost blocked " .. tostring(extra:IsAbleToDeckOrExtraAsCost()))
       `,
       "deck-or-extra-cost-after.lua",
     );
     expect(after.ok, after.error).toBe(true);
+    expect(host.messages).toContain("main deck only cost blocked false");
+    expect(host.messages).toContain("extra deck only cost blocked false");
     expect(host.messages).toContain("main deck cost blocked false");
     expect(host.messages).toContain("extra deck cost blocked false");
   });

@@ -146,6 +146,7 @@ export const cardFieldNames = [
   "IsAbleToGraveAsCost",
   "IsAbleToHand",
   "IsAbleToDeck",
+  "IsAbleToDeckAsCost",
   "IsAbleToDeckOrExtraAsCost",
   "IsAbleToRemove",
   "IsAbleToRemoveAsCost",
