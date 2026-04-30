@@ -18,6 +18,8 @@ export interface DuelStateRollback {
   eventHistory: DuelEventRecord[];
   usedCountKeys: string[];
   flagEffects: DuelFlagEffect[];
+  duelTypeFlags: number;
+  unofficialProcEnabled: boolean;
   activityCounts: DuelState["activityCounts"];
   activityHistory: DuelState["activityHistory"];
   battleDamage: DuelState["battleDamage"];
@@ -52,6 +54,8 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     eventHistory: state.eventHistory.map((event) => ({ ...event })),
     usedCountKeys: [...state.usedCountKeys],
     flagEffects: state.flagEffects.map((effect) => ({ ...effect })),
+    duelTypeFlags: state.duelTypeFlags,
+    unofficialProcEnabled: state.unofficialProcEnabled,
     activityCounts: { 0: { ...state.activityCounts[0] }, 1: { ...state.activityCounts[1] } },
     activityHistory: state.activityHistory.map((record) => ({ ...record })),
     battleDamage: { ...state.battleDamage },
@@ -90,6 +94,8 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.eventHistory = rollback.eventHistory;
   state.usedCountKeys = rollback.usedCountKeys;
   state.flagEffects = rollback.flagEffects;
+  state.duelTypeFlags = rollback.duelTypeFlags;
+  state.unofficialProcEnabled = rollback.unofficialProcEnabled;
   state.activityCounts = rollback.activityCounts;
   state.activityHistory = rollback.activityHistory;
   state.battleDamage = rollback.battleDamage;

@@ -202,6 +202,8 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     eventHistory: [],
     usedCountKeys: [],
     flagEffects: [],
+    duelTypeFlags: options.duelTypeFlags ?? (0x2000 | 0x4000 | 0x8000 | 0x20000),
+    unofficialProcEnabled: false,
     shuffleCheckDisabled: false,
     skippedPhases: [],
     activityCounts: createDuelActivityCounts(),

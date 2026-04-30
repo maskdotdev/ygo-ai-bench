@@ -6,6 +6,17 @@ const { lua, to_luastring } = fengari;
 
 export function installDuelFlagApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const mask = lua.lua_isnumber(state, 1) ? Math.trunc(lua.lua_tonumber(state, 1)) : 0;
+    lua.lua_pushboolean(state, hasAllFlags(session.state.duelTypeFlags, mask));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsDuelType"));
+  lua.lua_pushcfunction(L, () => {
+    session.state.unofficialProcEnabled = true;
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("EnableUnofficialProc"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const reset = lua.lua_isnumber(state, 3) ? Math.trunc(lua.lua_tonumber(state, 3)) : 0;
@@ -53,6 +64,11 @@ export function installDuelFlagApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ResetFlagEffect"));
+}
+
+function hasAllFlags(flags: number, mask: number): boolean {
+  if (!Number.isFinite(flags) || !Number.isFinite(mask) || mask <= 0) return false;
+  return (BigInt(Math.trunc(flags)) & BigInt(Math.trunc(mask))) === BigInt(Math.trunc(mask));
 }
 
 function normalizePlayer(value: number): PlayerId {

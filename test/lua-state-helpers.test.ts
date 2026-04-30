@@ -289,6 +289,33 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("summon player special false/true");
   });
 
+  it("lets Lua scripts query duel type flags and enable unofficial procedures", () => {
+    const session = createDuel({ seed: 99, startingHandSize: 0, duelTypeFlags: 0x2000 + 0x4000 + 0x8000 + 0x1000000000 });
+    loadDecks(session, {
+      0: { main: [] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("duel type default " .. tostring(Duel.IsDuelType(DUEL_EMZONE)) .. "/" .. tostring(Duel.IsDuelType(DUEL_SEPARATE_PZONE)))
+      Debug.Message("duel type high " .. tostring(Duel.IsDuelType(DUEL_NORMAL_SUMMON_FACEUP_DEF)))
+      Duel.EnableUnofficialProc()
+      Debug.Message("unofficial enabled")
+      `,
+      "duel-type.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("duel type default true/false");
+    expect(host.messages).toContain("duel type high true");
+    expect(host.messages).toContain("unofficial enabled");
+    expect(session.state.unofficialProcEnabled).toBe(true);
+    expect(restoreDuel(serializeDuel(session)).state.unofficialProcEnabled).toBe(true);
+  });
+
   it("lets Lua effects register, read, and reset duel and card flags", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Flag Source", kind: "monster" }];
     const session = createDuel({ seed: 22, startingHandSize: 1, cardReader: createCardReader(cards) });

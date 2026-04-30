@@ -99,6 +99,8 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       eventHistory: snapshot.state.eventHistory.map((event) => ({ ...event })),
       usedCountKeys: [...snapshot.state.usedCountKeys],
       flagEffects: snapshot.state.flagEffects.map((flag) => ({ ...flag })),
+      duelTypeFlags: snapshot.state.duelTypeFlags ?? (0x2000 | 0x4000 | 0x8000 | 0x20000),
+      unofficialProcEnabled: snapshot.state.unofficialProcEnabled ?? false,
       skippedPhases: snapshot.state.skippedPhases.map((skip) => ({ ...skip })),
       activityCounts: copyDuelActivityCounts(snapshot.state.activityCounts),
       activityHistory: (snapshot.state.activityHistory ?? []).map((record) => ({ ...record })),

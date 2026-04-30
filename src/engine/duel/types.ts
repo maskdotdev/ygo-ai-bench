@@ -26,6 +26,7 @@ export interface DuelOptions {
   startingLifePoints?: number;
   startingHandSize?: number;
   drawPerTurn?: number;
+  duelTypeFlags?: number;
 }
 
 export interface DuelCardData {
@@ -243,6 +244,8 @@ export interface DuelState {
   eventHistory: DuelEventRecord[];
   usedCountKeys: string[];
   flagEffects: DuelFlagEffect[];
+  duelTypeFlags: number;
+  unofficialProcEnabled: boolean;
   shuffleCheckDisabled: boolean;
   skippedPhases: SkippedDuelPhase[];
   activityCounts: Record<PlayerId, DuelActivityCounts>;
