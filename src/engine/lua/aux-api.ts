@@ -210,6 +210,34 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         return false
       end
     end
+    function aux.GetCoinEffectHintString(coin)
+      if coin==COIN_HEADS then return 62 end
+      if coin==COIN_TAILS then return 63 end
+      return nil
+    end
+    function aux.FieldSummonProcTg(fun1,fun2)
+      return function(e,tp,eg,ep,ev,re,r,rp,chk,c,...)
+        if not c then
+          return not fun1 or fun1(e,tp)
+        end
+        return not fun2 or fun2(e,tp,eg,ep,ev,re,r,rp,chk,c,...)
+      end
+    end
+    function aux.cannotmatfilter(val1,...)
+      local allowed=val1
+      if type(val1)~="table" then allowed={val1,...} end
+      local total=0
+      for _,val in pairs(allowed) do
+        total=total|val
+      end
+      return function(e,c,sumtype,tp)
+        local sum=total&sumtype
+        for _,val in pairs(allowed) do
+          if sum==val then return true end
+        end
+        return false
+      end
+    end
     function aux.ChkfMMZ(sumcount)
       return function(sg,e,tp,mg)
         return Duel.GetMZoneCount(tp,sg)>=sumcount

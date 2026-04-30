@@ -700,6 +700,12 @@ describe("Lua state helpers", () => {
       Debug.Message("not count " .. Duel.GetMatchingGroupCount(aux.NOT(Card.IsCode), 0, LOCATION_HAND, 0, nil, 100))
       Debug.Message("and count " .. Duel.GetMatchingGroupCount(aux.AND(Card.IsFaceup, Card.IsAttackAbove), 0, LOCATION_MZONE, 0, nil, 900))
       Debug.Message("or count " .. Duel.GetMatchingGroupCount(aux.OR(Card.IsFacedown, Card.IsAttackAbove), 0, LOCATION_MZONE, 0, nil, 900))
+      Debug.Message("coin hint " .. aux.GetCoinEffectHintString(COIN_HEADS) .. "/" .. aux.GetCoinEffectHintString(COIN_TAILS) .. "/" .. tostring(aux.GetCoinEffectHintString(9)))
+      local field_tg = aux.FieldSummonProcTg(function(e,tp) return tp==0 end,function(e,tp,eg,ep,ev,re,r,rp,chk,c,minatk) return c:GetAttack()>=minatk end)
+      Debug.Message("field summon tg " .. tostring(field_tg(nil,0,Group.CreateGroup(),0,0,nil,0,0,0,nil)) .. "/" .. tostring(field_tg(nil,1,Group.CreateGroup(),0,0,nil,0,0,0,nil)) .. "/" .. tostring(field_tg(nil,0,Group.CreateGroup(),0,0,nil,0,0,0,faceup_monster,900)) .. "/" .. tostring(field_tg(nil,0,Group.CreateGroup(),0,0,nil,0,0,0,faceup_monster,2000)))
+      local mat_filter = aux.cannotmatfilter(SUMMON_TYPE_FUSION,SUMMON_TYPE_SYNCHRO)
+      local table_mat_filter = aux.cannotmatfilter({SUMMON_TYPE_XYZ,SUMMON_TYPE_LINK})
+      Debug.Message("cannot mat " .. tostring(mat_filter(nil,nil,SUMMON_TYPE_FUSION,0)) .. "/" .. tostring(mat_filter(nil,nil,SUMMON_TYPE_XYZ,0)) .. "/" .. tostring(table_mat_filter(nil,nil,SUMMON_TYPE_LINK,0)))
       Debug.Message("chkf mmz " .. tostring(aux.ChkfMMZ(1)(Group.CreateGroup(), nil, 0)) .. "/" .. tostring(aux.ChkfMMZ(6)(Group.CreateGroup(), nil, 0)))
       Debug.Message("ritlimit " .. tostring(aux.ritlimit(nil,nil,0,SUMMON_TYPE_RITUAL)) .. "/" .. tostring(aux.ritlimit(nil,nil,0,SUMMON_TYPE_FUSION)))
       local value_effect=Effect.CreateEffect(faceup_monster)
@@ -801,6 +807,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("not count 1");
     expect(host.messages).toContain("and count 1");
     expect(host.messages).toContain("or count 2");
+    expect(host.messages).toContain("coin hint 62/63/nil");
+    expect(host.messages).toContain("field summon tg true/false/true/false");
+    expect(host.messages).toContain("cannot mat true/false/true");
     expect(host.messages).toContain("chkf mmz true/false");
     expect(host.messages).toContain("ritlimit true/false");
     expect(host.messages).toContain("value helpers own false/true/false");
