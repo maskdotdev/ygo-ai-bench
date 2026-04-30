@@ -46,6 +46,58 @@ function setupLuaCountLimitTriggerFixture(seed: number, codes: { first: string; 
   return { session, host, firstSummon: firstSummon!, secondSummon: secondSummon!, message };
 }
 
+function setupLuaSharedCountTriggerFixture(options: { seed: number; codes: { summon: string; first: string; second: string }; triggerType: string; countCode: string; messages: [string, string] }) {
+  const cards: DuelCardData[] = [
+    { code: options.codes.summon, name: "Lua Shared Count Summon", kind: "monster" },
+    { code: options.codes.first, name: "Lua Shared Count First Trigger", kind: "monster" },
+    { code: options.codes.second, name: "Lua Shared Count Second Trigger", kind: "monster" },
+  ];
+  const session = createDuel({ seed: options.seed, startingHandSize: 3, cardReader: createCardReader(cards) });
+  loadDecks(session, {
+    0: { main: [options.codes.summon, options.codes.first, options.codes.second] },
+    1: { main: [options.codes.summon, options.codes.summon, options.codes.summon] },
+  });
+  startDuel(session);
+
+  const host = createLuaScriptHost(session);
+  const result = host.loadScript(
+    `
+    c${options.codes.first}={}
+    function c${options.codes.first}.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(${options.triggerType})
+      e:SetCode(EVENT_SPSUMMON_SUCCESS)
+      e:SetRange(LOCATION_HAND)
+      e:SetCountLimit(1, ${options.countCode})
+      e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+        Debug.Message("${options.messages[0]}")
+      end)
+      c:RegisterEffect(e)
+    end
+    c${options.codes.second}={}
+    function c${options.codes.second}.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(${options.triggerType})
+      e:SetCode(EVENT_SPSUMMON_SUCCESS)
+      e:SetRange(LOCATION_HAND)
+      e:SetCountLimit(1, ${options.countCode})
+      e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+        Debug.Message("${options.messages[1]}")
+      end)
+      c:RegisterEffect(e)
+    end
+    `,
+    `lua-trigger-shared-count-${options.codes.first}.lua`,
+  );
+
+  expect(result.ok).toBe(true);
+  expect(host.registerInitialEffects()).toBe(2);
+  const summon = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === options.codes.summon);
+  expect(summon).toBeDefined();
+
+  return { session, host, summon: summon!, messages: options.messages };
+}
+
 function activateOnlyPendingTrigger(session: ReturnType<typeof createDuel>): void {
   expect(session.state.pendingTriggers).toHaveLength(1);
   const effectId = session.state.pendingTriggers[0]!.effectId;
@@ -102,128 +154,48 @@ describe("Lua trigger count limits", () => {
   });
 
   it("shares Lua count codes across multiple trigger effects", () => {
-    const cards: DuelCardData[] = [
-      { code: "14100", name: "Lua Shared Count Summon", kind: "monster" },
-      { code: "14200", name: "Lua Shared Count First Trigger", kind: "monster" },
-      { code: "14300", name: "Lua Shared Count Second Trigger", kind: "monster" },
-    ];
-    const session = createDuel({ seed: 94, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["14100", "14200", "14300"] },
-      1: { main: ["14100", "14100", "14100"] },
+    const fixture = setupLuaSharedCountTriggerFixture({
+      seed: 94,
+      codes: { summon: "14100", first: "14200", second: "14300" },
+      triggerType: "EFFECT_TYPE_TRIGGER_O",
+      countCode: "0x444",
+      messages: ["first shared count trigger", "second shared count trigger"],
     });
-    startDuel(session);
 
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
-      c14200={}
-      function c14200.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_TRIGGER_O)
-        e:SetCode(EVENT_SPSUMMON_SUCCESS)
-        e:SetRange(LOCATION_HAND)
-        e:SetCountLimit(1, 0x444)
-        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
-          Debug.Message("first shared count trigger")
-        end)
-        c:RegisterEffect(e)
-      end
-      c14300={}
-      function c14300.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_TRIGGER_O)
-        e:SetCode(EVENT_SPSUMMON_SUCCESS)
-        e:SetRange(LOCATION_HAND)
-        e:SetCountLimit(1, 0x444)
-        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
-          Debug.Message("second shared count trigger")
-        end)
-        c:RegisterEffect(e)
-      end
-      `,
-      "lua-trigger-shared-count-code.lua",
-    );
-
-    expect(result.ok).toBe(true);
-    expect(host.registerInitialEffects()).toBe(2);
-    const summon = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "14100");
-    expect(summon).toBeDefined();
-
-    specialSummonDuelCard(session.state, summon!.uid);
-    expect(session.state.pendingTriggers).toHaveLength(2);
-    const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
+    specialSummonDuelCard(fixture.session.state, fixture.summon.uid);
+    expect(fixture.session.state.pendingTriggers).toHaveLength(2);
+    const firstTrigger = getDuelLegalActions(fixture.session, 0).find((action) => action.type === "activateTrigger" && action.effectId === fixture.session.state.pendingTriggers[0]?.effectId);
     expect(firstTrigger).toBeDefined();
-    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+    expect(applyResponse(fixture.session, firstTrigger!).ok).toBe(true);
 
-    expect(session.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
-    expect(session.state.pendingTriggers).toHaveLength(1);
-    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(0);
-    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger")).toHaveLength(1);
-    expect(host.messages).toContain("first shared count trigger");
-    expect(host.messages).not.toContain("second shared count trigger");
+    expect(fixture.session.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
+    expect(fixture.session.state.pendingTriggers).toHaveLength(1);
+    expect(getDuelLegalActions(fixture.session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(0);
+    expect(getDuelLegalActions(fixture.session, 0).filter((action) => action.type === "declineTrigger")).toHaveLength(1);
+    expect(fixture.host.messages).toContain(fixture.messages[0]);
+    expect(fixture.host.messages).not.toContain(fixture.messages[1]);
   });
 
   it("prunes mandatory Lua shared-count triggers after a sibling spends the count", () => {
-    const cards: DuelCardData[] = [
-      { code: "15100", name: "Lua Mandatory Shared Count Summon", kind: "monster" },
-      { code: "15200", name: "Lua Mandatory Shared Count First Trigger", kind: "monster" },
-      { code: "15300", name: "Lua Mandatory Shared Count Second Trigger", kind: "monster" },
-    ];
-    const session = createDuel({ seed: 95, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["15100", "15200", "15300"] },
-      1: { main: ["15100", "15100", "15100"] },
+    const fixture = setupLuaSharedCountTriggerFixture({
+      seed: 95,
+      codes: { summon: "15100", first: "15200", second: "15300" },
+      triggerType: "EFFECT_TYPE_TRIGGER_F",
+      countCode: "0x555",
+      messages: ["first mandatory shared count trigger", "second mandatory shared count trigger"],
     });
-    startDuel(session);
 
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
-      c15200={}
-      function c15200.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_TRIGGER_F)
-        e:SetCode(EVENT_SPSUMMON_SUCCESS)
-        e:SetRange(LOCATION_HAND)
-        e:SetCountLimit(1, 0x555)
-        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
-          Debug.Message("first mandatory shared count trigger")
-        end)
-        c:RegisterEffect(e)
-      end
-      c15300={}
-      function c15300.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_TRIGGER_F)
-        e:SetCode(EVENT_SPSUMMON_SUCCESS)
-        e:SetRange(LOCATION_HAND)
-        e:SetCountLimit(1, 0x555)
-        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
-          Debug.Message("second mandatory shared count trigger")
-        end)
-        c:RegisterEffect(e)
-      end
-      `,
-      "lua-trigger-mandatory-shared-count-code.lua",
-    );
-
-    expect(result.ok).toBe(true);
-    expect(host.registerInitialEffects()).toBe(2);
-    const summon = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "15100");
-    expect(summon).toBeDefined();
-
-    specialSummonDuelCard(session.state, summon!.uid);
-    expect(session.state.pendingTriggers).toHaveLength(2);
-    const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
+    specialSummonDuelCard(fixture.session.state, fixture.summon.uid);
+    expect(fixture.session.state.pendingTriggers).toHaveLength(2);
+    const firstTrigger = getDuelLegalActions(fixture.session, 0).find((action) => action.type === "activateTrigger" && action.effectId === fixture.session.state.pendingTriggers[0]?.effectId);
     expect(firstTrigger).toBeDefined();
-    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+    expect(applyResponse(fixture.session, firstTrigger!).ok).toBe(true);
 
-    expect(session.state.usedCountKeys).toEqual(["turn-1:0:code-1365"]);
-    expect(session.state.pendingTriggers).toHaveLength(0);
-    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateTrigger" || action.type === "declineTrigger")).toBe(false);
-    expect(session.state.waitingFor).toBe(0);
-    expect(host.messages).toContain("first mandatory shared count trigger");
-    expect(host.messages).not.toContain("second mandatory shared count trigger");
+    expect(fixture.session.state.usedCountKeys).toEqual(["turn-1:0:code-1365"]);
+    expect(fixture.session.state.pendingTriggers).toHaveLength(0);
+    expect(getDuelLegalActions(fixture.session, 0).some((action) => action.type === "activateTrigger" || action.type === "declineTrigger")).toBe(false);
+    expect(fixture.session.state.waitingFor).toBe(0);
+    expect(fixture.host.messages).toContain(fixture.messages[0]);
+    expect(fixture.host.messages).not.toContain(fixture.messages[1]);
   });
 });
