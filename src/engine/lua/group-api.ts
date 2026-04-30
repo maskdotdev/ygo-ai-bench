@@ -134,6 +134,16 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   });
   lua.lua_setfield(L, -2, to_luastring("Sort"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const callbackRef = readOptionalFunctionRef(state, 2);
+    if (callbackRef !== undefined) {
+      const args = readFilterArgs(state, 3);
+      for (const uid of readGroupUids(state, 1)) callGroupCardCallback(state, uid, callbackRef, args);
+    }
+    releaseOptionalFunctionRef(state, callbackRef);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ForEach"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     pushGroupTable(state, readGroupUids(state, 1));
     return 1;
   });
@@ -351,6 +361,18 @@ function compareGroupCards(L: unknown, a: string, b: string, comparatorRef: numb
   return result;
 }
 
+function callGroupCardCallback(L: unknown, uid: string, callbackRef: number, args: LuaFilterArgs): void {
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, callbackRef);
+  pushCardTable(L, uid);
+  for (let index = 0; index < args.count; index += 1) lua.lua_pushvalue(L, args.start + index);
+  const status = lua.lua_pcall(L, 1 + args.count, 0, 0);
+  if (status !== lua.LUA_OK) {
+    const message = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) : "Group callback failed";
+    lua.lua_pop(L, 1);
+    throw new Error(message);
+  }
+}
+
 function readFilterArgs(L: unknown, start: number): LuaFilterArgs {
   const top = lua.lua_gettop(L);
   return { start, count: Math.max(0, top - start + 1) };
@@ -503,6 +525,7 @@ const groupFieldNames = [
   "Filter",
   "FilterCount",
   "Sort",
+  "ForEach",
   "Clone",
   "Select",
   "IsExists",

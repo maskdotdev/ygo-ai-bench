@@ -507,6 +507,13 @@ describe("Lua field and query helpers", () => {
       local sorted_desc = Group.FromCards(c100, c200, c300)
       sorted_desc:Sort(function(a,b,desc) if desc then return a:GetAttack()>b:GetAttack() end return a:GetAttack()<b:GetAttack() end, true)
       Debug.Message("sorted desc " .. sorted_desc:GetFirst():GetCode() .. "/" .. sorted_desc:GetNext():GetCode() .. "/" .. sorted_desc:GetNext():GetCode())
+      local foreach_sum = 0
+      local foreach_codes = ""
+      all:ForEach(function(tc,prefix)
+        foreach_sum = foreach_sum + tc:GetAttack()
+        foreach_codes = foreach_codes .. prefix .. tc:GetCode()
+      end, "#")
+      Debug.Message("foreach " .. foreach_sum .. " " .. foreach_codes)
       local select_pool = Group.FromCards(c100)
       local added = all:SelectUnselect(select_pool, true, false, 1, 2)
       Debug.Message("select unselect add " .. tostring(added and added:GetCode()))
@@ -600,6 +607,11 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("selected group unbounded 3");
     expect(host.messages).toContain("sorted asc 100/200/300");
     expect(host.messages).toContain("sorted desc 300/200/100");
+    const foreachMessage = host.messages.find((message) => message.startsWith("foreach 6000 "));
+    expect(foreachMessage).toBeDefined();
+    expect(foreachMessage).toContain("#100");
+    expect(foreachMessage).toContain("#200");
+    expect(foreachMessage).toContain("#300");
     expect(host.messages).toContain("select unselect add 200");
     expect(host.messages).toContain("select unselect stop true");
     expect(host.messages).toContain("select unselect unbounded 200");
