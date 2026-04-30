@@ -524,13 +524,21 @@ describe("Lua field and query helpers", () => {
       local first = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
       local second = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil)
       Debug.Message("summon result " .. Duel.Summon(first, true, nil))
+      Debug.Message("summon operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("summon count blocked " .. Duel.Summon(second, true, nil))
+      Debug.Message("summon blocked operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("summon nil result " .. Duel.Summon(nil, true, nil))
+      Debug.Message("summon nil operated " .. Duel.GetOperatedGroup():GetCount())
       `,
       "basic-normal-summon.lua",
     );
     expect(summonResult.ok, summonResult.error).toBe(true);
     expect(summonHost.messages).toContain("summon result 1");
+    expect(summonHost.messages).toContain("summon operated 1/100");
     expect(summonHost.messages).toContain("summon count blocked 0");
+    expect(summonHost.messages).toContain("summon blocked operated 0");
+    expect(summonHost.messages).toContain("summon nil result 0");
+    expect(summonHost.messages).toContain("summon nil operated 0");
     const summoned = summonSession.state.cards.find((card) => card.code === "100");
     expect(summoned).toMatchObject({ location: "monsterZone", position: "faceUpAttack", summonType: "normal" });
 
@@ -545,11 +553,17 @@ describe("Lua field and query helpers", () => {
       `
       local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil)
       Debug.Message("mset result " .. Duel.MSet(target, true, nil))
+      Debug.Message("mset operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("mset empty result " .. Duel.MSet(Group.CreateGroup(), true, nil))
+      Debug.Message("mset empty operated " .. Duel.GetOperatedGroup():GetCount())
       `,
       "basic-monster-set.lua",
     );
     expect(setResult.ok, setResult.error).toBe(true);
     expect(setHost.messages).toContain("mset result 1");
+    expect(setHost.messages).toContain("mset operated 1/300");
+    expect(setHost.messages).toContain("mset empty result 0");
+    expect(setHost.messages).toContain("mset empty operated 0");
     const setMonster = setSession.state.cards.find((card) => card.code === "300");
     expect(setMonster).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
 
@@ -603,15 +617,23 @@ describe("Lua field and query helpers", () => {
       local trap = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil)
       local monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil)
       Debug.Message("sset spell result " .. Duel.SSet(spell))
+      Debug.Message("sset spell operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("sset trap result " .. Duel.SSet(trap))
       Debug.Message("sset monster rejected " .. Duel.SSet(monster))
+      Debug.Message("sset rejected operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("sset empty result " .. Duel.SSet(Group.CreateGroup()))
+      Debug.Message("sset empty operated " .. Duel.GetOperatedGroup():GetCount())
       `,
       "basic-spell-trap-set.lua",
     );
     expect(setResult.ok, setResult.error).toBe(true);
     expect(setHost.messages).toContain("sset spell result 1");
+    expect(setHost.messages).toContain("sset spell operated 1/100");
     expect(setHost.messages).toContain("sset trap result 1");
     expect(setHost.messages).toContain("sset monster rejected 0");
+    expect(setHost.messages).toContain("sset rejected operated 0");
+    expect(setHost.messages).toContain("sset empty result 0");
+    expect(setHost.messages).toContain("sset empty operated 0");
     expect(setSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
     expect(setSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
 
