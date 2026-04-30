@@ -16,6 +16,24 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { cards, findPublicCard } from "./full-duel-engine-fixtures.js";
 
 describe("duel snapshot persistence", () => {
+  it("preserves skipped phases across snapshots", () => {
+    const session = createDuel({ seed: 122, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.skippedPhases.push({ player: 0, phase: "battle", remaining: 1 });
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    const next = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "changePhase");
+
+    expect(restored.state.skippedPhases).toEqual([{ player: 0, phase: "battle", remaining: 1 }]);
+    expect(next).toMatchObject({ phase: "main2" });
+    expect(applyResponse(restored, next!).ok).toBe(true);
+    expect(restored.state.skippedPhases).toEqual([]);
+  });
+
   it("preserves static continuous effects across snapshots", () => {
     const session = createDuel({ seed: 95, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

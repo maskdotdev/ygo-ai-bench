@@ -178,6 +178,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     usedCountKeys: [],
     flagEffects: [],
     shuffleCheckDisabled: false,
+    skippedPhases: [],
     activityCounts: createDuelActivityCounts(),
     attacksDeclared: [],
     positionsChanged: [],
@@ -273,7 +274,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       if (attacker && !isAttackPrevented(state, attacker, createContinuousEffectContext(state))) actions.push(action);
     }
   }
-  const nextPhase = phaseOrder[phaseOrder.indexOf(state.phase) + 1];
+  const nextPhase = nextAvailablePhase(state, player);
   if (nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
   actions.push({ type: "endTurn", player, label: "End turn" });
   return stampActions(actions, state.actionWindowId);
@@ -551,6 +552,8 @@ function setSpellTrap(state: DuelState, player: PlayerId, uid: string): void {
 function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void {
   if (state.turnPlayer !== player) throw new Error("Only the turn player can change phases");
   if (phaseOrder.indexOf(phase) <= phaseOrder.indexOf(state.phase)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
+  if (phase !== nextAvailablePhase(state, player)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
+  consumeSkippedPhases(state, player, phase);
   state.phase = phase;
   pruneResetEffectsAfterPhase(state, phase);
   pruneDuelFlagEffectsAfterPhase(state, phase);
@@ -581,6 +584,27 @@ function endTurn(state: DuelState, player: PlayerId): void {
   pruneDuelFlagEffectsAfterPhase(state, "main1");
   pushDuelLog(state, "turn", state.turnPlayer, undefined, `Turn ${state.turn} started`);
   collectTriggerEffects(state, "turnStarted");
+}
+
+function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
+  for (const phase of phaseOrder.slice(phaseOrder.indexOf(state.phase) + 1)) {
+    if (!isPhaseSkipped(state, player, phase)) return phase;
+  }
+  return undefined;
+}
+
+function isPhaseSkipped(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {
+  return state.skippedPhases.some((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0);
+}
+
+function consumeSkippedPhases(state: DuelState, player: PlayerId, targetPhase: DuelPhase): void {
+  const currentIndex = phaseOrder.indexOf(state.phase);
+  const targetIndex = phaseOrder.indexOf(targetPhase);
+  const skipped = new Set(phaseOrder.slice(currentIndex + 1, targetIndex).filter((phase) => isPhaseSkipped(state, player, phase)));
+  for (const skip of state.skippedPhases) {
+    if (skip.player === player && skipped.has(skip.phase)) skip.remaining -= 1;
+  }
+  state.skippedPhases = state.skippedPhases.filter((skip) => skip.remaining > 0);
 }
 
 function draw(state: DuelState, player: PlayerId, count: number, detail: string): number {

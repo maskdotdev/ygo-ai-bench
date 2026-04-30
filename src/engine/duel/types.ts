@@ -100,6 +100,12 @@ export interface DuelLogEntry {
   detail: string;
 }
 
+export interface SkippedDuelPhase {
+  player: PlayerId;
+  phase: DuelPhase;
+  remaining: number;
+}
+
 export interface DuelEffectDefinition {
   id: string;
   sourceUid: string;
@@ -217,6 +223,7 @@ export interface DuelState {
   usedCountKeys: string[];
   flagEffects: DuelFlagEffect[];
   shuffleCheckDisabled: boolean;
+  skippedPhases: SkippedDuelPhase[];
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   attacksDeclared: string[];
   positionsChanged: string[];

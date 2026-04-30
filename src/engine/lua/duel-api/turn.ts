@@ -51,6 +51,14 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDamageCalculated"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const phases = phasesFromMask(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0);
+    const count = Math.max(1, lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 1);
+    for (const phase of phases) skipPhase(session, player, phase, count);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SkipPhase"));
 }
 
 function normalizePlayer(value: number): PlayerId {
@@ -64,4 +72,18 @@ function phaseMask(phase: DuelPhase): number {
   if (phase === "battle") return 0x80;
   if (phase === "main2") return 0x100;
   return 0x200;
+}
+
+function phasesFromMask(mask: number): DuelPhase[] {
+  const phases: DuelPhase[] = [];
+  for (const phase of ["draw", "standby", "main1", "battle", "main2", "end"] satisfies DuelPhase[]) {
+    if ((phaseMask(phase) & mask) !== 0) phases.push(phase);
+  }
+  return phases;
+}
+
+function skipPhase(session: DuelSession, player: PlayerId, phase: DuelPhase, count: number): void {
+  const existing = session.state.skippedPhases.find((skip) => skip.player === player && skip.phase === phase);
+  if (existing) existing.remaining = Math.max(existing.remaining, count);
+  else session.state.skippedPhases.push({ player, phase, remaining: count });
 }

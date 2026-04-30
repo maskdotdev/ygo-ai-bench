@@ -6,6 +6,35 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua state helpers", () => {
+  it("lets Lua scripts skip the next matching phase", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Phase Source", kind: "monster" }];
+    const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.SkipPhase(0, PHASE_BATTLE, RESET_PHASE + PHASE_END, 1)
+      Debug.Message("skip registered " .. Duel.GetTurnPlayer())
+      `,
+      "skip-phase.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("skip registered 0");
+    expect(session.state.skippedPhases).toEqual([{ player: 0, phase: "battle", remaining: 1 }]);
+
+    const next = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase");
+    expect(next).toMatchObject({ phase: "main2" });
+    expect(applyResponse(session, next!).ok).toBe(true);
+    expect(session.state.phase).toBe("main2");
+    expect(session.state.skippedPhases).toEqual([]);
+  });
+
   it("lets Lua effects register, read, and reset duel and card flags", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Flag Source", kind: "monster" }];
     const session = createDuel({ seed: 22, startingHandSize: 1, cardReader: createCardReader(cards) });
