@@ -168,6 +168,14 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         return Duel.GetMZoneCount(tp,sg)>=sumcount
       end
     end
+    function aux.CheckStealEquip(c,e,tp)
+      if c:IsFacedown() or not c:IsControlerCanBeChanged() or not c:IsControler(1-tp) then return false end
+      if e:GetHandler():IsLocation(LOCATION_SZONE) then return true end
+      if not Duel.IsDuelType(DUEL_TRAP_MONSTERS_NOT_USE_ZONE) and c:IsType(TYPE_TRAPMONSTER) then
+        return Duel.GetLocationCount(tp,LOCATION_SZONE,tp,LOCATION_REASON_CONTROL)>0 and Duel.GetLocationCount(tp,LOCATION_SZONE,tp,0)>=2
+      end
+      return true
+    end
     function aux.ChangeBattleDamage(player,value)
       return function(e,damp)
         if player==0 then

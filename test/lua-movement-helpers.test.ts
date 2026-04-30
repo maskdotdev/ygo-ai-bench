@@ -148,6 +148,51 @@ describe("Lua movement helpers", () => {
     expect(session.state.log.some((entry) => entry.action === "equip" && entry.detail === "Equipped to Equip Target")).toBe(true);
   });
 
+  it("lets Lua scripts check steal-equip control requirements", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Steal Source", kind: "monster" },
+      { code: "200", name: "Opponent Faceup", kind: "monster" },
+      { code: "300", name: "Opponent Facedown", kind: "monster" },
+      { code: "400", name: "Own Faceup", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 40, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "400"] },
+      1: { main: ["200", "300"] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const own = session.state.cards.find((card) => card.controller === 0 && card.code === "400");
+    const opponentFaceup = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    const opponentFacedown = session.state.cards.find((card) => card.controller === 1 && card.code === "300");
+    for (const card of [source, own, opponentFaceup, opponentFacedown]) expect(card).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, own!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, opponentFaceup!.uid, "monsterZone", 1).position = "faceUpAttack";
+    const facedown = moveDuelCard(session.state, opponentFacedown!.uid, "monsterZone", 1);
+    facedown.position = "faceDownDefense";
+    facedown.faceUp = false;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source=Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local own=Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      local faceup=Duel.GetFieldCard(1, LOCATION_MZONE, 0)
+      local facedown=Duel.GetFieldCard(1, LOCATION_MZONE, 1)
+      local e=Effect.CreateEffect(source)
+      Debug.Message("steal checks " .. tostring(aux.CheckStealEquip(faceup,e,0)) .. "/" .. tostring(aux.CheckStealEquip(own,e,0)) .. "/" .. tostring(aux.CheckStealEquip(facedown,e,0)))
+      Duel.MoveToField(source,0,0,LOCATION_SZONE,POS_FACEUP_ATTACK,true)
+      Debug.Message("steal szone " .. tostring(aux.CheckStealEquip(faceup,e,0)))
+      `,
+      "check-steal-equip.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("steal checks true/false/false");
+    expect(host.messages).toContain("steal szone true");
+  });
+
   it("lets Lua scripts move cards to hand, deck, and extra deck", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Recoverable Monster", kind: "monster" },
