@@ -385,6 +385,69 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.code === "800")).toMatchObject({ controller: 1, location: "monsterZone", sequence: 0 });
   });
 
+  it("lets Lua scripts swap control of field cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Swap Self", kind: "monster" },
+      { code: "101", name: "Swap Self Filler A", kind: "monster" },
+      { code: "102", name: "Swap Self Filler B", kind: "monster" },
+      { code: "103", name: "Swap Self Filler C", kind: "monster" },
+      { code: "104", name: "Swap Self Filler D", kind: "monster" },
+      { code: "500", name: "Self Spell A", kind: "spell" },
+      { code: "501", name: "Self Spell B", kind: "spell" },
+      { code: "502", name: "Self Spell C", kind: "spell" },
+      { code: "503", name: "Self Spell D", kind: "spell" },
+      { code: "504", name: "Self Spell E", kind: "spell" },
+      { code: "600", name: "Swap Opponent", kind: "monster" },
+      { code: "601", name: "Swap Opponent Filler A", kind: "monster" },
+      { code: "602", name: "Swap Opponent Filler B", kind: "monster" },
+      { code: "603", name: "Swap Opponent Filler C", kind: "monster" },
+      { code: "604", name: "Swap Opponent Filler D", kind: "monster" },
+      { code: "900", name: "Opponent Spell", kind: "spell" },
+    ];
+    const session = createDuel({ seed: 63, startingHandSize: 10, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "101", "102", "103", "104", "500", "501", "502", "503", "504"] },
+      1: { main: ["600", "601", "602", "603", "604", "900"] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.kind === "monster")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.kind === "spell")) {
+      moveDuelCard(session.state, card.uid, "spellTrapZone", 0);
+    }
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 1 && candidate.location === "hand" && candidate.kind === "monster")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 1);
+    }
+    const opponentSpell = session.state.cards.find((card) => card.controller === 1 && card.code === "900");
+    moveDuelCard(session.state, opponentSpell!.uid, "spellTrapZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local self_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local opponent_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("swap monsters " .. tostring(Duel.SwapControl(self_monster, opponent_monster)))
+      Debug.Message("swap operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("swap controllers " .. self_monster:GetControler() .. "/" .. opponent_monster:GetControler())
+      local opponent_spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, 0, LOCATION_SZONE, 1, 1, nil):GetFirst()
+      Debug.Message("swap blocked " .. tostring(Duel.SwapControl(opponent_monster, opponent_spell)))
+      Debug.Message("swap blocked operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "swap-control.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("swap monsters true");
+    expect(host.messages).toContain("swap operated 2");
+    expect(host.messages).toContain("swap controllers 1/0");
+    expect(host.messages).toContain("swap blocked false");
+    expect(host.messages).toContain("swap blocked operated 0");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ controller: 1, location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.code === "600")).toMatchObject({ controller: 0, location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.code === "900")).toMatchObject({ controller: 1, location: "spellTrapZone" });
+  });
+
   it("lets Lua scripts inspect Xyz overlay materials", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Overlay Material A", kind: "monster" },

@@ -47,6 +47,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("EquipComplete"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetControl(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetControl"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSwapControl(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("SwapControl"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangePosition(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ChangePosition"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMoveToField(state, session, hostState));
@@ -156,6 +158,23 @@ function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMove
   }
   setOperatedUids(hostState, controlled);
   lua.lua_pushinteger(L, controlled.length);
+  return 1;
+}
+
+function pushSwapControl(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const leftUids = readCardOrGroupUids(L, 1);
+  const rightUids = readCardOrGroupUids(L, 2);
+  const count = Math.min(leftUids.length, rightUids.length);
+  const swapped: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const left = session.state.cards.find((candidate) => candidate.uid === leftUids[index]);
+    const right = session.state.cards.find((candidate) => candidate.uid === rightUids[index]);
+    if (!left || !right || !canSwapControlPair(session.state, left, right)) continue;
+    swapCardControl(session, left, right, hostState.activeContext?.player ?? session.state.turnPlayer);
+    swapped.push(left.uid, right.uid);
+  }
+  setOperatedUids(hostState, swapped);
+  lua.lua_pushboolean(L, swapped.length > 0);
   return 1;
 }
 
@@ -558,6 +577,47 @@ function canReorderFieldZone(location: DuelLocation): boolean {
 function canChangeControl(card: DuelCardInstance, allowedLocations: DuelLocation[] | undefined): boolean {
   if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
   return !allowedLocations || allowedLocations.includes(card.location);
+}
+
+function canSwapControlPair(state: DuelState, left: DuelCardInstance, right: DuelCardInstance): boolean {
+  if (left.uid === right.uid || left.controller === right.controller) return false;
+  if (!canChangeControl(left, undefined) || !canChangeControl(right, undefined)) return false;
+  return hasControlSwapSpace(state, left, right);
+}
+
+function hasControlSwapSpace(state: DuelState, left: DuelCardInstance, right: DuelCardInstance): boolean {
+  return [left.controller, right.controller].every((player) =>
+    (["monsterZone", "spellTrapZone"] as const).every((location) => {
+      const current = state.cards.filter((card) => card.controller === player && card.location === location).length;
+      const outgoing = [left, right].filter((card) => card.controller === player && card.location === location).length;
+      const incoming = [left, right].filter((card) => card.controller !== player && card.location === location).length;
+      return current - outgoing + incoming <= 5;
+    }),
+  );
+}
+
+function swapCardControl(session: DuelSession, left: DuelCardInstance, right: DuelCardInstance, reasonPlayer: PlayerId): void {
+  const leftController = left.controller;
+  const rightController = right.controller;
+  applyControlSwapCardState(left, rightController, reasonPlayer);
+  applyControlSwapCardState(right, leftController, reasonPlayer);
+  resequence(session.state, leftController, left.location);
+  resequence(session.state, rightController, left.location);
+  resequence(session.state, leftController, right.location);
+  resequence(session.state, rightController, right.location);
+  pushDuelLog(session.state, "control", rightController, left.name, `Swapped control with ${right.name}`);
+  pushDuelLog(session.state, "control", leftController, right.name, `Swapped control with ${left.name}`);
+}
+
+function applyControlSwapCardState(card: DuelCardInstance, controller: PlayerId, reasonPlayer: PlayerId): void {
+  card.previousLocation = card.location;
+  card.previousController = card.controller;
+  card.previousSequence = card.sequence;
+  card.previousPosition = card.position;
+  card.previousFaceUp = card.faceUp;
+  card.reason = duelReason.effect;
+  card.reasonPlayer = reasonPlayer;
+  card.controller = controller;
 }
 
 function removeOverlayReference(state: DuelState, uid: string): void {
