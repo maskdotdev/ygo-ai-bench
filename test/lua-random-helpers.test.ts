@@ -7,6 +7,20 @@ import type { DuelCardData, DuelSession } from "#duel/types.js";
 const cards: DuelCardData[] = [{ code: "100", name: "Random Probe", kind: "monster" }];
 
 describe("Lua random helpers", () => {
+  it("lets Lua scripts toss deterministic coins", () => {
+    const first = setupSession(154);
+    const second = setupSession(154);
+
+    const firstMessages = tossCoinMessages(first);
+    const secondMessages = tossCoinMessages(second);
+
+    expect(firstMessages).toEqual(secondMessages);
+    expect(firstMessages[0]).toMatch(/^coin one [01]$/);
+    expect(firstMessages[1]).toMatch(/^coin three [01],[01],[01]$/);
+    expect(first.state.randomCounter).toBe(4);
+    expect(first.state.log.some((entry) => entry.action === "tossCoin" && entry.detail.includes(","))).toBe(true);
+  });
+
   it("lets Lua scripts toss deterministic dice", () => {
     const first = setupSession(152);
     const second = setupSession(152);
@@ -77,6 +91,21 @@ function tossDiceMessages(session: DuelSession): string[] {
     Debug.Message("dice two " .. b .. "," .. c)
     `,
     "dice-toss.lua",
+  );
+  expect(result.ok, result.error).toBe(true);
+  return host.messages;
+}
+
+function tossCoinMessages(session: DuelSession): string[] {
+  const host = createLuaScriptHost(session);
+  const result = host.loadScript(
+    `
+    local a=Duel.TossCoin(0,1)
+    local b,c,d=Duel.TossCoin(1,3)
+    Debug.Message("coin one " .. a)
+    Debug.Message("coin three " .. b .. "," .. c .. "," .. d)
+    `,
+    "coin-toss.lua",
   );
   expect(result.ok, result.error).toBe(true);
   return host.messages;
