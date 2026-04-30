@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
 import {
   applyResponse,
   createDuel,
@@ -95,5 +96,36 @@ describe("duel snapshot persistence", () => {
 
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === source!.uid)?.location).toBe("graveyard");
+  });
+
+  it("keeps reset-pruned effects gone across snapshots", () => {
+    const session = createDuel({ seed: 121, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = findPublicCard(session, 0, "hand", "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "snapshot-reset-pruned",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      reset: { flags: 0x1000 + 0x40000 },
+      operation(ctx) {
+        sendDuelCardToGraveyard(ctx.duel, ctx.source.uid, ctx.player);
+      },
+    });
+    expect(session.state.effects).toHaveLength(1);
+
+    moveDuelCard(session.state, source!.uid, "graveyard", 0);
+
+    expect(session.state.effects).toHaveLength(0);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.effects).toHaveLength(0);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "snapshot-reset-pruned")).toBe(false);
   });
 });

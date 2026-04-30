@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, sendDuelCardToGraveyard, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -150,5 +150,51 @@ describe("duel effect reset", () => {
 
     expect(session.state.effects).toHaveLength(1);
     expect(session.state.effects[0]).toMatchObject({ id: "reset-stays-in-range" });
+  });
+
+  it("restores reset-pruned effects after failed operation rollback", () => {
+    const session = createDuel({ seed: 120, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const resetSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(source).toBeDefined();
+    expect(resetSource).toBeDefined();
+    registerEffect(session, {
+      id: "rollback-reset-pruned-effect",
+      sourceUid: resetSource!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      reset: { flags: 0x1000 + 0x40000 },
+      operation(ctx) {
+        ctx.log("Restored reset effect");
+      },
+    });
+    registerEffect(session, {
+      id: "failing-reset-prune-move",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        sendDuelCardToGraveyard(ctx.duel, resetSource!.uid, ctx.player);
+        throw new Error("reset prune rollback failed");
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "failing-reset-prune-move");
+    expect(action).toBeDefined();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("reset prune rollback failed");
+    expect(session.state.cards.find((card) => card.uid === resetSource!.uid)?.location).toBe("hand");
+    expect(session.state.effects.some((effect) => effect.id === "rollback-reset-pruned-effect")).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "rollback-reset-pruned-effect")).toBe(true);
   });
 });

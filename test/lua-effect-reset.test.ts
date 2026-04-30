@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { getLegalActions as getDuelLegalActions } from "#duel/core.js";
+import { getLegalActions as getDuelLegalActions, restoreDuel, serializeDuel } from "#duel/core.js";
+import type { DuelCardData } from "#duel/types.js";
+import { createCardReader } from "#engine/data-loaders.js";
 import { setupLuaChainFixture } from "./lua-chain-fixtures.js";
 
 describe("Lua effect reset", () => {
@@ -76,5 +78,54 @@ describe("Lua effect reset", () => {
 
     expect(session.state.effects).toHaveLength(0);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect")).toBe(false);
+  });
+
+  it("preserves Lua RESET_TOGRAVE metadata across snapshot restore", () => {
+    const cardData = [
+      { code: "22100", name: "Lua Reset Snapshot Source", kind: "monster" },
+      { code: "22200", name: "Lua Reset Snapshot Filler", kind: "monster" },
+    ] satisfies DuelCardData[];
+    const { session } = setupLuaChainFixture({
+      seed: 122,
+      startingHandSize: 1,
+      cards: cardData,
+      decks: {
+        0: { main: ["22100"] },
+        1: { main: ["22200"] },
+      },
+      expectedEffects: 1,
+      scriptName: "lua-effect-reset-snapshot.lua",
+      script: `
+      c22100={}
+      function c22100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetReset(RESET_EVENT + RESET_TOGRAVE)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua reset snapshot should not resolve")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+    const registryKey = session.state.effects[0]?.registryKey;
+    expect(registryKey).toBeDefined();
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cardData), {
+      [registryKey!]: (effect) => ({
+        ...effect,
+        operation(ctx) {
+          ctx.log("Restored Lua reset snapshot");
+        },
+      }),
+    });
+    const source = restored.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "22100");
+    expect(source).toBeDefined();
+    expect(restored.state.effects[0]).toMatchObject({ registryKey, reset: { flags: 0x1000 + 0x40000 } });
+
+    moveDuelCard(restored.state, source!.uid, "graveyard", 0);
+
+    expect(restored.state.effects).toHaveLength(0);
   });
 });
