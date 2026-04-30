@@ -117,6 +117,25 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         return ((not target:IsMaximumMode()) or (not (target:IsMaximumMode() and not target:IsMaximumModeCenter()))) and f(target,table.unpack(params))
       end
     end
+    function aux.AND(...)
+      local funs={...}
+      return function(...)
+        for _,f in ipairs(funs) do
+          if not f(...) then return false end
+        end
+        return true
+      end
+    end
+    function aux.NOT(f)
+      return function(...)
+        return not f(...)
+      end
+    end
+    function aux.ChkfMMZ(sumcount)
+      return function(sg,e,tp,mg)
+        return Duel.GetMZoneCount(tp,sg)>=sumcount
+      end
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));

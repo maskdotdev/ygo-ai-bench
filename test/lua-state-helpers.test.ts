@@ -365,6 +365,9 @@ describe("Lua state helpers", () => {
       local maximum_wrapped = aux.FilterMaximumSideFunctionEx(function(c,minatk) return c:IsFaceup() and c:GetAttack() >= minatk end, 900)
       Debug.Message("maximum ex count " .. Duel.GetMatchingGroupCount(maximum_wrapped, 0, LOCATION_MZONE, 0, nil))
       Debug.Message("maximum side count " .. Duel.GetMatchingGroupCount(aux.FilterMaximumSideFunction(function(c) return c:IsFaceup() end), 0, LOCATION_MZONE, 0, nil))
+      Debug.Message("not count " .. Duel.GetMatchingGroupCount(aux.NOT(Card.IsCode), 0, LOCATION_HAND, 0, nil, 100))
+      Debug.Message("and count " .. Duel.GetMatchingGroupCount(aux.AND(Card.IsFaceup, Card.IsAttackAbove), 0, LOCATION_MZONE, 0, nil, 900))
+      Debug.Message("chkf mmz " .. tostring(aux.ChkfMMZ(1)(Group.CreateGroup(), nil, 0)) .. "/" .. tostring(aux.ChkfMMZ(6)(Group.CreateGroup(), nil, 0)))
       local global_state={}
       local global_count=0
       aux.GlobalCheck(global_state,function()
@@ -430,6 +433,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("maximum defaults false/false/false/true");
     expect(host.messages).toContain("maximum ex count 1");
     expect(host.messages).toContain("maximum side count 0");
+    expect(host.messages).toContain("not count 1");
+    expect(host.messages).toContain("and count 1");
+    expect(host.messages).toContain("chkf mmz true/false");
     expect(host.messages).toContain("global check true/1");
     expect(host.messages).toContain("aux next 3/600");
     expect(host.messages).toContain("aux next empty 0");
