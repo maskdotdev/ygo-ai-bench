@@ -57,6 +57,7 @@ import {
   negateDuelAttack as negateDuelAttackRule,
   positionChangeActions,
 } from "#duel/battle.js";
+import { battleWindowActions } from "#duel/battle-window-actions.js";
 import {
   continueAttackResponseWindow,
   openAttackResponseWindow,
@@ -263,12 +264,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     return stampActions(actions, state.actionWindowId);
   }
   if (state.pendingBattle) {
-    if (state.battleStep === "damage") {
-      actions.push({ type: "passDamage", player, label: "Pass damage response" });
-      return stampActions(actions, state.actionWindowId);
-    }
-    actions.push(...quickEffectActions(state, player));
-    actions.push({ type: "passAttack", player, label: "Pass attack response" });
+    actions.push(...battleWindowActions(state, player, quickEffectActions));
     return stampActions(actions, state.actionWindowId);
   }
   const hand = getCards(state, player, "hand");
