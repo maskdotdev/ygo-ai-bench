@@ -44,7 +44,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelSummonApi(L, session, hostState);
   installDuelQueryApi(L, session, hostState);
   installDuelReleaseApi(L, session, hostState);
-  installDuelOperationApi(L, hostState);
+  installDuelOperationApi(L, session, hostState);
   installDuelFlagApi(L, session);
   lua.lua_setglobal(L, to_luastring("Duel"));
 }

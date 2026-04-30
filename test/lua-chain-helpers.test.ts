@@ -5,6 +5,46 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua chain helpers", () => {
+  it("lets Lua operations mark break effect boundaries", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Break Source", kind: "monster" }];
+    const session = createDuel({ seed: 86, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("before break")
+          Duel.BreakEffect()
+          Debug.Message("after break")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "break-effect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(host.messages).toContain("before break");
+    expect(host.messages).toContain("after break");
+    const breakLog = session.state.log.find((entry) => entry.action === "breakEffect");
+    expect(breakLog).toMatchObject({ player: 0, detail: "Effect operation break" });
+    expect(session.state.log.findIndex((entry) => entry.action === "activate")).toBeLessThan(session.state.log.findIndex((entry) => entry.action === "breakEffect"));
+  });
+
   it("lets Lua quick effects inspect pending chain info", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Chain Source", kind: "monster", alias: "101", level: 4, attack: 1800, defense: 1200, race: 0x2, attribute: 0x20 },

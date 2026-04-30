@@ -1,7 +1,8 @@
 import fengari from "fengari";
+import { pushDuelLog } from "#duel/card-state.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readGroupUids } from "#lua/api-utils.js";
-import type { PlayerId } from "#duel/types.js";
+import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -19,7 +20,7 @@ export interface LuaDuelOperationInfo {
   parameter: number;
 }
 
-export function installDuelOperationApi(L: unknown, hostState: LuaDuelOperationApiHostState): void {
+export function installDuelOperationApi(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushSetOperationInfo(state, hostState.operationInfos));
   lua.lua_setfield(L, -2, to_luastring("SetOperationInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, hostState.operationInfos));
@@ -28,6 +29,13 @@ export function installDuelOperationApi(L: unknown, hostState: LuaDuelOperationA
   lua.lua_setfield(L, -2, to_luastring("SetPossibleOperationInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, hostState.possibleOperationInfos));
   lua.lua_setfield(L, -2, to_luastring("GetPossibleOperationInfo"));
+  lua.lua_pushcfunction(L, () => pushBreakEffect(session));
+  lua.lua_setfield(L, -2, to_luastring("BreakEffect"));
+}
+
+function pushBreakEffect(session: DuelSession): number {
+  pushDuelLog(session.state, "breakEffect", session.state.turnPlayer, undefined, "Effect operation break");
+  return 0;
 }
 
 function pushSetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {
