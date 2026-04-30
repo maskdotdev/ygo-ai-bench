@@ -523,6 +523,8 @@ describe("Lua field and query helpers", () => {
       end
       local first_match = Duel.GetFirstMatchingCard(match, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, nil, 300)
       Debug.Message("first matching card " .. first_match:GetCode())
+      Debug.Message("equal function code " .. Duel.GetMatchingGroupCount(aux.FilterEqualFunction(Card.GetCode, 300), 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, nil))
+      Debug.Message("equal function set " .. Duel.GetMatchingGroupCount(aux.FilterEqualFunction(Card.IsCode, true, 300), 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, nil))
       local excluded = Duel.GetMatchingGroup(function(c) return c:IsCode(100) or c:IsCode(300) end, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, nil)
       local group_excluded = Duel.GetMatchingGroup(aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, excluded)
       Debug.Message("group excluded count " .. group_excluded:GetCount())
@@ -556,6 +558,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("mixed codes 100,200,300,400");
     expect(host.messages).toContain("field card codes 100/400/true");
     expect(host.messages).toContain("first matching card 300");
+    expect(host.messages).toContain("equal function code 1");
+    expect(host.messages).toContain("equal function set 1");
     expect(host.messages).toContain("group excluded count 2");
     expect(host.messages).toContain("group excluded matching count 2");
     expect(host.messages).toContain("matching target alias count 2");

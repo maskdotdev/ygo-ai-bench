@@ -149,6 +149,12 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         return ((not target:IsMaximumMode()) or (not (target:IsMaximumMode() and not target:IsMaximumModeCenter()))) and f(target,table.unpack(params))
       end
     end
+    function aux.FilterEqualFunction(f,value,...)
+      local params={...}
+      return function(target)
+        return f(target,table.unpack(params))==value
+      end
+    end
     function aux.FilterSummonCode(...)
       local params={...}
       return function(c,scard,sumtype,tp)
