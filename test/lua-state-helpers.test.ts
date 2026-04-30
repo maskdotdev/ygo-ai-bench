@@ -252,6 +252,72 @@ describe("Lua state helpers", () => {
     );
   });
 
+  it("uses the first repeated flag label and resets the whole repeated stack", () => {
+    const cards: DuelCardData[] = [{ code: "105", name: "Flag Repeat Edge Source", kind: "monster" }];
+    const session = createDuel({ seed: 141, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["105"] },
+      1: { main: ["105"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c105={}
+      function c105.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Duel.RegisterFlagEffect(0, 951, RESET_EVENT, EFFECT_FLAG_REPEAT, 51)
+          Duel.RegisterFlagEffect(0, 951, RESET_EVENT, EFFECT_FLAG_REPEAT, 52)
+          c:RegisterFlagEffect(952, RESET_EVENT, EFFECT_FLAG_REPEAT, 61)
+          c:RegisterFlagEffect(952, RESET_EVENT, EFFECT_FLAG_REPEAT, 62)
+          Debug.Message("duel repeated count " .. Duel.GetFlagEffect(0, 951))
+          Debug.Message("card repeated count " .. c:GetFlagEffect(952))
+          Debug.Message("duel repeated label " .. Duel.GetFlagEffectLabel(0, 951))
+          Debug.Message("card repeated label " .. c:GetFlagEffectLabel(952))
+          Debug.Message("duel repeated set " .. Duel.SetFlagEffectLabel(0, 951, 53))
+          Debug.Message("card repeated set " .. c:SetFlagEffectLabel(952, 63))
+          Debug.Message("duel repeated label after " .. Duel.GetFlagEffectLabel(0, 951))
+          Debug.Message("card repeated label after " .. c:GetFlagEffectLabel(952))
+          Debug.Message("duel repeated reset " .. Duel.ResetFlagEffect(0, 951))
+          Debug.Message("card repeated reset " .. c:ResetFlagEffect(952))
+          Debug.Message("duel repeated after " .. Duel.GetFlagEffect(0, 951))
+          Debug.Message("card repeated after " .. c:GetFlagEffect(952))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flag-repeat-edge-labels.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toEqual(
+      expect.arrayContaining([
+        "duel repeated count 2",
+        "card repeated count 2",
+        "duel repeated label 51",
+        "card repeated label 61",
+        "duel repeated set 1",
+        "card repeated set 1",
+        "duel repeated label after 53",
+        "card repeated label after 63",
+        "duel repeated reset 2",
+        "card repeated reset 2",
+        "duel repeated after 0",
+        "card repeated after 0",
+      ]),
+    );
+    expect(session.state.flagEffects.filter((flag) => flag.code === 951 || flag.code === 952)).toHaveLength(0);
+  });
+
   it("provides common aux compatibility helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Aux A", kind: "monster" },
