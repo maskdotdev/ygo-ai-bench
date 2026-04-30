@@ -7,6 +7,7 @@ const defaultScriptRoot = ".upstream/ignis/script";
 const apiTables = ["Duel", "Card", "Effect", "Group", "aux"];
 const usagePattern = /\b(Duel|Card|Effect|Group|aux)\s*[.:]\s*([A-Za-z_][A-Za-z0-9_]*)/g;
 const registrationPattern = /to_luastring\("([A-Za-z_][A-Za-z0-9_]*)"\)/g;
+const quotedApiNamePattern = /"([A-Z][A-Za-z0-9_]*)"/g;
 const globalPattern = /\b(Duel|Card|Effect|Group|aux)\s*=\s*\{([^}]*)\}/gs;
 const tableFunctionPattern = /\b(Duel|Card|Effect|Group|aux)\.([A-Za-z_][A-Za-z0-9_]*)\s*=/g;
 
@@ -82,6 +83,10 @@ function scanImplementedApis(root) {
     const table = tableForLocalFile(file);
     if (table) {
       for (const match of text.matchAll(registrationPattern)) {
+        const name = match[1];
+        if (name && !isInternalApiName(name)) implemented[table].add(name);
+      }
+      for (const match of text.matchAll(quotedApiNamePattern)) {
         const name = match[1];
         if (name && !isInternalApiName(name)) implemented[table].add(name);
       }

@@ -320,15 +320,22 @@ describe("Lua state helpers", () => {
 
   it("provides common aux compatibility helpers", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Aux A", kind: "monster" },
-      { code: "200", name: "Aux B", kind: "monster" },
+      { code: "100", name: "Aux A", kind: "monster", attack: 1000 },
+      { code: "200", name: "Aux B", kind: "monster", attack: 2000 },
+      { code: "300", name: "Aux C", kind: "monster", attack: 3000 },
     ];
-    const session = createDuel({ seed: 18, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 18, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200"] },
+      0: { main: ["100", "200", "300"] },
       1: { main: ["100"] },
     });
     startDuel(session);
+    const faceup = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const facedown = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    moveDuelCard(session.state, faceup!.uid, "monsterZone", 0).position = "faceUpAttack";
+    const setCard = moveDuelCard(session.state, facedown!.uid, "monsterZone", 0);
+    setCard.position = "faceDownDefense";
+    setCard.faceUp = false;
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -338,7 +345,14 @@ describe("Lua state helpers", () => {
       Debug.Message("false count " .. Duel.GetMatchingGroupCount(aux.FALSE, 0, LOCATION_HAND, 0, nil))
       local wrapped = aux.NecroValleyFilter(aux.FilterBoolFunction(Card.IsCode, 100))
       Debug.Message("wrapped count " .. Duel.GetMatchingGroupCount(wrapped, 0, LOCATION_HAND, 0, nil))
-      Debug.Message("target exists " .. tostring(Duel.IsExistingTarget(aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, nil)))
+      local wrapped_ex = aux.FilterBoolFunctionEx(function(c, minatk, code) return c:GetAttack() >= minatk and c:IsCode(code) end, 1500)
+      Debug.Message("wrapped ex count " .. Duel.GetMatchingGroupCount(wrapped_ex, 0, LOCATION_HAND, 0, nil, 300))
+      local target_bool = aux.TargetBoolFunction(function(c, minatk, code) return c:GetAttack() >= minatk and c:IsCode(code) end, 2500)
+      Debug.Message("target bool count " .. Duel.GetMatchingGroupCount(target_bool, 0, LOCATION_HAND, 0, nil, 300))
+      local faceup_filter = aux.FaceupFilter(function(c, minatk) return c:GetAttack() >= minatk end, 900)
+      Debug.Message("faceup count " .. Duel.GetMatchingGroupCount(faceup_filter, 0, LOCATION_MZONE, 0, nil))
+      Debug.Message("faceup runtime count " .. Duel.GetMatchingGroupCount(aux.FaceupFilter(function(c, minatk) return c:GetAttack() >= minatk end), 0, LOCATION_MZONE, 0, nil, 900))
+      Debug.Message("target exists " .. tostring(Duel.IsExistingTarget(aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, nil)))
       Debug.Message("target count " .. Duel.GetTargetCount(aux.TRUE, 0, LOCATION_HAND, 0, nil))
       `,
       "aux-helpers.lua",
@@ -346,11 +360,15 @@ describe("Lua state helpers", () => {
 
     expect(result.ok).toBe(true);
     expect(host.getGlobalNumber("observed_stringid")).toBe(1602);
-    expect(host.messages).toContain("true count 2");
+    expect(host.messages).toContain("true count 1");
     expect(host.messages).toContain("false count 0");
-    expect(host.messages).toContain("wrapped count 1");
+    expect(host.messages).toContain("wrapped count 0");
+    expect(host.messages).toContain("wrapped ex count 1");
+    expect(host.messages).toContain("target bool count 1");
+    expect(host.messages).toContain("faceup count 1");
+    expect(host.messages).toContain("faceup runtime count 1");
     expect(host.messages).toContain("target exists true");
-    expect(host.messages).toContain("target count 2");
+    expect(host.messages).toContain("target count 1");
   });
 
   it("provides deterministic Lua option prompt helpers", () => {

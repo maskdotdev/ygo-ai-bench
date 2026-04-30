@@ -690,6 +690,9 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("FilterBoolFunction"));
+  pushFixedFilterWrapper(L, "FilterBoolFunctionEx", readLuaError, false);
+  pushFixedFilterWrapper(L, "TargetBoolFunction", readLuaError, false);
+  pushFixedFilterWrapper(L, "FaceupFilter", readLuaError, true);
   lua.lua_pushcfunction(L, (state: unknown) => {
     if (!lua.lua_isfunction(state, 1)) {
       lua.lua_pushnil(state);
@@ -709,4 +712,52 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   });
   lua.lua_setfield(L, -2, to_luastring("NecroValleyFilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
+}
+
+function pushFixedFilterWrapper(L: unknown, fieldName: string, readLuaError: (state: unknown) => string, requireFaceup: boolean): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    if (!lua.lua_isfunction(state, 1)) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    const extraArgCount = lua.lua_gettop(state) - 1;
+    const refs: number[] = [];
+    lua.lua_pushvalue(state, 1);
+    refs.push(lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX));
+    for (let index = 0; index < extraArgCount; index += 1) {
+      lua.lua_pushvalue(state, index + 2);
+      refs.push(lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX));
+    }
+    lua.lua_pushjsfunction(state, (callState: unknown) => {
+      if (requireFaceup && !isLuaCardFaceup(callState, readLuaError)) {
+        lua.lua_pushboolean(callState, false);
+        return 1;
+      }
+      const runtimeArgCount = lua.lua_gettop(callState);
+      lua.lua_rawgeti(callState, lua.LUA_REGISTRYINDEX, refs[0]);
+      if (runtimeArgCount > 0) lua.lua_pushvalue(callState, 1);
+      for (let index = 1; index < refs.length; index += 1) lua.lua_rawgeti(callState, lua.LUA_REGISTRYINDEX, refs[index]);
+      for (let index = 2; index <= runtimeArgCount; index += 1) lua.lua_pushvalue(callState, index);
+      const status = lua.lua_pcall(callState, runtimeArgCount + refs.length - 1, 1, 0);
+      if (status !== lua.LUA_OK) return lauxlib.luaL_error(callState, to_luastring(readLuaError(callState)));
+      return 1;
+    });
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function isLuaCardFaceup(L: unknown, readLuaError: (state: unknown) => string): boolean {
+  if (!lua.lua_istable(L, 1)) return false;
+  lua.lua_getfield(L, 1, to_luastring("IsFaceup"));
+  if (!lua.lua_isfunction(L, -1)) {
+    lua.lua_pop(L, 1);
+    return false;
+  }
+  lua.lua_pushvalue(L, 1);
+  const status = lua.lua_pcall(L, 1, 1, 0);
+  if (status !== lua.LUA_OK) return Boolean(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
 }
