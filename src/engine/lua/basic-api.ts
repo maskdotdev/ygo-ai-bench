@@ -150,6 +150,7 @@ export function installConstants(L: unknown): void {
     TIMING_BATTLE_START: 0x8,
     TIMING_BATTLE_END: 0x10,
     TIMING_END_PHASE: 0x20,
+    TIMINGS_CHECK_MONSTER: 0x1c0,
     HINT_MESSAGE: 2,
     HINT_SELECTMSG: 3,
     HINT_OPSELECTED: 4,

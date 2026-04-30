@@ -159,6 +159,46 @@ describe("Lua effect metadata helpers", () => {
     });
   });
 
+  it("creates Mysterune quick-play effect metadata", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Runick Probe", kind: "spell" }];
+    const session = createDuel({ seed: 161, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.GetFieldCard(0,LOCATION_HAND,0)
+      local e1=Effect.CreateMysteruneQPEffect(c,31562086,CATEGORY_SEARCH,function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return true end
+        e:SetDescription(77)
+      end,function(e,tp,eg,ep,ev,re,r,rp)
+        Debug.Message("mysterune op")
+        return true
+      end,1,EFFECT_FLAG_CARD_TARGET)
+      local limit,limit_code=e1:GetCountLimit()
+      Debug.Message("mysterune base " .. e1:GetType() .. "/" .. e1:GetCode() .. "/" .. limit .. "/" .. limit_code .. "/" .. tostring(e1:GetTarget()~=nil) .. "/" .. tostring(e1:GetOperation()~=nil))
+      e1:GetTarget()(e1,0,Group.CreateGroup(),0,0,nil,0,0,1)
+      Debug.Message("mysterune unique " .. e1:GetCategory() .. "/" .. e1:GetProperty() .. "/" .. e1:GetDescription())
+      local e0,e2=Effect.CreateMysteruneQPEffect(c,66712905,CATEGORY_TOGRAVE,nil,nil,2,EFFECT_FLAG_DELAY,EVENT_TO_HAND)
+      local unique_limit,unique_code=e0:GetCountLimit()
+      local summon_limit,summon_code=e2:GetCountLimit()
+      Debug.Message("mysterune split " .. e0:GetDescription() .. "/" .. e0:GetCategory() .. "/" .. e0:GetCode() .. "/" .. unique_limit .. "/" .. unique_code)
+      Debug.Message("mysterune summon " .. e2:GetDescription() .. "/" .. e2:GetCategory() .. "/" .. e2:GetCode() .. "/" .. summon_limit .. "/" .. summon_code)
+      `,
+      "mysterune-effect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("mysterune base 16/1002/1/31562086/true/true");
+    expect(host.messages).toContain(`mysterune unique ${0x20000 | 0x4}/${0x10}/77`);
+    expect(host.messages).toContain(`mysterune split ${66712905 * 16}/${0x20 | 0x4}/1012/1/66712905`);
+    expect(host.messages).toContain(`mysterune summon ${66712905 * 16 + 1}/${0x200}/1002/1/66712905`);
+  });
+
   it("lets Lua effects clone metadata and override callbacks independently", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Clone Source", kind: "monster" },
