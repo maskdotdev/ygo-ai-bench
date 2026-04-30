@@ -295,6 +295,13 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsControler"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const targetPlayer = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : card ? otherPlayer(card.controller) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && targetPlayer !== undefined && canChangeControl(session.state, card, targetPlayer)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsAbleToChangeControler"));
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
   pushNumberMatcher(L, "IsSummonType", session, (card, requested) => isSummonTypeMatch(summonTypeMask(card), requested));
   pushNumberMatcher(L, "IsSummonPlayer", session, (card, requested) => card.summonPlayer !== undefined && card.summonPlayer === normalizePlayer(requested));
@@ -491,6 +498,12 @@ function isNegatableCard(state: DuelState, card: DuelCardInstance): boolean {
   return card.faceUp && (card.location === "monsterZone" || card.location === "spellTrapZone") && !isCardDisabled(state, card, createMaterialCheckContext(state));
 }
 
+function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer: PlayerId): boolean {
+  if (card.controller === targetPlayer) return false;
+  if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
+  return hasZoneSpace(state, targetPlayer, card.location);
+}
+
 function isMonsterLike(card: DuelCardInstance): boolean {
   return (cardTypeFlags(card) & 0x1) !== 0;
 }
@@ -556,6 +569,10 @@ function readCard(L: unknown, session: DuelSession | undefined): DuelCardInstanc
 
 function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
+}
+
+function otherPlayer(player: PlayerId): PlayerId {
+  return player === 0 ? 1 : 0;
 }
 
 function cardTypeFlags(card: DuelCardInstance | undefined): number {
@@ -754,6 +771,7 @@ const cardFieldNames = [
   "GetReasonPlayer",
   "IsReasonPlayer",
   "IsControler",
+  "IsAbleToChangeControler",
   "GetSummonType",
   "IsSummonType",
   "IsSummonPlayer",

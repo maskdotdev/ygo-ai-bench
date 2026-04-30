@@ -919,6 +919,64 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("monster negatable disabled false/false");
   });
 
+  it("lets Lua scripts check whether cards can change control", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Control Monster", kind: "monster" },
+      { code: "200", name: "Control Spell", kind: "spell" },
+      { code: "300", name: "Control Hand", kind: "monster" },
+      { code: "400", name: "Control Filler", kind: "monster" },
+      { code: "500", name: "Control Backrow Filler", kind: "spell" },
+    ];
+    const session = createDuel({ seed: 52, startingHandSize: 10, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: ["400", "400", "400", "400", "400", "500", "500", "500", "500", "500"] },
+    });
+    startDuel(session);
+
+    const monster = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const spell = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(monster).toBeTruthy();
+    expect(spell).toBeTruthy();
+    moveDuelCard(session.state, monster!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, spell!.uid, "spellTrapZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const open = host.loadScript(
+      `
+      local monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("control monster open " .. tostring(monster:IsAbleToChangeControler()) .. "/" .. tostring(monster:IsAbleToChangeControler(0)))
+      Debug.Message("control spell open " .. tostring(spell:IsAbleToChangeControler()))
+      Debug.Message("control hand " .. tostring(hand:IsAbleToChangeControler()))
+      `,
+      "control-change-open.lua",
+    );
+    expect(open.ok, open.error).toBe(true);
+    expect(host.messages).toContain("control monster open true/false");
+    expect(host.messages).toContain("control spell open true");
+    expect(host.messages).toContain("control hand false");
+
+    for (const filler of session.state.cards.filter((card) => card.controller === 1 && card.location === "hand" && card.code === "400")) {
+      moveDuelCard(session.state, filler.uid, "monsterZone", 1);
+    }
+    for (const filler of session.state.cards.filter((card) => card.controller === 1 && card.location === "hand" && card.code === "500")) {
+      moveDuelCard(session.state, filler.uid, "spellTrapZone", 1);
+    }
+
+    const full = host.loadScript(
+      `
+      local monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("control full " .. tostring(monster:IsAbleToChangeControler()) .. "/" .. tostring(spell:IsAbleToChangeControler()))
+      `,
+      "control-change-full.lua",
+    );
+    expect(full.ok, full.error).toBe(true);
+    expect(host.messages).toContain("control full false/false");
+  });
+
   it("applies Lua indestructible effect destruction prevention", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Indestructible Source", kind: "monster" },
