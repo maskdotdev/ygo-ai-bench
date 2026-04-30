@@ -5,7 +5,7 @@ import { pushCardTable } from "#lua/card-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
-import type { DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -33,6 +33,8 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("GetFieldGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFusionMaterial(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetFusionMaterial"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFusionMaterial(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SelectFusionMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFieldGroupCount(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetFieldGroupCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFieldGroupCount(state, session));
@@ -152,6 +154,19 @@ function pushFieldGroup(L: unknown, session: DuelSession): number {
 function pushFusionMaterial(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   pushGroupTable(L, fieldGroupUids(session, player, 0x02 | 0x04, 0));
+  return 1;
+}
+
+function pushSelectedFusionMaterial(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const targetUid = readCardUid(L, 2);
+  const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
+  const suppliedUids = readGroupUids(L, 3);
+  const poolUids = suppliedUids.length > 0 ? suppliedUids : fieldGroupUids(session, player, 0x02 | 0x04, 0);
+  const candidates = poolUids
+    .map((uid) => session.state.cards.find((card) => card.uid === uid))
+    .filter((card): card is DuelCardInstance => Boolean(card && card.uid !== targetUid && card.controller === player && canUseAsFusionMaterial(card)));
+  pushGroupTable(L, selectFusionMaterialUids(candidates, target));
   return 1;
 }
 
@@ -566,6 +581,30 @@ function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: 
     .filter((card) => card.controller === player && locations.includes(card.location))
     .sort((a, b) => a.sequence - b.sequence)
     .map((card) => card.uid);
+}
+
+function selectFusionMaterialUids(candidates: DuelCardInstance[], target: DuelCardInstance | undefined): string[] {
+  const requiredCodes = target?.data.fusionMaterials ?? [];
+  if (!requiredCodes.length) return candidates.slice(0, Math.min(2, candidates.length)).map((card) => card.uid);
+  const selected: DuelCardInstance[] = [];
+  for (const code of requiredCodes) {
+    const material = candidates.find((card) => !selected.includes(card) && cardCodes(card).includes(code));
+    if (!material) return [];
+    selected.push(material);
+  }
+  return selected.map((card) => card.uid);
+}
+
+function canUseAsFusionMaterial(card: DuelCardInstance): boolean {
+  return (card.location === "hand" || card.location === "monsterZone") && isMonsterLike(card);
+}
+
+function isMonsterLike(card: DuelCardInstance): boolean {
+  return card.kind === "monster" || (card.kind === "extra" && card.data.kind !== "spell" && card.data.kind !== "trap");
+}
+
+function cardCodes(card: DuelCardInstance): string[] {
+  return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
 
 function normalizePlayer(value: number): PlayerId {
