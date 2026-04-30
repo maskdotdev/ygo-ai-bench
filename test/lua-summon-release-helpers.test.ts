@@ -488,6 +488,76 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("release check target hit true");
   });
 
+  it("lets Lua scripts collect must-be material effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Synchro Must Material", kind: "monster" },
+      { code: "300", name: "Function Must Material", kind: "monster" },
+      { code: "900", name: "Summon Candidate", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 20, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["100", "300"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_MUST_BE_MATERIAL)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(1,0)
+        e:SetValue(REASON_SYNCHRO)
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_MUST_BE_MATERIAL)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(1,0)
+        e:SetValue(function(te,eg,sump,sc,g)
+          if sump==0 and sc and sc:IsCode(900) then return REASON_FUSION end
+          return 0
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "must-be-material-effects.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const result = host.loadScript(
+      `
+      local sc = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local synchro = aux.GetMustBeMaterialGroup(0, Group.CreateGroup(), 0, sc, nil, REASON_SYNCHRO)
+      local fusion = aux.GetMustBeMaterialGroup(0, Group.CreateGroup(), 0, sc, nil, REASON_FUSION)
+      local ritual = aux.GetMustBeMaterialGroup(0, Group.CreateGroup(), 0, sc, nil, REASON_RITUAL)
+      Debug.Message("must material synchro " .. synchro:GetCount() .. "/" .. tostring(synchro:GetFirst():IsCode(100)))
+      Debug.Message("must material fusion " .. fusion:GetCount() .. "/" .. tostring(fusion:GetFirst():IsCode(300)))
+      Debug.Message("must material ritual " .. ritual:GetCount())
+      `,
+      "must-be-material-check.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("must material synchro 1/true");
+    expect(host.messages).toContain("must material fusion 1/true");
+    expect(host.messages).toContain("must material ritual 0");
+  });
+
   it("excludes unreleasable cards from Lua release group helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Unreleasable Cost", kind: "monster" },

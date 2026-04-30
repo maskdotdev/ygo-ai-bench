@@ -186,6 +186,19 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
     function aux.ReleaseCheckTarget(sg,tp,exg,dg)
       return dg and dg:IsExists(aux.TRUE,1,sg)
     end
+    function aux.GetMustBeMaterialGroup(tp,eg,sump,sc,g,r)
+      local effects={Duel.GetPlayerEffect(tp,EFFECT_MUST_BE_MATERIAL)}
+      local sg=Group.CreateGroup()
+      for _,te in ipairs(effects) do
+        local value=te:GetValue()
+        if type(value)=="function" then value=value(te,eg,sump,sc,g) end
+        if value and (value & r)>0 then
+          local handler=te:GetHandler()
+          if handler then sg:AddCard(handler) end
+        end
+      end
+      return sg
+    end
     function aux.CheckStealEquip(c,e,tp)
       if c:IsFacedown() or not c:IsControlerCanBeChanged() or not c:IsControler(1-tp) then return false end
       if e:GetHandler():IsLocation(LOCATION_SZONE) then return true end
