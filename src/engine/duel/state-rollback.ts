@@ -1,4 +1,4 @@
-import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelState, PendingTrigger, PlayerId } from "#duel/types.js";
+import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelState, PendingTrigger, PlayerId } from "#duel/types.js";
 
 export interface DuelStateRollback {
   status: DuelState["status"];
@@ -13,6 +13,7 @@ export interface DuelStateRollback {
   chain: ChainLink[];
   chainPasses: PlayerId[];
   pendingTriggers: PendingTrigger[];
+  eventHistory: DuelEventRecord[];
   usedCountKeys: string[];
   flagEffects: DuelFlagEffect[];
   activityCounts: DuelState["activityCounts"];
@@ -43,6 +44,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     chain: state.chain.map((link) => ({ ...link, ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}) })),
     chainPasses: [...state.chainPasses],
     pendingTriggers: state.pendingTriggers.map((trigger) => ({ ...trigger })),
+    eventHistory: state.eventHistory.map((event) => ({ ...event })),
     usedCountKeys: [...state.usedCountKeys],
     flagEffects: state.flagEffects.map((effect) => ({ ...effect })),
     activityCounts: { 0: { ...state.activityCounts[0] }, 1: { ...state.activityCounts[1] } },
@@ -75,6 +77,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.chain = rollback.chain;
   state.chainPasses = rollback.chainPasses;
   state.pendingTriggers = rollback.pendingTriggers;
+  state.eventHistory = rollback.eventHistory;
   state.usedCountKeys = rollback.usedCountKeys;
   state.flagEffects = rollback.flagEffects;
   state.activityCounts = rollback.activityCounts;

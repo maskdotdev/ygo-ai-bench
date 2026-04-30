@@ -33,6 +33,8 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("GetPossibleOperationInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRaiseEvent(state, session));
   lua.lua_setfield(L, -2, to_luastring("RaiseEvent"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckEvent(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CheckEvent"));
   lua.lua_pushcfunction(L, () => pushBreakEffect(session));
   lua.lua_setfield(L, -2, to_luastring("BreakEffect"));
 }
@@ -50,6 +52,12 @@ function pushRaiseEvent(L: unknown, session: DuelSession): number {
     if (card) raiseDuelEvent(session.state, eventName, card);
   }
   return 0;
+}
+
+function pushCheckEvent(L: unknown, session: DuelSession): number {
+  const eventName = triggerEventFromCode(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : undefined);
+  lua.lua_pushboolean(L, Boolean(eventName && session.state.eventHistory.some((event) => event.eventName === eventName)));
+  return 1;
 }
 
 function pushSetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {

@@ -198,6 +198,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     chainLimits: [],
     chainPasses: [],
     pendingTriggers: [],
+    eventHistory: [],
     usedCountKeys: [],
     flagEffects: [],
     shuffleCheckDisabled: false,
@@ -752,7 +753,13 @@ function createReplacementEffectHandlers(state: DuelState): ReplacementEffectHan
 }
 
 function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
+  recordDuelEvent(state, eventName, eventCard);
   collectTriggerEffectsRule(state, eventName, (duel, effect, source, triggerEventName, triggerEventCard) => canChooseEffect(duel, effect, source, effect.controller, triggerEventName, triggerEventCard), eventCard);
+}
+
+function recordDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
+  state.eventHistory.push({ eventName, ...(eventCard ? { eventCardUid: eventCard.uid } : {}) });
+  state.eventHistory = state.eventHistory.slice(-32);
 }
 
 function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction[] {

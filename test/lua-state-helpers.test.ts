@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -120,6 +120,67 @@ describe("Lua state helpers", () => {
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
     expect(host.messages).toContain("raised trigger 100");
+  });
+
+  it("lets Lua scripts check recorded duel events", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Checked Event Card", kind: "monster" }];
+    const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("check before " .. tostring(Duel.CheckEvent(EVENT_TO_GRAVE)))
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Duel.RaiseEvent(target, EVENT_TO_GRAVE, nil, REASON_EFFECT, 0, 0, 0)
+      Debug.Message("check raised " .. tostring(Duel.CheckEvent(EVENT_TO_GRAVE)))
+      `,
+      "check-event-raised.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("check before false");
+    expect(host.messages).toContain("check raised true");
+    expect(session.state.eventHistory).toContainEqual({ eventName: "sentToGraveyard", eventCardUid: session.state.cards.find((card) => card.code === "100")?.uid });
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    const restoredHost = createLuaScriptHost(restored);
+    const restoredResult = restoredHost.loadScript(
+      `
+      Debug.Message("check restored " .. tostring(Duel.CheckEvent(EVENT_TO_GRAVE)))
+      `,
+      "check-event-restored.lua",
+    );
+
+    expect(restoredResult.ok, restoredResult.error).toBe(true);
+    expect(restoredHost.messages).toContain("check restored true");
+  });
+
+  it("records engine movement events for Lua event checks", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Moved Event Card", kind: "monster" }];
+    const session = createDuel({ seed: 145, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Duel.SendtoGrave(target, REASON_EFFECT)
+      Debug.Message("check moved " .. tostring(Duel.CheckEvent(EVENT_TO_GRAVE)))
+      `,
+      "check-event-moved.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("check moved true");
   });
 
   it("lets Lua effects register, read, and reset duel and card flags", () => {
