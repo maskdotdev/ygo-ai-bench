@@ -827,6 +827,59 @@ describe("Lua continuous effects", () => {
     expect(session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "graveyard" });
   });
 
+  it("checks Lua card release-by-effect legality", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Release Lock", kind: "monster" },
+      { code: "200", name: "Protected Release", kind: "monster" },
+      { code: "300", name: "Free Release", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 92, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const lock = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const protectedCard = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const free = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(lock).toBeTruthy();
+    expect(protectedCard).toBeTruthy();
+    expect(free).toBeTruthy();
+    moveDuelCard(session.state, lock!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, protectedCard!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, free!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_CANNOT_RELEASE)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+      `,
+      "release-by-effect-lock.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const check = host.loadScript(
+      `
+      local protected_card = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local free = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("releasable by effect " .. tostring(protected_card:IsReleasableByEffect()) .. "/" .. tostring(free:IsReleasableByEffect()))
+      `,
+      "release-by-effect-check.lua",
+    );
+
+    expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain("releasable by effect false/true");
+  });
+
   it("applies Lua send replacement effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Send Replacement Source", kind: "monster" },
