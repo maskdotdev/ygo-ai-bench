@@ -11,6 +11,7 @@ import { installDuelOperationApi } from "#lua/duel-api/operation.js";
 import { installDuelPlayerApi } from "#lua/duel-api/player.js";
 import { installDuelPromptApi } from "#lua/duel-api/prompt.js";
 import { installDuelQueryApi } from "#lua/duel-api/query.js";
+import { installDuelRandomApi } from "#lua/duel-api/random.js";
 import { installDuelReleaseApi } from "#lua/duel-api/release.js";
 import { installDuelSummonApi } from "#lua/duel-api/summon.js";
 import { installDuelTokenApi } from "#lua/duel-api/token.js";
@@ -47,6 +48,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelMoveApi(L, session, hostState);
   installDuelSummonApi(L, session, hostState);
   installDuelQueryApi(L, session, hostState);
+  installDuelRandomApi(L, session);
   installDuelReleaseApi(L, session, hostState);
   installDuelOperationApi(L, session, hostState);
   installDuelTokenApi(L, session);

@@ -215,6 +215,7 @@ export interface DuelState {
   turn: number;
   turnPlayer: PlayerId;
   phase: DuelPhase;
+  randomCounter: number;
   players: Record<PlayerId, DuelPlayerState>;
   cards: DuelCardInstance[];
   effects: DuelEffectDefinition[];
