@@ -179,6 +179,20 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
     function aux.ritlimit(e,se,sp,st)
       return aux.sumlimit(SUMMON_TYPE_RITUAL)(e,se,sp,st)
     end
+    function aux.qlifilter(e,te)
+      if te:IsActiveType(TYPE_MONSTER) and te:IsActivated() then
+        local lv=e:GetHandler():GetLevel()
+        local ec=te:GetOwner()
+        if ec:IsType(TYPE_LINK) then
+          return false
+        elseif ec:IsType(TYPE_XYZ) then
+          return ec:GetOriginalRank()<lv
+        else
+          return ec:GetOriginalLevel()<lv
+        end
+      end
+      return false
+    end
     function aux.gbspcon(e,tp,eg,ep,ev,re,r,rp)
       local st=e:GetHandler():GetSummonType()
       return st>=SUMMON_TYPE_SPECIAL+100 and st<SUMMON_TYPE_SPECIAL+150

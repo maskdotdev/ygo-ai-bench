@@ -199,6 +199,54 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain(`mysterune summon ${66712905 * 16 + 1}/${0x200}/1002/1/66712905`);
   });
 
+  it("checks active effect type metadata for qli filters", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Qli Source", kind: "monster", level: 6, typeFlags: 0x1 },
+      { code: "200", name: "Low Monster", kind: "monster", level: 4, typeFlags: 0x1 },
+      { code: "300", name: "High Monster", kind: "monster", level: 8, typeFlags: 0x1 },
+      { code: "400", name: "Xyz Monster", kind: "extra", level: 3, typeFlags: 0x800001 },
+      { code: "500", name: "Link Monster", kind: "extra", level: 2, typeFlags: 0x4000001 },
+      { code: "600", name: "Spell", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 162, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "600"], extra: ["400", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local qli=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,nil)
+      local low=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,200),0,LOCATION_HAND,0,nil)
+      local high=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,300),0,LOCATION_HAND,0,nil)
+      local spell=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,600),0,LOCATION_HAND,0,nil)
+      local xyz=Duel.GetFieldCard(0,LOCATION_EXTRA,0)
+      local link=Duel.GetFieldCard(0,LOCATION_EXTRA,1)
+      local e=Effect.CreateEffect(qli)
+      local low_effect=Effect.CreateEffect(low)
+      low_effect:SetType(EFFECT_TYPE_ACTIVATE)
+      local high_effect=Effect.CreateEffect(high)
+      high_effect:SetType(EFFECT_TYPE_ACTIVATE)
+      local xyz_effect=Effect.CreateEffect(xyz)
+      xyz_effect:SetType(EFFECT_TYPE_ACTIVATE)
+      local link_effect=Effect.CreateEffect(link)
+      link_effect:SetType(EFFECT_TYPE_ACTIVATE)
+      local spell_effect=Effect.CreateEffect(spell)
+      spell_effect:SetType(EFFECT_TYPE_ACTIVATE)
+      local inactive=Effect.CreateEffect(low)
+      Debug.Message("active type " .. tostring(low_effect:IsActiveType(TYPE_MONSTER)) .. "/" .. tostring(spell_effect:IsActiveType(TYPE_MONSTER)) .. "/" .. tostring(low_effect:IsActivated()) .. "/" .. tostring(inactive:IsActivated()))
+      Debug.Message("qli filter " .. tostring(aux.qlifilter(e,low_effect)) .. "/" .. tostring(aux.qlifilter(e,high_effect)) .. "/" .. tostring(aux.qlifilter(e,xyz_effect)) .. "/" .. tostring(aux.qlifilter(e,link_effect)) .. "/" .. tostring(aux.qlifilter(e,spell_effect)) .. "/" .. tostring(aux.qlifilter(e,inactive)))
+      `,
+      "qli-filter.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("active type true/false/true/false");
+    expect(host.messages).toContain("qli filter true/false/true/false/false/false");
+  });
+
   it("lets Lua effects clone metadata and override callbacks independently", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Clone Source", kind: "monster" },

@@ -323,6 +323,16 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
   pushEffectMethod(L, effects, "IsHasType", hasEffectNumberField("typeFlags"));
   pushEffectMethod(L, effects, "IsHasCategory", hasEffectNumberField("category"));
   pushEffectMethod(L, effects, "IsHasProperty", hasEffectNumberField("property"));
+  pushEffectMethod(L, effects, "IsActiveType", (state, effect) => {
+    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const ownerType = sourceCard(session, effect)?.data.typeFlags ?? 0;
+    lua.lua_pushboolean(state, requested !== 0 && (ownerType & requested) !== 0);
+    return 1;
+  });
+  pushEffectMethod(L, effects, "IsActivated", (state, effect) => {
+    lua.lua_pushboolean(state, ((effect.typeFlags ?? 0) & 0x10) !== 0);
+    return 1;
+  });
   pushEffectMethod(L, effects, "SetType", setEffectNumberField("typeFlags"));
   pushEffectMethod(L, effects, "SetCode", setEffectNumberField("code"));
   pushEffectMethod(L, effects, "SetDescription", setEffectNumberField("description"));
