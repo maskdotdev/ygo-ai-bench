@@ -4,7 +4,7 @@ import { findCard, moveDuelCard } from "#duel/card-state.js";
 import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
-import type { DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -24,6 +24,8 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanMSet"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummon(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummonMonster(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummonMonster"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsPlayerAffectedByEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerAffectedByEffect"));
 }
@@ -50,6 +52,15 @@ function pushCanSpecialSummon(L: unknown, session: DuelSession): number {
   const targetPlayer = normalizePlayer(lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : player);
   const uid = readCardUid(L, 5) ?? readCardUid(L, 2);
   lua.lua_pushboolean(L, canSpecialSummon(session, player, targetPlayer, positionMask, uid));
+  return 1;
+}
+
+function pushCanSpecialSummonMonster(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const targetPlayer = normalizePlayer(lua.lua_isnumber(L, 11) ? lua.lua_tointeger(L, 11) : player);
+  const positionMask = lua.lua_isnumber(L, 10) ? lua.lua_tointeger(L, 10) : 0x1;
+  const card = syntheticSpecialSummonCard(L, targetPlayer);
+  lua.lua_pushboolean(L, Boolean(positionFromMask(positionMask)) && availableMonsterZoneCount(session, targetPlayer, []) > 0 && canPlayerSpecialSummon(session.state, targetPlayer, card));
   return 1;
 }
 
@@ -99,6 +110,37 @@ function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: 
   if (!card || !isMonsterLike(card.kind)) return false;
   if (card.controller !== player && card.owner !== player) return false;
   return canSpecialSummonDuelCard(session.state, uid, targetPlayer);
+}
+
+function syntheticSpecialSummonCard(L: unknown, player: PlayerId): DuelCardInstance {
+  const code = String(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0);
+  const setcode = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : undefined;
+  const data: DuelCardData = {
+    code,
+    name: `Synthetic ${code}`,
+    kind: "monster",
+    ...(lua.lua_isnumber(L, 4) ? { typeFlags: lua.lua_tointeger(L, 4) } : {}),
+    ...(lua.lua_isnumber(L, 5) ? { attack: lua.lua_tointeger(L, 5) } : {}),
+    ...(lua.lua_isnumber(L, 6) ? { defense: lua.lua_tointeger(L, 6) } : {}),
+    ...(lua.lua_isnumber(L, 7) ? { level: lua.lua_tointeger(L, 7) } : {}),
+    ...(lua.lua_isnumber(L, 8) ? { race: lua.lua_tointeger(L, 8) } : {}),
+    ...(lua.lua_isnumber(L, 9) ? { attribute: lua.lua_tointeger(L, 9) } : {}),
+    ...(setcode === undefined || setcode === 0 ? {} : { setcodes: [setcode] }),
+  };
+  return {
+    uid: `synthetic-${code}`,
+    code,
+    name: data.name,
+    kind: "monster",
+    owner: player,
+    controller: player,
+    location: "hand",
+    sequence: -1,
+    position: "faceDown",
+    overlayUids: [],
+    faceUp: false,
+    data,
+  };
 }
 
 function createPlayerCheckContext(session: DuelSession): ContinuousEffectContextFactory {
