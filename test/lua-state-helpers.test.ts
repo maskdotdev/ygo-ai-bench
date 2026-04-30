@@ -845,8 +845,8 @@ describe("Lua state helpers", () => {
 
   it("provides deterministic Lua option prompt helpers", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Prompt Source", kind: "monster" },
-      { code: "200", name: "Prompt Target", kind: "monster" },
+      { code: "100", name: "Prompt Source", kind: "monster", attribute: 0x1 },
+      { code: "200", name: "Prompt Target", kind: "monster", attribute: 0x2 },
     ];
     const session = createDuel({ seed: 30, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -873,12 +873,16 @@ describe("Lua state helpers", () => {
       local disabled=Duel.SelectDisableField(0, 1, LOCATION_MZONE, 0, 0)
       local selected=Duel.SelectField(0, 2, LOCATION_SZONE, LOCATION_MZONE, 0)
       local group=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 2, nil)
+      local earth_group=Duel.SelectMatchingCard(0, Card.IsCode, 0, LOCATION_HAND, 0, 1, 1, nil, 100)
+      local another_earth=Duel.AnnounceAnotherAttribute(earth_group, 0)
+      local another_mixed=Duel.AnnounceAnotherAttribute(group, 0)
       local single=group:GetFirst()
       local group_hint_result=Duel.HintSelection(group, 501)
       local card_hint_result=Duel.HintSelection(single)
       Debug.Message("prompt option " .. option .. "/" .. tostring(yes))
       Debug.Message("prompt effect " .. tostring(effect_yes) .. "/" .. tostring(effect_choice) .. "/" .. tostring(effect_none))
       Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. level .. "/" .. ranged)
+      Debug.Message("prompt another attribute " .. another_earth .. "/" .. another_mixed)
       Debug.Message("prompt zones " .. disabled .. "/" .. selected .. "/" .. ZONES_MMZ .. "/" .. ZONES_EMZ)
       Debug.Message("hint return " .. tostring(group_hint_result == nil) .. "/" .. tostring(card_hint_result == nil))
       `,
@@ -889,6 +893,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("prompt option 0/true");
     expect(host.messages).toContain("prompt effect true/2/nil");
     expect(host.messages).toContain("prompt announce 4/100/1/1/16/3/4");
+    expect(host.messages).toContain("prompt another attribute 2/1");
     expect(host.messages).toContain("prompt zones 1/768/31/96");
     expect(host.messages).toContain("hint return true/true");
     const hintLogs = session.state.log.filter((entry) => entry.action === "hintSelection");

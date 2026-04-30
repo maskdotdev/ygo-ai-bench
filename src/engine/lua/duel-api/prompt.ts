@@ -44,6 +44,8 @@ export function installDuelPromptApi(L: unknown, session: DuelSession, hostState
   pushAnnouncementHelper(L, "AnnounceType");
   pushAnnouncementHelper(L, "AnnounceRace");
   pushAnnouncementHelper(L, "AnnounceAttribute");
+  lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceAnotherAttribute(state, session));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceAnotherAttribute"));
   pushAnnouncementHelper(L, "AnnounceLevel");
 }
 
@@ -86,6 +88,28 @@ function pushFirstAnnouncementValue(L: unknown, fallback: number): number {
   const value = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : fallback;
   lua.lua_pushinteger(L, value);
   return 1;
+}
+
+function pushAnnounceAnotherAttribute(L: unknown, session: DuelSession): number {
+  const currentMask = readCardOrGroupUids(L, 1).reduce((mask, uid) => {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    return mask | (card?.data.attribute ?? 0);
+  }, 0);
+  const attributeAll = 0x1 | 0x2 | 0x4 | 0x8 | 0x10 | 0x20 | 0x40;
+  const allowedMask = currentMask > 0 && isSingleBit(currentMask) ? attributeAll & ~currentMask : attributeAll;
+  lua.lua_pushinteger(L, firstSingleBit(allowedMask) ?? firstSingleBit(attributeAll) ?? 0);
+  return 1;
+}
+
+function isSingleBit(value: number): boolean {
+  return value > 0 && (value & (value - 1)) === 0;
+}
+
+function firstSingleBit(mask: number): number | undefined {
+  for (let bit = 1; bit <= 0x40; bit <<= 1) {
+    if ((mask & bit) !== 0) return bit;
+  }
+  return undefined;
 }
 
 function pushAnnounceNumberRange(L: unknown): number {
