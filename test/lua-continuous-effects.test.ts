@@ -1040,15 +1040,19 @@ describe("Lua continuous effects", () => {
       local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
       local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("control monster open " .. tostring(monster:IsAbleToChangeControler()) .. "/" .. tostring(monster:IsAbleToChangeControler(0)))
+      Debug.Message("control alias open " .. tostring(monster:IsControlerCanBeChanged()) .. "/" .. tostring(monster:IsControlerCanBeChanged(0)))
       Debug.Message("control spell open " .. tostring(spell:IsAbleToChangeControler()))
       Debug.Message("control hand " .. tostring(hand:IsAbleToChangeControler()))
+      Debug.Message("control alias hand " .. tostring(hand:IsControlerCanBeChanged()))
       `,
       "control-change-open.lua",
     );
     expect(open.ok, open.error).toBe(true);
     expect(host.messages).toContain("control monster open true/false");
+    expect(host.messages).toContain("control alias open true/false");
     expect(host.messages).toContain("control spell open true");
     expect(host.messages).toContain("control hand false");
+    expect(host.messages).toContain("control alias hand false");
 
     for (const filler of session.state.cards.filter((card) => card.controller === 1 && card.location === "hand" && card.code === "400")) {
       moveDuelCard(session.state, filler.uid, "monsterZone", 1);
@@ -1062,11 +1066,13 @@ describe("Lua continuous effects", () => {
       local monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("control full " .. tostring(monster:IsAbleToChangeControler()) .. "/" .. tostring(spell:IsAbleToChangeControler()))
+      Debug.Message("control alias full " .. tostring(monster:IsControlerCanBeChanged()) .. "/" .. tostring(spell:IsControlerCanBeChanged()))
       `,
       "control-change-full.lua",
     );
     expect(full.ok, full.error).toBe(true);
     expect(host.messages).toContain("control full false/false");
+    expect(host.messages).toContain("control alias full false/false");
   });
 
   it("applies Lua indestructible effect destruction prevention", () => {

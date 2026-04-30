@@ -299,13 +299,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsControler"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const targetPlayer = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : card ? otherPlayer(card.controller) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && targetPlayer !== undefined && canChangeControl(session.state, card, targetPlayer)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsAbleToChangeControler"));
+  pushCanChangeControler(L, "IsAbleToChangeControler", session);
+  pushCanChangeControler(L, "IsControlerCanBeChanged", session);
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
   pushNumberMatcher(L, "IsSummonType", session, (card, requested) => isSummonTypeMatch(summonTypeMask(card), requested));
   pushNumberMatcher(L, "IsSummonPlayer", session, (card, requested) => card.summonPlayer !== undefined && card.summonPlayer === normalizePlayer(requested));
@@ -449,6 +444,16 @@ function pushMaterialPredicate(L: unknown, fieldName: string, session: DuelSessi
     const targetUid = readCardUid(state, 2);
     const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
     lua.lua_pushboolean(state, canBeMaterial(session.state, card, kind, target));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function pushCanChangeControler(L: unknown, fieldName: string, session: DuelSession): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const targetPlayer = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : card ? otherPlayer(card.controller) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && targetPlayer !== undefined && canChangeControl(session.state, card, targetPlayer)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
@@ -828,6 +833,7 @@ const cardFieldNames = [
   "IsReasonPlayer",
   "IsControler",
   "IsAbleToChangeControler",
+  "IsControlerCanBeChanged",
   "GetSummonType",
   "IsSummonType",
   "IsSummonPlayer",
