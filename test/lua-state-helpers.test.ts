@@ -1085,13 +1085,17 @@ describe("Lua state helpers", () => {
     const fusion = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon");
     expect(fusion).toBeDefined();
     expect(applyResponse(session, fusion!).ok).toBe(true);
-    expect(session.state.cards.find((card) => card.code === "900")?.summonType).toBe("fusion");
+    const fusionCard = session.state.cards.find((card) => card.code === "900");
+    expect(fusionCard?.summonType).toBe("fusion");
+    fusionCard!.summonTypeCode = 0x40000000 + 151;
 
     const fusionResult = host.loadScript(
       `
       local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("fusion type " .. tostring(c:IsSummonType(SUMMON_TYPE_FUSION)) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_SPECIAL)))
       Debug.Message("fusion location " .. tostring(c:IsSummonLocation(LOCATION_EXTRA)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_HAND)))
+      local e=Effect.CreateEffect(c)
+      Debug.Message("custom summon type " .. c:GetSummonType() .. "/" .. tostring(aux.evospcon(e)) .. "/" .. tostring(aux.gbspcon(e)))
       Debug.Message("fusion status " .. tostring(c:IsStatus(STATUS_SUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_SPSUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_PROC_COMPLETE)))
       Debug.Message("fusion activity " .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON))
       cost_reason = REASON_COST
@@ -1100,11 +1104,24 @@ describe("Lua state helpers", () => {
     );
 
     expect(fusionResult.ok).toBe(true);
-    expect(host.messages).toContain("fusion type true/true");
+    expect(host.messages).toContain("fusion type false/true");
     expect(host.messages).toContain("fusion location true/false");
+    expect(host.messages).toContain("custom summon type 1073741975/true/false");
     expect(host.messages).toContain("fusion status false/true/true");
     expect(host.messages).toContain("fusion activity 2/1/1");
     expect(host.getGlobalNumber("cost_reason")).toBe(0x80);
+
+    fusionCard!.summonTypeCode = 0x40000000 + 120;
+    const gladiatorResult = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      Debug.Message("gladiator summon type " .. c:GetSummonType() .. "/" .. tostring(aux.evospcon(e)) .. "/" .. tostring(aux.gbspcon(e)))
+      `,
+      "summon-type-gladiator.lua",
+    );
+    expect(gladiatorResult.ok, gladiatorResult.error).toBe(true);
+    expect(host.messages).toContain("gladiator summon type 1073741944/false/true");
 
     const phase = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase");
     expect(phase).toBeDefined();

@@ -179,6 +179,14 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
     function aux.ritlimit(e,se,sp,st)
       return aux.sumlimit(SUMMON_TYPE_RITUAL)(e,se,sp,st)
     end
+    function aux.gbspcon(e,tp,eg,ep,ev,re,r,rp)
+      local st=e:GetHandler():GetSummonType()
+      return st>=SUMMON_TYPE_SPECIAL+100 and st<SUMMON_TYPE_SPECIAL+150
+    end
+    function aux.evospcon(e,tp,eg,ep,ev,re,r,rp)
+      local st=e:GetHandler():GetSummonType()
+      return st>=SUMMON_TYPE_SPECIAL+150 and st<SUMMON_TYPE_SPECIAL+180
+    end
     function aux.tgoval(e,re,rp)
       return rp~=e:GetHandlerPlayer()
     end

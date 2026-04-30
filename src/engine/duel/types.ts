@@ -79,6 +79,7 @@ export interface DuelCardInstance {
   reasonPlayer?: PlayerId;
   turnId?: number;
   summonType?: DuelSummonType;
+  summonTypeCode?: number;
   summonPlayer?: PlayerId;
   data: DuelCardData;
 }

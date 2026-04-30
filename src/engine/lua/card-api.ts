@@ -859,6 +859,7 @@ function positionMaskFromPosition(position: CardPosition | undefined): number {
 }
 
 function summonTypeMask(card: DuelCardInstance | undefined): number {
+  if (card?.summonTypeCode !== undefined) return card.summonTypeCode;
   if (!card?.summonType) return 0;
   if (card.summonType === "normal") return 0x10000000;
   if (card.summonType === "tribute") return 0x11000000;
