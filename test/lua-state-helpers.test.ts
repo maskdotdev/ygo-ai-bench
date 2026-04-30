@@ -122,6 +122,60 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("raised trigger 100");
   });
 
+  it("lets Lua scripts raise single-card events", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Single Event First", kind: "monster" },
+      { code: "101", name: "Single Event Second", kind: "monster" },
+      { code: "200", name: "Single Event Trigger", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 146, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "101", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const register = host.loadScript(
+      `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_TO_GRAVE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          Debug.Message("single trigger " .. eg:GetFirst():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "raise-single-event-register.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 101), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Duel.RaiseSingleEvent(target, EVENT_TO_GRAVE, nil, REASON_EFFECT, 0, 0, 0)
+      Debug.Message("single check " .. tostring(Duel.CheckEvent(EVENT_TO_GRAVE)))
+      `,
+      "raise-single-event.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    const raisedUid = session.state.cards.find((card) => card.code === "101")?.uid;
+    expect(session.state.eventHistory).toContainEqual({ eventName: "sentToGraveyard", eventCardUid: raisedUid });
+    expect(session.state.pendingTriggers).toHaveLength(1);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCardUid: raisedUid });
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("single check true");
+    expect(host.messages).toContain("single trigger 101");
+  });
+
   it("lets Lua scripts check recorded duel events", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Checked Event Card", kind: "monster" }];
     const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });
