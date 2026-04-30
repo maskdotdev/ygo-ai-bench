@@ -166,7 +166,7 @@ describe("duel battle", () => {
     expect(quickSource).toBeTruthy();
     specialSummonDuelCard(session.state, attacker!.uid, 0);
     registerEffect(session, {
-      id: "damage-window-quick",
+      id: "damage-step-quick",
       sourceUid: quickSource!.uid,
       controller: 0,
       event: "quick",
@@ -174,7 +174,19 @@ describe("duel battle", () => {
       oncePerTurn: true,
       property: 0x4000,
       operation(ctx) {
-        ctx.log("Damage window quick resolved");
+        ctx.log("Damage step quick resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "damage-calculation-quick",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      property: 0x8000,
+      operation(ctx) {
+        ctx.log("Damage calculation quick resolved");
       },
     });
     registerEffect(session, {
@@ -199,16 +211,27 @@ describe("duel battle", () => {
 
     expect(session.state.battleStep).toBe("damage");
     expect(session.state.players[1].lifePoints).toBe(8000);
-    const quick = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "damage-window-quick");
+    const quick = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "damage-step-quick");
     expect(quick).toBeUndefined();
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "damage-window-unflagged-quick")).toBe(false);
-    const turnPlayerQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "damage-window-quick");
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "damage-calculation-quick")).toBe(false);
+    const turnPlayerQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "damage-step-quick");
     expect(turnPlayerQuick).toBeTruthy();
     expect(applyResponse(session, turnPlayerQuick!).ok).toBe(true);
     expect(session.state.pendingBattle).toBeDefined();
     expect(session.state.battleStep).toBe("damage");
-    expect(session.state.log.some((entry) => entry.detail === "Damage window quick resolved")).toBe(true);
+    expect(session.state.log.some((entry) => entry.detail === "Damage step quick resolved")).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.battleStep).toBe("damageCalculation");
+    expect(getDuelLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.effectId === "damage-step-quick")).toBe(false);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    const calculationQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "damage-calculation-quick");
+    expect(calculationQuick).toBeTruthy();
+    expect(applyResponse(session, calculationQuick!).ok).toBe(true);
+    expect(session.state.battleStep).toBe("damageCalculation");
+    expect(session.state.log.some((entry) => entry.detail === "Damage calculation quick resolved")).toBe(true);
     passAttackResponses(session);
     expect(queryPublicState(session).players[1].lifePoints).toBe(6200);
   });
@@ -532,7 +555,7 @@ describe("duel battle", () => {
 function passAttackResponses(session: ReturnType<typeof createDuel>): void {
   while (session.state.pendingBattle) {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
-    const pass = getDuelLegalActions(session, player).find((action) => action.type === (session.state.battleStep === "damage" ? "passDamage" : "passAttack"));
+    const pass = getDuelLegalActions(session, player).find((action) => action.type === (session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack"));
     expect(pass).toBeTruthy();
     expect(applyResponse(session, pass!).ok).toBe(true);
   }

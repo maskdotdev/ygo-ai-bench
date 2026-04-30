@@ -24,8 +24,9 @@ export function hasQuickEffectResponses(state: DuelState, player: PlayerId, canC
 }
 
 function quickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition): boolean {
-  if (state.battleStep !== "damage") return true;
-  return Boolean((effect.property ?? 0) & (0x4000 | 0x8000));
+  if (state.battleStep === "damage") return Boolean((effect.property ?? 0) & 0x4000);
+  if (state.battleStep === "damageCalculation") return Boolean((effect.property ?? 0) & 0x8000);
+  return true;
 }
 
 function chainLimitsAllow(state: DuelState, effect: DuelEffectDefinition, player: PlayerId): boolean {

@@ -205,7 +205,7 @@ export type DuelPromptState =
   | { id: string; type: "selectOption"; player: PlayerId; options: number[]; returnTo?: PlayerId }
   | { id: string; type: "selectYesNo"; player: PlayerId; description?: number; returnTo?: PlayerId };
 
-export type BattleStep = "attack" | "damage";
+export type BattleStep = "attack" | "damage" | "damageCalculation";
 
 export interface DuelState {
   id: string;

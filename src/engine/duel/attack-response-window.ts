@@ -22,7 +22,7 @@ export function passAttackResponseWindow(state: DuelState, player: PlayerId, han
 }
 
 export function passDamageResponseWindow(state: DuelState, player: PlayerId, handlers: BattleContinuationHandlers): void {
-  if (!state.pendingBattle || state.battleStep !== "damage") throw new Error("No damage response window is pending");
+  if (!state.pendingBattle || !isDamageBattleStep(state)) throw new Error("No damage response window is pending");
   if (!state.damagePasses.includes(player)) state.damagePasses.push(player);
   const nextPlayer = otherPlayer(player);
   if (!state.damagePasses.includes(nextPlayer)) {
@@ -30,14 +30,18 @@ export function passDamageResponseWindow(state: DuelState, player: PlayerId, han
     return;
   }
   state.damagePasses = [];
+  if (state.battleStep === "damage") {
+    openDamageCalculationWindow(state, player);
+    return;
+  }
   resolvePendingBattle(state, handlers);
 }
 
 export function continueAttackResponseWindow(state: DuelState, handlers: BattleContinuationHandlers): void {
   if (!state.pendingBattle || state.chain.length || state.pendingTriggers.length) return;
-  if (state.battleStep === "damage") {
+  if (isDamageBattleStep(state)) {
     if (state.damagePasses.length > 0) return;
-    openDamageResponseWindow(state, state.turnPlayer);
+    openDamageResponseWindow(state, state.turnPlayer, state.battleStep === "damageCalculation" ? "damageCalculation" : "damage");
     return;
   }
   if (state.attackPasses.length > 0) return;
@@ -47,14 +51,22 @@ export function continueAttackResponseWindow(state: DuelState, handlers: BattleC
 
 export function markBattleWindowChainStarted(state: DuelState): void {
   if (!state.pendingBattle) return;
-  if (state.battleStep === "damage") state.damagePasses = [];
+  if (isDamageBattleStep(state)) state.damagePasses = [];
   else state.attackPasses = [];
 }
 
-function openDamageResponseWindow(state: DuelState, lastAttackResponder: PlayerId): void {
+function openDamageResponseWindow(state: DuelState, lastResponder: PlayerId, step: "damage" | "damageCalculation" = "damage"): void {
   state.damagePasses = [];
-  state.battleStep = "damage";
-  state.waitingFor = otherPlayer(lastAttackResponder);
+  state.battleStep = step;
+  state.waitingFor = otherPlayer(lastResponder);
+}
+
+function openDamageCalculationWindow(state: DuelState, lastDamageResponder: PlayerId): void {
+  openDamageResponseWindow(state, lastDamageResponder, "damageCalculation");
+}
+
+function isDamageBattleStep(state: DuelState): boolean {
+  return state.battleStep === "damage" || state.battleStep === "damageCalculation";
 }
 
 function otherPlayer(player: PlayerId): PlayerId {
