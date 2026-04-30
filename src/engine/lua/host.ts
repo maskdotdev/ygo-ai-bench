@@ -4,6 +4,7 @@ import { installCardApi, pushCardTable } from "#lua/card-api.js";
 import { installDuelApi } from "#lua/duel-api/index.js";
 import { installGroupApi, pushGroupTable } from "#lua/group-api.js";
 import { scriptFilenameForCard } from "#engine/data-loaders.js";
+import { registerEffect } from "#duel/core.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaDuelOperationInfo } from "#lua/duel-api/operation.js";
@@ -70,6 +71,7 @@ interface LuaHostState {
   selectedUids: string[];
   pushEffectTable: (state: unknown, id: number) => void;
   getEffectTypeFlags: (id: number) => number | undefined;
+  registerEffect: (state: unknown, id: number, player: PlayerId) => boolean;
 }
 
 export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
@@ -90,6 +92,9 @@ export function createLuaScriptHost(session: DuelSession): LuaScriptHost {
     },
     getEffectTypeFlags(id) {
       return hostState.effects.get(id)?.typeFlags;
+    },
+    registerEffect(state, id, player) {
+      return registerLuaEffect(state, hostState, id, player);
     },
   };
   lualib.luaL_openlibs(L);
@@ -376,6 +381,15 @@ function luaEffectDuelId(effect: LuaEffectRecord): string {
 
 function luaEffectRegistryKey(card: DuelCardInstance, effect: LuaEffectRecord): string {
   return `lua:${card.code}:${luaEffectDuelId(effect)}`;
+}
+
+function registerLuaEffect(L: unknown, hostState: LuaHostState, id: number, player: PlayerId): boolean {
+  const luaEffect = hostState.effects.get(id);
+  const source = luaEffect?.sourceUid === undefined ? undefined : hostState.session.state.cards.find((card) => card.uid === luaEffect.sourceUid);
+  if (!luaEffect || !source) return false;
+  luaEffect.ownerPlayer = player;
+  registerEffect(hostState.session, toDuelEffect(source, luaEffect, L, hostState));
+  return true;
 }
 
 function setEffectNumberField(field: "typeFlags" | "code" | "description" | "category" | "property") {

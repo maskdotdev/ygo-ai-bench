@@ -3,6 +3,7 @@ import { installDuelActivityApi } from "#lua/duel-api/activity.js";
 import { installDuelBattleApi } from "#lua/duel-api/battle.js";
 import { installDuelChainApi } from "#lua/duel-api/chain.js";
 import { installDuelDeckApi } from "#lua/duel-api/deck.js";
+import { installDuelEffectApi } from "#lua/duel-api/effect.js";
 import { installDuelFlagApi } from "#lua/duel-api/flag.js";
 import { installDuelLpApi } from "#lua/duel-api/lp.js";
 import { installDuelMoveApi } from "#lua/duel-api/move.js";
@@ -28,6 +29,7 @@ export interface LuaDuelApiHostState {
   selectedUids: string[];
   pushEffectTable: (state: unknown, id: number) => void;
   getEffectTypeFlags: (id: number) => number | undefined;
+  registerEffect: (state: unknown, id: number, player: 0 | 1) => boolean;
 }
 
 export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
@@ -39,6 +41,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelActivityApi(L, session);
   installDuelLpApi(L, session);
   installDuelDeckApi(L, session, hostState);
+  installDuelEffectApi(L, hostState);
   installDuelPlayerApi(L, session, hostState);
   installDuelMoveApi(L, session, hostState);
   installDuelSummonApi(L, session, hostState);

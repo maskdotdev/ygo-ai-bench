@@ -184,6 +184,56 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("affected missing nil");
   });
 
+  it("registers Lua duel-level player effects", () => {
+    const cards: DuelCardData[] = [{ code: "901", name: "Duel Effect Source", kind: "monster" }];
+    const session = createDuel({ seed: 42, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["901"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "901");
+    expect(source).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    source!.faceUp = true;
+    source!.position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c901={}
+      function c901.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(777004)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(1,0)
+        e:SetLabel(44)
+        Debug.Message("registered duel effect " .. tostring(Duel.RegisterEffect(e,0)))
+      end
+      `,
+      "duel-register-effect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const check = host.loadScript(
+      `
+      local effect=Duel.IsPlayerAffectedByEffect(0,777004)
+      Debug.Message("duel effect affected " .. tostring(effect ~= nil) .. "/" .. effect:GetLabel())
+      Debug.Message("duel effect owner " .. effect:GetOwnerPlayer())
+      `,
+      "duel-register-effect-check.lua",
+    );
+
+    expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain("registered duel effect true");
+    expect(host.messages).toContain("duel effect affected true/44");
+    expect(host.messages).toContain("duel effect owner 0");
+  });
+
   it("applies Lua continuous material restrictions to card material predicates", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Fusion Locked Material", kind: "monster" },
