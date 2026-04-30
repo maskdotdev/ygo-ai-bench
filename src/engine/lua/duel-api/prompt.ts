@@ -42,6 +42,7 @@ export function installDuelPromptApi(L: unknown, session: DuelSession, hostState
   pushAnnouncementHelper(L, "AnnounceType");
   pushAnnouncementHelper(L, "AnnounceRace");
   pushAnnouncementHelper(L, "AnnounceAttribute");
+  pushAnnouncementHelper(L, "AnnounceLevel");
 }
 
 function pushHintSelection(L: unknown, session: DuelSession): number {
