@@ -161,6 +161,14 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         return c:IsSummonCode(scard,sumtype,tp,table.unpack(params))
       end
     end
+    function aux.sumlimit(sumtype)
+      return function(e,se,sp,st)
+        return (st & sumtype)==sumtype
+      end
+    end
+    function aux.ritlimit(e,se,sp,st)
+      return aux.sumlimit(SUMMON_TYPE_RITUAL)(e,se,sp,st)
+    end
     function aux.AND(...)
       local funs={...}
       return function(...)
