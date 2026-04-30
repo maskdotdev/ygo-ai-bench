@@ -706,6 +706,12 @@ describe("Lua state helpers", () => {
       Debug.Message("value helpers opponent " .. tostring(aux.tgoval(value_effect,nil,1)) .. "/" .. tostring(aux.indsval(value_effect,nil,1)) .. "/" .. tostring(aux.indoval(value_effect,nil,1)))
       local opponent_card = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 1, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("imval helpers " .. tostring(aux.imval1(value_effect,faceup_monster)) .. "/" .. tostring(aux.imval2(value_effect,faceup_monster)) .. "/" .. tostring(aux.imval2(value_effect,opponent_card)))
+      aux.chainreg(value_effect,0,Group.CreateGroup(),0,0,nil,0,0)
+      aux.chainreg(value_effect,0,Group.CreateGroup(),0,0,nil,0,0)
+      Debug.Message("chainreg flag " .. faceup_monster:GetFlagEffect(1))
+      value_effect:SetLabel(100)
+      aux.sumreg(value_effect,0,Group.FromCards(faceup_monster,opponent_card),0,0,nil,0,0)
+      Debug.Message("sumreg flags " .. faceup_monster:GetFlagEffect(100) .. "/" .. opponent_card:GetFlagEffect(100))
       Debug.Message("extra limits " .. tostring(aux.fuslimit(nil,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(aux.synlimit(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(aux.xyzlimit(nil,nil,0,SUMMON_TYPE_XYZ)))
       Debug.Message("extra misses " .. tostring(aux.fuslimit(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(aux.synlimit(nil,nil,0,SUMMON_TYPE_XYZ)) .. "/" .. tostring(aux.xyzlimit(nil,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("sumlimit " .. tostring(aux.sumlimit(SUMMON_TYPE_RITUAL)(nil,nil,0,SUMMON_TYPE_RITUAL)))
@@ -798,6 +804,8 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("value helpers own false/true/false");
     expect(host.messages).toContain("value helpers opponent true/false/true");
     expect(host.messages).toContain("imval helpers true/false/true");
+    expect(host.messages).toContain("chainreg flag 1");
+    expect(host.messages).toContain("sumreg flags 1/1");
     expect(host.messages).toContain("extra limits true/true/true");
     expect(host.messages).toContain("extra misses false/false/false");
     expect(host.messages).toContain("sumlimit true");

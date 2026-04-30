@@ -231,6 +231,19 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
     function aux.imval2(e,c)
       return aux.imval1(e,c) and c:GetControler()~=e:GetHandlerPlayer()
     end
+    function aux.chainreg(e,tp,eg,ep,ev,re,r,rp)
+      if e:GetHandler():GetFlagEffect(1)==0 then
+        e:GetHandler():RegisterFlagEffect(1,RESET_EVENT+RESETS_STANDARD-RESET_TURN_SET+RESET_CHAIN,0,1)
+      end
+    end
+    function aux.sumreg(e,tp,eg,ep,ev,re,r,rp)
+      local code=e:GetLabel()
+      for tc in aux.Next(eg) do
+        if tc:GetOriginalCode()==code then
+          tc:RegisterFlagEffect(code,RESETS_STANDARD_PHASE_END,0,1)
+        end
+      end
+    end
     function aux.GetMustBeMaterialGroup(tp,eg,sump,sc,g,r)
       local effects={Duel.GetPlayerEffect(tp,EFFECT_MUST_BE_MATERIAL)}
       local sg=Group.CreateGroup()
