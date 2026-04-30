@@ -46,6 +46,8 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Recover"));
+  lua.lua_pushcfunction(L, () => 0);
+  lua.lua_setfield(L, -2, to_luastring("RDComplete"));
 }
 
 function normalizePlayer(value: number): PlayerId {

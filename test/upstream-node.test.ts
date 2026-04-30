@@ -880,6 +880,8 @@ describe("Node upstream workspace loader", () => {
         e:SetOperation(function(e,c)
           Debug.Message("lp before " .. Duel.GetLP(1))
           Debug.Message("damage " .. Duel.Damage(1, 1200, REASON_EFFECT))
+          Debug.Message("delayed damage " .. Duel.Damage(0, 100, REASON_EFFECT, true))
+          Duel.RDComplete()
           Debug.Message("lp after damage " .. Duel.GetLP(1))
           Debug.Message("recover " .. Duel.Recover(1, 300, REASON_EFFECT))
           Duel.SetLP(1, 250)
@@ -913,8 +915,9 @@ describe("Node upstream workspace loader", () => {
     const result = applyResponse(session, action!);
 
     expect(result.ok).toBe(true);
+    expect(result.state.players[0].lifePoints).toBe(7900);
     expect(result.state.players[1].lifePoints).toBe(50);
-    expect(host.messages).toEqual(expect.arrayContaining(["lp before 8000", "damage 1200", "lp after damage 6800", "recover 300", "can cost 200 true", "can cost 250 false", "lp after cost 50", "lp final 50"]));
+    expect(host.messages).toEqual(expect.arrayContaining(["lp before 8000", "damage 1200", "delayed damage 100", "lp after damage 6800", "recover 300", "can cost 200 true", "can cost 250 false", "lp after cost 50", "lp final 50"]));
   });
 
   it("lets Lua attack triggers inspect the attacker and attack target", () => {
