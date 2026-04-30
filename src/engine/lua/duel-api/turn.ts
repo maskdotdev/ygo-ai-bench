@@ -42,6 +42,11 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsBattlePhase"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, isAbleToEnterBattlePhase(session.state));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsAbleToEnterBP"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushboolean(state, session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation");
     return 1;
   });
@@ -86,6 +91,22 @@ function phasesFromMask(mask: number): DuelPhase[] {
     if ((phaseMask(phase) & mask) !== 0) phases.push(phase);
   }
   return phases;
+}
+
+function isAbleToEnterBattlePhase(state: DuelState): boolean {
+  return nextAvailablePhase(state, state.turnPlayer) === "battle";
+}
+
+function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
+  const phaseOrder = ["draw", "standby", "main1", "battle", "main2", "end"] satisfies DuelPhase[];
+  for (const phase of phaseOrder.slice(phaseOrder.indexOf(state.phase) + 1)) {
+    if (!isPhaseSkipped(state, player, phase)) return phase;
+  }
+  return undefined;
+}
+
+function isPhaseSkipped(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {
+  return state.skippedPhases.some((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0);
 }
 
 function skipPhase(session: DuelSession, player: PlayerId, phase: DuelPhase, count: number): void {

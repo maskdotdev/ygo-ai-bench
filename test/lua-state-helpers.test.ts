@@ -35,6 +35,44 @@ describe("Lua state helpers", () => {
     expect(session.state.skippedPhases).toEqual([]);
   });
 
+  it("lets Lua scripts query whether the turn player can enter battle phase", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Battle Phase Probe", kind: "monster" }];
+    const session = createDuel({ seed: 151, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const main = host.loadScript(
+      `
+      Debug.Message("able main " .. tostring(Duel.IsAbleToEnterBP()))
+      Duel.SkipPhase(0, PHASE_BATTLE, RESET_PHASE + PHASE_END, 1)
+      Debug.Message("able skipped " .. tostring(Duel.IsAbleToEnterBP()))
+      `,
+      "battle-phase-able-main.lua",
+    );
+
+    expect(main.ok, main.error).toBe(true);
+    expect(host.messages).toContain("able main true");
+    expect(host.messages).toContain("able skipped false");
+
+    const next = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase");
+    expect(next).toMatchObject({ phase: "main2" });
+    expect(applyResponse(session, next!).ok).toBe(true);
+
+    const after = host.loadScript(
+      `
+      Debug.Message("able main2 " .. tostring(Duel.IsAbleToEnterBP()))
+      `,
+      "battle-phase-able-main2.lua",
+    );
+
+    expect(after.ok, after.error).toBe(true);
+    expect(host.messages).toContain("able main2 false");
+  });
+
   it("lets Lua scripts raise events for trigger effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Raised Event Card", kind: "monster" },
