@@ -242,6 +242,16 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
       end
       return returned
     end
+    function aux.RegisterClientHint(card,property,tp,player1,player2,str,reset,ct)
+      if not card then return nil end
+      local eff=Effect.CreateEffect(card)
+      eff:SetProperty(EFFECT_FLAG_PLAYER_TARGET | EFFECT_FLAG_CLIENT_HINT | (property or 0))
+      eff:SetTargetRange(player1 or 0,player2 or 0)
+      eff:SetDescription(str or aux.Stringid(card:GetOriginalCode(),1))
+      eff:SetReset(RESET_PHASE | PHASE_END | (reset or 0),ct or 1)
+      Duel.RegisterEffect(eff,tp or 0)
+      return eff
+    end
     function aux.RemoveUntil(card_or_group,pos,reason,phase,flag,e,tp,oper,cond,reset,reset_count,hint,effect_desc)
       local g
       if type(card_or_group)=="table" and card_or_group.GetCount then

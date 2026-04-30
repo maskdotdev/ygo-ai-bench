@@ -698,6 +698,11 @@ describe("Lua state helpers", () => {
       Debug.Message("extra limits " .. tostring(aux.fuslimit(nil,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(aux.synlimit(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(aux.xyzlimit(nil,nil,0,SUMMON_TYPE_XYZ)))
       Debug.Message("extra misses " .. tostring(aux.fuslimit(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(aux.synlimit(nil,nil,0,SUMMON_TYPE_XYZ)) .. "/" .. tostring(aux.xyzlimit(nil,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("sumlimit " .. tostring(aux.sumlimit(SUMMON_TYPE_RITUAL)(nil,nil,0,SUMMON_TYPE_RITUAL)))
+      local hint=aux.RegisterClientHint(faceup_monster,EFFECT_FLAG_OATH,0,1,0,777,RESET_SELF_TURN,2)
+      local hint_range_self,hint_range_opp=hint:GetTargetRange()
+      local hint_reset,hint_reset_count=hint:GetReset()
+      Debug.Message("client hint " .. hint:GetDescription() .. "/" .. hint_range_self .. "/" .. hint_range_opp .. "/" .. hint_reset_count .. "/" .. tostring(hint:IsHasProperty(EFFECT_FLAG_CLIENT_HINT)) .. "/" .. tostring(hint:IsHasProperty(EFFECT_FLAG_OATH)))
+      Debug.Message("client hint default nil " .. tostring(aux.RegisterClientHint(nil,0,0,1,0)==nil))
       local global_state={}
       local global_count=0
       aux.GlobalCheck(global_state,function()
@@ -770,6 +775,8 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("extra limits true/true/true");
     expect(host.messages).toContain("extra misses false/false/false");
     expect(host.messages).toContain("sumlimit true");
+    expect(host.messages).toContain("client hint 777/1/0/2/true/true");
+    expect(host.messages).toContain("client hint default nil true");
     expect(host.messages).toContain("global check true/1");
     expect(host.messages).toContain("aux next 3/600");
     expect(host.messages).toContain("aux next empty 0");
