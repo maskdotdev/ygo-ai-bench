@@ -659,6 +659,89 @@ describe("Lua field and query helpers", () => {
     expect(fullHost.messages).toContain("sset zone blocked 0");
   });
 
+  it("lets Lua scripts tribute summon with explicit release cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Tribute Summon Target", kind: "monster", level: 7 },
+      { code: "200", name: "Tribute A", kind: "monster", level: 4 },
+      { code: "300", name: "Tribute B", kind: "monster", level: 4 },
+      { code: "400", name: "Wrong Hand Tribute", kind: "monster", level: 4 },
+    ];
+    const successSession = createDuel({ seed: 93, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(successSession, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(successSession);
+    for (const code of ["200", "300"]) {
+      const tribute = successSession.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === code);
+      moveDuelCard(successSession.state, tribute!.uid, "monsterZone", 0);
+    }
+
+    const successHost = createLuaScriptHost(successSession);
+    const successResult = successHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local tributes = Duel.SelectMatchingCard(0, function(c) return c:IsCode(200) or c:IsCode(300) end, 0, LOCATION_MZONE, 0, 2, 2, nil)
+      Debug.Message("tribute summon result " .. Duel.Summon(target, true, tributes))
+      Debug.Message("tribute summon operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "basic-tribute-summon.lua",
+    );
+    expect(successResult.ok, successResult.error).toBe(true);
+    expect(successHost.messages).toContain("tribute summon result 1");
+    expect(successHost.messages).toContain("tribute summon operated 1/100");
+    expect(successSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", position: "faceUpAttack", summonType: "tribute" });
+    expect(successSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
+    expect(successSession.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+
+    const tableSession = createDuel({ seed: 94, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(tableSession, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(tableSession);
+    for (const code of ["200", "300"]) {
+      const tribute = tableSession.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === code);
+      moveDuelCard(tableSession.state, tribute!.uid, "monsterZone", 0);
+    }
+    const tableHost = createLuaScriptHost(tableSession);
+    const tableResult = tableHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local tribute_a = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local tribute_b = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("tribute table result " .. Duel.Summon(target, true, {tribute_a, tribute_b}))
+      `,
+      "basic-tribute-table-summon.lua",
+    );
+    expect(tableResult.ok, tableResult.error).toBe(true);
+    expect(tableHost.messages).toContain("tribute table result 1");
+    expect(tableSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "tribute" });
+
+    const failureSession = createDuel({ seed: 95, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(failureSession, {
+      0: { main: ["100", "400"] },
+      1: { main: [] },
+    });
+    startDuel(failureSession);
+    const failureHost = createLuaScriptHost(failureSession);
+    const failureResult = failureHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local wrong = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("tribute missing result " .. Duel.Summon(target, true, nil))
+      Debug.Message("tribute wrong result " .. Duel.Summon(target, true, wrong))
+      Debug.Message("tribute wrong operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "basic-tribute-summon-failures.lua",
+    );
+    expect(failureResult.ok, failureResult.error).toBe(true);
+    expect(failureHost.messages).toContain("tribute missing result 0");
+    expect(failureHost.messages).toContain("tribute wrong result 0");
+    expect(failureHost.messages).toContain("tribute wrong operated 0");
+    expect(failureSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "hand" });
+  });
+
   it("passes extra filter arguments through Lua matching helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Vararg A", kind: "monster", attack: 1600 },

@@ -47,7 +47,11 @@ function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaD
     lua.lua_pushinteger(L, 0);
     return 1;
   }
-  const result = applyResponse(session, { type, player: target.controller, uid: target.uid, label: basicSummonLabel(type, target.name) });
+  const tributeUids = type === "normalSummon" ? readCardCollectionUids(L, 3) : [];
+  const result =
+    type === "normalSummon" && tributeUids.length > 0
+      ? applyResponse(session, { type: "tributeSummon", player: target.controller, uid: target.uid, tributeUids, label: `Tribute Summon ${target.name}` })
+      : applyResponse(session, { type, player: target.controller, uid: target.uid, label: basicSummonLabel(type, target.name) });
   setOperatedUids(hostState, result.ok ? [target.uid] : []);
   lua.lua_pushinteger(L, result.ok ? 1 : 0);
   return 1;
@@ -89,6 +93,20 @@ function readFirstCardOrGroupUid(L: unknown, index: number): string | undefined 
 function readCardOrGroupUids(L: unknown, index: number): string[] {
   const cardUid = readCardUid(L, index);
   return cardUid ? [cardUid] : readGroupUids(L, index);
+}
+
+function readCardCollectionUids(L: unknown, index: number): string[] {
+  const directUids = readCardOrGroupUids(L, index);
+  if (directUids.length > 0 || !lua.lua_istable(L, index)) return directUids;
+  const count = lua.lua_rawlen(L, index);
+  const uids: string[] = [];
+  for (let luaIndex = 1; luaIndex <= count; luaIndex += 1) {
+    lua.lua_rawgeti(L, index, luaIndex);
+    const uid = readCardUid(L, -1);
+    if (uid) uids.push(uid);
+    lua.lua_pop(L, 1);
+  }
+  return uids;
 }
 
 function setOperatedUids(hostState: LuaDuelSummonApiHostState, uids: string[]): void {
