@@ -151,6 +151,106 @@ describe("duel battle", () => {
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "passAttack")).toBe(false);
   });
 
+  it("skips battle resolution when the attack target leaves before damage", () => {
+    const session = createDuel({ seed: 33, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(target).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+    registerEffect(session, {
+      id: "remove-target-before-damage",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      operation(ctx) {
+        ctx.moveCard(target!.uid, "graveyard", 1);
+        ctx.log("Attack target left before damage");
+      },
+    });
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === target!.uid);
+    expect(attack).toBeTruthy();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+
+    const opponentPass = getDuelLegalActions(session, 1).find((action) => action.type === "passAttack");
+    expect(opponentPass).toBeTruthy();
+    expect(applyResponse(session, opponentPass!).ok).toBe(true);
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "remove-target-before-damage");
+    expect(quick).toBeTruthy();
+    expect(applyResponse(session, quick!).ok).toBe(true);
+    passAttackResponses(session);
+
+    expect(session.state.pendingBattle).toBeUndefined();
+    expect(session.state.currentAttack).toBeUndefined();
+    expect(session.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("graveyard");
+    expect(session.state.cards.find((card) => card.uid === attacker!.uid)?.location).toBe("monsterZone");
+    expect(session.state.players[1].lifePoints).toBe(8000);
+    expect(session.state.log.some((entry) => entry.detail === "Attack target left before damage")).toBe(true);
+  });
+
+  it("skips battle resolution when the attacker leaves before damage", () => {
+    const session = createDuel({ seed: 34, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, {
+      id: "remove-attacker-before-damage",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      operation(ctx) {
+        ctx.moveCard(attacker!.uid, "graveyard", 0);
+        ctx.log("Attacker left before damage");
+      },
+    });
+
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
+    expect(attack).toBeTruthy();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+
+    const opponentPass = getDuelLegalActions(session, 1).find((action) => action.type === "passAttack");
+    expect(opponentPass).toBeTruthy();
+    expect(applyResponse(session, opponentPass!).ok).toBe(true);
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "remove-attacker-before-damage");
+    expect(quick).toBeTruthy();
+    expect(applyResponse(session, quick!).ok).toBe(true);
+    passAttackResponses(session);
+
+    expect(session.state.pendingBattle).toBeUndefined();
+    expect(session.state.currentAttack).toBeUndefined();
+    expect(session.state.cards.find((card) => card.uid === attacker!.uid)?.location).toBe("graveyard");
+    expect(session.state.players[1].lifePoints).toBe(8000);
+    expect(session.state.log.some((entry) => entry.detail === "Attacker left before damage")).toBe(true);
+  });
+
   it("tracks summon and attack activity counts through snapshots and turn reset", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

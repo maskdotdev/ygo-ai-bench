@@ -69,6 +69,7 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   }
   const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
   delete state.pendingBattle;
+  delete state.currentAttack;
   if (!target) {
     callbacks.damagePlayer(otherPlayer(attacker.controller), getBattleAttack(attacker));
     return true;
