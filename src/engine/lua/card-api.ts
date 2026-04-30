@@ -314,6 +314,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsMSetable", session, (card) =>
     Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "setMonster" && action.uid === card.uid)),
   );
+  pushBooleanGetter(L, "IsCanTurnSet", session, (card) => Boolean(card && canTurnSet(card)));
   pushBooleanGetter(L, "IsSSetable", session, (card) => Boolean(card && card.location === "hand" && (card.kind === "spell" || card.kind === "trap") && hasZoneSpace(session.state, card.controller, "spellTrapZone")));
   pushMaterialPredicate(L, "IsCanBeFusionMaterial", session, "fusion");
   pushMaterialPredicate(L, "IsCanBeSynchroMaterial", session, "synchro");
@@ -527,6 +528,12 @@ function cardTypeFlags(card: DuelCardInstance | undefined): number {
   return 0x1;
 }
 
+function canTurnSet(card: DuelCardInstance): boolean {
+  if (card.location !== "monsterZone" || !card.faceUp) return false;
+  if (card.kind !== "monster" && card.kind !== "extra") return false;
+  return (cardTypeFlags(card) & 0x4000000) === 0;
+}
+
 function cardCodes(card: DuelCardInstance): string[] {
   return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
@@ -717,6 +724,7 @@ const cardFieldNames = [
   "IsSummonableCard",
   "IsSpecialSummonable",
   "IsMSetable",
+  "IsCanTurnSet",
   "IsSSetable",
   "IsSpellTrap",
   "IsMaximumMode",

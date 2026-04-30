@@ -709,4 +709,49 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("reason player 0/true/false");
     expect(host.messages).toContain("grave relation false/true");
   });
+
+  it("lets Lua scripts check whether cards can be turned face-down", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Face-up Monster", kind: "monster" },
+      { code: "200", name: "Face-down Monster", kind: "monster" },
+      { code: "300", name: "Link Monster", kind: "extra", typeFlags: 0x4000001, level: 2 },
+      { code: "400", name: "Hand Monster", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 21, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "400"], extra: ["300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const faceUp = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const faceDown = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const link = session.state.cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "300");
+    expect(faceUp).toBeDefined();
+    expect(faceDown).toBeDefined();
+    expect(link).toBeDefined();
+    moveDuelCard(session.state, faceUp!.uid, "monsterZone", 0).position = "faceUpAttack";
+    const setMonster = moveDuelCard(session.state, faceDown!.uid, "monsterZone", 0);
+    setMonster.position = "faceDownDefense";
+    setMonster.faceUp = false;
+    moveDuelCard(session.state, link!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local faceup = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local facedown = Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      local link = Duel.GetFieldCard(0, LOCATION_MZONE, 2)
+      local hand = Duel.GetFieldCard(0, LOCATION_HAND, 0)
+      Debug.Message("turn set faceup " .. tostring(faceup:IsCanTurnSet()))
+      Debug.Message("turn set facedown " .. tostring(facedown:IsCanTurnSet()))
+      Debug.Message("turn set link " .. tostring(link:IsCanTurnSet()))
+      Debug.Message("turn set hand " .. tostring(hand:IsCanTurnSet()))
+      `,
+      "card-turn-set.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["turn set faceup true", "turn set facedown false", "turn set link false", "turn set hand false"]);
+  });
 });
