@@ -7,6 +7,9 @@ const resetRemove = 0x80000;
 const resetToHand = 0x200000;
 const resetToDeck = 0x400000;
 const resetLeave = 0x800000;
+const resetToField = 0x1000000;
+const resetControl = 0x2000000;
+const resetOverlay = 0x4000000;
 const resetPhase = 0x40000000;
 const resetChain = 0x80000000;
 const destinationResetFlags = resetToGrave | resetRemove | resetToHand | resetToDeck;
@@ -25,6 +28,7 @@ export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInsta
     const flags = normalizeResetFlags(effect.reset?.flags ?? 0);
     if ((flags & resetEvent) === 0) return true;
     if ((flags & resetLeave) !== 0 && card.previousLocation !== card.location) return removeResetEffect(state, effect);
+    if (matchesMovementReset(flags, card)) return removeResetEffect(state, effect);
     if ((flags & destinationResetFlags) !== 0) return matchesDestinationReset(flags, card) ? removeResetEffect(state, effect) : true;
     const previousLocation = card.previousLocation ?? card.location;
     return !effect.range.includes(previousLocation) || effect.range.includes(card.location) || removeResetEffect(state, effect);
@@ -65,6 +69,17 @@ function normalizeResetFlags(flags: number): number {
 function removeResetEffect(state: DuelState, effect: DuelEffectDefinition): false {
   clearEffectCountUsage(state, effect);
   return false;
+}
+
+function matchesMovementReset(flags: number, card: DuelCardInstance): boolean {
+  if ((flags & resetToField) !== 0 && !isFieldLocation(card.previousLocation) && isFieldLocation(card.location)) return true;
+  if ((flags & resetControl) !== 0 && card.previousController !== undefined && card.previousController !== card.controller) return true;
+  if ((flags & resetOverlay) !== 0 && card.location === "overlay") return true;
+  return false;
+}
+
+function isFieldLocation(location: DuelCardInstance["location"] | undefined): boolean {
+  return location === "monsterZone" || location === "spellTrapZone";
 }
 
 function matchesDestinationReset(flags: number, card: DuelCardInstance): boolean {

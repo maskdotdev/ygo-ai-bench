@@ -239,4 +239,40 @@ describe("Lua effect reset", () => {
     expect(session.state.effects).toHaveLength(0);
     expect(session.state.usedCountKeys).toHaveLength(0);
   });
+
+  it("removes Lua RESET_TOFIELD effects when their source enters the field", () => {
+    const { session } = setupLuaChainFixture({
+      seed: 136,
+      startingHandSize: 1,
+      cards: [
+        { code: "26100", name: "Lua Reset Field Source", kind: "monster" },
+        { code: "26200", name: "Lua Reset Field Filler", kind: "monster" },
+      ],
+      decks: {
+        0: { main: ["26100"] },
+        1: { main: ["26200"] },
+      },
+      expectedEffects: 1,
+      scriptName: "lua-effect-reset-to-field.lua",
+      script: `
+      c26100={}
+      function c26100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND + LOCATION_MZONE)
+        e:SetReset(RESET_EVENT + RESET_TOFIELD)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua reset to field should not resolve")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "26100");
+    expect(source).toBeDefined();
+
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+
+    expect(session.state.effects).toHaveLength(0);
+  });
 });

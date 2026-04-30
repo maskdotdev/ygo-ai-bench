@@ -324,4 +324,83 @@ describe("duel effect reset", () => {
     expect(session.state.effects).toHaveLength(0);
     expect(session.state.usedCountKeys).toHaveLength(0);
   });
+
+  it("removes reset-to-field effects when their source enters the field", () => {
+    const session = createDuel({ seed: 133, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    registerEffect(session, {
+      id: "reset-to-field",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand", "monsterZone"],
+      reset: { flags: 0x1000 + 0x1000000 },
+      operation(ctx) {
+        ctx.log("To-field reset effect should not resolve");
+      },
+    });
+
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+
+    expect(session.state.effects).toHaveLength(0);
+  });
+
+  it("removes reset-control effects when their source controller changes", () => {
+    const session = createDuel({ seed: 134, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    registerEffect(session, {
+      id: "reset-control",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      range: ["monsterZone"],
+      reset: { flags: 0x1000 + 0x2000000 },
+      operation() {},
+    });
+
+    moveDuelCard(session.state, source!.uid, "monsterZone", 1);
+
+    expect(session.state.cards.find((card) => card.uid === source!.uid)?.controller).toBe(1);
+    expect(session.state.effects).toHaveLength(0);
+  });
+
+  it("removes reset-overlay effects when their source becomes overlay material", () => {
+    const session = createDuel({ seed: 135, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    registerEffect(session, {
+      id: "reset-overlay",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      range: ["hand", "overlay"],
+      reset: { flags: 0x1000 + 0x4000000 },
+      operation() {},
+    });
+
+    moveDuelCard(session.state, source!.uid, "overlay", 0);
+
+    expect(session.state.effects).toHaveLength(0);
+  });
 });
