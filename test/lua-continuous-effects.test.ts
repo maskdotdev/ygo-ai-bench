@@ -13,6 +13,72 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua continuous effects", () => {
+  it("checks whether cards are immune to Lua effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Immune Monster", kind: "monster" },
+      { code: "200", name: "Effect Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 73, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+      card.faceUp = true;
+      card.position = "faceUpAttack";
+    }
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        immune_target=c
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_IMMUNE_EFFECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetValue(function(e,te)
+          Debug.Message("immune value " .. te:GetOwnerPlayer())
+          return te:GetOwnerPlayer()==1
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "immune-effect-register.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const check = host.loadScript(
+      `
+      local target = immune_target
+      local opponent_effect = Effect.CreateEffect(target)
+      opponent_effect:SetOwnerPlayer(1)
+      local own_effect = Effect.CreateEffect(target)
+      own_effect:SetOwnerPlayer(0)
+      local ignore_effect = Effect.CreateEffect(target)
+      ignore_effect:SetOwnerPlayer(1)
+      ignore_effect:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)
+      Debug.Message("immune opponent " .. tostring(target:IsImmuneToEffect(opponent_effect)))
+      Debug.Message("immune own " .. tostring(target:IsImmuneToEffect(own_effect)))
+      Debug.Message("immune ignored " .. tostring(target:IsImmuneToEffect(ignore_effect)))
+      Debug.Message("immune nil " .. tostring(target:IsImmuneToEffect(nil)))
+      `,
+      "immune-effect-check.lua",
+    );
+
+    expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain("immune opponent true");
+    expect(host.messages).toContain("immune own false");
+    expect(host.messages).toContain("immune ignored false");
+    expect(host.messages).toContain("immune nil false");
+    expect(host.messages).toContain("immune value 1");
+    expect(host.messages).toContain("immune value 0");
+  });
+
   it("returns active Lua effect tables from Card.IsHasEffect", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Has Effect Field Source", kind: "monster" },

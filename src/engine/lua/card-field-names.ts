@@ -160,6 +160,7 @@ export const cardFieldNames = [
   "IsRelateToEffect",
   "IsRelateToBattle",
   "IsCanBeEffectTarget",
+  "IsImmuneToEffect",
   "IsHasEffect",
   "IsNegatable",
   "IsNegatableMonster",

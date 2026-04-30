@@ -28,6 +28,7 @@ export interface LuaCardApiEffectRecord {
   typeFlags?: number;
   sourceUid?: string;
   code?: number;
+  property?: number;
   value?: number;
   valueRef?: number;
 }
@@ -355,6 +356,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsImmuneToEffect(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("IsImmuneToEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsHasEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsHasEffect"));
   pushBooleanGetter(L, "IsNegatable", session, (card) => Boolean(card && isNegatableCard(session.state, card)));
@@ -568,6 +571,19 @@ function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   return effects.length;
 }
 
+function pushIsImmuneToEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const card = readCard(L, session);
+  const effectId = lua.lua_istable(L, 2) ? readTableNumberField(L, 2, "__effect_id") : undefined;
+  const targetEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
+  if (!card || !targetEffect || ((targetEffect.property ?? 0) & 0x80) !== 0) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  const immune = matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, targetEffect, hostState));
+  lua.lua_pushboolean(L, immune);
+  return 1;
+}
+
 function pushRitualLevel<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
   const card = readCard(L, session);
   if (!card) {
@@ -701,6 +717,26 @@ function matchingLuaEffects<EffectRecord extends LuaCardApiEffectRecord>(
     matches.push(luaEffect);
   }
   return matches;
+}
+
+function immuneEffectApplies<EffectRecord extends LuaCardApiEffectRecord>(
+  L: unknown,
+  immuneEffect: EffectRecord,
+  targetEffect: EffectRecord,
+  hostState: LuaCardApiState<EffectRecord>,
+): boolean {
+  if (immuneEffect.valueRef === undefined) return true;
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, immuneEffect.valueRef);
+  hostState.pushEffectTable(L, immuneEffect.id);
+  hostState.pushEffectTable(L, targetEffect.id);
+  const status = lua.lua_pcall(L, 2, 1, 0);
+  if (status !== lua.LUA_OK) {
+    lua.lua_pop(L, 1);
+    return false;
+  }
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
 }
 
 function luaEffectDuelId(effect: LuaCardApiEffectRecord): string {
