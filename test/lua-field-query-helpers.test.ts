@@ -543,6 +543,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not original attribute " .. tostring(c:IsNotOriginalAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsNotOriginalAttribute(ATTRIBUTE_LIGHT)))
       Debug.Message("spell count " .. Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, nil))
       local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("has level " .. tostring(c:HasLevel()) .. "/" .. tostring(xyz:HasLevel()) .. "/" .. tostring(link:HasLevel()) .. "/" .. tostring(spell:HasLevel()))
       Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()))
       Debug.Message("cost checks " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
       Duel.SendtoGrave(c, REASON_EFFECT)
@@ -566,6 +567,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not type false/true");
     expect(host.messages).toContain("not original type false/true");
     expect(host.messages).toContain("rank 4/4/true/true");
+    expect(host.messages).toContain("has level true/false/false/false");
     expect(host.messages).toContain("rank comparisons true/false/true/true");
     expect(host.messages).toContain("link 2/2/5/true/true");
     expect(host.messages).toContain("link comparisons true/false/false/true");
