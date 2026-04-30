@@ -742,6 +742,53 @@ describe("Lua field and query helpers", () => {
     expect(failureSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "hand" });
   });
 
+  it("lets Lua scripts change battle positions for cards and groups", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Position A", kind: "monster" },
+      { code: "200", name: "Position B", kind: "monster" },
+      { code: "300", name: "Position C", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 96, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["100", "200", "300"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+      card!.position = "faceUpAttack";
+      card!.faceUp = true;
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local group = Duel.SelectMatchingCard(0, function(c) return c:IsCode(100) or c:IsCode(200) end, 0, LOCATION_MZONE, 0, 1, 2, nil)
+      Debug.Message("change group " .. Duel.ChangePosition(group, POS_FACEUP_DEFENSE))
+      Debug.Message("change operated " .. Duel.GetOperatedGroup():GetCount())
+      local first = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local third = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("change repeat blocked " .. Duel.ChangePosition(first, POS_FACEUP_ATTACK))
+      Debug.Message("change repeat operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("change invalid " .. Duel.ChangePosition(third, 2))
+      Debug.Message("change invalid operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "change-position.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("change group 2");
+    expect(host.messages).toContain("change operated 2");
+    expect(host.messages).toContain("change repeat blocked 0");
+    expect(host.messages).toContain("change repeat operated 0");
+    expect(host.messages).toContain("change invalid 0");
+    expect(host.messages).toContain("change invalid operated 0");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ position: "faceUpDefense", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ position: "faceUpDefense", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ position: "faceUpAttack", faceUp: true });
+  });
+
   it("passes extra filter arguments through Lua matching helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Vararg A", kind: "monster", attack: 1600 },
