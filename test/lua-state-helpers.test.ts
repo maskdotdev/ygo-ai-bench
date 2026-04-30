@@ -144,6 +144,65 @@ describe("Lua state helpers", () => {
     expect(session.state.flagEffects).toHaveLength(0);
   });
 
+  it("replaces non-repeat flag effects and exposes flag labels", () => {
+    const cards: DuelCardData[] = [{ code: "103", name: "Flag Repeat Source", kind: "monster" }];
+    const session = createDuel({ seed: 139, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["103"] },
+      1: { main: ["103"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c103={}
+      function c103.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("duel flag first " .. Duel.RegisterFlagEffect(0, 931, RESET_EVENT, 0, 11))
+          Debug.Message("duel flag replace " .. Duel.RegisterFlagEffect(0, 931, RESET_EVENT, 0, 12))
+          Debug.Message("duel flag label " .. Duel.GetFlagEffectLabel(0, 931))
+          Debug.Message("duel flag repeat " .. Duel.RegisterFlagEffect(0, 931, RESET_EVENT, EFFECT_FLAG_REPEAT, 13))
+          Debug.Message("duel flag repeat label " .. Duel.GetFlagEffectLabel(0, 931))
+          Debug.Message("card flag first " .. c:RegisterFlagEffect(932, RESET_EVENT, 0, 21))
+          Debug.Message("card flag replace " .. c:RegisterFlagEffect(932, RESET_EVENT, 0, 22))
+          Debug.Message("card flag label " .. c:GetFlagEffectLabel(932))
+          Debug.Message("card flag repeat " .. c:RegisterFlagEffect(932, RESET_EVENT, EFFECT_FLAG_REPEAT, 23))
+          Debug.Message("card flag repeat label " .. c:GetFlagEffectLabel(932))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flag-repeat-labels.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toEqual(
+      expect.arrayContaining([
+        "duel flag first 1",
+        "duel flag replace 1",
+        "duel flag label 12",
+        "duel flag repeat 2",
+        "duel flag repeat label 12",
+        "card flag first 1",
+        "card flag replace 1",
+        "card flag label 22",
+        "card flag repeat 2",
+        "card flag repeat label 22",
+      ]),
+    );
+    expect(session.state.flagEffects.filter((flag) => flag.code === 931)).toHaveLength(2);
+    expect(session.state.flagEffects.filter((flag) => flag.code === 932)).toHaveLength(2);
+  });
+
   it("provides common aux compatibility helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Aux A", kind: "monster" },
