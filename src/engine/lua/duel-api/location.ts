@@ -44,6 +44,8 @@ export function installDuelLocationApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("SelectDisableField"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectField"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SelectFieldZone"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const positionMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0x1;
     lua.lua_pushinteger(state, positionMaskFromPosition(positionFromMask(positionMask) ?? "faceUpAttack"));

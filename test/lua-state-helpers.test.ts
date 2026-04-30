@@ -872,6 +872,7 @@ describe("Lua state helpers", () => {
       local ranged=Duel.AnnounceNumberRange(0, 2, 5, 2, 3)
       local disabled=Duel.SelectDisableField(0, 1, LOCATION_MZONE, 0, 0)
       local selected=Duel.SelectField(0, 2, LOCATION_SZONE, LOCATION_MZONE, 0)
+      local selected_zone=Duel.SelectFieldZone(0, 1, 0, LOCATION_MZONE, 0)
       local group=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 2, nil)
       local earth_group=Duel.SelectMatchingCard(0, Card.IsCode, 0, LOCATION_HAND, 0, 1, 1, nil, 100)
       local another_earth=Duel.AnnounceAnotherAttribute(earth_group, 0)
@@ -883,7 +884,7 @@ describe("Lua state helpers", () => {
       Debug.Message("prompt effect " .. tostring(effect_yes) .. "/" .. tostring(effect_choice) .. "/" .. tostring(effect_none))
       Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. level .. "/" .. ranged)
       Debug.Message("prompt another attribute " .. another_earth .. "/" .. another_mixed)
-      Debug.Message("prompt zones " .. disabled .. "/" .. selected .. "/" .. ZONES_MMZ .. "/" .. ZONES_EMZ)
+      Debug.Message("prompt zones " .. disabled .. "/" .. selected .. "/" .. selected_zone .. "/" .. ZONES_MMZ .. "/" .. ZONES_EMZ)
       Debug.Message("hint return " .. tostring(group_hint_result == nil) .. "/" .. tostring(card_hint_result == nil))
       `,
       "prompt-helpers.lua",
@@ -894,7 +895,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("prompt effect true/2/nil");
     expect(host.messages).toContain("prompt announce 4/100/1/1/16/3/4");
     expect(host.messages).toContain("prompt another attribute 2/1");
-    expect(host.messages).toContain("prompt zones 1/768/31/96");
+    expect(host.messages).toContain("prompt zones 1/768/65536/31/96");
     expect(host.messages).toContain("hint return true/true");
     const hintLogs = session.state.log.filter((entry) => entry.action === "hintSelection");
     expect(hintLogs).toHaveLength(2);
