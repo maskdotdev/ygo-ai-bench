@@ -302,6 +302,7 @@ describe("Lua state helpers", () => {
       `
       Debug.Message("duel type default " .. tostring(Duel.IsDuelType(DUEL_EMZONE)) .. "/" .. tostring(Duel.IsDuelType(DUEL_SEPARATE_PZONE)))
       Debug.Message("duel type high " .. tostring(Duel.IsDuelType(DUEL_NORMAL_SUMMON_FACEUP_DEF)))
+      Debug.Message("deck master default " .. tostring(Duel.IsDeckMaster(0, 153000001)))
       Duel.EnableUnofficialProc()
       Duel.EnableGlobalFlag(GLOBALFLAG_DETACH_EVENT)
       Duel.EnableGlobalFlag(GLOBALFLAG_SELF_TOGRAVE)
@@ -313,6 +314,7 @@ describe("Lua state helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("duel type default true/false");
     expect(host.messages).toContain("duel type high true");
+    expect(host.messages).toContain("deck master default false");
     expect(host.messages).toContain("unofficial enabled");
     expect(session.state.unofficialProcEnabled).toBe(true);
     expect(session.state.globalFlags).toBe(0x10 | 0x100);
