@@ -301,6 +301,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsAbleToGraveAsCost", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.cost)));
   pushBooleanGetter(L, "IsAbleToHand", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "hand")));
   pushBooleanGetter(L, "IsAbleToDeck", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "deck")));
+  pushBooleanGetter(L, "IsAbleToDeckOrExtraAsCost", session, (card, uid) => Boolean(card && uid && canMoveCardToDeckOrExtraAsCost(session.state, card, uid)));
   pushBooleanGetter(L, "IsAbleToRemove", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "banished")));
   pushBooleanGetter(L, "IsAbleToExtra", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "extraDeck")));
   pushBooleanGetter(L, "IsDestructable", session, (_, uid) => Boolean(uid && canDestroyCard(session.state, uid)));
@@ -470,8 +471,17 @@ function canDestroyCard(state: DuelState, uid: string): boolean {
   return canMoveDuelCardToLocation(state, uid, "graveyard", reason) && !findIndestructibleEffect(state, uid, reason, createMaterialCheckContext(state));
 }
 
+function canMoveCardToDeckOrExtraAsCost(state: DuelState, card: DuelCardInstance, uid: string): boolean {
+  const destination: DuelLocation = card.kind === "extra" || isPendulumCard(card) ? "extraDeck" : "deck";
+  return canMoveDuelCardToLocation(state, uid, destination, duelReason.cost);
+}
+
 function isMonsterLike(card: DuelCardInstance): boolean {
   return (cardTypeFlags(card) & 0x1) !== 0;
+}
+
+function isPendulumCard(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x1000000) !== 0;
 }
 
 function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind): boolean {
@@ -735,6 +745,7 @@ const cardFieldNames = [
   "IsAbleToGraveAsCost",
   "IsAbleToHand",
   "IsAbleToDeck",
+  "IsAbleToDeckOrExtraAsCost",
   "IsAbleToRemove",
   "IsAbleToExtra",
   "IsDestructable",

@@ -651,6 +651,72 @@ describe("Lua continuous effects", () => {
     expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "hand" });
   });
 
+  it("lets Lua scripts check whether cards can return to deck or extra deck as cost", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cannot Deck Source", kind: "monster" },
+      { code: "200", name: "Main Deck Cost", kind: "monster" },
+      { code: "900", name: "Extra Deck Cost", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 48, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"], extra: ["900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const extraCard = session.state.cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    expect(extraCard).toBeTruthy();
+    moveDuelCard(session.state, extraCard!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const before = host.loadScript(
+      `
+      local main=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local extra=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("main deck cost " .. tostring(main:IsAbleToDeckOrExtraAsCost()))
+      Debug.Message("extra deck cost " .. tostring(extra:IsAbleToDeckOrExtraAsCost()))
+      `,
+      "deck-or-extra-cost-before.lua",
+    );
+    expect(before.ok, before.error).toBe(true);
+    expect(host.messages).toContain("main deck cost true");
+    expect(host.messages).toContain("extra deck cost true");
+
+    const register = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_CANNOT_TO_DECK)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "cannot-to-deck.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const after = host.loadScript(
+      `
+      local main=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local extra=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("main deck cost blocked " .. tostring(main:IsAbleToDeckOrExtraAsCost()))
+      Debug.Message("extra deck cost blocked " .. tostring(extra:IsAbleToDeckOrExtraAsCost()))
+      `,
+      "deck-or-extra-cost-after.lua",
+    );
+    expect(after.ok, after.error).toBe(true);
+    expect(host.messages).toContain("main deck cost blocked false");
+    expect(host.messages).toContain("extra deck cost blocked false");
+  });
+
   it("applies Lua indestructible effect destruction prevention", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Indestructible Source", kind: "monster" },

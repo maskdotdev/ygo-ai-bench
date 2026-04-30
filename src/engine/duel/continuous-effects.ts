@@ -253,7 +253,7 @@ function isIndestructibleCodeForReason(code: number | undefined, reason: number)
 function isCannotMoveCodeForLocation(code: number | undefined, location: DuelLocation, reason: number): boolean {
   if (code === 59) return location === "graveyard" && (reason & 0x80) !== 0;
   if (code === 65) return location === "hand";
-  if (code === 66) return location === "deck";
+  if (code === 66) return location === "deck" || location === "extraDeck";
   if (code === 67) return location === "banished";
   if (code === 68) return location === "graveyard";
   return false;
