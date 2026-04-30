@@ -134,6 +134,7 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsNotOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);
   pushNumberGetter(L, "GetAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberGetter(L, "GetBaseAttack", session, (card) => card?.data.attack ?? 0);
+  pushBooleanGetter(L, "HasNonZeroAttack", session, (card) => Boolean(card && (card.data.attack ?? 0) !== 0));
   pushNumberMatcher(L, "IsAttack", session, (card, requested) => (card.data.attack ?? 0) === requested);
   pushNumberMatcher(L, "IsOriginalAttack", session, (card, requested) => (card.data.attack ?? 0) === requested);
   pushNumberMatcher(L, "IsAttackAbove", session, (card, requested) => (card.data.attack ?? 0) >= requested);
@@ -728,6 +729,7 @@ const cardFieldNames = [
   "IsNotOriginalType",
   "GetAttack",
   "GetBaseAttack",
+  "HasNonZeroAttack",
   "IsAttack",
   "IsOriginalAttack",
   "IsAttackAbove",

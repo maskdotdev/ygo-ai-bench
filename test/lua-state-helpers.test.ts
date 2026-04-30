@@ -915,6 +915,38 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("grave relation false/true");
   });
 
+  it("lets Lua scripts check whether cards have non-zero attack", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Nonzero Attack", kind: "monster", attack: 1500 },
+      { code: "200", name: "Zero Attack", kind: "monster", attack: 0 },
+      { code: "300", name: "Missing Attack", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 70, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local positive = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local zero = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local missing = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("nonzero attack " .. tostring(positive:HasNonZeroAttack()))
+      Debug.Message("zero attack " .. tostring(zero:HasNonZeroAttack()))
+      Debug.Message("missing attack " .. tostring(missing:HasNonZeroAttack()))
+      `,
+      "has-nonzero-attack.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("nonzero attack true");
+    expect(host.messages).toContain("zero attack false");
+    expect(host.messages).toContain("missing attack false");
+  });
+
   it("lets Lua scripts check whether cards can change battle position", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Face-up Monster", kind: "monster" },
