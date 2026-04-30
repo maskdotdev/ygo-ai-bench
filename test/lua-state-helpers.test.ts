@@ -323,19 +323,22 @@ describe("Lua state helpers", () => {
       { code: "100", name: "Aux A", kind: "monster", attack: 1000 },
       { code: "200", name: "Aux B", kind: "monster", attack: 2000 },
       { code: "300", name: "Aux C", kind: "monster", attack: 3000 },
+      { code: "400", name: "Aux D", kind: "monster", attack: 4000 },
     ];
-    const session = createDuel({ seed: 18, startingHandSize: 3, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 18, startingHandSize: 4, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300"] },
+      0: { main: ["100", "200", "300", "400"] },
       1: { main: ["100"] },
     });
     startDuel(session);
     const faceup = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
     const facedown = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const graveyard = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "400");
     moveDuelCard(session.state, faceup!.uid, "monsterZone", 0).position = "faceUpAttack";
     const setCard = moveDuelCard(session.state, facedown!.uid, "monsterZone", 0);
     setCard.position = "faceDownDefense";
     setCard.faceUp = false;
+    moveDuelCard(session.state, graveyard!.uid, "graveyard", 0);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -352,6 +355,12 @@ describe("Lua state helpers", () => {
       local faceup_filter = aux.FaceupFilter(function(c, minatk) return c:GetAttack() >= minatk end, 900)
       Debug.Message("faceup count " .. Duel.GetMatchingGroupCount(faceup_filter, 0, LOCATION_MZONE, 0, nil))
       Debug.Message("faceup runtime count " .. Duel.GetMatchingGroupCount(aux.FaceupFilter(function(c, minatk) return c:GetAttack() >= minatk end), 0, LOCATION_MZONE, 0, nil, 900))
+      local faceup_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local facedown_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local grave_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("sp elim grave " .. tostring(aux.SpElimFilter(grave_monster)))
+      Debug.Message("sp elim faceup mzone " .. tostring(aux.SpElimFilter(faceup_monster, true)) .. "/" .. tostring(aux.SpElimFilter(faceup_monster, true, true)))
+      Debug.Message("sp elim facedown mzone " .. tostring(aux.SpElimFilter(facedown_monster, true, true)) .. "/" .. tostring(aux.SpElimFilter(facedown_monster, false, true)))
       local all_cards = Duel.GetFieldGroup(0, LOCATION_HAND + LOCATION_MZONE, 0)
       local iter_count=0
       local iter_sum=0
@@ -402,6 +411,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("target bool count 1");
     expect(host.messages).toContain("faceup count 1");
     expect(host.messages).toContain("faceup runtime count 1");
+    expect(host.messages).toContain("sp elim grave true");
+    expect(host.messages).toContain("sp elim faceup mzone false/true");
+    expect(host.messages).toContain("sp elim facedown mzone false/true");
     expect(host.messages).toContain("aux next 3/600");
     expect(host.messages).toContain("aux next empty 0");
     expect(host.messages).toContain("aux select plain 2");

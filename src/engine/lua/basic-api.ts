@@ -700,6 +700,8 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setfield(L, -2, to_luastring("SelectUnselectGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAuxNext(state));
   lua.lua_setfield(L, -2, to_luastring("Next"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSpElimFilter(state, readLuaError));
+  lua.lua_setfield(L, -2, to_luastring("SpElimFilter"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     if (!lua.lua_isfunction(state, 1)) {
       lua.lua_pushnil(state);
@@ -719,6 +721,80 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   });
   lua.lua_setfield(L, -2, to_luastring("NecroValleyFilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
+}
+
+function pushSpElimFilter(L: unknown, readLuaError: (state: unknown) => string): number {
+  const mustBeFaceup = lua.lua_toboolean(L, 2);
+  const includeMonsterZone = lua.lua_toboolean(L, 3);
+  const isMonster = callLuaBooleanMethod(L, 1, "IsMonster", readLuaError);
+  if (!isMonster) {
+    lua.lua_pushboolean(L, includeMonsterZone || callLuaBooleanMethod(L, 1, "IsLocation", readLuaError, 0x10));
+    return 1;
+  }
+  const inMonsterZone = callLuaBooleanMethod(L, 1, "IsLocation", readLuaError, 0x04);
+  if (mustBeFaceup && inMonsterZone && callLuaBooleanMethod(L, 1, "IsFacedown", readLuaError)) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  const affectedBySpiritElimination = callIsPlayerAffectedByEffect(L, 1, 69832741, readLuaError);
+  const inGraveyard = callLuaBooleanMethod(L, 1, "IsLocation", readLuaError, 0x10);
+  lua.lua_pushboolean(L, includeMonsterZone ? inMonsterZone || !affectedBySpiritElimination : affectedBySpiritElimination ? inMonsterZone : inGraveyard);
+  return 1;
+}
+
+function callIsPlayerAffectedByEffect(L: unknown, cardIndex: number, code: number, readLuaError: (state: unknown) => string): boolean {
+  const top = lua.lua_gettop(L);
+  lua.lua_getglobal(L, to_luastring("Duel"));
+  if (!lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, lua.lua_gettop(L) - top);
+    return false;
+  }
+  lua.lua_getfield(L, -1, to_luastring("IsPlayerAffectedByEffect"));
+  if (!lua.lua_isfunction(L, -1)) {
+    lua.lua_pop(L, lua.lua_gettop(L) - top);
+    return false;
+  }
+  const player = callLuaNumberMethod(L, cardIndex, "GetControler", readLuaError);
+  lua.lua_pushinteger(L, player);
+  lua.lua_pushinteger(L, code);
+  const status = lua.lua_pcall(L, 2, 1, 0);
+  if (status !== lua.LUA_OK) return Boolean(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, lua.lua_gettop(L) - top);
+  return Boolean(result);
+}
+
+function callLuaBooleanMethod(L: unknown, tableIndex: number, methodName: string, readLuaError: (state: unknown) => string, ...args: number[]): boolean {
+  const top = lua.lua_gettop(L);
+  const absoluteIndex = lua.lua_absindex(L, tableIndex);
+  lua.lua_getfield(L, absoluteIndex, to_luastring(methodName));
+  if (!lua.lua_isfunction(L, -1)) {
+    lua.lua_pop(L, lua.lua_gettop(L) - top);
+    return false;
+  }
+  lua.lua_pushvalue(L, absoluteIndex);
+  for (const arg of args) lua.lua_pushinteger(L, arg);
+  const status = lua.lua_pcall(L, args.length + 1, 1, 0);
+  if (status !== lua.LUA_OK) return Boolean(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, lua.lua_gettop(L) - top);
+  return Boolean(result);
+}
+
+function callLuaNumberMethod(L: unknown, tableIndex: number, methodName: string, readLuaError: (state: unknown) => string): number {
+  const top = lua.lua_gettop(L);
+  const absoluteIndex = lua.lua_absindex(L, tableIndex);
+  lua.lua_getfield(L, absoluteIndex, to_luastring(methodName));
+  if (!lua.lua_isfunction(L, -1)) {
+    lua.lua_pop(L, lua.lua_gettop(L) - top);
+    return 0;
+  }
+  lua.lua_pushvalue(L, absoluteIndex);
+  const status = lua.lua_pcall(L, 1, 1, 0);
+  if (status !== lua.LUA_OK) return Number(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
+  const result = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : 0;
+  lua.lua_pop(L, lua.lua_gettop(L) - top);
+  return result;
 }
 
 function pushAuxNext(L: unknown): number {
