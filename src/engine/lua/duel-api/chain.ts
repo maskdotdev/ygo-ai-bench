@@ -49,6 +49,8 @@ export function installDuelChainApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("NegateActivation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushNegateChainLink(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("NegateEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushNegateRelatedChain(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("NegateRelatedChain"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangeTargetPlayer(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ChangeTargetPlayer"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangeTargetParam(state, session, hostState));
@@ -199,6 +201,19 @@ function pushNegateChainLink(L: unknown, session: DuelSession, hostState: LuaDue
     activeSource?.name ?? source?.name ?? "Lua effect",
   ));
   return 1;
+}
+
+function pushNegateRelatedChain(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
+  const cardUid = readCardUid(L, 1);
+  if (!cardUid) return 0;
+  const source = session.state.cards.find((candidate) => candidate.uid === cardUid);
+  const activeSource = hostState.activeContext?.source;
+  const player = hostState.activeContext?.player ?? activeSource?.controller ?? source?.controller ?? session.state.turnPlayer;
+  const cardName = activeSource?.name ?? source?.name ?? "Lua effect";
+  for (const link of session.state.chain.filter((candidate) => candidate.sourceUid === cardUid)) {
+    negateDuelChainLink(session.state, link.id, player, cardName);
+  }
+  return 0;
 }
 
 function pushChangeTargetPlayer(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {

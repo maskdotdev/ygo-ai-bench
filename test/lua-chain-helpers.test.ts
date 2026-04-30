@@ -433,6 +433,69 @@ describe("Lua chain helpers", () => {
     expect(session.state.log.some((entry) => entry.action === "chainNegated")).toBe(true);
   });
 
+  it("lets Lua effects negate pending chain links related to a card", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Related Chain Source", kind: "monster" },
+      { code: "400", name: "Related Chain Negator", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 91, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("related source resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          return Duel.GetCurrentChain()>0
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          local source = Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 100), tp, 0, LOCATION_HAND, 1, 1, nil):GetFirst()
+          Duel.NegateRelatedChain(source, RESET_TURN_SET)
+          Debug.Message("related negatable after " .. tostring(Duel.IsChainNegatable(1)))
+          local reason,player = Duel.GetChainInfo(1, CHAININFO_DISABLE_REASON, CHAININFO_DISABLE_PLAYER)
+          Debug.Message("related disable " .. reason .. "/" .. player)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "related-chain-negate.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(quickAction).toBeDefined();
+    expect(applyResponse(session, quickAction!).ok).toBe(true);
+    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+
+    expect(host.messages).toContain("related negatable after false");
+    expect(host.messages).toContain("related disable 64/1");
+    expect(host.messages).not.toContain("related source resolved");
+    expect(session.state.log.some((entry) => entry.action === "chainNegated" && entry.detail.includes("lua"))).toBe(true);
+  });
+
   it("passes upstream-style Lua callback arguments to trigger effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Summoned Event", kind: "monster" },
