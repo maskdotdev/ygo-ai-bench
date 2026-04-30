@@ -7,11 +7,13 @@ import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect,
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions } from "#duel/summon.js";
 import { pushGroupTable } from "#lua/group-api.js";
+import { canLuaSynchroSummonCard } from "#lua/synchro-summonable.js";
 import {
   copyGlobalFunctionToField,
   locationsFromMask,
   positionFromMask,
   readCardUid,
+  readGroupUids,
   readTableNumberField,
   readTableStringField,
 } from "#lua/api-utils.js";
@@ -338,6 +340,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "normalSummon" && action.uid === card.uid)),
   );
   pushBooleanGetter(L, "IsSpecialSummonable", session, (card) => Boolean(card && canSpecialSummonDuelCard(session.state, card.uid, card.controller)));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsSynchroSummonable(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsSynchroSummonable"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const player = lua.lua_isnumber(state, 4) ? normalizePlayer(lua.lua_tointeger(state, 4)) : card?.controller;
@@ -537,6 +541,13 @@ function pushIsCanAddCounter(L: unknown, session: DuelSession): number {
   return 1;
 }
 
+function pushIsSynchroSummonable(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const suppliedUids = [...readCardOrGroupUids(L, 2), ...readCardOrGroupUids(L, 3)];
+  lua.lua_pushboolean(L, Boolean(card && canLuaSynchroSummonCard(session, card, suppliedUids)));
+  return 1;
+}
+
 function detachOverlayRange(session: DuelSession, card: DuelCardInstance, min: number, max: number, player: PlayerId, reason: number): DuelCardInstance[] {
   const count = Math.min(Math.max(min, 0), Math.max(max, 0), card.overlayUids.length);
   if (count < min) return [];
@@ -651,6 +662,11 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
   if (kind === "xyz") return !target.data.xyzMaterials?.length ? cardRank(target) === (card.data.level ?? 0) : target.data.xyzMaterials.some((code) => codes.includes(code));
   if (kind === "link") return !target.data.linkMaterials?.length ? cardLink(target) > 0 && linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
   return true;
+}
+
+function readCardOrGroupUids(L: unknown, index: number): string[] {
+  const cardUid = readCardUid(L, index);
+  return cardUid ? [cardUid] : readGroupUids(L, index);
 }
 
 function linkMaterialRating(card: DuelCardInstance): number {
@@ -919,6 +935,7 @@ const cardFieldNames = [
   "IsNegatableMonster",
   "IsSummonableCard",
   "IsSpecialSummonable",
+  "IsSynchroSummonable",
   "IsCanBeSpecialSummoned",
   "IsMSetable",
   "IsCanTurnSet",

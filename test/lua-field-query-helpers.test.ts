@@ -595,11 +595,13 @@ describe("Lua field and query helpers", () => {
       Duel.SpecialSummon(c100, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
       Duel.SpecialSummon(c200, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
       Duel.SpecialSummon(c300, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
+      Debug.Message("synchro target material " .. tostring(c300:IsCanBeSynchroMaterial(synchro)) .. "/" .. tostring(c200:IsCanBeSynchroMaterial(synchro)))
+      Debug.Message("generic synchro target material " .. tostring(c100:IsCanBeSynchroMaterial(generic_synchro)) .. "/" .. tostring(c300:IsCanBeSynchroMaterial(generic_synchro)) .. "/" .. tostring(c500:IsCanBeSynchroMaterial(generic_synchro)))
+      Debug.Message("synchro summonable " .. tostring(synchro:IsSynchroSummonable()) .. "/" .. tostring(synchro:IsSynchroSummonable(c300)) .. "/" .. tostring(synchro:IsSynchroSummonable(c200)))
+      Debug.Message("generic synchro summonable " .. tostring(generic_synchro:IsSynchroSummonable(nil, Group.FromCards(c100, c300))) .. "/" .. tostring(generic_synchro:IsSynchroSummonable(nil, Group.FromCards(c100, c200))))
       Duel.SpecialSummon(c500, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
       Duel.SpecialSummon(c600, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
       Duel.SpecialSummon(c700, 0, 0, 0, 0, 0, POS_FACEUP_ATTACK)
-      Debug.Message("synchro target material " .. tostring(c300:IsCanBeSynchroMaterial(synchro)) .. "/" .. tostring(c200:IsCanBeSynchroMaterial(synchro)))
-      Debug.Message("generic synchro target material " .. tostring(c100:IsCanBeSynchroMaterial(generic_synchro)) .. "/" .. tostring(c300:IsCanBeSynchroMaterial(generic_synchro)) .. "/" .. tostring(c500:IsCanBeSynchroMaterial(generic_synchro)))
       Debug.Message("xyz target field material " .. tostring(c100:IsCanBeXyzMaterial(xyz)) .. "/" .. tostring(c200:IsCanBeXyzMaterial(xyz)))
       Debug.Message("fielded xyz target material " .. tostring(c100:IsCanBeXyzMaterial(c700)) .. "/" .. tostring(c700:IsCanBeXyzMaterial(c700)))
       Debug.Message("link target material " .. tostring(c100:IsCanBeLinkMaterial(link)) .. "/" .. tostring(link:IsCanBeLinkMaterial(link)))
@@ -616,6 +618,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("xyz target hand material false");
     expect(host.messages).toContain("synchro target material true/false");
     expect(host.messages).toContain("generic synchro target material true/true/false");
+    expect(host.messages).toContain("synchro summonable true/true/false");
+    expect(host.messages).toContain("generic synchro summonable true/false");
     expect(host.messages).toContain("xyz target field material true/false");
     expect(host.messages).toContain("fielded xyz target material true/false");
     expect(host.messages).toContain("link target material true/false");
