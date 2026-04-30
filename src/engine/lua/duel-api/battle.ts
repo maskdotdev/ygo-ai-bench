@@ -44,6 +44,11 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("ChangeAttackTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, chainAttack(session, readCardUid(state, 1)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ChainAttack"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushboolean(state, negateDuelAttack(session.state));
     return 1;
   });
@@ -77,6 +82,31 @@ function changeAttackTarget(session: DuelSession, targetUid: string | undefined)
   if (!attacker || !target || target.location !== "monsterZone" || target.controller === attacker.controller || target.uid === attacker.uid) return false;
   attack.targetUid = target.uid;
   pending.targetUid = target.uid;
+  return true;
+}
+
+function chainAttack(session: DuelSession, targetUid: string | undefined): boolean {
+  const attack = session.state.currentAttack ?? session.state.pendingBattle;
+  if (!attack) return false;
+  const attacker = session.state.cards.find((card) => card.uid === attack.attackerUid);
+  if (!attacker || attacker.location !== "monsterZone") return false;
+  const target = targetUid === undefined ? undefined : session.state.cards.find((card) => card.uid === targetUid);
+  if (targetUid !== undefined && (!target || target.location !== "monsterZone" || target.controller === attacker.controller || target.uid === attacker.uid)) return false;
+  session.state.attacksDeclared = session.state.attacksDeclared.filter((uid) => uid !== attacker.uid);
+  session.state.attackPasses = [];
+  session.state.damagePasses = [];
+  if (targetUid === undefined) {
+    delete session.state.currentAttack;
+    delete session.state.pendingBattle;
+    delete session.state.battleStep;
+    session.state.waitingFor = attacker.controller;
+    return true;
+  }
+  if (!target) return false;
+  session.state.currentAttack = { attackerUid: attacker.uid, targetUid: target.uid };
+  session.state.pendingBattle = { ...session.state.currentAttack };
+  session.state.battleStep = "attack";
+  session.state.waitingFor = target.controller;
   return true;
 }
 
