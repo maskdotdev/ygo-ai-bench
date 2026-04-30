@@ -501,6 +501,11 @@ describe("Lua field and query helpers", () => {
       Debug.Message("selected group " .. selected:GetCount())
       Debug.Message("selected group too few " .. clone:Select(0, 4, 4, nil):GetCount())
       Debug.Message("selected group unbounded " .. clone:Select(0, 1, 0, nil):GetCount())
+      local random_selected = all:RandomSelect(0, 2)
+      local random_first = random_selected:GetFirst()
+      local random_second = random_selected:GetNext()
+      Debug.Message("random selected " .. random_selected:GetCount() .. " " .. random_first:GetCode() .. "/" .. random_second:GetCode() .. " " .. tostring(random_first:GetCode() ~= random_second:GetCode()))
+      Debug.Message("random selected too many " .. all:RandomSelect(0, 4):GetCount())
       local sorted = Group.FromCards(c300, c100, c200)
       sorted:Sort(function(a,b) return a:GetAttack()<b:GetAttack() end)
       Debug.Message("sorted asc " .. sorted:GetFirst():GetCode() .. "/" .. sorted:GetNext():GetCode() .. "/" .. sorted:GetNext():GetCode())
@@ -605,6 +610,10 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("selected group 2");
     expect(host.messages).toContain("selected group too few 0");
     expect(host.messages).toContain("selected group unbounded 3");
+    const randomSelected = host.messages.find((message) => message.startsWith("random selected 2 "));
+    expect(randomSelected).toBeDefined();
+    expect(randomSelected).toContain(" true");
+    expect(host.messages).toContain("random selected too many 0");
     expect(host.messages).toContain("sorted asc 100/200/300");
     expect(host.messages).toContain("sorted desc 300/200/100");
     const foreachMessage = host.messages.find((message) => message.startsWith("foreach 6000 "));

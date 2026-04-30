@@ -156,6 +156,12 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   });
   lua.lua_setfield(L, -2, to_luastring("Select"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const count = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
+    pushGroupTable(state, selectGroupUids(readGroupUids(state, 1), count, count));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("RandomSelect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
     const count = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
     const excluded = readCardOrGroupUids(state, 4);
@@ -528,6 +534,7 @@ const groupFieldNames = [
   "ForEach",
   "Clone",
   "Select",
+  "RandomSelect",
   "IsExists",
   "Match",
   "GetClassCount",
