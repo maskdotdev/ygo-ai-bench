@@ -49,7 +49,7 @@ describe("Lua field and query helpers", () => {
       "summon-position.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("location count 0");
     expect(host.messages).toContain("mzone count 0");
     expect(host.messages).toContain("mzone with excluded 1");
@@ -103,7 +103,7 @@ describe("Lua field and query helpers", () => {
       "deck-top.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("top count 2");
     expect(host.messages).toContain(`first top ${expectedTop[0]}`);
     expect(host.messages).toContain(`second top ${expectedTop[1]}`);
@@ -320,12 +320,16 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not original attribute " .. tostring(c:IsNotOriginalAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsNotOriginalAttribute(ATTRIBUTE_LIGHT)))
       Debug.Message("spell count " .. Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, nil))
       local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()))
+      Debug.Message("cost checks " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
+      Duel.SendtoGrave(c, REASON_EFFECT)
+      Debug.Message("cost after move " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
       Debug.Message("spell material checks " .. tostring(spell:IsCanBeFusionMaterial(nil)) .. "/" .. tostring(spell:IsCanBeRitualMaterial(nil)))
       `,
       "card-stats.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("type 33");
     expect(host.messages).toContain("stats 2500/2100/7");
     expect(host.messages).toContain("stat predicates true/true/true");
@@ -349,6 +353,9 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not original race false/true");
     expect(host.messages).toContain("not original attribute false/true");
     expect(host.messages).toContain("spell count 1");
+    expect(host.messages).toContain("spell trap checks false/true");
+    expect(host.messages).toContain("cost checks true/true");
+    expect(host.messages).toContain("cost after move false/false");
     expect(host.messages).toContain("spell material checks false/false");
   });
 
