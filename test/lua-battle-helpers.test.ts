@@ -142,6 +142,101 @@ describe("Lua battle helpers", () => {
     expect(session.state.pendingBattle).toBeUndefined();
   });
 
+  it("lets Lua scripts inspect each player's battle monster", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Battle Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Lua Battle Target", kind: "monster", attack: 1000 },
+      { code: "300", name: "Lua Battle Probe", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 49, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200", "200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("battle monster self " .. Duel.GetBattleMonster(0):GetCode())
+          Debug.Message("battle monster opponent " .. Duel.GetBattleMonster(1):GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-battle-monster.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, activateEffectByCode(session, 0, "300")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+
+    expect(host.messages).toEqual(["battle monster self 100", "battle monster opponent 200"]);
+  });
+
+  it("returns nil for missing Lua battle monsters during direct attacks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Direct Attacker", kind: "monster", attack: 1800 },
+      { code: "300", name: "Lua Direct Probe", kind: "monster" },
+      { code: "500", name: "Lua Direct Filler", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 50, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["500", "500"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("direct battle monster self " .. Duel.GetBattleMonster(0):GetCode())
+          Debug.Message("direct battle monster opponent nil " .. tostring(Duel.GetBattleMonster(1) == nil))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-direct-battle-monster.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, activateEffectByCode(session, 0, "300")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+
+    expect(host.messages).toEqual(["direct battle monster self 100", "direct battle monster opponent nil true"]);
+  });
+
   it("offers Lua quick effects in their matching damage timing windows", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Lua Timing Attacker", kind: "monster", attack: 1800 },
