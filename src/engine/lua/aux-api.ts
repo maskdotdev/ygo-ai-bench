@@ -169,6 +169,15 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
     function aux.ritlimit(e,se,sp,st)
       return aux.sumlimit(SUMMON_TYPE_RITUAL)(e,se,sp,st)
     end
+    function aux.fuslimit(e,se,sp,st)
+      return aux.sumlimit(SUMMON_TYPE_FUSION)(e,se,sp,st)
+    end
+    function aux.synlimit(e,se,sp,st)
+      return aux.sumlimit(SUMMON_TYPE_SYNCHRO)(e,se,sp,st)
+    end
+    function aux.xyzlimit(e,se,sp,st)
+      return aux.sumlimit(SUMMON_TYPE_XYZ)(e,se,sp,st)
+    end
     function aux.AND(...)
       local funs={...}
       return function(...)
