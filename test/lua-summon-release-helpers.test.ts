@@ -132,6 +132,48 @@ describe("Lua summon and release helpers", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "500")?.location).toBe("monsterZone");
   });
 
+  it("lets Lua scripts check and select release cost groups", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cost Field A", kind: "monster" },
+      { code: "300", name: "Cost Field B", kind: "monster" },
+      { code: "500", name: "Cost Hand", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 18, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["100", "300"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local filter = function(tc, mincode) return tc:GetCode() >= mincode end
+      local excluded = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("cost check field two " .. tostring(Duel.CheckReleaseGroupCost(0, filter, 2, 2, false, nil, nil, 100)))
+      Debug.Message("cost check hand miss " .. tostring(Duel.CheckReleaseGroupCost(0, filter, 3, 3, false, nil, nil, 100)))
+      Debug.Message("cost check hand ok " .. tostring(Duel.CheckReleaseGroupCost(0, filter, 3, 3, true, nil, nil, 100)))
+      Debug.Message("cost excluded " .. tostring(Duel.CheckReleaseGroupCost(0, filter, 3, 3, true, nil, excluded, 100)))
+      local g = Duel.SelectReleaseGroupCost(0, filter, 1, 3, true, nil, nil, 100)
+      Debug.Message("cost selected " .. g:GetCount())
+      Debug.Message("cost contains hand " .. tostring(g:IsExists(Card.IsLocation, 1, nil, LOCATION_HAND)))
+      `,
+      "release-cost-group.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("cost check field two true");
+    expect(host.messages).toContain("cost check hand miss false");
+    expect(host.messages).toContain("cost check hand ok true");
+    expect(host.messages).toContain("cost excluded false");
+    expect(host.messages).toContain("cost selected 3");
+    expect(host.messages).toContain("cost contains hand true");
+  });
+
   it("excludes unreleasable cards from Lua release group helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Unreleasable Cost", kind: "monster" },

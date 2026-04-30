@@ -27,6 +27,10 @@ export function installDuelReleaseApi(L: unknown, session: DuelSession, hostStat
   lua.lua_setfield(L, -2, to_luastring("CheckReleaseGroupEx"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectReleaseGroup(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SelectReleaseGroupEx"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckReleaseGroupCost(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("CheckReleaseGroupCost"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectReleaseGroupCost(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("SelectReleaseGroupCost"));
 }
 
 function pushReleaseGroup(L: unknown, session: DuelSession): number {
@@ -72,6 +76,35 @@ function pushSelectReleaseGroup(L: unknown, session: DuelSession, hostState: Lua
   return 1;
 }
 
+function pushCheckReleaseGroupCost(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState): number {
+  const filterRef = readOptionalFunctionRef(L, 2);
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const minimum = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
+  const maximum = lua.lua_isnumber(L, 4) ? Math.max(minimum, lua.lua_tointeger(L, 4)) : minimum;
+  const useHand = lua.lua_toboolean(L, 5);
+  const excluded = readCardOrGroupUids(L, 7);
+  const selected = selectedReleasableMonsterUids(session, player, excluded, hostState.selectedUids, useHand);
+  const available = releasableMonsterUids(L, session, filterRef, player, [...excluded, ...selected], readFilterArgs(L, 8), useHand);
+  releaseOptionalFunctionRef(L, filterRef);
+  const count = selected.length + available.length;
+  lua.lua_pushboolean(L, count >= minimum && selected.length <= maximum);
+  return 1;
+}
+
+function pushSelectReleaseGroupCost(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState): number {
+  const filterRef = readOptionalFunctionRef(L, 2);
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const min = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
+  const max = Math.max(min, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min);
+  const useHand = lua.lua_toboolean(L, 5);
+  const excluded = readCardOrGroupUids(L, 7);
+  const selected = selectedReleasableMonsterUids(session, player, excluded, hostState.selectedUids, useHand);
+  const uids = selected.length > max ? [] : [...selected, ...releasableMonsterUids(L, session, filterRef, player, [...excluded, ...selected], readFilterArgs(L, 8), useHand)];
+  releaseOptionalFunctionRef(L, filterRef);
+  pushGroupTable(L, uids.slice(0, max > 0 ? max : Math.max(min, 1)));
+  return 1;
+}
+
 interface ReleaseQuery {
   player: PlayerId;
   filterRef: number | undefined;
@@ -88,25 +121,25 @@ function readReleaseQuery(L: unknown, session: DuelSession): ReleaseQuery {
   };
 }
 
-function releasableMonsterUids(L: unknown, session: DuelSession, filterRef: number | undefined, player: PlayerId, excluded: string[], args: LuaFilterArgs): string[] {
+function releasableMonsterUids(L: unknown, session: DuelSession, filterRef: number | undefined, player: PlayerId, excluded: string[], args: LuaFilterArgs, includeHand = false): string[] {
   return session.state.cards
-    .filter((card) => isReleasableMonster(session, card, player, excluded))
+    .filter((card) => isReleasableMonster(session, card, player, excluded, includeHand))
     .sort((a, b) => a.sequence - b.sequence)
     .map((card) => card.uid)
     .filter((uid) => cardMatchesFilter(L, uid, filterRef, args));
 }
 
-function isReleasableMonster(session: DuelSession, card: DuelCardInstance, player: PlayerId, excluded: string[]): boolean {
+function isReleasableMonster(session: DuelSession, card: DuelCardInstance, player: PlayerId, excluded: string[], includeHand = false): boolean {
   if (excluded.includes(card.uid)) return false;
-  if (card.controller !== player || card.location !== "monsterZone") return false;
+  if (card.controller !== player || (card.location !== "monsterZone" && (!includeHand || card.location !== "hand"))) return false;
   if (card.kind !== "monster" && card.kind !== "extra") return false;
   return canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.cost);
 }
 
-function selectedReleasableMonsterUids(session: DuelSession, player: PlayerId, excluded: string[], selectedUids: string[]): string[] {
+function selectedReleasableMonsterUids(session: DuelSession, player: PlayerId, excluded: string[], selectedUids: string[], includeHand = false): string[] {
   return uniqueUids(selectedUids).filter((uid) => {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    return Boolean(card && isReleasableMonster(session, card, player, excluded));
+    return Boolean(card && isReleasableMonster(session, card, player, excluded, includeHand));
   });
 }
 
