@@ -158,6 +158,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetControler", session, (card) => card?.controller ?? 0);
   pushNumberGetter(L, "GetLocation", session, (card) => locationMaskFromLocation(card?.location));
   pushNumberGetter(L, "GetSequence", session, (card) => card?.sequence ?? 0);
+  pushNumberMatcher(L, "IsSequence", session, (card, requested) => card.sequence === requested);
   pushNumberGetter(L, "GetPosition", session, (card) => positionMaskFromPosition(card?.position));
   pushNumberGetter(L, "GetOverlayCount", session, (card) => card?.overlayUids.length ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => {

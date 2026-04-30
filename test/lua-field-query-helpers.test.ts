@@ -1362,8 +1362,10 @@ describe("Lua field and query helpers", () => {
       local spell_a = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
       local trap_b = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("monster before " .. monster_a:GetSequence() .. "/" .. monster_b:GetSequence())
+      Debug.Message("monster sequence predicate before " .. tostring(monster_a:IsSequence(0)) .. "/" .. tostring(monster_a:IsSequence(1)))
       Debug.Message("swap monster " .. Duel.SwapSequence(monster_a, monster_b))
       Debug.Message("monster after " .. monster_a:GetSequence() .. "/" .. monster_b:GetSequence())
+      Debug.Message("monster sequence predicate after " .. tostring(monster_a:IsSequence(0)) .. "/" .. tostring(monster_a:IsSequence(1)))
       Debug.Message("swap operated " .. Duel.GetOperatedGroup():GetCount())
       Debug.Message("spell before " .. spell_a:GetSequence() .. "/" .. trap_b:GetSequence())
       Debug.Message("swap spelltrap " .. Duel.SwapSequence(spell_a, trap_b))
@@ -1378,8 +1380,10 @@ describe("Lua field and query helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("monster before 0/1");
+    expect(host.messages).toContain("monster sequence predicate before true/false");
     expect(host.messages).toContain("swap monster 1");
     expect(host.messages).toContain("monster after 1/0");
+    expect(host.messages).toContain("monster sequence predicate after false/true");
     expect(host.messages).toContain("swap operated 2");
     expect(host.messages).toContain("spell before 0/1");
     expect(host.messages).toContain("swap spelltrap 1");

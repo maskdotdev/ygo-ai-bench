@@ -96,6 +96,7 @@ export const cardFieldNames = [
   "IsFacedown",
   "GetLocation",
   "GetSequence",
+  "IsSequence",
   "GetPosition",
   "GetOverlayCount",
   "GetOverlayGroup",
