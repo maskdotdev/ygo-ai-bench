@@ -21,6 +21,10 @@ export function resetDuelActivityCounts(state: DuelState, player: PlayerId): voi
   state.activityHistory = state.activityHistory.filter((record) => record.player !== player);
 }
 
+export function markDuelPhaseActivity(state: DuelState): void {
+  state.phaseActivity = true;
+}
+
 export function copyDuelActivityCounts(counts: Record<PlayerId, DuelActivityCounts> | undefined): Record<PlayerId, DuelActivityCounts> {
   const source = counts ?? createDuelActivityCounts();
   return {
@@ -48,6 +52,7 @@ export function recordNormalSummonActivity(state: DuelState, player: PlayerId, c
 
 export function recordNormalSetActivity(state: DuelState, player: PlayerId): void {
   state.activityCounts[player].normalSummon += 1;
+  markDuelPhaseActivity(state);
 }
 
 export function recordSpecialSummonActivity(state: DuelState, player: PlayerId, card?: DuelCardInstance): void {
@@ -70,6 +75,7 @@ export function recordAttackActivity(state: DuelState, player: PlayerId, card?: 
 }
 
 function recordActivity(state: DuelState, player: PlayerId, activity: number, card?: DuelCardInstance): void {
+  markDuelPhaseActivity(state);
   state.activityHistory.push({ player, activity, ...(card === undefined ? {} : { cardUid: card.uid }) });
 }
 

@@ -16,6 +16,11 @@ export function installDuelActivityApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetActivityCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, session.state.phaseActivity);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CheckPhaseActivity"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const id = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0;
     const activity = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : duelActivity.summon;
     const filterRef = readOptionalFunctionRef(state, 3);

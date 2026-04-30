@@ -847,6 +847,7 @@ describe("Lua state helpers", () => {
     const normalResult = host.loadScript(
       `
       local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("phase activity after summon " .. tostring(Duel.CheckPhaseActivity()))
       Debug.Message("normal type " .. tostring(c:IsSummonType(SUMMON_TYPE_NORMAL)) .. "/" .. c:GetSummonType())
       Debug.Message("normal location " .. tostring(c:IsSummonLocation(LOCATION_HAND)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_EXTRA)))
       Debug.Message("normal activity " .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON))
@@ -855,6 +856,7 @@ describe("Lua state helpers", () => {
     );
 
     expect(normalResult.ok).toBe(true);
+    expect(host.messages).toContain("phase activity after summon true");
     expect(host.messages).toContain("normal type true/268435456");
     expect(host.messages).toContain("normal location true/false");
     expect(host.messages).toContain("normal activity 1/1/0");
@@ -880,6 +882,18 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("fusion location true/false");
     expect(host.messages).toContain("fusion activity 2/1/1");
     expect(host.getGlobalNumber("cost_reason")).toBe(0x80);
+
+    const phase = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase");
+    expect(phase).toBeDefined();
+    expect(applyResponse(session, phase!).ok).toBe(true);
+    const phaseResult = host.loadScript(
+      `
+      Debug.Message("phase activity after change " .. tostring(Duel.CheckPhaseActivity()))
+      `,
+      "phase-activity-reset.lua",
+    );
+    expect(phaseResult.ok, phaseResult.error).toBe(true);
+    expect(host.messages).toContain("phase activity after change false");
   });
 
   it("lets Lua scripts count custom filtered activities", () => {

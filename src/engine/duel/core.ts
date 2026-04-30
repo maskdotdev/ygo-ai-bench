@@ -1,6 +1,7 @@
 import { shuffle } from "#engine/rng.js";
 import {
   createDuelActivityCounts,
+  markDuelPhaseActivity,
   recordSpecialSummonActivity,
 } from "#duel/activity.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
@@ -211,6 +212,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     unofficialProcEnabled: false,
     shuffleCheckDisabled: false,
     skippedPhases: [],
+    phaseActivity: false,
     activityCounts: createDuelActivityCounts(),
     activityHistory: [],
     battleDamage: { 0: 0, 1: 0 },
@@ -253,6 +255,7 @@ export function startDuel(session: DuelSession): void {
   session.state.turn = 1;
   session.state.turnPlayer = 0;
   session.state.phase = "main1";
+  session.state.phaseActivity = false;
   session.state.waitingFor = 0;
   pushDuelLog(session.state, "startDuel", undefined, undefined, "Duel started");
 }
@@ -803,6 +806,7 @@ function pushChainLink(
     ...(targetPlayer === undefined ? {} : { targetPlayer }),
     ...(targetParam === undefined ? {} : { targetParam }),
   });
+  markDuelPhaseActivity(state);
   state.chainPasses = [];
   markBattleWindowChainStarted(state);
   clearStaleChainLimits(state);

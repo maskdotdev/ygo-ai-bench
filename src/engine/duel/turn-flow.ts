@@ -36,6 +36,7 @@ export function changeDuelPhase(state: DuelState, player: PlayerId, phase: DuelP
   if (phase !== nextAvailableDuelPhase(state, player)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
   consumeSkippedPhases(state, player, phase);
   state.phase = phase;
+  state.phaseActivity = false;
   pruneResetEffectsAfterPhase(state, phase);
   pruneDuelFlagEffectsAfterPhase(state, phase);
   if (phase === "battle") state.attacksDeclared = [];
@@ -51,6 +52,7 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   state.turn += 1;
   state.turnPlayer = otherPlayer(player);
   state.phase = "draw";
+  state.phaseActivity = false;
   pruneResetEffectsAfterPhase(state, "draw");
   pruneDuelFlagEffectsAfterPhase(state, "draw");
   state.waitingFor = state.turnPlayer;
@@ -61,6 +63,7 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   state.players[state.turnPlayer].normalSummonAvailable = true;
   drawDuelCardsFromDeck(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");
   state.phase = "main1";
+  state.phaseActivity = false;
   pruneResetEffectsAfterPhase(state, "main1");
   pruneDuelFlagEffectsAfterPhase(state, "main1");
   pushDuelLog(state, "turn", state.turnPlayer, undefined, `Turn ${state.turn} started`);

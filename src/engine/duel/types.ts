@@ -249,6 +249,7 @@ export interface DuelState {
   unofficialProcEnabled: boolean;
   shuffleCheckDisabled: boolean;
   skippedPhases: SkippedDuelPhase[];
+  phaseActivity: boolean;
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   activityHistory: DuelActivityRecord[];
   battleDamage: Record<PlayerId, number>;

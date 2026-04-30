@@ -106,6 +106,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       skippedPhases: snapshot.state.skippedPhases.map((skip) => ({ ...skip })),
       activityCounts: copyDuelActivityCounts(snapshot.state.activityCounts),
       activityHistory: (snapshot.state.activityHistory ?? []).map((record) => ({ ...record })),
+      phaseActivity: snapshot.state.phaseActivity ?? false,
       battleDamage: { ...snapshot.state.battleDamage },
       attackCostPaid: snapshot.state.attackCostPaid ?? 0,
       attacksDeclared: [...snapshot.state.attacksDeclared],
