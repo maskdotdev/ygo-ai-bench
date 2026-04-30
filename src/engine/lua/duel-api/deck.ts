@@ -87,6 +87,16 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
   lua.lua_setfield(L, -2, to_luastring("ConfirmCards"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
+    const confirmed = topDeckUids(session, player, count)
+      .map((uid) => session.state.cards.find((card) => card.uid === uid)?.code)
+      .filter((code): code is string => Boolean(code));
+    hostState.messages.push(`confirmed decktop ${player}: ${confirmed.join(",")}`);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ConfirmDecktop"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     shuffleDeck(session, player);
     return 0;
   });

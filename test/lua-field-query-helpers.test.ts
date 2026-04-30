@@ -83,11 +83,11 @@ describe("Lua field and query helpers", () => {
       1: { main: ["100"] },
     });
     startDuel(session);
-    const expectedTop = session.state.cards
+    const expectedDeck = session.state.cards
       .filter((card) => card.controller === 0 && card.location === "deck")
       .sort((a, b) => a.sequence - b.sequence)
-      .slice(0, 2)
       .map((card) => card.code);
+    const expectedTop = expectedDeck.slice(0, 2);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -99,6 +99,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("first top " .. first:GetCode())
       Debug.Message("second top " .. second:GetCode())
       Duel.ConfirmCards(1, top)
+      Duel.ConfirmDecktop(0, 3)
       Debug.Message("sent top " .. Duel.SendtoHand(top, 0, REASON_EFFECT))
       Duel.ShuffleDeck(0)
       `,
@@ -110,6 +111,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain(`first top ${expectedTop[0]}`);
     expect(host.messages).toContain(`second top ${expectedTop[1]}`);
     expect(host.messages).toContain(`confirmed 1: ${expectedTop.join(",")}`);
+    expect(host.messages).toContain(`confirmed decktop 0: ${expectedDeck.slice(0, 3).join(",")}`);
     expect(host.messages).toContain("sent top 2");
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && expectedTop.includes(card.code))).toHaveLength(2);
   });
