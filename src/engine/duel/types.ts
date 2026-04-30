@@ -73,6 +73,7 @@ export interface DuelCardInstance {
   equippedToUid?: string;
   reason?: number;
   reasonPlayer?: PlayerId;
+  turnId?: number;
   summonType?: DuelSummonType;
   summonPlayer?: PlayerId;
   data: DuelCardData;

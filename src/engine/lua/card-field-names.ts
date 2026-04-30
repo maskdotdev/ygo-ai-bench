@@ -140,6 +140,7 @@ export const cardFieldNames = [
   "IsReason",
   "GetReasonPlayer",
   "IsReasonPlayer",
+  "GetTurnID",
   "IsControler",
   "IsAbleToChangeControler",
   "IsControlerCanBeChanged",

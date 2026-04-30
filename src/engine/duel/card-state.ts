@@ -12,6 +12,7 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   card.previousFaceUp = card.faceUp;
   card.reason = reason;
   card.reasonPlayer = reasonPlayer ?? controller ?? card.controller;
+  card.turnId = state.turn;
   card.location = to;
   if (to !== "spellTrapZone") delete card.equippedToUid;
   for (const other of state.cards) {

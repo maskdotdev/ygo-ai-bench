@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -366,7 +367,7 @@ describe("Lua state helpers", () => {
       "flag-effects.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
@@ -413,7 +414,7 @@ describe("Lua state helpers", () => {
       "flag-chain-reset.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
@@ -650,21 +651,25 @@ describe("Lua state helpers", () => {
       { code: "200", name: "Aux B", kind: "monster", attack: 2000 },
       { code: "300", name: "Aux C", kind: "monster", attack: 3000 },
       { code: "400", name: "Aux D", kind: "monster", attack: 4000 },
+      { code: "500", name: "Aux E", kind: "monster", attack: 5000 },
     ];
-    const session = createDuel({ seed: 18, startingHandSize: 4, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 18, startingHandSize: 5, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400"] },
+      0: { main: ["100", "200", "300", "400", "500"] },
       1: { main: ["100"] },
     });
     startDuel(session);
     const faceup = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
     const facedown = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const sameTurn = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
     const graveyard = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "400");
     moveDuelCard(session.state, faceup!.uid, "monsterZone", 0).position = "faceUpAttack";
     const setCard = moveDuelCard(session.state, facedown!.uid, "monsterZone", 0);
     setCard.position = "faceDownDefense";
     setCard.faceUp = false;
+    sendDuelCardToGraveyard(session.state, sameTurn!.uid, 0, duelReason.effect);
     moveDuelCard(session.state, graveyard!.uid, "graveyard", 0);
+    graveyard!.turnId = 0;
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -683,6 +688,7 @@ describe("Lua state helpers", () => {
       Debug.Message("faceup runtime count " .. Duel.GetMatchingGroupCount(aux.FaceupFilter(function(c, minatk) return c:GetAttack() >= minatk end), 0, LOCATION_MZONE, 0, nil, 900))
       local faceup_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local facedown_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local same_turn_grave = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       local grave_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       Debug.Message("sp elim grave " .. tostring(aux.SpElimFilter(grave_monster)))
       Debug.Message("sp elim faceup mzone " .. tostring(aux.SpElimFilter(faceup_monster, true)) .. "/" .. tostring(aux.SpElimFilter(faceup_monster, true, true)))
@@ -736,6 +742,12 @@ describe("Lua state helpers", () => {
       local duplicate_names = Group.FromCards(faceup_monster,Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 1, LOCATION_HAND, 0, 1, 1, nil):GetFirst())
       local duplicate_ok,duplicate_has_repeat = aux.dncheck(duplicate_names)
       Debug.Message("dncheck duplicate " .. tostring(duplicate_ok) .. "/" .. tostring(duplicate_has_repeat))
+      local same_turn_effect=Effect.CreateEffect(same_turn_grave)
+      local previous_turn_effect=Effect.CreateEffect(grave_monster)
+      Debug.Message("exccon turns " .. same_turn_grave:GetTurnID() .. "/" .. grave_monster:GetTurnID() .. "/" .. Duel.GetTurnCount())
+      Debug.Message("exccon values " .. tostring(aux.exccon(same_turn_effect)) .. "/" .. tostring(aux.exccon(previous_turn_effect)))
+      Duel.SendtoHand(same_turn_grave,nil,REASON_RETURN)
+      Debug.Message("exccon return " .. tostring(aux.exccon(same_turn_effect)))
       local filtered_selected = aux.SelectUnselectGroup(all_cards, 0, 2, 2, false, false, function(sg,minatk)
         local total=0
         local tc=sg:GetFirst()
@@ -762,7 +774,7 @@ describe("Lua state helpers", () => {
       "aux-helpers.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.getGlobalNumber("observed_stringid")).toBe(1602);
     expect(host.messages).toContain("true count 1");
     expect(host.messages).toContain("false count 0");
@@ -795,10 +807,13 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("dpcheck unique true");
     expect(host.messages).toContain("dncheck unique true");
     expect(host.messages).toContain("dncheck duplicate false/true");
+    expect(host.messages).toContain("exccon turns 1/0/1");
+    expect(host.messages).toContain("exccon values false/true");
+    expect(host.messages).toContain("exccon return true");
     expect(host.messages).toContain("aux select filtered 2");
     expect(host.messages).toContain("aux select missed 0");
     expect(host.messages).toContain("target exists true");
-    expect(host.messages).toContain("target count 1");
+    expect(host.messages).toContain("target count 2");
   });
 
   it("provides deterministic Lua option prompt helpers", () => {

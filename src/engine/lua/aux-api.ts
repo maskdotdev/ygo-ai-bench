@@ -222,6 +222,9 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
     function aux.dncheck(sg,e,tp,mg)
       return aux.dpcheck(Card.GetCode)(sg,e,tp,mg)
     end
+    function aux.exccon(e)
+      return Duel.GetTurnCount()~=e:GetHandler():GetTurnID() or e:GetHandler():IsReason(REASON_RETURN)
+    end
     function aux.GetMustBeMaterialGroup(tp,eg,sump,sc,g,r)
       local effects={Duel.GetPlayerEffect(tp,EFFECT_MUST_BE_MATERIAL)}
       local sg=Group.CreateGroup()
