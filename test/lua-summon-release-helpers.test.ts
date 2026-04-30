@@ -267,6 +267,66 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("tribute locked only false");
   });
 
+  it("lets Lua scripts select tribute summon materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "One Tribute Target", kind: "monster", level: 6 },
+      { code: "200", name: "Two Tribute Target", kind: "monster", level: 7 },
+      { code: "300", name: "Free Tribute A", kind: "monster" },
+      { code: "400", name: "Free Tribute B", kind: "monster" },
+      { code: "500", name: "Locked Tribute", kind: "monster" },
+      { code: "600", name: "Off Material", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 40, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500", "600"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["300", "400", "500", "600"]) {
+      const card = session.state.cards.find((candidate) => candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c500={}
+      function c500.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_UNRELEASABLE_SUM)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+      `,
+      "select-tribute-lock.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const result = host.loadScript(
+      `
+      local one = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local two = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local limited = Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(300) or tc:IsCode(400) end, 0, LOCATION_MZONE, 0, 2, 2, nil)
+      local locked = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      local selected = Duel.SelectTribute(0, one, 1, 1)
+      Debug.Message("selected tribute one " .. selected:GetCount() .. "/" .. selected:GetFirst():GetCode())
+      local selected_two = Duel.SelectTribute(0, two, 2, 2, limited)
+      Debug.Message("selected tribute two " .. selected_two:GetCount() .. "/" .. selected_two:FilterCount(function(c) return c:IsCode(300) or c:IsCode(400) end, nil))
+      local selected_locked = Duel.SelectTribute(0, one, 1, 1, locked)
+      Debug.Message("selected tribute locked " .. selected_locked:GetCount())
+      `,
+      "select-tribute.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("selected tribute one 1/300");
+    expect(host.messages).toContain("selected tribute two 2/2");
+    expect(host.messages).toContain("selected tribute locked 0");
+  });
+
   it("lets Lua scripts check, select, and release monster-zone groups", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Release A", kind: "monster" },
