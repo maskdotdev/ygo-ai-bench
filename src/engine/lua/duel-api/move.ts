@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-state.js";
+import { createRng } from "#engine/rng.js";
 import {
   banishDuelCard,
   canMoveDuelCardToLocation,
@@ -65,6 +66,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("SwapSequence"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMoveSequence(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("MoveSequence"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushShuffleSetCard(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("ShuffleSetCard"));
 }
 
 function pushMoveHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0): void {
@@ -431,6 +434,44 @@ function pushMoveSequence(L: unknown, session: DuelSession, hostState: LuaDuelMo
   setOperatedUids(hostState, [card.uid]);
   lua.lua_pushinteger(L, 1);
   return 1;
+}
+
+function pushShuffleSetCard(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const shuffled: string[] = [];
+  const requested = new Set(readCardOrGroupUids(L, 1));
+  for (const bucket of shuffleBuckets(session.state, requested)) {
+    const next = shuffleCards(session, bucket.cards);
+    for (const [index, card] of next.entries()) card.sequence = bucket.sequences[index] ?? card.sequence;
+    shuffled.push(...next.map((card) => card.uid));
+  }
+  setOperatedUids(hostState, shuffled);
+  return 0;
+}
+
+function shuffleBuckets(state: DuelState, requested: Set<string>): { cards: DuelCardInstance[]; sequences: number[] }[] {
+  const keys = new Set<string>();
+  for (const uid of requested) {
+    const card = state.cards.find((candidate) => candidate.uid === uid);
+    if (card && canReorderFieldZone(card.location)) keys.add(`${card.controller}:${card.location}`);
+  }
+  return [...keys]
+    .map((key) => {
+      const [player, location] = key.split(":") as [string, DuelLocation];
+      const cards = getCards(state, Number(player) === 1 ? 1 : 0, location).filter((card) => requested.has(card.uid));
+      return { cards, sequences: cards.map((card) => card.sequence).sort((left, right) => left - right) };
+    })
+    .filter((bucket) => bucket.cards.length > 0);
+}
+
+function shuffleCards(session: DuelSession, cards: DuelCardInstance[]): DuelCardInstance[] {
+  const rng = createRng(`${session.state.seed}:shuffle-set:${session.state.randomCounter}`);
+  session.state.randomCounter += 1;
+  const shuffled = [...cards];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(rng() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
+  }
+  return shuffled;
 }
 
 function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {

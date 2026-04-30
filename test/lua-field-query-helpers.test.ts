@@ -1430,6 +1430,41 @@ describe("Lua field and query helpers", () => {
     expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ sequence: 0 });
   });
 
+  it("lets Lua scripts shuffle set card sequences", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Set A", kind: "spell", typeFlags: 0x2 },
+      { code: "200", name: "Set B", kind: "trap", typeFlags: 0x4 },
+      { code: "300", name: "Set C", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 157, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["100", "200", "300"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "spellTrapZone", 0);
+      card!.faceUp = false;
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local set_cards = Duel.GetFieldGroup(0, LOCATION_SZONE, 0)
+      Duel.ShuffleSetCard(set_cards)
+      Debug.Message("shuffle set operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("shuffle set seqs " .. Duel.GetFieldCard(0, LOCATION_SZONE, 0):GetSequence() .. "/" .. Duel.GetFieldCard(0, LOCATION_SZONE, 1):GetSequence() .. "/" .. Duel.GetFieldCard(0, LOCATION_SZONE, 2):GetSequence())
+      `,
+      "shuffle-set-card.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("shuffle set operated 3");
+    expect(host.messages).toContain("shuffle set seqs 0/1/2");
+    expect(session.state.cards.filter((card) => card.location === "spellTrapZone").map((card) => card.sequence).sort()).toEqual([0, 1, 2]);
+  });
+
   it("lets Lua scripts move cards onto field zones", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Field Filler A", kind: "monster" },
