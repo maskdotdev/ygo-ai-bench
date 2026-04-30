@@ -44,6 +44,9 @@ describe("Lua random helpers", () => {
       Debug.Message("count heads toss " .. Duel.CountHeads(a,b,c))
       Debug.Message("count heads constants " .. Duel.CountHeads(COIN_HEADS,COIN_TAILS,COIN_HEADS,7,nil))
       Debug.Message("count heads empty " .. Duel.CountHeads())
+      Debug.Message("count tails toss " .. Duel.CountTails(a,b,c))
+      Debug.Message("count tails constants " .. Duel.CountTails(COIN_HEADS,COIN_TAILS,COIN_TAILS,7,nil))
+      Debug.Message("count tails empty " .. Duel.CountTails())
       `,
       "coin-count-heads.lua",
     );
@@ -52,6 +55,9 @@ describe("Lua random helpers", () => {
     expect(host.messages[0]).toMatch(/^count heads toss [0-3]$/);
     expect(host.messages).toContain("count heads constants 2");
     expect(host.messages).toContain("count heads empty 0");
+    expect(host.messages).toContain(`count tails toss ${3 - Number(host.messages[0]?.at(-1) ?? 0)}`);
+    expect(host.messages).toContain("count tails constants 2");
+    expect(host.messages).toContain("count tails empty 0");
     expect(session.state.randomCounter).toBe(3);
   });
 

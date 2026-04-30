@@ -16,6 +16,8 @@ export function installDuelRandomApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("CallCoin"));
   lua.lua_pushcfunction(L, pushCountHeads);
   lua.lua_setfield(L, -2, to_luastring("CountHeads"));
+  lua.lua_pushcfunction(L, pushCountTails);
+  lua.lua_setfield(L, -2, to_luastring("CountTails"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetRandomNumber(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetRandomNumber"));
 }
@@ -76,6 +78,15 @@ function pushCountHeads(L: unknown): number {
   let count = 0;
   for (let index = 1; index <= lua.lua_gettop(L); index += 1) {
     if (lua.lua_isnumber(L, index) && lua.lua_tointeger(L, index) === 1) count += 1;
+  }
+  lua.lua_pushinteger(L, count);
+  return 1;
+}
+
+function pushCountTails(L: unknown): number {
+  let count = 0;
+  for (let index = 1; index <= lua.lua_gettop(L); index += 1) {
+    if (lua.lua_isnumber(L, index) && lua.lua_tointeger(L, index) === 0) count += 1;
   }
   lua.lua_pushinteger(L, count);
   return 1;
