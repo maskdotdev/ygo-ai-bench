@@ -30,6 +30,12 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("ListsCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
+    lua.lua_pushboolean(state, Boolean(card && materialCodes(card).some((code) => readRequestedCodes(state, 2).includes(code))));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ListsCodeAsMaterial"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
     lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
     return 1;
@@ -90,6 +96,10 @@ function cardCodes(card: DuelCardInstance): string[] {
 
 function listedCodes(card: DuelCardInstance): string[] {
   return [...(card.data.listedNames ?? []), ...(card.data.fitMonster ?? [])].map(String);
+}
+
+function materialCodes(card: DuelCardInstance): string[] {
+  return [...(card.data.fusionMaterials ?? []), ...(card.data.synchroMaterials ? [card.data.synchroMaterials.tuner, ...card.data.synchroMaterials.nonTuners] : []), ...(card.data.xyzMaterials ?? []), ...(card.data.linkMaterials ?? []), ...(card.data.ritualMaterials ?? [])].map(String);
 }
 
 function readRequestedCodes(L: unknown, start: number): string[] {
