@@ -154,6 +154,17 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         return Duel.GetMZoneCount(tp,sg)>=sumcount
       end
     end
+    function aux.ChangeBattleDamage(player,value)
+      return function(e,damp)
+        if player==0 then
+          if e:GetOwnerPlayer()==damp then return value end
+          return -1
+        elseif player==1 then
+          if e:GetOwnerPlayer()==1-damp then return value end
+          return -1
+        end
+      end
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));

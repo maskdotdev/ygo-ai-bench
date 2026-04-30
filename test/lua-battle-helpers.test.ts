@@ -120,6 +120,12 @@ describe("Lua battle helpers", () => {
       Debug.Message("battle damage changed " .. Duel.ChangeBattleDamage(1, 1200, false))
       Debug.Message("battle damage after " .. Duel.GetBattleDamage(1))
       Debug.Message("battle damage floor " .. Duel.ChangeBattleDamage(1, -5, false))
+      local c=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      local self_change=aux.ChangeBattleDamage(0, 700)
+      local opponent_change=aux.ChangeBattleDamage(1, 900)
+      Debug.Message("aux battle damage self " .. self_change(e, 0) .. "/" .. self_change(e, 1))
+      Debug.Message("aux battle damage opponent " .. opponent_change(e, 0) .. "/" .. opponent_change(e, 1))
       `,
       "battle-damage.lua",
     );
@@ -129,6 +135,8 @@ describe("Lua battle helpers", () => {
     expect(host.messages).toContain("battle damage changed 1200");
     expect(host.messages).toContain("battle damage after 1200");
     expect(host.messages).toContain("battle damage floor 0");
+    expect(host.messages).toContain("aux battle damage self 700/-1");
+    expect(host.messages).toContain("aux battle damage opponent -1/900");
     expect(session.state.battleDamage[1]).toBe(0);
   });
 
