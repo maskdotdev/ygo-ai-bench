@@ -635,6 +635,7 @@ describe("Lua field and query helpers", () => {
       { code: "200", name: "Fixture Spell", kind: "spell", typeFlags: 0x2 },
       { code: "201", name: "Fixture Equip Spell", kind: "spell", typeFlags: 0x40002 },
       { code: "202", name: "Fixture Trap Monster", kind: "trap", typeFlags: 0x105 },
+      { code: "203", name: "Fixture Field Spell", kind: "spell", typeFlags: 0x80002 },
       { code: "300", name: "Rank Fixture", kind: "monster", typeFlags: 0x800001, attack: 1800, defense: 1200, level: 4 },
       { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5 },
       { code: "500", name: "Infinity Alias", kind: "monster", alias: "1378" },
@@ -644,9 +645,9 @@ describe("Lua field and query helpers", () => {
       { code: "901", name: "Pendulum Fixture", kind: "monster", typeFlags: 0x1000021, level: 4, leftScale: 3, rightScale: 8 },
       { code: "902", name: "Material Listing Fusion", kind: "extra", fusionMaterials: ["100", "800"] },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 11, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 12, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "201", "202", "300", "400", "500", "600", "700", "800", "901"], extra: ["902"] },
+      0: { main: ["100", "200", "201", "202", "203", "300", "400", "500", "600", "700", "800", "901"], extra: ["902"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -718,12 +719,13 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not attribute " .. tostring(c:IsNotAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsNotAttribute(ATTRIBUTE_LIGHT)))
       Debug.Message("not original attribute " .. tostring(c:IsNotOriginalAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsNotOriginalAttribute(ATTRIBUTE_LIGHT)))
       Debug.Message("spell count " .. Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, nil))
-      local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local equip = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 201), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local trapmonster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 202), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local fieldspell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 203), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("has level " .. tostring(c:HasLevel()) .. "/" .. tostring(xyz:HasLevel()) .. "/" .. tostring(link:HasLevel()) .. "/" .. tostring(spell:HasLevel()))
       Debug.Message("main card types " .. c:GetMainCardType() .. "/" .. spell:GetMainCardType() .. "/" .. equip:GetMainCardType() .. "/" .. trapmonster:GetMainCardType())
-      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()) .. "/" .. tostring(spell:IsEquipSpell()) .. "/" .. tostring(equip:IsEquipSpell()))
+      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()) .. "/" .. tostring(spell:IsEquipSpell()) .. "/" .. tostring(equip:IsEquipSpell()) .. "/" .. tostring(fieldspell:IsFieldSpell()) .. "/" .. tostring(spell:IsFieldSpell()))
       Debug.Message("cost checks " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
       Duel.SendtoGrave(c, REASON_EFFECT)
       Debug.Message("cost after move " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
@@ -767,8 +769,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not attribute false/true");
     expect(host.messages).toContain("not original race false/true");
     expect(host.messages).toContain("not original attribute false/true");
-    expect(host.messages).toContain("spell count 2");
-    expect(host.messages).toContain("spell trap checks false/true/false/true");
+    expect(host.messages).toContain("spell count 3");
+    expect(host.messages).toContain("spell trap checks false/true/false/true/true/false");
     expect(host.messages).toContain("cost checks true/true");
     expect(host.messages).toContain("cost after move false/false");
     expect(host.messages).toContain("spell material checks false/false");
