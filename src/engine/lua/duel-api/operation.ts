@@ -43,6 +43,8 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("BreakEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAdjustInstantly(state, session));
   lua.lua_setfield(L, -2, to_luastring("AdjustInstantly"));
+  lua.lua_pushcfunction(L, () => pushReadjust(session));
+  lua.lua_setfield(L, -2, to_luastring("Readjust"));
   lua.lua_pushcfunction(L, pushAssumeReset);
   lua.lua_setfield(L, -2, to_luastring("AssumeReset"));
 }
@@ -61,6 +63,12 @@ function pushAdjustInstantly(L: unknown, session: DuelSession): number {
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   raiseDuelEvent(session.state, "adjust", card);
   pushDuelLog(session.state, "adjust", card?.controller ?? session.state.turnPlayer, card?.name, "Instant adjust");
+  return 0;
+}
+
+function pushReadjust(session: DuelSession): number {
+  raiseDuelEvent(session.state, "adjust");
+  pushDuelLog(session.state, "adjust", session.state.turnPlayer, undefined, "Readjust");
   return 0;
 }
 

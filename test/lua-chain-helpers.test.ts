@@ -59,6 +59,30 @@ describe("Lua chain helpers", () => {
     expect(host.messages).toContain("adjust resolved 200");
   });
 
+  it("lets Lua scripts request a generic readjust pass", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Readjust Source", kind: "monster" }];
+    const session = createDuel({ seed: 167, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Readjust()
+      Debug.Message("readjust event " .. tostring(Duel.CheckEvent(EVENT_ADJUST)))
+      `,
+      "readjust.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("readjust event true");
+    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "adjust" }));
+    expect(session.state.log).toContainEqual(expect.objectContaining({ action: "adjust", detail: "Readjust" }));
+  });
+
   it("lets Lua operations mark break effect boundaries", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Break Source", kind: "monster" }];
     const session = createDuel({ seed: 86, startingHandSize: 1, cardReader: createCardReader(cards) });
