@@ -165,12 +165,15 @@ describe("Lua trigger count limits", () => {
     specialSummonDuelCard(fixture.session.state, fixture.summon.uid);
     expect(fixture.session.state.pendingTriggers).toHaveLength(2);
     const firstTrigger = getDuelLegalActions(fixture.session, 0).find((action) => action.type === "activateTrigger" && action.effectId === fixture.session.state.pendingTriggers[0]?.effectId);
+    const staleSecondTrigger = getDuelLegalActions(fixture.session, 0).find((action) => action.type === "activateTrigger" && action.effectId === fixture.session.state.pendingTriggers[1]?.effectId);
     expect(firstTrigger).toBeDefined();
+    expect(staleSecondTrigger).toBeDefined();
     expect(applyResponse(fixture.session, firstTrigger!).ok).toBe(true);
 
     expect(fixture.session.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
     expect(fixture.session.state.pendingTriggers).toHaveLength(1);
     expect(getDuelLegalActions(fixture.session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(0);
+    expect(applyResponse(fixture.session, staleSecondTrigger!).ok).toBe(false);
     expect(getDuelLegalActions(fixture.session, 0).filter((action) => action.type === "declineTrigger")).toHaveLength(1);
     expect(fixture.host.messages).toContain(fixture.messages[0]);
     expect(fixture.host.messages).not.toContain(fixture.messages[1]);

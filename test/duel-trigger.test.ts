@@ -729,12 +729,15 @@ describe("duel triggers", () => {
     specialSummonDuelCard(session.state, firstSummon.uid);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["first-shared-count-trigger", "second-shared-count-trigger"]);
     const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "first-shared-count-trigger");
+    const staleSecondTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "second-shared-count-trigger");
     expect(firstTrigger).toBeTruthy();
+    expect(staleSecondTrigger).toBeTruthy();
     expect(applyResponse(session, firstTrigger!).ok).toBe(true);
 
     expect(session.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-shared-count-trigger"]);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(0);
+    expect(applyResponse(session, staleSecondTrigger!).ok).toBe(false);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger" && action.effectId === "second-shared-count-trigger")).toHaveLength(1);
     expect(session.state.log.some((entry) => entry.detail.includes("First shared count saw"))).toBe(true);
     expect(session.state.log.some((entry) => entry.detail.includes("Second shared count saw"))).toBe(false);
