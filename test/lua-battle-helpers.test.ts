@@ -6,6 +6,60 @@ import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua battle helpers", () => {
+  it("lets Lua scripts query whether cards can attack", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Can Attack", kind: "monster", attack: 1800 },
+      { code: "200", name: "Lua Defense", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 91, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const defender = session.state.cards.find((card) => card.controller === 0 && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(defender).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, defender!.uid, "monsterZone", 0).position = "faceUpDefense";
+
+    const host = createLuaScriptHost(session);
+    const before = host.loadScript(
+      `
+      local attacker = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local defender = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can attack before " .. tostring(attacker:CanAttack()) .. "/" .. tostring(defender:CanAttack()))
+      `,
+      "can-attack-before.lua",
+    );
+    expect(before.ok, before.error).toBe(true);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    const during = host.loadScript(
+      `
+      local attacker = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local defender = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can attack during " .. tostring(attacker:CanAttack()) .. "/" .. tostring(defender:CanAttack()))
+      `,
+      "can-attack-during.lua",
+    );
+    expect(during.ok, during.error).toBe(true);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!).ok).toBe(true);
+    const after = host.loadScript(
+      `
+      local attacker = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can attack after " .. tostring(attacker:CanAttack()))
+      `,
+      "can-attack-after.lua",
+    );
+
+    expect(after.ok, after.error).toBe(true);
+    expect(host.messages).toEqual(["can attack before false/false", "can attack during true/false", "can attack after false"]);
+  });
+
   it("lets Lua scripts calculate battle damage", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Damage Attacker", kind: "monster", attack: 1800 },
