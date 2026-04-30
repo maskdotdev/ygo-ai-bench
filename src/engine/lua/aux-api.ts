@@ -201,6 +201,9 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
       local st=e:GetHandler():GetSummonType()
       return st>=SUMMON_TYPE_SPECIAL+150 and st<SUMMON_TYPE_SPECIAL+180
     end
+    function aux.seqmovcon(e,tp,eg,ep,ev,re,r,rp)
+      return e:GetHandler():CheckAdjacent()
+    end
     function aux.tgoval(e,re,rp)
       return rp~=e:GetHandlerPlayer()
     end

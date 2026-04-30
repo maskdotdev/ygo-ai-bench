@@ -976,6 +976,38 @@ describe("Lua state helpers", () => {
     expect(hintLogs[1]?.detail).toMatch(/^1 selected: (100|200)$/);
   });
 
+  it("checks Lua sequence movement adjacency conditions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Blocked", kind: "monster" },
+      { code: "200", name: "Middle", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 91, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const blocked = session.state.cards.find((card) => card.code === "100");
+    const middle = session.state.cards.find((card) => card.code === "200");
+    expect(blocked).toBeTruthy();
+    expect(middle).toBeTruthy();
+    moveDuelCard(session.state, blocked!.uid, "monsterZone", 0).sequence = 0;
+    moveDuelCard(session.state, middle!.uid, "monsterZone", 0).sequence = 1;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local blocked=Duel.GetFieldCard(0,LOCATION_MZONE,0)
+      local middle=Duel.GetFieldCard(0,LOCATION_MZONE,1)
+      Debug.Message("seqmovcon " .. tostring(aux.seqmovcon(Effect.CreateEffect(middle))) .. "/" .. tostring(aux.seqmovcon(Effect.CreateEffect(blocked))))
+      `,
+      "seqmovcon.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("seqmovcon true/false");
+  });
+
   it("lets Lua scripts check additional summon availability", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Extra Summon Source", kind: "monster" },
