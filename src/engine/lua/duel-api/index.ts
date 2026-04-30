@@ -33,7 +33,7 @@ export interface LuaDuelApiHostState {
 export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaDuelApiHostState): void {
   lua.lua_newtable(L);
   installDuelTurnApi(L, session);
-  installDuelPromptApi(L, hostState);
+  installDuelPromptApi(L, session, hostState);
   installDuelBattleApi(L, session);
   installDuelChainApi(L, session, hostState);
   installDuelActivityApi(L, session);

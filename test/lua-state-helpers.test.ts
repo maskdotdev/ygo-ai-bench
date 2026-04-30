@@ -372,10 +372,13 @@ describe("Lua state helpers", () => {
   });
 
   it("provides deterministic Lua option prompt helpers", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "Prompt Source", kind: "monster" }];
-    const session = createDuel({ seed: 30, startingHandSize: 1, cardReader: createCardReader(cards) });
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Prompt Source", kind: "monster" },
+      { code: "200", name: "Prompt Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 30, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100"] },
+      0: { main: ["100", "200"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -392,9 +395,14 @@ describe("Lua state helpers", () => {
       local attribute=Duel.AnnounceAttribute(0, ATTRIBUTE_LIGHT, ATTRIBUTE_DARK)
       local disabled=Duel.SelectDisableField(0, 1, LOCATION_MZONE, 0, 0)
       local selected=Duel.SelectField(0, 2, LOCATION_SZONE, LOCATION_MZONE, 0)
+      local group=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 2, nil)
+      local single=group:GetFirst()
+      local group_hint_result=Duel.HintSelection(group, 501)
+      local card_hint_result=Duel.HintSelection(single)
       Debug.Message("prompt option " .. option .. "/" .. tostring(yes))
       Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute)
       Debug.Message("prompt zones " .. disabled .. "/" .. selected .. "/" .. ZONES_MMZ .. "/" .. ZONES_EMZ)
+      Debug.Message("hint return " .. tostring(group_hint_result == nil) .. "/" .. tostring(card_hint_result == nil))
       `,
       "prompt-helpers.lua",
     );
@@ -403,6 +411,12 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("prompt option 0/true");
     expect(host.messages).toContain("prompt announce 4/100/1/1/16");
     expect(host.messages).toContain("prompt zones 1/768/31/96");
+    expect(host.messages).toContain("hint return true/true");
+    const hintLogs = session.state.log.filter((entry) => entry.action === "hintSelection");
+    expect(hintLogs).toHaveLength(2);
+    expect(hintLogs[0]).toMatchObject({ player: 0 });
+    expect(hintLogs[0]?.detail).toMatch(/^2 selected: (100,200|200,100) \(501\)$/);
+    expect(hintLogs[1]?.detail).toMatch(/^1 selected: (100|200)$/);
   });
 
   it("exposes summon type metadata to Lua card helpers", () => {
