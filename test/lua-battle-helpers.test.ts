@@ -132,6 +132,48 @@ describe("Lua battle helpers", () => {
     expect(session.state.battleDamage[1]).toBe(0);
   });
 
+  it("lets Lua scripts record attack cost payment status", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cost Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Cost Target", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 79, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+    session.state.phase = "battle";
+
+    const host = createLuaScriptHost(session);
+    expect(applyResponse(session, { type: "declareAttack", player: 0, attackerUid: attacker!.uid, targetUid: target!.uid, label: "Attack" }).ok).toBe(true);
+    const result = host.loadScript(
+      `
+      Debug.Message("attack cost initial " .. Duel.IsAttackCostPaid())
+      Duel.AttackCostPaid()
+      Debug.Message("attack cost paid " .. Duel.IsAttackCostPaid())
+      Duel.AttackCostPaid(2)
+      Debug.Message("attack cost canceled " .. Duel.IsAttackCostPaid())
+      Duel.AttackCostPaid(9)
+      Debug.Message("attack cost clamped " .. Duel.IsAttackCostPaid())
+      `,
+      "attack-cost-paid.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["attack cost initial 0", "attack cost paid 1", "attack cost canceled 2", "attack cost clamped 2"]);
+    expect(session.state.attackCostPaid).toBe(2);
+    passBattleResponses(session);
+    expect(session.state.attackCostPaid).toBe(0);
+  });
+
   it("lets attack-announcement triggers negate battle before damage", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Window Attacker", kind: "monster", attack: 1800 },

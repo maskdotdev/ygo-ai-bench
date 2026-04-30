@@ -53,9 +53,11 @@ import {
   canDuelCardAttack as canDuelCardAttackRule,
   changeDuelCardPosition as changeDuelCardPositionRule,
   declareDuelAttack as declareDuelAttackRule,
+  getDuelAttackCostPaid as getDuelAttackCostPaidRule,
   getDuelAttackTargets as getDuelAttackTargetsRule,
   negateDuelAttack as negateDuelAttackRule,
   positionChangeActions,
+  setDuelAttackCostPaid as setDuelAttackCostPaidRule,
 } from "#duel/battle.js";
 import { battleWindowActions } from "#duel/battle-window-actions.js";
 import {
@@ -209,6 +211,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     activityCounts: createDuelActivityCounts(),
     activityHistory: [],
     battleDamage: { 0: 0, 1: 0 },
+    attackCostPaid: 0,
     attacksDeclared: [],
     attackPasses: [],
     damagePasses: [],
@@ -471,6 +474,14 @@ export function changeDuelBattleDamage(state: DuelState, player: PlayerId, amoun
   return value;
 }
 
+export function setDuelAttackCostPaid(state: DuelState, status: number): number {
+  return setDuelAttackCostPaidRule(state, status);
+}
+
+export function getDuelAttackCostPaid(state: DuelState): number {
+  return getDuelAttackCostPaidRule(state);
+}
+
 export function setDuelPlayerLifePoints(state: DuelState, player: PlayerId, lifePoints: number): void {
   state.players[player].lifePoints = Math.max(0, Math.floor(lifePoints));
   pushDuelLog(state, "setLifePoints", player, undefined, String(state.players[player].lifePoints));
@@ -623,6 +634,7 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
     delete state.pendingBattle;
     state.attackPasses = [];
     state.damagePasses = [];
+    state.attackCostPaid = 0;
     delete state.battleStep;
   }
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
@@ -642,6 +654,7 @@ function endTurn(state: DuelState, player: PlayerId): void {
   state.attacksDeclared = [];
   state.attackPasses = [];
   state.damagePasses = [];
+  state.attackCostPaid = 0;
   state.positionsChanged = [];
   for (const activityPlayer of [0, 1] satisfies PlayerId[]) resetDuelActivityCounts(state, activityPlayer);
   delete state.currentAttack;

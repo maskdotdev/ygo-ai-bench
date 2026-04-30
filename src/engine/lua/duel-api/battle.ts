@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { changeDuelBattleDamage, damageDuelPlayer, getDuelBattleDamage, negateDuelAttack } from "#duel/core.js";
+import { changeDuelBattleDamage, damageDuelPlayer, getDuelAttackCostPaid, getDuelBattleDamage, negateDuelAttack, setDuelAttackCostPaid } from "#duel/core.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
@@ -68,6 +68,17 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("ChangeBattleDamage"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCalculateDamage(state, session));
   lua.lua_setfield(L, -2, to_luastring("CalculateDamage"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const status = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 1;
+    setDuelAttackCostPaid(session.state, status);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("AttackCostPaid"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, getDuelAttackCostPaid(session.state));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsAttackCostPaid"));
 }
 
 function pushCalculateDamage(L: unknown, session: DuelSession): number {

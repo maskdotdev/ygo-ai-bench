@@ -251,6 +251,7 @@ export interface DuelState {
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   activityHistory: DuelActivityRecord[];
   battleDamage: Record<PlayerId, number>;
+  attackCostPaid: number;
   attacksDeclared: string[];
   attackPasses: PlayerId[];
   damagePasses: PlayerId[];

@@ -34,6 +34,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   }
 
   state.attacksDeclared.push(attacker.uid);
+  state.attackCostPaid = 0;
   recordAttackActivity(state, player, attacker);
   state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
   state.pendingBattle = { ...state.currentAttack };
@@ -56,6 +57,7 @@ export function negateDuelAttack(state: DuelState): boolean {
   delete state.pendingBattle;
   state.attackPasses = [];
   state.damagePasses = [];
+  state.attackCostPaid = 0;
   delete state.battleStep;
   pushDuelLog(state, "attack", attacker?.controller ?? state.turnPlayer, attacker?.name, "Negated attack");
   return true;
@@ -70,6 +72,7 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
     delete state.currentAttack;
     state.attackPasses = [];
     state.damagePasses = [];
+    state.attackCostPaid = 0;
     delete state.battleStep;
     return false;
   }
@@ -78,6 +81,7 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   delete state.currentAttack;
   state.attackPasses = [];
   state.damagePasses = [];
+  state.attackCostPaid = 0;
   delete state.battleStep;
   if (!target) {
     callbacks.damagePlayer(otherPlayer(attacker.controller), getBattleAttack(attacker));
@@ -96,6 +100,15 @@ export function canChangeDuelCardPosition(state: DuelState, uid: string, positio
   if (state.positionsChanged.includes(card.uid)) return false;
   if (state.attacksDeclared.includes(card.uid)) return false;
   return true;
+}
+
+export function setDuelAttackCostPaid(state: DuelState, status: number): number {
+  state.attackCostPaid = Math.max(0, Math.min(2, Math.trunc(status)));
+  return state.attackCostPaid;
+}
+
+export function getDuelAttackCostPaid(state: DuelState): number {
+  return state.attackCostPaid;
 }
 
 export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"]): DuelCardInstance {
