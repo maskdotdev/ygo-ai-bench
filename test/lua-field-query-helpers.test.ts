@@ -237,6 +237,8 @@ describe("Lua field and query helpers", () => {
       Debug.Message("group excluded selected too few " .. Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 3, 3, excluded):GetCount())
       Debug.Message("group excluded selected unbounded " .. Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK, 1, 0, excluded):GetCount())
       Debug.Message("onfield count " .. Duel.GetFieldGroupCount(0, LOCATION_ONFIELD, LOCATION_ONFIELD))
+      Debug.Message("hand field count " .. Duel.GetFieldGroup(0, LOCATION_HAND + LOCATION_GRAVE, LOCATION_DECK):GetCount())
+      Debug.Message("empty field count " .. Duel.GetFieldGroup(0, 0, 0):GetCount() .. "/" .. Duel.GetFieldGroupCount(0, 0, 0))
       `,
       "field-groups.lua",
     );
@@ -258,6 +260,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("group excluded selected too few 0");
     expect(host.messages).toContain("group excluded selected unbounded 2");
     expect(host.messages).toContain("onfield count 0");
+    expect(host.messages).toContain("hand field count 2");
+    expect(host.messages).toContain("empty field count 0/0");
   });
 
   it("lets Lua scripts read card type, stats, race, and attribute", () => {
