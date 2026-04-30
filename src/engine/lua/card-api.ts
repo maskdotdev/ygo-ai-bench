@@ -316,6 +316,13 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "normalSummon" && action.uid === card.uid)),
   );
   pushBooleanGetter(L, "IsSpecialSummonable", session, (card) => Boolean(card && canSpecialSummonDuelCard(session.state, card.uid, card.controller)));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const player = lua.lua_isnumber(state, 4) ? normalizePlayer(lua.lua_tointeger(state, 4)) : card?.controller;
+    lua.lua_pushboolean(state, Boolean(card && player !== undefined && canSpecialSummonDuelCard(session.state, card.uid, player)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsCanBeSpecialSummoned"));
   pushBooleanGetter(L, "IsMSetable", session, (card) =>
     Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "setMonster" && action.uid === card.uid)),
   );
@@ -765,6 +772,7 @@ const cardFieldNames = [
   "IsNegatableMonster",
   "IsSummonableCard",
   "IsSpecialSummonable",
+  "IsCanBeSpecialSummoned",
   "IsMSetable",
   "IsCanTurnSet",
   "IsCanChangePosition",

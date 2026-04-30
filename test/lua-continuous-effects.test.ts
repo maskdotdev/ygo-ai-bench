@@ -138,6 +138,80 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("synthetic bad pos false");
   });
 
+  it("lets Lua scripts check whether cards can be special summoned", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Special Check Lock", kind: "monster" },
+      { code: "200", name: "Special Check Target", kind: "monster" },
+      { code: "300", name: "Special Check Filler", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 51, startingHandSize: 7, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "300", "300", "300", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const before = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can special target " .. tostring(target:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK)))
+      Debug.Message("can special opponent " .. tostring(target:IsCanBeSpecialSummoned(nil,0,1,false,false,POS_FACEUP_ATTACK)))
+      `,
+      "can-be-special-before.lua",
+    );
+    expect(before.ok, before.error).toBe(true);
+    expect(host.messages).toContain("can special target true");
+    expect(host.messages).toContain("can special opponent true");
+
+    for (const filler of session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && card.code === "300").slice(0, 5)) {
+      moveDuelCard(session.state, filler.uid, "monsterZone", 0);
+    }
+    const full = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can special full " .. tostring(target:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK)))
+      `,
+      "can-be-special-full.lua",
+    );
+    expect(full.ok, full.error).toBe(true);
+    expect(host.messages).toContain("can special full false");
+
+    for (const filler of session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone" && card.code === "300")) {
+      moveDuelCard(session.state, filler.uid, "graveyard", 0);
+    }
+    const lock = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(lock).toBeTruthy();
+    moveDuelCard(session.state, lock!.uid, "monsterZone", 0);
+    const register = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(1,0)
+        c:RegisterEffect(e)
+      end
+      `,
+      "can-be-special-lock.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const blocked = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can special locked " .. tostring(target:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK)))
+      `,
+      "can-be-special-blocked.lua",
+    );
+    expect(blocked.ok, blocked.error).toBe(true);
+    expect(host.messages).toContain("can special locked false");
+  });
+
   it("applies Lua continuous attack restrictions", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Locked Attacker", kind: "monster", attack: 1600 }];
     const session = createDuel({ seed: 40, startingHandSize: 1, cardReader: createCardReader(cards) });
