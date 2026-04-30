@@ -132,6 +132,7 @@ describe("Lua movement helpers", () => {
       local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local equip = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("equip result " .. tostring(Duel.Equip(0, equip, target)))
+      Duel.EquipComplete()
       Debug.Message("equip operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("equip target " .. equip:GetEquipTarget():GetCode())
       Debug.Message("equip count " .. target:GetEquipCount() .. "/" .. target:GetEquipGroup():GetFirst():GetCode())

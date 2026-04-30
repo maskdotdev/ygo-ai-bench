@@ -43,6 +43,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("SpecialSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushEquip(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("Equip"));
+  lua.lua_pushcfunction(L, () => 0);
+  lua.lua_setfield(L, -2, to_luastring("EquipComplete"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetControl(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetControl"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangePosition(state, session, hostState));
