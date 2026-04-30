@@ -180,6 +180,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     shuffleCheckDisabled: false,
     skippedPhases: [],
     activityCounts: createDuelActivityCounts(),
+    battleDamage: { 0: 0, 1: 0 },
     attacksDeclared: [],
     positionsChanged: [],
     log: [],
@@ -421,6 +422,17 @@ export function raiseDuelEvent(state: DuelState, eventName: DuelEventName, event
   collectTriggerEffects(state, eventName, eventCard);
 }
 
+export function getDuelBattleDamage(state: DuelState, player: PlayerId): number {
+  return state.battleDamage[player] ?? 0;
+}
+
+export function changeDuelBattleDamage(state: DuelState, player: PlayerId, amount: number): number {
+  const value = Math.max(0, Math.floor(amount));
+  state.battleDamage[player] = value;
+  pushDuelLog(state, "battleDamage", player, undefined, String(value));
+  return value;
+}
+
 export function setDuelPlayerLifePoints(state: DuelState, player: PlayerId, lifePoints: number): void {
   state.players[player].lifePoints = Math.max(0, Math.floor(lifePoints));
   pushDuelLog(state, "setLifePoints", player, undefined, String(state.players[player].lifePoints));
@@ -506,7 +518,10 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   if (attacker && isAttackPrevented(state, attacker, createContinuousEffectContext(state))) throw new Error(`${attacker.name} cannot attack`);
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
     collectEvent: (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
-    damagePlayer: (damagedPlayer, amount) => damageDuelPlayer(state, damagedPlayer, amount),
+    damagePlayer: (damagedPlayer, amount) => {
+      changeDuelBattleDamage(state, damagedPlayer, amount);
+      return damageDuelPlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
+    },
     destroyCard: (uid, controller, reason) => destroyDuelCard(state, uid, controller, reason),
   });
 }

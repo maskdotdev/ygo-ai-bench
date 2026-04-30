@@ -48,4 +48,32 @@ describe("Lua battle helpers", () => {
     expect(session.state.currentAttack).toBeUndefined();
     expect(session.state.log.some((entry) => entry.action === "attack" && entry.detail === "Negated attack")).toBe(true);
   });
+
+  it("lets Lua scripts inspect and change recorded battle damage", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Damage Probe", kind: "monster" }];
+    const session = createDuel({ seed: 45, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("battle damage empty " .. Duel.GetBattleDamage(1))
+      Debug.Message("battle damage changed " .. Duel.ChangeBattleDamage(1, 1200, false))
+      Debug.Message("battle damage after " .. Duel.GetBattleDamage(1))
+      Debug.Message("battle damage floor " .. Duel.ChangeBattleDamage(1, -5, false))
+      `,
+      "battle-damage.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("battle damage empty 0");
+    expect(host.messages).toContain("battle damage changed 1200");
+    expect(host.messages).toContain("battle damage after 1200");
+    expect(host.messages).toContain("battle damage floor 0");
+    expect(session.state.battleDamage[1]).toBe(0);
+  });
 });

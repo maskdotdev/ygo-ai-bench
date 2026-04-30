@@ -47,6 +47,7 @@ describe("duel battle", () => {
 
     expect(attackResult.ok).toBe(true);
     expect(attackResult.state.players[1].lifePoints).toBe(6200);
+    expect(session.state.battleDamage[1]).toBe(1800);
     expect(attackResult.state.attacksDeclared).toContain(attacker!.uid);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid)).toBe(false);
     expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.attacksDeclared).toContain(attacker!.uid);
@@ -116,6 +117,7 @@ describe("duel battle", () => {
     expect(result.state.cards.find((card) => card.uid === attacker!.uid)?.location).toBe("monsterZone");
     expect(result.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("graveyard");
     expect(result.state.players[1].lifePoints).toBe(7100);
+    expect(session.state.battleDamage[1]).toBe(900);
     expect(result.state.log.some((entry) => entry.action === "destroy" && entry.card === "Opponent Monster")).toBe(true);
   });
 

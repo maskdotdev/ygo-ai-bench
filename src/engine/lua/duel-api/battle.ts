@@ -1,7 +1,7 @@
 import fengari from "fengari";
-import { negateDuelAttack } from "#duel/core.js";
+import { changeDuelBattleDamage, getDuelBattleDamage, negateDuelAttack } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
-import type { DuelSession } from "#duel/types.js";
+import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -31,4 +31,24 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("NegateAttack"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = readOptionalPlayer(state, 1) ?? session.state.turnPlayer;
+    lua.lua_pushinteger(state, getDuelBattleDamage(session.state, player));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetBattleDamage"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = readOptionalPlayer(state, 1) ?? session.state.turnPlayer;
+    const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushinteger(state, changeDuelBattleDamage(session.state, player, value));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ChangeBattleDamage"));
+}
+
+function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
+  if (!lua.lua_isnumber(L, index)) return undefined;
+  const value = lua.lua_tointeger(L, index);
+  if (value !== 0 && value !== 1) return undefined;
+  return value;
 }

@@ -225,6 +225,7 @@ export interface DuelState {
   shuffleCheckDisabled: boolean;
   skippedPhases: SkippedDuelPhase[];
   activityCounts: Record<PlayerId, DuelActivityCounts>;
+  battleDamage: Record<PlayerId, number>;
   attacksDeclared: string[];
   positionsChanged: string[];
   currentAttack?: {
