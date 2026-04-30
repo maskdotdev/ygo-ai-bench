@@ -8,6 +8,7 @@ import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from 
 import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
+const blueEyesSpiritRestrictionCode = 69832741;
 
 export interface LuaDuelPlayerApiHostState {
   pushEffectTable: (state: unknown, id: number) => void;
@@ -26,6 +27,8 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanMSet"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummon(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummonCount(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummonCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummonMonster(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummonMonster"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsPlayerAffectedByEffect(state, session, hostState));
@@ -60,6 +63,13 @@ function pushCanSpecialSummon(L: unknown, session: DuelSession): number {
   const targetPlayer = normalizePlayer(lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : player);
   const uid = readCardUid(L, 5) ?? readCardUid(L, 2);
   lua.lua_pushboolean(L, canSpecialSummon(session, player, targetPlayer, positionMask, uid));
+  return 1;
+}
+
+function pushCanSpecialSummonCount(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const count = Math.max(0, lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 1);
+  lua.lua_pushboolean(L, canSpecialSummonCount(session, player, count));
   return 1;
 }
 
@@ -132,6 +142,11 @@ function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: 
   if (!card || !isMonsterLike(card.kind)) return false;
   if (card.controller !== player && card.owner !== player) return false;
   return canSpecialSummonDuelCard(session.state, uid, targetPlayer);
+}
+
+function canSpecialSummonCount(session: DuelSession, player: PlayerId, count: number): boolean {
+  if (!canPlayerSpecialSummon(session.state, player)) return false;
+  return count < 2 || matchingPlayerEffects(session.state, player, blueEyesSpiritRestrictionCode, createPlayerCheckContext(session)).length === 0;
 }
 
 function syntheticSpecialSummonCard(L: unknown, player: PlayerId): DuelCardInstance {
