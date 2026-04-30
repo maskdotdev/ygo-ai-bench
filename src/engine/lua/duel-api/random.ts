@@ -10,6 +10,10 @@ export function installDuelRandomApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("TossDice"));
   lua.lua_pushcfunction(L, (state: unknown) => pushTossCoin(state, session));
   lua.lua_setfield(L, -2, to_luastring("TossCoin"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceCoin(state));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceCoin"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCallCoin(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CallCoin"));
 }
 
 function pushTossDice(L: unknown, session: DuelSession): number {
@@ -40,8 +44,26 @@ function pushTossCoin(L: unknown, session: DuelSession): number {
   return results.length;
 }
 
+function pushAnnounceCoin(L: unknown): number {
+  lua.lua_pushinteger(L, 1);
+  return 1;
+}
+
+function pushCallCoin(L: unknown, session: DuelSession): number {
+  const player = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer;
+  const call = announceCoin();
+  const result = tossCoin(session);
+  pushDuelLog(session.state, "callCoin", player === 1 ? 1 : 0, undefined, `${call}/${result}`);
+  lua.lua_pushboolean(L, call === result);
+  return 1;
+}
+
 function tossCoin(session: DuelSession): number {
   const rng = createRng(`${session.state.seed}:coin:${session.state.randomCounter}`);
   session.state.randomCounter += 1;
   return rng() < 0.5 ? 0 : 1;
+}
+
+function announceCoin(): number {
+  return 1;
 }

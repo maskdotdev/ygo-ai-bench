@@ -21,6 +21,52 @@ describe("Lua random helpers", () => {
     expect(first.state.log.some((entry) => entry.action === "tossCoin" && entry.detail.includes(","))).toBe(true);
   });
 
+  it("lets Lua scripts call deterministic coins", () => {
+    const first = setupSession(155);
+    const second = setupSession(155);
+
+    const firstMessages = callCoinMessages(first);
+    const secondMessages = callCoinMessages(second);
+
+    expect(firstMessages).toEqual(secondMessages);
+    expect(firstMessages[0]).toMatch(/^coin call true\/(true|false)$/);
+    expect(firstMessages[1]).toBe("coin constants 1/0");
+    expect(first.state.randomCounter).toBe(1);
+    expect(first.state.log.some((entry) => entry.action === "callCoin" && entry.detail.includes("/"))).toBe(true);
+  });
+
+  it("preserves coin-call progression across snapshots", () => {
+    const original = setupSession(156);
+    const firstHost = createLuaScriptHost(original);
+    const first = firstHost.loadScript(
+      `
+      Debug.Message("before snapshot " .. tostring(Duel.CallCoin(0)))
+      `,
+      "coin-call-before-snapshot.lua",
+    );
+    expect(first.ok, first.error).toBe(true);
+
+    const restored = restoreDuel(serializeDuel(original), createCardReader(cards));
+    const restoredHost = createLuaScriptHost(restored);
+    const restoredCall = restoredHost.loadScript(
+      `
+      Debug.Message("after snapshot " .. tostring(Duel.CallCoin(0)))
+      `,
+      "coin-call-after-snapshot.lua",
+    );
+    expect(restoredCall.ok, restoredCall.error).toBe(true);
+
+    const continuousHost = createLuaScriptHost(original);
+    const continuousCall = continuousHost.loadScript(
+      `
+      Debug.Message("continuous " .. tostring(Duel.CallCoin(0)))
+      `,
+      "coin-call-continuous.lua",
+    );
+    expect(continuousCall.ok, continuousCall.error).toBe(true);
+    expect(restoredHost.messages[0]?.replace("after snapshot", "continuous")).toBe(continuousHost.messages[0]);
+  });
+
   it("lets Lua scripts toss deterministic dice", () => {
     const first = setupSession(152);
     const second = setupSession(152);
@@ -106,6 +152,21 @@ function tossCoinMessages(session: DuelSession): string[] {
     Debug.Message("coin three " .. b .. "," .. c .. "," .. d)
     `,
     "coin-toss.lua",
+  );
+  expect(result.ok, result.error).toBe(true);
+  return host.messages;
+}
+
+function callCoinMessages(session: DuelSession): string[] {
+  const host = createLuaScriptHost(session);
+  const result = host.loadScript(
+    `
+    local announced=Duel.AnnounceCoin(0)
+    local called=Duel.CallCoin(0)
+    Debug.Message("coin call " .. tostring(announced == COIN_HEADS) .. "/" .. tostring(called))
+    Debug.Message("coin constants " .. COIN_HEADS .. "/" .. COIN_TAILS)
+    `,
+    "coin-call.lua",
   );
   expect(result.ok, result.error).toBe(true);
   return host.messages;

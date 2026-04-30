@@ -48,6 +48,8 @@ export function installConstants(L: unknown): void {
     ATTRIBUTE_LIGHT: 0x10,
     ATTRIBUTE_DARK: 0x20,
     ATTRIBUTE_DIVINE: 0x40,
+    COIN_TAILS: 0,
+    COIN_HEADS: 1,
     CATEGORY_DESTROY: 0x1,
     CATEGORY_RELEASE: 0x2,
     CATEGORY_REMOVE: 0x4,
