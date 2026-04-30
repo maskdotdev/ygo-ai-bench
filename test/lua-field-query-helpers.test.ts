@@ -959,6 +959,54 @@ describe("Lua field and query helpers", () => {
     expect(fullHost.messages).toContain("mset zone blocked 0");
   });
 
+  it("lets Lua scripts choose between normal summoning and setting monsters", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summon Or Set Normal", kind: "monster", level: 4 },
+      { code: "200", name: "Summon Or Set Tribute", kind: "monster", level: 5 },
+    ];
+    const summonSession = createDuel({ seed: 152, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(summonSession, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(summonSession);
+
+    const summonHost = createLuaScriptHost(summonSession);
+    const summonResult = summonHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("summon or set summon " .. Duel.SummonOrSet(0, target, true, nil))
+      Debug.Message("summon or set summon operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "summon-or-set-summon.lua",
+    );
+    expect(summonResult.ok, summonResult.error).toBe(true);
+    expect(summonHost.messages).toContain("summon or set summon 1");
+    expect(summonHost.messages).toContain("summon or set summon operated 1/100");
+    expect(summonSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", position: "faceUpAttack", summonType: "normal" });
+
+    const setSession = createDuel({ seed: 153, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(setSession, {
+      0: { main: ["200"] },
+      1: { main: [] },
+    });
+    startDuel(setSession);
+
+    const setHost = createLuaScriptHost(setSession);
+    const setResult = setHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("summon or set set " .. Duel.SummonOrSet(0, target, true, nil))
+      Debug.Message("summon or set set operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "summon-or-set-set.lua",
+    );
+    expect(setResult.ok, setResult.error).toBe(true);
+    expect(setHost.messages).toContain("summon or set set 1");
+    expect(setHost.messages).toContain("summon or set set operated 1/200");
+    expect(setSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
+  });
+
   it("lets Lua scripts set spells and traps", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Set Spell", kind: "spell", typeFlags: 0x2 },

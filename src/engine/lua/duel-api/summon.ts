@@ -16,13 +16,15 @@ import {
   xyzSummonDuelCard,
 } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
+import { normalSummonActions } from "#duel/summon.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { pushGroupTable } from "#lua/group-api.js";
-import type { CardPosition, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelAction, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
 type LuaSummonType = "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummon" | "RitualSummon";
+type LuaSummonOrSetAction = Extract<DuelAction, { type: "normalSummon" | "tributeSummon" | "setMonster" }>;
 
 export interface LuaDuelSummonApiHostState {
   operatedUids: string[];
@@ -33,6 +35,8 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   pushBasicSummonHelper(L, "Summon", session, hostState, "normalSummon");
   pushBasicSummonHelper(L, "MSet", session, hostState, "setMonster");
   pushBasicSummonHelper(L, "SSet", session, hostState, "setSpellTrap");
+  lua.lua_pushcfunction(L, (state: unknown) => pushSummonOrSetResult(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("SummonOrSet"));
   pushSummonHelper(L, "FusionSummon", session, hostState, "FusionSummon");
   pushSummonHelper(L, "SynchroSummon", session, hostState, "SynchroSummon");
   pushSummonHelper(L, "XyzSummon", session, hostState, "XyzSummon");
@@ -58,6 +62,38 @@ function pushBasicSummonHelper(L: unknown, fieldName: string, session: DuelSessi
 function pushSummonHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelSummonApiHostState, summonType: LuaSummonType): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushLuaSummonResult(state, session, hostState, summonType));
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function pushSummonOrSetResult(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
+  const targetUid = readFirstCardOrGroupUid(L, 2);
+  const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
+  if (!target) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const tributeUids = readCardCollectionUids(L, 4);
+  const action = selectSummonOrSetAction(session.state, player, target, tributeUids);
+  const result = action ? applyResponse(session, action) : { ok: false };
+  setOperatedUids(hostState, result.ok ? [target.uid] : []);
+  lua.lua_pushinteger(L, result.ok ? 1 : 0);
+  return 1;
+}
+
+function selectSummonOrSetAction(
+  state: DuelState,
+  player: PlayerId,
+  target: DuelCardInstance,
+  tributeUids: string[],
+): LuaSummonOrSetAction | undefined {
+  const actions = normalSummonActions(state, player, [target]);
+  const summon = actions.find((candidate): candidate is LuaSummonOrSetAction => candidate.type === "normalSummon" && candidate.uid === target.uid);
+  if (summon) return summon;
+  if (tributeUids.length > 0 && actions.some((candidate) => candidate.type === "tributeSummon" && candidate.uid === target.uid)) {
+    return { type: "tributeSummon", player, uid: target.uid, tributeUids, label: `Tribute Summon ${target.name}` };
+  }
+  return actions.find((candidate): candidate is LuaSummonOrSetAction => candidate.type === "setMonster" && candidate.uid === target.uid);
 }
 
 function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState, type: "normalSummon" | "setMonster" | "setSpellTrap"): number {
