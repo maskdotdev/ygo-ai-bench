@@ -145,6 +145,37 @@ describe("Lua field and query helpers", () => {
     expect(after).not.toEqual(before);
   });
 
+  it("lets Lua scripts create and summon tokens", () => {
+    const cards: DuelCardData[] = [{ code: "123456", name: "Generated Token", kind: "monster", attack: 500, defense: 500 }];
+    const session = createDuel({ seed: 13, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: [] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local token = Duel.CreateToken(0, 123456)
+      Debug.Message("token code " .. token:GetCode())
+      Debug.Message("token attack " .. token:GetAttack())
+      Debug.Message("token hand " .. tostring(token:IsLocation(LOCATION_HAND)))
+      Debug.Message("token summon " .. Duel.SpecialSummon(token, 0, 0, 0, false, false, POS_FACEUP_ATTACK))
+      Debug.Message("token faceup " .. tostring(token:IsFaceup()))
+      `,
+      "create-token.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("token code 123456");
+    expect(host.messages).toContain("token attack 500");
+    expect(host.messages).toContain("token hand true");
+    expect(host.messages).toContain("token summon 1");
+    expect(host.messages).toContain("token faceup true");
+    expect(session.state.cards.find((card) => card.code === "123456")).toMatchObject({ location: "monsterZone", controller: 0, summonType: "special" });
+  });
+
   it("lets Lua scripts draw and search deck cards", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Draw A", kind: "monster" },
