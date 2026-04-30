@@ -245,6 +245,7 @@ export interface DuelState {
   usedCountKeys: string[];
   flagEffects: DuelFlagEffect[];
   duelTypeFlags: number;
+  globalFlags: number;
   unofficialProcEnabled: boolean;
   shuffleCheckDisabled: boolean;
   skippedPhases: SkippedDuelPhase[];
