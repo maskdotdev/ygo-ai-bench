@@ -45,6 +45,12 @@ export function continueAttackResponseWindow(state: DuelState, handlers: BattleC
   openAttackResponseWindow(state, attacker?.controller ?? state.turnPlayer);
 }
 
+export function markBattleWindowChainStarted(state: DuelState): void {
+  if (!state.pendingBattle) return;
+  if (state.battleStep === "damage") state.damagePasses = [];
+  else state.attackPasses = [];
+}
+
 function openDamageResponseWindow(state: DuelState, lastAttackResponder: PlayerId): void {
   state.damagePasses = [];
   state.battleStep = "damage";

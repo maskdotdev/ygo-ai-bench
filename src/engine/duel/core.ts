@@ -60,6 +60,7 @@ import {
 import { battleWindowActions } from "#duel/battle-window-actions.js";
 import {
   continueAttackResponseWindow,
+  markBattleWindowChainStarted,
   openAttackResponseWindow,
   passAttackResponseWindow,
   passDamageResponseWindow,
@@ -871,10 +872,7 @@ function pushChainLink(
     ...(targetParam === undefined ? {} : { targetParam }),
   });
   state.chainPasses = [];
-  if (state.pendingBattle) {
-    if (state.battleStep === "damage") state.damagePasses = [];
-    else state.attackPasses = [];
-  }
+  markBattleWindowChainStarted(state);
   clearStaleChainLimits(state);
 }
 
