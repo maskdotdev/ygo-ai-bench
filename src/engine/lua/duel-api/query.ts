@@ -35,6 +35,10 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("GetFieldGroupCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFieldGroupCount(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetFieldGroupCountRush"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushOverlayGroup(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetOverlayGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushOverlayGroupCount(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetOverlayCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFieldCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetFieldCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsExistingMatchingCard(state, session));
@@ -149,6 +153,38 @@ function pushFieldGroupCount(L: unknown, session: DuelSession): number {
   const opponentMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
   lua.lua_pushinteger(L, fieldGroupUids(session, player, selfMask, opponentMask).length);
   return 1;
+}
+
+function pushOverlayGroup(L: unknown, session: DuelSession): number {
+  pushGroupTable(L, overlayGroupUids(session, readOverlayQuery(L, session)));
+  return 1;
+}
+
+function pushOverlayGroupCount(L: unknown, session: DuelSession): number {
+  lua.lua_pushinteger(L, overlayGroupUids(session, readOverlayQuery(L, session)).length);
+  return 1;
+}
+
+function readOverlayQuery(L: unknown, session: DuelSession): { player: PlayerId; self: boolean; opponent: boolean; excluded: string[] } {
+  return {
+    player: normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer),
+    self: lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) !== 0 : lua.lua_toboolean(L, 2),
+    opponent: lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) !== 0 : lua.lua_toboolean(L, 3),
+    excluded: readCardOrGroupUids(L, 4),
+  };
+}
+
+function overlayGroupUids(session: DuelSession, query: { player: PlayerId; self: boolean; opponent: boolean; excluded: string[] }): string[] {
+  return overlaySourceCards(session, query)
+    .flatMap((card) => card.overlayUids)
+    .filter((uid) => !query.excluded.includes(uid));
+}
+
+function overlaySourceCards(session: DuelSession, query: { player: PlayerId; self: boolean; opponent: boolean }): { controller: PlayerId; location: DuelLocation; sequence: number; overlayUids: string[] }[] {
+  const players = [query.self ? query.player : undefined, query.opponent ? otherPlayer(query.player) : undefined].filter((player): player is PlayerId => player !== undefined);
+  return session.state.cards
+    .filter((card) => players.includes(card.controller) && card.location === "monsterZone" && card.overlayUids.length > 0)
+    .sort((a, b) => a.controller - b.controller || a.sequence - b.sequence);
 }
 
 function pushFieldCard(L: unknown, session: DuelSession): number {

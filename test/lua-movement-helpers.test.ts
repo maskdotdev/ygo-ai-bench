@@ -525,6 +525,7 @@ describe("Lua movement helpers", () => {
       local first = overlays:GetFirst()
       local second = overlays:GetNext()
       Debug.Message("overlay count " .. xyz:GetOverlayCount() .. "/" .. overlays:GetCount())
+      Debug.Message("duel overlay count " .. Duel.GetOverlayCount(0, 1, 0) .. "/" .. Duel.GetOverlayGroup(0, 1, 0):GetCount() .. "/" .. Duel.GetOverlayCount(0, 0, 1))
       Debug.Message("overlay codes " .. first:GetCode() .. "/" .. second:GetCode())
       Debug.Message("card can detach one " .. tostring(xyz:CheckRemoveOverlayCard(0, 1, REASON_COST)))
       Debug.Message("card can detach three " .. tostring(xyz:CheckRemoveOverlayCard(0, 3, REASON_COST)))
@@ -544,6 +545,7 @@ describe("Lua movement helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("overlay count 2/2");
+    expect(host.messages).toContain("duel overlay count 2/2/0");
     expect(host.messages).toContain("overlay codes 100/300");
     expect(host.messages).toContain("card can detach one true");
     expect(host.messages).toContain("card can detach three false");
