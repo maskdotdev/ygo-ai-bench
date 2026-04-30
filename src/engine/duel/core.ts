@@ -2,7 +2,6 @@ import { shuffle } from "#engine/rng.js";
 import {
   createDuelActivityCounts,
   recordSpecialSummonActivity,
-  resetDuelActivityCounts,
 } from "#duel/activity.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import {
@@ -81,8 +80,8 @@ import {
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
-import { pruneResetEffectsAfterChain, pruneResetEffectsAfterPhase } from "#duel/effect-reset.js";
-import { pruneDuelFlagEffectsAfterChain, pruneDuelFlagEffectsAfterPhase } from "#duel/flags.js";
+import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
+import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import {
   applyDestroyPrevention,
   applyDestroyReplacement,
@@ -94,6 +93,7 @@ import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
 import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
+import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, nextAvailableDuelPhase } from "#duel/turn-flow.js";
 import type {
   ApplyDuelResponseResult,
   CardPosition,
@@ -119,8 +119,6 @@ import type {
 
 export { moveDuelCard } from "#duel/card-state.js";
 export { queryPublicState, serializeDuel, restoreDuel } from "#duel/snapshot.js";
-
-const phaseOrder: DuelPhase[] = ["draw", "standby", "main1", "battle", "main2", "end"];
 
 const activationHandlers: DuelActivationHandlers = {
   createEffectContext,
@@ -172,8 +170,12 @@ const responseHandlers: DuelResponseHandlers = {
   flipSummon: flipSummonDuelCard,
   changePosition: changeDuelCardPosition,
   declareAttack: declareDuelAttack,
-  changePhase,
-  endTurn,
+  changePhase(state, player, phase) {
+    changeDuelPhase(state, player, phase, { collectEvent: (eventName) => collectTriggerEffects(state, eventName) });
+  },
+  endTurn(state, player) {
+    endDuelTurn(state, player, { collectEvent: (eventName) => collectTriggerEffects(state, eventName) });
+  },
 };
 
 export interface CreateDuelOptions extends DuelOptions {
@@ -244,7 +246,7 @@ export function startDuel(session: DuelSession): void {
     const deck = getCards(session.state, player, "deck");
     const shuffled = shuffle(deck, `${session.state.seed}:${player}`);
     for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
-    draw(session.state, player, session.state.options.startingHandSize, "Opening hand");
+    drawDuelCardsFromDeck(session.state, player, session.state.options.startingHandSize, "Opening hand");
   }
   session.state.status = "awaiting";
   session.state.turn = 1;
@@ -312,7 +314,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       if (attacker && !isAttackPrevented(state, attacker, createContinuousEffectContext(state))) actions.push(action);
     }
   }
-  const nextPhase = nextAvailablePhase(state, player);
+  const nextPhase = nextAvailableDuelPhase(state, player);
   if (nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
   actions.push({ type: "endTurn", player, label: "End turn" });
   return stampActions(actions, state.actionWindowId);
@@ -548,7 +550,7 @@ function createReleasePredicate(state: DuelState, reason: number): DuelMaterialP
 }
 
 export function drawDuelCards(state: DuelState, player: PlayerId, count: number, detail = "Effect draw"): number {
-  return draw(state, player, Math.max(0, count), detail);
+  return drawDuelCardsFromDeck(state, player, Math.max(0, count), detail);
 }
 
 export function canDuelCardAttack(state: DuelState, uid: string): boolean {
@@ -618,88 +620,6 @@ function setSpellTrap(state: DuelState, player: PlayerId, uid: string): void {
   card.position = "faceDown";
   card.faceUp = false;
   pushDuelLog(state, "set", player, card.name, "Set from hand");
-}
-
-function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void {
-  if (state.turnPlayer !== player) throw new Error("Only the turn player can change phases");
-  if (phaseOrder.indexOf(phase) <= phaseOrder.indexOf(state.phase)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
-  if (phase !== nextAvailablePhase(state, player)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
-  consumeSkippedPhases(state, player, phase);
-  state.phase = phase;
-  pruneResetEffectsAfterPhase(state, phase);
-  pruneDuelFlagEffectsAfterPhase(state, phase);
-  if (phase === "battle") state.attacksDeclared = [];
-  else {
-    delete state.currentAttack;
-    delete state.pendingBattle;
-    state.attackPasses = [];
-    state.damagePasses = [];
-    state.attackCostPaid = 0;
-    delete state.battleStep;
-  }
-  pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
-  collectTriggerEffects(state, "phaseChanged");
-}
-
-function endTurn(state: DuelState, player: PlayerId): void {
-  if (state.turnPlayer !== player) throw new Error("Only the turn player can end the turn");
-  pruneResetEffectsAfterPhase(state, "end");
-  pruneDuelFlagEffectsAfterPhase(state, "end");
-  state.turn += 1;
-  state.turnPlayer = otherPlayer(player);
-  state.phase = "draw";
-  pruneResetEffectsAfterPhase(state, "draw");
-  pruneDuelFlagEffectsAfterPhase(state, "draw");
-  state.waitingFor = state.turnPlayer;
-  state.attacksDeclared = [];
-  state.attackPasses = [];
-  state.damagePasses = [];
-  state.attackCostPaid = 0;
-  state.positionsChanged = [];
-  for (const activityPlayer of [0, 1] satisfies PlayerId[]) resetDuelActivityCounts(state, activityPlayer);
-  delete state.currentAttack;
-  delete state.pendingBattle;
-  delete state.battleStep;
-  state.players[state.turnPlayer].normalSummonAvailable = true;
-  draw(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");
-  state.phase = "main1";
-  pruneResetEffectsAfterPhase(state, "main1");
-  pruneDuelFlagEffectsAfterPhase(state, "main1");
-  pushDuelLog(state, "turn", state.turnPlayer, undefined, `Turn ${state.turn} started`);
-  collectTriggerEffects(state, "turnStarted");
-}
-
-function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
-  for (const phase of phaseOrder.slice(phaseOrder.indexOf(state.phase) + 1)) {
-    if (!isPhaseSkipped(state, player, phase)) return phase;
-  }
-  return undefined;
-}
-
-function isPhaseSkipped(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {
-  return state.skippedPhases.some((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0);
-}
-
-function consumeSkippedPhases(state: DuelState, player: PlayerId, targetPhase: DuelPhase): void {
-  const currentIndex = phaseOrder.indexOf(state.phase);
-  const targetIndex = phaseOrder.indexOf(targetPhase);
-  const skipped = new Set(phaseOrder.slice(currentIndex + 1, targetIndex).filter((phase) => isPhaseSkipped(state, player, phase)));
-  for (const skip of state.skippedPhases) {
-    if (skip.player === player && skipped.has(skip.phase)) skip.remaining -= 1;
-  }
-  state.skippedPhases = state.skippedPhases.filter((skip) => skip.remaining > 0);
-}
-
-function draw(state: DuelState, player: PlayerId, count: number, detail: string): number {
-  let drawn = 0;
-  for (let index = 0; index < count; index += 1) {
-    const card = getCards(state, player, "deck").sort((a, b) => a.sequence - b.sequence)[0];
-    if (!card) return drawn;
-    moveDuelCard(state, card.uid, "hand", player, duelReason.rule);
-    pushDuelLog(state, "draw", player, card.name, detail);
-    drawn += 1;
-  }
-  return drawn;
 }
 
 function createEffectContext(
