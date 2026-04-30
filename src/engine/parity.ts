@@ -5,10 +5,22 @@ import {
   loadDecks,
   moveDuelCard,
   queryPublicState,
+  registerEffect,
   startDuel,
   type CreateDuelOptions,
 } from "#duel/core.js";
-import type { DuelAction, DuelCardReader, DuelLocation, DuelSession, PlayerId, ScriptedDuelFixture, ScriptedDuelStep, ScriptedFixtureMove, ScriptedResponseSelector } from "#duel/types.js";
+import type {
+  DuelAction,
+  DuelCardReader,
+  DuelLocation,
+  DuelSession,
+  PlayerId,
+  ScriptedDuelFixture,
+  ScriptedDuelStep,
+  ScriptedFixtureEffect,
+  ScriptedFixtureMove,
+  ScriptedResponseSelector,
+} from "#duel/types.js";
 
 export interface ParityRunOptions extends CreateDuelOptions {
   cardReader?: DuelCardReader;
@@ -31,6 +43,7 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
 
   const failures: ParityFailure[] = [];
   applyFixtureSetup(session, fixture.setup?.moveCards ?? [], failures, fixture.name);
+  applyFixtureEffects(session, fixture.setup?.effects ?? [], failures, fixture.name);
   if (failures.length) return { ok: false, failures };
   for (const step of fixture.responses) {
     const legal = getLegalActions(session, step.player);
@@ -52,6 +65,16 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
   }
   if (fixture.expected.turn && state.turn !== fixture.expected.turn) {
     failures.push({ fixture: fixture.name, message: `Expected turn ${fixture.expected.turn}, got ${state.turn}` });
+  }
+  for (const [player, expectedLifePoints] of Object.entries(fixture.expected.lifePoints ?? {}) as [string, number][]) {
+    const actualLifePoints = state.players[Number(player) as PlayerId]?.lifePoints;
+    if (actualLifePoints !== expectedLifePoints) failures.push({ fixture: fixture.name, message: `Expected player ${player} LP ${expectedLifePoints}, got ${actualLifePoints}` });
+  }
+  if (fixture.expected.pendingBattle !== undefined && Boolean(session.state.pendingBattle) !== fixture.expected.pendingBattle) {
+    failures.push({ fixture: fixture.name, message: `Expected pendingBattle ${fixture.expected.pendingBattle}, got ${Boolean(session.state.pendingBattle)}` });
+  }
+  if (fixture.expected.currentAttack !== undefined && Boolean(session.state.currentAttack) !== fixture.expected.currentAttack) {
+    failures.push({ fixture: fixture.name, message: `Expected currentAttack ${fixture.expected.currentAttack}, got ${Boolean(session.state.currentAttack)}` });
   }
   for (const [location, expectedCodes] of Object.entries(fixture.expected.locations ?? {}) as [DuelLocation, string[]][]) {
     const actualCodes = state.cards.filter((card) => card.location === location).map((card) => card.code);
@@ -92,6 +115,9 @@ function resolveScriptedStep(step: ScriptedDuelStep, legal: DuelAction[], cards:
     if (selector.position) {
       if (action.type !== "changePosition" || action.position !== selector.position) return false;
     }
+    if (selector.phase) {
+      if (action.type !== "changePhase" || action.phase !== selector.phase) return false;
+    }
     if (selector.attackerUid) {
       if (action.type !== "declareAttack" || action.attackerUid !== selector.attackerUid) return false;
     }
@@ -131,6 +157,31 @@ function isConcreteResponse(step: ScriptedDuelStep): step is DuelAction {
   return "label" in step && (!("uid" in step) || typeof step.uid === "string");
 }
 
+function applyFixtureEffects(session: DuelSession, effects: ScriptedFixtureEffect[], failures: ParityFailure[], fixture: string): void {
+  for (const effect of effects) {
+    const cards = queryPublicState(session).cards.filter((card) => {
+      if (card.controller !== effect.player || card.code !== effect.code) return false;
+      return effect.location === undefined || card.location === effect.location;
+    });
+    const source = cards[effect.occurrence ?? 0];
+    if (!source) {
+      failures.push({ fixture, message: `Setup could not find effect source ${effect.code} for player ${effect.player}` });
+      return;
+    }
+    registerEffect(session, {
+      id: effect.id,
+      sourceUid: source.uid,
+      controller: effect.player,
+      event: effect.event,
+      range: effect.range,
+      ...(effect.oncePerTurn === undefined ? {} : { oncePerTurn: effect.oncePerTurn }),
+      operation(ctx) {
+        if (effect.logMessage) ctx.log(effect.logMessage);
+      },
+    });
+  }
+}
+
 function applyFixtureSetup(session: DuelSession, moves: ScriptedFixtureMove[], failures: ParityFailure[], fixture: string): void {
   for (const move of moves) {
     const cards = queryPublicState(session).cards.filter((card) => {
@@ -142,7 +193,8 @@ function applyFixtureSetup(session: DuelSession, moves: ScriptedFixtureMove[], f
       failures.push({ fixture, message: `Setup could not find ${move.code} for player ${move.player}` });
       return;
     }
-    moveDuelCard(session.state, card.uid, move.to, move.controller);
+    const moved = moveDuelCard(session.state, card.uid, move.to, move.controller);
+    if (move.position) moved.position = move.position;
   }
 }
 
@@ -176,6 +228,7 @@ function describeStep(step: ScriptedDuelStep): string {
     "tributeUids" in step && step.tributeUids ? `tributeUids=${step.tributeUids.join(",")}` : undefined,
     "materialUids" in step && step.materialUids ? `materialUids=${step.materialUids.join(",")}` : undefined,
     "position" in step && step.position ? `position=${step.position}` : undefined,
+    "phase" in step && step.phase ? `phase=${step.phase}` : undefined,
     "attackerUid" in step && step.attackerUid ? `attackerUid=${step.attackerUid}` : undefined,
     "targetUid" in step && step.targetUid ? `targetUid=${step.targetUid}` : undefined,
     "promptId" in step && step.promptId ? `promptId=${step.promptId}` : undefined,

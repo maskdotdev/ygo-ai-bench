@@ -54,6 +54,84 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(result).toEqual({ ok: true, failures: [] });
   });
 
+  it("runs scripted battle-window fixtures against the TypeScript engine", () => {
+    const battleCards: DuelCardData[] = [
+      { code: "100", name: "Fixture Attacker", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Fixture Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Fixture Defender", kind: "monster", attack: 1500, defense: 1600 },
+    ];
+    const fixtures: ScriptedDuelFixture[] = [
+      {
+        name: "direct attack pass fixture",
+        options: { seed: 41, startingHandSize: 2 },
+        decks: {
+          0: { main: ["100", "300"] },
+          1: { main: ["400", "400"] },
+        },
+        setup: {
+          moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
+        },
+        responses: [
+          makeResponseSelector("changePhase", 0, { phase: "battle" }),
+          makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }),
+          makeResponseSelector("passAttack", 1),
+          makeResponseSelector("passAttack", 0),
+        ],
+        expected: {
+          phase: "battle",
+          lifePoints: { 1: 6200 },
+          pendingBattle: false,
+          currentAttack: false,
+          locations: { monsterZone: ["100"] },
+          logIncludes: ["Direct attack"],
+        },
+      },
+      {
+        name: "attack window quick fixture",
+        options: { seed: 42, startingHandSize: 2 },
+        decks: {
+          0: { main: ["100", "300"] },
+          1: { main: ["400", "400"] },
+        },
+        setup: {
+          moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
+          effects: [
+            {
+              id: "fixture-attack-window-quick",
+              player: 0,
+              code: "300",
+              location: "hand",
+              event: "quick",
+              range: ["hand"],
+              oncePerTurn: true,
+              logMessage: "Fixture attack-window quick resolved",
+            },
+          ],
+        },
+        responses: [
+          makeResponseSelector("changePhase", 0, { phase: "battle" }),
+          makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }),
+          makeResponseSelector("passAttack", 1),
+          makeResponseSelector("activateEffect", 0, { effectId: "fixture-attack-window-quick" }),
+          makeResponseSelector("passAttack", 1),
+          makeResponseSelector("passAttack", 0),
+        ],
+        expected: {
+          phase: "battle",
+          lifePoints: { 1: 6200 },
+          pendingBattle: false,
+          currentAttack: false,
+          locations: { monsterZone: ["100"] },
+          logIncludes: ["Fixture attack-window quick resolved", "Direct attack"],
+        },
+      },
+    ];
+
+    for (const fixture of fixtures) {
+      expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(battleCards) })).toEqual({ ok: true, failures: [] });
+    }
+  });
+
   it("selects extra deck scripted fixture responses by material uids", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Material A", kind: "monster" },

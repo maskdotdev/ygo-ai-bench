@@ -330,6 +330,7 @@ export interface ScriptedResponseSelector {
   tributeUids?: string[];
   materialUids?: string[];
   position?: CardPosition;
+  phase?: DuelPhase;
   attackerUid?: string;
   targetUid?: string;
   promptId?: string;
@@ -350,6 +351,19 @@ export interface ScriptedFixtureMove {
   from?: DuelLocation;
   to: DuelLocation;
   controller?: PlayerId;
+  position?: CardPosition;
+  occurrence?: number;
+}
+
+export interface ScriptedFixtureEffect {
+  id: string;
+  player: PlayerId;
+  code: string;
+  location?: DuelLocation;
+  event: DuelEffectDefinition["event"];
+  range: DuelLocation[];
+  oncePerTurn?: boolean;
+  logMessage?: string;
   occurrence?: number;
 }
 
@@ -359,11 +373,15 @@ export interface ScriptedDuelFixture {
   decks: Record<PlayerId, DuelPlayerDeck>;
   setup?: {
     moveCards?: ScriptedFixtureMove[];
+    effects?: ScriptedFixtureEffect[];
   };
   responses: ScriptedDuelStep[];
   expected: {
     phase?: DuelPhase;
     turn?: number;
+    lifePoints?: Partial<Record<PlayerId, number>>;
+    pendingBattle?: boolean;
+    currentAttack?: boolean;
     locations?: Partial<Record<DuelLocation, string[]>>;
     logIncludes?: string[];
   };
