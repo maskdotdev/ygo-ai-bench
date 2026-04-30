@@ -862,11 +862,12 @@ describe("Lua field and query helpers", () => {
       { code: "300", name: "Monster C", kind: "monster" },
       { code: "400", name: "Spell A", kind: "spell", typeFlags: 0x2 },
       { code: "500", name: "Trap B", kind: "trap", typeFlags: 0x4 },
+      { code: "600", name: "Opponent Monster", kind: "monster" },
     ];
     const session = createDuel({ seed: 98, startingHandSize: 5, cardReader: createCardReader(cards) });
     loadDecks(session, {
       0: { main: ["100", "200", "300", "400", "500"] },
-      1: { main: [] },
+      1: { main: ["600"] },
     });
     startDuel(session);
     for (const code of ["100", "200", "300"]) {
@@ -877,6 +878,8 @@ describe("Lua field and query helpers", () => {
       const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
       moveDuelCard(session.state, card!.uid, "spellTrapZone", 0);
     }
+    const opponentCard = session.state.cards.find((candidate) => candidate.controller === 1 && candidate.location === "hand" && candidate.code === "600");
+    moveDuelCard(session.state, opponentCard!.uid, "monsterZone", 1);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -896,6 +899,10 @@ describe("Lua field and query helpers", () => {
       Debug.Message("move spelltrap " .. Duel.MoveSequence(trap_b, 0))
       Debug.Message("spell order " .. spell_a:GetSequence() .. "/" .. trap_b:GetSequence())
       Debug.Message("monster order after spell " .. monster_a:GetSequence() .. "/" .. monster_b:GetSequence() .. "/" .. monster_c:GetSequence())
+      Debug.Message("field mzone codes " .. Duel.GetFieldCard(0, LOCATION_MZONE, 0):GetCode() .. "/" .. Duel.GetFieldCard(0, LOCATION_MZONE, 1):GetCode() .. "/" .. Duel.GetFieldCard(0, LOCATION_MZONE, 2):GetCode())
+      Debug.Message("field szone codes " .. Duel.GetFieldCard(0, LOCATION_SZONE, 0):GetCode() .. "/" .. Duel.GetFieldCard(0, LOCATION_SZONE, 1):GetCode())
+      Debug.Message("field opponent code " .. Duel.GetFieldCard(1, LOCATION_MZONE, 0):GetCode())
+      Debug.Message("field empty cards " .. tostring(Duel.GetFieldCard(0, LOCATION_MZONE, 3) == nil) .. "/" .. tostring(Duel.GetFieldCard(0, LOCATION_SZONE, 2) == nil))
       `,
       "move-sequence.lua",
     );
@@ -911,6 +918,10 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("move spelltrap 1");
     expect(host.messages).toContain("spell order 1/0");
     expect(host.messages).toContain("monster order after spell 1/2/0");
+    expect(host.messages).toContain("field mzone codes 300/100/200");
+    expect(host.messages).toContain("field szone codes 500/400");
+    expect(host.messages).toContain("field opponent code 600");
+    expect(host.messages).toContain("field empty cards true/true");
     expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ sequence: 1 });
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ sequence: 2 });
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ sequence: 0 });
