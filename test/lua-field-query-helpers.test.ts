@@ -283,6 +283,45 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("draw count default 2");
   });
 
+  it("lets Lua scripts query active field spell environments", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Field Environment", kind: "spell", typeFlags: 0x80002 },
+      { code: "200", name: "Normal Spell", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 73, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const field = session.state.cards.find((card) => card.code === "100");
+    const spell = session.state.cards.find((card) => card.code === "200");
+    expect(field).toBeDefined();
+    expect(spell).toBeDefined();
+    moveDuelCard(session.state, field!.uid, "spellTrapZone", 0);
+    moveDuelCard(session.state, spell!.uid, "spellTrapZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("environment field " .. tostring(Duel.IsEnvironment(100)))
+      Debug.Message("environment player " .. tostring(Duel.IsEnvironment(100, 0)))
+      Debug.Message("environment fzone " .. tostring(Duel.IsEnvironment(100, PLAYER_ALL, LOCATION_FZONE)))
+      Debug.Message("environment normal spell " .. tostring(Duel.IsEnvironment(200)))
+      Debug.Message("environment missing " .. tostring(Duel.IsEnvironment(300)))
+      `,
+      "field-environment.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("environment field true");
+    expect(host.messages).toContain("environment player true");
+    expect(host.messages).toContain("environment fzone true");
+    expect(host.messages).toContain("environment normal spell false");
+    expect(host.messages).toContain("environment missing false");
+  });
+
   it("lets Lua scripts query field groups across both players and locations", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Self Grave", kind: "monster" },

@@ -76,6 +76,7 @@ export function locationsFromMask(mask: number): DuelLocation[] {
   if ((mask & 0x10) !== 0) locations.push("graveyard");
   if ((mask & 0x20) !== 0) locations.push("banished");
   if ((mask & 0x40) !== 0) locations.push("extraDeck");
+  if ((mask & 0x100) !== 0) locations.push("spellTrapZone");
   return locations;
 }
 

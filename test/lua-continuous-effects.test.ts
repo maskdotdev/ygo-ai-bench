@@ -479,6 +479,65 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("duel effect owner 0");
   });
 
+  it("lets Lua scripts query environment-changing player effects", () => {
+    const cards: DuelCardData[] = [{ code: "902", name: "Environment Effect Source", kind: "monster" }];
+    const session = createDuel({ seed: 74, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["902"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "902");
+    expect(source).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    source!.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c902={}
+      function c902.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_CHANGE_ENVIRONMENT)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(1,0)
+        e:SetValue(777005)
+        c:RegisterEffect(e)
+      end
+      `,
+      "environment-effect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const check = host.loadScript(
+      `
+      Debug.Message("environment effect self " .. tostring(Duel.IsEnvironment(777005, 0)))
+      Debug.Message("environment effect opp " .. tostring(Duel.IsEnvironment(777005, 1)))
+      Debug.Message("environment effect all " .. tostring(Duel.IsEnvironment(777005, PLAYER_ALL)))
+      `,
+      "environment-effect-check.lua",
+    );
+
+    expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain("environment effect self true");
+    expect(host.messages).toContain("environment effect opp false");
+    expect(host.messages).toContain("environment effect all true");
+
+    moveDuelCard(session.state, source!.uid, "graveyard", 0);
+    const inactive = host.loadScript(
+      `
+      Debug.Message("environment effect inactive " .. tostring(Duel.IsEnvironment(777005, 0)))
+      `,
+      "environment-effect-inactive.lua",
+    );
+    expect(inactive.ok, inactive.error).toBe(true);
+    expect(host.messages).toContain("environment effect inactive false");
+  });
+
   it("applies Lua continuous material restrictions to card material predicates", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Fusion Locked Material", kind: "monster" },

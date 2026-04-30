@@ -1,9 +1,11 @@
 import fengari from "fengari";
+import { moveDuelCard } from "#duel/card-state.js";
+import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
-import type { DuelEffectContext, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -39,6 +41,8 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("GetTargetCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFirstMatchingCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetFirstMatchingCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsEnvironment(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsEnvironment"));
   installDuelLocationApi(L, session);
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckWithSumEqual(state, session));
   lua.lua_setfield(L, -2, to_luastring("CheckWithSumEqual"));
@@ -172,6 +176,17 @@ function pushFirstMatchingCard(L: unknown, session: DuelSession): number {
     return 1;
   }
   pushCardTable(L, uid);
+  return 1;
+}
+
+function pushIsEnvironment(L: unknown, session: DuelSession): number {
+  const code = lua.lua_isnumber(L, 1) ? String(lua.lua_tointeger(L, 1)) : "";
+  const players = environmentPlayers(L, session, 2);
+  const locations = environmentLocations(L, 3);
+  const active =
+    players.some((player) => hasEnvironmentFieldSpell(session, player, code, locations)) ||
+    players.some((player) => hasEnvironmentEffect(session, player, code));
+  lua.lua_pushboolean(L, active);
   return 1;
 }
 
@@ -423,6 +438,59 @@ function fieldGroupUids(session: DuelSession, player: PlayerId, selfMask: number
     ...matchingCardUids(session, player, selfMask),
     ...matchingCardUids(session, otherPlayer(player), opponentMask),
   ];
+}
+
+function environmentPlayers(L: unknown, session: DuelSession, index: number): PlayerId[] {
+  if (!lua.lua_isnumber(L, index)) return [session.state.turnPlayer, otherPlayer(session.state.turnPlayer)];
+  const value = lua.lua_tointeger(L, index);
+  if (value === 0 || value === 1) return [value];
+  return [0, 1];
+}
+
+function environmentLocations(L: unknown, index: number): DuelLocation[] {
+  if (!lua.lua_isnumber(L, index)) return ["spellTrapZone"];
+  const mask = lua.lua_tointeger(L, index);
+  if ((mask & 0x100) !== 0) return ["spellTrapZone"];
+  return locationsFromMask(mask);
+}
+
+function hasEnvironmentFieldSpell(session: DuelSession, player: PlayerId, code: string, locations: DuelLocation[]): boolean {
+  return session.state.cards.some(
+    (card) =>
+      card.controller === player &&
+      card.code === code &&
+      card.faceUp &&
+      locations.includes(card.location) &&
+      (card.data.typeFlags ?? 0) !== 0 &&
+      ((card.data.typeFlags ?? 0) & 0x80000) !== 0,
+  );
+}
+
+function hasEnvironmentEffect(session: DuelSession, player: PlayerId, code: string): boolean {
+  return matchingPlayerEffects(session.state, player, 290, createEnvironmentCheckContext(session)).some((match) => String(match.effect.value ?? "") === code);
+}
+
+function createEnvironmentCheckContext(session: DuelSession): ContinuousEffectContextFactory {
+  return (effect, source) => ({
+    duel: session.state,
+    source,
+    player: effect.controller,
+    checkOnly: true,
+    targetUids: [],
+    log() {},
+    moveCard(uid, to, controller) {
+      return moveDuelCard(session.state, uid, to, controller);
+    },
+    negateChainLink() {
+      return false;
+    },
+    setTargets() {},
+    getTargets() {
+      return [];
+    },
+    setTargetPlayer() {},
+    setTargetParam() {},
+  });
 }
 
 function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: number): string[] {
