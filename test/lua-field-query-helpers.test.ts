@@ -851,6 +851,69 @@ describe("Lua field and query helpers", () => {
     expect(session.state.cards.find((card) => card.code === "400")).toMatchObject({ sequence: 0 });
   });
 
+  it("lets Lua scripts move field card sequences", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Monster A", kind: "monster" },
+      { code: "200", name: "Monster B", kind: "monster" },
+      { code: "300", name: "Monster C", kind: "monster" },
+      { code: "400", name: "Spell A", kind: "spell", typeFlags: 0x2 },
+      { code: "500", name: "Trap B", kind: "trap", typeFlags: 0x4 },
+    ];
+    const session = createDuel({ seed: 98, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["100", "200", "300"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+    for (const code of ["400", "500"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "spellTrapZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local monster_a = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local monster_b = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local monster_c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local spell_a = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      local trap_b = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("move monster " .. Duel.MoveSequence(monster_c, 0))
+      Debug.Message("move monster operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("monster order " .. monster_a:GetSequence() .. "/" .. monster_b:GetSequence() .. "/" .. monster_c:GetSequence())
+      Debug.Message("move noop " .. Duel.MoveSequence(monster_c, 0))
+      Debug.Message("move noop operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("move range " .. Duel.MoveSequence(monster_c, 4))
+      Debug.Message("move range operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("move spelltrap " .. Duel.MoveSequence(trap_b, 0))
+      Debug.Message("spell order " .. spell_a:GetSequence() .. "/" .. trap_b:GetSequence())
+      Debug.Message("monster order after spell " .. monster_a:GetSequence() .. "/" .. monster_b:GetSequence() .. "/" .. monster_c:GetSequence())
+      `,
+      "move-sequence.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("move monster 1");
+    expect(host.messages).toContain("move monster operated 1/300");
+    expect(host.messages).toContain("monster order 1/2/0");
+    expect(host.messages).toContain("move noop 0");
+    expect(host.messages).toContain("move noop operated 0");
+    expect(host.messages).toContain("move range 0");
+    expect(host.messages).toContain("move range operated 0");
+    expect(host.messages).toContain("move spelltrap 1");
+    expect(host.messages).toContain("spell order 1/0");
+    expect(host.messages).toContain("monster order after spell 1/2/0");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ sequence: 1 });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ sequence: 2 });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ sequence: 0 });
+    expect(session.state.cards.find((card) => card.code === "400")).toMatchObject({ sequence: 1 });
+    expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ sequence: 0 });
+  });
+
   it("passes extra filter arguments through Lua matching helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Vararg A", kind: "monster", attack: 1600 },

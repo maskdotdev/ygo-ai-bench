@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { getCards } from "#duel/card-state.js";
 import {
   banishDuelCard,
   canMoveDuelCardToLocation,
@@ -40,6 +41,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("ChangePosition"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSwapSequence(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SwapSequence"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushMoveSequence(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("MoveSequence"));
 }
 
 function pushMoveHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0): void {
@@ -123,6 +126,29 @@ function pushSwapSequence(L: unknown, session: DuelSession, hostState: LuaDuelMo
   left.sequence = right.sequence;
   right.sequence = firstSequence;
   setOperatedUids(hostState, [left.uid, right.uid]);
+  lua.lua_pushinteger(L, 1);
+  return 1;
+}
+
+function pushMoveSequence(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const uid = readCardUid(L, 1);
+  const sequence = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+  if (!card || sequence === undefined || !canReorderFieldZone(card.location)) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const cards = getCards(session.state, card.controller, card.location);
+  if (sequence < 0 || sequence >= cards.length || card.sequence === sequence) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const ordered = cards.filter((candidate) => candidate.uid !== card.uid);
+  ordered.splice(sequence, 0, card);
+  for (const [nextSequence, candidate] of ordered.entries()) candidate.sequence = nextSequence;
+  setOperatedUids(hostState, [card.uid]);
   lua.lua_pushinteger(L, 1);
   return 1;
 }
@@ -243,6 +269,10 @@ function swappableSequencePair(first: DuelCardInstance | undefined, second: Duel
   if (!first || !second || first.uid === second.uid) return undefined;
   if (first.controller !== second.controller || first.location !== second.location) return undefined;
   return first.location === "monsterZone" || first.location === "spellTrapZone" ? [first, second] : undefined;
+}
+
+function canReorderFieldZone(location: DuelLocation): boolean {
+  return location === "monsterZone" || location === "spellTrapZone";
 }
 
 function setOperatedUids(hostState: LuaDuelMoveApiHostState, uids: string[]): void {
