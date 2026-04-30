@@ -233,6 +233,10 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsSpell", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x2) !== 0));
   pushBooleanGetter(L, "IsTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x4) !== 0));
   pushBooleanGetter(L, "IsSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x6) !== 0));
+  pushBooleanGetter(L, "IsMaximumMode", session, () => false);
+  pushBooleanGetter(L, "IsMaximumModeCenter", session, () => false);
+  pushBooleanGetter(L, "IsMaximumModeSide", session, () => false);
+  pushBooleanGetter(L, "IsNotMaximumModeSide", session, () => true);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
@@ -707,6 +711,10 @@ const cardFieldNames = [
   "IsMSetable",
   "IsSSetable",
   "IsSpellTrap",
+  "IsMaximumMode",
+  "IsMaximumModeCenter",
+  "IsMaximumModeSide",
+  "IsNotMaximumModeSide",
   "IsCanBeFusionMaterial",
   "IsCanBeSynchroMaterial",
   "IsCanBeXyzMaterial",

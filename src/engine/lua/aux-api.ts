@@ -105,6 +105,18 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
       c:RegisterEffect(e2)
       return e1
     end
+    function aux.FilterMaximumSideFunction(f,...)
+      local params={...}
+      return function(target)
+        return target:IsMaximumModeSide() and f(target,table.unpack(params))
+      end
+    end
+    function aux.FilterMaximumSideFunctionEx(f,...)
+      local params={...}
+      return function(target)
+        return ((not target:IsMaximumMode()) or (not (target:IsMaximumMode() and not target:IsMaximumModeCenter()))) and f(target,table.unpack(params))
+      end
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
