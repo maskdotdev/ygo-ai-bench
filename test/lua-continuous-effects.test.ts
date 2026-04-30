@@ -174,14 +174,14 @@ describe("Lua continuous effects", () => {
       local fusion_locked = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
       local generic_locked = Duel.GetFieldCard(0, LOCATION_MZONE, 1)
       Debug.Message("fusion material predicates " .. tostring(fusion_locked:IsCanBeFusionMaterial(nil)) .. "/" .. tostring(fusion_locked:IsCanBeSynchroMaterial(nil)))
-      Debug.Message("generic material predicates " .. tostring(generic_locked:IsCanBeFusionMaterial(nil)) .. "/" .. tostring(generic_locked:IsCanBeRitualMaterial(nil)))
+      Debug.Message("generic material predicates " .. tostring(generic_locked:IsCanBeFusionMaterial(nil)) .. "/" .. tostring(generic_locked:IsCanBeXyzMaterial(nil)) .. "/" .. tostring(generic_locked:IsCanBeRitualMaterial(nil)))
       `,
       "material-lock-predicate-check.lua",
     );
 
     expect(check.ok, check.error).toBe(true);
     expect(host.messages).toContain("fusion material predicates false/true");
-    expect(host.messages).toContain("generic material predicates false/false");
+    expect(host.messages).toContain("generic material predicates false/false/false");
     expect(host.messages).toContain("fusion material lock checked 100");
   });
 
