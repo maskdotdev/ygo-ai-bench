@@ -25,6 +25,7 @@ export interface DuelResponseHandlers {
   setSpellTrap(state: DuelState, player: PlayerId, uid: string): void;
   activateEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string): void;
   passChain(state: DuelState, player: PlayerId): void;
+  passAttack(state: DuelState, player: PlayerId): void;
   resolvePrompt(state: DuelState, response: Extract<DuelResponse, { type: "selectOption" | "selectYesNo" }>): void;
   activateTrigger(session: DuelSession, player: PlayerId, triggerId: string): void;
   declineTrigger(session: DuelSession, player: PlayerId, triggerId: string): void;
@@ -64,6 +65,7 @@ function dispatchDuelResponse(session: DuelSession, response: DuelResponse, hand
   else if (response.type === "setSpellTrap") handlers.setSpellTrap(session.state, response.player, response.uid);
   else if (response.type === "activateEffect") handlers.activateEffect(session, response.player, response.uid, response.effectId);
   else if (response.type === "passChain") handlers.passChain(session.state, response.player);
+  else if (response.type === "passAttack") handlers.passAttack(session.state, response.player);
   else if (response.type === "selectOption" || response.type === "selectYesNo") handlers.resolvePrompt(session.state, response);
   else if (response.type === "activateTrigger") handlers.activateTrigger(session, response.player, response.triggerId);
   else if (response.type === "declineTrigger") handlers.declineTrigger(session, response.player, response.triggerId);

@@ -15,9 +15,12 @@ export interface DuelStateRollback {
   usedCountKeys: string[];
   flagEffects: DuelFlagEffect[];
   activityCounts: DuelState["activityCounts"];
+  battleDamage: DuelState["battleDamage"];
   attacksDeclared: string[];
+  attackPasses: PlayerId[];
   positionsChanged: string[];
   currentAttack: DuelState["currentAttack"] | undefined;
+  pendingBattle: DuelState["pendingBattle"] | undefined;
   prompt: DuelState["prompt"] | undefined;
   waitingFor: PlayerId | undefined;
   log: DuelLogEntry[];
@@ -39,9 +42,12 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     usedCountKeys: [...state.usedCountKeys],
     flagEffects: state.flagEffects.map((effect) => ({ ...effect })),
     activityCounts: { 0: { ...state.activityCounts[0] }, 1: { ...state.activityCounts[1] } },
+    battleDamage: { ...state.battleDamage },
     attacksDeclared: [...state.attacksDeclared],
+    attackPasses: [...state.attackPasses],
     positionsChanged: [...state.positionsChanged],
     currentAttack: state.currentAttack ? { ...state.currentAttack } : undefined,
+    pendingBattle: state.pendingBattle ? { ...state.pendingBattle } : undefined,
     prompt: state.prompt ? { ...state.prompt } : undefined,
     waitingFor: state.waitingFor,
     log: state.log.map((entry) => ({ ...entry })),
@@ -63,10 +69,14 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.usedCountKeys = rollback.usedCountKeys;
   state.flagEffects = rollback.flagEffects;
   state.activityCounts = rollback.activityCounts;
+  state.battleDamage = rollback.battleDamage;
   state.attacksDeclared = rollback.attacksDeclared;
+  state.attackPasses = rollback.attackPasses;
   state.positionsChanged = rollback.positionsChanged;
   if (rollback.currentAttack) state.currentAttack = rollback.currentAttack;
   else delete state.currentAttack;
+  if (rollback.pendingBattle) state.pendingBattle = rollback.pendingBattle;
+  else delete state.pendingBattle;
   if (rollback.prompt) state.prompt = rollback.prompt;
   else delete state.prompt;
   if (rollback.waitingFor !== undefined) state.waitingFor = rollback.waitingFor;

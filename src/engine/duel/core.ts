@@ -57,7 +57,7 @@ import {
   negateDuelAttack as negateDuelAttackRule,
   positionChangeActions,
 } from "#duel/battle.js";
-import { resolvePendingBattle, resolvePendingBattleIfReady, type BattleContinuationHandlers } from "#duel/battle-continuation.js";
+import { resolvePendingBattle, type BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
   isAttackPrevented,
   isMaterialUsePrevented,
@@ -147,13 +147,14 @@ const responseHandlers: DuelResponseHandlers = {
     activateDuelEffect(session, player, uid, effectId, activationHandlers);
   },
   passChain,
+  passAttack: passAttackWindow,
   resolvePrompt,
   activateTrigger(session, player, triggerId) {
     activateDuelPendingTrigger(session, player, triggerId, activationHandlers);
   },
   declineTrigger(session, player, triggerId) {
     declineDuelPendingTrigger(session, player, triggerId);
-    resolvePendingBattleIfReady(session.state, battleContinuationHandlers);
+    continueAttackResponseWindow(session.state);
   },
   flipSummon: flipSummonDuelCard,
   changePosition: changeDuelCardPosition,
@@ -193,6 +194,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     activityCounts: createDuelActivityCounts(),
     battleDamage: { 0: 0, 1: 0 },
     attacksDeclared: [],
+    attackPasses: [],
     positionsChanged: [],
     log: [],
     options: {
@@ -250,6 +252,10 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   }
   if (state.pendingTriggers.length) {
     actions.push(...getPendingTriggerActions(state, player));
+    return stampActions(actions, state.actionWindowId);
+  }
+  if (state.pendingBattle) {
+    actions.push({ type: "passAttack", player, label: "Pass attack response" });
     return stampActions(actions, state.actionWindowId);
   }
   const hand = getCards(state, player, "hand");
@@ -536,7 +542,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
     },
     destroyCard: (uid, controller, reason) => destroyDuelCard(state, uid, controller, reason),
   });
-  if (state.pendingTriggers.length === pendingTriggerCount) resolvePendingBattle(state, battleContinuationHandlers);
+  if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
 }
 
 export function negateDuelAttack(state: DuelState): boolean {
@@ -593,6 +599,7 @@ function changePhase(state: DuelState, player: PlayerId, phase: DuelPhase): void
   else {
     delete state.currentAttack;
     delete state.pendingBattle;
+    state.attackPasses = [];
   }
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
   collectTriggerEffects(state, "phaseChanged");
@@ -609,6 +616,7 @@ function endTurn(state: DuelState, player: PlayerId): void {
   pruneDuelFlagEffectsAfterPhase(state, "draw");
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
+  state.attackPasses = [];
   state.positionsChanged = [];
   for (const activityPlayer of [0, 1] satisfies PlayerId[]) resetDuelActivityCounts(state, activityPlayer);
   delete state.currentAttack;
@@ -912,7 +920,30 @@ function resolveChain(state: DuelState): void {
   state.chainPasses = [];
   state.status = "awaiting";
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
-  resolvePendingBattleIfReady(state, battleContinuationHandlers);
+  continueAttackResponseWindow(state);
+}
+
+function openAttackResponseWindow(state: DuelState, attackingPlayer: PlayerId): void {
+  state.attackPasses = [];
+  state.waitingFor = otherPlayer(attackingPlayer);
+}
+
+function passAttackWindow(state: DuelState, player: PlayerId): void {
+  if (!state.pendingBattle) throw new Error("No attack response window is pending");
+  if (!state.attackPasses.includes(player)) state.attackPasses.push(player);
+  const nextPlayer = otherPlayer(player);
+  if (!state.attackPasses.includes(nextPlayer)) {
+    state.waitingFor = nextPlayer;
+    return;
+  }
+  state.attackPasses = [];
+  resolvePendingBattle(state, battleContinuationHandlers);
+}
+
+function continueAttackResponseWindow(state: DuelState): void {
+  if (!state.pendingBattle || state.chain.length || state.pendingTriggers.length || state.attackPasses.length > 0) return;
+  const attacker = findCard(state, state.pendingBattle.attackerUid);
+  openAttackResponseWindow(state, attacker?.controller ?? state.turnPlayer);
 }
 
 function clearStaleChainLimits(state: DuelState): void {

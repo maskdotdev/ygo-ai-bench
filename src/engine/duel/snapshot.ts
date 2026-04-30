@@ -35,6 +35,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
     pendingTriggers: state.pendingTriggers.map((trigger) => ({ ...trigger })),
     activityCounts: copyDuelActivityCounts(state.activityCounts),
     attacksDeclared: [...state.attacksDeclared],
+    attackPasses: [...state.attackPasses],
     positionsChanged: [...state.positionsChanged],
     log: state.log.map((entry) => ({ ...entry })),
   };
@@ -61,6 +62,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       activityCounts: copyDuelActivityCounts(session.state.activityCounts),
       battleDamage: { ...session.state.battleDamage },
       attacksDeclared: [...session.state.attacksDeclared],
+      attackPasses: [...session.state.attackPasses],
       positionsChanged: [...session.state.positionsChanged],
       ...(session.state.currentAttack === undefined ? {} : { currentAttack: { ...session.state.currentAttack } }),
       ...(session.state.pendingBattle === undefined ? {} : { pendingBattle: { ...session.state.pendingBattle } }),
@@ -92,6 +94,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       activityCounts: copyDuelActivityCounts(snapshot.state.activityCounts),
       battleDamage: { ...snapshot.state.battleDamage },
       attacksDeclared: [...snapshot.state.attacksDeclared],
+      attackPasses: [...snapshot.state.attackPasses],
       positionsChanged: [...snapshot.state.positionsChanged],
       ...(snapshot.state.currentAttack === undefined ? {} : { currentAttack: { ...snapshot.state.currentAttack } }),
       ...(snapshot.state.pendingBattle === undefined ? {} : { pendingBattle: { ...snapshot.state.pendingBattle } }),

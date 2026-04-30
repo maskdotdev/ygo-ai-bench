@@ -46,7 +46,9 @@ describe("duel battle", () => {
     const attackResult = applyResponse(session, attack!);
 
     expect(attackResult.ok).toBe(true);
-    expect(attackResult.state.players[1].lifePoints).toBe(6200);
+    expect(attackResult.state.players[1].lifePoints).toBe(8000);
+    passAttackResponses(session);
+    expect(queryPublicState(session).players[1].lifePoints).toBe(6200);
     expect(session.state.battleDamage[1]).toBe(1800);
     expect(attackResult.state.attacksDeclared).toContain(attacker!.uid);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid)).toBe(false);
@@ -78,6 +80,7 @@ describe("duel battle", () => {
     const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid);
     expect(attack).toBeTruthy();
     expect(applyResponse(session, attack!).ok).toBe(true);
+    passAttackResponses(session);
 
     expect(session.state.activityCounts[0]).toEqual({ summon: 2, normalSummon: 0, specialSummon: 1, flipSummon: 1, attack: 1 });
     expect(queryPublicState(session).activityCounts[0]).toEqual(session.state.activityCounts[0]);
@@ -114,11 +117,14 @@ describe("duel battle", () => {
     const result = applyResponse(session, attack!);
 
     expect(result.ok).toBe(true);
-    expect(result.state.cards.find((card) => card.uid === attacker!.uid)?.location).toBe("monsterZone");
-    expect(result.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("graveyard");
-    expect(result.state.players[1].lifePoints).toBe(7100);
+    expect(result.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("monsterZone");
+    passAttackResponses(session);
+    const state = queryPublicState(session);
+    expect(state.cards.find((card) => card.uid === attacker!.uid)?.location).toBe("monsterZone");
+    expect(state.cards.find((card) => card.uid === target!.uid)?.location).toBe("graveyard");
+    expect(state.players[1].lifePoints).toBe(7100);
     expect(session.state.battleDamage[1]).toBe(900);
-    expect(result.state.log.some((entry) => entry.action === "destroy" && entry.card === "Opponent Monster")).toBe(true);
+    expect(state.log.some((entry) => entry.action === "destroy" && entry.card === "Opponent Monster")).toBe(true);
   });
 
   it("prevents battle destruction with indestructible effects", () => {
@@ -154,9 +160,12 @@ describe("duel battle", () => {
 
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("monsterZone");
-    expect(result.state.players[1].lifePoints).toBe(7100);
-    expect(result.state.pendingTriggers).toHaveLength(0);
-    expect(result.state.log.some((entry) => entry.action === "destroyPrevented" && entry.card === "Opponent Monster")).toBe(true);
+    expect(result.state.players[1].lifePoints).toBe(8000);
+    passAttackResponses(session);
+    const state = queryPublicState(session);
+    expect(state.players[1].lifePoints).toBe(7100);
+    expect(state.pendingTriggers).toHaveLength(0);
+    expect(state.log.some((entry) => entry.action === "destroyPrevented" && entry.card === "Opponent Monster")).toBe(true);
   });
 
   it("collects battle destruction trigger effects", () => {
@@ -195,8 +204,10 @@ describe("duel battle", () => {
     const attackResult = applyResponse(session, attack!);
 
     expect(attackResult.ok).toBe(true);
-    expect(attackResult.state.pendingTriggers).toHaveLength(1);
-    expect(attackResult.state.pendingTriggers[0]).toMatchObject({ eventName: "battleDestroyed", eventCardUid: target!.uid });
+    expect(attackResult.state.pendingTriggers).toHaveLength(0);
+    passAttackResponses(session);
+    expect(session.state.pendingTriggers).toHaveLength(1);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "battleDestroyed", eventCardUid: target!.uid });
 
     const trigger = getDuelLegalActions(session, 1).find((action) => action.type === "activateTrigger" && action.effectId === "battle-destroyed-trigger");
     expect(trigger).toBeTruthy();
@@ -228,6 +239,7 @@ describe("duel battle", () => {
     expect(battle).toBeTruthy();
     expect(applyResponse(session, battle!).ok).toBe(true);
     declareDuelAttack(session.state, 0, attacker!.uid, target!.uid);
+    passAttackResponses(session);
 
     const state = queryPublicState(session);
     expect(state.cards.find((card) => card.uid === attacker!.uid)?.location).toBe("monsterZone");
@@ -258,3 +270,12 @@ describe("duel battle", () => {
     expect(state.log.some((entry) => entry.action === "setLifePoints" && entry.detail === "0")).toBe(true);
   });
 });
+
+function passAttackResponses(session: ReturnType<typeof createDuel>): void {
+  while (session.state.pendingBattle) {
+    const player = session.state.waitingFor ?? session.state.turnPlayer;
+    const pass = getDuelLegalActions(session, player).find((action) => action.type === "passAttack");
+    expect(pass).toBeTruthy();
+    expect(applyResponse(session, pass!).ok).toBe(true);
+  }
+}

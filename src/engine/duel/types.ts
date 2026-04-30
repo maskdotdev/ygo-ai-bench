@@ -227,6 +227,7 @@ export interface DuelState {
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   battleDamage: Record<PlayerId, number>;
   attacksDeclared: string[];
+  attackPasses: PlayerId[];
   positionsChanged: string[];
   currentAttack?: {
     attackerUid: string;
@@ -262,6 +263,7 @@ export type DuelAction = (
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
   | { type: "specialSummonProcedure"; player: PlayerId; uid: string; effectId: string; label: string }
   | { type: "passChain"; player: PlayerId; label: string }
+  | { type: "passAttack"; player: PlayerId; label: string }
   | { type: "selectOption"; player: PlayerId; promptId: string; option: number; label: string }
   | { type: "selectYesNo"; player: PlayerId; promptId: string; yes: boolean; label: string }
   | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
@@ -303,6 +305,7 @@ export interface PublicDuelState {
   pendingTriggers: PendingTrigger[];
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   attacksDeclared: string[];
+  attackPasses: PlayerId[];
   positionsChanged: string[];
   log: DuelLogEntry[];
 }
