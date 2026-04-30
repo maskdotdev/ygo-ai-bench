@@ -115,6 +115,51 @@ describe("Lua random helpers", () => {
     expect(continuousRoll.ok, continuousRoll.error).toBe(true);
     expect(restoredHost.messages[0]?.replace("after snapshot", "continuous")).toBe(continuousHost.messages[0]);
   });
+
+  it("lets Lua scripts get deterministic random numbers", () => {
+    const first = setupSession(157);
+    const second = setupSession(157);
+
+    const firstMessages = randomNumberMessages(first);
+    const secondMessages = randomNumberMessages(second);
+
+    expect(firstMessages).toEqual(secondMessages);
+    expect(firstMessages[0]).toMatch(/^random range [1-6],[1-6]$/);
+    expect(firstMessages[1]).toMatch(/^random reversed [1-6]$/);
+    expect(first.state.randomCounter).toBe(3);
+  });
+
+  it("preserves random-number progression across snapshots", () => {
+    const original = setupSession(158);
+    const firstHost = createLuaScriptHost(original);
+    const first = firstHost.loadScript(
+      `
+      Debug.Message("before snapshot " .. Duel.GetRandomNumber(1,6))
+      `,
+      "random-number-before-snapshot.lua",
+    );
+    expect(first.ok, first.error).toBe(true);
+
+    const restored = restoreDuel(serializeDuel(original), createCardReader(cards));
+    const restoredHost = createLuaScriptHost(restored);
+    const restoredRoll = restoredHost.loadScript(
+      `
+      Debug.Message("after snapshot " .. Duel.GetRandomNumber(1,6))
+      `,
+      "random-number-after-snapshot.lua",
+    );
+    expect(restoredRoll.ok, restoredRoll.error).toBe(true);
+
+    const continuousHost = createLuaScriptHost(original);
+    const continuousRoll = continuousHost.loadScript(
+      `
+      Debug.Message("continuous " .. Duel.GetRandomNumber(1,6))
+      `,
+      "random-number-continuous.lua",
+    );
+    expect(continuousRoll.ok, continuousRoll.error).toBe(true);
+    expect(restoredHost.messages[0]?.replace("after snapshot", "continuous")).toBe(continuousHost.messages[0]);
+  });
 });
 
 function setupSession(seed: number): DuelSession {
@@ -167,6 +212,22 @@ function callCoinMessages(session: DuelSession): string[] {
     Debug.Message("coin constants " .. COIN_HEADS .. "/" .. COIN_TAILS)
     `,
     "coin-call.lua",
+  );
+  expect(result.ok, result.error).toBe(true);
+  return host.messages;
+}
+
+function randomNumberMessages(session: DuelSession): string[] {
+  const host = createLuaScriptHost(session);
+  const result = host.loadScript(
+    `
+    local a=Duel.GetRandomNumber(1,6)
+    local b=Duel.GetRandomNumber(1,6)
+    local c=Duel.GetRandomNumber(6,1)
+    Debug.Message("random range " .. a .. "," .. b)
+    Debug.Message("random reversed " .. c)
+    `,
+    "random-number.lua",
   );
   expect(result.ok, result.error).toBe(true);
   return host.messages;

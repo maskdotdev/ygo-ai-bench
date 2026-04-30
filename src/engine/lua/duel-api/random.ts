@@ -14,6 +14,8 @@ export function installDuelRandomApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("AnnounceCoin"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCallCoin(state, session));
   lua.lua_setfield(L, -2, to_luastring("CallCoin"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetRandomNumber(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetRandomNumber"));
 }
 
 function pushTossDice(L: unknown, session: DuelSession): number {
@@ -66,4 +68,19 @@ function tossCoin(session: DuelSession): number {
 
 function announceCoin(): number {
   return 1;
+}
+
+function pushGetRandomNumber(L: unknown, session: DuelSession): number {
+  const first = lua.lua_isnumber(L, 1) ? Math.trunc(lua.lua_tonumber(L, 1)) : 0;
+  const second = lua.lua_isnumber(L, 2) ? Math.trunc(lua.lua_tonumber(L, 2)) : first;
+  const min = Math.min(first, second);
+  const max = Math.max(first, second);
+  lua.lua_pushinteger(L, randomInteger(session, min, max));
+  return 1;
+}
+
+function randomInteger(session: DuelSession, min: number, max: number): number {
+  const rng = createRng(`${session.state.seed}:number:${session.state.randomCounter}`);
+  session.state.randomCounter += 1;
+  return Math.floor(rng() * (max - min + 1)) + min;
 }
