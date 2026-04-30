@@ -225,6 +225,12 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
     function aux.exccon(e)
       return Duel.GetTurnCount()~=e:GetHandler():GetTurnID() or e:GetHandler():IsReason(REASON_RETURN)
     end
+    function aux.imval1(e,c)
+      return not c:IsImmuneToEffect(e)
+    end
+    function aux.imval2(e,c)
+      return aux.imval1(e,c) and c:GetControler()~=e:GetHandlerPlayer()
+    end
     function aux.GetMustBeMaterialGroup(tp,eg,sump,sc,g,r)
       local effects={Duel.GetPlayerEffect(tp,EFFECT_MUST_BE_MATERIAL)}
       local sg=Group.CreateGroup()
