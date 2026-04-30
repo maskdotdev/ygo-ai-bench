@@ -30,6 +30,13 @@ export function installDuelPromptApi(L: unknown, session: DuelSession, hostState
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SelectYesNo"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, true);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SelectEffectYesNo"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectEffect(state));
+  lua.lua_setfield(L, -2, to_luastring("SelectEffect"));
   pushAnnouncementHelper(L, "AnnounceNumber");
   pushAnnouncementHelper(L, "AnnounceCard");
   pushAnnouncementHelper(L, "AnnounceType");
@@ -44,6 +51,22 @@ function pushHintSelection(L: unknown, session: DuelSession): number {
   const detail = `${codes.length} selected${codes.length > 0 ? `: ${codes.join(",")}` : ""}${description === undefined ? "" : ` (${description})`}`;
   pushDuelLog(session.state, "hintSelection", session.state.turnPlayer, undefined, detail);
   return 0;
+}
+
+function pushSelectEffect(L: unknown): number {
+  const top = lua.lua_gettop(L);
+  for (let index = 2; index <= top; index += 1) {
+    if (!lua.lua_istable(L, index)) continue;
+    lua.lua_rawgeti(L, index, 1);
+    const enabled = lua.lua_toboolean(L, -1);
+    lua.lua_pop(L, 1);
+    if (enabled) {
+      lua.lua_pushinteger(L, index - 1);
+      return 1;
+    }
+  }
+  lua.lua_pushnil(L);
+  return 1;
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {

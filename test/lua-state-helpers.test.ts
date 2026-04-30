@@ -473,6 +473,9 @@ describe("Lua state helpers", () => {
       `
       local option=Duel.SelectOption(0, 101, 102, 103)
       local yes=Duel.SelectYesNo(0, 201)
+      local effect_yes=Duel.SelectEffectYesNo(0, nil, 202)
+      local effect_choice=Duel.SelectEffect(0, {false, 301}, {true, 302}, {true, 303})
+      local effect_none=Duel.SelectEffect(0, {false, 301})
       local number=Duel.AnnounceNumber(0, 4, 7, 9)
       local card=Duel.AnnounceCard(0, 100, 200)
       local kind=Duel.AnnounceType(0, TYPE_MONSTER, TYPE_SPELL)
@@ -485,6 +488,7 @@ describe("Lua state helpers", () => {
       local group_hint_result=Duel.HintSelection(group, 501)
       local card_hint_result=Duel.HintSelection(single)
       Debug.Message("prompt option " .. option .. "/" .. tostring(yes))
+      Debug.Message("prompt effect " .. tostring(effect_yes) .. "/" .. tostring(effect_choice) .. "/" .. tostring(effect_none))
       Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute)
       Debug.Message("prompt zones " .. disabled .. "/" .. selected .. "/" .. ZONES_MMZ .. "/" .. ZONES_EMZ)
       Debug.Message("hint return " .. tostring(group_hint_result == nil) .. "/" .. tostring(card_hint_result == nil))
@@ -494,6 +498,7 @@ describe("Lua state helpers", () => {
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("prompt option 0/true");
+    expect(host.messages).toContain("prompt effect true/2/nil");
     expect(host.messages).toContain("prompt announce 4/100/1/1/16");
     expect(host.messages).toContain("prompt zones 1/768/31/96");
     expect(host.messages).toContain("hint return true/true");
