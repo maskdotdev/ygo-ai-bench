@@ -16,6 +16,7 @@ export function installConstants(L: unknown): void {
     LOCATION_REMOVED: 0x20,
     LOCATION_EXTRA: 0x40,
     LOCATION_FZONE: 0x100,
+    LOCATION_PZONE: 0x200,
     ZONES_MMZ: 0x1f,
     ZONES_EMZ: 0x60,
     POS_FACEUP_ATTACK: 0x1,

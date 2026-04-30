@@ -70,6 +70,55 @@ describe("Lua field and query helpers", () => {
     expect(summoned?.position).toBe("faceUpDefense");
   });
 
+  it("lets Lua scripts check pendulum zone availability", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Pendulum Zone Left", kind: "spell" },
+      { code: "200", name: "Pendulum Zone Right", kind: "spell" },
+    ];
+    const session = createDuel({ seed: 90, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const left = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const right = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(left).toBeTruthy();
+    expect(right).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const open = host.loadScript(
+      `
+      Debug.Message("pzone constant " .. LOCATION_PZONE)
+      Debug.Message("pzone open " .. tostring(Duel.CheckPendulumZones(0)) .. "/" .. Duel.GetLocationCount(0, LOCATION_PZONE))
+      Debug.Message("pzone left open " .. tostring(Duel.CheckLocation(0, LOCATION_PZONE, 0)))
+      `,
+      "pendulum-zones-open.lua",
+    );
+
+    expect(open.ok, open.error).toBe(true);
+    expect(host.messages).toContain("pzone constant 512");
+    expect(host.messages).toContain("pzone open true/2");
+    expect(host.messages).toContain("pzone left open true");
+
+    moveDuelCard(session.state, left!.uid, "spellTrapZone", 0);
+    left!.sequence = 0;
+    moveDuelCard(session.state, right!.uid, "spellTrapZone", 0);
+    right!.sequence = 1;
+    const closed = host.loadScript(
+      `
+      Debug.Message("pzone closed " .. tostring(Duel.CheckPendulumZones(0)) .. "/" .. Duel.GetLocationCount(0, LOCATION_PZONE))
+      Debug.Message("pzone right open " .. tostring(Duel.CheckLocation(0, LOCATION_PZONE, 1)))
+      `,
+      "pendulum-zones-closed.lua",
+    );
+
+    expect(closed.ok, closed.error).toBe(true);
+    expect(host.messages).toContain("pzone closed false/0");
+    expect(host.messages).toContain("pzone right open false");
+  });
+
   it("lets Lua scripts inspect, confirm, and move deck-top groups", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Deck A", kind: "monster" },

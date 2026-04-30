@@ -32,6 +32,8 @@ export function installDuelLocationApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("CheckLocation"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckPendulumZones(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CheckPendulumZones"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectDisableField"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
@@ -52,15 +54,32 @@ export function availableMonsterZoneCount(session: DuelSession, player: PlayerId
 function availableLocationCount(session: DuelSession, player: PlayerId, locationMask: number): number {
   const locations = locationsFromMask(locationMask);
   if (locations.includes("monsterZone")) return availableMonsterZoneCount(session, player, []);
+  if ((locationMask & 0x200) !== 0) return availablePendulumZoneCount(session, player);
   if (locations.includes("spellTrapZone")) return Math.max(0, 5 - matchingCardUids(session, player, 0x08).length);
   return 99;
 }
 
 function isLocationSequenceOpen(session: DuelSession, player: PlayerId, locationMask: number, sequence: number): boolean {
+  if ((locationMask & 0x200) !== 0) return isPendulumZoneOpen(session, player, sequence);
   const location = (locationMask & 0x04) !== 0 ? "monsterZone" : (locationMask & 0x08) !== 0 ? "spellTrapZone" : undefined;
   if (!location) return true;
   if (sequence < 0 || sequence >= 5) return false;
   return !session.state.cards.some((card) => card.controller === player && card.location === location && card.sequence === sequence);
+}
+
+function pushCheckPendulumZones(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  lua.lua_pushboolean(L, availablePendulumZoneCount(session, player) > 0);
+  return 1;
+}
+
+function availablePendulumZoneCount(session: DuelSession, player: PlayerId): number {
+  return [0, 1].filter((sequence) => isPendulumZoneOpen(session, player, sequence)).length;
+}
+
+function isPendulumZoneOpen(session: DuelSession, player: PlayerId, sequence: number): boolean {
+  if (sequence < 0 || sequence > 1) return false;
+  return !session.state.cards.some((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence);
 }
 
 function pushSelectedFieldZoneMask(L: unknown, session: DuelSession): number {
