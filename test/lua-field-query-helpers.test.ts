@@ -689,6 +689,17 @@ describe("Lua field and query helpers", () => {
       function_ritual:SetValue(function(e,mat,rc) return mat:GetLevel()+rc:GetLevel() end)
       link:RegisterEffect(function_ritual)
       Debug.Message("ritual function level " .. link:GetRitualLevel(c))
+      local fixed_synchro=Effect.CreateEffect(c)
+      fixed_synchro:SetType(EFFECT_TYPE_SINGLE)
+      fixed_synchro:SetCode(EFFECT_SYNCHRO_LEVEL)
+      fixed_synchro:SetValue(5)
+      c:RegisterEffect(fixed_synchro)
+      local function_synchro=Effect.CreateEffect(normal)
+      function_synchro:SetType(EFFECT_TYPE_SINGLE)
+      function_synchro:SetCode(EFFECT_SYNCHRO_LEVEL)
+      function_synchro:SetValue(function(e,sc) return sc:GetLevel()+1 end)
+      normal:RegisterEffect(function_synchro)
+      Debug.Message("synchro levels " .. xyz:GetSynchroLevel() .. "/" .. c:GetSynchroLevel() .. "/" .. normal:GetSynchroLevel(c))
       Debug.Message("race " .. c:GetRace() .. " " .. tostring(c:IsRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsOriginalRace(RACE_SPELLCASTER)))
       Debug.Message("not race " .. tostring(c:IsNotRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotRace(RACE_DRAGON)))
       Debug.Message("not original race " .. tostring(c:IsNotOriginalRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotOriginalRace(RACE_DRAGON)))
@@ -733,6 +744,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("link comparisons true/false/false/true");
     expect(host.messages).toContain("ritual fixed level 5");
     expect(host.messages).toContain("ritual function level 9");
+    expect(host.messages).toContain("synchro levels 4/5/8");
     expect(host.messages).toContain("race 2 true/true");
     expect(host.messages).toContain("not race false/true");
     expect(host.messages).toContain("attribute 32 true/true");

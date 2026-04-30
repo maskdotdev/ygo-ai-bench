@@ -175,6 +175,8 @@ function installStatHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unkn
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => pushRitualLevel(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetRitualLevel"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSynchroLevel(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("GetSynchroLevel"));
   pushBooleanGetter(L, "HasLevel", session, (card) => Boolean(card && (card.data.level ?? 0) > 0 && cardRank(card) === 0 && cardLink(card) === 0));
   pushNumberMatcher(L, "IsLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
   pushNumberMatcher(L, "IsLevelAbove", session, (card, requested) => (card.data.level ?? 0) >= requested);
@@ -615,6 +617,15 @@ function pushRitualLevel<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   return 1;
 }
 
+function pushSynchroLevel<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const card = readCard(L, session);
+  if (!card) return lua.lua_pushinteger(L, 0), 1;
+  const syncTargetUid = readCardUid(L, 2);
+  const syncTarget = syncTargetUid ? session.state.cards.find((candidate) => candidate.uid === syncTargetUid) : undefined;
+  const effect = matchingLuaEffects(session.state, card, 240, hostState)[0];
+  lua.lua_pushinteger(L, effect ? synchroLevelFromEffect(L, effect, syncTarget, hostState) : card.data.level ?? 0);
+  return 1;
+}
 function ritualLevelFromEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, effect: EffectRecord, card: DuelCardInstance, ritualTarget: DuelCardInstance | undefined, hostState: LuaCardApiState<EffectRecord>): number {
   if (effect.valueRef !== undefined) {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, effect.valueRef);
@@ -631,6 +642,17 @@ function ritualLevelFromEffect<EffectRecord extends LuaCardApiEffectRecord>(L: u
     lua.lua_pop(L, 1);
   }
   return effect.value ?? card.data.level ?? 0;
+}
+function synchroLevelFromEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, effect: EffectRecord, syncTarget: DuelCardInstance | undefined, hostState: LuaCardApiState<EffectRecord>): number {
+  if (effect.valueRef === undefined) return effect.value ?? 0;
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, effect.valueRef);
+  hostState.pushEffectTable(L, effect.id);
+  syncTarget ? pushCardTable(L, syncTarget.uid) : lua.lua_pushnil(L);
+  const status = lua.lua_pcall(L, 2, 1, 0);
+  if (status !== lua.LUA_OK) return lua.lua_pop(L, 1), 0;
+  const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : 0;
+  lua.lua_pop(L, 1);
+  return value;
 }
 
 function pushGetCounter(L: unknown, session: DuelSession): number {

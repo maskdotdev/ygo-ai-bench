@@ -40,6 +40,7 @@ export const cardFieldNames = [
   "IsOriginalDefenseBelow",
   "GetLevel",
   "GetRitualLevel",
+  "GetSynchroLevel",
   "HasLevel",
   "GetOriginalLevel",
   "IsLevel",
