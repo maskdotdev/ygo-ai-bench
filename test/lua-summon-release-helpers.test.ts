@@ -191,6 +191,82 @@ describe("Lua summon and release helpers", () => {
     expect(session.state.cards.filter((card) => card.location === "graveyard" && (card.code === "100" || card.code === "300"))).toHaveLength(2);
   });
 
+  it("lets Lua scripts check tribute summon availability", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "One Tribute Target", kind: "monster", level: 6 },
+      { code: "200", name: "Two Tribute Target", kind: "monster", level: 7 },
+      { code: "300", name: "Free Tribute A", kind: "monster" },
+      { code: "400", name: "Free Tribute B", kind: "monster" },
+      { code: "500", name: "Locked Tribute", kind: "monster" },
+      { code: "600", name: "Zone Filler A", kind: "monster" },
+      { code: "700", name: "Zone Filler B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 39, startingHandSize: 7, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500", "600", "700"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const firstTribute = session.state.cards.find((card) => card.code === "300");
+    expect(firstTribute).toBeTruthy();
+    moveDuelCard(session.state, firstTribute!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const openZone = host.loadScript(
+      `
+      local one = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("tribute open zero " .. tostring(Duel.CheckTribute(one, 0, 0, nil)))
+      Debug.Message("tribute open one " .. tostring(Duel.CheckTribute(one, 1, 1, nil)))
+      `,
+      "check-tribute-open-zone.lua",
+    );
+    expect(openZone.ok, openZone.error).toBe(true);
+
+    for (const code of ["400", "500", "600", "700"]) {
+      const card = session.state.cards.find((candidate) => candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+    const setup = host.loadScript(
+      `
+      c500={}
+      function c500.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_UNRELEASABLE_SUM)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+      `,
+      "check-tribute-lock.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const fullZone = host.loadScript(
+      `
+      local one = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local two = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local free = Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(300) or tc:IsCode(400) end, 0, LOCATION_MZONE, 0, 2, 2, nil)
+      local locked = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("tribute full zero " .. tostring(Duel.CheckTribute(one, 0, 0, nil)))
+      Debug.Message("tribute full one " .. tostring(Duel.CheckTribute(one, 1, 1, nil)))
+      Debug.Message("tribute full two " .. tostring(Duel.CheckTribute(two, 2, 2, nil)))
+      Debug.Message("tribute limited two " .. tostring(Duel.CheckTribute(two, 2, 2, free)))
+      Debug.Message("tribute locked only " .. tostring(Duel.CheckTribute(one, 1, 1, locked)))
+      `,
+      "check-tribute-full-zone.lua",
+    );
+
+    expect(fullZone.ok, fullZone.error).toBe(true);
+    expect(host.messages).toContain("tribute open zero true");
+    expect(host.messages).toContain("tribute open one true");
+    expect(host.messages).toContain("tribute full zero false");
+    expect(host.messages).toContain("tribute full one true");
+    expect(host.messages).toContain("tribute full two true");
+    expect(host.messages).toContain("tribute limited two true");
+    expect(host.messages).toContain("tribute locked only false");
+  });
+
   it("lets Lua scripts check, select, and release monster-zone groups", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Release A", kind: "monster" },

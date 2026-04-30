@@ -19,6 +19,8 @@ export function installDuelReleaseApi(L: unknown, session: DuelSession, hostStat
   lua.lua_setfield(L, -2, to_luastring("GetReleaseGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushReleaseGroupCount(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetReleaseGroupCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckTribute(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CheckTribute"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckReleaseGroup(state, session, hostState, false));
   lua.lua_setfield(L, -2, to_luastring("CheckReleaseGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectReleaseGroup(state, session, hostState));
@@ -46,6 +48,21 @@ function pushReleaseGroupCount(L: unknown, session: DuelSession): number {
   const count = releasableMonsterUids(L, session, query.filterRef, query.player, query.excluded, query.args).length;
   releaseOptionalFunctionRef(L, query.filterRef);
   lua.lua_pushinteger(L, count);
+  return 1;
+}
+
+function pushCheckTribute(L: unknown, session: DuelSession): number {
+  const targetUid = readCardUid(L, 1);
+  const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
+  const player = readOptionalPlayer(L, 5) ?? target?.controller ?? session.state.turnPlayer;
+  const minimum = Math.max(0, lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : target ? normalSummonTributeCount(target) : 0);
+  const maximum = Math.max(minimum, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : minimum);
+  const materials = readCardOrGroupUids(L, 4);
+  const materialSet = materials.length > 0 ? new Set(materials) : undefined;
+  const available = tributeCandidateCount(session, player, target?.uid, materialSet);
+  const selected = Math.min(available, maximum);
+  const openZones = monsterZoneCapacity(session, player) - monsterZoneCount(session, player);
+  lua.lua_pushboolean(L, Boolean(target && selected >= minimum && (openZones > 0 || selected > 0)));
   return 1;
 }
 
@@ -136,6 +153,16 @@ function isReleasableMonster(session: DuelSession, card: DuelCardInstance, playe
   return canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.cost);
 }
 
+function tributeCandidateCount(session: DuelSession, player: PlayerId, targetUid: string | undefined, materialSet: Set<string> | undefined): number {
+  return session.state.cards.filter((card) => {
+    if (card.uid === targetUid) return false;
+    if (materialSet && !materialSet.has(card.uid)) return false;
+    if (card.controller !== player || card.location !== "monsterZone") return false;
+    if (card.kind !== "monster" && card.kind !== "extra") return false;
+    return canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.summon);
+  }).length;
+}
+
 function selectedReleasableMonsterUids(session: DuelSession, player: PlayerId, excluded: string[], selectedUids: string[], includeHand = false): string[] {
   return uniqueUids(selectedUids).filter((uid) => {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
@@ -151,6 +178,26 @@ function readCardOrGroupUids(L: unknown, index: number): string[] {
 
 function uniqueUids(uids: string[]): string[] {
   return [...new Set(uids)];
+}
+
+function monsterZoneCount(session: DuelSession, player: PlayerId): number {
+  return session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone").length;
+}
+
+function monsterZoneCapacity(_session: DuelSession, _player: PlayerId): number {
+  return 5;
+}
+
+function normalSummonTributeCount(card: DuelCardInstance): number {
+  const level = card.data.level ?? 0;
+  if (level >= 7) return 2;
+  if (level >= 5) return 1;
+  return 0;
+}
+
+function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
+  if (!lua.lua_isnumber(L, index)) return undefined;
+  return normalizePlayer(lua.lua_tointeger(L, index));
 }
 
 function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefined, args: LuaFilterArgs): boolean {
