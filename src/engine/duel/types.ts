@@ -1,4 +1,5 @@
 export type PlayerId = 0 | 1;
+export type DuelWinner = PlayerId | "draw";
 
 export type DuelPhase = "draw" | "standby" | "main1" | "battle" | "main2" | "end";
 export type DuelStatus = "setup" | "awaiting" | "resolving" | "ended";
@@ -219,6 +220,8 @@ export interface DuelState {
   seed: string;
   actionWindowId: number;
   status: DuelStatus;
+  winner?: DuelWinner;
+  winReason?: number;
   turn: number;
   turnPlayer: PlayerId;
   phase: DuelPhase;
@@ -310,6 +313,8 @@ export interface PublicDuelCard {
 export interface PublicDuelState {
   id: string;
   status: DuelStatus;
+  winner?: DuelWinner;
+  winReason?: number;
   turn: number;
   turnPlayer: PlayerId;
   phase: DuelPhase;

@@ -2,6 +2,8 @@ import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelEventRecord
 
 export interface DuelStateRollback {
   status: DuelState["status"];
+  winner: DuelState["winner"] | undefined;
+  winReason: number | undefined;
   actionWindowId: number;
   turn: number;
   turnPlayer: PlayerId;
@@ -33,6 +35,8 @@ export interface DuelStateRollback {
 export function captureDuelState(state: DuelState): DuelStateRollback {
   return {
     status: state.status,
+    winner: state.winner,
+    winReason: state.winReason,
     actionWindowId: state.actionWindowId,
     turn: state.turn,
     turnPlayer: state.turnPlayer,
@@ -66,6 +70,10 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
 
 export function restoreDuelState(state: DuelState, rollback: DuelStateRollback): void {
   state.status = rollback.status;
+  if (rollback.winner === undefined) delete state.winner;
+  else state.winner = rollback.winner;
+  if (rollback.winReason === undefined) delete state.winReason;
+  else state.winReason = rollback.winReason;
   state.actionWindowId = rollback.actionWindowId;
   state.turn = rollback.turn;
   state.turnPlayer = rollback.turnPlayer;

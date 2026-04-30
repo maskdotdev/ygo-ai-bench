@@ -111,6 +111,7 @@ import type {
   DuelResponse,
   DuelSession,
   DuelState,
+  DuelStatus,
   PlayerId,
 } from "#duel/types.js";
 
@@ -926,6 +927,8 @@ function resolveChain(state: DuelState): void {
   }
   pruneResetEffectsAfterChain(state);
   pruneDuelFlagEffectsAfterChain(state);
+  const resolvedStatus = (state as { status: DuelStatus }).status;
+  if (resolvedStatus === "ended") return;
   state.chainPasses = [];
   state.status = "awaiting";
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;

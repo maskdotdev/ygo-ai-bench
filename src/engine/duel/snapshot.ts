@@ -21,6 +21,8 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
   return {
     id: state.id,
     status: state.status,
+    ...(state.winner === undefined ? {} : { winner: state.winner }),
+    ...(state.winReason === undefined ? {} : { winReason: state.winReason }),
     turn: state.turn,
     turnPlayer: state.turnPlayer,
     phase: state.phase,

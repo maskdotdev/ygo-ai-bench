@@ -1,6 +1,7 @@
 import fengari from "fengari";
+import { pushDuelLog } from "#duel/card-state.js";
 import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/core.js";
-import type { DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelSession, DuelWinner, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -46,10 +47,29 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Recover"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const winner = normalizeWinner(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const reason = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    session.state.status = "ended";
+    session.state.winner = winner;
+    session.state.winReason = reason;
+    session.state.chain = [];
+    session.state.pendingTriggers = [];
+    delete session.state.prompt;
+    delete session.state.waitingFor;
+    pushDuelLog(session.state, "win", winner === "draw" ? undefined : winner, undefined, String(reason));
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Win"));
   lua.lua_pushcfunction(L, () => 0);
   lua.lua_setfield(L, -2, to_luastring("RDComplete"));
 }
 
 function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
+}
+
+function normalizeWinner(value: number): DuelWinner {
+  if (value === -1) return "draw";
+  return normalizePlayer(value);
 }
