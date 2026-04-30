@@ -3,12 +3,14 @@ import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuel
 import { findCard, moveDuelCard } from "#duel/card-state.js";
 import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { canAddDuelCardCounter, canRemoveDuelCounters, getDuelCardCounter, removeDuelCounters } from "#duel/counters.js";
+import { getDuelFlagEffectCount } from "#duel/flags.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 const blueEyesSpiritRestrictionCode = 69832741;
+const cardAdvanceCode = 52112003;
 
 export interface LuaDuelPlayerApiHostState {
   pushEffectTable: (state: unknown, id: number) => void;
@@ -25,6 +27,8 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanAdditionalSummon(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanAdditionalSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanAdditionalTributeSummon(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanAdditionalTributeSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanNormalSet(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanMSet"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummon(state, session));
@@ -58,6 +62,12 @@ function pushCanNormalSummon(L: unknown, session: DuelSession): number {
 function pushCanAdditionalSummon(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   lua.lua_pushboolean(L, canAdditionalSummon(session, player));
+  return 1;
+}
+
+function pushCanAdditionalTributeSummon(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  lua.lua_pushboolean(L, getDuelFlagEffectCount(session.state, { ownerType: "player", ownerId: player }, cardAdvanceCode) === 0);
   return 1;
 }
 

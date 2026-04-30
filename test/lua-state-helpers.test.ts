@@ -304,6 +304,11 @@ describe("Lua state helpers", () => {
       Debug.Message("duel type default " .. tostring(Duel.IsDuelType(DUEL_EMZONE)) .. "/" .. tostring(Duel.IsDuelType(DUEL_SEPARATE_PZONE)))
       Debug.Message("duel type high " .. tostring(Duel.IsDuelType(DUEL_NORMAL_SUMMON_FACEUP_DEF)))
       Debug.Message("deck master default " .. tostring(Duel.IsDeckMaster(0, 153000001)) .. "/" .. tostring(Duel.GetDeckMaster(0)==nil))
+      Debug.Message("additional tribute default " .. tostring(Duel.IsPlayerCanAdditionalTributeSummon(0)))
+      Duel.RegisterFlagEffect(0, 52112003, RESET_EVENT, 0, 1)
+      Debug.Message("additional tribute flagged " .. tostring(Duel.IsPlayerCanAdditionalTributeSummon(0)))
+      Duel.ResetFlagEffect(0, 52112003)
+      Debug.Message("additional tribute reset " .. tostring(Duel.IsPlayerCanAdditionalTributeSummon(0)))
       Duel.EnableUnofficialProc()
       Duel.EnableGlobalFlag(GLOBALFLAG_DETACH_EVENT)
       Duel.EnableGlobalFlag(GLOBALFLAG_SELF_TOGRAVE)
@@ -316,6 +321,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("duel type default true/false");
     expect(host.messages).toContain("duel type high true");
     expect(host.messages).toContain("deck master default false/true");
+    expect(host.messages).toContain("additional tribute default true");
+    expect(host.messages).toContain("additional tribute flagged false");
+    expect(host.messages).toContain("additional tribute reset true");
     expect(host.messages).toContain("unofficial enabled");
     expect(session.state.unofficialProcEnabled).toBe(true);
     expect(session.state.globalFlags).toBe(0x10 | 0x100);
