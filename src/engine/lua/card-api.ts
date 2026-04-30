@@ -125,6 +125,7 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
   pushNumberMatcher(L, "IsNotType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
+  pushNumberMatcher(L, "IsNotOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);
   pushNumberGetter(L, "GetAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberGetter(L, "GetBaseAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberMatcher(L, "IsAttack", session, (card, requested) => (card.data.attack ?? 0) === requested);
@@ -171,11 +172,13 @@ function installStatHelpers(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
   pushNumberMatcher(L, "IsNotRace", session, (card, requested) => ((card.data.race ?? 0) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
+  pushNumberMatcher(L, "IsNotOriginalRace", session, (card, requested) => ((card.data.race ?? 0) & requested) === 0);
   pushNumberGetter(L, "GetAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberGetter(L, "GetOriginalAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberMatcher(L, "IsAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
   pushNumberMatcher(L, "IsNotAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
+  pushNumberMatcher(L, "IsNotOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
 }
 
 function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
@@ -542,6 +545,7 @@ const cardFieldNames = [
   "IsType",
   "IsNotType",
   "IsOriginalType",
+  "IsNotOriginalType",
   "GetAttack",
   "GetBaseAttack",
   "IsAttack",
@@ -588,11 +592,13 @@ const cardFieldNames = [
   "IsRace",
   "IsNotRace",
   "IsOriginalRace",
+  "IsNotOriginalRace",
   "GetAttribute",
   "GetOriginalAttribute",
   "IsAttribute",
   "IsNotAttribute",
   "IsOriginalAttribute",
+  "IsNotOriginalAttribute",
   "IsFaceup",
   "IsFacedown",
   "GetLocation",
