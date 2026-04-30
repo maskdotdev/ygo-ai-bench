@@ -187,6 +187,27 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         end
       end
     end
+    function aux.DefaultFieldReturnOp(ag,e,tp)
+      local returned=0
+      for tc in aux.Next(ag) do
+        if Duel.ReturnToField(tc) then returned=returned+1 end
+      end
+      return returned
+    end
+    function aux.RemoveUntil(card_or_group,pos,reason,phase,flag,e,tp,oper,cond,reset,reset_count,hint,effect_desc)
+      local g
+      if type(card_or_group)=="table" and card_or_group.GetCount then
+        g=card_or_group
+      else
+        g=Group.FromCards(card_or_group)
+      end
+      if pos==nil then pos=POS_FACEUP end
+      if reason==nil then reason=REASON_EFFECT end
+      local moved=Duel.Remove(g,pos,reason)
+      if moved==0 then return false end
+      return true
+    end
+    Auxiliary=Auxiliary or aux
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));

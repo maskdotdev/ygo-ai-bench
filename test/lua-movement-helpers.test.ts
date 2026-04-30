@@ -186,6 +186,40 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
   });
 
+  it("lets Lua scripts temporarily banish cards through aux.RemoveUntil", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Temporary Banish A", kind: "monster" },
+      { code: "200", name: "Temporary Banish B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 153, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local g = Duel.GetMatchingGroup(aux.TRUE, 0, LOCATION_MZONE, 0, nil)
+      Debug.Message("remove until result " .. tostring(aux.RemoveUntil(g, POS_FACEUP, REASON_EFFECT, PHASE_END, 777002, nil, 0, aux.DefaultFieldReturnOp)))
+      Debug.Message("remove until operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("remove until banished " .. Duel.GetMatchingGroupCount(aux.TRUE, 0, LOCATION_REMOVED, 0, nil))
+      Debug.Message("remove until empty " .. tostring(aux.RemoveUntil(Group.CreateGroup(), POS_FACEUP, REASON_EFFECT, PHASE_END, 777002, nil, 0, aux.DefaultFieldReturnOp)))
+      `,
+      "aux-remove-until.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("remove until result true");
+    expect(host.messages).toContain("remove until operated 2");
+    expect(host.messages).toContain("remove until banished 2");
+    expect(host.messages).toContain("remove until empty false");
+  });
+
   it("lets Lua scripts check steal-equip control requirements", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Steal Source", kind: "monster" },
