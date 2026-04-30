@@ -681,6 +681,8 @@ describe("Lua state helpers", () => {
       Debug.Message("wrapped count " .. Duel.GetMatchingGroupCount(wrapped, 0, LOCATION_HAND, 0, nil))
       local wrapped_ex = aux.FilterBoolFunctionEx(function(c, minatk, code) return c:GetAttack() >= minatk and c:IsCode(code) end, 1500)
       Debug.Message("wrapped ex count " .. Duel.GetMatchingGroupCount(wrapped_ex, 0, LOCATION_HAND, 0, nil, 300))
+      local wrapped_ex2 = aux.FilterBoolFunctionEx2(function(c, scard, sumtype, tp, minatk, code) return tp==0 and sumtype==SUMMON_TYPE_FUSION and c:GetAttack() >= minatk and c:IsCode(code) end, 1500, 300)
+      Debug.Message("wrapped ex2 " .. tostring(wrapped_ex2(Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst(), nil, SUMMON_TYPE_FUSION, 0)) .. "/" .. tostring(wrapped_ex2(Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst(), nil, SUMMON_TYPE_SYNCHRO, 0)))
       local target_bool = aux.TargetBoolFunction(function(c, minatk, code) return c:GetAttack() >= minatk and c:IsCode(code) end, 2500)
       Debug.Message("target bool count " .. Duel.GetMatchingGroupCount(target_bool, 0, LOCATION_HAND, 0, nil, 300))
       local faceup_filter = aux.FaceupFilter(function(c, minatk) return c:GetAttack() >= minatk end, 900)
@@ -691,6 +693,7 @@ describe("Lua state helpers", () => {
       local same_turn_grave = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       local grave_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       Debug.Message("sp elim grave " .. tostring(aux.SpElimFilter(grave_monster)))
+      Debug.Message("is zone " .. tostring(aux.IsZone(faceup_monster,1,0)) .. "/" .. tostring(aux.IsZone(faceup_monster,2,0)) .. "/" .. tostring(aux.IsZone(faceup_monster,1<<16,1)))
       Debug.Message("sp elim faceup mzone " .. tostring(aux.SpElimFilter(faceup_monster, true)) .. "/" .. tostring(aux.SpElimFilter(faceup_monster, true, true)))
       Debug.Message("sp elim facedown mzone " .. tostring(aux.SpElimFilter(facedown_monster, true, true)) .. "/" .. tostring(aux.SpElimFilter(facedown_monster, false, true)))
       Debug.Message("maximum defaults " .. tostring(faceup_monster:IsMaximumMode()) .. "/" .. tostring(faceup_monster:IsMaximumModeCenter()) .. "/" .. tostring(faceup_monster:IsMaximumModeSide()) .. "/" .. tostring(faceup_monster:IsNotMaximumModeSide()))
@@ -795,10 +798,12 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("false count 0");
     expect(host.messages).toContain("wrapped count 0");
     expect(host.messages).toContain("wrapped ex count 1");
+    expect(host.messages).toContain("wrapped ex2 true/false");
     expect(host.messages).toContain("target bool count 1");
     expect(host.messages).toContain("faceup count 1");
     expect(host.messages).toContain("faceup runtime count 1");
     expect(host.messages).toContain("sp elim grave true");
+    expect(host.messages).toContain("is zone true/false/true");
     expect(host.messages).toContain("sp elim faceup mzone false/true");
     expect(host.messages).toContain("sp elim facedown mzone false/true");
     expect(host.messages).toContain("maximum defaults false/false/false/true");

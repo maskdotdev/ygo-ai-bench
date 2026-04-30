@@ -42,6 +42,8 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setfield(L, -2, to_luastring("SelectUnselectGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAuxNext(state));
   lua.lua_setfield(L, -2, to_luastring("Next"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAuxIsZone(state, readLuaError));
+  lua.lua_setfield(L, -2, to_luastring("IsZone"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpElimFilter(state, readLuaError));
   lua.lua_setfield(L, -2, to_luastring("SpElimFilter"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGlobalCheck(state, readLuaError));
@@ -159,6 +161,12 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
       local params={...}
       return function(c,scard,sumtype,tp)
         return c:IsSummonCode(scard,sumtype,tp,table.unpack(params))
+      end
+    end
+    function aux.FilterBoolFunctionEx2(f,...)
+      local params={...}
+      return function(target,scard,sumtype,tp)
+        return f(target,scard,sumtype,tp,table.unpack(params))
       end
     end
     function aux.sumlimit(sumtype)
@@ -384,6 +392,17 @@ function pushFilterBoolFunction(L: unknown, readLuaError: (state: unknown) => st
     if (status !== lua.LUA_OK) return lauxlib.luaL_error(state, to_luastring(readLuaError(state)));
     return 1;
   });
+  return 1;
+}
+
+function pushAuxIsZone(L: unknown, readLuaError: (state: unknown) => string): number {
+  const zone = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const player = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
+  const sequence = callLuaNumberMethod(L, 1, "GetSequence", readLuaError);
+  const isController = callLuaBooleanMethod(L, 1, "IsControler", readLuaError, player);
+  let relativeZone = isController ? 1 << sequence : 1 << (16 + sequence);
+  if (sequence === 5 || sequence === 6) relativeZone |= isController ? 1 << (16 + 11 - sequence) : 1 << (11 - sequence);
+  lua.lua_pushboolean(L, (relativeZone & zone) !== 0);
   return 1;
 }
 
