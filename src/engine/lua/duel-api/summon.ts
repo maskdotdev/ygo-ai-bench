@@ -17,7 +17,7 @@ import {
   moveDuelCard,
   xyzSummonDuelCard,
 } from "#duel/core.js";
-import { pushDuelLog } from "#duel/card-state.js";
+import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions } from "#duel/summon.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
@@ -122,7 +122,7 @@ function selectSummonOrSetAction(
 }
 
 function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState, type: "normalSummon" | "setMonster" | "setSpellTrap"): number {
-  const targetUid = readFirstCardOrGroupUid(L, 1);
+  const targetUid = readFirstCardOrGroupUid(L, type === "setSpellTrap" && lua.lua_isnumber(L, 1) ? 2 : 1);
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
   if (!target) {
     setOperatedUids(hostState, []);
@@ -131,12 +131,31 @@ function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaD
   }
   const tributeUids = type === "normalSummon" ? readCardCollectionUids(L, 3) : [];
   const result =
-    type === "normalSummon" && tributeUids.length > 0
+    type === "setSpellTrap"
+      ? setLuaSpellTrap(session, target)
+      : type === "normalSummon" && tributeUids.length > 0
       ? applyResponse(session, { type: "tributeSummon", player: target.controller, uid: target.uid, tributeUids, label: `Tribute Summon ${target.name}` })
       : applyResponse(session, { type, player: target.controller, uid: target.uid, label: basicSummonLabel(type, target.name) });
   setOperatedUids(hostState, result.ok ? [target.uid] : []);
   lua.lua_pushinteger(L, result.ok ? 1 : 0);
   return 1;
+}
+
+function setLuaSpellTrap(session: DuelSession, target: DuelCardInstance): { ok: boolean } {
+  if (!canLuaSetSpellTrap(session, target)) return { ok: false };
+  moveDuelCard(session.state, target.uid, "spellTrapZone", target.controller, duelReason.rule, session.state.turnPlayer);
+  target.position = "faceDown";
+  target.faceUp = false;
+  pushDuelLog(session.state, "set", target.controller, target.name, `Set from ${target.previousLocation}`);
+  return { ok: true };
+}
+
+function canLuaSetSpellTrap(session: DuelSession, target: DuelCardInstance): boolean {
+  return (
+    (target.kind === "spell" || target.kind === "trap") &&
+    (target.location === "hand" || target.location === "deck" || target.location === "graveyard") &&
+    hasZoneSpace(session.state, target.controller, "spellTrapZone")
+  );
 }
 
 function basicSummonLabel(type: "normalSummon" | "setMonster" | "setSpellTrap", name: string): string {

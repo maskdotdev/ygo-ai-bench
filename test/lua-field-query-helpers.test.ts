@@ -1945,6 +1945,7 @@ describe("Lua field and query helpers", () => {
       { code: "700", name: "Zone Filler C", kind: "spell", typeFlags: 0x2 },
       { code: "800", name: "Zone Filler D", kind: "spell", typeFlags: 0x2 },
       { code: "900", name: "Zone Filler E", kind: "spell", typeFlags: 0x2 },
+      { code: "1000", name: "Deck Set Spell", kind: "spell", typeFlags: 0x2 },
     ];
     const setSession = createDuel({ seed: 91, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(setSession, {
@@ -2030,6 +2031,28 @@ describe("Lua field and query helpers", () => {
     );
     expect(trapMonsterResult.ok, trapMonsterResult.error).toBe(true);
     expect(trapMonsterHost.messages).toContain("can set trap monster true");
+
+    const deckSetSession = createDuel({ seed: 160, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(deckSetSession, {
+      0: { main: ["1000"] },
+      1: { main: [] },
+    });
+    startDuel(deckSetSession);
+    const deckSetHost = createLuaScriptHost(deckSetSession);
+    const deckSetResult = deckSetHost.loadScript(
+      `
+      local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 1000), 0, LOCATION_DECK, 0, 1, 1, nil):GetFirst()
+      Debug.Message("deck ssetable " .. tostring(spell:IsSSetable()))
+      Debug.Message("deck sset result " .. Duel.SSet(0, spell))
+      Debug.Message("deck sset operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "basic-spell-trap-set-from-deck.lua",
+    );
+    expect(deckSetResult.ok, deckSetResult.error).toBe(true);
+    expect(deckSetHost.messages).toContain("deck ssetable true");
+    expect(deckSetHost.messages).toContain("deck sset result 1");
+    expect(deckSetHost.messages).toContain("deck sset operated 1/1000");
+    expect(deckSetSession.state.cards.find((card) => card.code === "1000")).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
   });
 
   it("lets Lua scripts tribute summon with explicit release cards", () => {

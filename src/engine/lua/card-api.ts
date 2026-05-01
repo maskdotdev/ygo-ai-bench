@@ -386,12 +386,16 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCanChangePositionRush"));
-  pushBooleanGetter(L, "IsSSetable", session, (card) => Boolean(card && card.location === "hand" && (card.kind === "spell" || card.kind === "trap") && hasZoneSpace(session.state, card.controller, "spellTrapZone")));
+  pushBooleanGetter(L, "IsSSetable", session, (card) => Boolean(card && canLuaSetSpellTrap(card) && hasZoneSpace(session.state, card.controller, "spellTrapZone")));
   pushMaterialPredicate(L, "IsCanBeFusionMaterial", session, "fusion");
   pushMaterialPredicate(L, "IsCanBeSynchroMaterial", session, "synchro");
   pushMaterialPredicate(L, "IsCanBeXyzMaterial", session, "xyz");
   pushMaterialPredicate(L, "IsCanBeLinkMaterial", session, "link");
   pushMaterialPredicate(L, "IsCanBeRitualMaterial", session, "ritual");
+}
+
+function canLuaSetSpellTrap(card: DuelCardInstance): boolean {
+  return (card.kind === "spell" || card.kind === "trap") && (card.location === "hand" || card.location === "deck" || card.location === "graveyard");
 }
 
 function equippedCards(session: DuelSession, uid: string): DuelCardInstance[] {
