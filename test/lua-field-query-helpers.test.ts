@@ -196,6 +196,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsAncientGearGolem", code: "83104731", setcode: 0x581 },
       { method: "IsAnti", code: "43583400", setcode: 0x503 },
       { method: "IsAssassin", code: "48365709", setcode: 0x504 },
+      { method: "IsAstral", code: "64591429", setcode: 0x505 },
       { method: "IsAtlandis", code: "9161357", setcode: 0x506 },
       { method: "IsBlackwingTamer", code: "81983656", setcode: 0x2033 },
       { method: "IsC", code: "15862758", setcode: 0x1048 },
@@ -1081,7 +1082,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("type " .. c:GetType())
       Debug.Message("stats " .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. c:GetLevel())
       Debug.Message("text stats " .. c:GetTextAttack() .. "/" .. c:GetTextDefense() .. "/" .. tostring(c:IsTextAttack(2500)) .. "/" .. tostring(c:IsTextDefense(2100)))
-      Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsBaseAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsLevel(7)) .. "/" .. tostring(c:IsLevelBetween(8,6)) .. "/" .. tostring(c:IsLevelBetween(1,6)))
+      Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsBaseAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsBaseDefense(2100)) .. "/" .. tostring(c:IsLevel(7)) .. "/" .. tostring(c:IsLevelBetween(8,6)) .. "/" .. tostring(c:IsLevelBetween(1,6)))
       Debug.Message("stat comparisons " .. tostring(c:IsAttackAbove(2400)) .. "/" .. tostring(c:IsAttackBelow(2600)) .. "/" .. tostring(c:IsDefenseAbove(2200)) .. "/" .. tostring(c:IsDefenseBelow(2200)) .. "/" .. tostring(c:IsLevelAbove(6)) .. "/" .. tostring(c:IsLevelBelow(6)))
       Debug.Message("original stat comparisons " .. tostring(c:IsOriginalAttack(2500)) .. "/" .. tostring(c:IsOriginalAttackAbove(2400)) .. "/" .. tostring(c:IsOriginalAttackBelow(2600)) .. "/" .. tostring(c:IsOriginalDefense(2100)) .. "/" .. tostring(c:IsOriginalDefenseAbove(2200)) .. "/" .. tostring(c:IsOriginalDefenseBelow(2200)) .. "/" .. tostring(c:IsOriginalLevelAbove(6)) .. "/" .. tostring(c:IsOriginalLevelBelow(6)))
       Debug.Message("code checks " .. tostring(c:IsCode(900)) .. "/" .. tostring(c:IsOriginalCode(900)) .. "/" .. tostring(c:IsOriginalCode(100)))
@@ -1184,7 +1185,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("stats 2500/2100/7");
     expect(host.messages).toContain("text stats 2500/2100/true/true");
     expect(host.messages).toContain("unknown text stats -2/-2/true/true");
-    expect(host.messages).toContain("stat predicates true/true/true/true/true/false");
+    expect(host.messages).toContain("stat predicates true/true/true/true/true/true/false");
     expect(host.messages).toContain("stat comparisons true/true/false/true/true/false");
     expect(host.messages).toContain("original stat comparisons true/true/true/true/false/true/true/false");
     expect(host.messages).toContain("code checks true/false/true");

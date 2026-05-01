@@ -30,6 +30,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "HasDefense", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x4000000) === 0));
   pushBooleanGetter(L, "HasNonZeroDefense", session, (card) => Boolean(card && (card.data.defense ?? 0) !== 0));
   pushNumberMatcher(L, "IsDefense", session, (card, requested) => (card.data.defense ?? 0) === requested);
+  pushNumberMatcher(L, "IsBaseDefense", session, (card, requested) => (card.data.defense ?? 0) === requested);
   pushNumberMatcher(L, "IsOriginalDefense", session, (card, requested) => (card.data.defense ?? 0) === requested);
   pushNumberMatcher(L, "IsTextDefense", session, (card, requested) => (card.data.defense ?? 0) === requested);
   pushNumberMatcher(L, "IsDefenseAbove", session, (card, requested) => (card.data.defense ?? 0) >= requested);

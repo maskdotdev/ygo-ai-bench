@@ -111,6 +111,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsAncientGearGolem", session, (card) => Boolean(card && isAnimeArchetype(card, ancientGearGolemSetcodes, ancientGearGolemCodes)));
   pushBooleanGetter(L, "IsAnti", session, (card) => Boolean(card && isAnimeArchetype(card, antiSetcodes, antiCodes)));
   pushBooleanGetter(L, "IsAssassin", session, (card) => Boolean(card && isAnimeArchetype(card, assassinSetcodes, assassinCodes)));
+  pushBooleanGetter(L, "IsAstral", session, (card) => Boolean(card && isAnimeArchetype(card, astralSetcodes, astralCodes)));
   pushBooleanGetter(L, "IsAtlandis", session, (card) => Boolean(card && isAnimeArchetype(card, atlandisSetcodes, atlandisCodes)));
   pushBooleanGetter(L, "IsBlackwingTamer", session, (card) => Boolean(card && isAnimeArchetype(card, blackwingTamerSetcodes, blackwingTamerCodes)));
   pushBooleanGetter(L, "IsC", session, (card) => Boolean(card && isAnimeArchetype(card, cSetcodes, cCodes)));
@@ -253,6 +254,8 @@ const antiSetcodes = [0x503] as const;
 const antiCodes = ["43583400", "31683874", "52085072", "59839761"] as const;
 const assassinSetcodes = [0x504] as const;
 const assassinCodes = ["48365709", "19357125", "16226786", "2191144", "25262697", "28150174", "77558536"] as const;
+const astralSetcodes = [0x505] as const;
+const astralCodes = ["64591429", "37053871", "69852487", "45950291"] as const;
 
 const atlandisSetcodes = [0x506] as const;
 const atlandisCodes = ["9161357", "6387204"] as const;
