@@ -9,6 +9,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetOriginalType", session, (card) => cardTypeFlags(card));
   pushNumberGetter(L, "GetMainCardType", session, (card) => cardMainTypeFlags(card));
   pushNumberMatcher(L, "IsType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
+  pushNumberMatcher(L, "IsExactType", session, (card, requested) => cardTypeFlags(card) === requested);
   pushNumberMatcher(L, "IsNotType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
   pushNumberMatcher(L, "IsNotOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);

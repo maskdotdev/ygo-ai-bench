@@ -224,6 +224,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsEarthboundServant", code: "8690387", setcode: 0x2021 },
       { method: "IsElf", code: "44663232", setcode: 0x51b },
       { method: "IsEmissaryOfDarkness", code: "44330098", setcode: 0x51c },
+      { method: "IsFairy", code: "25862681", setcode: 0x51d },
       { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
       { method: "IsMask", code: "29549364", setcode: 0x583 },
@@ -1112,6 +1113,7 @@ describe("Lua field and query helpers", () => {
       local monsters = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
       local c = monsters:GetFirst()
       Debug.Message("type " .. c:GetType())
+      Debug.Message("exact type " .. tostring(c:IsExactType(TYPE_MONSTER|TYPE_EFFECT)) .. "/" .. tostring(c:IsExactType(TYPE_MONSTER)))
       Debug.Message("stats " .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. c:GetLevel())
       Debug.Message("text stats " .. c:GetTextAttack() .. "/" .. c:GetTextDefense() .. "/" .. tostring(c:IsTextAttack(2500)) .. "/" .. tostring(c:IsTextDefense(2100)))
       Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsBaseAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsBaseDefense(2100)) .. "/" .. tostring(c:IsLevel(7)) .. "/" .. tostring(c:IsLevelBetween(8,6)) .. "/" .. tostring(c:IsLevelBetween(1,6)))
@@ -1215,6 +1217,7 @@ describe("Lua field and query helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("type 33");
+    expect(host.messages).toContain("exact type true/false");
     expect(host.messages).toContain("stats 2500/2100/7");
     expect(host.messages).toContain("text stats 2500/2100/true/true");
     expect(host.messages).toContain("unknown text stats -2/-2/true/true");
