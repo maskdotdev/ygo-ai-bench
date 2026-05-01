@@ -177,6 +177,8 @@ function getAttackTargets(state: DuelState, player: PlayerId): DuelCardInstance[
 }
 
 function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance, callbacks: DuelBattleCallbacks): void {
+  attacker.battlePosition = attacker.position;
+  target.battlePosition = target.position;
   const attackerAttack = getBattleAttack(attacker);
   const targetStat = target.position === "faceUpAttack" ? getBattleAttack(target) : getBattleDefense(target);
   if (target.position === "faceUpAttack") {

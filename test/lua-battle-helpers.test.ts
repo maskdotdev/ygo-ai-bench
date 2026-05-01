@@ -115,6 +115,45 @@ describe("Lua battle helpers", () => {
     expect(session.state.players[1].lifePoints).toBe(7200);
   });
 
+  it("lets Lua scripts inspect battle position and destruction status", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Battle Position Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Lua Battle Position Target", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 178, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local attacker = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_GRAVE, 1, 1, nil):GetFirst()
+      Debug.Message("battle position " .. attacker:GetBattlePosition() .. "/" .. target:GetBattlePosition() .. "/" .. tostring(target:IsBattlePosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(target:IsBattlePosition(POS_FACEUP_DEFENSE)))
+      Debug.Message("battle destroyed " .. tostring(attacker:IsBattleDestroyed()) .. "/" .. tostring(target:IsBattleDestroyed()))
+      `,
+      "battle-position-destroyed.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("battle position 1/1/true/false");
+    expect(host.messages).toContain("battle destroyed false/true");
+  });
+
   it("lets Lua scripts negate the active attack", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Attacker", kind: "monster", attack: 1800 },

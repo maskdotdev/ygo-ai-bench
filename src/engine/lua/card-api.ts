@@ -6,6 +6,7 @@ import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDu
 import { registerDuelFlagEffect } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions } from "#duel/summon.js";
+import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
@@ -71,6 +72,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));
   installCardCodeApi(L, session);
   installCardStatApi(L, session);
+  installCardBattleApi(L, session);
   installEffectBackedStatHelpers(L, session, hostState);
   installStateHelpers(L, session, hostState);
   installCardFlagApi(L, session);

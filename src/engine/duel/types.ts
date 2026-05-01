@@ -75,6 +75,7 @@ export interface DuelCardInstance {
   previousSequence?: number;
   previousPosition?: CardPosition;
   previousFaceUp?: boolean;
+  battlePosition?: CardPosition;
   equippedToUid?: string;
   reason?: number;
   reasonPlayer?: PlayerId;
