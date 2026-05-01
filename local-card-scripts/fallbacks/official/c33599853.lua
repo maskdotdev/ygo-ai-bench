@@ -61,7 +61,7 @@ function s.gyop(e,tp,eg,ep,ev,re,r,rp)
   if not c:IsRelateToEffect(e) then return end
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
   local g=Duel.SelectMatchingCard(tp,s.gyfilter,tp,LOCATION_GRAVE,0,1,1,c)
-  if #g>0 then
+  if g:GetCount()>0 then
     g:AddCard(c)
     Duel.SendtoHand(g,nil,REASON_EFFECT)
   end

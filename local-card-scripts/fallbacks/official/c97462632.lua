@@ -41,7 +41,7 @@ function s.setop(e,tp,eg,ep,ev,re,r,rp)
   if Duel.GetLocationCount(tp,LOCATION_SZONE)<=0 then return end
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SET)
   local g=Duel.SelectMatchingCard(tp,s.setfilter,tp,LOCATION_DECK,0,1,1,nil)
-  if #g>0 then Duel.SSet(tp,g) end
+  if g:GetCount()>0 then Duel.SSet(tp,g) end
 end
 function s.damtg(e,tp,eg,ep,ev,re,r,rp,chk)
   if chk==0 then return true end

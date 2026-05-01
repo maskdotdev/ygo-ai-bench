@@ -75,5 +75,5 @@ function s.rmtg(e,tp,eg,ep,ev,re,r,rp,chk)
 end
 function s.rmop(e,tp,eg,ep,ev,re,r,rp)
   local g=Duel.GetTargetCards(e)
-  if #g>0 then Duel.Remove(g,POS_FACEUP,REASON_EFFECT) end
+  if g:GetCount()>0 then Duel.Remove(g,POS_FACEUP,REASON_EFFECT) end
 end

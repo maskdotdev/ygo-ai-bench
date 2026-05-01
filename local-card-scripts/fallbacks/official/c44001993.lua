@@ -38,7 +38,7 @@ end
 function s.thop(e,tp,eg,ep,ev,re,r,rp)
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
   local g=Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_GRAVE,0,1,1,nil)
-  if #g>0 then Duel.SendtoHand(g,nil,REASON_EFFECT) end
+  if g:GetCount()>0 then Duel.SendtoHand(g,nil,REASON_EFFECT) end
 end
 function s.rmfilter(c,e)
   return c:IsAbleToRemove() and c:IsCanBeEffectTarget(e)

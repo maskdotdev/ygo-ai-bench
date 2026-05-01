@@ -41,7 +41,7 @@ end
 function s.thop(e,tp,eg,ep,ev,re,r,rp)
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
   local g=Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)
-  if #g>0 and Duel.SendtoHand(g,nil,REASON_EFFECT)>0 then
+  if g:GetCount()>0 and Duel.SendtoHand(g,nil,REASON_EFFECT)>0 then
     Duel.DiscardHand(tp,nil,1,1,REASON_EFFECT+REASON_DISCARD)
   end
 end
@@ -63,5 +63,5 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
   if Duel.SendtoHand(rc,nil,REASON_EFFECT)==0 then return end
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
   local g=Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_HAND,0,1,1,nil,e,tp,code)
-  if #g>0 then Duel.SpecialSummon(g,0,tp,tp,true,false,POS_FACEUP_ATTACK) end
+  if g:GetCount()>0 then Duel.SpecialSummon(g,0,tp,tp,true,false,POS_FACEUP_ATTACK) end
 end

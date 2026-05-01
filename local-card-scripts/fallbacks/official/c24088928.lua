@@ -45,7 +45,7 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
   if not c:IsRelateToEffect(e) then return end
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_TODECK)
   local g=Duel.SelectMatchingCard(tp,s.recyclefilter,tp,LOCATION_GRAVE+LOCATION_REMOVED,LOCATION_GRAVE+LOCATION_REMOVED,3,3,c)
-  if #g==3 and Duel.SendtoDeck(g,nil,SEQ_DECKBOTTOM,REASON_EFFECT)>0 then
+  if g:GetCount()==3 and Duel.SendtoDeck(g,nil,SEQ_DECKBOTTOM,REASON_EFFECT)>0 then
     Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP_ATTACK)
   end
 end
@@ -61,9 +61,9 @@ end
 function s.thop(e,tp,eg,ep,ev,re,r,rp)
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_TOGRAVE)
   local sg=Duel.SelectMatchingCard(tp,s.ritualspell,tp,LOCATION_HAND+LOCATION_DECK,0,1,1,nil)
-  if #sg>0 and Duel.SendtoGrave(sg,REASON_EFFECT)>0 then
+  if sg:GetCount()>0 and Duel.SendtoGrave(sg,REASON_EFFECT)>0 then
     Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
     local tg=Duel.SelectMatchingCard(tp,s.ritualmonster,tp,LOCATION_DECK,0,1,1,nil)
-    if #tg>0 then Duel.SendtoHand(tg,nil,REASON_EFFECT) end
+    if tg:GetCount()>0 then Duel.SendtoHand(tg,nil,REASON_EFFECT) end
   end
 end

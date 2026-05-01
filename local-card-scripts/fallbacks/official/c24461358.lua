@@ -34,7 +34,7 @@ end
 function s.thop(e,tp,eg,ep,ev,re,r,rp)
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
   local g=Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)
-  if #g>0 then Duel.SendtoHand(g,nil,REASON_EFFECT) end
+  if g:GetCount()>0 then Duel.SendtoHand(g,nil,REASON_EFFECT) end
 end
 function s.setfilter(c,tp)
   return c:IsPreviousControler(tp) and c:IsPreviousLocation(LOCATION_MZONE) and c:IsReason(REASON_EFFECT) and c:ListsCode(33599853)

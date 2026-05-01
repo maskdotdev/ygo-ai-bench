@@ -7,6 +7,22 @@ import { describe, expect, it } from "vitest";
 const scannerPath = path.resolve("tools/scan-lua-api-usage.mjs");
 
 describe("Lua API usage scanner", () => {
+  it("keeps local provisional fallback scripts on Group:GetCount checks", () => {
+    const provisionalScripts = fs
+      .readdirSync("local-card-scripts/fallbacks/official")
+      .filter((file) => file.endsWith(".lua"))
+      .map((file) => path.join("local-card-scripts/fallbacks/official", file))
+      .filter((file) => fs.readFileSync(file, "utf8").includes("local-fallback-provisional"));
+
+    const groupLengthChecks = provisionalScripts.flatMap((file) => {
+      const source = fs.readFileSync(file, "utf8");
+      const matches = source.match(/#[a-z][a-z0-9_]*(?=\s*[<>=~])/gi) ?? [];
+      return matches.map((match) => `${file}: ${match}`);
+    });
+
+    expect(groupLengthChecks).toEqual([]);
+  });
+
   it("ranks missing upstream-style API calls against local Lua bindings", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "lua-api-scan-"));
     const scripts = path.join(root, "script");
