@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import fs from "node:fs";
 import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
@@ -118,6 +119,36 @@ describe("Lua special summon procedures", () => {
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
+  });
+
+  it("supports Ultimate Magical Swordsman procedure returning a Ritual monster to deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "98684220", name: "Black Chaos the Ultimate Magical Swordsman", kind: "monster", attack: 3000 },
+      { code: "70405001", name: "Ritual Warrior Cost", kind: "monster", typeFlags: 0x81, race: 0x1 },
+    ];
+    const session = createDuel({ seed: 161, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["98684220", "70405001"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const cost = session.state.cards.find((card) => card.code === "70405001");
+    expect(cost).toBeTruthy();
+    moveDuelCard(session.state, cost!.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c98684220.lua", "utf8"), "c98684220.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const source = session.state.cards.find((card) => card.code === "98684220");
+    expect(source).toBeTruthy();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(session.state.cards.find((card) => card.uid === cost!.uid)).toMatchObject({ location: "deck", reason: 0x80 });
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid)).toBe(false);
   });
 
   it("supports Lua special summon procedures from face-up pendulum extra deck cards", () => {
