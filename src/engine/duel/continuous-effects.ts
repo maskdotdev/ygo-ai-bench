@@ -118,9 +118,10 @@ export function additionalBattleDamagePlayers(state: DuelState, player: PlayerId
   const players = new Set<PlayerId>();
   for (const card of battleCards) {
     for (const effect of state.effects) {
-      if (effect.event !== "continuous" || effect.code !== 206 || effect.sourceUid !== card.uid) continue;
+      if (effect.event !== "continuous" || (effect.code !== 206 && effect.code !== 207) || effect.sourceUid !== card.uid) continue;
       const source = findCard(state, effect.sourceUid);
       if (!source || !effect.range.includes(source.location)) continue;
+      if (effect.code === 207 && player !== source.controller) continue;
       const ctx = createContext(effect, source, card);
       if (!effect.canActivate || effect.canActivate(ctx)) players.add(otherPlayer(player));
     }
