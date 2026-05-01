@@ -16,6 +16,7 @@ import {
 } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
+import { createLuaScriptHost } from "#lua/host.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("duel position changes", () => {
@@ -46,6 +47,16 @@ describe("duel position changes", () => {
     expect(flipResult.state.cards.find((card) => card.uid === monster!.uid)?.position).toBe("faceUpAttack");
     expect(flipResult.state.cards.find((card) => card.uid === monster!.uid)?.faceUp).toBe(true);
     expect(flipResult.state.log.some((entry) => entry.action === "flipSummon" && entry.card === "Normal Test Monster")).toBe(true);
+    const host = createLuaScriptHost(session);
+    const luaResult = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("flip summoned " .. tostring(c:IsFlipSummoned()) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_FLIP)) .. "/" .. c:GetSummonType())
+      `,
+      "flip-summoned-predicate.lua",
+    );
+    expect(luaResult.ok, luaResult.error).toBe(true);
+    expect(host.messages).toContain("flip summoned true/true/536870912");
   });
 
   it("collects flip summon trigger effects", () => {
