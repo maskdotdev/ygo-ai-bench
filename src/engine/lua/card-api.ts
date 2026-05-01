@@ -233,6 +233,13 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsLocation"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushboolean(state, Boolean(card && (locationMaskFromLocation(card.location) & locationMask) !== 0));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsDestination"));
   pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
   pushNumberGetter(L, "GetPreviousSequence", session, (card) => card?.previousSequence ?? 0);
   pushNumberGetter(L, "GetPreviousPosition", session, (card) => positionMaskFromPosition(card?.previousPosition));

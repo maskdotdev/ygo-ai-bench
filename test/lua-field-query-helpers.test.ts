@@ -216,6 +216,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsCubicSeed", code: "15610297", setcode: 0x10e3 },
       { method: "IsDarkness", code: "18967507", setcode: 0x316 },
       { method: "IsDart", code: "43061293", setcode: 0x513 },
+      { method: "IsDice", code: "16725505", setcode: 0x514 },
       { method: "IsDyson", code: "1992816", setcode: 0x519 },
       { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
@@ -774,8 +775,9 @@ describe("Lua field and query helpers", () => {
       local token = Duel.CreateToken(0, 123456)
       Debug.Message("token code " .. token:GetCode())
       Debug.Message("token attack " .. token:GetAttack())
-      Debug.Message("token hand " .. tostring(token:IsLocation(LOCATION_HAND)))
+      Debug.Message("token hand " .. tostring(token:IsLocation(LOCATION_HAND)) .. "/" .. tostring(token:IsDestination(LOCATION_HAND)) .. "/" .. tostring(token:IsDestination(LOCATION_MZONE)))
       Debug.Message("token summon " .. Duel.SpecialSummon(token, 0, 0, 0, false, false, POS_FACEUP_ATTACK))
+      Debug.Message("token mzone destination " .. tostring(token:IsDestination(LOCATION_MZONE)))
       Debug.Message("token faceup " .. tostring(token:IsFaceup()))
       `,
       "create-token.lua",
@@ -784,8 +786,9 @@ describe("Lua field and query helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("token code 123456");
     expect(host.messages).toContain("token attack 500");
-    expect(host.messages).toContain("token hand true");
+    expect(host.messages).toContain("token hand true/true/false");
     expect(host.messages).toContain("token summon 1");
+    expect(host.messages).toContain("token mzone destination true");
     expect(host.messages).toContain("token faceup true");
     expect(session.state.cards.find((card) => card.code === "123456")).toMatchObject({ location: "monsterZone", controller: 0, summonType: "special" });
   });
