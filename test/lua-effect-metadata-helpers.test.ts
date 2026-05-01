@@ -149,10 +149,11 @@ describe("Lua effect metadata helpers", () => {
       { code: "100", name: "Procedure Status Source", kind: "monster", level: 7 },
       { code: "200", name: "Linked Zone Source", kind: "extra", typeFlags: 0x4000001, linkMarkers: 0x20 },
       { code: "300", name: "Linked Zone Target", kind: "extra", typeFlags: 0x4000001, linkMarkers: 0x8 },
+      { code: "400", name: "Extra Procedure Source", kind: "extra", typeFlags: 0x4000001, linkMarkers: 0x20 },
     ];
     const session = createDuel({ seed: 93, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100"], extra: ["200", "300"] },
+      0: { main: ["100"], extra: ["200", "300", "400"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -169,6 +170,7 @@ describe("Lua effect metadata helpers", () => {
       local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local extra=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
       c:GetMetatable().MaximumAttack=3900
       c:GetMetatable().is_legend=true
       local maximum_atk=c:AddMaximumAtkHandler()
@@ -179,10 +181,12 @@ describe("Lua effect metadata helpers", () => {
       local must_by_effect=c:AddMustBeSpecialSummonedByCardEffect()
       local must_dark_fusion=c:AddMustBeSpecialSummonedByDarkFusion()
       local must_fusion=c:AddMustBeFusionSummoned()
+      local first_fusion=extra:AddMustFirstBeFusionSummoned()
       local must_ritual=c:AddMustBeRitualSummoned()
       local must_synchro=c:AddMustBeSynchroSummoned()
       local must_xyz=c:AddMustBeXyzSummoned()
       local must_link=c:AddMustBeLinkSummoned()
+      local first_link=extra:AddMustFirstBeLinkSummoned()
       local must_pendulum=c:AddMustBePendulumSummoned()
       local cannot_normal=c:AddCannotBeNormalSummoned()
       local cannot_flip=c:AddCannotBeFlipSummoned()
@@ -199,10 +203,12 @@ describe("Lua effect metadata helpers", () => {
       Debug.Message("card effect summon limit " .. tostring(must_by_effect:GetValue()(nil,action_effect,0,SUMMON_TYPE_SPECIAL)) .. "/" .. tostring(must_by_effect:GetValue()(nil,continuous_effect,0,SUMMON_TYPE_SPECIAL)))
       Debug.Message("dark fusion proc " .. tostring(c:GetMetatable().dark_calling) .. "/" .. tostring(c:IsHasEffect(51476410)~=nil) .. "/" .. type(must_dark_fusion:GetValue()))
       Debug.Message("fusion summon limit " .. tostring(must_fusion:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(must_fusion:GetValue()(nil,nil,0,SUMMON_TYPE_SYNCHRO)))
+      Debug.Message("first fusion limit " .. tostring(first_fusion:GetValue()(first_fusion,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(first_fusion:GetValue()(first_fusion,nil,0,SUMMON_TYPE_LINK)))
       Debug.Message("ritual summon limit " .. tostring(must_ritual:GetValue()(nil,nil,0,SUMMON_TYPE_RITUAL)) .. "/" .. tostring(must_ritual:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("synchro summon limit " .. tostring(must_synchro:GetValue()(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(must_synchro:GetValue()(nil,nil,0,SUMMON_TYPE_XYZ)))
       Debug.Message("xyz summon limit " .. tostring(must_xyz:GetValue()(nil,nil,0,SUMMON_TYPE_XYZ)) .. "/" .. tostring(must_xyz:GetValue()(nil,nil,0,SUMMON_TYPE_SYNCHRO)))
       Debug.Message("link summon limit " .. tostring(must_link:GetValue()(nil,nil,0,SUMMON_TYPE_LINK)) .. "/" .. tostring(must_link:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)))
+      Debug.Message("first link limit " .. tostring(first_link:GetValue()(first_link,nil,0,SUMMON_TYPE_LINK)) .. "/" .. tostring(first_link:GetValue()(first_link,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("pendulum summon limit " .. tostring(must_pendulum:GetValue()(nil,nil,0,SUMMON_TYPE_PENDULUM)) .. "/" .. tostring(must_pendulum:GetValue()(nil,nil,0,SUMMON_TYPE_LINK)))
       Debug.Message("maximum atk handler " .. maximum_atk:GetValue() .. "/" .. maximum_atk:GetRange() .. "/" .. tostring(maximum_atk:GetCondition()(maximum_atk)))
       local grant_self,grant_opp=side_grant:GetTargetRange()
@@ -219,10 +225,12 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("card effect summon limit true/false");
     expect(host.messages).toContain("dark fusion proc true/true/function");
     expect(host.messages).toContain("fusion summon limit true/false");
+    expect(host.messages).toContain("first fusion limit true/false");
     expect(host.messages).toContain("ritual summon limit true/false");
     expect(host.messages).toContain("synchro summon limit true/false");
     expect(host.messages).toContain("xyz summon limit true/false");
     expect(host.messages).toContain("link summon limit true/false");
+    expect(host.messages).toContain("first link limit true/false");
     expect(host.messages).toContain("pendulum summon limit true/false");
     expect(host.messages).toContain("maximum atk handler 3900/4/false");
     expect(host.messages).toContain("center side grant 8194/4/4/0/true/false/false");

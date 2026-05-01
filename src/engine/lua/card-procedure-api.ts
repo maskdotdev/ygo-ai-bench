@@ -49,6 +49,15 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       c:RegisterEffect(e0)
       return e0
     end
+    function Card.AddMustFirstBeFusionSummoned(c)
+      local e0=Effect.CreateEffect(c)
+      e0:SetType(EFFECT_TYPE_SINGLE)
+      e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+      e0:SetCode(EFFECT_SPSUMMON_CONDITION)
+      e0:SetValue(function(e,sum_eff,sum_p,sum_type) return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (sum_type&SUMMON_TYPE_FUSION)==SUMMON_TYPE_FUSION end)
+      c:RegisterEffect(e0)
+      return e0
+    end
     function Card.AddMustBeRitualSummoned(c)
       local e0=Effect.CreateEffect(c)
       e0:SetType(EFFECT_TYPE_SINGLE)
@@ -82,6 +91,15 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
       e0:SetCode(EFFECT_SPSUMMON_CONDITION)
       e0:SetValue(aux.lnklimit)
+      c:RegisterEffect(e0)
+      return e0
+    end
+    function Card.AddMustFirstBeLinkSummoned(c)
+      local e0=Effect.CreateEffect(c)
+      e0:SetType(EFFECT_TYPE_SINGLE)
+      e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+      e0:SetCode(EFFECT_SPSUMMON_CONDITION)
+      e0:SetValue(function(e,sum_eff,sum_p,sum_type) return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (sum_type&SUMMON_TYPE_LINK)==SUMMON_TYPE_LINK end)
       c:RegisterEffect(e0)
       return e0
     end
