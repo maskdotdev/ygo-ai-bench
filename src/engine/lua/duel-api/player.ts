@@ -39,6 +39,8 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummonCount(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummonCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanPendulumSummon(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanPendulumSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummonMonster(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummonMonster"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsPlayerAffectedByEffect(state, session, hostState));
@@ -113,6 +115,12 @@ function pushCanSpecialSummonCount(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const count = Math.max(0, lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 1);
   lua.lua_pushboolean(L, canSpecialSummonCount(session, player, count));
+  return 1;
+}
+
+function pushCanPendulumSummon(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  lua.lua_pushboolean(L, canPendulumSummon(session, player));
   return 1;
 }
 
@@ -219,6 +227,41 @@ function canSpecialSummonCount(session: DuelSession, player: PlayerId, count: nu
   return count < 2 || matchingPlayerEffects(session.state, player, blueEyesSpiritRestrictionCode, createPlayerCheckContext(session)).length === 0;
 }
 
+function canPendulumSummon(session: DuelSession, player: PlayerId): boolean {
+  if (!isMainPhaseForPlayer(session, player)) return false;
+  if (!canSpecialSummonCount(session, player, 1)) return false;
+  if (availableMonsterZoneCount(session, player, []) <= 0) return false;
+  const scales = pendulumScales(session, player);
+  if (!scales) return false;
+  const [lowScale, highScale] = scales;
+  return session.state.cards.some((card) => canPendulumSummonCard(session, player, card, lowScale, highScale));
+}
+
+function canPendulumSummonCard(session: DuelSession, player: PlayerId, card: DuelCardInstance, lowScale: number, highScale: number): boolean {
+  if (card.controller !== player || !isPendulumMonster(card)) return false;
+  if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
+  const level = card.data.level ?? 0;
+  if (level <= lowScale || level >= highScale) return false;
+  return canSpecialSummonDuelCard(session.state, card.uid, player);
+}
+
+function pendulumScales(session: DuelSession, player: PlayerId): [number, number] | undefined {
+  const left = pendulumZoneCard(session, player, 0);
+  const right = pendulumZoneCard(session, player, 1);
+  if (!left || !right) return undefined;
+  const low = Math.min(pendulumScale(left), pendulumScale(right));
+  const high = Math.max(pendulumScale(left), pendulumScale(right));
+  return low < high ? [low, high] : undefined;
+}
+
+function pendulumZoneCard(session: DuelSession, player: PlayerId, sequence: number): DuelCardInstance | undefined {
+  return session.state.cards.find((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence && isPendulumCard(card));
+}
+
+function pendulumScale(card: DuelCardInstance): number {
+  return card.data.leftScale ?? card.data.rightScale ?? 0;
+}
+
 function syntheticSpecialSummonCard(L: unknown, player: PlayerId): DuelCardInstance {
   const code = String(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0);
   const setcode = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : undefined;
@@ -319,6 +362,14 @@ function isMainPhaseForPlayer(session: DuelSession, player: PlayerId): boolean {
 
 function isMonsterLike(kind: string): boolean {
   return kind === "monster" || kind === "extra";
+}
+
+function isPendulumMonster(card: DuelCardInstance): boolean {
+  return isMonsterLike(card.kind) && isPendulumCard(card);
+}
+
+function isPendulumCard(card: DuelCardInstance): boolean {
+  return ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
 }
 
 function luaEffectId(effect: DuelEffectDefinition): number | undefined {
