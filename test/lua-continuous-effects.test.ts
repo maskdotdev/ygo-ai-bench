@@ -1264,12 +1264,12 @@ describe("Lua continuous effects", () => {
     const after = host.loadScript(
       `
       local monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
-      Debug.Message("monster negatable disabled " .. tostring(monster:IsNegatable()) .. "/" .. tostring(monster:IsNegatableMonster()))
+      Debug.Message("monster negatable disabled " .. tostring(monster:IsNegatable()) .. "/" .. tostring(monster:IsNegatableMonster()) .. "/" .. tostring(monster:IsDisabled()))
       `,
       "negatable-after.lua",
     );
     expect(after.ok, after.error).toBe(true);
-    expect(host.messages).toContain("monster negatable disabled false/false");
+    expect(host.messages).toContain("monster negatable disabled false/false/true");
   });
 
   it("checks immunity when testing whether Lua cards can be disabled by effects", () => {
