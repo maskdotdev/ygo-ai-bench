@@ -83,6 +83,71 @@ describe("Lua movement helpers", () => {
     });
   });
 
+  it("raises Lua leave-field triggers for cards moved from the field by effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Leave Field Mover", kind: "monster" },
+      { code: "200", name: "Leaving Monster", kind: "monster" },
+      { code: "300", name: "Leave Field Trigger", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 97, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const mover = session.state.cards.find((card) => card.code === "100");
+    const leaving = session.state.cards.find((card) => card.code === "200");
+    expect(mover).toBeDefined();
+    expect(leaving).toBeDefined();
+    moveDuelCard(session.state, mover!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, leaving!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_MZONE)
+        e:SetOperation(function(e,tp)
+          local g=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_MZONE, 0, 1, 1, nil)
+          Duel.SendtoGrave(g, REASON_EFFECT)
+        end)
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_LEAVE_FIELD)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          local tc=eg:GetFirst()
+          return tc and tc:IsCode(200) and tc:IsPreviousLocation(LOCATION_MZONE) and tc:IsReason(REASON_EFFECT)
+        end)
+        e:SetOperation(function(e,tp,eg)
+          local tc=eg:GetFirst()
+          Debug.Message("left field trigger " .. tc:GetCode() .. "/" .. tc:GetLeaveFieldDest())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "leave-field-trigger.lua",
+    );
+
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === mover!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid !== mover!.uid);
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("left field trigger 200/16");
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },

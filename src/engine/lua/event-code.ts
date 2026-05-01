@@ -6,6 +6,7 @@ export function triggerEventFromCode(code: number | undefined): DuelEventName | 
   if (code === 1100) return "normalSummoned";
   if (code === 1102) return "specialSummoned";
   if (code === 1014) return "sentToGraveyard";
+  if (code === 1015 || code === 1019) return "leftField";
   if (code === 1016) return "positionChanged";
   if (code === 1040) return "adjust";
   if (code === 1130) return "attackDeclared";

@@ -12,7 +12,17 @@ function s.initial_effect(c)
   e1:SetTarget(s.thtg)
   e1:SetOperation(s.thop)
   c:RegisterEffect(e1)
-  -- GY recovery trigger is omitted until "left field by effect" group filtering is precise enough.
+  -- GY: Set this if a monster that mentions "Ritual of Light and Darkness" leaves your field by effect.
+  local e2=Effect.CreateEffect(c)
+  e2:SetDescription(aux.Stringid(id,1))
+  e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)
+  e2:SetCode(EVENT_LEAVE_FIELD)
+  e2:SetRange(LOCATION_GRAVE)
+  e2:SetCountLimit(1,{id,1})
+  e2:SetCondition(s.setcon)
+  e2:SetTarget(s.settg)
+  e2:SetOperation(s.setop)
+  c:RegisterEffect(e2)
 end
 function s.thfilter(c)
   return c:IsMonster() and c:ListsCode(33599853) and c:IsAbleToHand()
@@ -25,4 +35,19 @@ function s.thop(e,tp,eg,ep,ev,re,r,rp)
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
   local g=Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)
   if #g>0 then Duel.SendtoHand(g,nil,REASON_EFFECT) end
+end
+function s.setfilter(c,tp)
+  return c:IsPreviousControler(tp) and c:IsPreviousLocation(LOCATION_MZONE) and c:IsReason(REASON_EFFECT) and c:ListsCode(33599853)
+end
+function s.setcon(e,tp,eg,ep,ev,re,r,rp)
+  return eg:IsExists(s.setfilter,1,nil,tp)
+end
+function s.settg(e,tp,eg,ep,ev,re,r,rp,chk)
+  if chk==0 then return e:GetHandler():IsSSetable() and Duel.GetLocationCount(tp,LOCATION_SZONE)>0 end
+end
+function s.setop(e,tp,eg,ep,ev,re,r,rp)
+  local c=e:GetHandler()
+  if c:IsRelateToEffect(e) and Duel.GetLocationCount(tp,LOCATION_SZONE)>0 then
+    Duel.SSet(tp,c)
+  end
 end

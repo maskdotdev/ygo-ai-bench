@@ -12,6 +12,7 @@ export type DuelEventName =
   | "specialSummoned"
   | "activated"
   | "sentToGraveyard"
+  | "leftField"
   | "banished"
   | "phaseChanged"
   | "turnStarted"

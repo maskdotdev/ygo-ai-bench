@@ -402,6 +402,7 @@ export function sendDuelCardToGraveyard(state: DuelState, uid: string, controlle
   requireDuelMoveAllowed(state, uid, "graveyard", reason);
   const card = moveDuelCard(state, uid, "graveyard", controller, reason, reasonPlayer);
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
+  collectLeaveFieldTriggers(state, card);
   collectTriggerEffects(state, "sentToGraveyard", card);
   return card;
 }
@@ -415,6 +416,7 @@ export function destroyDuelCard(state: DuelState, uid: string, controller?: Play
   requireDuelMoveAllowed(state, uid, "graveyard", reason);
   const card = moveDuelCard(state, uid, "graveyard", controller, reason, reasonPlayer);
   pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
+  collectLeaveFieldTriggers(state, card);
   collectTriggerEffects(state, "sentToGraveyard", card);
   return card;
 }
@@ -427,6 +429,7 @@ export function banishDuelCard(state: DuelState, uid: string, controller?: Playe
   requireDuelMoveAllowed(state, uid, "banished", reason);
   const card = moveDuelCard(state, uid, "banished", controller, reason, reasonPlayer);
   pushDuelLog(state, "banish", card.controller, card.name, "Banished");
+  collectLeaveFieldTriggers(state, card);
   collectTriggerEffects(state, "banished", card);
   return card;
 }
@@ -437,7 +440,9 @@ export function moveDuelCardWithRedirects(state: DuelState, uid: string, to: Due
   const destination = redirectLocation ?? to;
   const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
   requireDuelMoveAllowed(state, uid, destination, moveReason);
-  return moveDuelCard(state, uid, destination, controller, moveReason, reasonPlayer);
+  const card = moveDuelCard(state, uid, destination, controller, moveReason, reasonPlayer);
+  collectLeaveFieldTriggers(state, card);
+  return card;
 }
 
 export function detachDuelOverlayMaterials(state: DuelState, uid: string, count: number, controller?: PlayerId, reason: number = duelReason.cost): DuelCardInstance[] {
@@ -801,6 +806,12 @@ function moveDuelCardToRedirectedLocation(state: DuelState, uid: string, locatio
   if (location === "graveyard") return sendDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect, reasonPlayer);
   if (location === "banished") return banishDuelCard(state, uid, controller, reason | duelReason.redirect, reasonPlayer);
   return moveDuelCard(state, uid, location, controller, reason | duelReason.redirect, reasonPlayer);
+}
+
+function collectLeaveFieldTriggers(state: DuelState, card: DuelCardInstance): void {
+  if (card.previousLocation !== "monsterZone" && card.previousLocation !== "spellTrapZone") return;
+  if (card.location === "monsterZone" || card.location === "spellTrapZone") return;
+  collectTriggerEffects(state, "leftField", card);
 }
 
 function hasChainResponses(state: DuelState, player: PlayerId): boolean {
