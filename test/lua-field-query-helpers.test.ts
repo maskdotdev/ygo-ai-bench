@@ -6,6 +6,46 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua field and query helpers", () => {
+  it("exposes exact Lua card type predicates", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Continuous Trap", kind: "trap", typeFlags: 0x20004 },
+      { code: "200", name: "Ritual Spell", kind: "spell", typeFlags: 0x82 },
+      { code: "300", name: "Continuous Spell", kind: "spell", typeFlags: 0x20002 },
+      { code: "400", name: "Drone Monster", kind: "monster", typeFlags: 0x21, setcodes: [0x581] },
+      { code: "500", name: "Normal Spell", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 44, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local continuous_trap=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local ritual_spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local continuous_spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local drone=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local normal_spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("exact type constants " .. TYPE_CONTINUOUS)
+      Debug.Message("continuous trap " .. tostring(continuous_trap:IsContinuousTrap()) .. "/" .. tostring(continuous_trap:IsContinuousSpell()) .. "/" .. tostring(continuous_trap:IsRitualSpell()))
+      Debug.Message("ritual spell " .. tostring(ritual_spell:IsRitualSpell()) .. "/" .. tostring(ritual_spell:IsContinuousTrap()))
+      Debug.Message("continuous spell " .. tostring(continuous_spell:IsContinuousSpell()) .. "/" .. tostring(normal_spell:IsContinuousSpell()))
+      Debug.Message("drone predicate " .. tostring(drone:IsDrone()) .. "/" .. tostring(normal_spell:IsDrone()))
+      `,
+      "exact-card-type-predicates.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("exact type constants 131072");
+    expect(host.messages).toContain("continuous trap true/false/false");
+    expect(host.messages).toContain("ritual spell true/false");
+    expect(host.messages).toContain("continuous spell true/false");
+    expect(host.messages).toContain("drone predicate true/false");
+  });
+
   it("lets Lua scripts query monster zones and choose summon positions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Zone Filler A", kind: "monster" },
