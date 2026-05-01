@@ -84,6 +84,19 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       end
       return false
     end
+    function Card.ListsCounter(c,counter_type)
+      local mt=c:GetMetatable(false)
+      if not mt then return false end
+      local listed=mt.counter_list or mt.counter_place_list
+      if not listed then return false end
+      for _,counter in ipairs(listed) do
+        if counter_type==counter then return true end
+      end
+      return false
+    end
+    function Card.IsNouvellesSummoned(c)
+      return c:HasFlagEffect(c:GetOriginalCode())
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));

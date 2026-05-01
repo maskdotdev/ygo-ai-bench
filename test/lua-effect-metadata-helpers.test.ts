@@ -175,10 +175,11 @@ describe("Lua effect metadata helpers", () => {
       local cannot=c:AddCannotBeSpecialSummoned()
       local must=c:AddMustBeSpecialSummoned()
       local gemini=c:EnableGeminiStatus()
+      c:RegisterFlagEffect(c:GetOriginalCode(),RESET_EVENT,0,1)
       local min,max=c:GetTributeRequirement()
       Debug.Message("card proc codes " .. revive:GetCode() .. "/" .. cannot:GetCode() .. "/" .. must:GetCode() .. "/" .. gemini:GetCode())
       Debug.Message("card proc effects " .. tostring(c:IsHasEffect(EFFECT_REVIVE_LIMIT)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_SPSUMMON_CONDITION)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_GEMINI_STATUS)~=nil) .. "/" .. tostring(c:IsGeminiStatus()))
-      Debug.Message("card proc queries " .. min .. "/" .. max .. "/" .. c:GetMaximumAttack() .. "/" .. tostring(c:IsLegend()) .. "/" .. source:GetToBeLinkedZone(target,0,true))
+      Debug.Message("card proc queries " .. min .. "/" .. max .. "/" .. c:GetMaximumAttack() .. "/" .. tostring(c:IsLegend()) .. "/" .. source:GetToBeLinkedZone(target,0,true) .. "/" .. tostring(c:IsNouvellesSummoned()))
       `,
       "card-procedure-status.lua",
     );
@@ -186,7 +187,7 @@ describe("Lua effect metadata helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("card proc codes 31/30/30/75");
     expect(host.messages).toContain("card proc effects true/true/true/true");
-    expect(host.messages).toContain("card proc queries 2/2/3900/true/2");
+    expect(host.messages).toContain("card proc queries 2/2/3900/true/2/true");
   });
 
   it("stores Lua effect metadata setters on registered effects", () => {
