@@ -189,6 +189,59 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("normal proc callbacks true/true/true/true");
   });
 
+  it("registers Lua persistent trap procedures and target filters", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Persistent Trap", kind: "trap", typeFlags: 0x4 },
+      { code: "200", name: "Own Target", kind: "monster", typeFlags: 0x21 },
+      { code: "300", name: "Opposing Target", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 58, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["300"] },
+    });
+    startDuel(session);
+    const trap = session.state.cards.find((card) => card.code === "100");
+    const ownTarget = session.state.cards.find((card) => card.code === "200");
+    const opposingTarget = session.state.cards.find((card) => card.code === "300");
+    expect(trap).toBeDefined();
+    expect(ownTarget).toBeDefined();
+    expect(opposingTarget).toBeDefined();
+    trap!.location = "spellTrapZone";
+    trap!.sequence = 0;
+    trap!.faceUp = true;
+    ownTarget!.location = "monsterZone";
+    ownTarget!.sequence = 0;
+    ownTarget!.faceUp = true;
+    opposingTarget!.location = "monsterZone";
+    opposingTarget!.sequence = 0;
+    opposingTarget!.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local trap = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      local own = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local opp = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      local e1,e2=aux.AddPersistentProcedure(trap,0,aux.FilterBoolFunction(Card.IsFaceup),CATEGORY_DISABLE,EFFECT_FLAG_DAMAGE_STEP,TIMING_DAMAGE_STEP,TIMINGS_CHECK_MONSTER)
+      Debug.Message("persistent proc metadata " .. e1:GetDescription() .. "/" .. e1:GetCategory() .. "/" .. e1:GetProperty() .. "/" .. e1:GetCode())
+      Debug.Message("persistent follow metadata " .. e2:GetType() .. "/" .. e2:GetRange() .. "/" .. e2:GetCode() .. "/" .. tostring(e2:GetLabelObject()==e1))
+      Debug.Message("persistent target check " .. tostring(e1:GetTarget()(e1,0,nil,0,0,nil,0,0,0)))
+      Debug.Message("persistent relation before " .. tostring(aux.PersistentTargetFilter(e1,own)) .. "/" .. tostring(aux.PersistentTargetFilter(e1,opp)))
+      Card.SetCardTarget(trap,own)
+      Debug.Message("persistent relation after " .. tostring(aux.PersistentTargetFilter(e1,own)) .. "/" .. tostring(aux.PersistentTargetFilter(e1,opp)))
+      `,
+      "persistent-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("persistent proc metadata 1068/16384/16400/1002");
+    expect(host.messages).toContain("persistent follow metadata 2050/8/1022/true");
+    expect(host.messages).toContain("persistent target check true");
+    expect(host.messages).toContain("persistent relation before false/false");
+    expect(host.messages).toContain("persistent relation after true/false");
+  });
+
   it("creates Mysterune quick-play effect metadata", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Runick Probe", kind: "spell" }];
     const session = createDuel({ seed: 161, startingHandSize: 1, cardReader: createCardReader(cards) });

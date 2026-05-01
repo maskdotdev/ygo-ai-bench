@@ -3,6 +3,7 @@ import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import { installNormalProcedureApi } from "#lua/normal-procedure-api.js";
+import { installPersistentProcedureApi } from "#lua/persistent-procedure-api.js";
 import type { DuelSession } from "#duel/types.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
@@ -56,6 +57,7 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setglobal(L, to_luastring("aux"));
   installEquipProcedure(L, readLuaError);
   installNormalProcedureApi(L, readLuaError);
+  installPersistentProcedureApi(L, readLuaError);
 }
 
 function pushBattleDestroyedCondition(L: unknown, session: DuelSession | undefined, requireOpponent: boolean, requireGraveMonster: boolean): number {
