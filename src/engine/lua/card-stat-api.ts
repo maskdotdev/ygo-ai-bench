@@ -76,6 +76,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsNotRace", session, (card, requested) => ((card.data.race ?? 0) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
   pushNumberMatcher(L, "IsNotOriginalRace", session, (card, requested) => ((card.data.race ?? 0) & requested) === 0);
+  pushNumberGetter(L, "AnnounceAnotherRace", session, (card) => firstDifferentBit(card?.data.race ?? 0, 0x3ffffff, 0x2000000));
   pushNumberGetter(L, "GetAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberGetter(L, "GetOriginalAttribute", session, (card) => card?.data.attribute ?? 0);
   pushNumberMatcher(L, "IsAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
@@ -135,6 +136,21 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function firstDifferentBit(currentMask: number, allMask: number, maxBit: number): number {
+  const allowedMask = currentMask > 0 && isSingleBit(currentMask) ? allMask & ~currentMask : allMask;
+  for (let bit = 1; bit <= maxBit; bit <<= 1) {
+    if ((allowedMask & bit) !== 0) return bit;
+  }
+  for (let bit = 1; bit <= maxBit; bit <<= 1) {
+    if ((allMask & bit) !== 0) return bit;
+  }
+  return 0;
+}
+
+function isSingleBit(value: number): boolean {
+  return value > 0 && (value & (value - 1)) === 0;
 }
 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {

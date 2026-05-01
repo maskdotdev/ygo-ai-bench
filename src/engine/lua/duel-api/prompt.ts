@@ -48,6 +48,8 @@ export function installDuelPromptApi(L: unknown, session: DuelSession, hostState
   pushAnnouncementHelper(L, "AnnounceAttribute");
   lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceAnotherAttribute(state, session));
   lua.lua_setfield(L, -2, to_luastring("AnnounceAnotherAttribute"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceAnotherRace(state, session));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceAnotherRace"));
   pushAnnouncementHelper(L, "AnnounceLevel");
 }
 
@@ -137,9 +139,16 @@ function pushAnnounceAnotherAttribute(L: unknown, session: DuelSession): number 
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     return mask | (card?.data.attribute ?? 0);
   }, 0);
-  const attributeAll = 0x1 | 0x2 | 0x4 | 0x8 | 0x10 | 0x20 | 0x40;
-  const allowedMask = currentMask > 0 && isSingleBit(currentMask) ? attributeAll & ~currentMask : attributeAll;
-  lua.lua_pushinteger(L, firstSingleBit(allowedMask) ?? firstSingleBit(attributeAll) ?? 0);
+  lua.lua_pushinteger(L, firstDifferentBit(currentMask, attributeAll, 0x40));
+  return 1;
+}
+
+function pushAnnounceAnotherRace(L: unknown, session: DuelSession): number {
+  const currentMask = readCardOrGroupUids(L, 1).reduce((mask, uid) => {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    return mask | (card?.data.race ?? 0);
+  }, 0);
+  lua.lua_pushinteger(L, firstDifferentBit(currentMask, raceAll, 0x2000000));
   return 1;
 }
 
@@ -147,8 +156,13 @@ function isSingleBit(value: number): boolean {
   return value > 0 && (value & (value - 1)) === 0;
 }
 
-function firstSingleBit(mask: number): number | undefined {
-  for (let bit = 1; bit <= 0x40; bit <<= 1) {
+function firstDifferentBit(currentMask: number, allMask: number, maxBit: number): number {
+  const allowedMask = currentMask > 0 && isSingleBit(currentMask) ? allMask & ~currentMask : allMask;
+  return firstSingleBitThrough(allowedMask, maxBit) ?? firstSingleBitThrough(allMask, maxBit) ?? 0;
+}
+
+function firstSingleBitThrough(mask: number, maxBit: number): number | undefined {
+  for (let bit = 1; bit <= maxBit; bit <<= 1) {
     if ((mask & bit) !== 0) return bit;
   }
   return undefined;
@@ -172,3 +186,6 @@ function pushAnnounceNumberRange(L: unknown): number {
   lua.lua_pushinteger(L, low);
   return 1;
 }
+
+const attributeAll = 0x1 | 0x2 | 0x4 | 0x8 | 0x10 | 0x20 | 0x40;
+const raceAll = 0x3ffffff;

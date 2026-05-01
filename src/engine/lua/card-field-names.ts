@@ -94,6 +94,7 @@ export const cardFieldNames = [
   "IsNotRace",
   "IsOriginalRace",
   "IsNotOriginalRace",
+  "AnnounceAnotherRace",
   "GetAttribute",
   "GetOriginalAttribute",
   "IsAttribute",

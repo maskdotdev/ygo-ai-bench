@@ -987,8 +987,8 @@ describe("Lua state helpers", () => {
 
   it("provides deterministic Lua option prompt helpers", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Prompt Source", kind: "monster", attribute: 0x1 },
-      { code: "200", name: "Prompt Target", kind: "monster", attribute: 0x2 },
+      { code: "100", name: "Prompt Source", kind: "monster", attribute: 0x1, race: 0x1 },
+      { code: "200", name: "Prompt Target", kind: "monster", attribute: 0x2, race: 0x2 },
     ];
     const session = createDuel({ seed: 30, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -1023,7 +1023,10 @@ describe("Lua state helpers", () => {
       local earth_group=Duel.SelectMatchingCard(0, Card.IsCode, 0, LOCATION_HAND, 0, 1, 1, nil, 100)
       local another_earth=Duel.AnnounceAnotherAttribute(earth_group, 0)
       local another_mixed=Duel.AnnounceAnotherAttribute(group, 0)
+      local another_warrior_race=Duel.AnnounceAnotherRace(earth_group, 0)
+      local another_mixed_race=Duel.AnnounceAnotherRace(group, 0)
       local single=group:GetFirst()
+      local another_card_race=single:AnnounceAnotherRace(0)
       local group_hint_result=Duel.HintSelection(group, 501)
       local card_hint_result=Duel.HintSelection(single)
       Debug.Message("prompt option " .. option .. "/" .. tostring(yes))
@@ -1031,6 +1034,7 @@ describe("Lua state helpers", () => {
       Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. level .. "/" .. ranged)
       Debug.Message("prompt card codes " .. selected_code .. "/" .. selected_from_table .. "/" .. selected_index[1] .. ":" .. selected_index[2] .. "/" .. selected_multi[1][1] .. ":" .. selected_multi[1][2] .. "," .. selected_multi[2][1] .. ":" .. selected_multi[2][2])
       Debug.Message("prompt another attribute " .. another_earth .. "/" .. another_mixed)
+      Debug.Message("prompt another race " .. another_warrior_race .. "/" .. another_mixed_race .. "/" .. another_card_race)
       Debug.Message("prompt zones " .. disabled .. "/" .. selected .. "/" .. selected_zone .. "/" .. ZONES_MMZ .. "/" .. ZONES_EMZ)
       Debug.Message("hint return " .. tostring(group_hint_result == nil) .. "/" .. tostring(card_hint_result == nil))
       `,
@@ -1043,6 +1047,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("prompt announce 4/100/1/1/16/3/4");
     expect(host.messages).toContain("prompt card codes 700/900/910:1/930:1,940:2");
     expect(host.messages).toContain("prompt another attribute 2/1");
+    expect(host.messages).toContain("prompt another race 2/1/1");
     expect(host.messages).toContain("prompt zones 1/768/65536/31/96");
     expect(host.messages).toContain("hint return true/true");
     const hintLogs = session.state.log.filter((entry) => entry.action === "hintSelection");
