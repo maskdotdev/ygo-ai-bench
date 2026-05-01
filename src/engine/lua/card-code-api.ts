@@ -140,10 +140,12 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsGaiatheDragonChampion", session, (card) => Boolean(card && isAnimeArchetype(card, gaiaTheDragonChampionSetcodes, gaiaTheDragonChampionCodes)));
   pushBooleanGetter(L, "IsGemKnightLady", session, (card) => Boolean(card && isAnimeArchetype(card, gemKnightLadySetcodes, gemKnightLadyCodes)));
   pushBooleanGetter(L, "IsGorgonic", session, (card) => Boolean(card && isAnimeArchetype(card, gorgonicSetcodes, gorgonicCodes)));
+  pushBooleanGetter(L, "IsGranel", session, (card) => Boolean(card && isAnimeArchetype(card, granelSetcodes, granelCodes)));
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
   pushBooleanGetter(L, "IsWhite", session, (card) => Boolean(card && isAnimeArchetype(card, whiteSetcodes, whiteCodes)));
   pushBooleanGetter(L, "IsChampion", session, (card) => Boolean(card && isAnimeArchetype(card, championSetcodes, championCodes)));
   pushBooleanGetter(L, "IsGoyo", session, (card) => Boolean(card && isAnimeArchetype(card, goyoSetcodes, goyoCodes)));
+  pushBooleanGetter(L, "IsHand", session, (card) => Boolean(card && isAnimeArchetype(card, handSetcodes, handCodes)));
   pushBooleanGetter(L, "IsHeavyIndustry", session, (card) => Boolean(card && isAnimeArchetype(card, heavyIndustrySetcodes, heavyIndustryCodes)));
   pushBooleanGetter(L, "IsMantis", session, (card) => Boolean(card && isAnimeArchetype(card, mantisSetcodes, mantisCodes)));
   pushBooleanGetter(L, "IsMask", session, (card) => Boolean(card && isAnimeArchetype(card, maskSetcodes, maskCodes)));
@@ -461,6 +463,10 @@ const gemKnightLadySetcodes = [0x3047] as const;
 const gemKnightLadyCodes = ["47611119", "19355597", "55610199"] as const;
 const gorgonicSetcodes = [0x522] as const;
 const gorgonicCodes = ["64379261", "84401683", "37984162", "37168514", "90764875"] as const;
+const granelSetcodes = [0x524] as const;
+const granelCodes = ["2137678", "4545683"] as const;
+const handSetcodes = [0x527] as const;
+const handCodes = ["95929069", "40830387", "20403123", "55888045", "19642889", "33453260", "97570038", "28003512", "63746411", "40555959", "68535320", "21414674", "22530212", "13317419", "95453143", "47840168", "11845050"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
