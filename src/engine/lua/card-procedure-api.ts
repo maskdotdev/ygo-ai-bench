@@ -62,6 +62,28 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       end
       return zone&ZONES_MMZ
     end
+    function Card.ListsCardType(c,...)
+      local mt=c:GetMetatable(false)
+      if not mt or not mt.listed_card_types then return false end
+      local requested={...}
+      for _,typ in ipairs(requested) do
+        for _,listed in ipairs(mt.listed_card_types) do
+          if (typ&listed)~=0 then return true end
+        end
+      end
+      return false
+    end
+    function Card.ListsArchetype(c,...)
+      local mt=c:GetMetatable(false)
+      if not mt or not mt.listed_series then return false end
+      local requested={...}
+      for _,setcode in ipairs(requested) do
+        for _,listed in ipairs(mt.listed_series) do
+          if setcode==listed then return true end
+        end
+      end
+      return false
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));

@@ -18,6 +18,8 @@ export const cardFieldNames = [
   "ListsCode",
   "ListsCodeAsMaterial",
   "ListsArchetypeAsMaterial",
+  "ListsArchetype",
+  "ListsCardType",
   "IsOriginalCode",
   "IsOriginalCodeRule",
   "IsSummonCode",
