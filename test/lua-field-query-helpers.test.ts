@@ -271,6 +271,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsParasite", code: "49966595", setcode: 0x53d },
       { method: "IsPhantomButterfly", code: "63630268", setcode: 0x150c },
       { method: "IsPixie", code: "44663232", setcode: 0x53e },
+      { method: "IsPriestess", code: "95511642", setcode: 0x53f },
       { method: "IsStarvingVenemy", code: "22070401", setcode: 0x576 },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];
@@ -1190,6 +1191,7 @@ describe("Lua field and query helpers", () => {
       { code: "201", name: "Fixture Equip Spell", kind: "spell", typeFlags: 0x40002 },
       { code: "202", name: "Fixture Trap Monster", kind: "trap", typeFlags: 0x105, level: 4, race: 0x2, attribute: 0x20 },
       { code: "203", name: "Fixture Field Spell", kind: "spell", typeFlags: 0x80002 },
+      { code: "204", name: "Fixture Quick-Play Spell", kind: "spell", typeFlags: 0x10002 },
       { code: "300", name: "Rank Fixture", kind: "monster", typeFlags: 0x800001, attack: 1800, defense: 1200, level: 4 },
       { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5, setcodes: [0x564] },
       { code: "500", name: "Infinity Alias", kind: "monster", alias: "1378" },
@@ -1205,9 +1207,9 @@ describe("Lua field and query helpers", () => {
       { code: "906", name: "Minus Fixture", kind: "monster", typeFlags: 0x40000001, level: 4 },
       { code: "907", name: "Plus Minus Fixture", kind: "monster", typeFlags: 0x60000001, level: 4 },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 17, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 18, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "201", "202", "203", "300", "400", "500", "600", "700", "800", "901", "903", "904", "905", "906", "907"], extra: ["801", "902"] },
+      0: { main: ["100", "200", "201", "202", "203", "204", "300", "400", "500", "600", "700", "800", "901", "903", "904", "905", "906", "907"], extra: ["801", "902"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -1313,9 +1315,10 @@ describe("Lua field and query helpers", () => {
       local equip = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 201), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local trapmonster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 202), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local fieldspell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 203), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local quickplay = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 204), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("has level " .. tostring(c:HasLevel()) .. "/" .. tostring(xyz:HasLevel()) .. "/" .. tostring(link:HasLevel()) .. "/" .. tostring(spell:HasLevel()))
       Debug.Message("main card types " .. c:GetMainCardType() .. "/" .. spell:GetMainCardType() .. "/" .. equip:GetMainCardType() .. "/" .. trapmonster:GetMainCardType())
-      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()) .. "/" .. tostring(spell:IsEquipCard()) .. "/" .. tostring(equip:IsEquipCard()) .. "/" .. tostring(spell:IsEquipSpell()) .. "/" .. tostring(equip:IsEquipSpell()) .. "/" .. tostring(fieldspell:IsFieldSpell()) .. "/" .. tostring(spell:IsFieldSpell()) .. "/" .. tostring(trapmonster:IsTrapCard()) .. "/" .. tostring(trapmonster:IsTrapMonster()) .. "/" .. tostring(spell:IsTrapMonster()) .. "/" .. TYPE_EQUIP)
+      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()) .. "/" .. tostring(spell:IsEquipCard()) .. "/" .. tostring(equip:IsEquipCard()) .. "/" .. tostring(spell:IsEquipSpell()) .. "/" .. tostring(equip:IsEquipSpell()) .. "/" .. tostring(fieldspell:IsFieldSpell()) .. "/" .. tostring(spell:IsFieldSpell()) .. "/" .. tostring(quickplay:IsQuickPlaySpell()) .. "/" .. tostring(spell:IsQuickPlaySpell()) .. "/" .. tostring(trapmonster:IsTrapCard()) .. "/" .. tostring(trapmonster:IsTrapMonster()) .. "/" .. tostring(spell:IsTrapMonster()) .. "/" .. TYPE_EQUIP)
       Debug.Message("cost checks " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
       Duel.SendtoGrave(c, REASON_EFFECT)
       Debug.Message("cost after move " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
@@ -1371,8 +1374,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not attribute false/true");
     expect(host.messages).toContain("not original race false/true");
     expect(host.messages).toContain("not original attribute false/true");
-    expect(host.messages).toContain("spell count 3");
-    expect(host.messages).toContain("spell trap checks false/true/false/true/false/true/true/false/true/true/false/262144");
+    expect(host.messages).toContain("spell count 4");
+    expect(host.messages).toContain("spell trap checks false/true/false/true/false/true/true/false/true/false/true/true/false/262144");
     expect(host.messages).toContain("cost checks true/true");
     expect(host.messages).toContain("cost after move false/false");
     expect(host.messages).toContain("spell material checks false/false");
