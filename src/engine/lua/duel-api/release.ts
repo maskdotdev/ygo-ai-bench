@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
+import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
@@ -42,6 +43,10 @@ export function installDuelReleaseApi(L: unknown, session: DuelSession, hostStat
   lua.lua_setfield(L, -2, to_luastring("CheckReleaseGroupCost"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectReleaseGroupCost(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SelectReleaseGroupCost"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckReleaseGroupSummon(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("CheckReleaseGroupSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectReleaseGroupSummon(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("SelectReleaseGroupSummon"));
 }
 
 function pushIsPlayerCanRelease(L: unknown, session: DuelSession): number {
@@ -167,6 +172,24 @@ function pushSelectReleaseGroupCost(L: unknown, session: DuelSession, hostState:
   return 1;
 }
 
+function pushCheckReleaseGroupSummon(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState): number {
+  const query = readReleaseSummonQuery(L, session, hostState);
+  const candidates = releaseSummonCandidateUids(L, session, query);
+  releaseOptionalFunctionRef(L, query.filterRef);
+  const selected = releaseSummonSelection(session, query, candidates);
+  lua.lua_pushboolean(L, selected.length >= query.minimum && availableMonsterZoneCount(session, query.player, selected) > 0);
+  return 1;
+}
+
+function pushSelectReleaseGroupSummon(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState): number {
+  const query = readReleaseSummonQuery(L, session, hostState);
+  const candidates = releaseSummonCandidateUids(L, session, query);
+  releaseOptionalFunctionRef(L, query.filterRef);
+  const selected = releaseSummonSelection(session, query, candidates);
+  pushGroupTable(L, selected.length >= query.minimum && availableMonsterZoneCount(session, query.player, selected) > 0 ? selected : []);
+  return 1;
+}
+
 function readReleaseCostQuery(L: unknown, session: DuelSession, hasMax: boolean): ReleaseCostQuery {
   const upstreamShape = !hasMax && !lua.lua_isnumber(L, 4);
   const useHandIndex = upstreamShape ? 4 : 5;
@@ -183,6 +206,51 @@ function readReleaseCostQuery(L: unknown, session: DuelSession, hasMax: boolean)
     excluded: readCardOrGroupUids(L, excludedIndex),
     args: readFilterArgs(L, excludedIndex + 1),
   };
+}
+
+interface ReleaseSummonQuery {
+  player: PlayerId;
+  filterRef: number | undefined;
+  minimum: number;
+  maximum: number;
+  excluded: string[];
+  args: LuaFilterArgs;
+  selected: string[];
+}
+
+function readReleaseSummonQuery(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState): ReleaseSummonQuery {
+  const player = normalizePlayer(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : session.state.turnPlayer);
+  const minimum = Math.max(0, lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 1);
+  const maximum = Math.max(minimum, lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : minimum);
+  const lastIndex = 7;
+  const excludedIndex = lua.lua_isnumber(L, lastIndex) ? lastIndex + 1 : lastIndex;
+  const excluded = readCardOrGroupUids(L, excludedIndex);
+  return {
+    player,
+    filterRef: readOptionalFunctionRef(L, 4),
+    minimum,
+    maximum,
+    excluded,
+    args: readFilterArgs(L, excludedIndex + 1),
+    selected: selectedReleasableMonsterUids(session, player, excluded, hostState.selectedUids),
+  };
+}
+
+function releaseSummonCandidateUids(L: unknown, session: DuelSession, query: ReleaseSummonQuery): string[] {
+  return [
+    ...query.selected,
+    ...releasableMonsterUids(L, session, query.filterRef, query.player, [...query.excluded, ...query.selected], query.args),
+  ];
+}
+
+function releaseSummonSelection(session: DuelSession, query: ReleaseSummonQuery, candidates: string[]): string[] {
+  if (query.selected.length > query.maximum || candidates.length < query.minimum) return [];
+  const limit = query.maximum > 0 ? query.maximum : Math.max(query.minimum, 1);
+  for (let count = Math.max(query.minimum, query.selected.length); count <= Math.min(limit, candidates.length); count += 1) {
+    const selected = candidates.slice(0, count);
+    if (availableMonsterZoneCount(session, query.player, selected) > 0) return selected;
+  }
+  return [];
 }
 
 function releaseCostCheckMatches(L: unknown, checkRef: number | undefined, uids: string[], player: PlayerId, excluded: string[], args: LuaFilterArgs): boolean {

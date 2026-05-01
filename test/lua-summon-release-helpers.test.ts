@@ -390,6 +390,51 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("selected tribute locked 0");
   });
 
+  it("lets Lua scripts check and select release summon materials with zone pressure", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Release Summon Target", kind: "monster", level: 6 },
+      { code: "300", name: "Release Summon A", kind: "monster" },
+      { code: "400", name: "Release Summon B", kind: "monster" },
+      { code: "500", name: "Release Summon Locked", kind: "monster" },
+      { code: "600", name: "Zone Filler A", kind: "monster" },
+      { code: "700", name: "Zone Filler B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 41, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "400", "500", "600", "700"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["300", "400", "500", "600", "700"]) {
+      const card = session.state.cards.find((candidate) => candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local filter = function(tc) return tc:IsCode(300) or tc:IsCode(400) end
+      local excluded = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("release summon one " .. tostring(Duel.CheckReleaseGroupSummon(target, 0, nil, filter, 1, 1, nil)))
+      Debug.Message("release summon excluded miss " .. tostring(Duel.CheckReleaseGroupSummon(target, 0, nil, filter, 2, 2, excluded)))
+      local selected = Duel.SelectReleaseGroupSummon(target, 0, nil, filter, 1, 2, nil)
+      Debug.Message("release summon selected " .. selected:GetCount() .. "/" .. selected:GetFirst():GetCode() .. "/" .. Duel.GetMZoneCount(0, selected))
+      Duel.SetSelectedCard(selected:GetFirst())
+      Debug.Message("release summon forced " .. tostring(Duel.CheckReleaseGroupSummon(target, 0, nil, filter, 2, 2, nil)))
+      Duel.SetSelectedCard(nil)
+      `,
+      "release-summon-group.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("release summon one true");
+    expect(host.messages).toContain("release summon excluded miss false");
+    expect(host.messages).toContain("release summon selected 1/300/1");
+    expect(host.messages).toContain("release summon forced true");
+  });
+
   it("lets Lua scripts check, select, and release monster-zone groups", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Release A", kind: "monster" },
