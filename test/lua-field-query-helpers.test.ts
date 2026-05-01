@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, startDuel } from "#duel/core.js";
+import { createDuel, loadDecks, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -39,6 +39,42 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("field id distinct true");
     expect(host.messages).toContain("field id matchers true/true/false");
     expect(host.messages).toContain("card id alias true/true");
+  });
+
+  it("exposes Lua summon location and defense availability helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Hand Defender", kind: "monster", typeFlags: 0x21, defense: 1200 },
+      { code: "200", name: "Extra Link", kind: "extra", typeFlags: 0x4000021, level: 2, defense: 0 },
+      { code: "300", name: "Defense Spell", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 179, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    specialSummonDuelCard(session.state, session.state.cards.find((card) => card.code === "100")!.uid, 0);
+    const extraSummoned = moveDuelCard(session.state, session.state.cards.find((card) => card.code === "200")!.uid, "monsterZone", 0);
+    extraSummoned.summonType = "special";
+    extraSummoned.summonPlayer = 0;
+    extraSummoned.faceUp = true;
+    extraSummoned.position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local hand_summoned=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local extra_summoned=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("summon locations " .. hand_summoned:GetSummonLocation() .. "/" .. extra_summoned:GetSummonLocation() .. "/" .. spell:GetSummonLocation())
+      Debug.Message("has defense " .. tostring(hand_summoned:HasDefense()) .. "/" .. tostring(extra_summoned:HasDefense()) .. "/" .. tostring(spell:HasDefense()))
+      `,
+      "summon-location-defense.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("summon locations 2/64/0");
+    expect(host.messages).toContain("has defense true/false/false");
   });
 
   it("exposes exact Lua card type predicates", () => {
