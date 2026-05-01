@@ -12,6 +12,7 @@ import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCa
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { cardFieldNames } from "#lua/card-field-names.js";
 import { installCardLinkApi } from "#lua/card-link-api.js";
+import { installCardReasonApi } from "#lua/card-reason-api.js";
 import { installCardRelationApi } from "#lua/card-relation-api.js";
 import { installCardRushApi } from "#lua/card-rush-api.js";
 import { cardLink, cardRank, cardTypeFlags, installCardStatApi } from "#lua/card-stat-api.js";
@@ -76,6 +77,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   installCardStatApi(L, session);
   installCardBattleApi(L, session);
   installCardLinkApi(L, session);
+  installCardReasonApi(L, session, hostState);
   installEffectBackedStatHelpers(L, session, hostState);
   installStateHelpers(L, session, hostState);
   installCardFlagApi(L, session);
@@ -307,34 +309,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberMatcher(L, "IsPreviousSetCard", session, (card, requested) => Boolean(card.previousLocation && card.data.setcodes?.includes(requested)));
   pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
   pushNumberMatcher(L, "IsReason", session, (card, requested) => ((card.reason ?? 0) & requested) !== 0);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    if (!card?.reasonCardUid) lua.lua_pushnil(state);
-    else pushCardTable(state, card.reasonCardUid);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetReasonCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const reasonCard = readCard(state, session);
-    const target = readCardArgument(state, session, 2);
-    lua.lua_pushboolean(state, Boolean(reasonCard && target?.reasonCardUid === reasonCard.uid));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsReasonCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    if (card?.reasonEffectId === undefined) lua.lua_pushnil(state);
-    else hostState.pushEffectTable(state, card.reasonEffectId);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetReasonEffect"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const effectId = readTableNumberField(state, 2, "__effect_id");
-    lua.lua_pushboolean(state, Boolean(card && effectId !== undefined && card.reasonEffectId === effectId));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsReasonEffect"));
   pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
   pushNumberMatcher(L, "IsReasonPlayer", session, (card, requested) => (card.reasonPlayer ?? card.controller) === normalizePlayer(requested));
   pushNumberGetter(L, "GetTurnID", session, (card) => card?.turnId ?? 0);
@@ -881,11 +855,6 @@ function linkedSequences(sequence: number, markers: number): number[] {
 
 function readCard(L: unknown, session: DuelSession | undefined): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1);
-  return uid && session ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-}
-
-function readCardArgument(L: unknown, session: DuelSession | undefined, index: number): DuelCardInstance | undefined {
-  const uid = readCardUid(L, index);
   return uid && session ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
 }
 
