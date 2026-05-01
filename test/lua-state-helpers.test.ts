@@ -1374,6 +1374,46 @@ describe("Lua state helpers", () => {
     expect(session.state.cards.find((card) => card.code === "100")?.cancelToGrave).toBe(false);
   });
 
+  it("checks Rush trait change availability from current and original traits", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Rush Trait Source", kind: "monster", race: 0x2, attribute: 0x10 }];
+    const session = createDuel({ seed: 31, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      Debug.Message("rush original traits " .. tostring(c:CanChangeIntoTypeRush(RACE_SPELLCASTER)) .. "/" .. tostring(c:CanChangeIntoAttributeRush(ATTRIBUTE_LIGHT)))
+      local race=Effect.CreateEffect(c)
+      race:SetType(EFFECT_TYPE_SINGLE)
+      race:SetCode(EFFECT_CHANGE_RACE)
+      race:SetValue(RACE_DRAGON)
+      race:SetReset(RESET_PHASE+PHASE_END,1)
+      c:RegisterEffect(race)
+      local attribute=Effect.CreateEffect(c)
+      attribute:SetType(EFFECT_TYPE_SINGLE)
+      attribute:SetCode(EFFECT_CHANGE_ATTRIBUTE)
+      attribute:SetValue(ATTRIBUTE_DARK)
+      attribute:SetReset(RESET_PHASE+PHASE_END,1)
+      c:RegisterEffect(attribute)
+      Debug.Message("rush race change " .. tostring(c:CanChangeIntoTypeRush(RACE_DRAGON)) .. "/" .. tostring(c:CanChangeIntoTypeRush(RACE_DRAGON,2)) .. "/" .. tostring(c:CanChangeIntoTypeRush(RACE_SPELLCASTER)) .. "/" .. tostring(c:CanChangeIntoTypeRush(RACE_WARRIOR)))
+      Debug.Message("rush attribute change " .. tostring(c:CanChangeIntoAttributeRush(ATTRIBUTE_DARK)) .. "/" .. tostring(c:CanChangeIntoAttributeRush(ATTRIBUTE_DARK,2)) .. "/" .. tostring(c:CanChangeIntoAttributeRush(ATTRIBUTE_LIGHT)) .. "/" .. tostring(c:CanChangeIntoAttributeRush(ATTRIBUTE_FIRE)))
+      `,
+      "rush-trait-change.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "rush original traits false/false",
+      "rush race change false/true/true/true",
+      "rush attribute change false/true/true/true",
+    ]);
+  });
+
   it("checks Lua sequence movement adjacency conditions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Blocked", kind: "monster" },

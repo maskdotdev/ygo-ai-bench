@@ -210,6 +210,8 @@ export const cardFieldNames = [
   "CanAttack",
   "GetAttackAnnouncedCount",
   "CanGetPiercingRush",
+  "CanChangeIntoTypeRush",
+  "CanChangeIntoAttributeRush",
   "IsMonster",
   "IsMonsterCard",
   "IsSpell",
