@@ -9,6 +9,11 @@ const cardSalamangreatSanctuary = 1295111;
 export function installCardSummonApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
   pushNumberGetter(L, "GetSummonPhase", session, (card) => phaseMask(card?.summonPhase));
+  pushNumberMatcher(L, "IsSummonPhase", session, (card, requested) => phaseMask(card.summonPhase) === requested);
+  pushBooleanGetter(L, "IsSummonPhaseBattle", session, (card) => {
+    const phase = phaseMask(card?.summonPhase);
+    return phase >= 0x8 && phase <= 0x80;
+  });
   pushNumberGetter(L, "GetMaterialCount", session, (card) => materialCount(card));
   pushNumberGetter(L, "GetMaterialCountRush", session, (card) => materialCountRush(card));
   pushBooleanGetter(L, "IsNormalSummoned", session, (card) => isSummonTypeMatch(summonTypeMask(card), 0x10000000));

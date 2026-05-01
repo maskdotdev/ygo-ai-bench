@@ -1608,7 +1608,7 @@ describe("Lua state helpers", () => {
       local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("phase activity after summon " .. tostring(Duel.CheckPhaseActivity()))
       Debug.Message("normal type " .. tostring(c:IsSummonType(SUMMON_TYPE_NORMAL)) .. "/" .. tostring(c:IsNormalSummoned()) .. "/" .. c:GetSummonType())
-      Debug.Message("normal phase/materials " .. c:GetSummonPhase() .. "/" .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
+      Debug.Message("normal phase/materials " .. c:GetSummonPhase() .. "/" .. tostring(c:IsSummonPhase(PHASE_MAIN1)) .. "/" .. tostring(c:IsSummonPhaseBattle()) .. "/" .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
       Debug.Message("normal location " .. tostring(c:IsSummonLocation(LOCATION_HAND)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_EXTRA)))
       Debug.Message("normal player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
       Debug.Message("normal special " .. tostring(c:IsSpecialSummoned()))
@@ -1621,7 +1621,7 @@ describe("Lua state helpers", () => {
     expect(normalResult.ok).toBe(true);
     expect(host.messages).toContain("phase activity after summon true");
     expect(host.messages).toContain("normal type true/true/268435456");
-    expect(host.messages).toContain("normal phase/materials 4/0/0");
+    expect(host.messages).toContain("normal phase/materials 4/true/false/0/0");
     expect(host.messages).toContain("normal location true/false");
     expect(host.messages).toContain("normal player/type 0/true/false");
     expect(host.messages).toContain("normal special false");
@@ -1663,7 +1663,7 @@ describe("Lua state helpers", () => {
       `
       local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("fusion type " .. tostring(c:IsSummonType(SUMMON_TYPE_FUSION)) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_SPECIAL)))
-      Debug.Message("fusion phase/materials " .. c:GetSummonPhase() .. "/" .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
+      Debug.Message("fusion phase/materials " .. c:GetSummonPhase() .. "/" .. tostring(c:IsSummonPhase(PHASE_MAIN1)) .. "/" .. tostring(c:IsSummonPhaseBattle()) .. "/" .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
       Debug.Message("fusion location " .. tostring(c:IsSummonLocation(LOCATION_EXTRA)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_HAND)))
       Debug.Message("fusion player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
       Debug.Message("fusion special " .. tostring(c:IsSpecialSummoned()) .. "/" .. tostring(c:IsFusionSummoned()) .. "/" .. tostring(c:IsRitualSummoned()))
@@ -1678,7 +1678,7 @@ describe("Lua state helpers", () => {
 
     expect(fusionResult.ok).toBe(true);
     expect(host.messages).toContain("fusion type false/true");
-    expect(host.messages).toContain("fusion phase/materials 4/2/2");
+    expect(host.messages).toContain("fusion phase/materials 4/true/false/2/2");
     expect(host.messages).toContain("fusion location true/false");
     expect(host.messages).toContain("fusion player/type 0/true/true");
     expect(host.messages).toContain("fusion special true/false/false");

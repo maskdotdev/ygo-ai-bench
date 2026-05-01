@@ -389,6 +389,8 @@ export const cardFieldNames = [
   "IsControlerCanBeChanged",
   "GetSummonType",
   "GetSummonPhase",
+  "IsSummonPhase",
+  "IsSummonPhaseBattle",
   "GetMaterialCount",
   "GetMaterialCountRush",
   "IsNormalSummoned",
