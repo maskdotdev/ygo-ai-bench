@@ -422,6 +422,15 @@ function installGroupCompatibilityApi(L: unknown): void {
       end
       return zone
     end
+    function Group.AddMaximumCheck(g)
+      local result=g:Clone()
+      for tc in Group.Iter(g) do
+        if tc:IsMaximumMode() then
+          result:Merge(Duel.GetMatchingGroup(Card.IsMaximumMode,tc:GetControler(),LOCATION_MZONE,0,tc))
+        end
+      end
+      return result
+    end
   `;
   const status = lauxlib.luaL_loadbuffer(L, to_luastring(source), source.length, to_luastring("group-compat.lua"));
   if (status === lua.LUA_OK) lua.lua_pcall(L, 0, 0, 0);
@@ -709,6 +718,7 @@ const groupFieldNames = [
   "SelectUnselect",
   "SelectUnselectSubGroup",
   "Iter",
+  "AddMaximumCheck",
 ];
 
 function sameUidSet(a: string[], b: string[]): boolean {

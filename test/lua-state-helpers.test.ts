@@ -1076,6 +1076,10 @@ describe("Lua state helpers", () => {
       Debug.Message("sp elim faceup mzone " .. tostring(aux.SpElimFilter(faceup_monster, true)) .. "/" .. tostring(aux.SpElimFilter(faceup_monster, true, true)))
       Debug.Message("sp elim facedown mzone " .. tostring(aux.SpElimFilter(facedown_monster, true, true)) .. "/" .. tostring(aux.SpElimFilter(facedown_monster, false, true)))
       Debug.Message("maximum defaults " .. tostring(faceup_monster:IsMaximumMode()) .. "/" .. tostring(faceup_monster:IsMaximumModeCenter()) .. "/" .. tostring(faceup_monster:IsMaximumModeLeft()) .. "/" .. tostring(faceup_monster:IsMaximumModeRight()) .. "/" .. tostring(faceup_monster:IsMaximumModeSide()) .. "/" .. tostring(faceup_monster:IsNotMaximumModeSide()))
+      local maximum_group = Group.FromCards(faceup_monster,facedown_monster)
+      local maximum_checked = maximum_group:AddMaximumCheck()
+      maximum_group:RemoveCard(facedown_monster)
+      Debug.Message("maximum add check " .. maximum_checked:GetCount() .. "/" .. maximum_group:GetCount() .. "/" .. tostring(maximum_checked:IsContains(faceup_monster)) .. "/" .. tostring(maximum_checked:IsContains(facedown_monster)))
       local maximum_wrapped = aux.FilterMaximumSideFunctionEx(function(c,minatk) return c:IsFaceup() and c:GetAttack() >= minatk end, 900)
       Debug.Message("maximum ex count " .. Duel.GetMatchingGroupCount(maximum_wrapped, 0, LOCATION_MZONE, 0, nil))
       Debug.Message("maximum side count " .. Duel.GetMatchingGroupCount(aux.FilterMaximumSideFunction(function(c) return c:IsFaceup() end), 0, LOCATION_MZONE, 0, nil))
@@ -1275,6 +1279,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("sp elim faceup mzone false/true");
     expect(host.messages).toContain("sp elim facedown mzone false/true");
     expect(host.messages).toContain("maximum defaults false/false/false/false/false/true");
+    expect(host.messages).toContain("maximum add check 2/1/true/true");
     expect(host.messages).toContain("maximum ex count 1");
     expect(host.messages).toContain("maximum side count 0");
     expect(host.messages).toContain("not count 1");
