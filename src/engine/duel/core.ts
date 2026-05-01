@@ -410,7 +410,7 @@ export function sendDuelCardToGraveyard(state: DuelState, uid: string, controlle
 
 export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId): DuelCardInstance {
   const replacementHandlers = createReplacementEffectHandlers(state);
-  const indestructible = applyDestroyPrevention(state, uid, controller, reason, replacementHandlers);
+  const indestructible = applyDestroyPrevention(state, uid, controller, reason, reasonPlayer, replacementHandlers);
   if (indestructible) return indestructible;
   const replacement = applyDestroyReplacement(state, uid, controller, reason, replacementHandlers);
   if (replacement) return replacement;

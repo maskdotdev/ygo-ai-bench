@@ -682,6 +682,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(luaEffect.property === undefined ? {} : { property: luaEffect.property }),
     ...(luaEffect.targetRange === undefined ? {} : { targetRange: luaEffect.targetRange }),
     ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
+    ...(luaEffect.valueRef === undefined ? {} : { valuePredicate: (ctx, reasonPlayer) => callLuaEffectValuePredicate(L, hostState, luaEffect, card, ctx, reasonPlayer) }),
     canActivate: (ctx) =>
       (luaEffect.code !== 1027 || hostState.session.state.chain.length > 0) &&
       callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, "condition", ctx) &&
@@ -876,6 +877,28 @@ function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: Lu
     const status = lua.lua_pcall(L, argCount, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
     const result = lua.lua_isnil(L, -1) ? fallback : Boolean(lua.lua_toboolean(L, -1));
+    lua.lua_pop(L, 1);
+    return result;
+  });
+}
+
+function callLuaEffectValuePredicate(
+  L: unknown,
+  hostState: LuaHostState,
+  luaEffect: LuaEffectRecord,
+  card: DuelCardInstance,
+  ctx: DuelEffectContext,
+  reasonPlayer: PlayerId | undefined,
+): boolean {
+  if (luaEffect.valueRef === undefined) return true;
+  return withLuaCallbackContext(hostState, ctx, () => {
+    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.valueRef);
+    pushLuaEffectTable(L, luaEffect.id, hostState);
+    pushRelatedEffectTable(L, hostState);
+    lua.lua_pushinteger(L, reasonPlayer ?? ctx.player ?? card.controller);
+    const status = lua.lua_pcall(L, 3, 1, 0);
+    if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+    const result = lua.lua_isnil(L, -1) ? true : Boolean(lua.lua_toboolean(L, -1));
     lua.lua_pop(L, 1);
     return result;
   });

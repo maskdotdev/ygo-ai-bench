@@ -175,7 +175,7 @@ function findReplacementEffect(
   return undefined;
 }
 
-export function findIndestructibleEffect(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
+export function findIndestructibleEffect(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory, reasonPlayer?: PlayerId): ContinuousEffectMatch | undefined {
   const card = findCard(state, uid);
   if (!card) return undefined;
   for (const effect of state.effects) {
@@ -185,7 +185,9 @@ export function findIndestructibleEffect(state: DuelState, uid: string, reason: 
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
-    if (!effect.canActivate || effect.canActivate(ctx)) return { effect, source, card };
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    if (effect.valuePredicate && !effect.valuePredicate(ctx, reasonPlayer)) continue;
+    return { effect, source, card };
   }
   return undefined;
 }

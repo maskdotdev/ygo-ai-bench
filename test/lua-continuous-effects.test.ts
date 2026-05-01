@@ -8,6 +8,7 @@ import {
   startDuel,
 } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
+import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -1645,6 +1646,42 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("protected destructible nil true");
     expect(host.messages).toContain("open destructible true");
     expect(host.messages).toContain("destructible group 3");
+  });
+
+  it("applies Lua indestructible value callbacks during destruction", () => {
+    const cards: DuelCardData[] = [{ code: "200", name: "Value Protected Target", kind: "monster" }];
+    const session = createDuel({ seed: 82, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const protectedCard = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(protectedCard).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
+        e:SetRange(LOCATION_HAND)
+        e:SetValue(aux.indoval)
+        c:RegisterEffect(e)
+      end
+      `,
+      "indestructible-value-destroy.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const prevented = destroyDuelCard(session.state, protectedCard!.uid, 0, duelReason.effect | duelReason.destroy, 1);
+    expect(prevented).toMatchObject({ uid: protectedCard!.uid, location: "hand" });
+    const destroyed = destroyDuelCard(session.state, protectedCard!.uid, 0, duelReason.effect | duelReason.destroy, 0);
+    expect(destroyed).toMatchObject({ uid: protectedCard!.uid, location: "graveyard" });
   });
 
   it("consumes Lua counted indestructible effects", () => {

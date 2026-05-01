@@ -24,9 +24,10 @@ export function applyDestroyPrevention(
   uid: string,
   controller: PlayerId | undefined,
   reason: number,
+  reasonPlayer: PlayerId | undefined,
   handlers: ReplacementEffectHandlers,
 ): DuelCardInstance | undefined {
-  const match = findIndestructibleEffect(state, uid, reason, handlers.createContinuousContext);
+  const match = findIndestructibleEffect(state, uid, reason, handlers.createContinuousContext, reasonPlayer);
   if (!match) return undefined;
   consumeIndestructibleCount(match.effect);
   handlers.log("destroyPrevented", controller ?? match.card.controller, match.card.name, "Destruction prevented");

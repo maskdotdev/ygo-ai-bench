@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { canChangeDuelCardPosition, canDuelCardAttack, canMoveDuelCardToLocation, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
-import { findIndestructibleEffect, isCardDisabled, type MaterialUseKind } from "#duel/continuous-effects.js";
+import { isCardDisabled, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
 import { registerDuelFlagEffect } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
@@ -700,11 +700,6 @@ function detachOverlayRange(session: DuelSession, card: DuelCardInstance, min: n
 
 function setOperatedUids<EffectRecord extends LuaCardApiEffectRecord>(hostState: LuaCardApiState<EffectRecord>, uids: string[]): void {
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...uids);
-}
-
-function canDestroyCard(state: DuelState, uid: string): boolean {
-  const reason = duelReason.effect | duelReason.destroy;
-  return canMoveDuelCardToLocation(state, uid, "graveyard", reason) && !findIndestructibleEffect(state, uid, reason, createLuaMaterialCheckContext(state));
 }
 
 function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer: PlayerId): boolean {
