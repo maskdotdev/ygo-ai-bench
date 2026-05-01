@@ -486,6 +486,49 @@ describe("Lua movement helpers", () => {
     expect(host.messages).toContain("attraction condition opp false/true");
   });
 
+  it("lets Lua scripts install Amazement quick equip effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Attraction Trap", kind: "trap", typeFlags: 0x4, setcodes: [0x15f] },
+      { code: "200", name: "Amazement Monster", kind: "monster", typeFlags: 0x21, setcodes: [0x15e] },
+      { code: "300", name: "Opponent Monster", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 158, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["300"] },
+    });
+    startDuel(session);
+    const trap = session.state.cards.find((card) => card.code === "100");
+    const ownMonster = session.state.cards.find((card) => card.code === "200");
+    const opponentMonster = session.state.cards.find((card) => card.code === "300");
+    expect(trap).toBeDefined();
+    expect(ownMonster).toBeDefined();
+    expect(opponentMonster).toBeDefined();
+    moveDuelCard(session.state, trap!.uid, "spellTrapZone", 0).faceUp = true;
+    moveDuelCard(session.state, ownMonster!.uid, "monsterZone", 0).faceUp = true;
+    moveDuelCard(session.state, opponentMonster!.uid, "monsterZone", 1).faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local trap = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      local own = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local opp = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Duel.Equip(0,trap,own)
+      local e = aux.AddAmazementQuickEquipEffect(own,200)
+      Debug.Message("amazement quick metadata " .. tostring(e:IsHasType(EFFECT_TYPE_QUICK_O)) .. "/" .. e:GetCode() .. "/" .. e:GetDescription() .. "/" .. tostring(e:GetTarget()~=nil) .. "/" .. tostring(e:GetOperation()~=nil))
+      Debug.Message("amazement quick filters " .. tostring(AA.eqsfilter(trap,0)) .. "/" .. tostring(AA.eqmfilter(opp,0)))
+      Debug.Message("amazement quick target " .. tostring(e:GetTarget()(e,0,nil,0,0,nil,0,0,0)))
+      `,
+      "amazement-quick-equip.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("amazement quick metadata true/1002/3201/true/true");
+    expect(host.messages).toContain("amazement quick filters true/true");
+    expect(host.messages).toContain("amazement quick target true");
+  });
+
   it("lets Lua scripts temporarily banish cards through aux.RemoveUntil", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Temporary Banish A", kind: "monster" },

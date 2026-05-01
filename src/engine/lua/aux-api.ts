@@ -67,11 +67,11 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_pushcfunction(L, (state: unknown) => pushNecroValleyPredicate(state, readLuaError));
   lua.lua_setfield(L, -2, to_luastring("nvfilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
-  installAuxCompatibilityApi(L);
   installAuxUtilityApi(L, readLuaError);
   installNormalProcedureApi(L, readLuaError);
   installPersistentProcedureApi(L, readLuaError);
   installUnionProcedureApi(L, readLuaError);
+  installAuxCompatibilityApi(L);
 }
 
 function installAuxCompatibilityApi(L: unknown): void {
@@ -86,6 +86,38 @@ function installAuxCompatibilityApi(L: unknown): void {
       Duel.RegisterEffect(ge1,0)
       local ge2=ge1:Clone()
       Duel.RegisterEffect(ge2,1)
+    end
+    function AA.eqsfilter(c,tp)
+      return c:IsSetCard(SET_ATTRACTION or 0x15f) and c:IsTrap() and c:GetEquipTarget()
+        and Duel.IsExistingMatchingCard(AA.eqmfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,c:GetEquipTarget(),tp)
+    end
+    function AA.eqmfilter(c,tp)
+      return c:IsFaceup() and (c:IsSetCard(SET_AMAZEMENT or 0x15e) or (not c:IsControler(tp)))
+    end
+    function AA.qeqetg(e,tp,eg,ep,ev,re,r,rp,chk,chkc)
+      if chkc then return false end
+      if chk==0 then return Duel.IsExistingTarget(AA.eqsfilter,tp,LOCATION_SZONE,0,1,nil,tp) end
+      Duel.SelectTarget(tp,AA.eqsfilter,tp,LOCATION_SZONE,0,1,1,nil,tp)
+    end
+    function AA.qeqeop(e,tp,eg,ep,ev,re,r,rp)
+      local tc=Duel.GetTargetCards(e):GetFirst()
+      if not tc then return end
+      local mg=Duel.GetMatchingGroup(AA.eqmfilter,tp,LOCATION_MZONE,LOCATION_MZONE,tc:GetEquipTarget(),tp)
+      local mc=mg:GetFirst()
+      if tc:IsFaceup() and tc:IsRelateToEffect(e) and mc and mc:IsFaceup() then Duel.Equip(tp,tc,mc) end
+    end
+    function aux.AddAmazementQuickEquipEffect(c,id)
+      local e2=Effect.CreateEffect(c)
+      e2:SetDescription(aux.Stringid(id,1))
+      e2:SetType(EFFECT_TYPE_QUICK_O)
+      e2:SetCode(EVENT_FREE_CHAIN)
+      e2:SetRange(LOCATION_MZONE)
+      e2:SetProperty(EFFECT_FLAG_CARD_TARGET)
+      e2:SetCountLimit(1,id)
+      e2:SetTarget(AA.qeqetg)
+      e2:SetOperation(AA.qeqeop)
+      c:RegisterEffect(e2)
+      return e2
     end
   `;
   const status = lauxlib.luaL_loadbuffer(L, to_luastring(source), source.length, to_luastring("aux-compat.lua"));
