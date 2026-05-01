@@ -66,6 +66,8 @@ export const cardFieldNames = [
   "IsButterfly",
   "IsC",
   "IsCat",
+  "IsCelestial",
+  "IsCenozoic",
   "IsCicada",
   "IsDyson",
   "IsRed",

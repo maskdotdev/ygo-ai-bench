@@ -203,6 +203,8 @@ describe("Lua field and query helpers", () => {
       { method: "IsButterfly", code: "63630268", setcode: 0x150c },
       { method: "IsC", code: "15862758", setcode: 0x1048 },
       { method: "IsCat", code: "19963185", setcode: 0x50e },
+      { method: "IsCelestial", code: "69865139", setcode: 0x254a },
+      { method: "IsCenozoic", code: "12015000", setcode: 0x57c },
       { method: "IsCicada", code: "4997565", setcode: 0x50f },
       { method: "IsDyson", code: "1992816", setcode: 0x519 },
       { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
