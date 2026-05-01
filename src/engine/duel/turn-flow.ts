@@ -7,6 +7,7 @@ import type { DuelEventName, DuelPhase, DuelState, PlayerId } from "#duel/types.
 
 export interface DuelTurnFlowHandlers {
   collectEvent(eventName: DuelEventName): void;
+  executePhaseEffects?(phase: DuelPhase): void;
 }
 
 const phaseOrder: DuelPhase[] = ["draw", "standby", "main1", "battle", "main2", "end"];
@@ -37,6 +38,7 @@ export function changeDuelPhase(state: DuelState, player: PlayerId, phase: DuelP
   consumeSkippedPhases(state, player, phase);
   state.phase = phase;
   state.phaseActivity = false;
+  handlers.executePhaseEffects?.(phase);
   pruneResetEffectsAfterPhase(state, phase);
   pruneDuelFlagEffectsAfterPhase(state, phase);
   if (phase === "battle") state.attacksDeclared = [];
@@ -47,12 +49,14 @@ export function changeDuelPhase(state: DuelState, player: PlayerId, phase: DuelP
 
 export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTurnFlowHandlers): void {
   if (state.turnPlayer !== player) throw new Error("Only the turn player can end the turn");
+  handlers.executePhaseEffects?.("end");
   pruneResetEffectsAfterPhase(state, "end");
   pruneDuelFlagEffectsAfterPhase(state, "end");
   state.turn += 1;
   state.turnPlayer = otherPlayer(player);
   state.phase = "draw";
   state.phaseActivity = false;
+  handlers.executePhaseEffects?.("draw");
   pruneResetEffectsAfterPhase(state, "draw");
   pruneDuelFlagEffectsAfterPhase(state, "draw");
   state.waitingFor = state.turnPlayer;
@@ -64,6 +68,7 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   drawDuelCardsFromDeck(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw");
   state.phase = "main1";
   state.phaseActivity = false;
+  handlers.executePhaseEffects?.("main1");
   pruneResetEffectsAfterPhase(state, "main1");
   pruneDuelFlagEffectsAfterPhase(state, "main1");
   pushDuelLog(state, "turn", state.turnPlayer, undefined, `Turn ${state.turn} started`);

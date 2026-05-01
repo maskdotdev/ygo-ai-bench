@@ -938,6 +938,39 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("target count 2");
   });
 
+  it("runs delayed Lua operations on matching phase transitions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Delay Source", kind: "monster" },
+      { code: "200", name: "Delay Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 47, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local effect=Effect.CreateEffect(source)
+      local delayed=aux.DelayedOperation(target,PHASE_BATTLE,777047,effect,0,function(g,e,tp)
+        Debug.Message("delayed operation " .. g:GetCount() .. "/" .. tp .. "/" .. g:GetFirst():GetFlagEffectLabel(777047))
+      end,function(g,e,tp) return tp==0 and g:GetCount()==1 end,nil,1,701,702)
+      Debug.Message("delayed setup " .. delayed:GetCode() .. "/" .. delayed:GetDescription() .. "/" .. target:GetFlagEffect(777047))
+      `,
+      "delayed-operation.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("delayed setup 4224/702/1");
+    applyResponse(session, { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase" });
+    expect(host.messages).toContain("delayed operation 1/0/1");
+    expect(session.state.effects.some((effect) => effect.code === 0x1000 + 0x80)).toBe(false);
+  });
+
   it("provides deterministic Lua option prompt helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Prompt Source", kind: "monster", attribute: 0x1 },

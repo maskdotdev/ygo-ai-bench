@@ -80,7 +80,7 @@ import {
   shouldRedirectToGraveyardMove,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
-import { canUseEffectCount } from "#duel/effect-counts.js";
+import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import {
@@ -172,10 +172,16 @@ const responseHandlers: DuelResponseHandlers = {
   changePosition: changeDuelCardPosition,
   declareAttack: declareDuelAttack,
   changePhase(state, player, phase) {
-    changeDuelPhase(state, player, phase, { collectEvent: (eventName) => collectTriggerEffects(state, eventName) });
+    changeDuelPhase(state, player, phase, {
+      collectEvent: (eventName) => collectTriggerEffects(state, eventName),
+      executePhaseEffects: (reachedPhase) => executeContinuousPhaseEffects(state, reachedPhase),
+    });
   },
   endTurn(state, player) {
-    endDuelTurn(state, player, { collectEvent: (eventName) => collectTriggerEffects(state, eventName) });
+    endDuelTurn(state, player, {
+      collectEvent: (eventName) => collectTriggerEffects(state, eventName),
+      executePhaseEffects: (reachedPhase) => executeContinuousPhaseEffects(state, reachedPhase),
+    });
   },
 };
 
@@ -702,6 +708,28 @@ function collectTriggerEffects(state: DuelState, eventName: DuelEventName, event
 function recordDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
   state.eventHistory.push({ eventName, ...(eventCard ? { eventCardUid: eventCard.uid } : {}) });
   state.eventHistory = state.eventHistory.slice(-32);
+}
+
+function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void {
+  const code = 0x1000 | phaseMask(phase);
+  for (const effect of [...state.effects]) {
+    if (effect.event !== "continuous" || effect.code !== code || !canUseEffectCount(state, effect)) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createEffectContext(state, source, effect.controller, "phaseChanged");
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    effect.operation(ctx);
+    markEffectUsed(state, effect);
+  }
+}
+
+function phaseMask(phase: DuelPhase): number {
+  if (phase === "draw") return 0x1;
+  if (phase === "standby") return 0x2;
+  if (phase === "main1") return 0x4;
+  if (phase === "battle") return 0x80;
+  if (phase === "main2") return 0x100;
+  return 0x200;
 }
 
 function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction[] {

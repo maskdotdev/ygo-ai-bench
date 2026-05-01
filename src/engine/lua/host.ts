@@ -318,6 +318,10 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
   });
   pushEffectMethod(L, effects, "GetType", getEffectNumberField("typeFlags"));
   pushEffectMethod(L, effects, "GetCode", getEffectNumberField("code"));
+  pushEffectMethod(L, effects, "GetFieldID", (state, effect) => {
+    lua.lua_pushinteger(state, effect.id);
+    return 1;
+  });
   pushEffectMethod(L, effects, "GetDescription", getEffectNumberField("description"));
   pushEffectMethod(L, effects, "GetCategory", getEffectNumberField("category"));
   pushEffectMethod(L, effects, "GetProperty", getEffectNumberField("property"));

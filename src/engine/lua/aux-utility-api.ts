@@ -470,6 +470,41 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       if count then return not total or total>=count end
       return total
     end
+    function aux.DelayedOperation(card_or_group,phase,flag,e,tp,oper,cond,reset,reset_count,hint,effect_desc)
+      local group=(type(card_or_group)=="table" and card_or_group.GetCount) and card_or_group or Group.FromCards(card_or_group)
+      if group:GetCount()==0 then return nil end
+      reset=reset or (RESET_PHASE|phase)
+      reset_count=reset_count or 1
+      local field_id=e and e.GetFieldID and e:GetFieldID() or 0
+      local function affected_filter(c,label) return c:GetFlagEffectLabel(flag)==label end
+      local function affected_group(effect)
+        return effect:GetLabelObject():Filter(affected_filter,nil,effect:GetLabel())
+      end
+      local c=e and e.GetHandler and e:GetHandler() or group:GetFirst()
+      local e1=Effect.CreateEffect(c)
+      if effect_desc then e1:SetDescription(effect_desc) end
+      e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+      e1:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)
+      e1:SetCode(EVENT_PHASE|phase)
+      e1:SetReset(reset,reset_count)
+      e1:SetCountLimit(1)
+      e1:SetLabel(field_id)
+      e1:SetLabelObject(group)
+      e1:SetCondition(function(te,...)
+        local affected=affected_group(te)
+        return affected:GetCount()>0 and (not cond or cond(affected,te,...))
+      end)
+      e1:SetOperation(function(te,...)
+        if oper then oper(affected_group(te),te,...) end
+      end)
+      Duel.RegisterEffect(e1,tp or 0)
+      local flag_property=hint and EFFECT_FLAG_CLIENT_HINT or 0
+      for tc in aux.Next(group) do
+        tc:RegisterFlagEffect(flag,RESET_EVENT+RESETS_STANDARD,flag_property,1,field_id,hint)
+      end
+      group:KeepAlive()
+      return e1
+    end
     function aux.ChangeBattleDamage(player,value)
       return function(e,damp)
         if player==0 then
