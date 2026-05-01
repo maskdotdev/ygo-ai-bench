@@ -138,6 +138,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsForest", session, (card) => Boolean(card && isAnimeArchetype(card, forestSetcodes, forestCodes)));
   pushBooleanGetter(L, "IsFortressWhale", session, (card) => Boolean(card && isAnimeArchetype(card, fortressWhaleSetcodes, fortressWhaleCodes)));
   pushBooleanGetter(L, "IsGaiatheDragonChampion", session, (card) => Boolean(card && isAnimeArchetype(card, gaiaTheDragonChampionSetcodes, gaiaTheDragonChampionCodes)));
+  pushBooleanGetter(L, "IsGemKnightLady", session, (card) => Boolean(card && isAnimeArchetype(card, gemKnightLadySetcodes, gemKnightLadyCodes)));
+  pushBooleanGetter(L, "IsGorgonic", session, (card) => Boolean(card && isAnimeArchetype(card, gorgonicSetcodes, gorgonicCodes)));
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
   pushBooleanGetter(L, "IsWhite", session, (card) => Boolean(card && isAnimeArchetype(card, whiteSetcodes, whiteCodes)));
   pushBooleanGetter(L, "IsChampion", session, (card) => Boolean(card && isAnimeArchetype(card, championSetcodes, championCodes)));
@@ -455,6 +457,10 @@ const fortressWhaleSetcodes = [0x583] as const;
 const fortressWhaleCodes = ["62337487", "77454922", "96546575"] as const;
 const gaiaTheDragonChampionSetcodes = [0x580] as const;
 const gaiaTheDragonChampionCodes = ["66889139", "2519690"] as const;
+const gemKnightLadySetcodes = [0x3047] as const;
+const gemKnightLadyCodes = ["47611119", "19355597", "55610199"] as const;
+const gorgonicSetcodes = [0x522] as const;
+const gorgonicCodes = ["64379261", "84401683", "37984162", "37168514", "90764875"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
