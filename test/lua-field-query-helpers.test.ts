@@ -157,6 +157,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("ritual spell " .. tostring(ritual_spell:IsRitualSpell()) .. "/" .. tostring(ritual_spell:IsContinuousTrap()))
       Debug.Message("continuous spell " .. tostring(continuous_spell:IsContinuousSpell()) .. "/" .. tostring(normal_spell:IsContinuousSpell()))
       Debug.Message("normal spell " .. tostring(normal_spell:IsNormalSpell()) .. "/" .. tostring(continuous_spell:IsNormalSpell()) .. "/" .. tostring(link_spell:IsNormalSpell()))
+      Debug.Message("normal spelltrap " .. tostring(normal_spell:IsNormalSpellTrap()) .. "/" .. tostring(normal_trap:IsNormalSpellTrap()) .. "/" .. tostring(continuous_spell:IsNormalSpellTrap()))
       Debug.Message("continuous spelltrap " .. tostring(continuous_trap:IsContinuousSpellTrap()) .. "/" .. tostring(continuous_spell:IsContinuousSpellTrap()) .. "/" .. tostring(ritual_spell:IsContinuousSpellTrap()) .. "/" .. tostring(normal_spell:IsContinuousSpellTrap()))
       Debug.Message("equip trap " .. tostring(equip_trap:IsEquipTrap()) .. "/" .. tostring(equip_trap:IsEquipCard()) .. "/" .. tostring(continuous_trap:IsEquipTrap()))
       Debug.Message("normal trap " .. tostring(normal_trap:IsNormalTrap()) .. "/" .. tostring(continuous_trap:IsNormalTrap()) .. "/" .. tostring(equip_trap:IsNormalTrap()) .. "/" .. tostring(action_trap:IsNormalTrap()))
@@ -184,6 +185,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("ritual spell true/false");
     expect(host.messages).toContain("continuous spell true/false");
     expect(host.messages).toContain("normal spell true/false/false");
+    expect(host.messages).toContain("normal spelltrap true/true/false");
     expect(host.messages).toContain("continuous spelltrap true/true/false/false");
     expect(host.messages).toContain("equip trap true/true/false");
     expect(host.messages).toContain("normal trap true/false/false/false");

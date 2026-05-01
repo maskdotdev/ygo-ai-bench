@@ -1607,7 +1607,7 @@ describe("Lua state helpers", () => {
       `
       local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("phase activity after summon " .. tostring(Duel.CheckPhaseActivity()))
-      Debug.Message("normal type " .. tostring(c:IsSummonType(SUMMON_TYPE_NORMAL)) .. "/" .. c:GetSummonType())
+      Debug.Message("normal type " .. tostring(c:IsSummonType(SUMMON_TYPE_NORMAL)) .. "/" .. tostring(c:IsNormalSummoned()) .. "/" .. c:GetSummonType())
       Debug.Message("normal phase/materials " .. c:GetSummonPhase() .. "/" .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
       Debug.Message("normal location " .. tostring(c:IsSummonLocation(LOCATION_HAND)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_EXTRA)))
       Debug.Message("normal player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
@@ -1620,7 +1620,7 @@ describe("Lua state helpers", () => {
 
     expect(normalResult.ok).toBe(true);
     expect(host.messages).toContain("phase activity after summon true");
-    expect(host.messages).toContain("normal type true/268435456");
+    expect(host.messages).toContain("normal type true/true/268435456");
     expect(host.messages).toContain("normal phase/materials 4/0/0");
     expect(host.messages).toContain("normal location true/false");
     expect(host.messages).toContain("normal player/type 0/true/false");
