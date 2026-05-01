@@ -1115,6 +1115,10 @@ describe("Lua field and query helpers", () => {
       function_ritual:SetValue(function(e,mat,rc) return mat:GetLevel()+rc:GetLevel() end)
       link:RegisterEffect(function_ritual)
       Debug.Message("ritual function level " .. link:GetRitualLevel(c))
+      aux.RitualSummoningLevel=7
+      function_ritual:SetValue(function(e,mat,rc) return aux.RitualSummoningLevel or 0 end)
+      Debug.Message("ritual summoning level " .. link:GetRitualLevel(c))
+      aux.RitualSummoningLevel=nil
       local fixed_synchro=Effect.CreateEffect(c)
       fixed_synchro:SetType(EFFECT_TYPE_SINGLE)
       fixed_synchro:SetCode(EFFECT_SYNCHRO_LEVEL)
@@ -1186,6 +1190,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("link comparisons true/false/false/true");
     expect(host.messages).toContain("ritual fixed level 5");
     expect(host.messages).toContain("ritual function level 9");
+    expect(host.messages).toContain("ritual summoning level 7");
     expect(host.messages).toContain("synchro levels 4/5/8");
     expect(host.messages).toContain("scale hand 3/3/8/3/8/true/true/false");
     expect(host.messages).toContain("scale pzone 0/3/true/false");

@@ -11,6 +11,7 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       Duel.Remove(c,POS_FACEUP,REASON_COST)
     end
     aux.bfgcost=Cost.SelfBanish
+    aux.RitualSummoningLevel=nil
     function aux.dogcon(e,tp,eg,ep,ev,re,r,rp)
       local c=e:GetHandler()
       return c:IsPreviousControler(tp) and c:IsReason(REASON_DESTROY) and rp==1-tp
