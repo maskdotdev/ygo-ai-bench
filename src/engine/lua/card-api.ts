@@ -1,13 +1,15 @@
 import fengari from "fengari";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
-import { canChangeDuelCardPosition, canDuelCardAttack, canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
-import { findIndestructibleEffect, isCardDisabled, isMaterialUsePrevented, type MaterialUseKind } from "#duel/continuous-effects.js";
+import { canChangeDuelCardPosition, canDuelCardAttack, canMoveDuelCardToLocation, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
+import { findIndestructibleEffect, isCardDisabled, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
 import { registerDuelFlagEffect } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions } from "#duel/summon.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
+import { cardCodes } from "#lua/card-code-utils.js";
+import { canBeMaterial, canMoveCardToDeckOrExtraAsCost, canSpecialSummonFromLua, isMonsterLike } from "#lua/card-eligibility-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { cardFieldNames } from "#lua/card-field-names.js";
@@ -31,7 +33,7 @@ import {
   readTableNumberField,
   readTableStringField,
 } from "#lua/api-utils.js";
-import type { CardPosition, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelCardInstance, DuelEffectDefinition, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
 const { lua, to_luastring } = fengari;
@@ -702,34 +704,15 @@ function setOperatedUids<EffectRecord extends LuaCardApiEffectRecord>(hostState:
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...uids);
 }
 
-function canBeMaterial(state: DuelState, card: DuelCardInstance | undefined, kind: MaterialUseKind, target?: DuelCardInstance): boolean {
-  return Boolean(
-    card &&
-      isMonsterLike(card) &&
-      canBeMaterialFromLocation(card.location, kind) &&
-      targetAllowsMaterial(target, card, kind) &&
-      !isMaterialUsePrevented(state, card.uid, kind, createLuaMaterialCheckContext(state)),
-  );
-}
-
 function canDestroyCard(state: DuelState, uid: string): boolean {
   const reason = duelReason.effect | duelReason.destroy;
   return canMoveDuelCardToLocation(state, uid, "graveyard", reason) && !findIndestructibleEffect(state, uid, reason, createLuaMaterialCheckContext(state));
-}
-
-function canMoveCardToDeckOrExtraAsCost(state: DuelState, card: DuelCardInstance, uid: string): boolean {
-  const destination: DuelLocation = card.kind === "extra" || isPendulumCard(card) ? "extraDeck" : "deck";
-  return canMoveDuelCardToLocation(state, uid, destination, duelReason.cost);
 }
 
 function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer: PlayerId): boolean {
   if (card.controller === targetPlayer) return false;
   if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
   return hasZoneSpace(state, targetPlayer, card.location);
-}
-
-function isMonsterLike(card: DuelCardInstance): boolean {
-  return (cardTypeFlags(card) & 0x1) !== 0;
 }
 
 function totalCounters(card: DuelCardInstance): number {
@@ -740,47 +723,9 @@ function isPendulumCard(card: DuelCardInstance): boolean {
   return (cardTypeFlags(card) & 0x1000000) !== 0;
 }
 
-function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind): boolean {
-  if (kind === "fusion" || kind === "ritual") return location === "hand" || location === "monsterZone";
-  return location === "monsterZone";
-}
-
-function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {
-  if (!target) return true;
-  if (target.uid === card.uid) return false;
-  const codes = cardCodes(card);
-  if (kind === "fusion") return !target.data.fusionMaterials?.length || target.data.fusionMaterials.some((code) => codes.includes(code));
-  if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
-  if (kind === "synchro") {
-    const materials = target.data.synchroMaterials;
-    if (materials) return [materials.tuner, ...materials.nonTuners].some((code) => codes.includes(code));
-    const targetLevel = cardTypeFlags(target) & 0x2000 ? target.data.level ?? 0 : 0;
-    const materialLevel = card.data.level ?? 0;
-    return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
-  }
-  if (kind === "xyz") {
-    if (target.data.xyzMaterials?.length) return target.data.xyzMaterials.some((code) => codes.includes(code));
-    const targetRank = cardRank(target);
-    const materialLevel = card.data.level ?? 0;
-    const materialRank = cardRank(card);
-    return targetRank > 0 && (materialLevel === targetRank || (materialRank > 0 && targetRank === materialRank + 1));
-  }
-  if (kind === "link") return !target.data.linkMaterials?.length ? cardLink(target) > 0 && linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
-  return true;
-}
-
-function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number): boolean {
-  if (canSpecialSummonDuelCard(session.state, card.uid, player)) return true;
-  return card.location === "extraDeck" && summonType !== 0 && hasZoneSpace(session.state, player, "monsterZone") && canPlayerSpecialSummon(session.state, player, card);
-}
-
 function readCardOrGroupUids(L: unknown, index: number): string[] {
   const cardUid = readCardUid(L, index);
   return cardUid ? [cardUid] : readGroupUids(L, index);
-}
-
-function linkMaterialRating(card: DuelCardInstance): number {
-  return cardLink(card) || 1;
 }
 
 function isLinkedMonsterZoneCard(state: DuelState, card: DuelCardInstance): boolean {
@@ -932,10 +877,6 @@ function canChangePosition(state: DuelState, card: DuelCardInstance, requested: 
   if (card.position === "faceUpAttack") return canChangeDuelCardPosition(state, card.uid, "faceUpDefense");
   if (card.position === "faceUpDefense" || card.position === "faceDownDefense") return canChangeDuelCardPosition(state, card.uid, "faceUpAttack");
   return false;
-}
-
-function cardCodes(card: DuelCardInstance): string[] {
-  return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
 
 function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {

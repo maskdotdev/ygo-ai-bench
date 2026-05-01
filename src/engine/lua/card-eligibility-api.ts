@@ -1,0 +1,72 @@
+import { hasZoneSpace } from "#duel/card-state.js";
+import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard } from "#duel/core.js";
+import { isMaterialUsePrevented, type MaterialUseKind } from "#duel/continuous-effects.js";
+import { duelReason } from "#duel/reasons.js";
+import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
+import { cardLink, cardRank, cardTypeFlags } from "#lua/card-stat-api.js";
+import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+
+export function canBeMaterial(state: DuelState, card: DuelCardInstance | undefined, kind: MaterialUseKind, target?: DuelCardInstance): boolean {
+  return Boolean(
+    card &&
+      isMonsterLike(card) &&
+      canBeMaterialFromLocation(card.location, kind) &&
+      targetAllowsMaterial(target, card, kind) &&
+      !isMaterialUsePrevented(state, card.uid, kind, createLuaMaterialCheckContext(state)),
+  );
+}
+
+export function canMoveCardToDeckOrExtraAsCost(state: DuelState, card: DuelCardInstance, uid: string): boolean {
+  const destination: DuelLocation = card.kind === "extra" || isPendulumCard(card) ? "extraDeck" : "deck";
+  return canMoveDuelCardToLocation(state, uid, destination, duelReason.cost);
+}
+
+export function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number): boolean {
+  if (canSpecialSummonDuelCard(session.state, card.uid, player)) return true;
+  return card.location === "extraDeck" && summonType !== 0 && hasZoneSpace(session.state, player, "monsterZone") && canPlayerSpecialSummon(session.state, player, card);
+}
+
+export function isMonsterLike(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x1) !== 0;
+}
+
+function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind): boolean {
+  if (kind === "fusion" || kind === "ritual") return location === "hand" || location === "monsterZone";
+  return location === "monsterZone";
+}
+
+function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {
+  if (!target) return true;
+  if (target.uid === card.uid) return false;
+  const codes = cardCodes(card);
+  if (kind === "fusion") return !target.data.fusionMaterials?.length || target.data.fusionMaterials.some((code) => codes.includes(code));
+  if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
+  if (kind === "synchro") {
+    const materials = target.data.synchroMaterials;
+    if (materials) return [materials.tuner, ...materials.nonTuners].some((code) => codes.includes(code));
+    const targetLevel = cardTypeFlags(target) & 0x2000 ? target.data.level ?? 0 : 0;
+    const materialLevel = card.data.level ?? 0;
+    return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
+  }
+  if (kind === "xyz") {
+    if (target.data.xyzMaterials?.length) return target.data.xyzMaterials.some((code) => codes.includes(code));
+    const targetRank = cardRank(target);
+    const materialLevel = card.data.level ?? 0;
+    const materialRank = cardRank(card);
+    return targetRank > 0 && (materialLevel === targetRank || (materialRank > 0 && targetRank === materialRank + 1));
+  }
+  if (kind === "link") return !target.data.linkMaterials?.length ? cardLink(target) > 0 && linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
+  return true;
+}
+
+function isPendulumCard(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x1000000) !== 0;
+}
+
+function linkMaterialRating(card: DuelCardInstance): number {
+  return cardLink(card) || 1;
+}
+
+function cardCodes(card: DuelCardInstance): string[] {
+  return card.data.alias ? [card.code, card.data.alias] : [card.code];
+}
