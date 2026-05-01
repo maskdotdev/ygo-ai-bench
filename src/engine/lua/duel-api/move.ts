@@ -167,16 +167,20 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
   const summonType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const targetPlayer = readOptionalPlayer(L, 4);
   const requestedPosition = lua.lua_isnumber(L, 7) ? positionFromMask(lua.lua_tointeger(L, 7)) : undefined;
+  const zoneMask = lua.lua_isnumber(L, 8) ? lua.lua_tointeger(L, 8) : undefined;
   const moved: string[] = [];
   for (const uid of uids) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
+    const player = targetPlayer ?? card.controller;
+    if (!hasOpenMonsterZone(session, player, zoneMask)) continue;
     try {
-      const summoned = specialSummonDuelCard(session.state, uid, targetPlayer ?? card.controller);
+      const summoned = specialSummonDuelCard(session.state, uid, player);
       if (requestedPosition) applySummonPosition(summoned, requestedPosition);
+      applyMonsterZoneMask(session, summoned, player, zoneMask);
       moved.push(uid);
     } catch {
-      if (!card || !specialSummonExplicitExtraDeckCard(session, card, targetPlayer ?? card.controller, summonType, requestedPosition, hostState)) continue;
+      if (!card || !specialSummonExplicitExtraDeckCard(session, card, player, summonType, requestedPosition, zoneMask, hostState)) continue;
       moved.push(uid);
     }
   }
@@ -714,12 +718,14 @@ function specialSummonExplicitExtraDeckCard(
   player: PlayerId,
   summonType: number,
   requestedPosition: CardPosition | undefined,
+  zoneMask: number | undefined,
   hostState: LuaDuelMoveApiHostState,
 ): boolean {
-  if (card.location !== "extraDeck" || summonType === 0 || !hasZoneSpace(session.state, player, "monsterZone") || !canPlayerSpecialSummon(session.state, player, card)) return false;
+  if (card.location !== "extraDeck" || summonType === 0 || !hasOpenMonsterZone(session, player, zoneMask) || !canPlayerSpecialSummon(session.state, player, card)) return false;
   try {
     moveDuelCard(session.state, card.uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon, hostState.activeContext?.player ?? player);
     applySummonPosition(card, requestedPosition ?? "faceUpAttack");
+    applyMonsterZoneMask(session, card, player, zoneMask);
     card.summonType = "special";
     card.summonPlayer = player;
     card.summonPhase = session.state.phase;
@@ -730,6 +736,43 @@ function specialSummonExplicitExtraDeckCard(
   } catch {
     return false;
   }
+}
+
+function hasOpenMonsterZone(session: DuelSession, player: PlayerId, zoneMask: number | undefined): boolean {
+  return firstOpenMonsterSequence(session, player, zoneMask) !== undefined;
+}
+
+function applyMonsterZoneMask(session: DuelSession, card: DuelCardInstance, player: PlayerId, zoneMask: number | undefined): void {
+  const sequence = firstOpenMonsterSequence(session, player, zoneMask, card.uid);
+  if (sequence !== undefined) card.sequence = sequence;
+}
+
+function firstOpenMonsterSequence(session: DuelSession, player: PlayerId, zoneMask: number | undefined, movingUid?: string): number | undefined {
+  if (zoneMask === undefined || zoneMask === 0) {
+    if (!hasZoneSpace(session.state, player, "monsterZone") && !movingUid) return undefined;
+    return nextOpenMonsterSequence(session, player, movingUid);
+  }
+  const occupied = new Set(
+    session.state.cards
+      .filter((card) => card.controller === player && card.location === "monsterZone" && card.uid !== movingUid)
+      .map((card) => card.sequence),
+  );
+  for (let sequence = 0; sequence < 5; sequence += 1) {
+    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) return sequence;
+  }
+  return undefined;
+}
+
+function nextOpenMonsterSequence(session: DuelSession, player: PlayerId, movingUid?: string): number | undefined {
+  const occupied = new Set(
+    session.state.cards
+      .filter((card) => card.controller === player && card.location === "monsterZone" && card.uid !== movingUid)
+      .map((card) => card.sequence),
+  );
+  for (let sequence = 0; sequence < 5; sequence += 1) {
+    if (!occupied.has(sequence)) return sequence;
+  }
+  return undefined;
 }
 
 function assignReasonCard(card: DuelCardInstance, hostState: LuaDuelMoveApiHostState): void {

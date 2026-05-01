@@ -1002,6 +1002,42 @@ describe("Lua movement helpers", () => {
     expect(host.messages).toContain("ice replace paid 1/true/false");
   });
 
+  it("lets Lua scripts special summon into an explicit monster zone", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Zone Filler", kind: "monster" },
+      { code: "200", name: "Zone Summon Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 117, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const filler = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(filler).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, filler!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("zone summon blocked " .. Duel.SpecialSummon(target,0,0,0,false,false,POS_FACEUP_ATTACK,0x1))
+      Debug.Message("zone summon allowed " .. Duel.SpecialSummon(target,0,0,0,false,false,POS_FACEUP_ATTACK,0x4))
+      Debug.Message("zone summon seq " .. target:GetSequence())
+      `,
+      "zone-special-summon.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("zone summon blocked 0");
+    expect(host.messages).toContain("zone summon allowed 1");
+    expect(host.messages).toContain("zone summon seq 2");
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", sequence: 2 });
+  });
+
   it("lets Lua scripts use self-banish cost aliases", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Banish Cost", kind: "monster" }];
     const session = createDuel({ seed: 83, startingHandSize: 1, cardReader: createCardReader(cards) });

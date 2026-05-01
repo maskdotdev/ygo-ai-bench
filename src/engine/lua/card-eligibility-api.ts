@@ -21,7 +21,8 @@ export function canMoveCardToDeckOrExtraAsCost(state: DuelState, card: DuelCardI
   return canMoveDuelCardToLocation(state, uid, destination, duelReason.cost);
 }
 
-export function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number): boolean {
+export function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, zoneMask?: number): boolean {
+  if (!hasAvailableMonsterZone(session, player, zoneMask)) return false;
   if (canSpecialSummonDuelCard(session.state, card.uid, player)) return true;
   return card.location === "extraDeck" && summonType !== 0 && hasZoneSpace(session.state, player, "monsterZone") && canPlayerSpecialSummon(session.state, player, card);
 }
@@ -33,6 +34,15 @@ export function isMonsterLike(card: DuelCardInstance): boolean {
 function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind): boolean {
   if (kind === "fusion" || kind === "ritual") return location === "hand" || location === "monsterZone";
   return location === "monsterZone";
+}
+
+function hasAvailableMonsterZone(session: DuelSession, player: PlayerId, zoneMask: number | undefined): boolean {
+  if (zoneMask === undefined || zoneMask === 0) return hasZoneSpace(session.state, player, "monsterZone");
+  const occupied = new Set(session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone").map((card) => card.sequence));
+  for (let sequence = 0; sequence < 5; sequence += 1) {
+    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) return true;
+  }
+  return false;
 }
 
 function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {

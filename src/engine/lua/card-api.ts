@@ -378,7 +378,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     const card = readCard(state, session);
     const summonType = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
     const player = readSpecialSummonTargetPlayer(state, card);
-    lua.lua_pushboolean(state, Boolean(card && player !== undefined && canSpecialSummonFromLua(session, card, player, summonType)));
+    const zoneMask = lua.lua_isnumber(state, 9) ? lua.lua_tointeger(state, 9) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && player !== undefined && canSpecialSummonFromLua(session, card, player, summonType, zoneMask)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCanBeSpecialSummoned"));
