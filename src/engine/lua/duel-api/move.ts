@@ -31,7 +31,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("Sendto"));
   pushMoveHelper(L, "SendtoGrave", session, hostState, (state, uid, controller, reason, reasonPlayer) => sendDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer));
   pushMoveHelper(L, "Destroy", session, hostState, (state, uid, controller, reason, reasonPlayer) => destroyDuelCard(state, uid, controller, reason, reasonPlayer), duelReason.destroy);
-  pushMoveHelper(L, "Remove", session, hostState, (state, uid, controller, reason, reasonPlayer) => banishDuelCard(state, uid, controller, reason, reasonPlayer));
+  lua.lua_pushcfunction(L, (state: unknown) => pushRemove(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("Remove"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveCards(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RemoveCards"));
   pushMoveHelper(L, "Release", session, hostState, (state, uid, controller, reason, reasonPlayer) => sendDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer), duelReason.release);
@@ -134,6 +135,28 @@ function pushRemoveCards(L: unknown, session: DuelSession, hostState: LuaDuelMov
   }
   setOperatedUids(hostState, removed);
   lua.lua_pushinteger(L, removed.length);
+  return 1;
+}
+
+function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const requestedPosition = lua.lua_isnumber(L, 2) ? positionFromMask(lua.lua_tointeger(L, 2)) : undefined;
+  const reason = readMoveReason(L, 3, 0);
+  const moved: string[] = [];
+  for (const uid of readCardOrGroupUids(L, 1)) {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!card) continue;
+    const before = movementSnapshot(card);
+    try {
+      const result = banishDuelCard(session.state, uid, card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      assignReasonCard(result, hostState);
+      if (requestedPosition) applySummonPosition(result, requestedPosition);
+      if (didMove(result, before)) moved.push(uid);
+    } catch {
+      // EDOPro-style removal reports successful card moves only.
+    }
+  }
+  setOperatedUids(hostState, moved);
+  lua.lua_pushinteger(L, moved.length);
   return 1;
 }
 

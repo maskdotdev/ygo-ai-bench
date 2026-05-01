@@ -1647,7 +1647,7 @@ describe("Lua continuous effects", () => {
     expect(moveResult.ok, moveResult.error).toBe(true);
     expect(host.messages).toContain("banish redirect checked 100");
     expect(host.messages).toContain("banish redirected 1");
-    expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "graveyard", reason: 0x4000001 });
+    expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "graveyard", reason: 0x4000040 });
   });
 
   it("applies Lua continuous leave-field redirect effects", () => {

@@ -50,6 +50,39 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.map((card) => card.code).sort()).toEqual(["300"]);
   });
 
+  it("lets Lua scripts banish cards face-down with the third-argument reason", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Hidden Banish", kind: "monster" }];
+    const session = createDuel({ seed: 95, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      Debug.Message("removed face-down " .. Duel.Remove(c, POS_FACEDOWN_DEFENSE, REASON_EFFECT))
+      Debug.Message("removed state " .. tostring(c:IsLocation(LOCATION_REMOVED)) .. "/" .. tostring(c:IsFacedown()) .. "/" .. tostring(c:IsPublic()) .. "/" .. c:GetReason())
+      `,
+      "face-down-remove.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("removed face-down 1");
+    expect(host.messages).toContain("removed state true/true/false/64");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({
+      faceUp: false,
+      location: "banished",
+      position: "faceDownDefense",
+      reason: 0x40,
+    });
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },
