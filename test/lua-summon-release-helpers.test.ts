@@ -144,6 +144,38 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("procedure helpers true/true");
   });
 
+  it("lets Lua scripts register temporary and continuous Lizard checks", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Lizard Probe", kind: "monster" }];
+    const session = createDuel({ seed: 158, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local temp = aux.createTempLizardCheck(c, aux.FALSE, RESET_PHASE|PHASE_END, 0x7, 0x8, 2)
+      local tr1,tr2 = temp:GetTargetRange()
+      local reset,reset_count = temp:GetReset()
+      Debug.Message("temp lizard metadata " .. temp:GetCode() .. "/" .. tostring(temp:IsHasType(EFFECT_TYPE_FIELD)) .. "/" .. tr1 .. "/" .. tr2 .. "/" .. reset_count .. "/" .. tostring(temp:GetTarget()(temp,c)))
+      local added = aux.addTempLizardCheck(c, 0, aux.TRUE)
+      local continuous = aux.createContinuousLizardCheck(c, LOCATION_MZONE, aux.TRUE, 0x1, 0x2)
+      local cr1,cr2 = continuous:GetTargetRange()
+      Debug.Message("continuous lizard metadata " .. continuous:GetCode() .. "/" .. continuous:GetRange() .. "/" .. cr1 .. "/" .. cr2 .. "/" .. tostring(continuous:GetTarget()(continuous,c)))
+      local registered = aux.addContinuousLizardCheck(c, LOCATION_MZONE)
+      Debug.Message("lizard registered " .. tostring(added~=nil) .. "/" .. tostring(registered~=nil))
+      `,
+      "lizard-checks.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("temp lizard metadata 51476410/true/7/8/2/false");
+    expect(host.messages).toContain("continuous lizard metadata 51476410/4/1/2/true");
+    expect(host.messages).toContain("lizard registered true/true");
+  });
+
   it("lets Lua scripts query legal ritual material candidates", () => {
     const cards: DuelCardData[] = [
       { code: "100", alias: "101", name: "Aliased Ritual Material", kind: "monster" },

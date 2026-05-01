@@ -81,6 +81,40 @@ function installAuxCompatibilityApi(L: unknown): void {
     end
     Auxiliary=Auxiliary or aux
     Auxiliary.CanActivateSkill=aux.CanActivateSkill
+    function aux.createTempLizardCheck(c,filter,reset,tRange,tRange2,resetcount)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_FIELD)
+      e1:SetCode(CARD_CLOCK_LIZARD or 51476410)
+      e1:SetTargetRange(tRange or 0xff,tRange2 or 0)
+      e1:SetReset(reset or (RESET_PHASE|PHASE_END),resetcount)
+      e1:SetTarget(filter or aux.TRUE)
+      e1:SetValue(1)
+      return e1
+    end
+    function aux.addTempLizardCheck(c,tp,filter,reset,tRange,tRange2,resetcount)
+      local e1=aux.createTempLizardCheck(c,filter,reset,tRange,tRange2,resetcount)
+      Duel.RegisterEffect(e1,tp)
+      return e1
+    end
+    function aux.createContinuousLizardCheck(c,location,filter,tRange,tRange2)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_FIELD)
+      e1:SetCode(CARD_CLOCK_LIZARD or 51476410)
+      e1:SetTargetRange(tRange or 0xff,tRange2 or 0)
+      e1:SetRange(location)
+      e1:SetTarget(filter or aux.TRUE)
+      e1:SetValue(1)
+      return e1
+    end
+    function aux.addContinuousLizardCheck(c,location,filter,tRange,tRange2)
+      local e1=aux.createContinuousLizardCheck(c,location,filter,tRange,tRange2)
+      c:RegisterEffect(e1)
+      return e1
+    end
+    Auxiliary.createTempLizardCheck=aux.createTempLizardCheck
+    Auxiliary.addTempLizardCheck=aux.addTempLizardCheck
+    Auxiliary.createContinuousLizardCheck=aux.createContinuousLizardCheck
+    Auxiliary.addContinuousLizardCheck=aux.addContinuousLizardCheck
     function aux.LP0ActivationValidity(eff)
       local ge1=Effect.GlobalEffect()
       ge1:SetType(EFFECT_TYPE_FIELD)
