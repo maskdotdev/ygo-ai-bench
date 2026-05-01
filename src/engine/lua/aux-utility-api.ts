@@ -337,6 +337,12 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
     function aux.xyzlimit(e,se,sp,st)
       return aux.sumlimit(SUMMON_TYPE_XYZ)(e,se,sp,st)
     end
+    function aux.penlimit(e,se,sp,st)
+      return aux.sumlimit(SUMMON_TYPE_PENDULUM)(e,se,sp,st)
+    end
+    function aux.lnklimit(e,se,sp,st)
+      return aux.sumlimit(SUMMON_TYPE_LINK)(e,se,sp,st)
+    end
     local card_dark_fusion = CARD_DARK_FUSION or 94820406
     local card_super_polymerization = CARD_SUPER_POLYMERIZATION or 48130397
     local skill_dark_unity = SKILL_DARK_UNITY or 300306009

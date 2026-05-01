@@ -790,8 +790,8 @@ describe("Lua state helpers", () => {
       value_effect:SetLabel(100)
       aux.sumreg(value_effect,0,Group.FromCards(faceup_monster,opponent_card),0,0,nil,0,0)
       Debug.Message("sumreg flags " .. faceup_monster:GetFlagEffect(100) .. "/" .. opponent_card:GetFlagEffect(100))
-      Debug.Message("extra limits " .. tostring(aux.fuslimit(nil,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(aux.synlimit(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(aux.xyzlimit(nil,nil,0,SUMMON_TYPE_XYZ)))
-      Debug.Message("extra misses " .. tostring(aux.fuslimit(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(aux.synlimit(nil,nil,0,SUMMON_TYPE_XYZ)) .. "/" .. tostring(aux.xyzlimit(nil,nil,0,SUMMON_TYPE_FUSION)))
+      Debug.Message("extra limits " .. tostring(aux.fuslimit(nil,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(aux.synlimit(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(aux.xyzlimit(nil,nil,0,SUMMON_TYPE_XYZ)) .. "/" .. tostring(aux.penlimit(nil,nil,0,SUMMON_TYPE_PENDULUM)) .. "/" .. tostring(aux.lnklimit(nil,nil,0,SUMMON_TYPE_LINK)))
+      Debug.Message("extra misses " .. tostring(aux.fuslimit(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(aux.synlimit(nil,nil,0,SUMMON_TYPE_XYZ)) .. "/" .. tostring(aux.xyzlimit(nil,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(aux.penlimit(nil,nil,0,SUMMON_TYPE_LINK)) .. "/" .. tostring(aux.lnklimit(nil,nil,0,SUMMON_TYPE_PENDULUM)))
       Debug.Message("sumlimit " .. tostring(aux.sumlimit(SUMMON_TYPE_RITUAL)(nil,nil,0,SUMMON_TYPE_RITUAL)))
       local evil_effect=Effect.CreateEffect(faceup_monster)
       local dark_fusion_effect=Effect.CreateEffect(dark_fusion)
@@ -924,8 +924,8 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("imval helpers true/false/true");
     expect(host.messages).toContain("chainreg flag 1");
     expect(host.messages).toContain("sumreg flags 1/1");
-    expect(host.messages).toContain("extra limits true/true/true");
-    expect(host.messages).toContain("extra misses false/false/false");
+    expect(host.messages).toContain("extra limits true/true/true/true/true");
+    expect(host.messages).toContain("extra misses false/false/false/false/false");
     expect(host.messages).toContain("sumlimit true");
     expect(host.messages).toContain("evil hero direct true/nil");
     expect(host.messages).toContain("evil hero skill true");
