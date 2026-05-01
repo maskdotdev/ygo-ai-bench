@@ -137,6 +137,8 @@ export const cardFieldNames = [
   "IsSphere",
   "IsStarship",
   "IsStarvingVenemy",
+  "IsStatue",
+  "IsStone",
   "IsEarth",
   "IsSky",
   "Is_V_",
