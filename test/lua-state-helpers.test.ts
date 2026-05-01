@@ -446,6 +446,7 @@ describe("Lua state helpers", () => {
       `
       Debug.Message("duel type default " .. tostring(Duel.IsDuelType(DUEL_EMZONE)) .. "/" .. tostring(Duel.IsDuelType(DUEL_SEPARATE_PZONE)))
       Debug.Message("duel type high " .. tostring(Duel.IsDuelType(DUEL_NORMAL_SUMMON_FACEUP_DEF)))
+      Debug.Message("master rule " .. Duel.GetMasterRule())
       Debug.Message("deck master default " .. tostring(Duel.IsDeckMaster(0, 153000001)) .. "/" .. tostring(Duel.GetDeckMaster(0)==nil))
       Debug.Message("deck master flag constant " .. FLAG_DECK_MASTER)
       Debug.Message("additional tribute default " .. tostring(Duel.IsPlayerCanAdditionalTributeSummon(0)))
@@ -464,6 +465,7 @@ describe("Lua state helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("duel type default true/false");
     expect(host.messages).toContain("duel type high true");
+    expect(host.messages).toContain("master rule 5");
     expect(host.messages).toContain("deck master default false/true");
     expect(host.messages).toContain("deck master flag constant 153000000");
     expect(host.messages).toContain("additional tribute default true");

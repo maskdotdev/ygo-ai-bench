@@ -15,6 +15,11 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetTurnCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, 5);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetMasterRule"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     lua.lua_pushboolean(state, session.state.turnPlayer === player);
     return 1;
