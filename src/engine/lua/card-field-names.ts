@@ -28,6 +28,7 @@ export const cardFieldNames = [
   "AddSetcodesRule",
   "AddPiercing",
   "AddCenterToSideEffectHandler",
+  "AddSideMaximumHandler",
   "IsLegend",
   "GetToBeLinkedZone",
   "GetCode",

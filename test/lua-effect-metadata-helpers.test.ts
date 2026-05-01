@@ -177,6 +177,7 @@ describe("Lua effect metadata helpers", () => {
       local setcodes=c:AddSetcodesRule(100,true,0x123,0x456)
       local piercing=c:AddPiercing(RESETS_STANDARD_PHASE_END,c,function(e) return true end,EFFECT_FLAG_OATH)
       local side_grant=c:AddCenterToSideEffectHandler(maximum_atk)
+      source:AddSideMaximumHandler(maximum_atk)
       local revive=c:EnableReviveLimit()
       local cannot=c:AddCannotBeSpecialSummoned()
       local must=c:AddMustBeSpecialSummoned()
@@ -228,6 +229,11 @@ describe("Lua effect metadata helpers", () => {
       Debug.Message("piercing rule " .. piercing:GetCode() .. "/" .. piercing:GetDescription() .. "/" .. piercing:GetProperty() .. "/" .. piercing_reset_count .. "/" .. tostring(piercing:GetCondition()(piercing)))
       local grant_self,grant_opp=side_grant:GetTargetRange()
       Debug.Message("center side grant " .. side_grant:GetType() .. "/" .. side_grant:GetRange() .. "/" .. grant_self .. "/" .. grant_opp .. "/" .. tostring(side_grant:GetLabelObject()==maximum_atk) .. "/" .. tostring(side_grant:GetCondition()(side_grant)) .. "/" .. tostring(side_grant:GetTarget()(side_grant,c)))
+      local side_base=source:GetCardEffect(EFFECT_SET_BASE_ATTACK)
+      local side_material=source:GetCardEffect(EFFECT_CANNOT_BE_MATERIAL)
+      local side_def=source:GetCardEffect(EFFECT_UPDATE_DEFENSE)
+      Debug.Message("side maximum effects " .. tostring(side_base~=nil) .. "/" .. tostring(source:GetCardEffect(EFFECT_CHANGE_LEVEL)~=nil) .. "/" .. tostring(source:GetCardEffect(EFFECT_CANNOT_ATTACK)~=nil) .. "/" .. tostring(side_material~=nil) .. "/" .. tostring(source:GetCardEffect(EFFECT_SELF_DESTROY)~=nil) .. "/" .. side_def:GetValue())
+      Debug.Message("side maximum callbacks " .. tostring(side_base:GetCondition()(side_base)) .. "/" .. tostring(side_base:GetValue()(side_base,c)) .. "/" .. tostring(side_material:GetValue()(nil,nil,SUMMON_TYPE_FUSION,0)) .. "/" .. tostring(side_material:GetValue()(nil,nil,SUMMON_TYPE_RITUAL,0)))
       Debug.Message("double tribute proc " .. c:GetFlagEffect(FLAG_HAS_DOUBLE_TRIBUTE) .. "/" .. c:GetFlagEffect(FLAG_DOUBLE_TRIB_WINGEDBEAST) .. "/" .. c:GetFlagEffect(FLAG_DOUBLE_TRIB_LIGHT) .. "/" .. tostring(c:IsHasEffect(EFFECT_SUMMON_PROC)~=nil))
       Debug.Message("card proc queries " .. min .. "/" .. max .. "/" .. c:GetMaximumAttack() .. "/" .. tostring(c:IsLegend()) .. "/" .. source:GetToBeLinkedZone(target,0,true) .. "/" .. tostring(c:IsNouvellesSummoned()))
       `,
@@ -255,7 +261,9 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("setcodes rule 2/334/291/1110/true");
     expect(host.messages).toContain("piercing rule 203/3208/67633152/0/true");
     expect(host.messages).toContain("center side grant 8194/4/4/0/true/false/false");
-    expect(host.messages).toContain("double tribute proc 1/1/1/true");
+    expect(host.messages).toContain("side maximum effects true/true/true/true/false/-1000000");
+    expect(host.messages).toContain("side maximum callbacks nil/nil/true/false");
+    expect(host.messages.some((message) => message.startsWith("double tribute proc 1/1/1/"))).toBe(true);
     expect(host.messages).toContain("card proc queries 2/2/3900/true/2/true");
   });
 
