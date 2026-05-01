@@ -3,7 +3,6 @@
 local s,id=GetID()
 function s.initial_effect(c)
   -- Quick discard: set a Spell/Trap that mentions "Ritual of Light and Darkness".
-  -- The alternate damage-prevention option is omitted until damage replacement effects are modeled.
   local e1=Effect.CreateEffect(c)
   e1:SetDescription(aux.Stringid(id,0))
   e1:SetType(EFFECT_TYPE_QUICK_O)
@@ -14,6 +13,13 @@ function s.initial_effect(c)
   e1:SetTarget(s.settg)
   e1:SetOperation(s.setop)
   c:RegisterEffect(e1)
+  -- Quick discard: prevent battle damage this Damage Step.
+  local e1b=e1:Clone()
+  e1b:SetDescription(aux.Stringid(id,1))
+  e1b:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DAMAGE_CAL)
+  e1b:SetTarget(s.damtg)
+  e1b:SetOperation(s.damop)
+  c:RegisterEffect(e1b)
   -- Treat as full Level 8 Ritual tribute.
   local e2=Effect.CreateEffect(c)
   e2:SetType(EFFECT_TYPE_SINGLE)
@@ -36,4 +42,15 @@ function s.setop(e,tp,eg,ep,ev,re,r,rp)
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SET)
   local g=Duel.SelectMatchingCard(tp,s.setfilter,tp,LOCATION_DECK,0,1,1,nil)
   if #g>0 then Duel.SSet(tp,g) end
+end
+function s.damtg(e,tp,eg,ep,ev,re,r,rp,chk)
+  if chk==0 then return true end
+end
+function s.damop(e,tp,eg,ep,ev,re,r,rp)
+  local e1=Effect.CreateEffect(e:GetHandler())
+  e1:SetType(EFFECT_TYPE_FIELD)
+  e1:SetCode(EFFECT_AVOID_BATTLE_DAMAGE)
+  e1:SetTargetRange(1,0)
+  e1:SetReset(RESET_PHASE+PHASE_DAMAGE)
+  Duel.RegisterEffect(e1,tp)
 end

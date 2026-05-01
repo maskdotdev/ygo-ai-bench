@@ -102,6 +102,40 @@ describe("Lua battle helpers", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)).toBe(false);
   });
 
+  it("applies player-scoped Lua battle damage prevention effects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Prevented Damage Attacker", kind: "monster", attack: 1800 }];
+    const session = createDuel({ seed: 93, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    expect(attacker).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local e=Effect.GlobalEffect()
+      e:SetType(EFFECT_TYPE_FIELD)
+      e:SetCode(EFFECT_AVOID_BATTLE_DAMAGE)
+      e:SetTargetRange(0,1)
+      Duel.RegisterEffect(e,0)
+      `,
+      "avoid-battle-damage.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    expect(session.state.battleDamage[1]).toBe(0);
+    expect(session.state.players[1].lifePoints).toBe(8000);
+  });
+
   it("lets Lua scripts calculate battle damage", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Damage Attacker", kind: "monster", attack: 1800 },

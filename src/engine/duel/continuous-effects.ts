@@ -52,6 +52,10 @@ export function matchingPlayerEffects(
   return matches;
 }
 
+export function isBattleDamagePrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory): boolean {
+  return matchingPlayerEffects(state, player, 201, createContext).length > 0;
+}
+
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 85) continue;
@@ -261,7 +265,7 @@ function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelC
 }
 
 function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
-  if ((effect.property ?? 0) === 0 || ((effect.property ?? 0) & 0x800) === 0) return source.controller === player;
+  if (effect.targetRange === undefined && ((effect.property ?? 0) & 0x800) === 0) return source.controller === player;
   const [selfTarget = 0, opponentTarget = 0] = effect.targetRange ?? [1, 0];
   if (source.controller === player) return selfTarget !== 0;
   return opponentTarget !== 0;

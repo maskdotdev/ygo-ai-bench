@@ -71,6 +71,7 @@ import type { BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
   isAttackPrevented,
   extraAttackCount,
+  isBattleDamagePrevented,
   isMaterialUsePrevented,
   isMoveToLocationPrevented,
   isReleasePrevented,
@@ -134,7 +135,7 @@ const activationHandlers: DuelActivationHandlers = {
 
 const battleContinuationHandlers: BattleContinuationHandlers = {
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
-  changeBattleDamage: changeDuelBattleDamage,
+  changeBattleDamage: changeDuelBattleDamageWithPrevention,
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
 };
@@ -494,6 +495,11 @@ export function changeDuelBattleDamage(state: DuelState, player: PlayerId, amoun
   }
   pushDuelLog(state, "battleDamage", player, undefined, String(value));
   return value;
+}
+
+function changeDuelBattleDamageWithPrevention(state: DuelState, player: PlayerId, amount: number): number {
+  const prevented = isBattleDamagePrevented(state, player, createContinuousEffectContext(state));
+  return changeDuelBattleDamage(state, player, prevented ? 0 : amount);
 }
 
 export function setDuelAttackCostPaid(state: DuelState, status: number): number {
