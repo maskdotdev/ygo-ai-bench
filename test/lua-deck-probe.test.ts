@@ -65,6 +65,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
   });
 });
 
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Onomat Ryzeal Lua deck probe with local fallbacks", () => {
+  it("uses the local Bagooska fallback stub instead of reporting a missing script", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "onomat-ryzeal-ycs-guatemala-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 1");
+    expect(output).toContain("STUB c90590304.lua");
+    expect(output).toContain("Local fallback stubs: 1");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+  });
+});
+
 function createProbeCards(main: string[], extra: string[]): DuelCardData[] {
   const extraCodes = new Set(extra);
   return Array.from(new Set([...main, ...extra])).map((code) => ({

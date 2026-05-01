@@ -8,6 +8,7 @@ import type { LuaScriptSource } from "#lua/host.js";
 export interface UpstreamNodeWorkspace extends LuaScriptSource {
   readonly config: UpstreamSourceConfig;
   scriptPath(code: string | number): string;
+  scriptCandidates(name: string): ScriptCandidatePath[];
   scriptPaths(name: string): string[];
   databasePath(filename: string): string;
   banlistPath(filename: string): string;
@@ -16,14 +17,22 @@ export interface UpstreamNodeWorkspace extends LuaScriptSource {
   readBanlist(filename: string): BanlistEntry[];
 }
 
+export interface ScriptCandidatePath {
+  path: string;
+  source: "local-override" | "upstream-official" | "upstream-root" | "local-fallback";
+}
+
 export function createUpstreamNodeWorkspace(config: UpstreamSourceConfig): UpstreamNodeWorkspace {
   return {
     config,
     scriptPath(code) {
       return resolveWorkspacePath(upstreamScriptPath(config, code));
     },
-    scriptPaths(name) {
+    scriptCandidates(name) {
       return scriptCandidatePaths(config, name);
+    },
+    scriptPaths(name) {
+      return scriptCandidatePaths(config, name).map((candidate) => candidate.path);
     },
     databasePath(filename) {
       return resolveWorkspacePath(upstreamDatabasePath(config, filename));
@@ -33,7 +42,7 @@ export function createUpstreamNodeWorkspace(config: UpstreamSourceConfig): Upstr
     },
     readScript(name) {
       for (const candidate of scriptCandidatePaths(config, name)) {
-        const text = readTextIfExists(candidate);
+        const text = readTextIfExists(candidate.path);
         if (text !== undefined) return text;
       }
       return undefined;
@@ -55,13 +64,24 @@ export function createUpstreamNodeWorkspace(config: UpstreamSourceConfig): Upstr
   };
 }
 
-function scriptCandidatePaths(config: UpstreamSourceConfig, name: string): string[] {
+function scriptCandidatePaths(config: UpstreamSourceConfig, name: string): ScriptCandidatePath[] {
   const scriptRoot = resolveWorkspacePath(config.root, config.scriptPath ?? "script");
-  if (path.isAbsolute(name)) return [name];
-  if (name.includes("/") || name.includes("\\")) return [resolveWorkspacePath(scriptRoot, name)];
+  const localScriptRoot = resolveWorkspacePath(config.localScriptPath ?? "local-card-scripts");
+  if (path.isAbsolute(name)) return [{ path: name, source: "upstream-root" }];
+  if (name.includes("/") || name.includes("\\")) {
+    return [
+      { path: resolveWorkspacePath(localScriptRoot, "overrides", name), source: "local-override" },
+      { path: resolveWorkspacePath(scriptRoot, name), source: "upstream-root" },
+      { path: resolveWorkspacePath(localScriptRoot, "fallbacks", name), source: "local-fallback" },
+    ];
+  }
   return [
-    resolveWorkspacePath(scriptRoot, "official", name),
-    resolveWorkspacePath(scriptRoot, name),
+    { path: resolveWorkspacePath(localScriptRoot, "overrides", "official", name), source: "local-override" },
+    { path: resolveWorkspacePath(localScriptRoot, "overrides", name), source: "local-override" },
+    { path: resolveWorkspacePath(scriptRoot, "official", name), source: "upstream-official" },
+    { path: resolveWorkspacePath(scriptRoot, name), source: "upstream-root" },
+    { path: resolveWorkspacePath(localScriptRoot, "fallbacks", "official", name), source: "local-fallback" },
+    { path: resolveWorkspacePath(localScriptRoot, "fallbacks", name), source: "local-fallback" },
   ];
 }
 

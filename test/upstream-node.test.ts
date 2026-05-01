@@ -47,19 +47,28 @@ describe("Node upstream workspace loader", () => {
     expect(host.messages).toContain("fixture script");
   });
 
-  it("prefers Project Ignis official scripts before root scripts", () => {
+  it("prefers local overrides, then upstream scripts, then local fallbacks", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
     tempRoots.push(root);
     fs.mkdirSync(path.join(root, "script", "official"), { recursive: true });
+    fs.mkdirSync(path.join(root, "local-card-scripts", "overrides", "official"), { recursive: true });
+    fs.mkdirSync(path.join(root, "local-card-scripts", "fallbacks", "official"), { recursive: true });
     fs.writeFileSync(path.join(root, "script", "c100.lua"), "loaded_name = 'root script'\n", "utf8");
     fs.writeFileSync(path.join(root, "script", "official", "c100.lua"), "loaded_name = 'official script'\n", "utf8");
+    fs.writeFileSync(path.join(root, "local-card-scripts", "overrides", "official", "c100.lua"), "loaded_name = 'override script'\n", "utf8");
+    fs.writeFileSync(path.join(root, "local-card-scripts", "fallbacks", "official", "c200.lua"), "loaded_name = 'fallback script'\n", "utf8");
 
-    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const workspace = createUpstreamNodeWorkspace({ ...createUpstreamSourceConfig(root), localScriptPath: path.join(root, "local-card-scripts") });
 
-    expect(workspace.readCardScript(100)).toContain("official script");
-    expect(workspace.scriptPaths("c100.lua").map((candidate) => path.relative(root, candidate))).toEqual([
-      path.join("script", "official", "c100.lua"),
-      path.join("script", "c100.lua"),
+    expect(workspace.readCardScript(100)).toContain("override script");
+    expect(workspace.readCardScript(200)).toContain("fallback script");
+    expect(workspace.scriptCandidates("c100.lua").map((candidate) => [candidate.source, path.relative(root, candidate.path)])).toEqual([
+      ["local-override", path.join("local-card-scripts", "overrides", "official", "c100.lua")],
+      ["local-override", path.join("local-card-scripts", "overrides", "c100.lua")],
+      ["upstream-official", path.join("script", "official", "c100.lua")],
+      ["upstream-root", path.join("script", "c100.lua")],
+      ["local-fallback", path.join("local-card-scripts", "fallbacks", "official", "c100.lua")],
+      ["local-fallback", path.join("local-card-scripts", "fallbacks", "c100.lua")],
     ]);
   });
 

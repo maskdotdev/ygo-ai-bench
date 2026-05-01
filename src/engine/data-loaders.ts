@@ -9,6 +9,7 @@ export interface UpstreamSourceConfig {
   scriptPath?: string;
   databasePath?: string;
   lflistPath?: string;
+  localScriptPath?: string;
 }
 
 export interface RawCdbDataRow {
@@ -41,6 +42,7 @@ export const defaultUpstreamSourceConfig: Omit<UpstreamSourceConfig, "root"> = {
   scriptPath: "script",
   databasePath: "cdb",
   lflistPath: ".",
+  localScriptPath: "local-card-scripts",
 };
 
 export function createUpstreamSourceConfig(root: string): UpstreamSourceConfig {
