@@ -141,6 +141,29 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       end
       return false
     end
+    function Card.AddNoTributeCheck(c,id,stringid,rangeP1,rangeP2)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_FIELD)
+      e1:SetCode(FLAG_NO_TRIBUTE)
+      e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_CLIENT_HINT)
+      e1:SetRange(LOCATION_MZONE)
+      e1:SetDescription(aux.Stringid(id,stringid))
+      e1:SetReset(RESET_PHASE+PHASE_END+RESET_OPPO_TURN,1)
+      e1:SetTargetRange(rangeP1,rangeP2)
+      c:RegisterEffect(e1)
+      return e1
+    end
+    function Duel.AddNoTributeCheck(c,tp,id,stringid,rangeP1,rangeP2)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_FIELD)
+      e1:SetCode(FLAG_NO_TRIBUTE)
+      e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_CLIENT_HINT)
+      e1:SetDescription(aux.Stringid(id,stringid))
+      e1:SetTargetRange(rangeP1,rangeP2)
+      e1:SetReset(RESET_PHASE+PHASE_END+RESET_OPPO_TURN,1)
+      Duel.RegisterEffect(e1,tp)
+      return e1
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));

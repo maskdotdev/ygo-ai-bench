@@ -15,7 +15,7 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_pushcfunction(L, (state: unknown) => {
     const code = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0;
     const index = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushinteger(state, code * 16 + index);
+    lua.lua_pushnumber(state, code * 16 + index);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Stringid"));

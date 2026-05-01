@@ -770,6 +770,39 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("rush equip target true/false");
   });
 
+  it("registers Rush no-tribute check effects for cards and players", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "No Tribute Source", kind: "monster" }];
+    const session = createDuel({ seed: 102, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local e1=c:AddNoTributeCheck(160001029,1,1,0)
+      local self_range,opp_range=e1:GetTargetRange()
+      local reset,reset_count=e1:GetReset()
+      Debug.Message("card no tribute " .. e1:GetCode() .. "/" .. e1:GetDescription() .. "/" .. self_range .. "/" .. opp_range .. "/" .. reset_count .. "/" .. tostring(e1:IsHasProperty(EFFECT_FLAG_CLIENT_HINT)))
+      local e2=Duel.AddNoTributeCheck(c,0,160001029,2,0,1)
+      local player_effect=Duel.IsPlayerAffectedByEffect(1,FLAG_NO_TRIBUTE)
+      local self2,opp2=e2:GetTargetRange()
+      Debug.Message("duel no tribute " .. tostring(player_effect~=nil) .. "/" .. self2 .. "/" .. opp2)
+      `,
+      "rush-no-tribute-check.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages.some((message) => message.startsWith("card no tribute 160001029/") && message.endsWith("/1/0/1/true"))).toBe(true);
+    expect(host.messages).toContain("duel no tribute true/0/1");
+  });
+
   it("shares Lua keyed count limits across effect copies", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Count Source", kind: "monster" }];
     const session = createDuel({ seed: 21, startingHandSize: 2, cardReader: createCardReader(cards) });

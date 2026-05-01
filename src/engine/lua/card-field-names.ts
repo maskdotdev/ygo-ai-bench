@@ -321,6 +321,7 @@ export const cardFieldNames = [
   "IsCanBeXyzMaterial",
   "IsCanBeLinkMaterial",
   "IsCanBeRitualMaterial",
+  "AddNoTributeCheck",
   "RegisterFlagEffect",
   "GetFlagEffect",
   "HasFlagEffect",
