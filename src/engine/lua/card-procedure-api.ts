@@ -13,6 +13,15 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       return e0
     end
     Card.AddMustBeSpecialSummoned=Card.AddCannotBeSpecialSummoned
+    function Card.AddMustBeFusionSummoned(c)
+      local e0=Effect.CreateEffect(c)
+      e0:SetType(EFFECT_TYPE_SINGLE)
+      e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+      e0:SetCode(EFFECT_SPSUMMON_CONDITION)
+      e0:SetValue(aux.fuslimit)
+      c:RegisterEffect(e0)
+      return e0
+    end
     function Card.AddCannotBeNormalSummoned(c)
       local e0=Effect.CreateEffect(c)
       e0:SetType(EFFECT_TYPE_SINGLE)
