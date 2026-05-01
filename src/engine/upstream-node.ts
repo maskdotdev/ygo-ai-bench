@@ -19,7 +19,7 @@ export interface UpstreamNodeWorkspace extends LuaScriptSource {
 
 export interface ScriptCandidatePath {
   path: string;
-  source: "local-override" | "upstream-official" | "upstream-root" | "local-fallback";
+  source: "local-override" | "upstream-official" | "upstream-root" | "upstream-pre-release" | "local-fallback";
 }
 
 export function createUpstreamNodeWorkspace(config: UpstreamSourceConfig): UpstreamNodeWorkspace {
@@ -80,6 +80,7 @@ function scriptCandidatePaths(config: UpstreamSourceConfig, name: string): Scrip
     { path: resolveWorkspacePath(localScriptRoot, "overrides", name), source: "local-override" },
     { path: resolveWorkspacePath(scriptRoot, "official", name), source: "upstream-official" },
     { path: resolveWorkspacePath(scriptRoot, name), source: "upstream-root" },
+    { path: resolveWorkspacePath(scriptRoot, "pre-release", name), source: "upstream-pre-release" },
     { path: resolveWorkspacePath(localScriptRoot, "fallbacks", "official", name), source: "local-fallback" },
     { path: resolveWorkspacePath(localScriptRoot, "fallbacks", name), source: "local-fallback" },
   ];

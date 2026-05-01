@@ -350,7 +350,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Solfachord Lua dec
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Phantom Knights Lua deck probe", () => {
-  it("uses local pre-release fallbacks for graveyard and Rank-Up coverage", () => {
+  it("uses upstream pre-release scripts for graveyard and Rank-Up coverage", () => {
     const output = execFileSync(
       "node",
       ["--experimental-transform-types", "tools/probe-lua-deck.ts", "phantom-knights-mar-2026-v4.ydk", "--upstream", ".upstream/ignis"],
@@ -358,13 +358,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Phantom Knights Lu
     );
 
     expect(output).toContain("Metadata source: cards.cdb");
-    expect(output).toContain("Local fallback scripts: 6");
+    expect(output).toContain("Local fallback scripts: 1");
     expect(output).toContain("FALLBACK c100452015.lua");
-    expect(output).toContain("FALLBACK c101305018.lua");
-    expect(output).toContain("FALLBACK c101305019.lua");
-    expect(output).toContain("FALLBACK c101305037.lua");
-    expect(output).toContain("FALLBACK c101305057.lua");
-    expect(output).toContain("FALLBACK c101305073.lua");
+    expect(output).toContain("OK c101305018.lua -> script/pre-release/c101305018.lua");
+    expect(output).toContain("OK c101305019.lua -> script/pre-release/c101305019.lua");
+    expect(output).toContain("OK c101305037.lua -> script/pre-release/c101305037.lua");
+    expect(output).toContain("OK c101305057.lua -> script/pre-release/c101305057.lua");
+    expect(output).toContain("OK c101305073.lua -> script/pre-release/c101305073.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Script load errors: 0");

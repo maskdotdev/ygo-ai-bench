@@ -67,6 +67,7 @@ describe("Node upstream workspace loader", () => {
       ["local-override", path.join("local-card-scripts", "overrides", "c100.lua")],
       ["upstream-official", path.join("script", "official", "c100.lua")],
       ["upstream-root", path.join("script", "c100.lua")],
+      ["upstream-pre-release", path.join("script", "pre-release", "c100.lua")],
       ["local-fallback", path.join("local-card-scripts", "fallbacks", "official", "c100.lua")],
       ["local-fallback", path.join("local-card-scripts", "fallbacks", "c100.lua")],
     ]);
