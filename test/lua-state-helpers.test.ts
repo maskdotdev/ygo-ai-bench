@@ -1565,15 +1565,15 @@ describe("Lua state helpers", () => {
       local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
       local e=Effect.CreateEffect(c)
       c:CreateEffectRelation(e)
-      Debug.Message("effect relation created")
+      Debug.Message("effect relation created " .. tostring(c:IsRelateToEffect(e)))
       c:ReleaseEffectRelation(e)
-      Debug.Message("effect relation released")
+      Debug.Message("effect relation released " .. tostring(c:IsRelateToEffect(e)))
       `,
       "effect-relation.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["effect relation created", "effect relation released"]);
+    expect(host.messages).toEqual(["effect relation created true", "effect relation released false"]);
     expect(session.state.cards.find((card) => card.code === "100")?.effectRelationIds).toEqual([]);
   });
 

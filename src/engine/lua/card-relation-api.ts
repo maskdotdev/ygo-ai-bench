@@ -16,6 +16,8 @@ export function installCardRelationApi<EffectRecord extends LuaCardApiEffectReco
   lua.lua_setfield(L, -2, to_luastring("ReleaseEffectRelation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetMarkedEffects(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetMarkedEffects"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToEffect(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsRelateToEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsRelateToCard"));
 }
@@ -49,6 +51,17 @@ function pushGetMarkedEffects<EffectRecord extends LuaCardApiEffectRecord>(L: un
     lua.lua_rawseti(L, -2, index);
     index += 1;
   }
+  return 1;
+}
+
+function pushIsRelateToEffect(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session, 1);
+  const effectId = readTableNumberField(L, 2, "__effect_id");
+  if (card?.effectRelationIds !== undefined && effectId !== undefined) {
+    lua.lua_pushboolean(L, card.effectRelationIds.includes(effectId));
+    return 1;
+  }
+  lua.lua_pushboolean(L, Boolean(card));
   return 1;
 }
 

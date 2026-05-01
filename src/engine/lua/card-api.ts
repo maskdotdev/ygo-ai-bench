@@ -334,7 +334,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsReleasableByEffect", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.release | duelReason.effect)));
   pushBooleanGetter(L, "IsDestructable", session, (_, uid) => Boolean(uid && canDestroyCard(session.state, uid)));
   pushBooleanGetter(L, "IsDiscardable", session, (card, uid) => Boolean(card && uid && card.location === "hand" && canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.cost)));
-  pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
   installCardRelationApi(L, session, hostState);
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
