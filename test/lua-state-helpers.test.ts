@@ -560,6 +560,34 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("deck master card reset false");
   });
 
+  it("lets Lua scripts query, summon, and clear deck master flagged cards", () => {
+    const cards: DuelCardData[] = [{ code: "153000001", name: "Deck Master Probe", kind: "monster", attack: 1200, defense: 800 }];
+    const session = createDuel({ seed: 167, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["153000001"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.GetFieldGroup(0,LOCATION_HAND,0):GetFirst()
+      c:RegisterFlagEffect(FLAG_DECK_MASTER, RESET_EVENT, 0, 1)
+      Debug.Message("deck master flagged " .. tostring(Duel.IsDeckMaster(0,153000001)) .. "/" .. Duel.GetDeckMaster(0):GetCode() .. "/" .. tostring(c:IsDeckMaster()))
+      Debug.Message("deck master summon " .. Duel.SummonDeckMaster(0) .. "/" .. c:GetLocation() .. "/" .. tostring(c:IsFaceup()) .. "/" .. Duel.GetDeckMaster(0):GetCode())
+      Debug.Message("deck master clear " .. Duel.ClearDeckMasterZone(0) .. "/" .. tostring(Duel.GetDeckMaster(0)==nil) .. "/" .. tostring(c:IsDeckMaster()))
+      `,
+      "deck-master-zone.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("deck master flagged true/153000001/true");
+    expect(host.messages).toContain("deck master summon 1/4/true/153000001");
+    expect(host.messages).toContain("deck master clear 1/true/false");
+    expect(session.state.cards.find((card) => card.code === "153000001")).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
+  });
+
   it("expires Lua flag effects at chain reset boundaries", () => {
     const cards: DuelCardData[] = [{ code: "101", name: "Flag Chain Source", kind: "monster" }];
     const session = createDuel({ seed: 137, startingHandSize: 1, cardReader: createCardReader(cards) });
