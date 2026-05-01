@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, startDuel } from "#duel/core.js";
+import fs from "node:fs";
+import { applyResponse, createDuel, getLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -105,6 +106,46 @@ describe("Lua summon and release helpers", () => {
       expect(host.messages).toContain(`${current.label} 1`);
       expect(session.state.cards.find((card) => card.code === current.target)?.location).toBe("monsterZone");
     }
+  });
+
+  it("lets Lua ritual scripts summon with selected materials when card metadata has no recipe", () => {
+    const cards: DuelCardData[] = [
+      { code: "33599853", name: "Ritual of Light and Darkness", kind: "spell", typeFlags: 0x82 },
+      { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", typeFlags: 0x81, level: 8 },
+      { code: "100", name: "Ritual Material A", kind: "monster", level: 4 },
+      { code: "300", name: "Ritual Material B", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 61, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["33599853", "70405001", "100", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c33599853.lua", "utf8"), "c33599853.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const ritualSpell = session.state.cards.find((card) => card.code === "33599853");
+    expect(ritualSpell).toBeTruthy();
+    const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === ritualSpell!.uid);
+    expect(action).toBeTruthy();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    while (session.state.chain.length > 0) {
+      const player = session.state.waitingFor ?? session.state.turnPlayer;
+      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+    }
+
+    expect(session.state.cards.find((card) => card.code === "70405001")).toMatchObject({
+      location: "monsterZone",
+      summonType: "ritual",
+      summonMaterialUids: expect.arrayContaining([
+        session.state.cards.find((card) => card.code === "100")!.uid,
+        session.state.cards.find((card) => card.code === "300")!.uid,
+      ]),
+    });
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
   });
 
   it("lets Lua scripts register generic Fusion, Synchro, and cost procedure helpers", () => {

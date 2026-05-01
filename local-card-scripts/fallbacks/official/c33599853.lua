@@ -23,27 +23,29 @@ function s.initial_effect(c)
   c:RegisterEffect(e2)
 end
 s.listed_names={70405001,44001993}
-function s.ritualfilter(c,e,tp)
-  return (c:IsCode(70405001) or c:IsCode(44001993)) and c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_RITUAL,tp,true,false)
+function s.ritualfilter(c,e,tp,mg)
+  return (c:IsCode(70405001) or c:IsCode(44001993))
+    and c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_RITUAL,tp,true,false)
+    and mg:CheckWithSumGreater(function(mc) return mc:GetRitualLevel(c) end,c:GetLevel(),1,c:GetLevel())
 end
 function s.matfilter(c)
   return c:IsMonster() and c:IsAbleToGrave()
 end
 function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
+  local mg=Duel.GetRitualMaterial(tp):Filter(s.matfilter,e:GetHandler())
   if chk==0 then return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
-    and Duel.IsExistingMatchingCard(s.ritualfilter,tp,LOCATION_HAND,0,1,nil,e,tp)
-    and Duel.GetMatchingGroupCount(s.matfilter,tp,LOCATION_HAND+LOCATION_MZONE,0,e:GetHandler())>0 end
+    and Duel.IsExistingMatchingCard(s.ritualfilter,tp,LOCATION_HAND,0,1,nil,e,tp,mg) end
   Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND)
 end
 function s.activate(e,tp,eg,ep,ev,re,r,rp)
   if Duel.GetLocationCount(tp,LOCATION_MZONE)<=0 then return end
+  local mg=Duel.GetRitualMaterial(tp):Filter(s.matfilter,e:GetHandler())
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
-  local rc=Duel.SelectMatchingCard(tp,s.ritualfilter,tp,LOCATION_HAND,0,1,1,nil,e,tp):GetFirst()
+  local rc=Duel.SelectMatchingCard(tp,s.ritualfilter,tp,LOCATION_HAND,0,1,1,nil,e,tp,mg):GetFirst()
   if not rc then return end
   Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_RELEASE)
-  local mg=Duel.SelectMatchingCard(tp,s.matfilter,tp,LOCATION_HAND+LOCATION_MZONE,0,1,99,e:GetHandler())
-  if #mg>0 then
-    Duel.ReleaseRitualMaterial(mg)
+  mg=mg:SelectWithSumGreater(tp,function(mc) return mc:GetRitualLevel(rc) end,rc:GetLevel(),1,rc:GetLevel())
+  if mg:GetCount()>0 then
     Duel.RitualSummon(rc,mg)
   end
 end

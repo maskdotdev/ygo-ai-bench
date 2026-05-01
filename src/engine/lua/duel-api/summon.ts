@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { recordNormalSummonActivity } from "#duel/activity.js";
+import { recordNormalSummonActivity, recordSpecialSummonActivity } from "#duel/activity.js";
 import {
   isMaterialUsePrevented,
   type ContinuousEffectContextFactory,
@@ -17,8 +17,10 @@ import {
   moveDuelCard,
   xyzSummonDuelCard,
 } from "#duel/core.js";
+import { pushDuelLog } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions } from "#duel/summon.js";
+import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -156,7 +158,8 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     else if (summonType === "SynchroSummon") synchroSummonDuelCard(session.state, target.controller, target.uid, materialUids);
     else if (summonType === "XyzSummon") xyzSummonDuelCard(session.state, target.controller, target.uid, materialUids);
     else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    else ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids);
+    else if (target.data.ritualMaterials?.length) ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids);
+    else ritualSummonSelectedMaterials(session, target, materialUids);
     setOperatedUids(hostState, [target.uid]);
     lua.lua_pushinteger(L, 1);
   } catch {
@@ -164,6 +167,38 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     lua.lua_pushinteger(L, 0);
   }
   return 1;
+}
+
+function ritualSummonSelectedMaterials(session: DuelSession, target: DuelCardInstance, materialUids: string[]): void {
+  if (target.kind !== "monster" || target.location !== "hand") throw new Error(`${target.name} is not a ritual monster in hand`);
+  if (new Set(materialUids).size !== materialUids.length || materialUids.length === 0) throw new Error(`${target.name} ritual materials are not legal`);
+  if (availableMonsterZoneCount(session, target.controller, []) <= 0 || !canSpecialSummonDuelCard(session.state, target.uid, target.controller)) {
+    throw new Error(`${target.name} cannot be Ritual Summoned`);
+  }
+  for (const uid of materialUids) {
+    const material = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!material || !canBeRitualMaterial(session.state, material, undefined) || material.controller !== target.controller || material.uid === target.uid) {
+      throw new Error(`${target.name} ritual materials are not legal`);
+    }
+  }
+  for (const uid of materialUids) {
+    const material = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!material) continue;
+    sendDuelCardToGraveyard(session.state, uid, target.controller, duelReason.material | duelReason.ritual, target.controller);
+    pushDuelLog(session.state, "ritualMaterial", target.controller, material.name, `Used for ${target.name}`);
+  }
+  moveDuelCard(session.state, target.uid, "monsterZone", target.controller, duelReason.summon | duelReason.specialSummon | duelReason.ritual);
+  target.position = "faceUpAttack";
+  target.faceUp = true;
+  target.summonType = "ritual";
+  target.summonPlayer = target.controller;
+  target.summonPhase = session.state.phase;
+  target.summonMaterialUids = [...materialUids];
+  recordSpecialSummonActivity(session.state, target.controller, target);
+  pushDuelLog(session.state, "ritualSummon", target.controller, target.name, `Ritual Summoned with ${materialUids.length} material(s)`);
+  session.state.eventHistory.push({ eventName: "specialSummoned", eventCardUid: target.uid });
+  session.state.eventHistory = session.state.eventHistory.slice(-32);
+  collectTriggerEffectsRule(session.state, "specialSummoned", () => true, target);
 }
 
 function pushRitualMaterial(L: unknown, session: DuelSession): number {
