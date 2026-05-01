@@ -1700,7 +1700,9 @@ describe("Lua field and query helpers", () => {
       `
       local first = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
       local second = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("summon count before " .. tostring(Duel.CheckSummonedCount()))
       Debug.Message("summon result " .. Duel.Summon(first, true, nil))
+      Debug.Message("summon count after " .. tostring(Duel.CheckSummonedCount()))
       Debug.Message("summon operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("summon count blocked " .. Duel.Summon(second, true, nil))
       Debug.Message("summon blocked operated " .. Duel.GetOperatedGroup():GetCount())
@@ -1710,7 +1712,9 @@ describe("Lua field and query helpers", () => {
       "basic-normal-summon.lua",
     );
     expect(summonResult.ok, summonResult.error).toBe(true);
+    expect(summonHost.messages).toContain("summon count before true");
     expect(summonHost.messages).toContain("summon result 1");
+    expect(summonHost.messages).toContain("summon count after false");
     expect(summonHost.messages).toContain("summon operated 1/100");
     expect(summonHost.messages).toContain("summon count blocked 0");
     expect(summonHost.messages).toContain("summon blocked operated 0");
@@ -1718,6 +1722,27 @@ describe("Lua field and query helpers", () => {
     expect(summonHost.messages).toContain("summon nil operated 0");
     const summoned = summonSession.state.cards.find((card) => card.code === "100");
     expect(summoned).toMatchObject({ location: "monsterZone", position: "faceUpAttack", summonType: "normal" });
+
+    const countSession = createDuel({ seed: 93, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(countSession, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(countSession);
+    const countHost = createLuaScriptHost(countSession);
+    const countResult = countHost.loadScript(
+      `
+      Debug.Message("manual count before " .. tostring(Duel.CheckSummonedCount()))
+      Duel.IncreaseSummonedCount()
+      Debug.Message("manual count after " .. tostring(Duel.CheckSummonedCount()))
+      Debug.Message("manual activity " .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SUMMON))
+      `,
+      "manual-summoned-count.lua",
+    );
+    expect(countResult.ok, countResult.error).toBe(true);
+    expect(countHost.messages).toContain("manual count before true");
+    expect(countHost.messages).toContain("manual count after false");
+    expect(countHost.messages).toContain("manual activity 1/1");
 
     const setSession = createDuel({ seed: 89, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(setSession, {

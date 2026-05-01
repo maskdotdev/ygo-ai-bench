@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { recordNormalSummonActivity } from "#duel/activity.js";
 import {
   isMaterialUsePrevented,
   type ContinuousEffectContextFactory,
@@ -44,6 +45,19 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSummonCancelable"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = readOptionalPlayer(state, 1) ?? session.state.turnPlayer;
+    lua.lua_pushboolean(state, session.state.players[player].normalSummonAvailable);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CheckSummonedCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = readOptionalPlayer(state, 1) ?? session.state.turnPlayer;
+    if (session.state.players[player].normalSummonAvailable) recordNormalSummonActivity(session.state, player);
+    session.state.players[player].normalSummonAvailable = false;
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IncreaseSummonedCount"));
   pushSummonHelper(L, "FusionSummon", session, hostState, "FusionSummon");
   pushSummonHelper(L, "SynchroSummon", session, hostState, "SynchroSummon");
   pushSummonHelper(L, "XyzSummon", session, hostState, "XyzSummon");
