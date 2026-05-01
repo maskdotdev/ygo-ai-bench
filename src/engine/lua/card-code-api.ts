@@ -123,6 +123,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsClear", session, (card) => Boolean(card && isAnimeArchetype(card, clearSetcodes, clearCodes)));
   pushBooleanGetter(L, "IsCN39UtopiaRay", session, (card) => Boolean(card && isAnimeArchetype(card, cn39UtopiaRaySetcodes, cn39UtopiaRayCodes)));
   pushBooleanGetter(L, "IsComicsHero", session, (card) => Boolean(card && isAnimeArchetype(card, comicsHeroSetcodes, comicsHeroCodes)));
+  pushBooleanGetter(L, "IsCubicSeed", session, (card) => Boolean(card && isAnimeArchetype(card, cubicSeedSetcodes, cubicSeedCodes)));
   pushBooleanGetter(L, "IsDyson", session, (card) => Boolean(card && isAnimeArchetype(card, dysonSetcodes, dysonCodes)));
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
   pushBooleanGetter(L, "IsWhite", session, (card) => Boolean(card && isAnimeArchetype(card, whiteSetcodes, whiteCodes)));
@@ -315,6 +316,9 @@ const cn39UtopiaRayCodes = ["56840427", "87911394", "66970002"] as const;
 
 const comicsHeroSetcodes = [0x511] as const;
 const comicsHeroCodes = ["77631175", "13030280"] as const;
+
+const cubicSeedSetcodes = [0x10e3] as const;
+const cubicSeedCodes = ["15610297"] as const;
 
 const dysonSetcodes = [0x519] as const;
 const dysonCodes = ["1992816", "32559361"] as const;

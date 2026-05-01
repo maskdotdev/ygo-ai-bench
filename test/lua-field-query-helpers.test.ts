@@ -93,6 +93,7 @@ describe("Lua field and query helpers", () => {
       { code: "802", name: "Action Field", kind: "spell", typeFlags: 0x10080002 },
       { code: "806", name: "Equip Trap", kind: "trap", typeFlags: 0x40004 },
       { code: "808", name: "Normal Trap", kind: "trap", typeFlags: 0x4 },
+      { code: "812", name: "Counter Trap", kind: "trap", typeFlags: 0x100004 },
       { code: "82382815", name: "Champion Code", kind: "spell", typeFlags: 0x2 },
       { code: "803", name: "Champion Set", kind: "monster", typeFlags: 0x21, setcodes: [0x152f] },
       { code: "7391448", name: "Goyo Code", kind: "monster", typeFlags: 0x21 },
@@ -108,9 +109,9 @@ describe("Lua field and query helpers", () => {
       { code: "49771608", name: "Sky Code", kind: "monster", typeFlags: 0x21 },
       { code: "805", name: "Sky Set", kind: "monster", typeFlags: 0x21, setcodes: [0x54a] },
     ];
-    const session = createDuel({ seed: 44, startingHandSize: 28, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 44, startingHandSize: 29, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "806", "808", "82382815", "803", "7391448", "807", "90276649", "809", "92341815", "810", "7500772", "811", "42685062", "804", "49771608", "805"] },
+      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "806", "808", "812", "82382815", "803", "7391448", "807", "90276649", "809", "92341815", "810", "7500772", "811", "42685062", "804", "49771608", "805"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -132,6 +133,7 @@ describe("Lua field and query helpers", () => {
       local action_field=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 802), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local equip_trap=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 806), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local normal_trap=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 808), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local counter_trap=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 812), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local champion_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 82382815), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local champion_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 803), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local goyo_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 7391448), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -153,6 +155,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("continuous spelltrap " .. tostring(continuous_trap:IsContinuousSpellTrap()) .. "/" .. tostring(continuous_spell:IsContinuousSpellTrap()) .. "/" .. tostring(ritual_spell:IsContinuousSpellTrap()) .. "/" .. tostring(normal_spell:IsContinuousSpellTrap()))
       Debug.Message("equip trap " .. tostring(equip_trap:IsEquipTrap()) .. "/" .. tostring(equip_trap:IsEquipCard()) .. "/" .. tostring(continuous_trap:IsEquipTrap()))
       Debug.Message("normal trap " .. tostring(normal_trap:IsNormalTrap()) .. "/" .. tostring(continuous_trap:IsNormalTrap()) .. "/" .. tostring(equip_trap:IsNormalTrap()) .. "/" .. tostring(action_trap:IsNormalTrap()))
+      Debug.Message("counter trap " .. tostring(counter_trap:IsCounterTrap()) .. "/" .. tostring(normal_trap:IsCounterTrap()) .. "/" .. tostring(continuous_trap:IsCounterTrap()))
       Debug.Message("drone predicate " .. tostring(drone:IsDrone()) .. "/" .. tostring(normal_spell:IsDrone()))
       Debug.Message("action predicates " .. TYPE_ACTION .. "/" .. tostring(action_spell:IsActionCard()) .. "/" .. tostring(action_spell:IsActionSpell()) .. "/" .. tostring(action_trap:IsActionTrap()) .. "/" .. tostring(action_field:IsActionField()) .. "/" .. tostring(action_field:IsActionCard()))
       Debug.Message("champion predicates " .. tostring(champion_code:IsChampion()) .. "/" .. tostring(champion_set:IsChampion()) .. "/" .. tostring(normal_spell:IsChampion()))
@@ -176,6 +179,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("continuous spelltrap true/true/false/false");
     expect(host.messages).toContain("equip trap true/true/false");
     expect(host.messages).toContain("normal trap true/false/false/false");
+    expect(host.messages).toContain("counter trap true/false/false");
     expect(host.messages).toContain("drone predicate true/false");
     expect(host.messages).toContain("action predicates 268435456/true/true/true/true/false");
     expect(host.messages).toContain("champion predicates true/true/false");
@@ -209,6 +213,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsClear", code: "97811903", setcode: 0x510 },
       { method: "IsCN39UtopiaRay", code: "56840427", setcode: 0x1539 },
       { method: "IsComicsHero", code: "77631175", setcode: 0x511 },
+      { method: "IsCubicSeed", code: "15610297", setcode: 0x10e3 },
       { method: "IsDyson", code: "1992816", setcode: 0x519 },
       { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
