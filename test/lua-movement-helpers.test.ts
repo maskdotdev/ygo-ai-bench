@@ -279,6 +279,52 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
   });
 
+  it("loads Skull Archfiend of Chaos and recycles cards before summoning itself", () => {
+    const cards: DuelCardData[] = [
+      { code: "24088928", name: "Skull Archfiend of Chaos", kind: "monster" },
+      { code: "33599853", name: "Ritual of Light and Darkness", kind: "spell" },
+      { code: "100", name: "Recycle Grave", kind: "monster" },
+      { code: "200", name: "Recycle Banished", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 100, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["24088928", "33599853", "100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "24088928");
+    const ritualSpell = session.state.cards.find((card) => card.code === "33599853");
+    const grave = session.state.cards.find((card) => card.code === "100");
+    const banished = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeDefined();
+    expect(ritualSpell).toBeDefined();
+    expect(grave).toBeDefined();
+    expect(banished).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "hand", 0);
+    moveDuelCard(session.state, ritualSpell!.uid, "graveyard", 0);
+    moveDuelCard(session.state, grave!.uid, "graveyard", 0);
+    moveDuelCard(session.state, banished!.uid, "banished", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c24088928.lua", "utf8"), "c24088928.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    while (session.state.chain.length > 0) {
+      const player = session.state.waitingFor ?? session.state.turnPlayer;
+      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+    }
+
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    for (const card of [ritualSpell, grave, banished]) {
+      expect(session.state.cards.find((candidate) => candidate.uid === card!.uid)).toMatchObject({ location: "deck", reason: 0x40 });
+    }
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },
