@@ -361,6 +361,22 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       end
       return pairs(res)
     end
+    function aux.PropertyTableFilter(f,...)
+      local cachetab={}
+      local truthtable={}
+      for _,elem in pairs({...}) do
+        truthtable[elem]=true
+      end
+      return function(c,...)
+        if not cachetab[c] then
+          cachetab[c]={}
+          for _,val in pairs({f(c,...)}) do
+            if truthtable[val] then table.insert(cachetab[c],val) end
+          end
+        end
+        return table.unpack(cachetab[c])
+      end
+    end
     function aux.FieldSummonProcTg(fun1,fun2)
       return function(e,tp,eg,ep,ev,re,r,rp,chk,c,...)
         if not c then

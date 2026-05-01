@@ -809,6 +809,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not code checks " .. tostring(c:IsNotCode(900)) .. "/" .. tostring(c:IsNotCode(901)))
       Debug.Message("code rule checks " .. c:GetOriginalCodeRule() .. "/" .. tostring(c:IsOriginalCodeRule(900)) .. "/" .. tostring(c:IsOriginalCodeRule(100)))
       Debug.Message("set checks " .. tostring(c:IsSetCard(0x123)) .. "/" .. tostring(c:IsNotSetCard(0x123)) .. "/" .. tostring(c:IsNotSetCard(0x456)))
+      local property_filter=aux.PropertyTableFilter(Card.GetSetCard,0x123,0x456)
       Debug.Message("listed checks " .. tostring(c:ListsCode(700)) .. "/" .. tostring(c:ListsCode(800)) .. "/" .. tostring(c:ListsCode(900)) .. "/" .. tostring(c:ListsCode(600,700)))
       local infinity = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("infinity checks " .. tostring(infinity:IsInfinity()) .. "/" .. tostring(c:IsInfinity()))
@@ -820,6 +821,9 @@ describe("Lua field and query helpers", () => {
       local pendulum = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local material_fusion = Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 902), 0, LOCATION_EXTRA, 0, nil):GetFirst()
       local unknown_stats = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 903), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local property_match=property_filter(c)
+      local property_miss=property_filter(normal)
+      Debug.Message("property table filter " .. tostring(property_match) .. "/" .. tostring(property_miss))
       Debug.Message("unknown text stats " .. unknown_stats:GetTextAttack() .. "/" .. unknown_stats:GetTextDefense() .. "/" .. tostring(Card.IsTextAttack(unknown_stats,-2)) .. "/" .. tostring(Card.IsTextDefense(unknown_stats,-2)))
       Debug.Message("material listed checks " .. tostring(material_fusion:ListsCodeAsMaterial(100)) .. "/" .. tostring(material_fusion:ListsCodeAsMaterial(700,800)) .. "/" .. tostring(material_fusion:ListsCodeAsMaterial(300)) .. "/" .. tostring(ritual:ListsCodeAsMaterial(100)))
       Debug.Message("material set listed checks " .. tostring(material_fusion:ListsArchetypeAsMaterial(0x123)) .. "/" .. tostring(material_fusion:ListsArchetypeAsMaterial(0x223)) .. "/" .. tostring(ritual:ListsArchetypeAsMaterial(0x123)))
@@ -896,6 +900,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not code checks false/true");
     expect(host.messages).toContain("code rule checks 100/false/true");
     expect(host.messages).toContain("set checks true/false/true");
+    expect(host.messages).toContain("property table filter 291/nil");
     expect(host.messages).toContain("listed checks true/true/false/true");
     expect(host.messages).toContain("material listed checks true/true/false/true");
     expect(host.messages).toContain("material set listed checks true/false/false");
