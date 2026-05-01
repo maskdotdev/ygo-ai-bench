@@ -120,6 +120,51 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("adjacent blocked false");
   });
 
+  it("lets Lua scripts distinguish main and extra monster zones", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Main Zone Monster", kind: "monster" },
+      { code: "200", name: "Extra Zone Monster", kind: "monster" },
+      { code: "300", name: "Opponent Main Zone Monster", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 155, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["300"] },
+    });
+    startDuel(session);
+
+    const main = session.state.cards.find((card) => card.code === "100");
+    const extra = session.state.cards.find((card) => card.code === "200");
+    const opponent = session.state.cards.find((card) => card.code === "300");
+    expect(main).toBeDefined();
+    expect(extra).toBeDefined();
+    expect(opponent).toBeDefined();
+    moveDuelCard(session.state, main!.uid, "monsterZone", 0);
+    main!.sequence = 2;
+    moveDuelCard(session.state, extra!.uid, "monsterZone", 0);
+    extra!.sequence = 5;
+    moveDuelCard(session.state, opponent!.uid, "monsterZone", 1);
+    opponent!.sequence = 4;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local main = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local opponent = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("main mzone " .. tostring(main:IsInMainMZone()) .. "/" .. tostring(main:IsInExtraMZone()) .. "/" .. tostring(main:IsInMainMZone(0)) .. "/" .. tostring(main:IsInMainMZone(1)))
+      Debug.Message("extra mzone " .. tostring(extra:IsInMainMZone()) .. "/" .. tostring(extra:IsInExtraMZone()) .. "/" .. tostring(extra:IsInExtraMZone(0)) .. "/" .. tostring(extra:IsInExtraMZone(1)))
+      Debug.Message("opponent main mzone " .. tostring(Card.IsInMainMZone(opponent,1)) .. "/" .. tostring(Card.IsInMainMZone(opponent,0)))
+      `,
+      "main-extra-mzone.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("main mzone true/false/true/false");
+    expect(host.messages).toContain("extra mzone false/true/true/false");
+    expect(host.messages).toContain("opponent main mzone true/false");
+  });
+
   it("lets Lua scripts check pendulum zone availability", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Pendulum Zone Left", kind: "spell" },

@@ -121,6 +121,8 @@ export const cardFieldNames = [
   "IsDefensePos",
   "IsPublic",
   "IsOnField",
+  "IsInMainMZone",
+  "IsInExtraMZone",
   "CanAttack",
   "IsMonster",
   "IsSpell",
