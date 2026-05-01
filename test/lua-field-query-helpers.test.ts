@@ -56,10 +56,12 @@ describe("Lua field and query helpers", () => {
       { code: "803", name: "Champion Set", kind: "monster", typeFlags: 0x21, setcodes: [0x152f] },
       { code: "42685062", name: "Earth Code", kind: "monster", typeFlags: 0x21 },
       { code: "804", name: "Earthbound Set", kind: "monster", typeFlags: 0x21, setcodes: [0x21] },
+      { code: "49771608", name: "Sky Code", kind: "monster", typeFlags: 0x21 },
+      { code: "805", name: "Sky Set", kind: "monster", typeFlags: 0x21, setcodes: [0x54a] },
     ];
-    const session = createDuel({ seed: 44, startingHandSize: 16, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 44, startingHandSize: 18, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "82382815", "803", "42685062", "804"] },
+      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "82382815", "803", "42685062", "804", "49771608", "805"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -83,6 +85,8 @@ describe("Lua field and query helpers", () => {
       local champion_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 803), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local earth_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 42685062), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local earth_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 804), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local sky_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 49771608), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local sky_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 805), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("exact type constants " .. TYPE_CONTINUOUS)
       Debug.Message("continuous trap " .. tostring(continuous_trap:IsContinuousTrap()) .. "/" .. tostring(continuous_trap:IsContinuousSpell()) .. "/" .. tostring(continuous_trap:IsRitualSpell()))
       Debug.Message("ritual spell " .. tostring(ritual_spell:IsRitualSpell()) .. "/" .. tostring(ritual_spell:IsContinuousTrap()))
@@ -91,6 +95,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("action predicates " .. TYPE_ACTION .. "/" .. tostring(action_spell:IsActionCard()) .. "/" .. tostring(action_spell:IsActionSpell()) .. "/" .. tostring(action_trap:IsActionTrap()) .. "/" .. tostring(action_field:IsActionField()) .. "/" .. tostring(action_field:IsActionCard()))
       Debug.Message("champion predicates " .. tostring(champion_code:IsChampion()) .. "/" .. tostring(champion_set:IsChampion()) .. "/" .. tostring(normal_spell:IsChampion()))
       Debug.Message("earth predicates " .. tostring(earth_code:IsEarth()) .. "/" .. tostring(earth_set:IsEarth()) .. "/" .. tostring(normal_spell:IsEarth()))
+      Debug.Message("sky predicates " .. tostring(sky_code:IsSky()) .. "/" .. tostring(sky_set:IsSky()) .. "/" .. tostring(normal_spell:IsSky()))
       Debug.Message("set/race helpers " .. drone:GetSetCard() .. "/" .. tostring(drone:IsRaceExcept(RACE_DRAGON)) .. "/" .. tostring(drone:IsRaceExcept(RACE_SPELLCASTER|RACE_DRAGON)))
       Debug.Message("anime colors " .. tostring(known_red:IsRed()) .. "/" .. tostring(setcode_red:IsRed()) .. "/" .. tostring(known_white:IsWhite()) .. "/" .. tostring(setcode_white:IsWhite()) .. "/" .. tostring(normal_spell:IsRed()) .. "/" .. tostring(normal_spell:IsWhite()))
       `,
@@ -106,6 +111,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("action predicates 268435456/true/true/true/true/false");
     expect(host.messages).toContain("champion predicates true/true/false");
     expect(host.messages).toContain("earth predicates true/true/false");
+    expect(host.messages).toContain("sky predicates true/true/false");
     expect(host.messages).toContain("set/race helpers 1409/true/false");
     expect(host.messages).toContain("anime colors true/true/true/true/false/false");
   });
