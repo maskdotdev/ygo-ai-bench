@@ -401,6 +401,40 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       end
       return res
     end
+    function aux.GetExtraMaterials(tp,mustg,sc,summon_type)
+      local tg=Group.CreateGroup()
+      mustg=mustg or Group.CreateGroup()
+      local entries={}
+      for _,te in ipairs({Duel.GetPlayerEffect(tp,EFFECT_EXTRA_MATERIAL)}) do
+        if te:CheckCountLimit(tp) then
+          local val=te:GetValue()
+          local eg=type(val)=="function" and val(0,summon_type,te,tp,sc) or Group.CreateGroup()
+          eg:Sub(mustg)
+          eg:KeepAlive()
+          tg:Merge(eg)
+          table.insert(entries,{eg,te:GetOperation() or aux.TRUE,te})
+        end
+      end
+      return entries,tg
+    end
+    function aux.CheckValidExtra(c,tp,sg,mg,lc,emt,filt)
+      local res=false
+      filt=filt or {}
+      for _,ex in ipairs(emt or {}) do
+        if ex[1]:IsContains(c) and ex[2](c,ex[3],tp,sg,mg,lc,ex[1],0) then
+          res=true
+          table.insert(filt,ex)
+        end
+      end
+      return res
+    end
+    function aux.DeleteExtraMaterialGroups(emt)
+      for _,ex in ipairs(emt or {}) do
+        local val=ex[3]:GetValue()
+        if type(val)=="function" then val(2,nil,ex[3],ex[1]) end
+        ex[1]:DeleteGroup()
+      end
+    end
     function aux.BitSplit(v)
       local res={}
       local i=0

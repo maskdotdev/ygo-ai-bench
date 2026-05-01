@@ -813,6 +813,24 @@ describe("Lua state helpers", () => {
       Debug.Message("compose number " .. aux.ComposeNumberDigitByDigit(0,123,129) .. "/" .. aux.ComposeNumberDigitByDigit(0,9,7))
       local id_map=aux.GrouptoCardid(Group.FromCards(faceup_monster,facedown_monster))
       Debug.Message("group card ids " .. tostring(id_map[faceup_monster:GetCardID()]) .. "/" .. tostring(id_map[facedown_monster:GetCardID()]) .. "/" .. tostring(id_map[999999]))
+      local cleanup_count=0
+      local extra_effect=Effect.CreateEffect(faceup_monster)
+      extra_effect:SetType(EFFECT_TYPE_FIELD)
+      extra_effect:SetCode(EFFECT_EXTRA_MATERIAL)
+      extra_effect:SetRange(LOCATION_MZONE)
+      extra_effect:SetTargetRange(1,0)
+      extra_effect:SetValue(function(stage,summon_type,e,tp,sc)
+        if stage==2 then cleanup_count=cleanup_count+1 return Group.CreateGroup() end
+        return Group.FromCards(faceup_monster,facedown_monster)
+      end)
+      extra_effect:SetOperation(function(c,e,tp,sg,mg,lc,eg,stage) return c==faceup_monster end)
+      faceup_monster:RegisterEffect(extra_effect)
+      local emt,extra_group=aux.GetExtraMaterials(0,Group.FromCards(facedown_monster),faceup_monster,SUMMON_TYPE_LINK)
+      local valid_entries={}
+      Debug.Message("extra materials " .. #emt .. "/" .. extra_group:GetCount() .. "/" .. tostring(extra_group:IsContains(faceup_monster)) .. "/" .. tostring(extra_group:IsContains(facedown_monster)))
+      Debug.Message("extra valid " .. tostring(aux.CheckValidExtra(faceup_monster,0,Group.CreateGroup(),Group.CreateGroup(),nil,emt,valid_entries)) .. "/" .. tostring(aux.CheckValidExtra(facedown_monster,0,Group.CreateGroup(),Group.CreateGroup(),nil,emt)) .. "/" .. #valid_entries)
+      aux.DeleteExtraMaterialGroups(emt)
+      Debug.Message("extra cleanup " .. cleanup_count .. "/" .. extra_group:GetCount())
       local field_tg = aux.FieldSummonProcTg(function(e,tp) return tp==0 end,function(e,tp,eg,ep,ev,re,r,rp,chk,c,minatk) return c:GetAttack()>=minatk end)
       Debug.Message("field summon tg " .. tostring(field_tg(nil,0,Group.CreateGroup(),0,0,nil,0,0,0,nil)) .. "/" .. tostring(field_tg(nil,1,Group.CreateGroup(),0,0,nil,0,0,0,nil)) .. "/" .. tostring(field_tg(nil,0,Group.CreateGroup(),0,0,nil,0,0,0,faceup_monster,900)) .. "/" .. tostring(field_tg(nil,0,Group.CreateGroup(),0,0,nil,0,0,0,faceup_monster,2000)))
       local reset_count=0
@@ -984,6 +1002,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("coin hint 62/63/nil");
     expect(host.messages).toContain("compose number 123/7");
     expect(host.messages).toContain("group card ids true/true/nil");
+    expect(host.messages).toContain("extra materials 1/1/true/false");
+    expect(host.messages).toContain("extra valid true/false/1");
+    expect(host.messages).toContain("extra cleanup 1/1");
     expect(host.messages).toContain("field summon tg true/false/true/false");
     expect(host.messages).toContain("values reset setup 1210/1/true");
     expect(host.messages).toContain("values reset call false/11");
