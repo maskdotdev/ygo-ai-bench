@@ -191,7 +191,9 @@ describe("Lua field and query helpers", () => {
 
   it("exposes anime archetype predicates from code and setcode checks", () => {
     const cases = [
+      { method: "IsAlligator", code: "39984786", setcode: 0x502 },
       { method: "IsAngel", code: "79575620", setcode: 0x154a },
+      { method: "IsAncientGearGolem", code: "83104731", setcode: 0x581 },
       { method: "IsAtlandis", code: "9161357", setcode: 0x506 },
       { method: "IsBlackwingTamer", code: "81983656", setcode: 0x2033 },
       { method: "IsC", code: "15862758", setcode: 0x1048 },

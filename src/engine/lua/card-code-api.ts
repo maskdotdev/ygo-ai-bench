@@ -106,7 +106,9 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsInfinity"));
+  pushBooleanGetter(L, "IsAlligator", session, (card) => Boolean(card && isAnimeArchetype(card, alligatorSetcodes, alligatorCodes)));
   pushBooleanGetter(L, "IsAngel", session, (card) => Boolean(card && isAnimeArchetype(card, angelSetcodes, angelCodes)));
+  pushBooleanGetter(L, "IsAncientGearGolem", session, (card) => Boolean(card && isAnimeArchetype(card, ancientGearGolemSetcodes, ancientGearGolemCodes)));
   pushBooleanGetter(L, "IsAtlandis", session, (card) => Boolean(card && isAnimeArchetype(card, atlandisSetcodes, atlandisCodes)));
   pushBooleanGetter(L, "IsBlackwingTamer", session, (card) => Boolean(card && isAnimeArchetype(card, blackwingTamerSetcodes, blackwingTamerCodes)));
   pushBooleanGetter(L, "IsC", session, (card) => Boolean(card && isAnimeArchetype(card, cSetcodes, cCodes)));
@@ -214,6 +216,9 @@ function matchesAnyCodeAtOrAfter(L: unknown, card: DuelCardInstance, start: numb
   return false;
 }
 
+const alligatorSetcodes = [0x502] as const;
+const alligatorCodes = ["39984786", "4611269", "34479658", "59383041", "66451379"] as const;
+
 const angelSetcodes = [0x154a, 0xef] as const;
 const angelCodes = [
   "79575620",
@@ -239,6 +244,9 @@ const angelCodes = [
   "11398951",
   "19280589",
 ] as const;
+
+const ancientGearGolemSetcodes = [0x581] as const;
+const ancientGearGolemCodes = ["83104731", "95735217", "7171149", "12652643"] as const;
 
 const atlandisSetcodes = [0x506] as const;
 const atlandisCodes = ["9161357", "6387204"] as const;
