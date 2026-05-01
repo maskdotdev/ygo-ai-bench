@@ -1764,6 +1764,7 @@ describe("Lua state helpers", () => {
       Debug.Message("activity counts " .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_FLIPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_ATTACK) .. "/" .. Duel.GetBattledCount(0))
       Debug.Message("maximum previous checks " .. tostring(c:WasMaximumMode()) .. "/" .. tostring(c:WasMaximumModeCenter()) .. "/" .. tostring(c:WasMaximumModeSide()))
       Debug.Message("column checks " .. tostring(c:IsColumn(column_spell)) .. "/" .. tostring(c:IsColumn(hidden)))
+      Debug.Message("column zones " .. c:GetColumnZone(LOCATION_MZONE) .. "/" .. c:GetColumnZone(LOCATION_SZONE) .. "/" .. c:GetColumnZone(LOCATION_MZONE,0,1,0) .. "/" .. c:GetColumnZone(LOCATION_MZONE,0,0,1))
       Debug.Message("used summon legality " .. tostring(Duel.IsPlayerCanSummon(0, c)) .. "/" .. tostring(Duel.IsPlayerCanMSet(0, c)) .. "/" .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, c)))
       Duel.SendtoGrave(c, REASON_EFFECT)
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
@@ -1793,6 +1794,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("activity counts 1/1/0/0/0/0");
     expect(host.messages).toContain("maximum previous checks false/false/false");
     expect(host.messages).toContain("column checks true/false");
+    expect(host.messages).toContain("column zones 1/256/3/65536");
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous checks true/true/true/true");

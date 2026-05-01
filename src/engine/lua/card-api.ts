@@ -10,6 +10,7 @@ import { installCardCodeApi } from "#lua/card-code-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { cardFieldNames } from "#lua/card-field-names.js";
+import { installCardRelationApi } from "#lua/card-relation-api.js";
 import { installCardRushApi } from "#lua/card-rush-api.js";
 import { cardLink, cardRank, cardTypeFlags, installCardStatApi } from "#lua/card-stat-api.js";
 import { linkedGroupUidsForCard, linkedZoneMask } from "#lua/duel-api/location.js";
@@ -255,6 +256,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsColumn"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetColumnZone(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetColumnZone"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
@@ -316,10 +319,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsDestructable", session, (_, uid) => Boolean(uid && canDestroyCard(session.state, uid)));
   pushBooleanGetter(L, "IsDiscardable", session, (card, uid) => Boolean(card && uid && card.location === "hand" && canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.cost)));
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
-  lua.lua_pushcfunction(L, (state: unknown) => pushCreateEffectRelation(state, session));
-  lua.lua_setfield(L, -2, to_luastring("CreateEffectRelation"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushReleaseEffectRelation(state, session));
-  lua.lua_setfield(L, -2, to_luastring("ReleaseEffectRelation"));
+  installCardRelationApi(L, session, hostState);
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -536,21 +536,24 @@ function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   return effects.length;
 }
 
-function pushCreateEffectRelation(L: unknown, session: DuelSession): number {
+function pushGetColumnZone(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
-  const effectId = readTableNumberField(L, 2, "__effect_id");
-  if (card && effectId !== undefined) {
-    card.effectRelationIds = card.effectRelationIds ?? [];
-    if (!card.effectRelationIds.includes(effectId)) card.effectRelationIds.push(effectId);
-  }
-  return 0;
+  const locationMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const left = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0);
+  const right = Math.max(0, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0);
+  const player = normalizePlayer(lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : card?.controller ?? session.state.turnPlayer);
+  lua.lua_pushinteger(L, card && isFieldCard(card) ? columnZoneMask(card, locationMask, left, right, player) : 0);
+  return 1;
 }
 
-function pushReleaseEffectRelation(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const effectId = readTableNumberField(L, 2, "__effect_id");
-  if (card && effectId !== undefined) card.effectRelationIds = (card.effectRelationIds ?? []).filter((id) => id !== effectId);
-  return 0;
+function columnZoneMask(card: DuelCardInstance, locationMask: number, left: number, right: number, player: PlayerId): number {
+  let mask = 0;
+  for (let sequence = card.sequence - left; sequence <= card.sequence + right; sequence += 1) {
+    if (sequence < 0 || sequence > 4) continue;
+    if ((locationMask & 0x04) !== 0) mask |= 1 << (card.controller === player ? sequence : 16 + sequence);
+    if ((locationMask & 0x08) !== 0) mask |= 1 << (card.controller === player ? 8 + sequence : 24 + sequence);
+  }
+  return mask;
 }
 
 function pushRitualLevel<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {

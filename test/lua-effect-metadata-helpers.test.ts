@@ -974,6 +974,37 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("label object count 1");
   });
 
+  it("lets Lua scripts read marked effect label objects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Marked Effect Source", kind: "monster" }];
+    const session = createDuel({ seed: 41, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local base=Effect.CreateEffect(c)
+      base:SetType(EFFECT_TYPE_IGNITION)
+      base:SetCode(777001)
+      local mark=Effect.CreateEffect(c)
+      mark:SetType(EFFECT_TYPE_SINGLE)
+      mark:SetCode(777002)
+      mark:SetLabelObject(base)
+      c:RegisterEffect(mark)
+      local marked=c:GetMarkedEffects(777002)
+      Debug.Message("marked effects " .. #marked .. "/" .. marked[1]:GetCode())
+      `,
+      "marked-effects.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("marked effects 1/777001");
+  });
+
   it("lets Lua effects share operation info between target and operation callbacks", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Operation Source", kind: "monster" },
