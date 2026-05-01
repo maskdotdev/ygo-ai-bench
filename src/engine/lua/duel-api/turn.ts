@@ -76,6 +76,12 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsDamageCalculated"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, session.state.battleStep === "damageCalculation");
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsDamageCalculation"));
+  pushPhasePredicate(L, "IsEndStep", session, (state) => state.phase === "battle" && state.battleStep === undefined);
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const phases = phasesFromMask(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0);
     const count = Math.max(1, lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 1);

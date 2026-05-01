@@ -954,7 +954,7 @@ describe("Lua battle helpers", () => {
         e:SetProperty(EFFECT_FLAG_DAMAGE_STEP)
         e:SetRange(LOCATION_HAND)
         e:SetOperation(function(e,tp)
-          Debug.Message("lua damage step quick " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageCalculated()))
+          Debug.Message("lua damage step quick " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageCalculated()) .. "/" .. tostring(Duel.IsDamageCalculation()))
         end)
         c:RegisterEffect(e)
       end
@@ -965,7 +965,7 @@ describe("Lua battle helpers", () => {
         e:SetProperty(EFFECT_FLAG_DAMAGE_CAL)
         e:SetRange(LOCATION_HAND)
         e:SetOperation(function(e,tp)
-          Debug.Message("lua damage calculation quick " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageCalculated()))
+          Debug.Message("lua damage calculation quick " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageCalculated()) .. "/" .. tostring(Duel.IsDamageCalculation()))
         end)
         c:RegisterEffect(e)
       end
@@ -990,7 +990,7 @@ describe("Lua battle helpers", () => {
     expect(legalEffectCodes(session, 0)).toEqual(["300"]);
     expect(applyResponse(session, activateEffectByCode(session, 0, "300")!).ok).toBe(true);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
-    expect(host.messages).toContain("lua damage step quick 32/true/false");
+    expect(host.messages).toContain("lua damage step quick 32/true/false/false");
     expect(session.state.battleStep).toBe("damage");
 
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
@@ -1002,12 +1002,20 @@ describe("Lua battle helpers", () => {
     expect(legalEffectCodes(session, 0)).toEqual(["400"]);
     expect(applyResponse(session, activateEffectByCode(session, 0, "400")!).ok).toBe(true);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
-    expect(host.messages).toContain("lua damage calculation quick 64/true/true");
+    expect(host.messages).toContain("lua damage calculation quick 64/true/true/true");
 
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
     expect(session.state.players[1].lifePoints).toBe(6200);
     expect(session.state.pendingBattle).toBeUndefined();
+    const endStep = host.loadScript(
+      `
+      Debug.Message("lua end step alias " .. tostring(Duel.IsEndStep()))
+      `,
+      "lua-end-step-alias.lua",
+    );
+    expect(endStep.ok, endStep.error).toBe(true);
+    expect(host.messages).toContain("lua end step alias true");
   });
 
   it("lets Lua damage-calculation quick effects override final battle damage", () => {
