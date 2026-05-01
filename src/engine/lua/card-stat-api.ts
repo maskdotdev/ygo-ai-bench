@@ -98,6 +98,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsNotAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
   pushNumberMatcher(L, "IsNotOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
+  pushNumberGetter(L, "AnnounceAnotherAttribute", session, (card) => firstDifferentBit(card?.data.attribute ?? 0, 0x7f, 0x40));
   pushBooleanGetter(L, "IsTrapCard", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x4) !== 0));
   pushBooleanGetter(L, "IsTrapMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x4) !== 0 && ((card.data.level ?? 0) > 0 || (card.data.attribute ?? 0) > 0 || (card.data.race ?? 0) > 0)));
 }

@@ -1316,6 +1316,7 @@ describe("Lua state helpers", () => {
       local another_warrior_race=Duel.AnnounceAnotherRace(earth_group, 0)
       local another_mixed_race=Duel.AnnounceAnotherRace(group, 0)
       local single=group:GetFirst()
+      local another_card_attribute=earth_group:GetFirst():AnnounceAnotherAttribute(0)
       local another_card_race=single:AnnounceAnotherRace(0)
       local group_hint_result=Duel.HintSelection(group, 501)
       local card_hint_result=Duel.HintSelection(single)
@@ -1323,7 +1324,7 @@ describe("Lua state helpers", () => {
       Debug.Message("prompt effect " .. tostring(effect_yes) .. "/" .. tostring(effect_choice) .. "/" .. tostring(effect_none))
       Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. level .. "/" .. ranged)
       Debug.Message("prompt card codes " .. selected_code .. "/" .. selected_from_table .. "/" .. selected_index[1] .. ":" .. selected_index[2] .. "/" .. selected_multi[1][1] .. ":" .. selected_multi[1][2] .. "," .. selected_multi[2][1] .. ":" .. selected_multi[2][2])
-      Debug.Message("prompt another attribute " .. another_earth .. "/" .. another_mixed)
+      Debug.Message("prompt another attribute " .. another_earth .. "/" .. another_mixed .. "/" .. another_card_attribute)
       Debug.Message("prompt another race " .. another_warrior_race .. "/" .. another_mixed_race .. "/" .. another_card_race)
       Debug.Message("prompt zones " .. disabled .. "/" .. selected .. "/" .. selected_zone .. "/" .. ZONES_MMZ .. "/" .. ZONES_EMZ)
       Debug.Message("hint return " .. tostring(group_hint_result == nil) .. "/" .. tostring(card_hint_result == nil))
@@ -1336,7 +1337,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("prompt effect true/2/nil");
     expect(host.messages).toContain("prompt announce 4/100/1/1/16/3/4");
     expect(host.messages).toContain("prompt card codes 700/900/910:1/930:1,940:2");
-    expect(host.messages).toContain("prompt another attribute 2/1");
+    expect(host.messages).toContain("prompt another attribute 2/1/2");
     expect(host.messages).toContain("prompt another race 2/1/1");
     expect(host.messages).toContain("prompt zones 1/768/65536/31/96");
     expect(host.messages).toContain("hint return true/true");

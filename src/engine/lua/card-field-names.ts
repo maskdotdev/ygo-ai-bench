@@ -162,6 +162,7 @@ export const cardFieldNames = [
   "IsNotAttribute",
   "IsOriginalAttribute",
   "IsNotOriginalAttribute",
+  "AnnounceAnotherAttribute",
   "IsTrapCard",
   "IsTrapMonster",
   "IsStatus",
