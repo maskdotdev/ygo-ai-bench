@@ -166,6 +166,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsMask", session, (card) => Boolean(card && isAnimeArchetype(card, maskSetcodes, maskCodes)));
   pushBooleanGetter(L, "IsMelodiousSongtress", session, (card) => Boolean(card && isAnimeArchetype(card, melodiousSongtressSetcodes, melodiousSongtressCodes)));
   pushBooleanGetter(L, "IsMesozoic", session, (card) => Boolean(card && isAnimeArchetype(card, mesozoicSetcodes, mesozoicCodes)));
+  pushBooleanGetter(L, "IsMonarch", session, (card) => Boolean(card && isAnimeArchetype(card, monarchSetcodes, monarchCodes)));
+  pushBooleanGetter(L, "IsMosquito", session, (card) => Boolean(card && isAnimeArchetype(card, mosquitoSetcodes, mosquitoCodes)));
   pushBooleanGetter(L, "IsPapillon", session, (card) => Boolean(card && isAnimeArchetype(card, papillonSetcodes, papillonCodes)));
   pushBooleanGetter(L, "IsShark", session, (card) => Boolean(card && isAnimeArchetype(card, sharkSetcodes, sharkCodes)));
   pushBooleanGetter(L, "IsStarvingVenemy", session, (card) => Boolean(card && isAnimeArchetype(card, starvingVenemySetcodes, starvingVenemyCodes)));
@@ -535,6 +537,17 @@ const landstarSetcodes = [0x533] as const;
 const landstarCodes = ["3573512", "83602069"] as const;
 const mesozoicSetcodes = [0x57d] as const;
 const mesozoicCodes = ["83656563", "59531356"] as const;
+const monarchSetcodes = [0x571, 0xbe] as const;
+const monarchCodes = [
+  "4929256", "5795980", "8522996", "9748752", "15545291", "18235309", "77832858", "9870120", "22842126", "23064604", "23689697", "26205777", "26822796",
+  "33609262", "48716527", "51945556", "54241725", "57666212", "60229110", "61466310", "65612386", "69230391", "69327790", "73125233", "79844764",
+  "84171830", "85718645", "87288189", "87602890", "96570609", "99940363", "95457011", "59463312", "90122655", "11250655", "22382087", "22404675",
+  "24326617", "58786132", "59808784", "95993388", "1855932", "3775068", "4545683", "31930787", "68140974", "12986778", "6836211", "14306092",
+  "15237615", "40390147", "40392714", "54040221", "58818411", "73289035", "75840616", "77387463", "80921533", "93483212", "99427357", "82301904",
+  "4591250", "62188962", "40473581", "56907389",
+] as const;
+const mosquitoSetcodes = [0x536] as const;
+const mosquitoCodes = ["94113093"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
