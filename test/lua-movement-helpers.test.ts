@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import fs from "node:fs";
 import {
   applyResponse,
   createDuel,
@@ -146,6 +147,60 @@ describe("Lua movement helpers", () => {
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
     expect(host.messages).toContain("left field trigger 200/16");
+  });
+
+  it("lets Corrupted Ritual Records set itself from the GY after a listed monster leaves by effect", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Leave Field Mover", kind: "monster" },
+      { code: "24461358", name: "Corrupted Ritual Records", kind: "trap" },
+      { code: "70405001", name: "Listed Ritual Monster", kind: "monster", listedNames: ["33599853"] },
+    ];
+    const session = createDuel({ seed: 162, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "24461358", "70405001"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const mover = session.state.cards.find((card) => card.code === "100");
+    const record = session.state.cards.find((card) => card.code === "24461358");
+    const listed = session.state.cards.find((card) => card.code === "70405001");
+    expect(mover).toBeTruthy();
+    expect(record).toBeTruthy();
+    expect(listed).toBeTruthy();
+    moveDuelCard(session.state, mover!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, record!.uid, "graveyard", 0);
+    moveDuelCard(session.state, listed!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_MZONE)
+        e:SetOperation(function(e,tp)
+          local g=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 70405001), tp, LOCATION_MZONE, 0, 1, 1, nil)
+          Duel.SendtoGrave(g, REASON_EFFECT)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "corrupted-records-mover.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    const fallback = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c24461358.lua", "utf8"), "c24461358.lua");
+    expect(fallback.ok, fallback.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const moveAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === mover!.uid);
+    expect(moveAction).toBeDefined();
+    expect(applyResponse(session, moveAction!).ok).toBe(true);
+    const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === record!.uid);
+    expect(setAction).toBeDefined();
+    expect(applyResponse(session, setAction!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === listed!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
+    expect(session.state.cards.find((card) => card.uid === record!.uid)).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
   });
 
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
