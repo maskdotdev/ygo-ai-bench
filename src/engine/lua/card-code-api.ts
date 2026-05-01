@@ -151,6 +151,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsHell", session, (card) => Boolean(card && isAnimeArchetype(card, hellSetcodes, hellCodes)));
   pushBooleanGetter(L, "IsHeraldic", session, (card) => Boolean(card && isAnimeArchetype(card, heraldicSetcodes, heraldicCodes)));
   pushBooleanGetter(L, "IsHeavyIndustry", session, (card) => Boolean(card && isAnimeArchetype(card, heavyIndustrySetcodes, heavyIndustryCodes)));
+  pushBooleanGetter(L, "IsHunder", session, (card) => Boolean(card && isAnimeArchetype(card, hunderSetcodes, hunderCodes)));
+  pushBooleanGetter(L, "IsInsectQueen", session, (card) => Boolean(card && isAnimeArchetype(card, insectQueenSetcodes, insectQueenCodes)));
   pushBooleanGetter(L, "IsMantis", session, (card) => Boolean(card && isAnimeArchetype(card, mantisSetcodes, mantisCodes)));
   pushBooleanGetter(L, "IsMask", session, (card) => Boolean(card && isAnimeArchetype(card, maskSetcodes, maskCodes)));
   pushBooleanGetter(L, "IsMelodiousSongtress", session, (card) => Boolean(card && isAnimeArchetype(card, melodiousSongtressSetcodes, melodiousSongtressCodes)));
@@ -478,6 +480,10 @@ const hellSetcodes = [0x567] as const;
 const hellCodes = ["36029076", "46820049", "50916353", "64104037", "99370594", "61103515"] as const;
 const heraldicSetcodes = [0x566, 0x76] as const;
 const heraldicCodes = ["23649496", "47387961"] as const;
+const hunderSetcodes = [0x565] as const;
+const hunderCodes = ["71438011", "78663366", "21524779", "84530620", "27217742", "57019473", "34961968", "15510988", "69196160", "20264508", "48049769", "31786629", "52833089", "50920465", "14089428", "21817254", "48770333", "61204971", "30010480", "698785", "77506119", "54752875", "6766208", "987311", "84417082", "4178474", "11741041", "12580477"] as const;
+const insectQueenSetcodes = [0x582] as const;
+const insectQueenCodes = ["91512835", "41456841"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
