@@ -244,6 +244,57 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
   });
 
+  it("lets Lua scripts install Attraction equip procedures and conditions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Attraction Trap", kind: "trap", typeFlags: 0x4, setcodes: [0x15f] },
+      { code: "200", name: "Amazement Monster", kind: "monster", typeFlags: 0x21, setcodes: [0x15e] },
+      { code: "300", name: "Opponent Monster", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 157, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["300"] },
+    });
+    startDuel(session);
+    const trap = session.state.cards.find((card) => card.code === "100");
+    const ownMonster = session.state.cards.find((card) => card.code === "200");
+    const opponentMonster = session.state.cards.find((card) => card.code === "300");
+    expect(trap).toBeDefined();
+    expect(ownMonster).toBeDefined();
+    expect(opponentMonster).toBeDefined();
+    moveDuelCard(session.state, trap!.uid, "spellTrapZone", 0).faceUp = true;
+    moveDuelCard(session.state, ownMonster!.uid, "monsterZone", 0).faceUp = true;
+    moveDuelCard(session.state, opponentMonster!.uid, "monsterZone", 1).faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local trap = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      local own = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local opp = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      local e = aux.AddAttractionEquipProc(trap)
+      Debug.Message("attraction registered " .. tostring(e:IsHasType(EFFECT_TYPE_ACTIVATE)) .. "/" .. e:GetCode() .. "/" .. tostring(e:GetCost()~=nil) .. "/" .. tostring(e:GetTarget()~=nil) .. "/" .. tostring(e:GetOperation()~=nil))
+      Debug.Message("attraction target check " .. tostring(e:GetTarget()(e,0,nil,0,0,nil,0,0,0)))
+      Debug.Message("attraction filters " .. tostring(AA.eqtgfilter(own,0)) .. "/" .. tostring(AA.eqtgfilter(opp,0)))
+      Duel.Equip(0,trap,own)
+      local cond_self = aux.AttractionEquipCon(true)
+      local cond_opp = aux.AttractionEquipCon(false)
+      local ce = Effect.CreateEffect(trap)
+      Debug.Message("attraction condition self " .. tostring(cond_self(ce)) .. "/" .. tostring(cond_opp(ce)))
+      Duel.Equip(0,trap,opp)
+      Debug.Message("attraction condition opp " .. tostring(cond_self(ce)) .. "/" .. tostring(cond_opp(ce)))
+      `,
+      "attraction-equip-proc.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("attraction registered true/1002/true/true/true");
+    expect(host.messages).toContain("attraction target check true");
+    expect(host.messages).toContain("attraction filters true/true");
+    expect(host.messages).toContain("attraction condition self true/false");
+    expect(host.messages).toContain("attraction condition opp false/true");
+  });
+
   it("lets Lua scripts temporarily banish cards through aux.RemoveUntil", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Temporary Banish A", kind: "monster" },
