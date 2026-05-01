@@ -283,8 +283,10 @@ describe("Lua field and query helpers", () => {
       local link=Duel.GetFieldCard(0,LOCATION_MZONE,0)
       local linked=Duel.GetFieldCard(0,LOCATION_MZONE,1)
       local unlinked=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local link_group=Duel.GetMatchingGroup(Card.IsLinkMonster,0,LOCATION_MZONE,0,nil)
       Debug.Message("linked checks " .. tostring(link:IsLinked()) .. "/" .. tostring(linked:IsLinked()) .. "/" .. tostring(unlinked:IsLinked()))
       Debug.Message("linked zone counts " .. Duel.GetZoneWithLinkedCount(1,0) .. "/" .. Duel.GetZoneWithLinkedCount(2,0))
+      Debug.Message("linked zones " .. link:GetLinkedZone(0) .. "/" .. Duel.GetLinkedZone(0) .. "/" .. link_group:GetLinkedZone(0) .. "/" .. Duel.GetLinkedZone(1))
       `,
       "linked-card-predicate.lua",
     );
@@ -292,6 +294,7 @@ describe("Lua field and query helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("linked checks true/true/false");
     expect(host.messages).toContain("linked zone counts 2/2");
+    expect(host.messages).toContain("linked zones 2/2/2/0");
   });
 
   it("lets Lua scripts check Rikka releasable cards", () => {

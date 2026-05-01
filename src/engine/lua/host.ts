@@ -123,7 +123,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   installDuelApi(L, session, hostState);
   installEffectApi(L, hostState, readLuaError);
   installCardApi(L, session, hostState, (card, luaEffect, state) => toDuelEffect(card, luaEffect, state, hostState));
-  installGroupApi(L, hostState);
+  installGroupApi(L, hostState, session);
 
   return {
     messages: hostState.messages,

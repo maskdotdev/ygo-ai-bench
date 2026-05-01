@@ -54,6 +54,12 @@ export function installDuelLocationApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetZoneWithLinkedCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    lua.lua_pushinteger(state, linkedZoneMaskForPlayer(session, player));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetLinkedZone"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const positionMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0x1;
     lua.lua_pushinteger(state, positionMaskFromPosition(positionFromMask(positionMask) ?? "faceUpAttack"));
     return 1;
@@ -141,8 +147,17 @@ function linkedZoneMaskWithCount(session: DuelSession, player: PlayerId, count: 
   return mask;
 }
 
-function linkedZoneMask(card: DuelCardInstance): number {
-  if (((card.data.typeFlags ?? 0) & 0x4000001) !== 0x4000001) return 0;
+export function linkedZoneMaskForPlayer(session: DuelSession, player: PlayerId): number {
+  return session.state.cards.filter((card) => card.controller === player).reduce((mask, card) => mask | linkedZoneMask(card), 0);
+}
+
+export function linkedZoneMaskForUids(session: DuelSession, uids: readonly string[]): number {
+  const uidSet = new Set(uids);
+  return session.state.cards.filter((card) => uidSet.has(card.uid)).reduce((mask, card) => mask | linkedZoneMask(card), 0);
+}
+
+export function linkedZoneMask(card: DuelCardInstance): number {
+  if (card.location !== "monsterZone" || !card.faceUp || ((card.data.typeFlags ?? 0) & 0x4000001) !== 0x4000001) return 0;
   return linkedSequences(card.sequence, card.data.linkMarkers ?? 0).reduce((mask, sequence) => mask | (1 << sequence), 0);
 }
 

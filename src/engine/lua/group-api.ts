@@ -1,6 +1,8 @@
 import fengari from "fengari";
 import { copyGlobalFunctionToField, readCardUid, readGroupUids, readOptionalFunctionRef, readTableNumberField, releaseOptionalFunctionRef, setGroupUids } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
+import { linkedZoneMaskForUids } from "#lua/duel-api/location.js";
+import type { DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -10,7 +12,7 @@ export interface LuaGroupApiState {
   selectedUids: string[];
 }
 
-export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selectedUids: [] }): void {
+export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selectedUids: [] }, session?: DuelSession): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
     pushGroupTable(state, []);
@@ -180,6 +182,11 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("RandomSelect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushinteger(state, session ? linkedZoneMaskForUids(session, readGroupUids(state, 1)) : 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetLinkedZone"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
     const count = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
@@ -555,6 +562,7 @@ const groupFieldNames = [
   "Clone",
   "Select",
   "RandomSelect",
+  "GetLinkedZone",
   "IsExists",
   "Match",
   "GetClassCount",
