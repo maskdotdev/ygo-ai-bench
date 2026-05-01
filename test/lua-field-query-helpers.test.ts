@@ -43,6 +43,33 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("card id lookup 100/true");
   });
 
+  it("lets Lua scripts read static card data by code", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Static Monster", kind: "monster", typeFlags: 0x21, setcodes: [0x123, 0x456] },
+      { code: "200", name: "Static Spell", kind: "spell", typeFlags: 0x10002 },
+    ];
+    const session = createDuel({ seed: 47, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local first,second=Duel.GetCardSetcodeFromCode(100)
+      Debug.Message("static type " .. Duel.GetCardTypeFromCode(100) .. "/" .. Duel.GetCardTypeFromCode(200) .. "/" .. Duel.GetCardTypeFromCode(999))
+      Debug.Message("static setcodes " .. first .. "/" .. second .. "/" .. select("#",Duel.GetCardSetcodeFromCode(999)))
+      `,
+      "static-card-data.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("static type 33/65538/0");
+    expect(host.messages).toContain("static setcodes 291/1110/0");
+  });
+
   it("exposes Lua summon location and defense availability helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Hand Defender", kind: "monster", typeFlags: 0x21, defense: 1200 },

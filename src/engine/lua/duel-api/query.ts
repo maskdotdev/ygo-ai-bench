@@ -52,6 +52,10 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("GetFieldCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCardFromCardId(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetCardFromCardID"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCardTypeFromCode(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetCardTypeFromCode"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCardSetcodesFromCode(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetCardSetcodeFromCode"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsExistingMatchingCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsExistingMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsExistingMatchingCard(state, session));
@@ -250,6 +254,19 @@ function pushCardFromCardId(L: unknown, session: DuelSession): number {
   return 1;
 }
 
+function pushCardTypeFromCode(L: unknown, session: DuelSession): number {
+  const data = readCardDataByCode(L, session, 1);
+  lua.lua_pushinteger(L, cardTypeFlags(data));
+  return 1;
+}
+
+function pushCardSetcodesFromCode(L: unknown, session: DuelSession): number {
+  const data = readCardDataByCode(L, session, 1);
+  const setcodes = data?.setcodes ?? [];
+  for (const setcode of setcodes) lua.lua_pushinteger(L, setcode);
+  return setcodes.length;
+}
+
 function pushIsExistingMatchingCard(L: unknown, session: DuelSession): number {
   const query = readMatchingQuery(L, session, 1, 2, 3, 4, 6, 7);
   const minimum = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 1;
@@ -257,6 +274,20 @@ function pushIsExistingMatchingCard(L: unknown, session: DuelSession): number {
   releaseOptionalFunctionRef(L, query.filterRef);
   lua.lua_pushboolean(L, count >= minimum);
   return 1;
+}
+
+function readCardDataByCode(L: unknown, session: DuelSession, index: number) {
+  if (!lua.lua_isnumber(L, index) && !lua.lua_isstring(L, index)) return undefined;
+  const code = String(lua.lua_isnumber(L, index) ? lua.lua_tointeger(L, index) : lua.lua_tojsstring(L, index));
+  return session.cardReader(code);
+}
+
+function cardTypeFlags(data: ReturnType<DuelSession["cardReader"]>): number {
+  if (!data) return 0;
+  if (data.typeFlags !== undefined) return data.typeFlags;
+  if (data.kind === "spell") return 0x2;
+  if (data.kind === "trap") return 0x4;
+  return 0x1;
 }
 
 function pushTargetCount(L: unknown, session: DuelSession): number {
