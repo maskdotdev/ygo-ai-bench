@@ -6,6 +6,7 @@ export const cardFieldNames = [
   "AddMustBeSpecialSummonedByDarkFusion",
   "AddMustBeFusionSummoned",
   "AddMustBeRitualSummoned",
+  "AddMustBeSynchroSummoned",
   "AddMustBeLinkSummoned",
   "AddMustBePendulumSummoned",
   "AddCannotBeNormalSummoned",
