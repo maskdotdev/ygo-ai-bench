@@ -67,10 +67,30 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_pushcfunction(L, (state: unknown) => pushNecroValleyPredicate(state, readLuaError));
   lua.lua_setfield(L, -2, to_luastring("nvfilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
+  installAuxCompatibilityApi(L);
   installAuxUtilityApi(L, readLuaError);
   installNormalProcedureApi(L, readLuaError);
   installPersistentProcedureApi(L, readLuaError);
   installUnionProcedureApi(L, readLuaError);
+}
+
+function installAuxCompatibilityApi(L: unknown): void {
+  const source = `
+    function aux.LP0ActivationValidity(eff)
+      local ge1=Effect.GlobalEffect()
+      ge1:SetType(EFFECT_TYPE_FIELD)
+      ge1:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+      ge1:SetTargetRange(1,0)
+      ge1:SetCode(511000793)
+      ge1:SetCondition(function(e) return not eff.IsActivatable or eff:IsActivatable(e:GetHandlerPlayer()) end)
+      Duel.RegisterEffect(ge1,0)
+      local ge2=ge1:Clone()
+      Duel.RegisterEffect(ge2,1)
+    end
+  `;
+  const status = lauxlib.luaL_loadbuffer(L, to_luastring(source), source.length, to_luastring("aux-compat.lua"));
+  if (status === lua.LUA_OK) lua.lua_pcall(L, 0, 0, 0);
+  else lua.lua_pop(L, 1);
 }
 
 function pushBattleDestroyedCondition(L: unknown, session: DuelSession | undefined, requireOpponent: boolean, requireGraveMonster: boolean): number {

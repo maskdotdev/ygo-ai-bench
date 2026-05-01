@@ -77,6 +77,34 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("drawless adjusted 2/true");
   });
 
+  it("lets Lua scripts register LP0 activation validity markers", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "LP0 Marker", kind: "trap" }];
+    const session = createDuel({ seed: 168, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e = Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_ACTIVATE)
+      e:SetCode(EVENT_LP0 or 511002521)
+      aux.LP0ActivationValidity(e)
+      Debug.Message("lp0 activatable " .. tostring(e:IsActivatable(0)))
+      Debug.Message("lp0 markers " .. tostring(Duel.IsPlayerAffectedByEffect(0,511000793)~=nil) .. "/" .. tostring(Duel.IsPlayerAffectedByEffect(1,511000793)~=nil))
+      `,
+      "lp0-activation-validity.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("lp0 activatable true");
+    expect(host.messages).toContain("lp0 markers true/true");
+  });
+
   it("lets Lua scripts skip the next matching phase", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Phase Source", kind: "monster" }];
     const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });

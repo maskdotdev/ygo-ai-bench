@@ -428,6 +428,10 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
     lua.lua_pushboolean(state, ((effect.typeFlags ?? 0) & 0x10) !== 0);
     return 1;
   });
+  pushEffectMethod(L, effects, "IsActivatable", (state, effect) => {
+    lua.lua_pushboolean(state, effect.sourceUid !== undefined || effect.isGlobal);
+    return 1;
+  });
   pushEffectMethod(L, effects, "SetType", setEffectNumberField("typeFlags"));
   pushEffectMethod(L, effects, "SetCode", setEffectNumberField("code"));
   pushEffectMethod(L, effects, "SetDescription", setEffectNumberField("description"));
