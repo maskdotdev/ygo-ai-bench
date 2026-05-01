@@ -173,6 +173,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsNonEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x20) === 0));
   pushBooleanGetter(L, "IsLinked", session, (card) => Boolean(card && isLinkedMonsterZoneCard(session.state, card)));
   pushBooleanGetter(L, "IsDrone", session, (card) => Boolean(card?.data.setcodes?.includes(0x581)));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsRikkaReleasable(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("IsRikkaReleasable"));
   pushBooleanGetter(L, "IsForbidden", session, () => false);
   pushBooleanGetter(L, "CheckAdjacent", session, (card) => Boolean(card && hasAdjacentMonsterZone(session.state, card)));
   pushBooleanGetter(L, "IsMaximumMode", session, () => false);
@@ -732,6 +734,18 @@ function canGetPiercingRush<EffectRecord extends LuaCardApiEffectRecord>(state: 
   if (matchingLuaEffects(state, card, 85, hostState).length > 0) return false;
   const pierceEffects = matchingLuaEffects(state, card, 203, hostState);
   return pierceEffects.length === 0 || pierceEffects.some((effect) => (effect.reset?.flags ?? 0) === 0);
+}
+
+function pushIsRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const card = readCard(L, session);
+  const player = normalizePlayer(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : session.state.turnPlayer);
+  lua.lua_pushboolean(L, Boolean(card && isRikkaReleasable(session.state, card, player, hostState)));
+  return 1;
+}
+
+function isRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(state: DuelState, card: DuelCardInstance, player: PlayerId, hostState: LuaCardApiState<EffectRecord>): boolean {
+  if (((card.data.race ?? 0) & 0x400) !== 0) return true;
+  return card.controller === otherPlayer(player) && matchingLuaEffects(state, card, 76869711, hostState).length > 0;
 }
 
 function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {

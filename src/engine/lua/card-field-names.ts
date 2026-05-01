@@ -153,6 +153,7 @@ export const cardFieldNames = [
   "IsNonEffectMonster",
   "IsLinked",
   "IsDrone",
+  "IsRikkaReleasable",
   "IsForbidden",
   "CheckAdjacent",
   "IsLocation",

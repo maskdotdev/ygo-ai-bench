@@ -103,6 +103,57 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("linked zone counts 2/2");
   });
 
+  it("lets Lua scripts check Rikka releasable cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Plant Monster", kind: "monster", typeFlags: 0x21, race: 0x400 },
+      { code: "200", name: "Konkon Target", kind: "monster", typeFlags: 0x21, race: 0x2 },
+      { code: "300", name: "Plain Monster", kind: "monster", typeFlags: 0x21, race: 0x2 },
+    ];
+    const session = createDuel({ seed: 46, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200", "300"] },
+    });
+    startDuel(session);
+
+    const plant = session.state.cards.find((card) => card.code === "100");
+    const konkonTarget = session.state.cards.find((card) => card.code === "200");
+    const plain = session.state.cards.find((card) => card.code === "300");
+    expect(plant).toBeDefined();
+    expect(konkonTarget).toBeDefined();
+    expect(plain).toBeDefined();
+    moveDuelCard(session.state, plant!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, konkonTarget!.uid, "monsterZone", 1);
+    moveDuelCard(session.state, plain!.uid, "monsterZone", 1);
+    plant!.sequence = 0;
+    konkonTarget!.sequence = 0;
+    plain!.sequence = 1;
+    plant!.faceUp = true;
+    konkonTarget!.faceUp = true;
+    plain!.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local plant = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local konkon = Duel.GetFieldCard(1, LOCATION_MZONE, 0)
+      local plain = Duel.GetFieldCard(1, LOCATION_MZONE, 1)
+      local e = Effect.CreateEffect(konkon)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(CARD_RIKKA_KONKON)
+      e:SetRange(LOCATION_MZONE)
+      konkon:RegisterEffect(e)
+      Debug.Message("rikka constants " .. RACE_PLANT .. "/" .. CARD_RIKKA_KONKON)
+      Debug.Message("rikka releasable " .. tostring(plant:IsRikkaReleasable(0)) .. "/" .. tostring(konkon:IsRikkaReleasable(0)) .. "/" .. tostring(plain:IsRikkaReleasable(0)) .. "/" .. tostring(konkon:IsRikkaReleasable(1)))
+      `,
+      "rikka-releasable.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("rikka constants 1024/76869711");
+    expect(host.messages).toContain("rikka releasable true/true/false/false");
+  });
+
   it("lets Lua scripts query monster zones and choose summon positions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Zone Filler A", kind: "monster" },
