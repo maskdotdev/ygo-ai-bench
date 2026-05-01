@@ -95,6 +95,9 @@ describe("Lua state helpers", () => {
       e:SetRange(LOCATION_HAND)
       c:RegisterEffect(e)
       Debug.Message("piercing blocked " .. tostring(c:CanGetPiercingRush()))
+      Debug.Message("continuous rush before " .. tostring(c:HasContinuousRushEffect()))
+      c:RegisterFlagEffect(160015036, RESET_EVENT, 0, 1)
+      Debug.Message("continuous rush after " .. tostring(c:HasContinuousRushEffect()))
       Duel.SkipPhase(0, PHASE_BATTLE, RESET_PHASE + PHASE_END, 1)
       Debug.Message("able skipped " .. tostring(Duel.IsAbleToEnterBP()))
       Debug.Message("piercing skipped " .. tostring(c:CanGetPiercingRush()))
@@ -106,6 +109,8 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("able main true");
     expect(host.messages).toContain("piercing main true");
     expect(host.messages).toContain("piercing blocked false");
+    expect(host.messages).toContain("continuous rush before false");
+    expect(host.messages).toContain("continuous rush after true");
     expect(host.messages).toContain("able skipped false");
     expect(host.messages).toContain("piercing skipped false");
 

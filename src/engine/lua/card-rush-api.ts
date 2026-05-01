@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { getDuelFlagEffectCount } from "#duel/flags.js";
 import { matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { readTableStringField } from "#lua/api-utils.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api.js";
@@ -15,6 +16,8 @@ export function installCardRushApi<EffectRecord extends LuaCardApiEffectRecord>(
   lua.lua_setfield(L, -2, to_luastring("CanChangeIntoTypeRush"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanChangeAttributeRush(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("CanChangeIntoAttributeRush"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushHasContinuousRushEffect(state, session));
+  lua.lua_setfield(L, -2, to_luastring("HasContinuousRushEffect"));
 }
 
 function pushCanChangeRaceRush<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
@@ -48,6 +51,17 @@ function canChangeRushTrait<EffectRecord extends LuaCardApiEffectRecord>(
 
 function isFieldOrEquipEffect(effect: LuaCardApiEffectRecord): boolean {
   return effect.typeFlags === 0x2 || effect.typeFlags === 0x4;
+}
+
+function pushHasContinuousRushEffect(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  lua.lua_pushboolean(L, Boolean(card && hasContinuousRushEffect(session, card)));
+  return 1;
+}
+
+function hasContinuousRushEffect(session: DuelSession, card: DuelCardInstance): boolean {
+  if (getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: card.uid }, 160015036) > 0) return true;
+  return false;
 }
 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {

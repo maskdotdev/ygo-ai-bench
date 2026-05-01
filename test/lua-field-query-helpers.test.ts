@@ -201,6 +201,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
       { method: "IsMask", code: "29549364", setcode: 0x583 },
       { method: "IsStarvingVenemy", code: "22070401", setcode: 0x576 },
+      { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];
     const cards: DuelCardData[] = [{ code: "9000", name: "Normal Spell", kind: "spell", typeFlags: 0x2 }];
     const main = ["9000"];
