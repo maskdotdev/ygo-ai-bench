@@ -418,6 +418,7 @@ export function destroyDuelCard(state: DuelState, uid: string, controller?: Play
   const card = moveDuelCard(state, uid, "graveyard", controller, reason, reasonPlayer);
   pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
   collectLeaveFieldTriggers(state, card);
+  collectTriggerEffects(state, "destroyed", card);
   collectTriggerEffects(state, "sentToGraveyard", card);
   return card;
 }

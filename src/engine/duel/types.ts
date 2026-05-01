@@ -11,6 +11,7 @@ export type DuelEventName =
   | "normalSummoned"
   | "specialSummoned"
   | "activated"
+  | "destroyed"
   | "sentToGraveyard"
   | "leftField"
   | "banished"

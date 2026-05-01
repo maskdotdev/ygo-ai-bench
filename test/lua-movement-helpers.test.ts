@@ -4,6 +4,7 @@ import {
   applyResponse,
   createDuel,
   detachDuelOverlayMaterials,
+  destroyDuelCard,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   specialSummonDuelCard,
@@ -612,6 +613,87 @@ describe("Lua movement helpers", () => {
       faceUp: true,
     });
     expect(session.state.cards.find((card) => card.uid === revealed!.uid)).toMatchObject({
+      location: "hand",
+      controller: 0,
+    });
+  });
+
+  it("loads Phantom Knights Malevolent Scythe and detaches material to summon from Deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "101305037", name: "The Phantom Knights of Malevolent Scythe", kind: "extra", setcodes: [0xdb] },
+      { code: "100", name: "Phantom Knights Summon", kind: "monster", setcodes: [0xdb] },
+      { code: "200", name: "Overlay Material", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 110, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"], extra: ["101305037"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const xyz = session.state.cards.find((card) => card.code === "101305037");
+    const summoned = session.state.cards.find((card) => card.code === "100");
+    const material = session.state.cards.find((card) => card.code === "200");
+    expect(xyz).toBeDefined();
+    expect(summoned).toBeDefined();
+    expect(material).toBeDefined();
+    moveDuelCard(session.state, xyz!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, summoned!.uid, "deck", 0);
+    moveDuelCard(session.state, material!.uid, "overlay", 0);
+    xyz!.overlayUids.push(material!.uid);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305037.lua", "utf8"), "c101305037.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === xyz!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({
+      location: "graveyard",
+      reason: 0x80,
+    });
+    expect(session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      faceUp: true,
+    });
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([]);
+  });
+
+  it("loads Phantom Knights Malevolent Scythe and recovers a banished Phantom Knights card when destroyed", () => {
+    const cards: DuelCardData[] = [
+      { code: "101305037", name: "The Phantom Knights of Malevolent Scythe", kind: "extra", setcodes: [0xdb] },
+      { code: "100", name: "Phantom Knights Banished", kind: "trap", setcodes: [0xdb] },
+    ];
+    const session = createDuel({ seed: 111, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"], extra: ["101305037"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const xyz = session.state.cards.find((card) => card.code === "101305037");
+    const recovered = session.state.cards.find((card) => card.code === "100");
+    expect(xyz).toBeDefined();
+    expect(recovered).toBeDefined();
+    moveDuelCard(session.state, xyz!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, recovered!.uid, "banished", 0);
+    recovered!.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305037.lua", "utf8"), "c101305037.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    destroyDuelCard(session.state, xyz!.uid, 0);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === xyz!.uid);
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === recovered!.uid)).toMatchObject({
       location: "hand",
       controller: 0,
     });

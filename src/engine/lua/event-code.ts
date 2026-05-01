@@ -5,6 +5,7 @@ export function triggerEventFromCode(code: number | undefined): DuelEventName | 
   if (code === 1001) return "flipSummoned";
   if (code === 1100) return "normalSummoned";
   if (code === 1102) return "specialSummoned";
+  if (code === 1029) return "destroyed";
   if (code === 1014) return "sentToGraveyard";
   if (code === 1015 || code === 1019) return "leftField";
   if (code === 1016) return "positionChanged";
