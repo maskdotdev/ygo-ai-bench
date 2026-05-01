@@ -167,7 +167,7 @@ describe("Lua state helpers", () => {
     session.state.battleStep = "attack";
     result = host.loadScript(
       `
-      Debug.Message("phase battle step " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()) .. "/" .. tostring(Duel.IsBattlePhase()))
+      Debug.Message("phase battle step " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()) .. "/" .. tostring(Duel.IsBattlePhase()))
       `,
       "phase-predicate-battle-step.lua",
     );
@@ -176,7 +176,16 @@ describe("Lua state helpers", () => {
     delete session.state.battleStep;
     result = host.loadScript(
       `
-      Debug.Message("phase battle end " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()))
+      Debug.Message("phase battle start " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()))
+      `,
+      "phase-predicate-battle-start.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    session.state.attacksDeclared.push("attacked-card");
+    result = host.loadScript(
+      `
+      Debug.Message("phase battle end " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()))
       `,
       "phase-predicate-battle-end.lua",
     );
@@ -194,8 +203,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("phase draw true/true/false/false");
     expect(host.messages).toContain("phase standby true/false");
     expect(host.messages).toContain("phase main1 true/true/false");
-    expect(host.messages).toContain("phase battle step true/false/true");
-    expect(host.messages).toContain("phase battle end false/true");
+    expect(host.messages).toContain("phase battle step true/false/false/true");
+    expect(host.messages).toContain("phase battle start false/true/true");
+    expect(host.messages).toContain("phase battle end false/false/true");
     expect(host.messages).toContain("phase end true/true/false");
   });
 

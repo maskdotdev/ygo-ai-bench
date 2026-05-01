@@ -34,6 +34,7 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   pushPhasePredicate(L, "IsDrawPhase", session, (state) => state.phase === "draw");
   pushPhasePredicate(L, "IsStandbyPhase", session, (state) => state.phase === "standby");
   pushPhasePredicate(L, "IsMainPhase1", session, (state) => state.phase === "main1");
+  pushPhasePredicate(L, "IsStartOfBattlePhase", session, isStartOfBattlePhase);
   pushPhasePredicate(L, "IsBattleStep", session, (state) => state.phase === "battle" && state.battleStep === "attack");
   pushPhasePredicate(L, "IsEndOfBattlePhase", session, (state) => state.phase === "battle" && state.battleStep === undefined);
   pushPhasePredicate(L, "IsEndPhase", session, (state) => state.phase === "end");
@@ -96,6 +97,10 @@ function currentPhaseMask(state: DuelState): number {
   if (state.phase === "battle" && state.battleStep === "damage") return 0x20;
   if (state.phase === "battle" && state.battleStep === "damageCalculation") return 0x40;
   return phaseMask(state.phase);
+}
+
+function isStartOfBattlePhase(state: DuelState): boolean {
+  return state.phase === "battle" && state.battleStep === undefined && !state.currentAttack && !state.pendingBattle && state.attacksDeclared.length === 0;
 }
 
 function phaseMask(phase: DuelPhase): number {
