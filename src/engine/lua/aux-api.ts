@@ -147,6 +147,40 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
       c:RegisterEffect(e2)
       return e1
     end
+    function aux.EquipAndLimitRegister(c,e,tp,tc,code,previousPos)
+      if not tc:EquipByEffectAndLimitRegister(e,tp,c,code,previousPos==nil and true or previousPos) then return false end
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetCode(EFFECT_EQUIP_LIMIT)
+      e1:SetReset(RESET_EVENT+RESETS_STANDARD)
+      e1:SetValue(function(le,ec) return ec==tc end)
+      c:RegisterEffect(e1)
+      return true
+    end
+    function aux.AddEREquipLimit(c,con,equipval,equipop,linkedeff,prop,resetflag,resetcount)
+      local finalprop=EFFECT_FLAG_CANNOT_DISABLE
+      if prop then finalprop=finalprop|prop end
+      local e1=Effect.CreateEffect(c)
+      if con then e1:SetCondition(con) end
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetProperty(finalprop)
+      e1:SetCode(89785779)
+      e1:SetLabelObject(linkedeff)
+      if resetflag and resetcount then e1:SetReset(resetflag,resetcount)
+      elseif resetflag then e1:SetReset(resetflag) end
+      e1:SetValue(function(ec,bc,tp) return equipval(ec,bc,tp) end)
+      e1:SetOperation(function(ec,e,tp,tc) return equipop(ec,e,tp,tc) end)
+      c:RegisterEffect(e1)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_SINGLE)
+      e2:SetProperty(finalprop & ~EFFECT_FLAG_CANNOT_DISABLE)
+      e2:SetCode(89785779+EFFECT_EQUIP_LIMIT)
+      if resetflag and resetcount then e2:SetReset(resetflag,resetcount)
+      elseif resetflag then e2:SetReset(resetflag) end
+      c:RegisterEffect(e2)
+      if linkedeff then linkedeff:SetLabelObject(e2) end
+      return e1,e2
+    end
     function aux.RemainFieldCost(e,tp,eg,ep,ev,re,r,rp,chk)
       return chk==0 or true
     end
