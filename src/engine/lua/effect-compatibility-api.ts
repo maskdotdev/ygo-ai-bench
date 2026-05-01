@@ -5,8 +5,15 @@ const { lua, lauxlib, to_luastring } = fengari;
 export function installEffectCompatibilityApi(L: unknown, readLuaError: (state: unknown) => string): void {
   const source = `
     Cost=Cost or {}
+    __duel_self_tograve_costs=__duel_self_tograve_costs or setmetatable({}, {__mode="k"})
     __duel_self_discard_costs=__duel_self_discard_costs or setmetatable({}, {__mode="k"})
     __duel_self_changepos_costs=__duel_self_changepos_costs or setmetatable({}, {__mode="k"})
+    function Cost.SelfToGrave(e,tp,eg,ep,ev,re,r,rp,chk)
+      local c=e:GetHandler()
+      if chk==0 then return c and c:IsAbleToGraveAsCost() end
+      Duel.SendtoGrave(c,REASON_COST)
+    end
+    __duel_self_tograve_costs[Cost.SelfToGrave]=true
     function Cost.SelfDiscard(e,tp,eg,ep,ev,re,r,rp,chk)
       local c=e:GetHandler()
       if chk==0 then return c and c:IsDiscardable() end
@@ -18,6 +25,7 @@ export function installEffectCompatibilityApi(L: unknown, readLuaError: (state: 
       if chk==0 then return c and c:IsDiscardable() and c:IsAbleToGraveAsCost() end
       Duel.SendtoGrave(c,REASON_DISCARD|REASON_COST)
     end
+    __duel_self_tograve_costs[Cost.SelfDiscardToGrave]=true
     __duel_self_discard_costs[Cost.SelfDiscardToGrave]=true
     function Cost.SelfChangePosition(position)
       local cost=function(e,tp,eg,ep,ev,re,r,rp,chk)
@@ -78,9 +86,25 @@ export function installEffectCompatibilityApi(L: unknown, readLuaError: (state: 
       local cost=e:GetCost()
       return cost~=nil and __duel_self_discard_costs[cost] or false
     end
+    function Effect.HasSelfToGraveCost(e)
+      local cost=e:GetCost()
+      return cost~=nil and __duel_self_tograve_costs[cost] or false
+    end
     function Effect.HasSelfChangePositionCost(e)
       local cost=e:GetCost()
       return cost~=nil and __duel_self_changepos_costs[cost] or false
+    end
+    function Effect.IsMonsterEffect(e)
+      return e:IsActiveType(TYPE_MONSTER)
+    end
+    function Effect.IsSpellEffect(e)
+      return e:IsActiveType(TYPE_SPELL)
+    end
+    function Effect.IsTrapEffect(e)
+      return e:IsActiveType(TYPE_TRAP)
+    end
+    function Effect.IsSpellTrapEffect(e)
+      return e:IsSpellEffect() or e:IsTrapEffect()
     end
     local create_effect,global_effect=Effect.CreateEffect,Effect.GlobalEffect
     function Effect.CreateEffect(c) return setmetatable(create_effect(c),{__index=Effect}) end

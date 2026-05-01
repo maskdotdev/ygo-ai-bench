@@ -393,10 +393,14 @@ describe("Lua effect metadata helpers", () => {
   });
 
   it("classifies Lua effect cost helper families", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "Cost Metadata Source", kind: "monster" }];
-    const session = createDuel({ seed: 166, startingHandSize: 1, cardReader: createCardReader(cards) });
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cost Metadata Source", kind: "monster", typeFlags: 0x1 },
+      { code: "200", name: "Spell Cost Metadata Source", kind: "spell", typeFlags: 0x2 },
+      { code: "300", name: "Trap Cost Metadata Source", kind: "trap", typeFlags: 0x4 },
+    ];
+    const session = createDuel({ seed: 166, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100"] },
+      0: { main: ["100", "200", "300"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -404,22 +408,33 @@ describe("Lua effect metadata helpers", () => {
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
       `
-      local c=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local trap=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local detach=Effect.CreateEffect(c)
       detach:SetCost(Cost.DetachFromSelf(1))
+      local spell_effect=Effect.CreateEffect(spell)
+      local trap_effect=Effect.CreateEffect(trap)
       local remain=Effect.CreateEffect(c)
       remain:SetCost(aux.RemainFieldCost)
+      local to_grave=Effect.CreateEffect(c)
+      to_grave:SetCost(Cost.SelfToGrave)
       local discard=Effect.CreateEffect(c)
       discard:SetCost(Cost.SelfDiscard)
+      local discard_grave=Effect.CreateEffect(c)
+      discard_grave:SetCost(Cost.SelfDiscardToGrave)
       local change_pos=Effect.CreateEffect(c)
       change_pos:SetCost(Cost.SelfChangePosition(POS_FACEUP_DEFENSE))
       local custom=Effect.CreateEffect(c)
       custom:SetCost(function() return true end)
       Debug.Message("cost families detach " .. tostring(detach:HasDetachCost()) .. "/" .. tostring(detach:HasRemainFieldCost()))
       Debug.Message("cost families remain " .. tostring(remain:HasDetachCost()) .. "/" .. tostring(remain:HasRemainFieldCost()))
-      Debug.Message("cost families discard " .. tostring(discard:HasSelfDiscardCost()) .. "/" .. tostring(discard:HasSelfChangePositionCost()))
+      Debug.Message("cost families to grave " .. tostring(to_grave:HasSelfToGraveCost()) .. "/" .. tostring(to_grave:HasSelfDiscardCost()))
+      Debug.Message("cost families discard " .. tostring(discard:HasSelfToGraveCost()) .. "/" .. tostring(discard:HasSelfDiscardCost()) .. "/" .. tostring(discard:HasSelfChangePositionCost()))
+      Debug.Message("cost families discard grave " .. tostring(discard_grave:HasSelfToGraveCost()) .. "/" .. tostring(discard_grave:HasSelfDiscardCost()))
       Debug.Message("cost families change position " .. tostring(change_pos:HasSelfDiscardCost()) .. "/" .. tostring(change_pos:HasSelfChangePositionCost()))
-      Debug.Message("cost families custom " .. tostring(custom:HasDetachCost()) .. "/" .. tostring(custom:HasRemainFieldCost()) .. "/" .. tostring(custom:HasSelfDiscardCost()) .. "/" .. tostring(custom:HasSelfChangePositionCost()))
+      Debug.Message("cost families active type " .. tostring(detach:IsMonsterEffect()) .. "/" .. tostring(detach:IsSpellEffect()) .. "/" .. tostring(spell_effect:IsSpellEffect()) .. "/" .. tostring(spell_effect:IsSpellTrapEffect()) .. "/" .. tostring(trap_effect:IsTrapEffect()) .. "/" .. tostring(trap_effect:IsSpellTrapEffect()))
+      Debug.Message("cost families custom " .. tostring(custom:HasDetachCost()) .. "/" .. tostring(custom:HasRemainFieldCost()) .. "/" .. tostring(custom:HasSelfToGraveCost()) .. "/" .. tostring(custom:HasSelfDiscardCost()) .. "/" .. tostring(custom:HasSelfChangePositionCost()))
       `,
       "effect-cost-families.lua",
     );
@@ -427,9 +442,12 @@ describe("Lua effect metadata helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("cost families detach true/false");
     expect(host.messages).toContain("cost families remain false/true");
-    expect(host.messages).toContain("cost families discard true/false");
+    expect(host.messages).toContain("cost families to grave true/false");
+    expect(host.messages).toContain("cost families discard false/true/false");
+    expect(host.messages).toContain("cost families discard grave true/true");
     expect(host.messages).toContain("cost families change position false/true");
-    expect(host.messages).toContain("cost families custom false/false/false/false");
+    expect(host.messages).toContain("cost families active type true/false/true/true/true/true");
+    expect(host.messages).toContain("cost families custom false/false/false/false/false");
   });
 
   it("registers Lua normal summon and set procedure effects", () => {
