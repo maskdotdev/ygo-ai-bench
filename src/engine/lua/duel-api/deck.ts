@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { drawDuelCards, sendDuelCardToGraveyard } from "#duel/core.js";
+import { getCards, moveDuelCard } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -82,6 +83,13 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("DiscardHand"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const moved = swapDeckAndGrave(session, player);
+    setOperatedUids(hostState, moved);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SwapDeckAndGrave"));
   installDeckQueryHelpers(L, session, hostState);
 }
 
@@ -210,6 +218,24 @@ function discardHandCards(session: DuelSession, L: unknown): string[] {
     }
   }
   return discarded;
+}
+
+function swapDeckAndGrave(session: DuelSession, player: PlayerId): string[] {
+  const deckCards = getCards(session.state, player, "deck");
+  const graveCards = getCards(session.state, player, "graveyard");
+  const moved: string[] = [];
+  for (const card of deckCards) {
+    moveDuelCard(session.state, card.uid, "graveyard", player, duelReason.effect, player);
+    moved.push(card.uid);
+  }
+  for (const card of graveCards) {
+    moveDuelCard(session.state, card.uid, "deck", player, duelReason.effect, player);
+    moved.push(card.uid);
+  }
+  for (const [sequence, card] of deckCards.entries()) card.sequence = sequence;
+  for (const [sequence, card] of graveCards.entries()) card.sequence = sequence;
+  shuffleDeck(session, player);
+  return moved;
 }
 
 function topDeckUids(session: DuelSession, player: PlayerId, count: number): string[] {

@@ -223,6 +223,48 @@ describe("Lua movement helpers", () => {
     ]);
   });
 
+  it("lets Lua scripts swap the deck and graveyard", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Swap Deck A", kind: "monster" },
+      { code: "200", name: "Swap Deck B", kind: "monster" },
+      { code: "300", name: "Swap Grave A", kind: "monster" },
+      { code: "400", name: "Swap Grave B", kind: "monster" },
+      { code: "500", name: "Swap Grave C", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 177, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    for (const code of ["300", "400", "500"]) {
+      const card = session.state.cards.find((candidate) => candidate.code === code);
+      expect(card).toBeDefined();
+      moveDuelCard(session.state, card!.uid, "graveyard", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("swap before " .. Duel.GetFieldGroupCount(0, LOCATION_DECK, 0) .. "/" .. Duel.GetFieldGroupCount(0, LOCATION_GRAVE, 0))
+      Duel.SwapDeckAndGrave(0)
+      Debug.Message("swap after " .. Duel.GetFieldGroupCount(0, LOCATION_DECK, 0) .. "/" .. Duel.GetFieldGroupCount(0, LOCATION_GRAVE, 0))
+      Debug.Message("swap operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "swap-deck-and-grave.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("swap before 2/3");
+    expect(host.messages).toContain("swap after 3/2");
+    expect(host.messages).toContain("swap operated 5");
+    expect(getCards(session.state, 0, "deck").map((card) => card.code).sort()).toEqual(["300", "400", "500"]);
+    expect(getCards(session.state, 0, "graveyard").map((card) => card.code)).toEqual(["100", "200"]);
+    expect(getCards(session.state, 0, "deck").every((card) => card.previousLocation === "graveyard")).toBe(true);
+    expect(getCards(session.state, 0, "graveyard").every((card) => card.previousLocation === "deck")).toBe(true);
+  });
+
   it("registers Lua equip spell procedures", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Procedure Target", kind: "monster" },
