@@ -605,7 +605,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
       changeDuelBattleDamage(state, damagedPlayer, amount);
       return damageDuelPlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
     },
-    destroyCard: (uid, controller, reason) => destroyDuelCard(state, uid, controller, reason),
+    destroyCard: (uid, controller, reason, reasonPlayer) => destroyDuelCard(state, uid, controller, reason, reasonPlayer),
   }, attacker ? extraAttackCount(state, attacker, createContext) : 0);
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
 }
