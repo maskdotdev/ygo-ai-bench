@@ -167,7 +167,7 @@ function tableForLocalFile(file) {
 }
 
 function isInternalApiName(name) {
-  return name.startsWith("__") || name === "initial_effect";
+  return (name.startsWith("__") && name !== "__tostring") || name === "initial_effect";
 }
 
 function createApiMap(factory) {

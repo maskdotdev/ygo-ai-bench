@@ -1218,6 +1218,7 @@ describe("Lua field and query helpers", () => {
       `
       local mixed = Duel.GetFieldGroup(0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK)
       Debug.Message("mixed count " .. mixed:GetCount())
+      Debug.Message("mixed tostring " .. tostring(mixed) .. "/" .. Group.__tostring(mixed))
       Debug.Message("field count " .. Duel.GetFieldGroupCount(0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK))
       Debug.Message("field rush count " .. Duel.GetFieldGroupCountRush(0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK))
       Debug.Message("banished count " .. Duel.GetMatchingGroupCount(Card.IsAbleToGrave, 0, LOCATION_REMOVED, 0, nil))
@@ -1265,6 +1266,7 @@ describe("Lua field and query helpers", () => {
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("mixed count 4");
+    expect(host.messages).toContain('mixed tostring Group: { "size": 4 }/Group: { "size": 4 }');
     expect(host.messages).toContain("field count 4");
     expect(host.messages).toContain("field rush count 4");
     expect(host.messages).toContain("banished count 1");
