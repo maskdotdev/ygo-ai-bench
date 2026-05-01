@@ -572,14 +572,15 @@ describe("Lua movement helpers", () => {
       { code: "301", name: "Pendulum Extra Return", kind: "monster", typeFlags: 0x1000001 },
       { code: "900", name: "Extra Return", kind: "extra" },
       { code: "901", name: "Extra Alias Return", kind: "extra" },
+      { code: "902", name: "Generic Extra Return", kind: "extra" },
     ];
     const session = createDuel({ seed: 9, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "300", "301"], extra: ["900", "901"] },
+      0: { main: ["100", "300", "301"], extra: ["900", "901", "902"] },
       1: { main: ["100", "300"] },
     });
     startDuel(session);
-    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && (candidate.code === "100" || candidate.code === "300" || candidate.code === "301" || candidate.code === "900" || candidate.code === "901"))) {
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && (candidate.code === "100" || candidate.code === "300" || candidate.code === "301" || candidate.code === "900" || candidate.code === "901" || candidate.code === "902"))) {
       moveDuelCard(session.state, card.uid, "graveyard", 0);
     }
 
@@ -599,6 +600,9 @@ describe("Lua movement helpers", () => {
       local extra_alias = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_GRAVE, 0, 1, 1, nil)
       Debug.Message("to extra alias " .. Duel.SendtoExtra(extra_alias, 0, REASON_EFFECT))
       Debug.Message("operated extra alias " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      local generic_extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 902), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("generic to extra " .. Duel.Sendto(generic_extra, LOCATION_EXTRA, REASON_EFFECT, POS_FACEDOWN_DEFENSE))
+      Debug.Message("operated generic extra " .. Duel.GetOperatedGroup():GetFirst():GetCode() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetLocation() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetPosition())
       local pendulum = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_GRAVE, 0, 1, 1, nil)
       Debug.Message("pendulum able extra " .. tostring(pendulum:GetFirst():IsAbleToExtra()))
       Debug.Message("to pendulum extra " .. Duel.SendtoExtraP(pendulum, 0, REASON_EFFECT))
@@ -620,6 +624,8 @@ describe("Lua movement helpers", () => {
     expect(host.messages).toContain("extra faceup false");
     expect(host.messages).toContain("to extra alias 1");
     expect(host.messages).toContain("operated extra alias 901");
+    expect(host.messages).toContain("generic to extra 1");
+    expect(host.messages).toContain("operated generic extra 902/64/8");
     expect(host.messages).toContain("pendulum able extra true");
     expect(host.messages).toContain("to pendulum extra 1");
     expect(host.messages).toContain("pendulum extra faceup true");
@@ -627,6 +633,7 @@ describe("Lua movement helpers", () => {
     expect(host.messages).toContain("operated illegal 0");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "100")?.location).toBe("deck");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "900")?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "902")).toMatchObject({ location: "extraDeck", faceUp: false, position: "faceDownDefense" });
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "301")).toMatchObject({ location: "extraDeck", faceUp: true });
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("graveyard");
   });

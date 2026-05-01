@@ -27,6 +27,8 @@ export interface LuaDuelMoveApiHostState {
 }
 
 export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): void {
+  lua.lua_pushcfunction(L, (state: unknown) => pushSendToGenericLocation(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("Sendto"));
   pushMoveHelper(L, "SendtoGrave", session, hostState, (state, uid, controller, reason, reasonPlayer) => sendDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer));
   pushMoveHelper(L, "Destroy", session, hostState, (state, uid, controller, reason, reasonPlayer) => destroyDuelCard(state, uid, controller, reason, reasonPlayer), duelReason.destroy);
   pushMoveHelper(L, "Remove", session, hostState, (state, uid, controller, reason, reasonPlayer) => banishDuelCard(state, uid, controller, reason, reasonPlayer));
@@ -73,6 +75,33 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("MoveSequence"));
   lua.lua_pushcfunction(L, (state: unknown) => pushShuffleSetCard(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ShuffleSetCard"));
+}
+
+function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const location = readSingleDestination(L, 2);
+  if (!location) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const reason = readMoveReason(L, 3, 0);
+  const requestedPosition = lua.lua_isnumber(L, 4) ? positionFromMask(lua.lua_tointeger(L, 4)) : undefined;
+  const moved: string[] = [];
+  for (const uid of readCardOrGroupUids(L, 1)) {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!card || !canMoveDuelCardToLocation(session.state, uid, location, reason)) continue;
+    const before = movementSnapshot(card);
+    try {
+      const result = moveDuelCardWithRedirects(session.state, uid, location, card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      if (requestedPosition) applySummonPosition(result, requestedPosition);
+      if (didMove(result, before)) moved.push(uid);
+    } catch {
+      // Generic movement reports successful card moves only.
+    }
+  }
+  setOperatedUids(hostState, moved);
+  lua.lua_pushinteger(L, moved.length);
+  return 1;
 }
 
 function pushMoveHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0): void {
@@ -667,6 +696,19 @@ function readFieldDestination(L: unknown, index: number): "monsterZone" | "spell
   const locations = locationsFromMask(lua.lua_tointeger(L, index));
   if (locations.includes("monsterZone")) return "monsterZone";
   if (locations.includes("spellTrapZone")) return "spellTrapZone";
+  return undefined;
+}
+
+function readSingleDestination(L: unknown, index: number): DuelLocation | undefined {
+  if (!lua.lua_isnumber(L, index)) return undefined;
+  const mask = lua.lua_tointeger(L, index);
+  if ((mask & 0x40) !== 0) return "extraDeck";
+  if ((mask & 0x20) !== 0) return "banished";
+  if ((mask & 0x10) !== 0) return "graveyard";
+  if ((mask & 0x08) !== 0) return "spellTrapZone";
+  if ((mask & 0x04) !== 0) return "monsterZone";
+  if ((mask & 0x02) !== 0) return "hand";
+  if ((mask & 0x01) !== 0) return "deck";
   return undefined;
 }
 
