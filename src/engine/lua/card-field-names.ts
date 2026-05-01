@@ -81,6 +81,8 @@ export const cardFieldNames = [
   "IsDruid",
   "IsDyson",
   "IsEarthboundServant",
+  "IsElf",
+  "IsEmissaryOfDarkness",
   "IsRed",
   "IsWhite",
   "IsChampion",

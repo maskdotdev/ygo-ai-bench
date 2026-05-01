@@ -132,6 +132,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsDruid", session, (card) => Boolean(card && isAnimeArchetype(card, druidSetcodes, druidCodes)));
   pushBooleanGetter(L, "IsDyson", session, (card) => Boolean(card && isAnimeArchetype(card, dysonSetcodes, dysonCodes)));
   pushBooleanGetter(L, "IsEarthboundServant", session, (card) => Boolean(card && isAnimeArchetype(card, earthboundServantSetcodes, earthboundServantCodes)));
+  pushBooleanGetter(L, "IsElf", session, (card) => Boolean(card && isAnimeArchetype(card, elfSetcodes, elfCodes)));
+  pushBooleanGetter(L, "IsEmissaryOfDarkness", session, (card) => Boolean(card && isAnimeArchetype(card, emissaryOfDarknessSetcodes, emissaryOfDarknessCodes)));
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
   pushBooleanGetter(L, "IsWhite", session, (card) => Boolean(card && isAnimeArchetype(card, whiteSetcodes, whiteCodes)));
   pushBooleanGetter(L, "IsChampion", session, (card) => Boolean(card && isAnimeArchetype(card, championSetcodes, championCodes)));
@@ -403,6 +405,28 @@ const dysonCodes = ["1992816", "32559361"] as const;
 
 const earthboundServantSetcodes = [0x2021] as const;
 const earthboundServantCodes = ["8690387", "33202303", "44094981", "45716579", "71101678"] as const;
+
+const elfSetcodes = [0x51b, 0xe4] as const;
+const elfCodes = [
+  "44663232",
+  "98582704",
+  "39897277",
+  "93221206",
+  "97170107",
+  "85239662",
+  "68625727",
+  "59983499",
+  "21417692",
+  "69140098",
+  "42386471",
+  "61807040",
+  "11613567",
+  "15025844",
+  "98299011",
+] as const;
+
+const emissaryOfDarknessSetcodes = [0x51c] as const;
+const emissaryOfDarknessCodes = ["44330098", "44330099"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
