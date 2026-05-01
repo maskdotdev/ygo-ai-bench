@@ -287,6 +287,8 @@ describe("Lua field and query helpers", () => {
       { method: "IsTachyonDragon", code: "88177324", setcode: 0x1555 },
       { method: "IsTheWingedDragonofRa", code: "10000010", setcode: 0x584 },
       { method: "IsToy", code: "56675280", setcode: 0x559 },
+      { method: "IsToyArcV", code: "9001", setcode: 0x558, codeMatches: false },
+      { method: "IsV", code: "97574404", setcode: 0x55a },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];
     for (let index = 0; index < cases.length; index += 12) {
@@ -322,7 +324,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("generic butterfly false/false");
   });
 
-  function expectAnimeArchetypePredicates(cases: { method: string; code: string; setcode: number }[], seed: number): void {
+  function expectAnimeArchetypePredicates(cases: { method: string; code: string; setcode: number; codeMatches?: boolean }[], seed: number): void {
     const cards: DuelCardData[] = [{ code: "9000", name: "Normal Spell", kind: "spell", typeFlags: 0x2 }];
     const main = ["9000"];
     for (const [index, fixture] of cases.entries()) {
@@ -357,7 +359,7 @@ describe("Lua field and query helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    for (const fixture of cases) expect(host.messages).toContain(`${fixture.method} true/${fixture.setcode === 0 ? "false" : "true"}/false`);
+    for (const fixture of cases) expect(host.messages).toContain(`${fixture.method} ${fixture.codeMatches === false ? "false" : "true"}/${fixture.setcode === 0 ? "false" : "true"}/false`);
   }
 
   it("lets Lua scripts check linked monster-zone cards", () => {
