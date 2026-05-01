@@ -74,6 +74,7 @@ interface LuaHostState {
   possibleOperationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
   selectedUids: string[];
+  fusionMaterialUids: string[];
   scriptSource: LuaScriptSource | undefined;
   loadedScripts: Set<string>;
   currentScriptCardCode: string | undefined;
@@ -98,6 +99,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     possibleOperationInfos: [],
     operatedUids: [],
     selectedUids: [],
+    fusionMaterialUids: [],
     scriptSource,
     loadedScripts: new Set(),
     currentScriptCardCode: undefined,
