@@ -107,6 +107,30 @@ describe("Lua random helpers", () => {
     expect(first.state.log.some((entry) => entry.action === "tossDice" && entry.detail.includes(","))).toBe(true);
   });
 
+  it("lets Lua scripts read the last dice result", () => {
+    const session = setupSession(167);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local empty={Duel.GetDiceResult()}
+      local a=Duel.TossDice(0,1)
+      local one={Duel.GetDiceResult()}
+      local b,c=Duel.TossDice(1,2)
+      local two={Duel.GetDiceResult()}
+      Debug.Message("dice result empty " .. #empty)
+      Debug.Message("dice result one " .. a .. "/" .. one[1])
+      Debug.Message("dice result two " .. b .. "," .. c .. "/" .. two[1] .. "," .. two[2])
+      `,
+      "dice-result.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("dice result empty 0");
+    expect(host.messages[1]).toMatch(/^dice result one ([1-6])\/\1$/);
+    expect(host.messages[2]).toMatch(/^dice result two ([1-6]),([1-6])\/\1,\2$/);
+    expect(session.state.lastDiceResults).toHaveLength(2);
+  });
+
   it("preserves dice progression across snapshots", () => {
     const original = setupSession(153);
     const firstHost = createLuaScriptHost(original);
@@ -140,6 +164,32 @@ describe("Lua random helpers", () => {
     );
     expect(continuousRoll.ok, continuousRoll.error).toBe(true);
     expect(restoredHost.messages[0]?.replace("after snapshot", "continuous")).toBe(continuousHost.messages[0]);
+  });
+
+  it("preserves last dice results across snapshots", () => {
+    const original = setupSession(168);
+    const firstHost = createLuaScriptHost(original);
+    const first = firstHost.loadScript(
+      `
+      local a,b=Duel.TossDice(0,2)
+      Debug.Message("before dice result " .. a .. "," .. b)
+      `,
+      "dice-result-before-snapshot.lua",
+    );
+    expect(first.ok, first.error).toBe(true);
+
+    const restored = restoreDuel(serializeDuel(original), createCardReader(cards));
+    const restoredHost = createLuaScriptHost(restored);
+    const restoredResult = restoredHost.loadScript(
+      `
+      local a,b=Duel.GetDiceResult()
+      Debug.Message("after dice result " .. a .. "," .. b)
+      `,
+      "dice-result-after-snapshot.lua",
+    );
+
+    expect(restoredResult.ok, restoredResult.error).toBe(true);
+    expect(restoredHost.messages[0]?.replace("after", "before")).toBe(firstHost.messages[0]);
   });
 
   it("lets Lua scripts get deterministic random numbers", () => {

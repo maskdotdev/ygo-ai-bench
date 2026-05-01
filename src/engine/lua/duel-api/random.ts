@@ -8,6 +8,8 @@ const { lua, to_luastring } = fengari;
 export function installDuelRandomApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushTossDice(state, session));
   lua.lua_setfield(L, -2, to_luastring("TossDice"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetDiceResult(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetDiceResult"));
   lua.lua_pushcfunction(L, (state: unknown) => pushTossCoin(state, session));
   lua.lua_setfield(L, -2, to_luastring("TossCoin"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceCoin(state));
@@ -31,9 +33,15 @@ function pushTossDice(L: unknown, session: DuelSession): number {
   for (let index = 0; index < count; index += 1) {
     results.push(rollDie(session));
   }
+  session.state.lastDiceResults = results;
   pushDuelLog(session.state, "tossDice", player === 1 ? 1 : 0, undefined, results.join(","));
   for (const result of results) lua.lua_pushinteger(L, result);
   return results.length;
+}
+
+function pushGetDiceResult(L: unknown, session: DuelSession): number {
+  for (const result of session.state.lastDiceResults) lua.lua_pushinteger(L, result);
+  return session.state.lastDiceResults.length;
 }
 
 function rollDie(session: DuelSession): number {
