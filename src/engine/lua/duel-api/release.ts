@@ -24,6 +24,8 @@ export function installDuelReleaseApi(L: unknown, session: DuelSession, hostStat
   lua.lua_setfield(L, -2, to_luastring("GetReleaseGroupCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckTribute(state, session));
   lua.lua_setfield(L, -2, to_luastring("CheckTribute"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushTributeCount(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetTributeCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushTributeGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetTributeGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectTribute(state, session));
@@ -78,6 +80,13 @@ function pushCheckTribute(L: unknown, session: DuelSession): number {
   const selected = Math.min(available, maximum);
   const openZones = monsterZoneCapacity(session, player) - monsterZoneCount(session, player);
   lua.lua_pushboolean(L, Boolean(target && selected >= minimum && (openZones > 0 || selected > 0)));
+  return 1;
+}
+
+function pushTributeCount(L: unknown, session: DuelSession): number {
+  const targetUid = readCardUid(L, 1);
+  const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
+  lua.lua_pushinteger(L, target ? normalSummonTributeCount(target) : 0);
   return 1;
 }
 

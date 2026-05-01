@@ -266,6 +266,8 @@ describe("Lua summon and release helpers", () => {
     const openZone = host.loadScript(
       `
       local one = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local two = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("tribute counts " .. Duel.GetTributeCount(one) .. "/" .. Duel.GetTributeCount(two) .. "/" .. Duel.GetTributeCount(nil))
       Debug.Message("tribute open zero " .. tostring(Duel.CheckTribute(one, 0, 0, nil)))
       Debug.Message("tribute open one " .. tostring(Duel.CheckTribute(one, 1, 1, nil)))
       `,
@@ -315,6 +317,7 @@ describe("Lua summon and release helpers", () => {
     );
 
     expect(fullZone.ok, fullZone.error).toBe(true);
+    expect(host.messages).toContain("tribute counts 1/2/0");
     expect(host.messages).toContain("tribute open zero true");
     expect(host.messages).toContain("tribute open one true");
     expect(host.messages).toContain("tribute full zero false");
