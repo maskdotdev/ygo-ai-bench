@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { readCardUid, readTableStringField } from "#lua/api-utils.js";
+import { cardCodes, cardSetcodes, isAnimeArchetype, isSetcodeMatch, listedCodes, listedCodeSetcodes, matchesAnyCodeAtOrAfter, materialCodes, materialSetcodes, readRequestedCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -222,62 +223,6 @@ function pushCardScriptTable(L: unknown, code: string): void {
   lua.lua_newtable(L);
   lua.lua_pushvalue(L, -1);
   lua.lua_setglobal(L, to_luastring(`c${code}`));
-}
-
-function cardCodes(card: DuelCardInstance): string[] {
-  return card.data.alias ? [card.code, card.data.alias] : [card.code];
-}
-
-function listedCodes(card: DuelCardInstance): string[] {
-  return [...(card.data.listedNames ?? []), ...(card.data.fitMonster ?? [])].map(String);
-}
-
-function listedCodeSetcodes(session: DuelSession, code: string): number[] {
-  return session.state.cards.find((card) => card.code === code || card.data.alias === code)?.data.setcodes ?? [];
-}
-
-function materialCodes(card: DuelCardInstance): string[] {
-  return [...(card.data.fusionMaterials ?? []), ...(card.data.synchroMaterials ? [card.data.synchroMaterials.tuner, ...card.data.synchroMaterials.nonTuners] : []), ...(card.data.xyzMaterials ?? []), ...(card.data.linkMaterials ?? []), ...(card.data.ritualMaterials ?? [])].map(String);
-}
-
-function readRequestedCodes(L: unknown, start: number): string[] {
-  const codes: string[] = [];
-  for (let index = start; index <= lua.lua_gettop(L); index += 1) {
-    if (lua.lua_isnumber(L, index)) codes.push(String(lua.lua_tointeger(L, index)));
-  }
-  return codes;
-}
-
-function readRequestedNumbers(L: unknown, start: number): number[] {
-  const values: number[] = [];
-  for (let index = start; index <= lua.lua_gettop(L); index += 1) {
-    if (lua.lua_isnumber(L, index)) values.push(lua.lua_tointeger(L, index));
-  }
-  return values;
-}
-
-function materialSetcodes(card: DuelCardInstance): number[] {
-  return card.data.materialSetcodes ?? [];
-}
-
-function cardSetcodes(card: DuelCardInstance): number[] {
-  return card.data.setcodes ?? [];
-}
-
-function isAnimeArchetype(card: DuelCardInstance, setcodes: readonly number[], codes: readonly string[]): boolean {
-  return setcodes.some((requested) => cardSetcodes(card).some((setcode) => isSetcodeMatch(requested, setcode))) || cardCodes(card).some((code) => codes.includes(code));
-}
-
-function isSetcodeMatch(requested: number, setcode: number): boolean {
-  return (setcode & 0xfff) === (requested & 0xfff) && (setcode & requested) === requested;
-}
-
-function matchesAnyCodeAtOrAfter(L: unknown, card: DuelCardInstance, start: number): boolean {
-  const codes = cardCodes(card);
-  for (let index = start; index <= lua.lua_gettop(L); index += 1) {
-    if (lua.lua_isnumber(L, index) && codes.includes(String(lua.lua_tointeger(L, index)))) return true;
-  }
-  return false;
 }
 
 const alligatorSetcodes = [0x502] as const;
