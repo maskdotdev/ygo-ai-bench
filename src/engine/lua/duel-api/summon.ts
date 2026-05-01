@@ -24,6 +24,7 @@ import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/trigge
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
+import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -296,13 +297,15 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
   const target = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   const targetPlayer = readOptionalPlayer(L, 4) ?? target?.controller;
   const requestedPosition = lua.lua_isnumber(L, 7) ? positionFromMask(lua.lua_tointeger(L, 7)) : undefined;
-  if (!uid || !target || targetPlayer === undefined) {
+  const zoneMask = lua.lua_isnumber(L, 8) ? lua.lua_tointeger(L, 8) : undefined;
+  if (!uid || !target || targetPlayer === undefined || !hasOpenMonsterZone(session, targetPlayer, zoneMask)) {
     lua.lua_pushboolean(L, false);
     return 1;
   }
   try {
     const summoned = specialSummonDuelCard(session.state, uid, targetPlayer);
     if (requestedPosition) applySummonPosition(summoned, requestedPosition);
+    applyMonsterZoneMask(session, summoned, targetPlayer, zoneMask);
     hostState.pendingSpecialSummonUids = [...(hostState.pendingSpecialSummonUids ?? []), uid];
     setOperatedUids(hostState, hostState.pendingSpecialSummonUids);
     lua.lua_pushboolean(L, true);

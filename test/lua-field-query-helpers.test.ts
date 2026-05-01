@@ -2158,7 +2158,9 @@ describe("Lua field and query helpers", () => {
       local first = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local second = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("step first " .. tostring(Duel.SpecialSummonStep(first, 0, 0, 0, false, false, POS_FACEUP_DEFENSE)))
-      Debug.Message("step second " .. tostring(Duel.SpecialSummonStep(second, 0, 0, 0, false, false, POS_FACEUP_ATTACK)))
+      Debug.Message("step second blocked " .. tostring(Duel.SpecialSummonStep(second, 0, 0, 0, false, false, POS_FACEUP_ATTACK, 0x1)))
+      Debug.Message("step second " .. tostring(Duel.SpecialSummonStep(second, 0, 0, 0, false, false, POS_FACEUP_ATTACK, 0x4)))
+      Debug.Message("step second seq " .. second:GetSequence())
       Duel.SpecialSummonComplete()
       Debug.Message("step operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("step repeat " .. tostring(Duel.SpecialSummonStep(first, 0, 0, 0, false, false, POS_FACEUP_ATTACK)))
@@ -2168,7 +2170,9 @@ describe("Lua field and query helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("step first true");
+    expect(host.messages).toContain("step second blocked false");
     expect(host.messages).toContain("step second true");
+    expect(host.messages).toContain("step second seq 2");
     expect(host.messages).toContain("step operated 2/100");
     expect(host.messages).toContain("step repeat false");
     expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", position: "faceUpDefense", summonType: "special" });
