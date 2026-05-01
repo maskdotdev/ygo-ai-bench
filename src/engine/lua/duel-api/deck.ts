@@ -108,6 +108,13 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetDeckbottomGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
+    pushGroupTable(state, extraDeckSegmentUids(session, player, count));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetExtraTopGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGoatConfirm(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GoatConfirm"));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -129,6 +136,16 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ConfirmDecktop"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
+    const confirmed = extraDeckSegmentUids(session, player, count)
+      .map((uid) => session.state.cards.find((card) => card.uid === uid)?.code)
+      .filter((code): code is string => Boolean(code));
+    hostState.messages.push(`confirmed extratop ${player}: ${confirmed.join(",")}`);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ConfirmExtratop"));
   lua.lua_pushcfunction(L, () => {
     session.state.shuffleCheckDisabled = true;
     return 0;
@@ -245,6 +262,14 @@ function topDeckUids(session: DuelSession, player: PlayerId, count: number): str
 function deckSegmentUids(session: DuelSession, player: PlayerId, count: number, edge: "top" | "bottom"): string[] {
   const deck = matchingCardUids(session, player, 0x01);
   return edge === "top" ? deck.slice(0, count) : deck.slice(Math.max(0, deck.length - count));
+}
+
+function extraDeckSegmentUids(session: DuelSession, player: PlayerId, count: number): string[] {
+  return session.state.cards
+    .filter((card) => card.controller === player && card.location === "extraDeck")
+    .sort((left, right) => left.sequence - right.sequence)
+    .slice(0, count)
+    .map((card) => card.uid);
 }
 
 function resequenceDeck(session: DuelSession, player: PlayerId, segmentUids: string[], edge: "top" | "bottom"): void {

@@ -891,6 +891,35 @@ describe("Lua field and query helpers", () => {
     expect(after).not.toEqual(before);
   });
 
+  it("lets Lua scripts confirm and read the extra deck top group", () => {
+    const cards: DuelCardData[] = [
+      { code: "900", name: "Extra Top A", kind: "extra" },
+      { code: "910", name: "Extra Top B", kind: "extra" },
+      { code: "920", name: "Extra Top C", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 94, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: [], extra: ["900", "910", "920"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const expectedTop = extraCodes(session, 0).slice(0, 2);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.ConfirmExtratop(0,2)
+      local g=Duel.GetExtraTopGroup(0,2)
+      Debug.Message("extra top group " .. g:GetCount() .. "/" .. g:GetFirst():GetCode())
+      `,
+      "confirm-extra-top.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain(`confirmed extratop 0: ${expectedTop.join(",")}`);
+    expect(host.messages).toContain(`extra top group 2/${expectedTop[0]}`);
+  });
+
   it("lets Lua scripts create and summon tokens", () => {
     const cards: DuelCardData[] = [{ code: "123456", name: "Generated Token", kind: "monster", attack: 500, defense: 500 }];
     const session = createDuel({ seed: 13, startingHandSize: 0, cardReader: createCardReader(cards) });
