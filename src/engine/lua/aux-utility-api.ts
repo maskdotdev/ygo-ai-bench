@@ -271,6 +271,21 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
     function aux.seqmovcon(e,tp,eg,ep,ev,re,r,rp)
       return e:GetHandler():CheckAdjacent()
     end
+    function aux.seqmovop(e,tp,eg,ep,ev,re,r,rp)
+      local c=e:GetHandler()
+      if not c:IsRelateToEffect(e) or c:IsControler(1-tp) then return end
+      c:MoveAdjacent(tp)
+    end
+    function aux.seqmovtg(e,tp,eg,ep,ev,re,r,rp,chk)
+      if chk==0 then return true end
+      e:SetLabel(e:GetHandler():SelectAdjacent(tp))
+    end
+    function aux.seqmovtgop(e,tp,eg,ep,ev,re,r,rp)
+      local c=e:GetHandler()
+      local seq=e:GetLabel()
+      if not c:IsRelateToEffect(e) or c:IsControler(1-tp) or not Duel.CheckLocation(tp,LOCATION_MZONE,seq) then return end
+      Duel.MoveSequence(c,seq)
+    end
     function aux.tgoval(e,re,rp)
       return rp~=e:GetHandlerPlayer()
     end

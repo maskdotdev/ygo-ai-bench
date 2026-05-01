@@ -159,6 +159,8 @@ export const cardFieldNames = [
   "IsRikkaReleasable",
   "IsForbidden",
   "CheckAdjacent",
+  "SelectAdjacent",
+  "MoveAdjacent",
   "IsLocation",
   "GetPreviousLocation",
   "GetPreviousSequence",

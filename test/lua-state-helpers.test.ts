@@ -1090,6 +1090,44 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("seqmovcon true/false");
   });
 
+  it("lets Lua scripts move a monster to an adjacent open zone", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Sequence Mover", kind: "monster" },
+      { code: "200", name: "Left Blocker", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 157, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const mover = session.state.cards.find((card) => card.code === "100");
+    const blocker = session.state.cards.find((card) => card.code === "200");
+    expect(mover).toBeDefined();
+    expect(blocker).toBeDefined();
+    moveDuelCard(session.state, mover!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, blocker!.uid, "monsterZone", 0);
+    mover!.sequence = 2;
+    blocker!.sequence = 1;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local mover=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(mover)
+      Debug.Message("select adjacent " .. mover:SelectAdjacent(0))
+      aux.seqmovop(e,0)
+      Debug.Message("seq after op " .. mover:GetSequence() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "seqmovop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("select adjacent 3");
+    expect(host.messages).toContain("seq after op 3/100");
+  });
+
   it("lets Lua scripts check additional summon availability", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Extra Summon Source", kind: "monster" },

@@ -177,6 +177,10 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("IsRikkaReleasable"));
   pushBooleanGetter(L, "IsForbidden", session, () => false);
   pushBooleanGetter(L, "CheckAdjacent", session, (card) => Boolean(card && hasAdjacentMonsterZone(session.state, card)));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectAdjacent(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SelectAdjacent"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushMoveAdjacent(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("MoveAdjacent"));
   pushBooleanGetter(L, "IsMaximumMode", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeCenter", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeSide", session, () => false);
@@ -746,6 +750,38 @@ function pushIsRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(L: u
 function isRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(state: DuelState, card: DuelCardInstance, player: PlayerId, hostState: LuaCardApiState<EffectRecord>): boolean {
   if (((card.data.race ?? 0) & 0x400) !== 0) return true;
   return card.controller === otherPlayer(player) && matchingLuaEffects(state, card, 76869711, hostState).length > 0;
+}
+
+function pushSelectAdjacent(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const sequence = firstOpenAdjacentMonsterSequence(session.state, card);
+  if (sequence === undefined) {
+    lua.lua_pushnil(L);
+    return 1;
+  }
+  lua.lua_pushinteger(L, sequence);
+  return 1;
+}
+
+function pushMoveAdjacent<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const card = readCard(L, session);
+  const sequence = firstOpenAdjacentMonsterSequence(session.state, card);
+  if (!card || sequence === undefined) return 0;
+  card.sequence = sequence;
+  hostState.operatedUids?.splice(0, hostState.operatedUids.length, card.uid);
+  return 0;
+}
+
+function firstOpenAdjacentMonsterSequence(state: DuelState, card: DuelCardInstance | undefined): number | undefined {
+  if (!card || card.location !== "monsterZone" || card.sequence < 0 || card.sequence > 4) return undefined;
+  for (const sequence of [card.sequence - 1, card.sequence + 1]) {
+    if (sequence >= 0 && sequence <= 4 && isMonsterSequenceOpen(state, card.controller, sequence)) return sequence;
+  }
+  return undefined;
+}
+
+function isMonsterSequenceOpen(state: DuelState, player: PlayerId, sequence: number): boolean {
+  return !state.cards.some((card) => card.controller === player && card.location === "monsterZone" && card.sequence === sequence);
 }
 
 function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
