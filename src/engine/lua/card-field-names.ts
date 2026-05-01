@@ -390,6 +390,7 @@ export const cardFieldNames = [
   "GetSummonType",
   "GetSummonPhase",
   "IsSummonPhase",
+  "IsSummonPhaseMain",
   "IsSummonPhaseBattle",
   "GetMaterialCount",
   "GetMaterialCountRush",

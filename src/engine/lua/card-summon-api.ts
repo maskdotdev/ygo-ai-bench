@@ -10,6 +10,10 @@ export function installCardSummonApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
   pushNumberGetter(L, "GetSummonPhase", session, (card) => phaseMask(card?.summonPhase));
   pushNumberMatcher(L, "IsSummonPhase", session, (card, requested) => phaseMask(card.summonPhase) === requested);
+  pushBooleanGetter(L, "IsSummonPhaseMain", session, (card) => {
+    const phase = phaseMask(card?.summonPhase);
+    return phase === 0x4 || phase === 0x100;
+  });
   pushBooleanGetter(L, "IsSummonPhaseBattle", session, (card) => {
     const phase = phaseMask(card?.summonPhase);
     return phase >= 0x8 && phase <= 0x80;
