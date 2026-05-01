@@ -6,6 +6,51 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua special summon procedures", () => {
+  it("registers Lua Malefic summon procedures", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Malefic Source", kind: "monster", setcodes: [0x23] },
+      { code: "300", name: "Named Material", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 86, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const material = session.state.cards.find((card) => card.code === "300");
+    expect(source).toBeTruthy();
+    expect(material).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "hand", 0);
+    moveDuelCard(session.state, material!.uid, "deck", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local unique=aux.MaleficUniqueFilter(c)
+      local e=aux.AddMaleficSummonProcedure(c,300,LOCATION_DECK)
+      Debug.Message("malefic unique " .. tostring(unique(c)) .. "/" .. tostring(c:GetMetatable().has_malefic_unique[c]))
+      Debug.Message("malefic metadata " .. e:GetType() .. "/" .. e:GetCode() .. "/" .. e:GetProperty() .. "/" .. e:GetRange())
+      Debug.Message("malefic condition " .. tostring(e:GetCondition()(e,c)))
+      Debug.Message("malefic target " .. tostring(e:GetTarget()(e,0,Group.CreateGroup(),0,0,nil,0,0,0,c)))
+      local sg=e:GetLabelObject()
+      Debug.Message("malefic selected " .. sg:GetCount() .. "/" .. sg:GetFirst():GetCode())
+      e:GetOperation()(e,0,Group.CreateGroup(),0,0,nil,0,0,c)
+      Debug.Message("malefic removed " .. Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsCode,300),0,LOCATION_REMOVED,0,nil))
+      `,
+      "malefic-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("malefic unique true/true");
+    expect(host.messages).toContain("malefic metadata 2/34/262144/2");
+    expect(host.messages).toContain("malefic condition true");
+    expect(host.messages).toContain("malefic target true");
+    expect(host.messages).toContain("malefic selected 1/300");
+    expect(host.messages).toContain("malefic removed 1");
+  });
+
   it("registers Lua special summon procedure effects as legal summon actions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Procedure Source", kind: "monster" },
