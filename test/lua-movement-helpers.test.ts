@@ -795,6 +795,43 @@ describe("Lua movement helpers", () => {
     expect(host.messages).toContain("steal szone true");
   });
 
+  it("lets Lua scripts hide Spell/Trap cards as face-down monster-zone decoys", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Decoy Spell A", kind: "spell", typeFlags: 0x2 },
+      { code: "200", name: "Decoy Trap B", kind: "trap", typeFlags: 0x4 },
+    ];
+    const session = createDuel({ seed: 41, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local g=Duel.GetMatchingGroup(aux.TRUE,0,LOCATION_HAND,0,nil)
+      local hidden=Group.CreateGroup()
+      for tc in aux.Next(g) do
+        if Duel.MoveToField(tc,0,0,LOCATION_MZONE,POS_FACEDOWN_DEFENSE,true)>0 then
+          hidden:AddCard(tc)
+        end
+      end
+      Duel.ShuffleSetCard(hidden)
+      local first=Duel.GetFieldCard(0,LOCATION_MZONE,0)
+      local second=Duel.GetFieldCard(0,LOCATION_MZONE,1)
+      Debug.Message("hidden decoys " .. Duel.GetOperatedGroup():GetCount() .. "/" .. first:GetLocation() .. "/" .. tostring(first:IsFacedown()) .. "/" .. tostring(first:IsSpellTrapCard()))
+      Debug.Message("hidden second " .. second:GetLocation() .. "/" .. tostring(second:IsFacedown()) .. "/" .. tostring(second:IsSpellTrapCard()))
+      `,
+      "spell-trap-monster-decoys.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("hidden decoys 2/4/true/true");
+    expect(host.messages).toContain("hidden second 4/true/true");
+    expect(session.state.cards.filter((card) => card.location === "monsterZone" && !card.faceUp).map((card) => card.code).sort()).toEqual(["100", "200"]);
+  });
+
   it("lets Lua scripts move cards to hand, deck, and extra deck", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Recoverable Monster", kind: "monster" },
