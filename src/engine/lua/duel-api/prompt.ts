@@ -30,6 +30,8 @@ export function installDuelPromptApi(L: unknown, session: DuelSession, hostState
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SelectYesNo"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAskEveryone(state));
+  lua.lua_setfield(L, -2, to_luastring("AskEveryone"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushboolean(state, true);
     return 1;
@@ -75,6 +77,11 @@ function pushSelectEffect(L: unknown): number {
     }
   }
   lua.lua_pushnil(L);
+  return 1;
+}
+
+function pushAskEveryone(L: unknown): number {
+  lua.lua_pushboolean(L, true);
   return 1;
 }
 
