@@ -144,6 +144,37 @@ describe("Lua effect metadata helpers", () => {
     expect(session.state.effects[0]?.registryKey).toBe("lua:global:lua-1-22");
   });
 
+  it("registers Lua skill procedure startup effects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Skill Source", kind: "monster", race: 7 }];
+    const session = createDuel({ seed: 84, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e1=aux.AddSkillProcedure(c,2,true,function(e,tp) return tp==0 end,function(e,tp) Debug.Message("skill op " .. tp) end,1)
+      local e2=aux.AddPreDrawSkillProcedure(c,3,2,nil,function(e,tp) Debug.Message("predraw op " .. tp) end,2)
+      local e3,e4=aux.AddFieldSkillProcedure(c,4,false)
+      local e5,e6=aux.AddContinuousSkillProcedure(c,5,true,true)
+      Debug.Message("skill cover " .. aux.GetCover(c,2) .. "/" .. e1:GetLabel() .. "/" .. e2:GetCode() .. "/" .. e5:GetValue())
+      Debug.Message("skill drawless " .. aux.Drawless[c])
+      Debug.Message("skill field " .. e3:GetCountLimit() .. "/" .. e4:GetCode() .. "/" .. e6:GetCode())
+      `,
+      "skill-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("skill cover 302000007/302000007/1000/1");
+    expect(host.messages).toContain("skill drawless 1");
+    expect(host.messages).toContain("skill field 1/66/66");
+    expect(session.state.effects.filter((effect) => effect.sourceUid === session.state.cards[0]?.uid)).toHaveLength(6);
+  });
+
   it("registers Lua card procedure status helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Procedure Status Source", kind: "monster", level: 7 },
