@@ -65,6 +65,7 @@ interface LuaHostState {
   session: DuelSession;
   nextEffectId: number;
   effects: Map<number, LuaEffectRecord>;
+  usedEffectCounts: Map<string, number>;
   messages: string[];
   activeTargetUids: string[] | undefined;
   activeContext: DuelEffectContext | undefined;
@@ -88,6 +89,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     session,
     nextEffectId: 1,
     effects: new Map(),
+    usedEffectCounts: new Map(),
     messages: [],
     activeTargetUids: undefined,
     activeContext: undefined,
@@ -422,6 +424,17 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
     lua.lua_pushinteger(state, effect.countLimitCode ?? 0);
     return 2;
   });
+  pushEffectMethod(L, effects, "CheckCountLimit", (state, effect) => {
+    const player = normalizeLuaPlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : effect.ownerPlayer ?? 0);
+    lua.lua_pushboolean(state, canUseLuaEffectCount(hostState, effect, player));
+    return 1;
+  });
+  pushEffectMethod(L, effects, "UseCountLimit", (state, effect) => {
+    const player = normalizeLuaPlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : effect.ownerPlayer ?? 0);
+    const count = Math.max(1, lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1);
+    markLuaEffectCountUsed(hostState, effect, player, count);
+    return 0;
+  });
   pushEffectMethod(L, effects, "SetReset", (state, effect) => {
     const flags = lua.lua_isnumber(state, 2) ? Math.trunc(lua.lua_tonumber(state, 2)) : 0;
     const count = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
@@ -437,6 +450,7 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
     effect.countLimit = 0;
     delete effect.countLimitCode;
     delete effect.reset;
+    clearLuaEffectCountUsage(hostState, effect);
     return 0;
   });
   pushEffectMethod(L, effects, "Delete", (_, effect) => {
@@ -537,6 +551,39 @@ function effectController(session: DuelSession, effect: LuaEffectRecord): Player
 
 function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
+}
+
+function normalizeLuaPlayer(value: number): PlayerId {
+  return normalizePlayer(value);
+}
+
+function canUseLuaEffectCount(hostState: LuaHostState, effect: LuaEffectRecord, player: PlayerId): boolean {
+  const limit = luaEffectCountLimit(effect);
+  if (limit <= 0) return true;
+  return (hostState.usedEffectCounts.get(luaEffectCountKey(effect, player)) ?? 0) < limit;
+}
+
+function markLuaEffectCountUsed(hostState: LuaHostState, effect: LuaEffectRecord, player: PlayerId, count: number): void {
+  const limit = luaEffectCountLimit(effect);
+  if (limit <= 0) return;
+  const key = luaEffectCountKey(effect, player);
+  hostState.usedEffectCounts.set(key, (hostState.usedEffectCounts.get(key) ?? 0) + count);
+}
+
+function clearLuaEffectCountUsage(hostState: LuaHostState, effect: LuaEffectRecord): void {
+  const prefix = `effect:${effect.id}:`;
+  const codePrefix = effect.countLimitCode === undefined ? undefined : `code:${effect.countLimitCode}:`;
+  for (const key of [...hostState.usedEffectCounts.keys()]) {
+    if (key.startsWith(prefix) || (codePrefix && key.startsWith(codePrefix))) hostState.usedEffectCounts.delete(key);
+  }
+}
+
+function luaEffectCountLimit(effect: LuaEffectRecord): number {
+  return effect.countLimit ?? 0;
+}
+
+function luaEffectCountKey(effect: LuaEffectRecord, player: PlayerId): string {
+  return effect.countLimitCode === undefined ? `effect:${effect.id}:${player}` : `code:${effect.countLimitCode}:${player}`;
 }
 
 function sourceCard(session: DuelSession, effect: LuaEffectRecord): DuelCardInstance | undefined {

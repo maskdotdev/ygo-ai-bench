@@ -12,6 +12,42 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua effect metadata helpers", () => {
+  it("tracks Lua effect count-limit usage", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Count Limit Source", kind: "monster" }];
+    const session = createDuel({ seed: 95, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      e:SetCountLimit(2, 99001)
+      Debug.Message("count limit initial " .. tostring(e:CheckCountLimit(0)) .. "/" .. tostring(e:CheckCountLimit(1)))
+      e:UseCountLimit(0)
+      Debug.Message("count limit once " .. tostring(e:CheckCountLimit(0)) .. "/" .. tostring(e:CheckCountLimit(1)))
+      e:UseCountLimit(0)
+      Debug.Message("count limit spent " .. tostring(e:CheckCountLimit(0)) .. "/" .. tostring(e:CheckCountLimit(1)))
+      local clone=e:Clone()
+      Debug.Message("count limit shared clone " .. tostring(clone:CheckCountLimit(0)) .. "/" .. tostring(clone:CheckCountLimit(1)))
+      e:Reset()
+      Debug.Message("count limit reset " .. tostring(e:CheckCountLimit(0)))
+      `,
+      "effect-count-limit.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("count limit initial true/true");
+    expect(host.messages).toContain("count limit once true/true");
+    expect(host.messages).toContain("count limit spent false/true");
+    expect(host.messages).toContain("count limit shared clone false/true");
+    expect(host.messages).toContain("count limit reset true");
+  });
+
   it("creates and registers Lua global effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Global Anchor", kind: "monster" }];
     const session = createDuel({ seed: 94, startingHandSize: 1, cardReader: createCardReader(cards) });
