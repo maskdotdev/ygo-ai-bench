@@ -1030,7 +1030,7 @@ describe("Lua field and query helpers", () => {
       { code: "100", alias: "900", name: "Stat Monster", kind: "monster", typeFlags: 0x21, attack: 2500, defense: 2100, level: 7, race: 0x2, attribute: 0x20, setcodes: [0x123], listedNames: ["700"], fitMonster: ["800"] },
       { code: "200", name: "Fixture Spell", kind: "spell", typeFlags: 0x2 },
       { code: "201", name: "Fixture Equip Spell", kind: "spell", typeFlags: 0x40002 },
-      { code: "202", name: "Fixture Trap Monster", kind: "trap", typeFlags: 0x105 },
+      { code: "202", name: "Fixture Trap Monster", kind: "trap", typeFlags: 0x105, level: 4, race: 0x2, attribute: 0x20 },
       { code: "203", name: "Fixture Field Spell", kind: "spell", typeFlags: 0x80002 },
       { code: "300", name: "Rank Fixture", kind: "monster", typeFlags: 0x800001, attack: 1800, defense: 1200, level: 4 },
       { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5 },
@@ -1058,7 +1058,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("type " .. c:GetType())
       Debug.Message("stats " .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. c:GetLevel())
       Debug.Message("text stats " .. c:GetTextAttack() .. "/" .. c:GetTextDefense() .. "/" .. tostring(c:IsTextAttack(2500)) .. "/" .. tostring(c:IsTextDefense(2100)))
-      Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsLevel(7)))
+      Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsBaseAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsLevel(7)) .. "/" .. tostring(c:IsLevelBetween(8,6)) .. "/" .. tostring(c:IsLevelBetween(1,6)))
       Debug.Message("stat comparisons " .. tostring(c:IsAttackAbove(2400)) .. "/" .. tostring(c:IsAttackBelow(2600)) .. "/" .. tostring(c:IsDefenseAbove(2200)) .. "/" .. tostring(c:IsDefenseBelow(2200)) .. "/" .. tostring(c:IsLevelAbove(6)) .. "/" .. tostring(c:IsLevelBelow(6)))
       Debug.Message("original stat comparisons " .. tostring(c:IsOriginalAttack(2500)) .. "/" .. tostring(c:IsOriginalAttackAbove(2400)) .. "/" .. tostring(c:IsOriginalAttackBelow(2600)) .. "/" .. tostring(c:IsOriginalDefense(2100)) .. "/" .. tostring(c:IsOriginalDefenseAbove(2200)) .. "/" .. tostring(c:IsOriginalDefenseBelow(2200)) .. "/" .. tostring(c:IsOriginalLevelAbove(6)) .. "/" .. tostring(c:IsOriginalLevelBelow(6)))
       Debug.Message("code checks " .. tostring(c:IsCode(900)) .. "/" .. tostring(c:IsOriginalCode(900)) .. "/" .. tostring(c:IsOriginalCode(100)))
@@ -1135,7 +1135,7 @@ describe("Lua field and query helpers", () => {
       local fieldspell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 203), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("has level " .. tostring(c:HasLevel()) .. "/" .. tostring(xyz:HasLevel()) .. "/" .. tostring(link:HasLevel()) .. "/" .. tostring(spell:HasLevel()))
       Debug.Message("main card types " .. c:GetMainCardType() .. "/" .. spell:GetMainCardType() .. "/" .. equip:GetMainCardType() .. "/" .. trapmonster:GetMainCardType())
-      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()) .. "/" .. tostring(spell:IsEquipCard()) .. "/" .. tostring(equip:IsEquipCard()) .. "/" .. tostring(spell:IsEquipSpell()) .. "/" .. tostring(equip:IsEquipSpell()) .. "/" .. tostring(fieldspell:IsFieldSpell()) .. "/" .. tostring(spell:IsFieldSpell()) .. "/" .. TYPE_EQUIP)
+      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()) .. "/" .. tostring(spell:IsEquipCard()) .. "/" .. tostring(equip:IsEquipCard()) .. "/" .. tostring(spell:IsEquipSpell()) .. "/" .. tostring(equip:IsEquipSpell()) .. "/" .. tostring(fieldspell:IsFieldSpell()) .. "/" .. tostring(spell:IsFieldSpell()) .. "/" .. tostring(trapmonster:IsTrapCard()) .. "/" .. tostring(trapmonster:IsTrapMonster()) .. "/" .. tostring(spell:IsTrapMonster()) .. "/" .. TYPE_EQUIP)
       Debug.Message("cost checks " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
       Duel.SendtoGrave(c, REASON_EFFECT)
       Debug.Message("cost after move " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
@@ -1149,7 +1149,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("stats 2500/2100/7");
     expect(host.messages).toContain("text stats 2500/2100/true/true");
     expect(host.messages).toContain("unknown text stats -2/-2/true/true");
-    expect(host.messages).toContain("stat predicates true/true/true");
+    expect(host.messages).toContain("stat predicates true/true/true/true/true/false");
     expect(host.messages).toContain("stat comparisons true/true/false/true/true/false");
     expect(host.messages).toContain("original stat comparisons true/true/true/true/false/true/true/false");
     expect(host.messages).toContain("code checks true/false/true");
@@ -1185,7 +1185,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not original race false/true");
     expect(host.messages).toContain("not original attribute false/true");
     expect(host.messages).toContain("spell count 3");
-    expect(host.messages).toContain("spell trap checks false/true/false/true/false/true/true/false/262144");
+    expect(host.messages).toContain("spell trap checks false/true/false/true/false/true/true/false/true/true/false/262144");
     expect(host.messages).toContain("cost checks true/true");
     expect(host.messages).toContain("cost after move false/false");
     expect(host.messages).toContain("spell material checks false/false");

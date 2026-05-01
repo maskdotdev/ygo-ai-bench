@@ -17,6 +17,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetTextAttack", session, (card) => card?.data.attack ?? 0);
   pushBooleanGetter(L, "HasNonZeroAttack", session, (card) => Boolean(card && (card.data.attack ?? 0) !== 0));
   pushNumberMatcher(L, "IsAttack", session, (card, requested) => (card.data.attack ?? 0) === requested);
+  pushNumberMatcher(L, "IsBaseAttack", session, (card, requested) => (card.data.attack ?? 0) === requested);
   pushNumberMatcher(L, "IsOriginalAttack", session, (card, requested) => (card.data.attack ?? 0) === requested);
   pushNumberMatcher(L, "IsTextAttack", session, (card, requested) => (card.data.attack ?? 0) === requested);
   pushNumberMatcher(L, "IsAttackAbove", session, (card, requested) => (card.data.attack ?? 0) >= requested);
@@ -47,6 +48,17 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsEvenScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 === 0);
   pushBooleanGetter(L, "HasLevel", session, (card) => Boolean(card && (card.data.level ?? 0) > 0 && cardRank(card) === 0 && cardLink(card) === 0));
   pushNumberMatcher(L, "IsLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const firstLevel = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
+    const secondLevel = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
+    const lower = firstLevel === undefined || secondLevel === undefined ? undefined : Math.min(firstLevel, secondLevel);
+    const upper = firstLevel === undefined || secondLevel === undefined ? undefined : Math.max(firstLevel, secondLevel);
+    const level = card?.data.level ?? 0;
+    lua.lua_pushboolean(state, Boolean(card && lower !== undefined && upper !== undefined && level >= lower && level <= upper));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsLevelBetween"));
   pushNumberMatcher(L, "IsLevelAbove", session, (card, requested) => (card.data.level ?? 0) >= requested);
   pushNumberMatcher(L, "IsLevelBelow", session, (card, requested) => (card.data.level ?? 0) <= requested);
   pushNumberMatcher(L, "IsOriginalLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
@@ -85,6 +97,8 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsNotAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
   pushNumberMatcher(L, "IsNotOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
+  pushBooleanGetter(L, "IsTrapCard", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x4) !== 0));
+  pushBooleanGetter(L, "IsTrapMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x4) !== 0 && ((card.data.level ?? 0) > 0 || (card.data.attribute ?? 0) > 0 || (card.data.race ?? 0) > 0)));
 }
 
 export function cardTypeFlags(card: DuelCardInstance | undefined): number {
