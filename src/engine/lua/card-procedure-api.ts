@@ -131,6 +131,16 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
         tc:RegisterEffect(e3)
       end
     end
+    function Card.CheckEquipTargetRush(equip,monster)
+      local effect=equip:GetActivateEffect()
+      if effect~=nil then
+        local filter=effect:GetTarget()
+        if filter~=nil then
+          return filter(effect,effect:GetHandlerPlayer(),nil,nil,nil,nil,nil,nil,nil,monster)
+        end
+      end
+      return false
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));

@@ -730,6 +730,46 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("operation target 200");
   });
 
+  it("lets Rush equip target checks call activation target filters", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Rush Equip", kind: "spell", typeFlags: 0x40002 },
+      { code: "200", name: "Valid Equip Target", kind: "monster" },
+      { code: "300", name: "Invalid Equip Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 101, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      if (card.code === "100") moveDuelCard(session.state, card.uid, "spellTrapZone", 0);
+      else moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local equip=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      local valid=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local invalid=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(equip)
+      e:SetType(EFFECT_TYPE_ACTIVATE)
+      e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk,monster)
+        return monster~=nil and monster:IsCode(200) and tp==0
+      end)
+      equip:RegisterEffect(e)
+      Debug.Message("activate effect " .. tostring(equip:GetActivateEffect()~=nil))
+      Debug.Message("rush equip target " .. tostring(Card.CheckEquipTargetRush(equip,valid)) .. "/" .. tostring(Card.CheckEquipTargetRush(equip,invalid)))
+      `,
+      "rush-equip-target-check.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("activate effect true");
+    expect(host.messages).toContain("rush equip target true/false");
+  });
+
   it("shares Lua keyed count limits across effect copies", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Count Source", kind: "monster" }];
     const session = createDuel({ seed: 21, startingHandSize: 2, cardReader: createCardReader(cards) });

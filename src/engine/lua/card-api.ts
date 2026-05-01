@@ -321,6 +321,14 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("IsHasEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsHasEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetCardEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const effect = card ? [...hostState.effects.values()].find((candidate) => candidate.sourceUid === card.uid && ((candidate.typeFlags ?? 0) & 0x10) !== 0) : undefined;
+    if (!effect) lua.lua_pushnil(state);
+    else hostState.pushEffectTable(state, effect.id);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetActivateEffect"));
   pushBooleanGetter(L, "IsNegatable", session, (card) => Boolean(card && isNegatableCard(session.state, card)));
   pushBooleanGetter(L, "IsNegatableMonster", session, (card) => Boolean(card && isMonsterLike(card) && isNegatableCard(session.state, card)));
   pushBooleanGetter(L, "IsNegatableSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x6) !== 0 && isNegatableCard(session.state, card)));

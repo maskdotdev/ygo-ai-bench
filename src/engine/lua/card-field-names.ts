@@ -294,6 +294,7 @@ export const cardFieldNames = [
   "IsCanBeDisabledByEffect",
   "NegateEffects",
   "IsHasEffect",
+  "GetActivateEffect",
   "IsNegatable",
   "IsNegatableMonster",
   "IsNegatableSpellTrap",
