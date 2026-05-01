@@ -120,6 +120,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsCelestial", session, (card) => Boolean(card && isAnimeArchetype(card, celestialSetcodes, celestialCodes)));
   pushBooleanGetter(L, "IsCenozoic", session, (card) => Boolean(card && isAnimeArchetype(card, cenozoicSetcodes, cenozoicCodes)));
   pushBooleanGetter(L, "IsCicada", session, (card) => Boolean(card && isAnimeArchetype(card, cicadaSetcodes, cicadaCodes)));
+  pushBooleanGetter(L, "IsClear", session, (card) => Boolean(card && isAnimeArchetype(card, clearSetcodes, clearCodes)));
+  pushBooleanGetter(L, "IsCN39UtopiaRay", session, (card) => Boolean(card && isAnimeArchetype(card, cn39UtopiaRaySetcodes, cn39UtopiaRayCodes)));
   pushBooleanGetter(L, "IsDyson", session, (card) => Boolean(card && isAnimeArchetype(card, dysonSetcodes, dysonCodes)));
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
   pushBooleanGetter(L, "IsWhite", session, (card) => Boolean(card && isAnimeArchetype(card, whiteSetcodes, whiteCodes)));
@@ -303,6 +305,12 @@ const cenozoicCodes = ["12015000", "10040267", "86520461"] as const;
 
 const cicadaSetcodes = [0x50f] as const;
 const cicadaCodes = ["4997565", "79663524", "5068132"] as const;
+
+const clearSetcodes = [0x510] as const;
+const clearCodes = ["97811903", "82044279", "33900648", "6089145", "33506331", "70717628", "7102732", "70095046"] as const;
+
+const cn39UtopiaRaySetcodes = [0x1539] as const;
+const cn39UtopiaRayCodes = ["56840427", "87911394", "66970002"] as const;
 
 const dysonSetcodes = [0x519] as const;
 const dysonCodes = ["1992816", "32559361"] as const;
