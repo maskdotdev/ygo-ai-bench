@@ -68,6 +68,13 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSetCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && cardSetcodes(card).some((setcode) => isSetcodeMatch(requested, setcode))));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsOriginalSetCard"));
   pushNumberGetter(L, "GetSetCard", session, (card) => card?.data.setcodes?.[0] ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
@@ -139,9 +146,12 @@ function materialSetcodes(card: DuelCardInstance): number[] {
   return card.data.materialSetcodes ?? [];
 }
 
+function cardSetcodes(card: DuelCardInstance): number[] {
+  return card.data.setcodes ?? [];
+}
+
 function isAnimeArchetype(card: DuelCardInstance, setcodes: readonly number[], codes: readonly string[]): boolean {
-  const cardSetcodes = card.data.setcodes ?? [];
-  return setcodes.some((requested) => cardSetcodes.some((setcode) => isSetcodeMatch(requested, setcode))) || cardCodes(card).some((code) => codes.includes(code));
+  return setcodes.some((requested) => cardSetcodes(card).some((setcode) => isSetcodeMatch(requested, setcode))) || cardCodes(card).some((code) => codes.includes(code));
 }
 
 function isSetcodeMatch(requested: number, setcode: number): boolean {

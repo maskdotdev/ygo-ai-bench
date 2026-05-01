@@ -12,6 +12,7 @@ export const cardFieldNames = [
   "IsOriginalCodeRule",
   "IsSummonCode",
   "IsSetCard",
+  "IsOriginalSetCard",
   "GetSetCard",
   "IsNotSetCard",
   "IsInfinity",
