@@ -153,6 +153,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsHeavyIndustry", session, (card) => Boolean(card && isAnimeArchetype(card, heavyIndustrySetcodes, heavyIndustryCodes)));
   pushBooleanGetter(L, "IsHunder", session, (card) => Boolean(card && isAnimeArchetype(card, hunderSetcodes, hunderCodes)));
   pushBooleanGetter(L, "IsInsectQueen", session, (card) => Boolean(card && isAnimeArchetype(card, insectQueenSetcodes, insectQueenCodes)));
+  pushBooleanGetter(L, "IsInu", session, (card) => Boolean(card && isAnimeArchetype(card, inuSetcodes, inuCodes)));
+  pushBooleanGetter(L, "IsIvy", session, (card) => Boolean(card && isAnimeArchetype(card, ivySetcodes, ivyCodes)));
   pushBooleanGetter(L, "IsMantis", session, (card) => Boolean(card && isAnimeArchetype(card, mantisSetcodes, mantisCodes)));
   pushBooleanGetter(L, "IsMask", session, (card) => Boolean(card && isAnimeArchetype(card, maskSetcodes, maskCodes)));
   pushBooleanGetter(L, "IsMelodiousSongtress", session, (card) => Boolean(card && isAnimeArchetype(card, melodiousSongtressSetcodes, melodiousSongtressCodes)));
@@ -484,6 +486,10 @@ const hunderSetcodes = [0x565] as const;
 const hunderCodes = ["71438011", "78663366", "21524779", "84530620", "27217742", "57019473", "34961968", "15510988", "69196160", "20264508", "48049769", "31786629", "52833089", "50920465", "14089428", "21817254", "48770333", "61204971", "30010480", "698785", "77506119", "54752875", "6766208", "987311", "84417082", "4178474", "11741041", "12580477"] as const;
 const insectQueenSetcodes = [0x582] as const;
 const insectQueenCodes = ["91512835", "41456841"] as const;
+const inuSetcodes = [0x52a] as const;
+const inuCodes = ["79182538", "42878636", "55351724", "91754175", "86652646", "65938950", "11987744", "86889202", "27971137", "58616392", "11548522", "71583486", "94667532", "27750191"] as const;
+const ivySetcodes = [0x52b] as const;
+const ivyCodes = ["30069398", "14730606", "30069399"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
