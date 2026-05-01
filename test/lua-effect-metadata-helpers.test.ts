@@ -840,6 +840,44 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("clone op 222/9/20/2/0");
   });
 
+  it("copies Lua effects between cards with Duel.MajesticCopy", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Majestic Receiver", kind: "monster" },
+      { code: "200", name: "Majestic Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 86, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local receiver=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode,100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode,200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(source)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(777001)
+      e:SetLabel(88)
+      e:SetOperation(function(e,tp) Debug.Message("majestic copied op " .. e:GetHandler():GetCode() .. "/" .. tp) end)
+      source:RegisterEffect(e)
+      Debug.Message("majestic copy count " .. Duel.MajesticCopy(receiver,source,RESET_EVENT+RESETS_STANDARD))
+      local copied=receiver:GetCardEffect(777001)
+      local reset=copied:GetReset()
+      Debug.Message("majestic copied " .. tostring(copied~=nil) .. "/" .. copied:GetLabel() .. "/" .. copied:GetHandler():GetCode() .. "/" .. reset)
+      copied:GetOperation()(copied,0)
+      `,
+      "majestic-copy.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("majestic copy count 1");
+    expect(host.messages).toContain("majestic copied true/88/100/33427456");
+    expect(host.messages).toContain("majestic copied op 100/0");
+  });
+
   it("stores Lua effect owner player metadata and deletes registered effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Lifecycle Source", kind: "monster" }];
     const session = createDuel({ seed: 28, startingHandSize: 1, cardReader: createCardReader(cards) });

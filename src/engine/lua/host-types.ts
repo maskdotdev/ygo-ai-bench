@@ -78,6 +78,7 @@ export interface LuaHostState {
   currentScriptCardCode: string | undefined;
   pushEffectTable: (state: unknown, id: number) => void;
   getEffectTypeFlags: (id: number) => number | undefined;
+  majesticCopy: (state: unknown, receiverUid: string, sourceUid: string, reset?: number) => number;
   changeChainOperation: (state: unknown, chainIndex: number, operationRef: number) => boolean;
   registerEffect: (state: unknown, id: number, player: PlayerId) => boolean;
   loadScriptFile: (name: string, forced?: boolean) => LuaScriptLoadResult;

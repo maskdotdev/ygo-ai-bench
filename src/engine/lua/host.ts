@@ -40,6 +40,9 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     getEffectTypeFlags(id) {
       return hostState.effects.get(id)?.typeFlags;
     },
+    majesticCopy(state, receiverUid, sourceUid, reset) {
+      return majesticCopyLuaEffects(state, hostState, receiverUid, sourceUid, reset);
+    },
     changeChainOperation(state, chainIndex, operationRef) {
       return changeLuaChainOperation(state, hostState, chainIndex, operationRef);
     },
@@ -515,6 +518,23 @@ function cloneLuaEffectRecord(hostState: LuaHostState, effect: LuaEffectRecord):
   if (effect.reset) clone.reset = { ...effect.reset };
   hostState.effects.set(id, clone);
   return id;
+}
+
+function majesticCopyLuaEffects(L: unknown, hostState: LuaHostState, receiverUid: string, sourceUid: string, reset?: number): number {
+  const receiver = hostState.session.state.cards.find((card) => card.uid === receiverUid);
+  if (!receiver) return 0;
+  let count = 0;
+  for (const effect of [...hostState.effects.values()]) {
+    if (effect.sourceUid !== sourceUid || effect.isGlobal) continue;
+    const id = cloneLuaEffectRecord(hostState, effect);
+    const clone = hostState.effects.get(id);
+    if (!clone) continue;
+    clone.sourceUid = receiverUid;
+    if (reset !== undefined) clone.reset = { flags: reset };
+    registerEffect(hostState.session, toDuelEffect(receiver, clone, L, hostState));
+    count += 1;
+  }
+  return count;
 }
 
 function deleteRegisteredLuaEffects(session: DuelSession, effect: LuaEffectRecord): void {

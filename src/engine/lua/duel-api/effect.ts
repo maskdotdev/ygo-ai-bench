@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { applyResponse } from "#duel/core.js";
-import { readTableNumberField } from "#lua/api-utils.js";
+import { readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import type { DuelEffectContext, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -9,6 +9,7 @@ export interface LuaDuelEffectApiHostState {
   activeContext?: DuelEffectContext | undefined;
   pushEffectTable: (state: unknown, id: number) => void;
   registerEffect: (state: unknown, id: number, player: PlayerId) => boolean;
+  majesticCopy: (state: unknown, receiverUid: string, sourceUid: string, reset?: number) => number;
 }
 
 export function installDuelEffectApi(L: unknown, session: DuelSession, hostState: LuaDuelEffectApiHostState): void {
@@ -28,6 +29,14 @@ export function installDuelEffectApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("GetReasonPlayer"));
   lua.lua_pushcfunction(L, (state: unknown) => pushReasonEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetReasonEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const receiverUid = readCardUid(state, 1);
+    const sourceUid = readCardUid(state, 2);
+    const reset = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
+    lua.lua_pushinteger(state, receiverUid && sourceUid ? hostState.majesticCopy(state, receiverUid, sourceUid, reset) : 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("MajesticCopy"));
 }
 
 function normalizePlayer(value: number): PlayerId {
