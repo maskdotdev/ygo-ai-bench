@@ -334,7 +334,7 @@ describe("Lua movement helpers", () => {
       Duel.EquipComplete()
       Debug.Message("equip operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("equip target " .. equip:GetEquipTarget():GetCode())
-      Debug.Message("equip count " .. target:GetEquipCount() .. "/" .. target:GetEquipGroup():GetFirst():GetCode())
+      Debug.Message("equip count " .. target:GetEquipCount() .. "/" .. target:GetEquipGroup():GetFirst():GetCode() .. "/" .. tostring(target:HasEquipCard()) .. "/" .. tostring(equip:HasEquipCard()))
       `,
       "equip-helper.lua",
     );
@@ -343,7 +343,7 @@ describe("Lua movement helpers", () => {
     expect(host.messages).toContain("equip result true");
     expect(host.messages).toContain("equip operated 500");
     expect(host.messages).toContain("equip target 100");
-    expect(host.messages).toContain("equip count 1/500");
+    expect(host.messages).toContain("equip count 1/500/true/false");
     expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
     expect(session.state.log.some((entry) => entry.action === "equip" && entry.detail === "Equipped to Equip Target")).toBe(true);
   });

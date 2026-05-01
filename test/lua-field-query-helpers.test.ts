@@ -1051,10 +1051,11 @@ describe("Lua field and query helpers", () => {
       { code: "901", name: "Pendulum Fixture", kind: "monster", typeFlags: 0x1000021, level: 4, leftScale: 3, rightScale: 8 },
       { code: "902", name: "Material Listing Fusion", kind: "extra", fusionMaterials: ["100", "800"], materialSetcodes: [0x3000 | 0x123] },
       { code: "903", name: "Unknown Stat Fixture", kind: "monster", typeFlags: 0x21, attack: -2, defense: -2, level: 10 },
+      { code: "904", name: "Spirit Fixture", kind: "monster", typeFlags: 0x200021, level: 4 },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 13, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 14, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "201", "202", "203", "300", "400", "500", "600", "700", "800", "901", "903"], extra: ["801", "902"] },
+      0: { main: ["100", "200", "201", "202", "203", "300", "400", "500", "600", "700", "800", "901", "903", "904"], extra: ["801", "902"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -1084,6 +1085,7 @@ describe("Lua field and query helpers", () => {
       local normal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local synchro = Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 801), 0, LOCATION_EXTRA, 0, nil):GetFirst()
       local pendulum = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local spirit = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 904), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local material_fusion = Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 902), 0, LOCATION_EXTRA, 0, nil):GetFirst()
       local unknown_stats = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 903), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local property_match=property_filter(c)
@@ -1096,7 +1098,8 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not type " .. tostring(c:IsNotType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotType(TYPE_SPELL)))
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
       Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(synchro:IsSynchroMonster()) .. "/" .. tostring(c:IsSynchroMonster()) .. "/" .. tostring(xyz:IsXyzMonster()) .. "/" .. tostring(c:IsXyzMonster()) .. "/" .. tostring(pendulum:IsPendulumMonster()) .. "/" .. tostring(c:IsPendulumMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()) .. "/" .. tostring(c:IsEffectMonster()) .. "/" .. tostring(normal:IsEffectMonster()) .. "/" .. tostring(c:IsForbidden()))
-      Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)))
+      Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:HasRank()) .. "/" .. tostring(normal:HasRank()) .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)))
+      Debug.Message("spirit predicate " .. tostring(spirit:IsSpirit()) .. "/" .. tostring(c:IsSpirit()))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
       Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()))
       Debug.Message("link comparisons " .. tostring(link:IsLinkAbove(2)) .. "/" .. tostring(link:IsLinkBelow(1)) .. "/" .. tostring(link:IsOriginalLinkAbove(3)) .. "/" .. tostring(link:IsOriginalLinkBelow(2)))
@@ -1174,7 +1177,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not type false/true");
     expect(host.messages).toContain("not original type false/true");
     expect(host.messages).toContain("named type predicates true/false/true/false/true/false/true/false/true/false/true/false/false");
-    expect(host.messages).toContain("rank 4/4/true/true");
+    expect(host.messages).toContain("rank 4/4/true/false/true/true");
+    expect(host.messages).toContain("spirit predicate true/false");
     expect(host.messages).toContain("has level true/false/false/false");
     expect(host.messages).toContain("main card types 1/2/2/5");
     expect(host.messages).toContain("rank comparisons true/false/true/true");

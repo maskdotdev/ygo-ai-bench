@@ -113,6 +113,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   });
   lua.lua_setfield(L, -2, to_luastring("GetOverlayGroup"));
   pushNumberGetter(L, "GetEquipCount", session, (card) => (card ? equippedCards(session, card.uid).length : 0));
+  pushBooleanGetter(L, "HasEquipCard", session, (card) => Boolean(card && equippedCards(session, card.uid).length > 0));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     pushGroupTable(state, card ? equippedCards(session, card.uid).map((equip) => equip.uid) : []);
@@ -170,6 +171,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsSpell", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x2) !== 0));
   pushBooleanGetter(L, "IsTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x4) !== 0));
   pushBooleanGetter(L, "IsSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x6) !== 0));
+  pushBooleanGetter(L, "IsSpirit", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x200000) !== 0));
   pushBooleanGetter(L, "IsActionCard", session, (card) => (cardTypeFlags(card) & 0x10000000) !== 0 && (cardTypeFlags(card) & 0x80000) === 0);
   pushBooleanGetter(L, "IsActionSpell", session, (card) => (cardTypeFlags(card) & 0x10000002) === 0x10000002 && (cardTypeFlags(card) & 0x80000) === 0);
   pushBooleanGetter(L, "IsActionTrap", session, (card) => (cardTypeFlags(card) & 0x10000004) === 0x10000004 && (cardTypeFlags(card) & 0x80000) === 0);
@@ -214,6 +216,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsMaximumModeSide", session, () => false);
   pushBooleanGetter(L, "IsNotMaximumModeSide", session, () => true);
   pushBooleanGetter(L, "WasMaximumMode", session, () => false);
+  pushBooleanGetter(L, "WasMaximumModeCenter", session, () => false);
   pushBooleanGetter(L, "WasMaximumModeSide", session, () => false);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
@@ -226,6 +229,12 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetPreviousSequence", session, (card) => card?.previousSequence ?? 0);
   pushNumberGetter(L, "GetPreviousPosition", session, (card) => positionMaskFromPosition(card?.previousPosition));
   pushNumberGetter(L, "GetPreviousCode", session, (card) => (card?.previousLocation ? Number(card.code) : 0));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && readRequestedCodes(state, 2).includes(card.code)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPreviousCodeOnField"));
   pushNumberGetter(L, "GetPreviousTypeOnField", session, (card) => (card?.previousLocation ? cardTypeFlags(card) : 0));
   pushNumberGetter(L, "GetPreviousAttackOnField", session, (card) => (card?.previousLocation ? card.data.attack ?? 0 : 0));
   pushNumberGetter(L, "GetPreviousDefenseOnField", session, (card) => (card?.previousLocation ? card.data.defense ?? 0 : 0));
@@ -236,6 +245,14 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetPreviousAttributeOnField", session, (card) => (card?.previousLocation ? card.data.attribute ?? 0 : 0));
   pushBooleanGetter(L, "WasFaceup", session, (card) => Boolean(card?.previousLocation && card.previousFaceUp));
   pushBooleanGetter(L, "WasFacedown", session, (card) => Boolean(card?.previousLocation && !card.previousFaceUp));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const targetUid = readCardUid(state, 2);
+    const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && target && isFieldCard(card) && isFieldCard(target) && card.controller === target.controller && card.sequence === target.sequence));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsColumn"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
@@ -779,6 +796,18 @@ function linkedSequences(sequence: number, markers: number): number[] {
 function readCard(L: unknown, session: DuelSession | undefined): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1);
   return uid && session ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+}
+
+function readRequestedCodes(L: unknown, startIndex: number): string[] {
+  const codes: string[] = [];
+  for (let index = startIndex; index <= lua.lua_gettop(L); index += 1) {
+    if (lua.lua_isnumber(L, index)) codes.push(String(lua.lua_tointeger(L, index)));
+  }
+  return codes;
+}
+
+function isFieldCard(card: DuelCardInstance): boolean {
+  return card.location === "monsterZone" || card.location === "spellTrapZone";
 }
 
 function normalizePlayer(value: number): PlayerId {

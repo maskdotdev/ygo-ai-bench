@@ -1514,11 +1514,12 @@ describe("Lua state helpers", () => {
   it("exposes card owner, controller, location, sequence, and position metadata", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "State Probe", kind: "monster", typeFlags: 0x21, attack: 1700, defense: 1300, level: 4, race: 0x2, attribute: 0x20, setcodes: [0x123] },
+      { code: "200", name: "Column Spell", kind: "spell", typeFlags: 0x2 },
       { code: "900", name: "Hidden Extra", kind: "extra" },
     ];
-    const session = createDuel({ seed: 20, startingHandSize: 1, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 20, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100"], extra: ["900"] },
+      0: { main: ["100", "200"], extra: ["900"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -1526,11 +1527,16 @@ describe("Lua state helpers", () => {
     const normal = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon");
     expect(normal).toBeDefined();
     expect(applyResponse(session, normal!).ok).toBe(true);
+    const columnSpell = session.state.cards.find((card) => card.code === "200" && card.controller === 0);
+    expect(columnSpell).toBeDefined();
+    const movedColumnSpell = moveDuelCard(session.state, columnSpell!.uid, "spellTrapZone", 0);
+    movedColumnSpell.sequence = 0;
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
       `
       local c = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local column_spell = Duel.GetFieldCard(0, LOCATION_SZONE, 0)
       Debug.Message("card state " .. c:GetOwner() .. "/" .. tostring(c:IsOwner(0)) .. "/" .. c:GetControler() .. "/" .. c:GetLocation() .. "/" .. c:GetSequence() .. "/" .. c:GetPosition())
       Debug.Message("original meta " .. c:GetOriginalCode() .. "/" .. c:GetOriginalType() .. "/" .. c:GetOriginalLevel() .. "/" .. c:GetOriginalRace() .. "/" .. c:GetOriginalAttribute())
       Debug.Message("base stats " .. c:GetBaseAttack() .. "/" .. c:GetBaseDefense())
@@ -1540,13 +1546,14 @@ describe("Lua state helpers", () => {
       Debug.Message("relation checks " .. tostring(c:IsOnField()) .. "/" .. tostring(c:IsMonster()) .. "/" .. tostring(c:IsSpell()) .. "/" .. tostring(c:IsTrap()) .. "/" .. tostring(c:IsCanBeEffectTarget(nil)))
       Debug.Message("material checks " .. tostring(c:IsCanBeFusionMaterial(nil)) .. "/" .. tostring(c:IsCanBeSynchroMaterial(nil)) .. "/" .. tostring(c:IsCanBeXyzMaterial(nil)) .. "/" .. tostring(c:IsCanBeLinkMaterial(nil)) .. "/" .. tostring(c:IsCanBeRitualMaterial(nil)))
       Debug.Message("activity counts " .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_FLIPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_ATTACK) .. "/" .. Duel.GetBattledCount(0))
-      Debug.Message("maximum previous checks " .. tostring(c:WasMaximumMode()) .. "/" .. tostring(c:WasMaximumModeSide()))
+      Debug.Message("maximum previous checks " .. tostring(c:WasMaximumMode()) .. "/" .. tostring(c:WasMaximumModeCenter()) .. "/" .. tostring(c:WasMaximumModeSide()))
+      Debug.Message("column checks " .. tostring(c:IsColumn(column_spell)) .. "/" .. tostring(c:IsColumn(hidden)))
       Debug.Message("used summon legality " .. tostring(Duel.IsPlayerCanSummon(0, c)) .. "/" .. tostring(Duel.IsPlayerCanMSet(0, c)) .. "/" .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, c)))
       Duel.SendtoGrave(c, REASON_EFFECT)
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
       Debug.Message("previous state " .. g:GetPreviousLocation() .. "/" .. g:GetPreviousControler() .. "/" .. g:GetPreviousSequence() .. "/" .. g:GetPreviousPosition())
       Debug.Message("previous checks " .. tostring(g:IsPreviousLocation(LOCATION_MZONE)) .. "/" .. tostring(g:IsPreviousControler(0)) .. "/" .. tostring(g:IsPreviousPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(g:IsPreviousSetCard(0x123)))
-      Debug.Message("previous identity " .. g:GetPreviousCode() .. "/" .. tostring(g:IsPreviousCode(100)) .. "/" .. tostring(g:IsPreviousCode(900)))
+      Debug.Message("previous identity " .. g:GetPreviousCode() .. "/" .. tostring(g:IsPreviousCode(100)) .. "/" .. tostring(g:IsPreviousCode(900)) .. "/" .. tostring(g:IsPreviousCodeOnField(100)) .. "/" .. tostring(g:IsPreviousCodeOnField(900)))
       Debug.Message("previous type " .. g:GetPreviousTypeOnField() .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_EFFECT)) .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_SPELL)))
       Debug.Message("previous stats " .. g:GetPreviousAttackOnField() .. "/" .. tostring(g:IsPreviousAttackOnField(1700)) .. "/" .. g:GetPreviousDefenseOnField() .. "/" .. tostring(g:IsPreviousDefenseOnField(1300)))
       Debug.Message("previous level " .. g:GetPreviousLevelOnField() .. "/" .. tostring(g:IsPreviousLevelOnField(4)) .. "/" .. tostring(g:IsPreviousLevelOnField(7)))
@@ -1568,11 +1575,12 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("relation checks true/true/false/false/true");
     expect(host.messages).toContain("material checks true/true/true/true/true");
     expect(host.messages).toContain("activity counts 1/1/0/0/0/0");
-    expect(host.messages).toContain("maximum previous checks false/false");
+    expect(host.messages).toContain("maximum previous checks false/false/false");
+    expect(host.messages).toContain("column checks true/false");
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous checks true/true/true/true");
-    expect(host.messages).toContain("previous identity 100/true/false");
+    expect(host.messages).toContain("previous identity 100/true/false/true/false");
     expect(host.messages).toContain("previous type 33/true/false");
     expect(host.messages).toContain("previous stats 1700/true/1300/true");
     expect(host.messages).toContain("previous level 4/true/false");

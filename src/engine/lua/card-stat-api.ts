@@ -66,6 +66,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsOriginalLevelBelow", session, (card, requested) => (card.data.level ?? 0) <= requested);
   pushNumberGetter(L, "GetRank", session, (card) => cardRank(card));
   pushNumberGetter(L, "GetOriginalRank", session, (card) => cardRank(card));
+  pushBooleanGetter(L, "HasRank", session, (card) => cardRank(card) > 0);
   pushNumberMatcher(L, "IsRank", session, (card, requested) => cardRank(card) === requested);
   pushNumberMatcher(L, "IsRankAbove", session, (card, requested) => cardRank(card) >= requested);
   pushNumberMatcher(L, "IsRankBelow", session, (card, requested) => cardRank(card) <= requested);
