@@ -67,20 +67,20 @@ import {
 } from "#duel/attack-response-window.js";
 import type { BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
-  changedBattleDamageAmount,
-  isBattleDamagePrevented,
-  isBattleDamagePreventedByCard,
   isMaterialUsePrevented,
   isMoveToLocationPrevented,
   isReleasePrevented,
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
   moveDestinationRedirectLocation,
-  reflectedBattleDamagePlayer,
   shouldRedirectBanishMove,
   shouldRedirectToGraveyardMove,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
+import {
+  changeDuelBattleDamageWithPrevention as changeDuelBattleDamageWithPreventionRule,
+  reflectedDuelBattleDamagePlayer as reflectedDuelBattleDamagePlayerRule,
+} from "#duel/core-battle-damage.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
@@ -121,6 +121,7 @@ import type {
 
 export { moveDuelCard } from "#duel/card-state.js";
 export { queryPublicState, serializeDuel, restoreDuel } from "#duel/snapshot.js";
+export { changeDuelBattleDamage, getDuelBattleDamage } from "#duel/core-battle-damage.js";
 
 const activationHandlers: DuelActivationHandlers = {
   createEffectContext,
@@ -133,17 +134,17 @@ const activationHandlers: DuelActivationHandlers = {
 };
 
 const battleContinuationHandlers: BattleContinuationHandlers = {
-  battleDamagePlayer: reflectedDuelBattleDamagePlayer,
+  battleDamagePlayer: (state, player, battleCards) => reflectedDuelBattleDamagePlayerRule(state, player, createContinuousEffectContext(state), battleCards),
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
-  changeBattleDamage: changeDuelBattleDamageWithPrevention,
+  changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
 };
 
 const coreBattleHandlers: CoreBattleHandlers = {
-  battleDamagePlayer: reflectedDuelBattleDamagePlayer,
+  battleDamagePlayer: (state, player, battleCards) => reflectedDuelBattleDamagePlayerRule(state, player, createContinuousEffectContext(state), battleCards),
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
-  changeBattleDamage: changeDuelBattleDamageWithPrevention,
+  changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
   createContinuousContext: createContinuousEffectContext,
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
@@ -485,39 +486,6 @@ export function recoverDuelPlayer(state: DuelState, player: PlayerId, amount: nu
 
 export function raiseDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
   collectTriggerEffects(state, eventName, eventCard);
-}
-
-export function getDuelBattleDamage(state: DuelState, player: PlayerId): number {
-  return state.battleDamage[player] ?? 0;
-}
-
-export function changeDuelBattleDamage(state: DuelState, player: PlayerId, amount: number): number {
-  const value = Math.max(0, Math.floor(amount));
-  state.battleDamage[player] = value;
-  if (state.pendingBattle && (state.battleStep === "damage" || state.battleStep === "damageCalculation")) {
-    state.pendingBattle.battleDamageOverrides = { ...state.pendingBattle.battleDamageOverrides, [player]: value };
-  }
-  pushDuelLog(state, "battleDamage", player, undefined, String(value));
-  return value;
-}
-
-function changeDuelBattleDamageWithPrevention(state: DuelState, player: PlayerId, amount: number, battleCards: DuelCardInstance[] = []): number {
-  const relatedBattleCards = battleCards.length > 0 ? battleCards : currentBattleCards(state);
-  const prevented = isBattleDamagePrevented(state, player, createContinuousEffectContext(state));
-  const preventedByCard = isBattleDamagePreventedByCard(state, player, relatedBattleCards, createContinuousEffectContext(state));
-  const changedAmount = changedBattleDamageAmount(state, player, amount, relatedBattleCards, createContinuousEffectContext(state));
-  return changeDuelBattleDamage(state, player, prevented || preventedByCard ? 0 : changedAmount);
-}
-
-function reflectedDuelBattleDamagePlayer(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[] = []): PlayerId {
-  const relatedBattleCards = battleCards.length > 0 ? battleCards : currentBattleCards(state);
-  return reflectedBattleDamagePlayer(state, player, relatedBattleCards, createContinuousEffectContext(state));
-}
-
-function currentBattleCards(state: DuelState): DuelCardInstance[] {
-  const attacker = state.currentAttack?.attackerUid ? findCard(state, state.currentAttack.attackerUid) : undefined;
-  const target = state.currentAttack?.targetUid ? findCard(state, state.currentAttack.targetUid) : undefined;
-  return [attacker, target].filter((card): card is DuelCardInstance => Boolean(card));
 }
 
 export function setDuelAttackCostPaid(state: DuelState, status: number): number {

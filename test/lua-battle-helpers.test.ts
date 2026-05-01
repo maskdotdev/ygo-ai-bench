@@ -358,6 +358,53 @@ describe("Lua battle helpers", () => {
     expect(session.state.players[1].lifePoints).toBe(7200);
   });
 
+  it("applies player-scoped Lua battle damage reflection effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Field Reflect Attacker", kind: "monster", attack: 1800 },
+      { code: "300", name: "Field Reflect Source", kind: "spell" },
+    ];
+    const session = createDuel({ seed: 114, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const source = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    expect(attacker).toBeDefined();
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, source!.uid, "spellTrapZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_REFLECT_BATTLE_DAMAGE)
+        e:SetRange(LOCATION_SZONE)
+        e:SetTargetRange(0,1)
+        c:RegisterEffect(e)
+      end
+      `,
+      "reflect-battle-damage-player.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    expect(session.state.battleDamage[0]).toBe(1800);
+    expect(session.state.battleDamage[1]).toBe(0);
+    expect(session.state.players[0].lifePoints).toBe(6200);
+    expect(session.state.players[1].lifePoints).toBe(8000);
+  });
+
   it("passes the battle opponent to Lua indestructible battle value callbacks", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Indestructible Check Attacker", kind: "monster", attack: 1800 },
