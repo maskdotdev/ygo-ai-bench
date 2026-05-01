@@ -12,6 +12,7 @@ import { openAttackResponseWindow } from "#duel/attack-response-window.js";
 import {
   extraAttackCount,
   isAttackPrevented,
+  isBattleTargetSelectionPrevented,
   isBattleTargetPrevented,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
@@ -32,7 +33,7 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
     state,
     player,
     (card) => extraAttackCount(state, card, createContext),
-    (card) => !isBattleTargetPrevented(state, card, createContext),
+    (card) => canSelectBattleTarget(state, player, card, createContext),
   )) {
     if (action.type !== "declareAttack") continue;
     const attacker = findCard(state, action.attackerUid);
@@ -54,7 +55,7 @@ export function getCoreDuelAttackTargets(state: DuelState, attackerUid: string, 
     state,
     attackerUid,
     extraAttackCount(state, card, createContext),
-    (target) => !isBattleTargetPrevented(state, target, createContext),
+    (target) => canSelectBattleTarget(state, card.controller, target, createContext),
   );
 }
 
@@ -71,7 +72,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
       return handlers.damagePlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),
-  }, attacker ? extraAttackCount(state, attacker, createContext) : 0, (target) => !isBattleTargetPrevented(state, target, createContext));
+  }, attacker ? extraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || canSelectBattleTarget(state, attacker.controller, target, createContext));
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
 }
 
@@ -85,4 +86,8 @@ export function canCoreChangeDuelCardPosition(state: DuelState, uid: string, pos
 
 export function changeCoreDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, handlers: CoreBattleHandlers): DuelCardInstance {
   return changeDuelCardPositionRule(state, player, uid, position, (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard));
+}
+
+function canSelectBattleTarget(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  return !isBattleTargetPrevented(state, card, createContext) && !isBattleTargetSelectionPrevented(state, player, card, createContext);
 }

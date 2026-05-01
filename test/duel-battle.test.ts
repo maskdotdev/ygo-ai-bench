@@ -120,6 +120,41 @@ describe("duel battle", () => {
     expect(applyResponse(session, { type: "declareAttack", player: 0, attackerUid: attacker!.uid, targetUid: protectedTarget.uid, label: "Attack protected" }).ok).toBe(false);
   });
 
+  it("omits monsters blocked by battle target selection effects", () => {
+    const session = createDuel({ seed: 34, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "100"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const monsters = queryPublicState(session).cards.filter((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(monsters).toHaveLength(3);
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    const source = specialSummonDuelCard(session.state, monsters[0]!.uid, 1);
+    const blockedTarget = specialSummonDuelCard(session.state, monsters[1]!.uid, 1);
+    const legalTarget = specialSummonDuelCard(session.state, monsters[2]!.uid, 1);
+
+    registerEffect(session, {
+      id: "cannot-select-battle-target",
+      sourceUid: source.uid,
+      controller: 1,
+      event: "continuous",
+      code: 332,
+      range: ["monsterZone"],
+      targetRange: [0, 0x04],
+      valueCardPredicate: (_ctx, card) => card.uid === blockedTarget.uid,
+      operation() {},
+    });
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(getDuelAttackTargets(session.state, attacker!.uid).map((card) => card.uid)).toEqual([source.uid, legalTarget.uid]);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "declareAttack" && action.targetUid === blockedTarget.uid)).toBe(false);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "declareAttack" && action.targetUid === legalTarget.uid)).toBe(true);
+  });
+
   it("offers quick effects during the attack response window before battle resolves", () => {
     const session = createDuel({ seed: 31, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

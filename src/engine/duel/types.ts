@@ -170,6 +170,7 @@ export interface DuelEffectDefinition {
   property?: number;
   targetRange?: [number, number?];
   hintTiming?: [number, number?];
+  valueCardPredicate?: (ctx: DuelEffectContext, card: DuelCardInstance) => boolean;
   valuePredicate?: (ctx: DuelEffectContext, reasonPlayer?: PlayerId) => boolean;
   canActivate?: (ctx: DuelEffectContext) => boolean;
   cost?: (ctx: DuelEffectContext) => boolean;

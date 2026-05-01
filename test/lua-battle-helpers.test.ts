@@ -267,6 +267,58 @@ describe("Lua battle helpers", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.targetUid === legalTarget!.uid)).toBe(true);
   });
 
+  it("applies Lua cannot-select-battle-target value callbacks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Selection Lock Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Selection Lock Source", kind: "monster", attack: 1000 },
+      { code: "300", name: "Selection Locked Target", kind: "monster", attack: 1000 },
+      { code: "400", name: "Selection Legal Target", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 109, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200", "300", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const source = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    const blockedTarget = session.state.cards.find((card) => card.controller === 1 && card.code === "300");
+    const legalTarget = session.state.cards.find((card) => card.controller === 1 && card.code === "400");
+    expect(attacker).toBeDefined();
+    expect(source).toBeDefined();
+    expect(blockedTarget).toBeDefined();
+    expect(legalTarget).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, source!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, blockedTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, legalTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_CANNOT_SELECT_BATTLE_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(0,LOCATION_MZONE)
+        e:SetValue(function(e,c) return c:IsCode(300) end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "cannot-select-battle-target.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.targetUid === blockedTarget!.uid)).toBe(false);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.targetUid === source!.uid)).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.targetUid === legalTarget!.uid)).toBe(true);
+  });
+
   it("lets Lua scripts calculate battle damage", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Damage Attacker", kind: "monster", attack: 1800 },

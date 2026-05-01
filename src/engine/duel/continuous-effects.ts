@@ -80,6 +80,20 @@ export function isBattleTargetPrevented(state: DuelState, card: DuelCardInstance
   return false;
 }
 
+export function isBattleTargetSelectionPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 332) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createContext(effect, source, card);
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    if (effect.valueCardPredicate && !effect.valueCardPredicate(ctx, card)) continue;
+    return true;
+  }
+  return false;
+}
+
 export function extraAttackCount(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): number {
   let count = 0;
   for (const effect of state.effects) {
