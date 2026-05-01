@@ -11,6 +11,7 @@ import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { cardFieldNames } from "#lua/card-field-names.js";
 import { cardLink, cardRank, cardTypeFlags, installCardStatApi } from "#lua/card-stat-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
+import { canLuaLinkSummonCard, readLinkMaterialArguments } from "#lua/link-summonable.js";
 import { canLuaSynchroSummonCard } from "#lua/synchro-summonable.js";
 import { canLuaXyzSummonCard } from "#lua/xyz-summonable.js";
 import {
@@ -266,6 +267,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("IsSynchroSummonable"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsXyzSummonable(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsXyzSummonable"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsLinkSummonable(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsLinkSummonable"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const player = lua.lua_isnumber(state, 4) ? normalizePlayer(lua.lua_tointeger(state, 4)) : card?.controller;
@@ -542,6 +545,13 @@ function pushIsXyzSummonable(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
   const suppliedUids = [...readCardOrGroupUids(L, 2), ...readCardOrGroupUids(L, 3)];
   lua.lua_pushboolean(L, Boolean(card && canLuaXyzSummonCard(session, card, suppliedUids)));
+  return 1;
+}
+
+function pushIsLinkSummonable(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const { requiredUids, materialGroupUids, min, max } = readLinkMaterialArguments(L);
+  lua.lua_pushboolean(L, Boolean(card && canLuaLinkSummonCard(session, card, requiredUids, materialGroupUids, min, max)));
   return 1;
 }
 
