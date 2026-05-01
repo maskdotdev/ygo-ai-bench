@@ -188,6 +188,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsEquipSpell", session, (card) => cardTypeFlags(card) === 0x40002);
   pushBooleanGetter(L, "IsEquipTrap", session, (card) => (cardTypeFlags(card) & 0x40004) === 0x40004);
   pushBooleanGetter(L, "IsFieldSpell", session, (card) => (cardTypeFlags(card) & 0x80002) === 0x80002);
+  pushBooleanGetter(L, "IsLinkSpell", session, (card) => cardTypeFlags(card) === 0x4000002);
   pushBooleanGetter(L, "IsNormalTrap", session, (card) => cardTypeFlags(card) === 0x4);
   pushBooleanGetter(L, "IsCounterTrap", session, (card) => (cardTypeFlags(card) & 0x100004) === 0x100004);
   pushBooleanGetter(L, "IsContinuousSpell", session, (card) => (cardTypeFlags(card) & 0x20002) === 0x20002);
@@ -222,6 +223,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("MoveAdjacent"));
   pushBooleanGetter(L, "IsMaximumMode", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeCenter", session, () => false);
+  pushBooleanGetter(L, "IsMaximumModeLeft", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeSide", session, () => false);
   pushBooleanGetter(L, "IsNotMaximumModeSide", session, () => true);
   pushBooleanGetter(L, "WasMaximumMode", session, () => false);
