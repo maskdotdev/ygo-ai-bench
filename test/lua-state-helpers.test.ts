@@ -1686,6 +1686,17 @@ describe("Lua state helpers", () => {
     expect(gladiatorResult.ok, gladiatorResult.error).toBe(true);
     expect(host.messages).toContain("gladiator summon type 1073741944/false/true");
 
+    fusionCard!.summonTypeCode = 0x12000000;
+    const geminiResult = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("gemini summon type " .. c:GetSummonType() .. "/" .. tostring(c:IsGeminiSummoned()) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_GEMINI)))
+      `,
+      "summon-type-gemini.lua",
+    );
+    expect(geminiResult.ok, geminiResult.error).toBe(true);
+    expect(host.messages).toContain("gemini summon type 301989888/true/true");
+
     fusionCard!.summonTypeCode = 0x11000000 + 100;
     const rushMaterialResult = host.loadScript(
       `

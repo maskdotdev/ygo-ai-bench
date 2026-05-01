@@ -137,6 +137,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsFairy", session, (card) => Boolean(card && isAnimeArchetype(card, fairySetcodes, fairyCodes)));
   pushBooleanGetter(L, "IsForest", session, (card) => Boolean(card && isAnimeArchetype(card, forestSetcodes, forestCodes)));
   pushBooleanGetter(L, "IsFortressWhale", session, (card) => Boolean(card && isAnimeArchetype(card, fortressWhaleSetcodes, fortressWhaleCodes)));
+  pushBooleanGetter(L, "IsGaiatheDragonChampion", session, (card) => Boolean(card && isAnimeArchetype(card, gaiaTheDragonChampionSetcodes, gaiaTheDragonChampionCodes)));
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
   pushBooleanGetter(L, "IsWhite", session, (card) => Boolean(card && isAnimeArchetype(card, whiteSetcodes, whiteCodes)));
   pushBooleanGetter(L, "IsChampion", session, (card) => Boolean(card && isAnimeArchetype(card, championSetcodes, championCodes)));
@@ -452,6 +453,8 @@ const forestSetcodes = [0x51f] as const;
 const forestCodes = ["77797992", "87624166", "14015067", "4192696", "87430998", "46668237", "60398723", "37322745", "36318200", "24096499", "78010363", "42883273", "65303664", "17733394"] as const;
 const fortressWhaleSetcodes = [0x583] as const;
 const fortressWhaleCodes = ["62337487", "77454922", "96546575"] as const;
+const gaiaTheDragonChampionSetcodes = [0x580] as const;
+const gaiaTheDragonChampionCodes = ["66889139", "2519690"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [

@@ -13,6 +13,7 @@ export function installCardSummonApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsFlipSummoned", session, (card) => Boolean(card && card.summonType === "flip"));
   pushBooleanGetter(L, "IsSpecialSummoned", session, (card) => Boolean(card && card.summonType !== undefined && card.summonType !== "normal" && card.summonType !== "tribute" && card.summonType !== "flip"));
   pushNumberMatcher(L, "IsSummonType", session, (card, requested) => isSummonTypeMatch(summonTypeMask(card), requested));
+  pushSummonTypePredicate(L, "IsGeminiSummoned", session, 0x12000000);
   pushSummonTypePredicate(L, "IsRitualSummoned", session, 0x45000000);
   pushSummonTypePredicate(L, "IsFusionSummoned", session, 0x43000000);
   pushSummonTypePredicate(L, "IsSynchroSummoned", session, 0x46000000);
