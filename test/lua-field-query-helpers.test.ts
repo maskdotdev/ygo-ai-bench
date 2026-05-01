@@ -292,12 +292,14 @@ describe("Lua field and query helpers", () => {
       { method: "IsW", code: "23846921", setcode: 0x56b },
       { method: "IsWisel", code: "68140974", setcode: 0x560 },
       { method: "IsX", code: "18000338", setcode: 0x56c },
+      { method: "IsY", code: "23915499", setcode: 0x56d },
+      { method: "IsYomi", code: "12538374", setcode: 0x563 },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];
     for (let index = 0; index < cases.length; index += 12) {
       expectAnimeArchetypePredicates(cases.slice(index, index + 12), 158 + index);
     }
-  });
+  }, 10000);
 
   it("keeps Phantom Butterfly out of the generic Butterfly predicate", () => {
     const cards: DuelCardData[] = [

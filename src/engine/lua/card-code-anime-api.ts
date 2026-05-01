@@ -99,6 +99,8 @@ export function installCardCodeAnimeApi(L: unknown, session: DuelSession): void 
   pushBooleanGetter(L, "IsW", session, (card) => Boolean(card && isAnimeArchetype(card, wSetcodes, wCodes)));
   pushBooleanGetter(L, "IsWisel", session, (card) => Boolean(card && isAnimeArchetype(card, wiselSetcodes, wiselCodes)));
   pushBooleanGetter(L, "IsX", session, (card) => Boolean(card && isAnimeArchetype(card, xSetcodes, xCodes)));
+  pushBooleanGetter(L, "IsY", session, (card) => Boolean(card && isAnimeArchetype(card, ySetcodes, yCodes)));
+  pushBooleanGetter(L, "IsYomi", session, (card) => Boolean(card && isAnimeArchetype(card, yomiSetcodes, yomiCodes)));
   pushBooleanGetter(L, "IsEarth", session, (card) => Boolean(card && isAnimeArchetype(card, earthSetcodes, earthCodes) && !isAnimeArchetype(card, hellSetcodes, hellCodes)));
   pushBooleanGetter(L, "IsSky", session, (card) => Boolean(card && isAnimeArchetype(card, skySetcodes, skyCodes)));
   pushBooleanGetter(L, "Is_V_", session, (card) => Boolean(card && isAnimeArchetype(card, vZexalSetcodes, vZexalCodes)));
@@ -644,6 +646,10 @@ const xCodes = [
   "46008667", "40253382", "11264180", "3868277", "58258899", "48605591", "12181376", "93130021", "62651957", "86559484", "30562585", "28912357", "19891310",
   "84243274", "2111707", "91998119", "99724761",
 ] as const;
+const ySetcodes = [0x56d, 0xc1] as const;
+const yCodes = ["23915499", "76895648", "56111151", "3912064", "911883", "14731897", "65622692", "81332143", "84243274", "2111707", "91998119", "25119460"] as const;
+const yomiSetcodes = [0x563] as const;
+const yomiCodes = ["12538374", "51534754"] as const;
 
 const earthSetcodes = [0x51a, 0x21, 0x567] as const;
 const earthCodes = [
