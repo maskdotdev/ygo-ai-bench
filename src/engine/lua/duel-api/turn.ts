@@ -31,13 +31,21 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPhase"));
+  pushPhasePredicate(L, "IsDrawPhase", session, (state) => state.phase === "draw");
+  pushPhasePredicate(L, "IsStandbyPhase", session, (state) => state.phase === "standby");
+  pushPhasePredicate(L, "IsMainPhase1", session, (state) => state.phase === "main1");
+  pushPhasePredicate(L, "IsBattleStep", session, (state) => state.phase === "battle" && state.battleStep === "attack");
+  pushPhasePredicate(L, "IsEndOfBattlePhase", session, (state) => state.phase === "battle" && state.battleStep === undefined);
+  pushPhasePredicate(L, "IsEndPhase", session, (state) => state.phase === "end");
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, session.state.phase === "main1" || session.state.phase === "main2");
+    const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
+    lua.lua_pushboolean(state, (session.state.phase === "main1" || session.state.phase === "main2") && (player === undefined || session.state.turnPlayer === player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsMainPhase"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, session.state.phase === "main2");
+    const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
+    lua.lua_pushboolean(state, session.state.phase === "main2" && (player === undefined || session.state.turnPlayer === player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsMainPhase2"));
@@ -69,6 +77,15 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("SkipPhase"));
+}
+
+function pushPhasePredicate(L: unknown, fieldName: string, session: DuelSession, predicate: (state: DuelState) => boolean): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
+    lua.lua_pushboolean(state, predicate(session.state) && (player === undefined || session.state.turnPlayer === player));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
 function normalizePlayer(value: number): PlayerId {

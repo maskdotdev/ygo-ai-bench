@@ -126,6 +126,79 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("is main phase 2 true");
   });
 
+  it("lets Lua scripts query current phase helper predicates", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Phase Predicate Probe", kind: "monster" }];
+    const session = createDuel({ seed: 167, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+
+    session.state.phase = "draw";
+    let result = host.loadScript(
+      `
+      Debug.Message("phase draw " .. tostring(Duel.IsDrawPhase()) .. "/" .. tostring(Duel.IsDrawPhase(0)) .. "/" .. tostring(Duel.IsDrawPhase(1)) .. "/" .. tostring(Duel.IsStandbyPhase()))
+      `,
+      "phase-predicate-draw.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    session.state.phase = "standby";
+    result = host.loadScript(
+      `
+      Debug.Message("phase standby " .. tostring(Duel.IsStandbyPhase()) .. "/" .. tostring(Duel.IsDrawPhase()))
+      `,
+      "phase-predicate-standby.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    session.state.phase = "main1";
+    result = host.loadScript(
+      `
+      Debug.Message("phase main1 " .. tostring(Duel.IsMainPhase1()) .. "/" .. tostring(Duel.IsMainPhase()) .. "/" .. tostring(Duel.IsMainPhase2()))
+      `,
+      "phase-predicate-main1.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    session.state.phase = "battle";
+    session.state.battleStep = "attack";
+    result = host.loadScript(
+      `
+      Debug.Message("phase battle step " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()) .. "/" .. tostring(Duel.IsBattlePhase()))
+      `,
+      "phase-predicate-battle-step.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    delete session.state.battleStep;
+    result = host.loadScript(
+      `
+      Debug.Message("phase battle end " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()))
+      `,
+      "phase-predicate-battle-end.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    session.state.phase = "end";
+    result = host.loadScript(
+      `
+      Debug.Message("phase end " .. tostring(Duel.IsEndPhase()) .. "/" .. tostring(Duel.IsEndPhase(0)) .. "/" .. tostring(Duel.IsEndPhase(1)))
+      `,
+      "phase-predicate-end.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    expect(host.messages).toContain("phase draw true/true/false/false");
+    expect(host.messages).toContain("phase standby true/false");
+    expect(host.messages).toContain("phase main1 true/true/false");
+    expect(host.messages).toContain("phase battle step true/false/true");
+    expect(host.messages).toContain("phase battle end false/true");
+    expect(host.messages).toContain("phase end true/true/false");
+  });
+
   it("lets Lua scripts raise events for trigger effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Raised Event Card", kind: "monster" },
