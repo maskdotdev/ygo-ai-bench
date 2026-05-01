@@ -36,6 +36,12 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("ListsCodeAsMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
+    lua.lua_pushboolean(state, Boolean(card && materialSetcodes(card).some((setcode) => readRequestedNumbers(state, 2).some((requested) => isSetcodeMatch(requested, setcode)))));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ListsArchetypeAsMaterial"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
     lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
     return 1;
@@ -109,6 +115,22 @@ function readRequestedCodes(L: unknown, start: number): string[] {
     if (lua.lua_isnumber(L, index)) codes.push(String(lua.lua_tointeger(L, index)));
   }
   return codes;
+}
+
+function readRequestedNumbers(L: unknown, start: number): number[] {
+  const values: number[] = [];
+  for (let index = start; index <= lua.lua_gettop(L); index += 1) {
+    if (lua.lua_isnumber(L, index)) values.push(lua.lua_tointeger(L, index));
+  }
+  return values;
+}
+
+function materialSetcodes(card: DuelCardInstance): number[] {
+  return card.data.materialSetcodes ?? [];
+}
+
+function isSetcodeMatch(requested: number, setcode: number): boolean {
+  return (setcode & 0xfff) === (requested & 0xfff) && (setcode & requested) === requested;
 }
 
 function matchesAnyCodeAtOrAfter(L: unknown, card: DuelCardInstance, start: number): boolean {

@@ -45,6 +45,7 @@ export interface DuelCardData {
   attribute?: number;
   setcodes?: number[];
   fusionMaterials?: string[];
+  materialSetcodes?: number[];
   synchroMaterials?: {
     tuner: string;
     nonTuners: string[];

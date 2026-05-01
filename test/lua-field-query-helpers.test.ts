@@ -774,7 +774,7 @@ describe("Lua field and query helpers", () => {
       { code: "800", name: "Normal Fixture", kind: "monster", typeFlags: 0x11, level: 4 },
       { code: "801", name: "Synchro Fixture", kind: "extra", typeFlags: 0x2001, level: 7 },
       { code: "901", name: "Pendulum Fixture", kind: "monster", typeFlags: 0x1000021, level: 4, leftScale: 3, rightScale: 8 },
-      { code: "902", name: "Material Listing Fusion", kind: "extra", fusionMaterials: ["100", "800"] },
+      { code: "902", name: "Material Listing Fusion", kind: "extra", fusionMaterials: ["100", "800"], materialSetcodes: [0x3000 | 0x123] },
       { code: "903", name: "Unknown Stat Fixture", kind: "monster", typeFlags: 0x21, attack: -2, defense: -2, level: 10 },
     ];
     const session = createDuel({ seed: 14, startingHandSize: 13, cardReader: createCardReader(cards) });
@@ -812,10 +812,11 @@ describe("Lua field and query helpers", () => {
       local unknown_stats = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 903), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("unknown text stats " .. unknown_stats:GetTextAttack() .. "/" .. unknown_stats:GetTextDefense() .. "/" .. tostring(Card.IsTextAttack(unknown_stats,-2)) .. "/" .. tostring(Card.IsTextDefense(unknown_stats,-2)))
       Debug.Message("material listed checks " .. tostring(material_fusion:ListsCodeAsMaterial(100)) .. "/" .. tostring(material_fusion:ListsCodeAsMaterial(700,800)) .. "/" .. tostring(material_fusion:ListsCodeAsMaterial(300)) .. "/" .. tostring(ritual:ListsCodeAsMaterial(100)))
+      Debug.Message("material set listed checks " .. tostring(material_fusion:ListsArchetypeAsMaterial(0x123)) .. "/" .. tostring(material_fusion:ListsArchetypeAsMaterial(0x223)) .. "/" .. tostring(ritual:ListsArchetypeAsMaterial(0x123)))
       Debug.Message("original predicates " .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalLevel(7)))
       Debug.Message("not type " .. tostring(c:IsNotType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotType(TYPE_SPELL)))
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
-      Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(synchro:IsSynchroMonster()) .. "/" .. tostring(c:IsSynchroMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()) .. "/" .. tostring(c:IsEffectMonster()) .. "/" .. tostring(normal:IsEffectMonster()) .. "/" .. tostring(c:IsForbidden()))
+      Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(synchro:IsSynchroMonster()) .. "/" .. tostring(c:IsSynchroMonster()) .. "/" .. tostring(xyz:IsXyzMonster()) .. "/" .. tostring(c:IsXyzMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()) .. "/" .. tostring(c:IsEffectMonster()) .. "/" .. tostring(normal:IsEffectMonster()) .. "/" .. tostring(c:IsForbidden()))
       Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
       Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()))
@@ -884,11 +885,12 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("set checks true/false/true");
     expect(host.messages).toContain("listed checks true/true/false/true");
     expect(host.messages).toContain("material listed checks true/true/false/true");
+    expect(host.messages).toContain("material set listed checks true/false/false");
     expect(host.messages).toContain("infinity checks true/false");
     expect(host.messages).toContain("original predicates true/true");
     expect(host.messages).toContain("not type false/true");
     expect(host.messages).toContain("not original type false/true");
-    expect(host.messages).toContain("named type predicates true/false/true/false/true/false/true/false/false");
+    expect(host.messages).toContain("named type predicates true/false/true/false/true/false/true/false/true/false/false");
     expect(host.messages).toContain("rank 4/4/true/true");
     expect(host.messages).toContain("has level true/false/false/false");
     expect(host.messages).toContain("main card types 1/2/2/5");

@@ -168,6 +168,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsFusionMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x41) === 0x41));
   pushBooleanGetter(L, "IsRitualMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x81) === 0x81));
   pushBooleanGetter(L, "IsSynchroMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x2001) === 0x2001));
+  pushBooleanGetter(L, "IsXyzMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x800001) === 0x800001));
   pushBooleanGetter(L, "IsEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x21) === 0x21));
   pushBooleanGetter(L, "IsNonEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x20) === 0));
   pushBooleanGetter(L, "IsLinked", session, (card) => Boolean(card && isLinkedMonsterZoneCard(session.state, card)));
