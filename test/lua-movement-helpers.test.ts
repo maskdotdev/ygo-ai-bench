@@ -476,6 +476,54 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: source!.uid, faceUp: true });
   });
 
+  it("lets Lua scripts register Neos return effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Neos Fusion", kind: "monster" },
+      { code: "14088859", name: "Contact Out", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 160, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "14088859"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const substitute = session.state.cards.find((card) => card.code === "14088859");
+    expect(source).toBeTruthy();
+    expect(substitute).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0).faceUp = true;
+    moveDuelCard(session.state, substitute!.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local marker = Effect.CreateEffect(c)
+      local e1,e2 = aux.EnableNeosReturn(c,CATEGORY_DESTROY,function(e,tp,eg,ep,ev,re,r,rp,chk) Debug.Message("neos extra info " .. chk) end,function(e,tp) Debug.Message("neos extra op " .. tp) end,marker)
+      Debug.Message("neos metadata " .. e1:GetCategory() .. "/" .. e1:GetType() .. "/" .. e2:GetType() .. "/" .. e1:GetCode() .. "/" .. e1:GetRange() .. "/" .. e1:GetCountLimit())
+      Debug.Message("neos labels " .. tostring(e1:GetLabelObject()==marker) .. "/" .. tostring(e2:GetLabelObject()==marker))
+      Debug.Message("neos conditions " .. tostring(e1:GetCondition()(e1,0,Group.CreateGroup(),0,0,nil,0,0)) .. "/" .. tostring(e2:GetCondition()(e2,0,Group.CreateGroup(),0,0,nil,0,0)))
+      Debug.Message("neos target " .. tostring(e1:GetTarget()(e1,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+      e1:GetTarget()(e1,0,Group.CreateGroup(),0,0,nil,0,0,1)
+      local ok,cat,g,count,p,param=Duel.GetOperationInfo(0,CATEGORY_TODECK)
+      Debug.Message("neos op info " .. tostring(ok) .. "/" .. cat .. "/" .. g:GetCount() .. "/" .. count)
+      e1:GetOperation()(e1,0,Group.CreateGroup(),0,0,nil,0,0)
+      Debug.Message("neos locations " .. c:GetLocation() .. "/" .. Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,14088859),0,LOCATION_REMOVED,0,nil):GetCode())
+      `,
+      "neos-return.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("neos metadata 17/514/130/4608/4/1");
+    expect(host.messages).toContain("neos labels true/true");
+    expect(host.messages).toContain("neos conditions true/nil");
+    expect(host.messages).toContain("neos target true");
+    expect(host.messages).toContain("neos extra info 1");
+    expect(host.messages).toContain("neos op info true/16/1/1");
+    expect(host.messages).toContain("neos locations 4/14088859");
+    expect(session.state.cards.find((card) => card.code === "14088859")).toMatchObject({ location: "banished" });
+  });
+
   it("lets Lua scripts install Attraction equip procedures and conditions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Attraction Trap", kind: "trap", typeFlags: 0x4, setcodes: [0x15f] },
