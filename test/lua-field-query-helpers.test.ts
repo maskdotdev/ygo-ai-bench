@@ -1141,6 +1141,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("environment fzone " .. tostring(Duel.IsEnvironment(100, PLAYER_ALL, LOCATION_FZONE)))
       Debug.Message("environment normal spell " .. tostring(Duel.IsEnvironment(200)))
       Debug.Message("environment missing " .. tostring(Duel.IsEnvironment(300)))
+      Debug.Message("environment code " .. Duel.GetEnvironment(0, LOCATION_FZONE))
       `,
       "field-environment.lua",
     );
@@ -1151,6 +1152,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("environment fzone true");
     expect(host.messages).toContain("environment normal spell false");
     expect(host.messages).toContain("environment missing false");
+    expect(host.messages).toContain("environment code 100");
   });
 
   it("lets Lua scripts activate and replace field spells", () => {

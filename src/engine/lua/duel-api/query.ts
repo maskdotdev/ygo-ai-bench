@@ -66,6 +66,8 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("GetFirstMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsEnvironment(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsEnvironment"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushEnvironment(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetEnvironment"));
   installDuelLocationApi(L, session);
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckWithSumEqual(state, session));
   lua.lua_setfield(L, -2, to_luastring("CheckWithSumEqual"));
@@ -318,6 +320,16 @@ function pushIsEnvironment(L: unknown, session: DuelSession): number {
     players.some((player) => hasEnvironmentFieldSpell(session, player, code, locations)) ||
     players.some((player) => hasEnvironmentEffect(session, player, code));
   lua.lua_pushboolean(L, active);
+  return 1;
+}
+
+function pushEnvironment(L: unknown, session: DuelSession): number {
+  const players = environmentPlayers(L, session, 1);
+  const locations = environmentLocations(L, 2);
+  const environment = players
+    .flatMap((player) => environmentFieldSpells(session, player, locations))
+    .sort((left, right) => left.sequence - right.sequence)[0];
+  lua.lua_pushinteger(L, environment ? Number(environment.code) || 0 : 0);
   return 1;
 }
 
@@ -595,10 +607,13 @@ function environmentLocations(L: unknown, index: number): DuelLocation[] {
 }
 
 function hasEnvironmentFieldSpell(session: DuelSession, player: PlayerId, code: string, locations: DuelLocation[]): boolean {
-  return session.state.cards.some(
+  return environmentFieldSpells(session, player, locations).some((card) => card.code === code);
+}
+
+function environmentFieldSpells(session: DuelSession, player: PlayerId, locations: DuelLocation[]): DuelCardInstance[] {
+  return session.state.cards.filter(
     (card) =>
       card.controller === player &&
-      card.code === code &&
       card.faceUp &&
       locations.includes(card.location) &&
       (card.data.typeFlags ?? 0) !== 0 &&
