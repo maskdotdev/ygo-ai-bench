@@ -1610,6 +1610,7 @@ describe("Lua continuous effects", () => {
         e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
         e:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
         e:SetRange(LOCATION_HAND)
+        e:SetValue(aux.indoval)
         e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
           return true
         end)
@@ -1625,7 +1626,13 @@ describe("Lua continuous effects", () => {
       `
       local protected=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local open=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      Debug.Message("protected destructible " .. tostring(protected:IsDestructable()))
+      local opponent_effect=Effect.CreateEffect(open)
+      opponent_effect:SetOwnerPlayer(1)
+      local own_effect=Effect.CreateEffect(open)
+      own_effect:SetOwnerPlayer(0)
+      Debug.Message("protected destructible " .. tostring(protected:IsDestructable(opponent_effect)))
+      Debug.Message("protected destructible own " .. tostring(protected:IsDestructable(own_effect)))
+      Debug.Message("protected destructible nil " .. tostring(protected:IsDestructable()))
       Debug.Message("open destructible " .. tostring(open:IsDestructable()))
       Debug.Message("destructible group " .. Duel.GetMatchingGroupCount(Card.IsDestructable, 0, LOCATION_HAND, 0, nil))
       `,
@@ -1634,8 +1641,10 @@ describe("Lua continuous effects", () => {
 
     expect(query.ok, query.error).toBe(true);
     expect(host.messages).toContain("protected destructible false");
+    expect(host.messages).toContain("protected destructible own true");
+    expect(host.messages).toContain("protected destructible nil true");
     expect(host.messages).toContain("open destructible true");
-    expect(host.messages).toContain("destructible group 2");
+    expect(host.messages).toContain("destructible group 3");
   });
 
   it("consumes Lua counted indestructible effects", () => {
