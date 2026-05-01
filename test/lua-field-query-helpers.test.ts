@@ -216,7 +216,6 @@ describe("Lua field and query helpers", () => {
       { method: "IsAtlandis", code: "9161357", setcode: 0x506 },
       { method: "IsBlackwingTamer", code: "81983656", setcode: 0x2033 },
       { method: "IsButterfly", code: "16984449", setcode: 0x50c },
-      { method: "IsButterfly", code: "63630268", setcode: 0x150c },
       { method: "IsC", code: "15862758", setcode: 0x1048 },
       { method: "IsCat", code: "19963185", setcode: 0x50e },
       { method: "IsCelestial", code: "69865139", setcode: 0x254a },
@@ -270,12 +269,42 @@ describe("Lua field and query helpers", () => {
       { method: "IsNeko", code: "8634636", setcode: 0x538 },
       { method: "IsPaleozoic", code: "21225115", setcode: 0x57e },
       { method: "IsParasite", code: "49966595", setcode: 0x53d },
+      { method: "IsPhantomButterfly", code: "63630268", setcode: 0x150c },
+      { method: "IsPixie", code: "44663232", setcode: 0x53e },
       { method: "IsStarvingVenemy", code: "22070401", setcode: 0x576 },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];
     for (let index = 0; index < cases.length; index += 12) {
       expectAnimeArchetypePredicates(cases.slice(index, index + 12), 158 + index);
     }
+  });
+
+  it("keeps Phantom Butterfly out of the generic Butterfly predicate", () => {
+    const cards: DuelCardData[] = [
+      { code: "63630268", name: "Butterspy Protection", kind: "trap", typeFlags: 0x4 },
+      { code: "9001", name: "Phantom Butterfly Set", kind: "monster", typeFlags: 0x21, setcodes: [0x150c] },
+    ];
+    const session = createDuel({ seed: 159, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["63630268", "9001"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local by_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 63630268), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local by_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 9001), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("phantom butterfly " .. tostring(by_code:IsPhantomButterfly()) .. "/" .. tostring(by_set:IsPhantomButterfly()))
+      Debug.Message("generic butterfly " .. tostring(by_code:IsButterfly()) .. "/" .. tostring(by_set:IsButterfly()))
+      `,
+      "phantom-butterfly-exclusion.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("phantom butterfly true/true");
+    expect(host.messages).toContain("generic butterfly false/false");
   });
 
   function expectAnimeArchetypePredicates(cases: { method: string; code: string; setcode: number }[], seed: number): void {

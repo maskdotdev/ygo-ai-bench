@@ -114,7 +114,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsAstral", session, (card) => Boolean(card && isAnimeArchetype(card, astralSetcodes, astralCodes)));
   pushBooleanGetter(L, "IsAtlandis", session, (card) => Boolean(card && isAnimeArchetype(card, atlandisSetcodes, atlandisCodes)));
   pushBooleanGetter(L, "IsBlackwingTamer", session, (card) => Boolean(card && isAnimeArchetype(card, blackwingTamerSetcodes, blackwingTamerCodes)));
-  pushBooleanGetter(L, "IsButterfly", session, (card) => Boolean(card && isAnimeArchetype(card, butterflySetcodes, butterflyCodes)));
+  pushBooleanGetter(L, "IsButterfly", session, (card) => Boolean(card && isAnimeArchetype(card, butterflySetcodes, butterflyCodes) && !isAnimeArchetype(card, phantomButterflySetcodes, phantomButterflyCodes)));
   pushBooleanGetter(L, "IsC", session, (card) => Boolean(card && isAnimeArchetype(card, cSetcodes, cCodes)));
   pushBooleanGetter(L, "IsCat", session, (card) => Boolean(card && isAnimeArchetype(card, catSetcodes, catCodes)));
   pushBooleanGetter(L, "IsCelestial", session, (card) => Boolean(card && isAnimeArchetype(card, celestialSetcodes, celestialCodes)));
@@ -174,6 +174,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsPaleozoic", session, (card) => Boolean(card && isAnimeArchetype(card, paleozoicSetcodes, paleozoicCodes)));
   pushBooleanGetter(L, "IsPapillon", session, (card) => Boolean(card && isAnimeArchetype(card, papillonSetcodes, papillonCodes)));
   pushBooleanGetter(L, "IsParasite", session, (card) => Boolean(card && isAnimeArchetype(card, parasiteSetcodes, parasiteCodes)));
+  pushBooleanGetter(L, "IsPhantomButterfly", session, (card) => Boolean(card && isAnimeArchetype(card, phantomButterflySetcodes, phantomButterflyCodes)));
+  pushBooleanGetter(L, "IsPixie", session, (card) => Boolean(card && isAnimeArchetype(card, pixieSetcodes, pixieCodes)));
   pushBooleanGetter(L, "IsShark", session, (card) => Boolean(card && isAnimeArchetype(card, sharkSetcodes, sharkCodes)));
   pushBooleanGetter(L, "IsStarvingVenemy", session, (card) => Boolean(card && isAnimeArchetype(card, starvingVenemySetcodes, starvingVenemyCodes)));
   pushBooleanGetter(L, "IsEarth", session, (card) => Boolean(card && isAnimeArchetype(card, earthSetcodes, earthCodes) && !isAnimeArchetype(card, hellSetcodes, hellCodes)));
@@ -311,8 +313,10 @@ const atlandisCodes = ["9161357", "6387204"] as const;
 const blackwingTamerSetcodes = [0x2033] as const;
 const blackwingTamerCodes = ["81983656"] as const;
 
-const butterflySetcodes = [0x50c, 0x150c, 0x6a] as const;
-const butterflyCodes = ["16984449", "69243953", "57261568", "3966653", "63630268"] as const;
+const butterflySetcodes = [0x50c] as const;
+const butterflyCodes = ["16984449", "69243953", "57261568", "3966653"] as const;
+const phantomButterflySetcodes = [0x150c, 0x6a] as const;
+const phantomButterflyCodes = ["63630268"] as const;
 
 const cSetcodes = [0x1048, 0x1073, 0x568] as const;
 const cCodes = ["15862758"] as const;
@@ -563,6 +567,11 @@ const paleozoicSetcodes = [0x57e] as const;
 const paleozoicCodes = ["21225115", "57157964", "96897184"] as const;
 const parasiteSetcodes = [0x53d] as const;
 const parasiteCodes = ["49966595", "6205579"] as const;
+const pixieSetcodes = [0x53e] as const;
+const pixieCodes = [
+  "44663232", "81563416", "91559748", "8687195", "85239662", "21893603", "90925163", "58753372", "44125452", "42921475",
+  "52022648", "55623480", "86937530", "45425051", "28290705", "19684740", "68401546", "73507661", "4179255",
+] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
