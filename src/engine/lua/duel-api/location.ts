@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { pushGroupTable } from "#lua/group-api.js";
 import type { CardPosition, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -59,6 +60,14 @@ export function installDuelLocationApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetLinkedZone"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const selfLocations = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0x04;
+    const opponentLocations = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
+    pushGroupTable(state, linkedGroupUidsForPlayer(session, player, selfLocations, opponentLocations));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetLinkedGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const positionMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0x1;
     lua.lua_pushinteger(state, positionMaskFromPosition(positionFromMask(positionMask) ?? "faceUpAttack"));
@@ -156,9 +165,33 @@ export function linkedZoneMaskForUids(session: DuelSession, uids: readonly strin
   return session.state.cards.filter((card) => uidSet.has(card.uid)).reduce((mask, card) => mask | linkedZoneMask(card), 0);
 }
 
+export function linkedGroupUidsForCard(session: DuelSession, card: DuelCardInstance): string[] {
+  const mask = linkedZoneMask(card);
+  if (mask === 0) return [];
+  return session.state.cards
+    .filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && candidate.faceUp && ((1 << candidate.sequence) & mask) !== 0)
+    .map((candidate) => candidate.uid);
+}
+
 export function linkedZoneMask(card: DuelCardInstance): number {
   if (card.location !== "monsterZone" || !card.faceUp || ((card.data.typeFlags ?? 0) & 0x4000001) !== 0x4000001) return 0;
   return linkedSequences(card.sequence, card.data.linkMarkers ?? 0).reduce((mask, sequence) => mask | (1 << sequence), 0);
+}
+
+function linkedGroupUidsForPlayer(session: DuelSession, player: PlayerId, selfLocations: number, opponentLocations: number): string[] {
+  return [
+    ...linkedGroupUidsForField(session, player, selfLocations),
+    ...linkedGroupUidsForField(session, otherPlayer(player), opponentLocations),
+  ];
+}
+
+function linkedGroupUidsForField(session: DuelSession, player: PlayerId, locationMask: number): string[] {
+  const linkedZones = linkedZoneMaskForPlayer(session, player);
+  const locations = locationsFromMask(locationMask);
+  if (linkedZones === 0 || locations.length === 0) return [];
+  return session.state.cards
+    .filter((card) => card.controller === player && locations.includes(card.location) && ((1 << card.sequence) & linkedZones) !== 0)
+    .map((card) => card.uid);
 }
 
 function linkedSequences(sequence: number, markers: number): number[] {

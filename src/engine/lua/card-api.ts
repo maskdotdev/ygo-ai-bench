@@ -11,7 +11,7 @@ import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCa
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { cardFieldNames } from "#lua/card-field-names.js";
 import { cardLink, cardRank, cardTypeFlags, installCardStatApi } from "#lua/card-stat-api.js";
-import { linkedZoneMask } from "#lua/duel-api/location.js";
+import { linkedGroupUidsForCard, linkedZoneMask } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { canLuaLinkSummonCard, readLinkMaterialArguments } from "#lua/link-summonable.js";
 import { canLuaSynchroSummonCard } from "#lua/synchro-summonable.js";
@@ -190,6 +190,13 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsNonEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x20) === 0));
   pushBooleanGetter(L, "IsLinked", session, (card) => Boolean(card && isLinkedMonsterZoneCard(session.state, card)));
   pushNumberGetter(L, "GetLinkedZone", session, (card) => (card ? linkedZoneMask(card) : 0));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    pushGroupTable(state, card ? linkedGroupUidsForCard(session, card) : []);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetLinkedGroup"));
+  pushNumberGetter(L, "GetLinkedGroupCount", session, (card) => (card ? linkedGroupUidsForCard(session, card).length : 0));
   pushBooleanGetter(L, "IsDrone", session, (card) => Boolean(card?.data.setcodes?.includes(0x581)));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsRikkaReleasable(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsRikkaReleasable"));

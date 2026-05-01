@@ -195,6 +195,8 @@ export const cardFieldNames = [
   "IsNonEffectMonster",
   "IsLinked",
   "GetLinkedZone",
+  "GetLinkedGroup",
+  "GetLinkedGroupCount",
   "IsDrone",
   "IsRikkaReleasable",
   "IsForbidden",
