@@ -151,6 +151,52 @@ describe("Lua special summon procedures", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid)).toBe(false);
   });
 
+  it("loads Ultimate Magical Swordsman field effects for placing Mind Shuffle and banishing two cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "98684220", name: "Black Chaos the Ultimate Magical Swordsman", kind: "monster", attack: 3000 },
+      { code: "24749710", name: "Mind Shuffle", kind: "spell", typeFlags: 0x2 },
+      { code: "100", name: "Opponent Card A", kind: "monster" },
+      { code: "200", name: "Opponent Card B", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 162, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["98684220", "24749710"] },
+      1: { main: ["100", "200"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "98684220");
+    const mindShuffle = session.state.cards.find((card) => card.code === "24749710");
+    const opponentA = session.state.cards.find((card) => card.code === "100");
+    const opponentB = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeTruthy();
+    expect(mindShuffle).toBeTruthy();
+    expect(opponentA).toBeTruthy();
+    expect(opponentB).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "hand", 0);
+    moveDuelCard(session.state, mindShuffle!.uid, "deck", 0);
+    moveDuelCard(session.state, opponentA!.uid, "monsterZone", 1);
+    moveDuelCard(session.state, opponentB!.uid, "spellTrapZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c98684220.lua", "utf8"), "c98684220.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const placeAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(placeAction).toBeDefined();
+    expect(applyResponse(session, placeAction!).ok).toBe(true);
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.uid === mindShuffle!.uid)).toMatchObject({ location: "spellTrapZone", controller: 0, faceUp: true });
+
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    const banishAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(banishAction).toBeDefined();
+    expect(applyResponse(session, banishAction!).ok).toBe(true);
+    expect(session.state.cards.find((card) => card.uid === opponentA!.uid)).toMatchObject({ location: "banished" });
+    expect(session.state.cards.find((card) => card.uid === opponentB!.uid)).toMatchObject({ location: "banished" });
+  });
+
   it("supports Lua special summon procedures from face-up pendulum extra deck cards", () => {
     const cards: DuelCardData[] = [
       { code: "301", name: "Extra Procedure Pendulum", kind: "monster", typeFlags: 0x1000001 },
