@@ -415,7 +415,7 @@ function equippedCards(session: DuelSession, uid: string): DuelCardInstance[] {
   return session.state.cards.filter((card) => card.equippedToUid === uid && card.location === "spellTrapZone");
 }
 
-function cardFieldId(card: DuelCardInstance | undefined): number {
+export function cardFieldId(card: DuelCardInstance | undefined): number {
   if (!card) return 0;
   let value = 0x811c9dc5;
   for (let index = 0; index < card.uid.length; index += 1) {

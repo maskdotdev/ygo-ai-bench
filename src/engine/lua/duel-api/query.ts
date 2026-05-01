@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { moveDuelCard } from "#duel/card-state.js";
 import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
-import { pushCardTable } from "#lua/card-api.js";
+import { cardFieldId, pushCardTable } from "#lua/card-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
@@ -50,6 +50,8 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("GetOverlayCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFieldCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetFieldCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCardFromCardId(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetCardFromCardID"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsExistingMatchingCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsExistingMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsExistingMatchingCard(state, session));
@@ -234,6 +236,17 @@ function pushFieldCard(L: unknown, session: DuelSession): number {
     return 1;
   }
   pushCardTable(L, uid);
+  return 1;
+}
+
+function pushCardFromCardId(L: unknown, session: DuelSession): number {
+  const id = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0;
+  const card = session.state.cards.find((candidate) => cardFieldId(candidate) === id);
+  if (!card) {
+    lua.lua_pushnil(L);
+    return 1;
+  }
+  pushCardTable(L, card.uid);
   return 1;
 }
 

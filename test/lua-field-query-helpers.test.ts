@@ -30,6 +30,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("field id distinct " .. tostring(fid~=b:GetFieldID()))
       Debug.Message("field id matchers " .. tostring(a:IsFieldID(fid)) .. "/" .. tostring(a:IsRealFieldID(rfid)) .. "/" .. tostring(b:IsFieldID(fid)))
       Debug.Message("card id alias " .. tostring(cid==fid) .. "/" .. tostring(cid==a:GetCardID()))
+      Debug.Message("card id lookup " .. Duel.GetCardFromCardID(cid):GetCode() .. "/" .. tostring(Duel.GetCardFromCardID(999999)==nil))
       `,
       "card-field-id.lua",
     );
@@ -39,6 +40,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("field id distinct true");
     expect(host.messages).toContain("field id matchers true/true/false");
     expect(host.messages).toContain("card id alias true/true");
+    expect(host.messages).toContain("card id lookup 100/true");
   });
 
   it("exposes Lua summon location and defense availability helpers", () => {
