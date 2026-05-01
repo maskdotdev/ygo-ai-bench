@@ -3,7 +3,7 @@ import type { DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel
 
 export interface BattleContinuationHandlers {
   collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void;
-  changeBattleDamage(state: DuelState, player: PlayerId, amount: number): number;
+  changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   damagePlayer(state: DuelState, player: PlayerId, amount: number): number;
   destroyCard(state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
 }
@@ -12,8 +12,8 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
   const battleDamageOverrides = state.pendingBattle?.battleDamageOverrides;
   resolvePendingDuelBattle(state, {
     collectEvent: (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard),
-    damagePlayer: (damagedPlayer, amount) => {
-      handlers.changeBattleDamage(state, damagedPlayer, battleDamageOverrides?.[damagedPlayer] ?? amount);
+    damagePlayer: (damagedPlayer, amount, battleCards) => {
+      handlers.changeBattleDamage(state, damagedPlayer, battleDamageOverrides?.[damagedPlayer] ?? amount, battleCards);
       return handlers.damagePlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),

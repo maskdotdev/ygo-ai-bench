@@ -68,6 +68,7 @@ import {
 import type { BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
   isBattleDamagePrevented,
+  isBattleDamagePreventedByCard,
   isMaterialUsePrevented,
   isMoveToLocationPrevented,
   isReleasePrevented,
@@ -496,9 +497,17 @@ export function changeDuelBattleDamage(state: DuelState, player: PlayerId, amoun
   return value;
 }
 
-function changeDuelBattleDamageWithPrevention(state: DuelState, player: PlayerId, amount: number): number {
+function changeDuelBattleDamageWithPrevention(state: DuelState, player: PlayerId, amount: number, battleCards: DuelCardInstance[] = []): number {
+  const relatedBattleCards = battleCards.length > 0 ? battleCards : currentBattleCards(state);
   const prevented = isBattleDamagePrevented(state, player, createContinuousEffectContext(state));
-  return changeDuelBattleDamage(state, player, prevented ? 0 : amount);
+  const preventedByCard = isBattleDamagePreventedByCard(state, player, relatedBattleCards, createContinuousEffectContext(state));
+  return changeDuelBattleDamage(state, player, prevented || preventedByCard ? 0 : amount);
+}
+
+function currentBattleCards(state: DuelState): DuelCardInstance[] {
+  const attacker = state.currentAttack?.attackerUid ? findCard(state, state.currentAttack.attackerUid) : undefined;
+  const target = state.currentAttack?.targetUid ? findCard(state, state.currentAttack.targetUid) : undefined;
+  return [attacker, target].filter((card): card is DuelCardInstance => Boolean(card));
 }
 
 export function setDuelAttackCostPaid(state: DuelState, status: number): number {

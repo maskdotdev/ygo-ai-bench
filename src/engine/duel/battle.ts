@@ -5,7 +5,7 @@ import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelSta
 
 export interface DuelBattleCallbacks {
   collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance): void;
-  damagePlayer(player: PlayerId, amount: number): number;
+  damagePlayer(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   destroyCard(uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
 }
 
@@ -87,18 +87,21 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
     return false;
   }
   const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
-  delete state.pendingBattle;
-  delete state.currentAttack;
-  state.attackPasses = [];
-  state.damagePasses = [];
-  state.attackCostPaid = 0;
-  delete state.battleStep;
-  if (!target) {
-    callbacks.damagePlayer(otherPlayer(attacker.controller), getBattleAttack(attacker));
+  try {
+    if (!target) {
+      callbacks.damagePlayer(otherPlayer(attacker.controller), getBattleAttack(attacker), [attacker]);
+      return true;
+    }
+    if (target.location === "monsterZone") resolveBattle(state, attacker, target, callbacks);
     return true;
+  } finally {
+    delete state.pendingBattle;
+    delete state.currentAttack;
+    state.attackPasses = [];
+    state.damagePasses = [];
+    state.attackCostPaid = 0;
+    delete state.battleStep;
   }
-  if (target.location === "monsterZone") resolveBattle(state, attacker, target, callbacks);
-  return true;
 }
 
 export function canChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition): boolean {
@@ -206,12 +209,12 @@ function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: Due
 function resolveAttackPositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetAttack: number, callbacks: DuelBattleCallbacks): void {
   if (attackerAttack > targetAttack) {
     if (destroyBattleCard(target, attacker.controller, callbacks)) callbacks.collectEvent("battleDestroyed", target);
-    callbacks.damagePlayer(target.controller, attackerAttack - targetAttack);
+    callbacks.damagePlayer(target.controller, attackerAttack - targetAttack, [attacker, target]);
     return;
   }
   if (attackerAttack < targetAttack) {
     if (destroyBattleCard(attacker, target.controller, callbacks)) callbacks.collectEvent("battleDestroyed", attacker);
-    callbacks.damagePlayer(attacker.controller, targetAttack - attackerAttack);
+    callbacks.damagePlayer(attacker.controller, targetAttack - attackerAttack, [attacker, target]);
     return;
   }
   if (destroyBattleCard(attacker, target.controller, callbacks)) callbacks.collectEvent("battleDestroyed", attacker);
@@ -223,7 +226,7 @@ function resolveDefensePositionBattle(state: DuelState, attacker: DuelCardInstan
     if (destroyBattleCard(target, attacker.controller, callbacks)) callbacks.collectEvent("battleDestroyed", target);
     return;
   }
-  if (attackerAttack < targetDefense) callbacks.damagePlayer(attacker.controller, targetDefense - attackerAttack);
+  if (attackerAttack < targetDefense) callbacks.damagePlayer(attacker.controller, targetDefense - attackerAttack, [attacker, target]);
 }
 
 function destroyBattleCard(card: DuelCardInstance, reasonPlayer: PlayerId, callbacks: DuelBattleCallbacks): boolean {
