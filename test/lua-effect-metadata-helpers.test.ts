@@ -301,6 +301,11 @@ describe("Lua effect metadata helpers", () => {
       Debug.Message("three tribute grant before " .. tostring(grant_target(rush3,c)))
       c:RegisterFlagEffect(FLAG_TRIPLE_TRIBUTE,RESET_EVENT,0,1)
       Debug.Message("three tribute grant after " .. FLAG_TRIPLE_TRIBUTE .. "/" .. tostring(grant_target(rush3,c)))
+      Debug.Message("three tribute target " .. tostring(rush3:GetTarget()(rush3,0,nil,0,0,nil,0,0,1,c)))
+      local g=rush3:GetLabelObject()
+      Debug.Message("three tribute selected " .. g:GetCount())
+      rush3:GetOperation()(rush3,0,nil,0,0,nil,0,0,c)
+      Debug.Message("three tribute released " .. g:GetCount() .. "/" .. Duel.GetMatchingGroupCount(aux.TRUE,0,LOCATION_GRAVE,0,nil))
       `,
       "normal-procedure.lua",
     );
@@ -314,6 +319,9 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("three tribute condition true/true");
     expect(host.messages).toContain("three tribute grant before false");
     expect(host.messages).toContain("three tribute grant after 160012000/true");
+    expect(host.messages).toContain("three tribute target true");
+    expect(host.messages).toContain("three tribute selected 3");
+    expect(host.messages).toContain("three tribute released 3/3");
   });
 
   it("registers Lua persistent trap procedures and target filters", () => {

@@ -99,6 +99,26 @@ export function installNormalProcedureApi(L: unknown, readLuaError: (state: unkn
         return rg1:GetCount()>=2 and rg2:GetCount()>=1
       end
     end
+    function aux.ThreeTributeTarget(otfilter)
+      return function(e,tp,eg,ep,ev,re,r,rp,chk,c,minc,zone,relzone,exeff)
+        if chk==0 then return aux.ThreeTributeCondition(otfilter)(e,c) end
+        local g=Duel.SelectTribute(tp,c,2,2)
+        local extra=Duel.SelectMatchingCard(tp,otfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,g,tp)
+        g:Merge(extra)
+        g:KeepAlive()
+        e:SetLabelObject(g)
+        return true
+      end
+    end
+    function aux.ThreeTributeOperation()
+      return function(e,tp,eg,ep,ev,re,r,rp,c,minc,zone,relzone,exeff)
+        local g=e:GetLabelObject()
+        if not g then return end
+        Duel.Release(g,REASON_SUMMON+REASON_MATERIAL)
+        g:DeleteGroup()
+        e:SetLabelObject(nil)
+      end
+    end
     function aux.summonproc3trib(c,desc,otfilter)
       local e1=Effect.CreateEffect(c)
       e1:SetType(EFFECT_TYPE_SINGLE)
@@ -106,8 +126,8 @@ export function installNormalProcedureApi(L: unknown, readLuaError: (state: unkn
       e1:SetCode(EFFECT_SUMMON_PROC)
       e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
       e1:SetCondition(aux.ThreeTributeCondition(otfilter))
-      e1:SetTarget(aux.NormalSummonTarget(3,3,otfilter))
-      e1:SetOperation(aux.NormalSummonOperation(3,3,nil))
+      e1:SetTarget(aux.ThreeTributeTarget(otfilter))
+      e1:SetOperation(aux.ThreeTributeOperation())
       e1:SetValue(SUMMON_TYPE_TRIBUTE+1)
       c:RegisterEffect(e1)
       return e1
