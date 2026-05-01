@@ -241,6 +241,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDestination"));
+  pushNumberGetter(L, "GetLeaveFieldDest", session, (card) => leaveFieldDestinationMask(card));
+  pushNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => (leaveFieldDestinationMask(card) & requested) !== 0);
   pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
   pushNumberGetter(L, "GetPreviousSequence", session, (card) => card?.previousSequence ?? 0);
   pushNumberGetter(L, "GetPreviousPosition", session, (card) => positionMaskFromPosition(card?.previousPosition));
@@ -919,6 +921,11 @@ function locationMaskFromLocation(location: DuelCardInstance["location"] | undef
   if (location === "banished") return 0x20;
   if (location === "extraDeck") return 0x40;
   return 0;
+}
+
+function leaveFieldDestinationMask(card: DuelCardInstance | undefined): number {
+  if (!card || (card.previousLocation !== "monsterZone" && card.previousLocation !== "spellTrapZone")) return 0;
+  return locationMaskFromLocation(card.location);
 }
 
 function positionMaskFromPosition(position: CardPosition | undefined): number {

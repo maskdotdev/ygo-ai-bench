@@ -251,6 +251,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsKing", code: "60990740", setcode: 0x52f },
       { method: "IsKnight", code: "24435369", setcode: 0x530 },
       { method: "IsLamp", code: "24434049", setcode: 0x532 },
+      { method: "IsLandstar", code: "3573512", setcode: 0x533 },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
       { method: "IsMask", code: "29549364", setcode: 0x583 },
       { method: "IsStarvingVenemy", code: "22070401", setcode: 0x576 },
@@ -823,6 +824,37 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("token mzone destination true");
     expect(host.messages).toContain("token faceup true");
     expect(session.state.cards.find((card) => card.code === "123456")).toMatchObject({ location: "monsterZone", controller: 0, summonType: "special" });
+  });
+
+  it("lets Lua scripts query leave-field destinations", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Leaving Monster", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Hand Card", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 181, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const leaving = session.state.cards.find((card) => card.code === "100")!;
+    moveDuelCard(session.state, leaving.uid, "monsterZone", 0);
+    moveDuelCard(session.state, leaving.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local leaving=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("leave field dest " .. leaving:GetLeaveFieldDest() .. "/" .. tostring(leaving:IsLeaveFieldDest(LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsLeaveFieldDest(LOCATION_HAND)))
+      Debug.Message("hand leave field dest " .. hand:GetLeaveFieldDest() .. "/" .. tostring(hand:IsLeaveFieldDest(LOCATION_HAND)))
+      `,
+      "leave-field-destination.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("leave field dest 16/true/false");
+    expect(host.messages).toContain("hand leave field dest 0/false");
   });
 
   it("lets Lua scripts draw and search deck cards", () => {
