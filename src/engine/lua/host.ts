@@ -556,7 +556,11 @@ function getEffectNumberField(field: "typeFlags" | "code" | "description" | "cat
 function hasEffectNumberField(field: "typeFlags" | "category" | "property") {
   return (state: unknown, effect: LuaEffectRecord): number => {
     const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushboolean(state, requested !== 0 && ((effect[field] ?? 0) & requested) === requested);
+    const value = effect[field] ?? 0;
+    const actionTypes = 0x10 | 0x20 | 0x40 | 0x80 | 0x100 | 0x200 | 0x400;
+    const matchesActionGroup = field === "typeFlags" && (requested & 0x8) !== 0 && (value & actionTypes) !== 0;
+    const matchesDirectFlags = requested !== 0 && (value & requested) === requested;
+    lua.lua_pushboolean(state, matchesActionGroup || matchesDirectFlags);
     return 1;
   };
 }

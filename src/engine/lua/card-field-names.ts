@@ -2,6 +2,7 @@ export const cardFieldNames = [
   "RegisterEffect",
   "AddCannotBeSpecialSummoned",
   "AddMustBeSpecialSummoned",
+  "AddMustBeSpecialSummonedByCardEffect",
   "AddMustBeFusionSummoned",
   "AddMustBeRitualSummoned",
   "AddMustBeLinkSummoned",
