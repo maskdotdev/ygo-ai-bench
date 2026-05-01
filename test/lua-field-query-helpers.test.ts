@@ -279,6 +279,8 @@ describe("Lua field and query helpers", () => {
       { method: "IsShining", code: "22061412", setcode: 0x548 },
       { method: "IsSkiel", code: "31930787", setcode: 0x549 },
       { method: "IsSlime", code: "68638985", setcode: 0x54b },
+      { method: "IsSphere", code: "60202749", setcode: 0x54c },
+      { method: "IsStarship", code: "15458892", setcode: 0x54f },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];
     for (let index = 0; index < cases.length; index += 12) {
