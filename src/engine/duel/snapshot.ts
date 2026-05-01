@@ -54,7 +54,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
         0: { ...session.state.players[0] },
         1: { ...session.state.players[1] },
       },
-      cards: session.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids], ...(card.counters ? { counters: { ...card.counters } } : {}) })),
+      cards: session.state.cards.map(copyCard),
       effects: session.state.effects.flatMap(serializeEffect),
       chain: session.state.chain.map(copyChainLink),
       chainLimits: [],
@@ -91,7 +91,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
         0: { ...snapshot.state.players[0] },
         1: { ...snapshot.state.players[1] },
       },
-      cards: snapshot.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids], ...(card.counters ? { counters: { ...card.counters } } : {}) })),
+      cards: snapshot.state.cards.map(copyCard),
       effects: snapshot.state.effects.flatMap((effect) => restoreEffect(effect, effectRegistry)),
       lastDiceResults: [...(snapshot.state.lastDiceResults ?? [])],
       lastCoinResults: [...(snapshot.state.lastCoinResults ?? [])],
@@ -158,6 +158,17 @@ function noopEffectOperation(_ctx: DuelEffectContext): void {}
 
 function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][number] {
   return { ...link, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };
+}
+
+function copyCard(card: DuelCardInstance): DuelCardInstance {
+  return {
+    ...card,
+    data: { ...card.data },
+    overlayUids: [...card.overlayUids],
+    ...(card.counters ? { counters: { ...card.counters } } : {}),
+    ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
+    ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
+  };
 }
 
 function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {

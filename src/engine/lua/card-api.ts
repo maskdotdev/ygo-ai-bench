@@ -299,6 +299,9 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushCanChangeControler(L, "IsAbleToChangeControler", session);
   pushCanChangeControler(L, "IsControlerCanBeChanged", session);
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
+  pushNumberGetter(L, "GetSummonPhase", session, (card) => phaseMask(card?.summonPhase));
+  pushNumberGetter(L, "GetMaterialCount", session, (card) => materialCount(card));
+  pushNumberGetter(L, "GetMaterialCountRush", session, (card) => materialCountRush(card));
   pushBooleanGetter(L, "IsTributeSummoned", session, (card) => Boolean(card && card.summonType === "tribute"));
   pushBooleanGetter(L, "IsSpecialSummoned", session, (card) => Boolean(card && card.summonType !== undefined && card.summonType !== "normal" && card.summonType !== "tribute" && card.summonType !== "flip"));
   pushNumberMatcher(L, "IsSummonType", session, (card, requested) => isSummonTypeMatch(summonTypeMask(card), requested));
@@ -930,6 +933,25 @@ function summonTypeMask(card: DuelCardInstance | undefined): number {
   if (card.summonType === "synchro") return 0x46000000;
   if (card.summonType === "xyz") return 0x49000000;
   if (card.summonType === "link") return 0x4c000000;
+  return 0;
+}
+
+function materialCount(card: DuelCardInstance | undefined): number {
+  return card?.summonMaterialUids?.length ?? card?.overlayUids.length ?? 0;
+}
+
+function materialCountRush(card: DuelCardInstance | undefined): number {
+  const count = materialCount(card);
+  return summonTypeMask(card) === 0x11000000 + 100 ? count + 1 : count;
+}
+
+function phaseMask(phase: DuelPhase | undefined): number {
+  if (phase === "draw") return 0x1;
+  if (phase === "standby") return 0x2;
+  if (phase === "main1") return 0x4;
+  if (phase === "battle") return 0x80;
+  if (phase === "main2") return 0x100;
+  if (phase === "end") return 0x200;
   return 0;
 }
 

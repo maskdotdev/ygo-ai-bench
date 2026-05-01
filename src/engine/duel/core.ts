@@ -347,6 +347,8 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   card.faceUp = true;
   card.summonType = "special";
   card.summonPlayer = summonController;
+  card.summonPhase = state.phase;
+  card.summonMaterialUids = [];
   recordSpecialSummonActivity(state, summonController, card);
   pushDuelLog(state, "specialSummon", card.controller, card.name, "Special Summoned");
   collectTriggerEffects(state, "specialSummoned", card);

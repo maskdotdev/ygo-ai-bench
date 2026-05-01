@@ -1603,6 +1603,7 @@ describe("Lua state helpers", () => {
       local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("phase activity after summon " .. tostring(Duel.CheckPhaseActivity()))
       Debug.Message("normal type " .. tostring(c:IsSummonType(SUMMON_TYPE_NORMAL)) .. "/" .. c:GetSummonType())
+      Debug.Message("normal phase/materials " .. c:GetSummonPhase() .. "/" .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
       Debug.Message("normal location " .. tostring(c:IsSummonLocation(LOCATION_HAND)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_EXTRA)))
       Debug.Message("normal player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
       Debug.Message("normal special " .. tostring(c:IsSpecialSummoned()))
@@ -1615,6 +1616,7 @@ describe("Lua state helpers", () => {
     expect(normalResult.ok).toBe(true);
     expect(host.messages).toContain("phase activity after summon true");
     expect(host.messages).toContain("normal type true/268435456");
+    expect(host.messages).toContain("normal phase/materials 4/0/0");
     expect(host.messages).toContain("normal location true/false");
     expect(host.messages).toContain("normal player/type 0/true/false");
     expect(host.messages).toContain("normal special false");
@@ -1632,6 +1634,7 @@ describe("Lua state helpers", () => {
       `
       local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("fusion type " .. tostring(c:IsSummonType(SUMMON_TYPE_FUSION)) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_SPECIAL)))
+      Debug.Message("fusion phase/materials " .. c:GetSummonPhase() .. "/" .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
       Debug.Message("fusion location " .. tostring(c:IsSummonLocation(LOCATION_EXTRA)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_HAND)))
       Debug.Message("fusion player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
       Debug.Message("fusion special " .. tostring(c:IsSpecialSummoned()))
@@ -1646,6 +1649,7 @@ describe("Lua state helpers", () => {
 
     expect(fusionResult.ok).toBe(true);
     expect(host.messages).toContain("fusion type false/true");
+    expect(host.messages).toContain("fusion phase/materials 4/2/2");
     expect(host.messages).toContain("fusion location true/false");
     expect(host.messages).toContain("fusion player/type 0/true/true");
     expect(host.messages).toContain("fusion special true");
@@ -1665,6 +1669,17 @@ describe("Lua state helpers", () => {
     );
     expect(gladiatorResult.ok, gladiatorResult.error).toBe(true);
     expect(host.messages).toContain("gladiator summon type 1073741944/false/true");
+
+    fusionCard!.summonTypeCode = 0x11000000 + 100;
+    const rushMaterialResult = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("rush material count " .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
+      `,
+      "summon-material-rush.lua",
+    );
+    expect(rushMaterialResult.ok, rushMaterialResult.error).toBe(true);
+    expect(host.messages).toContain("rush material count 2/3");
 
     const phase = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase");
     expect(phase).toBeDefined();

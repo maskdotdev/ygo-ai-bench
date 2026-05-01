@@ -84,6 +84,8 @@ export interface DuelCardInstance {
   summonType?: DuelSummonType;
   summonTypeCode?: number;
   summonPlayer?: PlayerId;
+  summonPhase?: DuelPhase;
+  summonMaterialUids?: string[];
   data: DuelCardData;
 }
 

@@ -53,7 +53,12 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     lastDiceResults: [...state.lastDiceResults],
     lastCoinResults: [...state.lastCoinResults],
     players: { 0: { ...state.players[0] }, 1: { ...state.players[1] } },
-    cards: state.cards.map((card) => ({ ...card, overlayUids: [...card.overlayUids] })),
+    cards: state.cards.map((card) => ({
+      ...card,
+      overlayUids: [...card.overlayUids],
+      ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
+      ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
+    })),
     effects: state.effects.map((effect) => ({ ...effect, range: [...effect.range], ...(effect.reset ? { reset: { ...effect.reset } } : {}) })),
     chain: state.chain.map((link) => ({ ...link, ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}) })),
     chainPasses: [...state.chainPasses],
