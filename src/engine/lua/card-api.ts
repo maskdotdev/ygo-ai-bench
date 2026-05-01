@@ -146,6 +146,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_pushcfunction(L, (state: unknown) => pushIsCanAddCounter(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsCanAddCounter"));
   pushBooleanGetter(L, "HasCounter", session, (card) => Boolean(card && totalCounters(card) > 0));
+  pushBooleanGetter(L, "HasCounters", session, (card) => Boolean(card && totalCounters(card) > 0));
   pushBooleanGetter(L, "IsFaceup", session, (card) => Boolean(card?.faceUp));
   pushBooleanGetter(L, "IsFacedown", session, (card) => Boolean(card && !card.faceUp));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -162,6 +163,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushZonePredicate(L, "IsInMainMZone", session, (card) => card.location === "monsterZone" && card.sequence >= 0 && card.sequence <= 4);
   pushZonePredicate(L, "IsInExtraMZone", session, (card) => card.location === "monsterZone" && card.sequence >= 5 && card.sequence <= 6);
   pushBooleanGetter(L, "CanAttack", session, (card) => Boolean(card && canDuelCardAttack(session.state, card.uid)));
+  pushNumberGetter(L, "GetAttackAnnouncedCount", session, (card) => (card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0));
   pushBooleanGetter(L, "CanGetPiercingRush", session, (card) => Boolean(card && canGetPiercingRush(session.state, card, hostState)));
   pushBooleanGetter(L, "IsMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0));
   pushBooleanGetter(L, "IsMonsterCard", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0));
@@ -211,6 +213,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsMaximumModeCenter", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeSide", session, () => false);
   pushBooleanGetter(L, "IsNotMaximumModeSide", session, () => true);
+  pushBooleanGetter(L, "WasMaximumMode", session, () => false);
+  pushBooleanGetter(L, "WasMaximumModeSide", session, () => false);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;

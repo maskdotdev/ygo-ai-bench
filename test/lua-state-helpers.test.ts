@@ -1539,7 +1539,8 @@ describe("Lua state helpers", () => {
       Debug.Message("public checks " .. tostring(c:IsPublic()) .. "/" .. tostring(hidden:IsPublic()))
       Debug.Message("relation checks " .. tostring(c:IsOnField()) .. "/" .. tostring(c:IsMonster()) .. "/" .. tostring(c:IsSpell()) .. "/" .. tostring(c:IsTrap()) .. "/" .. tostring(c:IsCanBeEffectTarget(nil)))
       Debug.Message("material checks " .. tostring(c:IsCanBeFusionMaterial(nil)) .. "/" .. tostring(c:IsCanBeSynchroMaterial(nil)) .. "/" .. tostring(c:IsCanBeXyzMaterial(nil)) .. "/" .. tostring(c:IsCanBeLinkMaterial(nil)) .. "/" .. tostring(c:IsCanBeRitualMaterial(nil)))
-      Debug.Message("activity counts " .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_FLIPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_ATTACK))
+      Debug.Message("activity counts " .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_FLIPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_ATTACK) .. "/" .. Duel.GetBattledCount(0))
+      Debug.Message("maximum previous checks " .. tostring(c:WasMaximumMode()) .. "/" .. tostring(c:WasMaximumModeSide()))
       Debug.Message("used summon legality " .. tostring(Duel.IsPlayerCanSummon(0, c)) .. "/" .. tostring(Duel.IsPlayerCanMSet(0, c)) .. "/" .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, c)))
       Duel.SendtoGrave(c, REASON_EFFECT)
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
@@ -1566,7 +1567,8 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("public checks true/false");
     expect(host.messages).toContain("relation checks true/true/false/false/true");
     expect(host.messages).toContain("material checks true/true/true/true/true");
-    expect(host.messages).toContain("activity counts 1/1/0/0/0");
+    expect(host.messages).toContain("activity counts 1/1/0/0/0/0");
+    expect(host.messages).toContain("maximum previous checks false/false");
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous checks true/true/true/true");
@@ -1648,7 +1650,7 @@ describe("Lua state helpers", () => {
       local self = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local opp = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
       local deck = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_DECK, 0, 1, 1, nil):GetFirst()
-      Debug.Message("add self " .. tostring(self:AddCounter(99, 2)) .. "/" .. self:GetCounter(99) .. "/" .. tostring(self:HasCounter()))
+      Debug.Message("add self " .. tostring(self:AddCounter(99, 2)) .. "/" .. self:GetCounter(99) .. "/" .. tostring(self:HasCounter()) .. "/" .. tostring(self:HasCounters()))
       Debug.Message("add opp " .. tostring(opp:AddCounter(99, 1)) .. "/" .. opp:GetCounter(99))
       Debug.Message("can add deck " .. tostring(deck:IsCanAddCounter(99, 1)) .. "/" .. tostring(deck:AddCounter(99, 1)))
       Debug.Message("duel can add " .. tostring(Duel.IsCanAddCounter(0, 99, 1, self)) .. "/" .. tostring(Duel.IsCanAddCounter(0, 99, 1, deck)) .. "/" .. tostring(Duel.IsCanAddCounter(0, 99, 1)))
@@ -1664,7 +1666,7 @@ describe("Lua state helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("add self true/2/true");
+    expect(host.messages).toContain("add self true/2/true/true");
     expect(host.messages).toContain("add opp true/1");
     expect(host.messages).toContain("can add deck false/false");
     expect(host.messages).toContain("duel can add true/false/true");

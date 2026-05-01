@@ -16,6 +16,12 @@ export function installDuelActivityApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetActivityCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    lua.lua_pushinteger(state, getDuelActivityCount(session.state, player, duelActivity.attack));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetBattledCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushboolean(state, session.state.phaseActivity);
     return 1;
   });

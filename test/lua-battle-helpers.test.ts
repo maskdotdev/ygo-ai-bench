@@ -51,13 +51,13 @@ describe("Lua battle helpers", () => {
     const after = host.loadScript(
       `
       local attacker = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
-      Debug.Message("can attack after " .. tostring(attacker:CanAttack()))
+      Debug.Message("can attack after " .. tostring(attacker:CanAttack()) .. "/" .. attacker:GetAttackAnnouncedCount() .. "/" .. Duel.GetBattledCount(0))
       `,
       "can-attack-after.lua",
     );
 
     expect(after.ok, after.error).toBe(true);
-    expect(host.messages).toEqual(["can attack before false/false", "can attack during true/false", "can attack after false"]);
+    expect(host.messages).toEqual(["can attack before false/false", "can attack during true/false", "can attack after false/1/1"]);
   });
 
   it("lets Lua scripts calculate battle damage", () => {
