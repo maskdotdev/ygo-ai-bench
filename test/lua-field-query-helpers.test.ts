@@ -481,6 +481,7 @@ describe("Lua field and query helpers", () => {
       local zpt=aux.zptgroup(eg,Card.IsFaceup,link,0)
       local zpt_condition=aux.zptcon(Card.IsFaceup)
       local e=Effect.CreateEffect(link)
+      Debug.Message("group to be linked zone " .. eg:GetToBeLinkedZone(link,0,false,false) .. "/" .. Group.GetToBeLinkedZone(eg,link,0,true,false))
       Debug.Message("zpt helpers " .. zpt:GetCount() .. "/" .. tostring(zpt:IsContains(linked)) .. "/" .. tostring(zpt:IsContains(unlinked)) .. "/" .. tostring(aux.zptgroupcon(eg,Card.IsFaceup,link,0)) .. "/" .. tostring(zpt_condition(e,0,eg,0,0,nil,0,0)))
       Debug.Message("linked group " .. linked_group:GetCount() .. "/" .. link:GetLinkedGroupCount() .. "/" .. tostring(linked_group:IsContains(linked)) .. "/" .. tostring(linked_group:IsContains(unlinked)))
       Debug.Message("duel linked group " .. duel_linked_group:GetCount() .. "/" .. tostring(duel_linked_group:IsContains(linked)) .. "/" .. Duel.GetLinkedGroup(1,LOCATION_MZONE,0):GetCount())
@@ -494,6 +495,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("linked zone counts 3/2");
     expect(host.messages).toContain("linked zones 2/3/3/0");
     expect(host.messages).toContain("mmz pointed 3/2/2");
+    expect(host.messages).toContain("group to be linked zone 9/1");
     expect(host.messages).toContain("zpt helpers 1/true/false/true/true");
     expect(host.messages).toContain("linked group 1/1/true/false");
     expect(host.messages).toContain("duel linked group 2/true/0");
@@ -1219,6 +1221,11 @@ describe("Lua field and query helpers", () => {
       local mixed = Duel.GetFieldGroup(0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK)
       Debug.Message("mixed count " .. mixed:GetCount())
       Debug.Message("mixed tostring " .. tostring(mixed) .. "/" .. Group.__tostring(mixed))
+      local iter_codes={}
+      for tc in Group.Iter(mixed:Clone()) do
+        iter_codes[#iter_codes+1]=tc:GetCode()
+      end
+      Debug.Message("group new iter " .. Group.NewGroup():GetCount() .. "/" .. table.concat(iter_codes,","))
       Debug.Message("field count " .. Duel.GetFieldGroupCount(0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK))
       Debug.Message("field rush count " .. Duel.GetFieldGroupCountRush(0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK))
       Debug.Message("banished count " .. Duel.GetMatchingGroupCount(Card.IsAbleToGrave, 0, LOCATION_REMOVED, 0, nil))
@@ -1286,6 +1293,7 @@ describe("Lua field and query helpers", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("mixed count 4");
     expect(host.messages).toContain('mixed tostring Group: { "size": 4 }/Group: { "size": 4 }');
+    expect(host.messages).toContain("group new iter 0/100,200,300,400");
     expect(host.messages).toContain("group same property true/2/false/0");
     expect(host.messages).toContain("group different property true/false");
     expect(host.messages).toContain("group different property multi true");
