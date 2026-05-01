@@ -92,6 +92,8 @@ export interface DuelCardInstance {
   attackModifier?: number;
   defenseModifier?: number;
   levelModifier?: number;
+  rankModifier?: number;
+  linkModifier?: number;
   uniqueOnField?: {
     self: boolean;
     opponent: boolean;

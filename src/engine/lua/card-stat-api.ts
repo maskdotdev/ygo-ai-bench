@@ -77,24 +77,28 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsOriginalLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
   pushNumberMatcher(L, "IsOriginalLevelAbove", session, (card, requested) => (card.data.level ?? 0) >= requested);
   pushNumberMatcher(L, "IsOriginalLevelBelow", session, (card, requested) => (card.data.level ?? 0) <= requested);
-  pushNumberGetter(L, "GetRank", session, (card) => cardRank(card));
+  pushNumberGetter(L, "GetRank", session, (card) => currentRank(card));
   pushNumberGetter(L, "GetOriginalRank", session, (card) => cardRank(card));
-  pushBooleanGetter(L, "HasRank", session, (card) => cardRank(card) > 0);
-  pushNumberMatcher(L, "IsRank", session, (card, requested) => cardRank(card) === requested);
-  pushNumberMatcher(L, "IsRankAbove", session, (card, requested) => cardRank(card) >= requested);
-  pushNumberMatcher(L, "IsRankBelow", session, (card, requested) => cardRank(card) <= requested);
+  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateRank(state, session));
+  lua.lua_setfield(L, -2, to_luastring("UpdateRank"));
+  pushBooleanGetter(L, "HasRank", session, (card) => currentRank(card) > 0);
+  pushNumberMatcher(L, "IsRank", session, (card, requested) => currentRank(card) === requested);
+  pushNumberMatcher(L, "IsRankAbove", session, (card, requested) => currentRank(card) >= requested);
+  pushNumberMatcher(L, "IsRankBelow", session, (card, requested) => currentRank(card) <= requested);
   pushNumberMatcher(L, "IsOriginalRank", session, (card, requested) => cardRank(card) === requested);
   pushNumberMatcher(L, "IsOriginalRankAbove", session, (card, requested) => cardRank(card) >= requested);
   pushNumberMatcher(L, "IsOriginalRankBelow", session, (card, requested) => cardRank(card) <= requested);
-  pushNumberGetter(L, "GetLink", session, (card) => cardLink(card));
+  pushNumberGetter(L, "GetLink", session, (card) => currentLink(card));
   pushNumberGetter(L, "GetOriginalLink", session, (card) => cardLink(card));
-  pushNumberMatcher(L, "IsLink", session, (card, requested) => cardLink(card) === requested);
-  pushNumberMatcher(L, "IsLinkAbove", session, (card, requested) => cardLink(card) >= requested);
-  pushNumberMatcher(L, "IsLinkBelow", session, (card, requested) => cardLink(card) <= requested);
+  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLink(state, session));
+  lua.lua_setfield(L, -2, to_luastring("UpdateLink"));
+  pushNumberMatcher(L, "IsLink", session, (card, requested) => currentLink(card) === requested);
+  pushNumberMatcher(L, "IsLinkAbove", session, (card, requested) => currentLink(card) >= requested);
+  pushNumberMatcher(L, "IsLinkBelow", session, (card, requested) => currentLink(card) <= requested);
   pushNumberMatcher(L, "IsOriginalLink", session, (card, requested) => cardLink(card) === requested);
   pushNumberMatcher(L, "IsOriginalLinkAbove", session, (card, requested) => cardLink(card) >= requested);
   pushNumberMatcher(L, "IsOriginalLinkBelow", session, (card, requested) => cardLink(card) <= requested);
-  pushBooleanGetter(L, "IsLinkMonster", session, (card) => cardLink(card) > 0);
+  pushBooleanGetter(L, "IsLinkMonster", session, (card) => currentLink(card) > 0);
   pushNumberGetter(L, "GetLinkMarker", session, (card) => card?.data.linkMarkers ?? 0);
   pushNumberGetter(L, "GetRace", session, (card) => card?.data.race ?? 0);
   pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
@@ -230,6 +234,34 @@ function pushUpdateLevel(L: unknown, session: DuelSession): number {
   return 1;
 }
 
+function pushUpdateRank(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  if (!card) {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const before = currentRank(card);
+  if (before + amount <= 0) amount = -(before - 1);
+  card.rankModifier = (card.rankModifier ?? 0) + amount;
+  lua.lua_pushinteger(L, currentRank(card) - before);
+  return 1;
+}
+
+function pushUpdateLink(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  if (!card) {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const before = currentLink(card);
+  if (before + amount <= 0) amount = -(before - 1);
+  card.linkModifier = (card.linkModifier ?? 0) + amount;
+  lua.lua_pushinteger(L, currentLink(card) - before);
+  return 1;
+}
+
 function currentAttack(card: DuelCardInstance | undefined): number {
   return (card?.data.attack ?? 0) + (card?.attackModifier ?? 0);
 }
@@ -240,6 +272,14 @@ function currentDefense(card: DuelCardInstance | undefined): number {
 
 function currentLevel(card: DuelCardInstance | undefined): number {
   return (card?.data.level ?? 0) + (card?.levelModifier ?? 0);
+}
+
+function currentRank(card: DuelCardInstance | undefined): number {
+  return cardRank(card) + (card?.rankModifier ?? 0);
+}
+
+function currentLink(card: DuelCardInstance | undefined): number {
+  return cardLink(card) + (card?.linkModifier ?? 0);
 }
 
 function isPendulumCardData(card: DuelCardInstance | undefined): card is DuelCardInstance {

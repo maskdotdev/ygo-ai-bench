@@ -1318,8 +1318,10 @@ describe("Lua field and query helpers", () => {
       Debug.Message("spirit predicate " .. tostring(spirit:IsSpirit()) .. "/" .. tostring(c:IsSpirit()))
       Debug.Message("plus minus predicate " .. tostring(plus:IsPlusOrMinus()) .. "/" .. tostring(minus:IsPlusOrMinus()) .. "/" .. tostring(plus_minus:IsPlusOrMinus()) .. "/" .. tostring(c:IsPlusOrMinus()))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
+      Debug.Message("rank update " .. xyz:UpdateRank(-10, RESETS_STANDARD_PHASE_END) .. "/" .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:IsRank(1)) .. "/" .. tostring(xyz:IsRankBelow(2)))
       Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()) .. "/" .. tostring(link:IsLineMonster()) .. "/" .. tostring(c:IsLineMonster()))
       Debug.Message("link comparisons " .. tostring(link:IsLinkAbove(2)) .. "/" .. tostring(link:IsLinkBelow(1)) .. "/" .. tostring(link:IsOriginalLinkAbove(3)) .. "/" .. tostring(link:IsOriginalLinkBelow(2)))
+      Debug.Message("link update " .. link:UpdateLink(3, RESETS_STANDARD_PHASE_END) .. "/" .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. tostring(link:IsLink(5)) .. "/" .. tostring(link:IsLinkAbove(5)))
       local fixed_ritual=Effect.CreateEffect(c)
       fixed_ritual:SetType(EFFECT_TYPE_SINGLE)
       fixed_ritual:SetCode(EFFECT_RITUAL_LEVEL)
@@ -1412,8 +1414,10 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("has level true/false/false/false");
     expect(host.messages).toContain("main card types 1/2/2/5");
     expect(host.messages).toContain("rank comparisons true/false/true/true");
+    expect(host.messages).toContain("rank update -3/1/4/true/true");
     expect(host.messages).toContain("link 2/2/5/true/true/true/false/true/false");
     expect(host.messages).toContain("link comparisons true/false/false/true");
+    expect(host.messages).toContain("link update 3/5/2/true/true");
     expect(host.messages).toContain("ritual fixed level 5");
     expect(host.messages).toContain("ritual function level 9");
     expect(host.messages).toContain("ritual summoning level 7");
