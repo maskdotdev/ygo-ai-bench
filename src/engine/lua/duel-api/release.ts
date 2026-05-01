@@ -16,6 +16,8 @@ export interface LuaDuelReleaseApiHostState {
 }
 
 export function installDuelReleaseApi(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState): void {
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsPlayerCanRelease(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsPlayerCanRelease"));
   lua.lua_pushcfunction(L, (state: unknown) => pushReleaseGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetReleaseGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushReleaseGroupCount(state, session));
@@ -38,6 +40,14 @@ export function installDuelReleaseApi(L: unknown, session: DuelSession, hostStat
   lua.lua_setfield(L, -2, to_luastring("CheckReleaseGroupCost"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectReleaseGroupCost(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SelectReleaseGroupCost"));
+}
+
+function pushIsPlayerCanRelease(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const uid = readCardUid(L, 2);
+  const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+  lua.lua_pushboolean(L, card ? isReleasableMonster(session, card, player, []) : releasableMonsterUids(L, session, undefined, player, [], { start: 3, count: 0 }).length > 0);
+  return 1;
 }
 
 function pushReleaseGroup(L: unknown, session: DuelSession): number {

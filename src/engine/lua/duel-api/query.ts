@@ -22,6 +22,8 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_pushcfunction(L, (state: unknown) => pushMatchingGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetMatchingGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMatchingGroup(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetMatchingGroupRush"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushMatchingGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetMatchingTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMatchingGroupCount(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetMatchingGroupCount"));

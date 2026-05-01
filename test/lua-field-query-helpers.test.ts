@@ -699,6 +699,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("field rush count " .. Duel.GetFieldGroupCountRush(0, LOCATION_GRAVE + LOCATION_REMOVED, LOCATION_GRAVE + LOCATION_DECK))
       Debug.Message("banished count " .. Duel.GetMatchingGroupCount(Card.IsAbleToGrave, 0, LOCATION_REMOVED, 0, nil))
       Debug.Message("banished rush count " .. Duel.GetMatchingGroupCountRush(Card.IsAbleToGrave, 0, LOCATION_REMOVED, 0, nil))
+      Debug.Message("banished rush group " .. Duel.GetMatchingGroupRush(Card.IsAbleToGrave, 0, LOCATION_REMOVED, 0, nil):GetCount())
       local first = mixed:GetNext()
       local second = mixed:GetNext()
       local third = mixed:GetNext()
@@ -745,6 +746,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("field rush count 4");
     expect(host.messages).toContain("banished count 1");
     expect(host.messages).toContain("banished rush count 1");
+    expect(host.messages).toContain("banished rush group 1");
     expect(host.messages).toContain("mixed codes 100,200,300,400");
     expect(host.messages).toContain("field card codes 100/400/true");
     expect(host.messages).toContain("first matching card 300");

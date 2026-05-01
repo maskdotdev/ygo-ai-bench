@@ -371,6 +371,11 @@ describe("Lua summon and release helpers", () => {
       `
       local filter = function(tc) return tc:IsCode(100) or tc:IsCode(300) end
       local vararg_filter = function(tc, mincode) return tc:GetCode() >= mincode end
+      local hand = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 1, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local field = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can release player " .. tostring(Duel.IsPlayerCanRelease(0)))
+      Debug.Message("can release field " .. tostring(Duel.IsPlayerCanRelease(0, field)))
+      Debug.Message("can release hand " .. tostring(Duel.IsPlayerCanRelease(1, hand)))
       Debug.Message("release group " .. Duel.GetReleaseGroup(0, filter, nil):GetCount())
       Debug.Message("release group count " .. Duel.GetReleaseGroupCount(0, filter, nil))
       Debug.Message("release group vararg " .. Duel.GetReleaseGroup(0, vararg_filter, nil, 300):GetCount())
@@ -405,6 +410,9 @@ describe("Lua summon and release helpers", () => {
     );
 
     expect(result.ok).toBe(true);
+    expect(host.messages).toContain("can release player true");
+    expect(host.messages).toContain("can release field true");
+    expect(host.messages).toContain("can release hand false");
     expect(host.messages).toContain("release group 2");
     expect(host.messages).toContain("release group count 2");
     expect(host.messages).toContain("release group vararg 2");
