@@ -503,6 +503,44 @@ describe("Lua movement helpers", () => {
     });
   });
 
+  it("loads Phantom Knights Doomed Solleret and sets a Phantom Knights Spell/Trap from Deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "101305019", name: "The Phantom Knights of Doomed Solleret", kind: "monster", setcodes: [0xdb] },
+      { code: "100", name: "Phantom Knights Trap", kind: "trap", setcodes: [0xdb] },
+    ];
+    const session = createDuel({ seed: 107, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101305019", "100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "101305019");
+    const trap = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
+    expect(trap).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "hand", 0);
+    moveDuelCard(session.state, trap!.uid, "deck", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305019.lua", "utf8"), "c101305019.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === source!.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === trap!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      position: "faceDown",
+      faceUp: false,
+    });
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },
