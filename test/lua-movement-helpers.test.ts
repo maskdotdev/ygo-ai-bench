@@ -6,6 +6,7 @@ import {
   detachDuelOverlayMaterials,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  specialSummonDuelCard,
   startDuel,
   xyzSummonDuelCard,
 } from "#duel/core.js";
@@ -464,6 +465,42 @@ describe("Lua movement helpers", () => {
 
     expect(session.state.cards.find((card) => card.uid === searched!.uid)).toMatchObject({ location: "hand", reason: 0x40 });
     expect(session.state.cards.find((card) => card.uid === fodder!.uid)).toMatchObject({ location: "graveyard", reason: 0x4040 });
+  });
+
+  it("loads Black Luster Soldier and banishes an opponent card after Special Summon", () => {
+    const cards: DuelCardData[] = [
+      { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster" },
+      { code: "100", name: "Opponent Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 104, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["70405001"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "70405001");
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "hand", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c70405001.lua", "utf8"), "c70405001.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    specialSummonDuelCard(session.state, source!.uid, 0);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
+      location: "banished",
+      faceUp: true,
+      reason: 0x40,
+    });
   });
 
   it("lets Lua scripts pay Ice Barrier discard costs", () => {

@@ -762,7 +762,7 @@ function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecor
 }
 
 function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEventName | undefined): boolean {
-  return (typeFlags & 0x1) !== 0 && ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) && triggerEvent === "sentToGraveyard";
+  return (typeFlags & 0x1) !== 0 && ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) && (triggerEvent === "sentToGraveyard" || triggerEvent === "specialSummoned");
 }
 
 function luaEffectTriggerIsOptional(typeFlags: number): boolean {
