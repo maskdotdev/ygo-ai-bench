@@ -426,6 +426,46 @@ describe("Lua movement helpers", () => {
     });
   });
 
+  it("loads Mind Shuffle and searches a listed monster before discarding", () => {
+    const cards: DuelCardData[] = [
+      { code: "24749710", name: "Mind Shuffle", kind: "spell" },
+      { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", listedNames: ["33599853"] },
+      { code: "100", name: "Discard Fodder", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 103, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["24749710", "70405001", "100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "24749710");
+    const searched = session.state.cards.find((card) => card.code === "70405001");
+    const fodder = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
+    expect(searched).toBeDefined();
+    expect(fodder).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "spellTrapZone", 0);
+    moveDuelCard(session.state, searched!.uid, "deck", 0);
+    moveDuelCard(session.state, fodder!.uid, "hand", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c24749710.lua", "utf8"), "c24749710.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid && session.state.effects.find((effect) => effect.id === candidate.effectId)?.category === 0x20088);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    while (session.state.chain.length > 0) {
+      const player = session.state.waitingFor ?? session.state.turnPlayer;
+      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+    }
+
+    expect(session.state.cards.find((card) => card.uid === searched!.uid)).toMatchObject({ location: "hand", reason: 0x40 });
+    expect(session.state.cards.find((card) => card.uid === fodder!.uid)).toMatchObject({ location: "graveyard", reason: 0x4040 });
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },
