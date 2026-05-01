@@ -20,6 +20,8 @@ export interface LuaDuelPlayerApiHostState {
 export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState): void {
   lua.lua_pushcfunction(L, pushGetPlayersCount);
   lua.lua_setfield(L, -2, to_luastring("GetPlayersCount"));
+  lua.lua_pushcfunction(L, pushTagSwap);
+  lua.lua_setfield(L, -2, to_luastring("TagSwap"));
   pushPlayerMoveMatcher(L, "IsPlayerCanSendtoGrave", session, "graveyard");
   pushPlayerMoveMatcher(L, "IsPlayerCanSendtoHand", session, "hand");
   pushPlayerMoveMatcher(L, "IsPlayerCanSendtoDeck", session, "deck");
@@ -60,6 +62,10 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
 function pushGetPlayersCount(L: unknown): number {
   lua.lua_pushinteger(L, 1);
   return 1;
+}
+
+function pushTagSwap(): number {
+  return 0;
 }
 
 function pushCanNormalSummon(L: unknown, session: DuelSession): number {
