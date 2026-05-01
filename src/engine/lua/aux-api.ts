@@ -3,6 +3,7 @@ import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import { installAuxUtilityApi } from "#lua/aux-utility-api.js";
+import { installEquipProcedureApi } from "#lua/equip-procedure-api.js";
 import { installNormalProcedureApi } from "#lua/normal-procedure-api.js";
 import { installPersistentProcedureApi } from "#lua/persistent-procedure-api.js";
 import { installRankUpApi } from "#lua/rank-up-api.js";
@@ -70,6 +71,7 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setfield(L, -2, to_luastring("nvfilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
   installAuxUtilityApi(L, readLuaError);
+  installEquipProcedureApi(L, readLuaError);
   installNormalProcedureApi(L, readLuaError);
   installPersistentProcedureApi(L, readLuaError);
   installRankUpApi(L, readLuaError);

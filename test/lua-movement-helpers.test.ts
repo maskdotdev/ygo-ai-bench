@@ -435,6 +435,47 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: source!.uid, faceUp: true });
   });
 
+  it("lets Lua scripts register ZW equip limits", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "ZW Source", kind: "monster" },
+      { code: "500", name: "ZW Equip", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 159, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0).faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local equip = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local linked = Effect.CreateEffect(source)
+      local e1,e2 = aux.AddZWEquipLimit(source,nil,function(ec,c,tp) return ec:IsFaceup() end,aux.EquipAndLimitRegister,linked,EFFECT_FLAG_IGNORE_IMMUNE,RESET_EVENT+RESETS_STANDARD,1)
+      Debug.Message("zw metadata " .. e1:GetCode() .. "/" .. e1:GetProperty() .. "/" .. e2:GetCode() .. "/" .. e2:GetProperty() .. "/" .. tostring(linked:GetLabelObject()==e2))
+      local reset,reset_count=e1:GetReset()
+      Debug.Message("zw reset " .. reset .. "/" .. reset_count .. "/" .. tostring(e1:GetValue()(source,source,0)))
+      Debug.Message("zw operation " .. tostring(e1:GetOperation()(equip,linked,0,source)))
+      Debug.Message("zw equip target " .. equip:GetEquipTarget():GetCode())
+      Debug.Message("zw equip limit " .. tostring(equip:IsHasEffect(EFFECT_EQUIP_LIMIT)~=nil))
+      `,
+      "zw-equip-limit.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("zw metadata 75402014/1152/75402090/128/true");
+    expect(host.messages).toContain("zw reset 33427456/1/true");
+    expect(host.messages).toContain("zw operation true");
+    expect(host.messages).toContain("zw equip target 100");
+    expect(host.messages).toContain("zw equip limit true");
+    expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: source!.uid, faceUp: true });
+  });
+
   it("lets Lua scripts install Attraction equip procedures and conditions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Attraction Trap", kind: "trap", typeFlags: 0x4, setcodes: [0x15f] },
