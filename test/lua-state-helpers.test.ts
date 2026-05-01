@@ -964,6 +964,14 @@ describe("Lua state helpers", () => {
       gate_high:SetValue(function(tp) return tp==0 and 4 or 1 end)
       Duel.RegisterEffect(gate_high,0)
       Debug.Message("summon gate " .. tostring(aux.CheckSummonGate(0)) .. "/" .. tostring(aux.CheckSummonGate(0,2)) .. "/" .. tostring(aux.CheckSummonGate(0,3)) .. "/" .. tostring(aux.CheckSummonGate(1)) .. "/" .. tostring(aux.CheckSummonGate(1,3)))
+      Debug.Message("double tribute open " .. tostring(aux.DoubleTributeCon(value_effect,0,Group.CreateGroup(),0,0,nil,0,0)))
+      local no_tribute=Effect.CreateEffect(faceup_monster)
+      no_tribute:SetType(EFFECT_TYPE_FIELD)
+      no_tribute:SetCode(FLAG_NO_TRIBUTE)
+      no_tribute:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+      no_tribute:SetTargetRange(1,0)
+      Duel.RegisterEffect(no_tribute,0)
+      Debug.Message("double tribute blocked " .. FLAG_NO_TRIBUTE .. "/" .. tostring(aux.DoubleTributeCon(value_effect,0,Group.CreateGroup(),0,0,nil,0,0)) .. "/" .. tostring(aux.DoubleTributeCon(value_effect,1,Group.CreateGroup(),0,0,nil,0,0)))
       local named = aux.FunctionWithNamedArgs(function(a,b,...)
         local total=0
         for _,value in ipairs({...}) do total=total+value end
@@ -1120,6 +1128,8 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("values reset setup 1210/1/true");
     expect(host.messages).toContain("values reset call false/11");
     expect(host.messages).toContain("summon gate 2/true/false/nil/true");
+    expect(host.messages).toContain("double tribute open true");
+    expect(host.messages).toContain("double tribute blocked 160001029/false/true");
     expect(host.messages).toContain("named args A/B/7/X/Y/11");
     expect(host.messages).toContain("cannot mat true/false/true");
     expect(host.messages).toContain("chkf mmz true/false");

@@ -16,6 +16,9 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       local c=e:GetHandler()
       return c:IsPreviousControler(tp) and c:IsReason(REASON_DESTROY) and rp==1-tp
     end
+    function aux.DoubleTributeCon(e,tp,eg,ep,ev,re,r,rp)
+      return not Duel.IsPlayerAffectedByEffect(tp,FLAG_NO_TRIBUTE)
+    end
     function aux.ReincarnationRitualFilter(c,rc,id,tp)
       return c:IsSummonCode(rc,SUMMON_TYPE_RITUAL,tp,id) and c:IsControler(tp) and c:IsLocation(LOCATION_MZONE)
     end
