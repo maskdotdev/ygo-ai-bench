@@ -162,6 +162,7 @@ export const cardFieldNames = [
   "IsRitualMonster",
   "IsSynchroMonster",
   "IsXyzMonster",
+  "IsPendulumMonster",
   "IsEffectMonster",
   "IsNonEffectMonster",
   "IsLinked",
