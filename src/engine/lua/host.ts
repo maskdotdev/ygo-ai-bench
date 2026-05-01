@@ -3,6 +3,7 @@ import { installAuxApi, installConstants, installDebugApi } from "#lua/basic-api
 import { installCardApi, pushCardTable } from "#lua/card-api.js";
 import { installCardProcedureApi } from "#lua/card-procedure-api.js";
 import { installDuelApi } from "#lua/duel-api/index.js";
+import { callLuaEffectBattleDamageValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
 import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js";
 import { installGroupApi, pushGroupTable } from "#lua/group-api.js";
 import { scriptFilenameForCard } from "#engine/data-loaders.js";
@@ -682,9 +683,9 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(luaEffect.property === undefined ? {} : { property: luaEffect.property }),
     ...(luaEffect.targetRange === undefined ? {} : { targetRange: luaEffect.targetRange }),
     ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
-    ...(luaEffect.valueRef === undefined ? {} : { battleDamageValue: (ctx, player) => callLuaEffectBattleDamageValue(L, hostState, luaEffect, ctx, player) }),
-    ...(luaEffect.valueRef === undefined ? {} : { valueCardPredicate: (ctx, targetCard) => callLuaEffectValueCardPredicate(L, hostState, luaEffect, ctx, targetCard) }),
-    ...(luaEffect.valueRef === undefined ? {} : { valuePredicate: (ctx, reasonPlayer) => callLuaEffectValuePredicate(L, hostState, luaEffect, card, ctx, reasonPlayer) }),
+    ...(luaEffect.valueRef === undefined ? {} : { battleDamageValue: (ctx, player) => callLuaEffectBattleDamageValue(L, hostState, luaEffect, ctx, player, readLuaError) }),
+    ...(luaEffect.valueRef === undefined ? {} : { valueCardPredicate: (ctx, targetCard) => callLuaEffectValueCardPredicate(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
+    ...(luaEffect.valueRef === undefined ? {} : { valuePredicate: (ctx, reasonPlayer) => callLuaEffectValuePredicate(L, hostState, luaEffect, card, ctx, reasonPlayer, readLuaError) }),
     canActivate: (ctx) =>
       (luaEffect.code !== 1027 || hostState.session.state.chain.length > 0) &&
       callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, "condition", ctx) &&
@@ -879,68 +880,6 @@ function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: Lu
     const status = lua.lua_pcall(L, argCount, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
     const result = lua.lua_isnil(L, -1) ? fallback : Boolean(lua.lua_toboolean(L, -1));
-    lua.lua_pop(L, 1);
-    return result;
-  });
-}
-
-function callLuaEffectValuePredicate(
-  L: unknown,
-  hostState: LuaHostState,
-  luaEffect: LuaEffectRecord,
-  card: DuelCardInstance,
-  ctx: DuelEffectContext,
-  reasonPlayer: PlayerId | undefined,
-): boolean {
-  if (luaEffect.valueRef === undefined) return true;
-  return withLuaCallbackContext(hostState, ctx, () => {
-    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.valueRef);
-    pushLuaEffectTable(L, luaEffect.id, hostState);
-    pushRelatedEffectTable(L, hostState);
-    lua.lua_pushinteger(L, reasonPlayer ?? ctx.player ?? card.controller);
-    const status = lua.lua_pcall(L, 3, 1, 0);
-    if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
-    const result = lua.lua_isnil(L, -1) ? true : Boolean(lua.lua_toboolean(L, -1));
-    lua.lua_pop(L, 1);
-    return result;
-  });
-}
-
-function callLuaEffectValueCardPredicate(
-  L: unknown,
-  hostState: LuaHostState,
-  luaEffect: LuaEffectRecord,
-  ctx: DuelEffectContext,
-  card: DuelCardInstance,
-): boolean {
-  if (luaEffect.valueRef === undefined) return true;
-  return withLuaCallbackContext(hostState, ctx, () => {
-    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.valueRef);
-    pushLuaEffectTable(L, luaEffect.id, hostState);
-    pushCardTable(L, card.uid);
-    const status = lua.lua_pcall(L, 2, 1, 0);
-    if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
-    const result = lua.lua_isnil(L, -1) ? true : Boolean(lua.lua_toboolean(L, -1));
-    lua.lua_pop(L, 1);
-    return result;
-  });
-}
-
-function callLuaEffectBattleDamageValue(
-  L: unknown,
-  hostState: LuaHostState,
-  luaEffect: LuaEffectRecord,
-  ctx: DuelEffectContext,
-  player: PlayerId,
-): number | undefined {
-  if (luaEffect.valueRef === undefined) return undefined;
-  return withLuaCallbackContext(hostState, ctx, () => {
-    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.valueRef);
-    pushLuaEffectTable(L, luaEffect.id, hostState);
-    lua.lua_pushinteger(L, player);
-    const status = lua.lua_pcall(L, 2, 1, 0);
-    if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
-    const result = lua.lua_isnumber(L, -1) ? lua.lua_tonumber(L, -1) : undefined;
     lua.lua_pop(L, 1);
     return result;
   });
