@@ -541,6 +541,82 @@ describe("Lua movement helpers", () => {
     });
   });
 
+  it("loads Phantom Knights Decayed Cloak and searches a Phantom Knights monster from Deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "101305018", name: "The Phantom Knights of Decayed Cloak", kind: "monster", setcodes: [0xdb] },
+      { code: "100", name: "Phantom Knights Monster", kind: "monster", setcodes: [0xdb] },
+    ];
+    const session = createDuel({ seed: 108, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101305018", "100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "101305018");
+    const searched = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
+    expect(searched).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "hand", 0);
+    moveDuelCard(session.state, searched!.uid, "deck", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305018.lua", "utf8"), "c101305018.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === source!.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === searched!.uid)).toMatchObject({
+      location: "hand",
+      controller: 0,
+    });
+  });
+
+  it("loads Phantom Knights Decayed Cloak and special summons itself by revealing another Phantom Knights card", () => {
+    const cards: DuelCardData[] = [
+      { code: "101305018", name: "The Phantom Knights of Decayed Cloak", kind: "monster", setcodes: [0xdb] },
+      { code: "100", name: "Phantom Knights Reveal", kind: "trap", setcodes: [0xdb] },
+    ];
+    const session = createDuel({ seed: 109, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101305018", "100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "101305018");
+    const revealed = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
+    expect(revealed).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "hand", 0);
+    moveDuelCard(session.state, revealed!.uid, "hand", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305018.lua", "utf8"), "c101305018.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      faceUp: true,
+    });
+    expect(session.state.cards.find((card) => card.uid === revealed!.uid)).toMatchObject({
+      location: "hand",
+      controller: 0,
+    });
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },
