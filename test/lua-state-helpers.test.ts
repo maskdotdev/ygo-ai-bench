@@ -1180,6 +1180,7 @@ describe("Lua state helpers", () => {
       local option=Duel.SelectOption(0, 101, 102, 103)
       local yes=Duel.SelectYesNo(0, 201)
       local everyone=Duel.AskEveryone(203)
+      local any=Duel.AskAny(204)
       local effect_yes=Duel.SelectEffectYesNo(0, nil, 202)
       local effect_choice=Duel.SelectEffect(0, {false, 301}, {true, 302}, {true, 303})
       local effect_none=Duel.SelectEffect(0, {false, 301})
@@ -1207,7 +1208,7 @@ describe("Lua state helpers", () => {
       local another_card_race=single:AnnounceAnotherRace(0)
       local group_hint_result=Duel.HintSelection(group, 501)
       local card_hint_result=Duel.HintSelection(single)
-      Debug.Message("prompt option " .. option .. "/" .. tostring(yes) .. "/" .. tostring(everyone))
+      Debug.Message("prompt option " .. option .. "/" .. tostring(yes) .. "/" .. tostring(everyone) .. "/" .. tostring(any))
       Debug.Message("prompt effect " .. tostring(effect_yes) .. "/" .. tostring(effect_choice) .. "/" .. tostring(effect_none))
       Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. level .. "/" .. ranged)
       Debug.Message("prompt card codes " .. selected_code .. "/" .. selected_from_table .. "/" .. selected_index[1] .. ":" .. selected_index[2] .. "/" .. selected_multi[1][1] .. ":" .. selected_multi[1][2] .. "," .. selected_multi[2][1] .. ":" .. selected_multi[2][2])
@@ -1220,7 +1221,7 @@ describe("Lua state helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("prompt option 0/true/true");
+    expect(host.messages).toContain("prompt option 0/true/true/true");
     expect(host.messages).toContain("prompt effect true/2/nil");
     expect(host.messages).toContain("prompt announce 4/100/1/1/16/3/4");
     expect(host.messages).toContain("prompt card codes 700/900/910:1/930:1,940:2");
