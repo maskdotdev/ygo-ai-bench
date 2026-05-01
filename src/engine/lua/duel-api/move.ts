@@ -1,10 +1,12 @@
 import fengari from "fengari";
+import { recordSpecialSummonActivity } from "#duel/activity.js";
 import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-state.js";
 import { createRng } from "#engine/rng.js";
 import {
   banishDuelCard,
   canChangeDuelCardPosition,
   canMoveDuelCardToLocation,
+  canPlayerSpecialSummon,
   changeDuelCardPosition,
   detachDuelOverlayMaterials,
   destroyDuelCard,
@@ -162,6 +164,7 @@ function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiH
 
 function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
   const uids = readCardOrGroupUids(L, 1);
+  const summonType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const targetPlayer = readOptionalPlayer(L, 4);
   const requestedPosition = lua.lua_isnumber(L, 7) ? positionFromMask(lua.lua_tointeger(L, 7)) : undefined;
   const moved: string[] = [];
@@ -173,7 +176,8 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
       if (requestedPosition) applySummonPosition(summoned, requestedPosition);
       moved.push(uid);
     } catch {
-      // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
+      if (!card || !specialSummonExplicitExtraDeckCard(session, card, targetPlayer ?? card.controller, summonType, requestedPosition, hostState)) continue;
+      moved.push(uid);
     }
   }
   setOperatedUids(hostState, moved);
@@ -564,7 +568,7 @@ function shuffleCards(session: DuelSession, cards: DuelCardInstance[]): DuelCard
 function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
   const targetUid = readCardUid(L, 1);
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
-  if (!target || target.location !== "monsterZone") {
+  if (!target || (target.location !== "monsterZone" && target.location !== "extraDeck")) {
     setOperatedUids(hostState, []);
     return 0;
   }
@@ -575,10 +579,21 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || !canMoveDuelCardToLocation(session.state, uid, "overlay", duelReason.effect)) continue;
     try {
+      const attachedUids = [...card.overlayUids];
       removeOverlayReference(session.state, uid);
       moveDuelCard(session.state, uid, "overlay", target.controller, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+      card.overlayUids = [];
       target.overlayUids.push(uid);
       moved.push(uid);
+      for (const attachedUid of attachedUids) {
+        if (target.overlayUids.includes(attachedUid)) continue;
+        const attached = session.state.cards.find((candidate) => candidate.uid === attachedUid);
+        if (!attached || !canMoveDuelCardToLocation(session.state, attachedUid, "overlay", duelReason.effect)) continue;
+        removeOverlayReference(session.state, attachedUid);
+        moveDuelCard(session.state, attachedUid, "overlay", target.controller, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+        target.overlayUids.push(attachedUid);
+        moved.push(attachedUid);
+      }
     } catch {
       // EDOPro-style helpers expose successful moves through GetOperatedGroup.
     }
@@ -691,6 +706,30 @@ function readMoveReason(L: unknown, index: number, extraReason: number): number 
   const reason = lua.lua_isnumber(L, index) ? lua.lua_tointeger(L, index) : undefined;
   if (reason === undefined && extraReason === 0) return undefined;
   return (reason ?? 0) | extraReason;
+}
+
+function specialSummonExplicitExtraDeckCard(
+  session: DuelSession,
+  card: DuelCardInstance,
+  player: PlayerId,
+  summonType: number,
+  requestedPosition: CardPosition | undefined,
+  hostState: LuaDuelMoveApiHostState,
+): boolean {
+  if (card.location !== "extraDeck" || summonType === 0 || !hasZoneSpace(session.state, player, "monsterZone") || !canPlayerSpecialSummon(session.state, player, card)) return false;
+  try {
+    moveDuelCard(session.state, card.uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon, hostState.activeContext?.player ?? player);
+    applySummonPosition(card, requestedPosition ?? "faceUpAttack");
+    card.summonType = "special";
+    card.summonPlayer = player;
+    card.summonPhase = session.state.phase;
+    card.summonMaterialUids = card.summonMaterialUids ?? [];
+    recordSpecialSummonActivity(session.state, player, card);
+    pushDuelLog(session.state, "specialSummon", player, card.name, "Special Summoned");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function assignReasonCard(card: DuelCardInstance, hostState: LuaDuelMoveApiHostState): void {

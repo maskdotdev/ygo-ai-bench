@@ -82,8 +82,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsSummonCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && card.data.setcodes?.includes(requested)));
+    const requested = readRequestedSetcodes(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.some((wanted) => cardSetcodes(card).some((setcode) => isSetcodeMatch(wanted, setcode)))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSetCard"));
@@ -122,6 +122,19 @@ function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, g
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1) ?? readTableStringField(L, 1, "__duel_uid");
   return uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+}
+
+function readRequestedSetcodes(L: unknown, index: number): number[] {
+  if (lua.lua_isnumber(L, index)) return [lua.lua_tointeger(L, index)];
+  if (!lua.lua_istable(L, index)) return [];
+  const values: number[] = [];
+  const count = lua.lua_rawlen(L, index);
+  for (let luaIndex = 1; luaIndex <= count; luaIndex += 1) {
+    lua.lua_rawgeti(L, index, luaIndex);
+    if (lua.lua_isnumber(L, -1)) values.push(lua.lua_tointeger(L, -1));
+    lua.lua_pop(L, 1);
+  }
+  return values;
 }
 
 function pushCardScriptTable(L: unknown, code: string): void {

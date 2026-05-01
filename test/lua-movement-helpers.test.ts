@@ -839,6 +839,60 @@ describe("Lua movement helpers", () => {
     for (const material of materials) expect(session.state.cards.find((card) => card.uid === material.uid)?.location).toBe("overlay");
   });
 
+  it("loads Phantom Knights Rank-Up-Magic Requiem and ranks up a revived Xyz monster", () => {
+    const cards: DuelCardData[] = [
+      { code: "101305057", name: "The Phantom Knights' Rank-Up-Magic Requiem", kind: "spell", setcodes: [0x95] },
+      { code: "100", name: "Phantom Knights Revive", kind: "monster", setcodes: [0xdb] },
+      { code: "200", name: "Dark Rank 3 Xyz", kind: "extra", typeFlags: 0x800001, level: 3, attribute: 0x20, setcodes: [0xdb] },
+      { code: "300", name: "Dark Rank 4 Xyz", kind: "extra", typeFlags: 0x800001, level: 4, attribute: 0x20, setcodes: [0xdb] },
+      { code: "400", name: "Rank-Up Overlay", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 115, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101305057", "100", "400"], extra: ["200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const spell = session.state.cards.find((card) => card.code === "101305057");
+    const revived = session.state.cards.find((card) => card.code === "100");
+    const rankThree = session.state.cards.find((card) => card.code === "200");
+    const rankFour = session.state.cards.find((card) => card.code === "300");
+    const overlay = session.state.cards.find((card) => card.code === "400");
+    expect(spell).toBeDefined();
+    expect(revived).toBeDefined();
+    expect(rankThree).toBeDefined();
+    expect(rankFour).toBeDefined();
+    expect(overlay).toBeDefined();
+    moveDuelCard(session.state, spell!.uid, "hand", 0);
+    moveDuelCard(session.state, revived!.uid, "graveyard", 0);
+    moveDuelCard(session.state, rankThree!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, overlay!.uid, "overlay", 0);
+    rankThree!.overlayUids.push(overlay!.uid);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305057.lua", "utf8"), "c101305057.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === spell!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === revived!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+    });
+    expect(session.state.cards.find((card) => card.uid === rankFour!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "special",
+      overlayUids: expect.arrayContaining([rankThree!.uid]),
+    });
+    expect(session.state.cards.find((card) => card.uid === rankThree!.uid)).toMatchObject({
+      location: "overlay",
+    });
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },

@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
-import { canChangeDuelCardPosition, canDuelCardAttack, canMoveDuelCardToLocation, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
+import { canChangeDuelCardPosition, canDuelCardAttack, canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
 import { findIndestructibleEffect, isCardDisabled, isMaterialUsePrevented, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
 import { registerDuelFlagEffect } from "#duel/flags.js";
@@ -374,8 +374,9 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("IsLinkSummonable"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
+    const summonType = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
     const player = lua.lua_isnumber(state, 4) ? normalizePlayer(lua.lua_tointeger(state, 4)) : card?.controller;
-    lua.lua_pushboolean(state, Boolean(card && player !== undefined && canSpecialSummonDuelCard(session.state, card.uid, player)));
+    lua.lua_pushboolean(state, Boolean(card && player !== undefined && canSpecialSummonFromLua(session, card, player, summonType)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCanBeSpecialSummoned"));
@@ -401,6 +402,14 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushMaterialPredicate(L, "IsCanBeXyzMaterial", session, "xyz");
   pushMaterialPredicate(L, "IsCanBeLinkMaterial", session, "link");
   pushMaterialPredicate(L, "IsCanBeRitualMaterial", session, "ritual");
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    if (card) card.summonMaterialUids = readCardOrGroupUids(state, 2);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SetMaterial"));
+  lua.lua_pushcfunction(L, () => 0);
+  lua.lua_setfield(L, -2, to_luastring("CompleteProcedure"));
 }
 
 function canLuaSetSpellTrap(card: DuelCardInstance): boolean {
@@ -749,9 +758,20 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
     const materialLevel = card.data.level ?? 0;
     return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
   }
-  if (kind === "xyz") return !target.data.xyzMaterials?.length ? cardRank(target) === (card.data.level ?? 0) : target.data.xyzMaterials.some((code) => codes.includes(code));
+  if (kind === "xyz") {
+    if (target.data.xyzMaterials?.length) return target.data.xyzMaterials.some((code) => codes.includes(code));
+    const targetRank = cardRank(target);
+    const materialLevel = card.data.level ?? 0;
+    const materialRank = cardRank(card);
+    return targetRank > 0 && (materialLevel === targetRank || (materialRank > 0 && targetRank === materialRank + 1));
+  }
   if (kind === "link") return !target.data.linkMaterials?.length ? cardLink(target) > 0 && linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
   return true;
+}
+
+function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number): boolean {
+  if (canSpecialSummonDuelCard(session.state, card.uid, player)) return true;
+  return card.location === "extraDeck" && summonType !== 0 && hasZoneSpace(session.state, player, "monsterZone") && canPlayerSpecialSummon(session.state, player, card);
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {

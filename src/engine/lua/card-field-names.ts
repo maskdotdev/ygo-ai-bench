@@ -36,6 +36,8 @@ export const cardFieldNames = [
   "AddSideMaximumHandler",
   "AddMonsterAttribute",
   "AddMonsterAttributeComplete",
+  "SetMaterial",
+  "CompleteProcedure",
   "IsLegend",
   "GetToBeLinkedZone",
   "GetCode",
