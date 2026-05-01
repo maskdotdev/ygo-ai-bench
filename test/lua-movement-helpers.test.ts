@@ -243,6 +243,42 @@ describe("Lua movement helpers", () => {
     });
   });
 
+  it("loads Mystical Celtic Sage and tributes itself to summon a listed Ritual monster", () => {
+    const cards: DuelCardData[] = [
+      { code: "50073633", name: "Mystical Celtic Sage", kind: "monster" },
+      { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", typeFlags: 0x81, listedNames: ["33599853"] },
+    ];
+    const session = createDuel({ seed: 99, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["50073633", "70405001"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const sage = session.state.cards.find((card) => card.code === "50073633");
+    const ritual = session.state.cards.find((card) => card.code === "70405001");
+    expect(sage).toBeDefined();
+    expect(ritual).toBeDefined();
+    moveDuelCard(session.state, sage!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, ritual!.uid, "hand", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c50073633.lua", "utf8"), "c50073633.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const summonAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sage!.uid);
+    expect(summonAction).toBeDefined();
+    expect(applyResponse(session, summonAction!).ok).toBe(true);
+    while (session.state.chain.length > 0) {
+      const player = session.state.waitingFor ?? session.state.turnPlayer;
+      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+    }
+
+    expect(session.state.cards.find((card) => card.uid === sage!.uid)).toMatchObject({ location: "graveyard", reason: 0x82 });
+    expect(session.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },
