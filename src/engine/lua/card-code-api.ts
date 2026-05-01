@@ -198,6 +198,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsV", session, (card) => Boolean(card && (isAnimeArchetype(card, vSetcodes, vCodes) || isAnimeArchetype(card, vZexalSetcodes, vZexalCodes))));
   pushBooleanGetter(L, "IsVirus", session, (card) => Boolean(card && virusCodes.includes(card.code)));
   pushBooleanGetter(L, "IsW", session, (card) => Boolean(card && isAnimeArchetype(card, wSetcodes, wCodes)));
+  pushBooleanGetter(L, "IsWisel", session, (card) => Boolean(card && isAnimeArchetype(card, wiselSetcodes, wiselCodes)));
+  pushBooleanGetter(L, "IsX", session, (card) => Boolean(card && isAnimeArchetype(card, xSetcodes, xCodes)));
   pushBooleanGetter(L, "IsEarth", session, (card) => Boolean(card && isAnimeArchetype(card, earthSetcodes, earthCodes) && !isAnimeArchetype(card, hellSetcodes, hellCodes)));
   pushBooleanGetter(L, "IsSky", session, (card) => Boolean(card && isAnimeArchetype(card, skySetcodes, skyCodes)));
   pushBooleanGetter(L, "Is_V_", session, (card) => Boolean(card && isAnimeArchetype(card, vZexalSetcodes, vZexalCodes)));
@@ -748,6 +750,14 @@ const vZexalCodes = ["33725002", "66970002", "13536606", "13536607", "94933468"]
 const virusCodes = ["86361354", "33184167", "24725825", "22804644", "48736598", "84121193", "4931121", "35027493", "39163598", "54591086", "54974237", "57728570", "84491298", "85555787", "100000166", "800000012", "511002576", "511005713", "511009657", "511001119"] as const;
 const wSetcodes = [0x56b, 0xf0, 0x107e] as const;
 const wCodes = ["23846921", "41181774", "27564031", "90075978", "96300057", "58859575", "84243274", "65687442"] as const;
+const wiselSetcodes = [0x560] as const;
+const wiselCodes = ["68140974", "30221870", "39648965"] as const;
+const xSetcodes = [0x56c, 0x1073, 0x100d] as const;
+const xCodes = [
+  "18000338", "69831560", "5861892", "61156777", "55410871", "87526784", "98535702", "21598948", "71525232", "5257687", "37745919", "81823360", "81913510",
+  "46008667", "40253382", "11264180", "3868277", "58258899", "48605591", "12181376", "93130021", "62651957", "86559484", "30562585", "28912357", "19891310",
+  "84243274", "2111707", "91998119", "99724761",
+] as const;
 
 const earthSetcodes = [0x51a, 0x21, 0x567] as const;
 const earthCodes = [

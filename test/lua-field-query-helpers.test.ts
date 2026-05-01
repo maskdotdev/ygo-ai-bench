@@ -290,6 +290,8 @@ describe("Lua field and query helpers", () => {
       { method: "IsToyArcV", code: "9001", setcode: 0x558, codeMatches: false },
       { method: "IsV", code: "97574404", setcode: 0x55a },
       { method: "IsW", code: "23846921", setcode: 0x56b },
+      { method: "IsWisel", code: "68140974", setcode: 0x560 },
+      { method: "IsX", code: "18000338", setcode: 0x56c },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];
     for (let index = 0; index < cases.length; index += 12) {
