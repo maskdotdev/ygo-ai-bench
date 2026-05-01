@@ -203,6 +203,46 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.uid === record!.uid)).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
   });
 
+  it("loads Gurifoh and sets a listed Spell/Trap from Deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "97462632", name: "Gurifoh", kind: "monster" },
+      { code: "24461358", name: "Corrupted Ritual Records", kind: "trap", listedNames: ["33599853"] },
+    ];
+    const session = createDuel({ seed: 98, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["97462632", "24461358"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const gurifoh = session.state.cards.find((card) => card.code === "97462632");
+    const records = session.state.cards.find((card) => card.code === "24461358");
+    expect(gurifoh).toBeDefined();
+    expect(records).toBeDefined();
+    moveDuelCard(session.state, gurifoh!.uid, "hand", 0);
+    moveDuelCard(session.state, records!.uid, "deck", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c97462632.lua", "utf8"), "c97462632.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === gurifoh!.uid);
+    expect(setAction).toBeDefined();
+    expect(applyResponse(session, setAction!).ok).toBe(true);
+    while (session.state.chain.length > 0) {
+      const player = session.state.waitingFor ?? session.state.turnPlayer;
+      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+    }
+
+    expect(session.state.cards.find((card) => card.uid === gurifoh!.uid)).toMatchObject({ location: "graveyard", reason: 0x4080 });
+    expect(session.state.cards.find((card) => card.uid === records!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      position: "faceDown",
+      faceUp: false,
+    });
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },
