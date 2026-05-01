@@ -251,6 +251,39 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
       ex,cat,cg,ct,cp,cv=Duel.GetOperationInfo(ev,CATEGORY_RECOVER)
       return ex and (cp==tp or cp==PLAYER_ALL) and rr and not Duel.IsPlayerAffectedByEffect(tp,EFFECT_NO_EFFECT_DAMAGE)
     end
+    function aux.thoeSend(card)
+      return Duel.SendtoGrave(card,REASON_EFFECT)
+    end
+    function aux.ToHandOrElse(card,player,check,oper,str,...)
+      if not card then return nil end
+      if not check then check=Card.IsAbleToGrave end
+      if not oper then oper=aux.thoeSend end
+      if not str then str=574 end
+      local params={...}
+      local b1,b2=true,true
+      if type(card)=="table" and card.GetCount then
+        for ctg in aux.Next(card) do
+          if not ctg:IsAbleToHand() then b1=false end
+          if not check(ctg,table.unpack(params)) then b2=false end
+        end
+      else
+        b1=card:IsAbleToHand()
+        b2=check(card,table.unpack(params))
+      end
+      if not b1 and not b2 then return 0 end
+      local opt=0
+      if b1 and b2 then
+        opt=Duel.SelectOption(player,573,str)
+      elseif not b1 then
+        opt=Duel.SelectOption(player,str)+1
+      end
+      if opt==0 then
+        local res=Duel.SendtoHand(card,nil,REASON_EFFECT)
+        if res~=0 then Duel.ConfirmCards(1-player,card) end
+        return res
+      end
+      return oper(card,table.unpack(params))
+    end
     function aux.FilterMaximumSideFunction(f,...)
       local params={...}
       return function(target)

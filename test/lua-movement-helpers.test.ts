@@ -481,6 +481,49 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("graveyard");
   });
 
+  it("lets Lua scripts move cards to hand or fallback elsewhere", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "To Hand First", kind: "monster" },
+      { code: "200", name: "Fallback Only", kind: "monster" },
+      { code: "300", name: "No Legal Move", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 161, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.owner === 0)) {
+      moveDuelCard(session.state, card.uid, "graveyard", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local first = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local fallback = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local blocked = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local cannot_hand=Effect.CreateEffect(fallback)
+      cannot_hand:SetType(EFFECT_TYPE_SINGLE)
+      cannot_hand:SetCode(EFFECT_CANNOT_TO_HAND)
+      fallback:RegisterEffect(cannot_hand)
+      local blocked_cannot_hand=Effect.CreateEffect(blocked)
+      blocked_cannot_hand:SetType(EFFECT_TYPE_SINGLE)
+      blocked_cannot_hand:SetCode(EFFECT_CANNOT_TO_HAND)
+      blocked:RegisterEffect(blocked_cannot_hand)
+      Debug.Message("thoe hand " .. aux.ToHandOrElse(first,0) .. "/" .. first:GetLocation())
+      Debug.Message("thoe fallback " .. aux.ToHandOrElse(fallback,0,function(c) return c:IsAbleToDeck() end,function(c) return Duel.SendtoDeck(c,0,0,REASON_EFFECT) end,574) .. "/" .. fallback:GetLocation())
+      Debug.Message("thoe none " .. aux.ToHandOrElse(blocked,0,function(c) return false end,function(c) return Duel.SendtoDeck(c,0,0,REASON_EFFECT) end,574) .. "/" .. blocked:GetLocation())
+      `,
+      "to-hand-or-else.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("thoe hand 1/2");
+    expect(host.messages).toContain("thoe fallback 1/1");
+    expect(host.messages).toContain("thoe none 0/16");
+  });
+
   it("lets Lua scripts take control of field cards", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Self A", kind: "monster" },
