@@ -73,6 +73,8 @@ export const cardFieldNames = [
   "IsCN39UtopiaRay",
   "IsComicsHero",
   "IsCubicSeed",
+  "IsDarkness",
+  "IsDart",
   "IsDyson",
   "IsRed",
   "IsWhite",

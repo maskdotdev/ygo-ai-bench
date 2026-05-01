@@ -214,6 +214,8 @@ describe("Lua field and query helpers", () => {
       { method: "IsCN39UtopiaRay", code: "56840427", setcode: 0x1539 },
       { method: "IsComicsHero", code: "77631175", setcode: 0x511 },
       { method: "IsCubicSeed", code: "15610297", setcode: 0x10e3 },
+      { method: "IsDarkness", code: "18967507", setcode: 0x316 },
+      { method: "IsDart", code: "43061293", setcode: 0x513 },
       { method: "IsDyson", code: "1992816", setcode: 0x519 },
       { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
@@ -221,6 +223,12 @@ describe("Lua field and query helpers", () => {
       { method: "IsStarvingVenemy", code: "22070401", setcode: 0x576 },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];
+    for (let index = 0; index < cases.length; index += 12) {
+      expectAnimeArchetypePredicates(cases.slice(index, index + 12), 158 + index);
+    }
+  });
+
+  function expectAnimeArchetypePredicates(cases: { method: string; code: string; setcode: number }[], seed: number): void {
     const cards: DuelCardData[] = [{ code: "9000", name: "Normal Spell", kind: "spell", typeFlags: 0x2 }];
     const main = ["9000"];
     for (const [index, fixture] of cases.entries()) {
@@ -231,7 +239,7 @@ describe("Lua field and query helpers", () => {
       );
       main.push(fixture.code, setCodeCard);
     }
-    const session = createDuel({ seed: 158, startingHandSize: main.length, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed, startingHandSize: main.length, cardReader: createCardReader(cards) });
     loadDecks(session, {
       0: { main },
       1: { main: [] },
@@ -256,7 +264,7 @@ describe("Lua field and query helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     for (const fixture of cases) expect(host.messages).toContain(`${fixture.method} true/true/false`);
-  });
+  }
 
   it("lets Lua scripts check linked monster-zone cards", () => {
     const cards: DuelCardData[] = [
