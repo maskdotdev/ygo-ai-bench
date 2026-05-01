@@ -179,7 +179,9 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsPriestess", session, (card) => Boolean(card && isAnimeArchetype(card, priestessSetcodes, priestessCodes)));
   pushBooleanGetter(L, "IsRaccoon", session, (card) => Boolean(card && isAnimeArchetype(card, raccoonSetcodes, raccoonCodes)));
   pushBooleanGetter(L, "IsSeal", session, (card) => Boolean(card && isAnimeArchetype(card, sealSetcodes, sealCodes)));
+  pushBooleanGetter(L, "IsShaman", session, (card) => Boolean(card && isAnimeArchetype(card, shamanSetcodes, shamanCodes)));
   pushBooleanGetter(L, "IsShark", session, (card) => Boolean(card && isAnimeArchetype(card, sharkSetcodes, sharkCodes)));
+  pushBooleanGetter(L, "IsShining", session, (card) => Boolean(card && isAnimeArchetype(card, shiningSetcodes, shiningCodes)));
   pushBooleanGetter(L, "IsStarvingVenemy", session, (card) => Boolean(card && isAnimeArchetype(card, starvingVenemySetcodes, starvingVenemyCodes)));
   pushBooleanGetter(L, "IsEarth", session, (card) => Boolean(card && isAnimeArchetype(card, earthSetcodes, earthCodes) && !isAnimeArchetype(card, hellSetcodes, hellCodes)));
   pushBooleanGetter(L, "IsSky", session, (card) => Boolean(card && isAnimeArchetype(card, skySetcodes, skyCodes)));
@@ -581,6 +583,8 @@ const raccoonSetcodes = [0x542] as const;
 const raccoonCodes = ["92729410", "28118128", "39972130", "39972129", "17441953"] as const;
 const sealSetcodes = [0x545] as const;
 const sealCodes = ["63102017", "29549364", "25880422", "58921041"] as const;
+const shamanSetcodes = [0x546] as const;
+const shamanCodes = ["97870394", "81003500", "10530913", "3643300", "44968687", "19801646", "56166150", "39761138", "2752099"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
@@ -746,6 +750,8 @@ const sharkCodes = [
   "70156946",
   "11845050",
 ] as const;
+const shiningSetcodes = [0x548, 0x2048] as const;
+const shiningCodes = ["22061412", "88820235", "25366484", "62829077", "53347303", "90263923", "12927849", "21481146", "2061963"] as const;
 
 const starvingVenemySetcodes = [0x576] as const;
 const starvingVenemyCodes = ["22070401", "93729065"] as const;
