@@ -4,6 +4,7 @@ import {
   createDuel,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  moveDuelCard,
   serializeDuel,
   startDuel,
 } from "#duel/core.js";
@@ -262,13 +263,23 @@ describe("Lua effect metadata helpers", () => {
   });
 
   it("registers Lua normal summon and set procedure effects", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "Procedure Source", kind: "monster", level: 7 }];
-    const session = createDuel({ seed: 57, startingHandSize: 1, cardReader: createCardReader(cards) });
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Procedure Source", kind: "monster", level: 7 },
+      { code: "200", name: "Procedure Tribute A", kind: "monster", level: 4 },
+      { code: "300", name: "Procedure Tribute B", kind: "monster", level: 4 },
+      { code: "400", name: "Procedure Extra Tribute", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 57, startingHandSize: 4, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100"] },
+      0: { main: ["100", "200", "300", "400"] },
       1: { main: [] },
     });
     startDuel(session);
+    for (const code of ["200", "300", "400"]) {
+      const tribute = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === code);
+      expect(tribute).toBeDefined();
+      moveDuelCard(session.state, tribute!.uid, "monsterZone", 0);
+    }
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -280,11 +291,16 @@ describe("Lua effect metadata helpers", () => {
       local lt=aux.AddNormalSetProcedure(c,false,false,2,2)
       local rush=aux.summonproc(c,true,true,1,1,SUMMON_TYPE_TRIBUTE+100,9012)
       local rush3=aux.summonproc3trib(c,3456,aux.TRUE)
+      local grant_target=aux.ThreeTribGrantTarget(function(e,tc) return tc:IsCode(100) end)
       Debug.Message("normal proc codes " .. ns:GetCode() .. "/" .. ls:GetCode() .. "/" .. st:GetCode() .. "/" .. lt:GetCode())
       Debug.Message("normal proc metadata " .. ns:GetDescription() .. "/" .. st:GetDescription() .. "/" .. ns:GetProperty() .. "/" .. ns:GetValue())
       Debug.Message("normal proc callbacks " .. tostring(ns:GetCondition()(ns,c,0,0,0,nil)) .. "/" .. tostring(ls:GetCondition()(ls,nil,0,0,0,nil)) .. "/" .. tostring(ns:GetTarget()~=nil) .. "/" .. tostring(ns:GetOperation()~=nil))
       Debug.Message("rush proc metadata " .. rush:GetCode() .. "/" .. rush:GetDescription() .. "/" .. rush:GetValue() .. "/" .. rush3:GetCode() .. "/" .. rush3:GetDescription() .. "/" .. rush3:GetValue())
       Debug.Message("rush proc registered " .. tostring(c:GetCardEffect(EFFECT_SUMMON_PROC)~=nil))
+      Debug.Message("three tribute condition " .. tostring(rush3:GetCondition()(rush3,c)) .. "/" .. tostring(rush3:GetCondition()(rush3,nil)))
+      Debug.Message("three tribute grant before " .. tostring(grant_target(rush3,c)))
+      c:RegisterFlagEffect(FLAG_TRIPLE_TRIBUTE,RESET_EVENT,0,1)
+      Debug.Message("three tribute grant after " .. FLAG_TRIPLE_TRIBUTE .. "/" .. tostring(grant_target(rush3,c)))
       `,
       "normal-procedure.lua",
     );
@@ -295,6 +311,9 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("normal proc callbacks true/true/true/true");
     expect(host.messages).toContain("rush proc metadata 32/9012/285212772/32/3456/285212673");
     expect(host.messages).toContain("rush proc registered true");
+    expect(host.messages).toContain("three tribute condition true/true");
+    expect(host.messages).toContain("three tribute grant before false");
+    expect(host.messages).toContain("three tribute grant after 160012000/true");
   });
 
   it("registers Lua persistent trap procedures and target filters", () => {

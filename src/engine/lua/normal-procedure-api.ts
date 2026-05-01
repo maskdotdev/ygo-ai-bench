@@ -84,13 +84,28 @@ export function installNormalProcedureApi(L: unknown, readLuaError: (state: unkn
       e1:SetValue(val)
       return e1
     end
+    function aux.ThreeTribGrantTarget(eftg)
+      return function(e,c)
+        return eftg(e,c) and c:GetFlagEffect(FLAG_TRIPLE_TRIBUTE)~=0
+      end
+    end
+    function aux.ThreeTributeCondition(otfilter)
+      return function(e,c)
+        if c==nil then return true end
+        if not c:IsLevelAbove(7) then return false end
+        local tp=e:GetHandlerPlayer()
+        local rg1=Duel.GetTributeGroup(c)
+        local rg2=Duel.GetMatchingGroup(otfilter,tp,LOCATION_MZONE,LOCATION_MZONE,nil,tp)
+        return rg1:GetCount()>=2 and rg2:GetCount()>=1
+      end
+    end
     function aux.summonproc3trib(c,desc,otfilter)
       local e1=Effect.CreateEffect(c)
       e1:SetType(EFFECT_TYPE_SINGLE)
       if desc then e1:SetDescription(desc) end
       e1:SetCode(EFFECT_SUMMON_PROC)
       e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
-      e1:SetCondition(aux.NormalSummonCondition1(3,3,otfilter,false))
+      e1:SetCondition(aux.ThreeTributeCondition(otfilter))
       e1:SetTarget(aux.NormalSummonTarget(3,3,otfilter))
       e1:SetOperation(aux.NormalSummonOperation(3,3,nil))
       e1:SetValue(SUMMON_TYPE_TRIBUTE+1)
