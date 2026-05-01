@@ -15,6 +15,8 @@ export const cardFieldNames = [
   "GetSetCard",
   "IsNotSetCard",
   "IsInfinity",
+  "IsRed",
+  "IsWhite",
   "GetOwner",
   "IsOwner",
   "GetControler",

@@ -13,10 +13,14 @@ describe("Lua field and query helpers", () => {
       { code: "300", name: "Continuous Spell", kind: "spell", typeFlags: 0x20002 },
       { code: "400", name: "Drone Monster", kind: "monster", typeFlags: 0x21, race: 0x2, setcodes: [0x581] },
       { code: "500", name: "Normal Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "95453143", name: "Known Red", kind: "monster", typeFlags: 0x21 },
+      { code: "89631139", name: "Known White", kind: "monster", typeFlags: 0x21 },
+      { code: "600", name: "Setcode Red", kind: "monster", typeFlags: 0x21, setcodes: [0x1045] },
+      { code: "700", name: "Setcode White", kind: "monster", typeFlags: 0x21, setcodes: [0x55d] },
     ];
-    const session = createDuel({ seed: 44, startingHandSize: 5, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 44, startingHandSize: 9, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500"] },
+      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -29,12 +33,17 @@ describe("Lua field and query helpers", () => {
       local continuous_spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local drone=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local normal_spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local known_red=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 95453143), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local known_white=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 89631139), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local setcode_red=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local setcode_white=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 700), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("exact type constants " .. TYPE_CONTINUOUS)
       Debug.Message("continuous trap " .. tostring(continuous_trap:IsContinuousTrap()) .. "/" .. tostring(continuous_trap:IsContinuousSpell()) .. "/" .. tostring(continuous_trap:IsRitualSpell()))
       Debug.Message("ritual spell " .. tostring(ritual_spell:IsRitualSpell()) .. "/" .. tostring(ritual_spell:IsContinuousTrap()))
       Debug.Message("continuous spell " .. tostring(continuous_spell:IsContinuousSpell()) .. "/" .. tostring(normal_spell:IsContinuousSpell()))
       Debug.Message("drone predicate " .. tostring(drone:IsDrone()) .. "/" .. tostring(normal_spell:IsDrone()))
       Debug.Message("set/race helpers " .. drone:GetSetCard() .. "/" .. tostring(drone:IsRaceExcept(RACE_DRAGON)) .. "/" .. tostring(drone:IsRaceExcept(RACE_SPELLCASTER|RACE_DRAGON)))
+      Debug.Message("anime colors " .. tostring(known_red:IsRed()) .. "/" .. tostring(setcode_red:IsRed()) .. "/" .. tostring(known_white:IsWhite()) .. "/" .. tostring(setcode_white:IsWhite()) .. "/" .. tostring(normal_spell:IsRed()) .. "/" .. tostring(normal_spell:IsWhite()))
       `,
       "exact-card-type-predicates.lua",
     );
@@ -46,6 +55,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("continuous spell true/false");
     expect(host.messages).toContain("drone predicate true/false");
     expect(host.messages).toContain("set/race helpers 1409/true/false");
+    expect(host.messages).toContain("anime colors true/true/true/true/false/false");
   });
 
   it("lets Lua scripts check linked monster-zone cards", () => {
