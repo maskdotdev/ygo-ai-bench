@@ -9,9 +9,31 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       local mt=c:GetMetatable(false)
       if mt then mt.fusion_materials={...} end
     end
+    function Fusion.AddProcMixRep(c,...)
+      local mt=c:GetMetatable(false)
+      if mt then mt.fusion_materials={...} end
+    end
+    function Fusion.AddProcMixN(c,...)
+      local mt=c:GetMetatable(false)
+      if mt then mt.fusion_materials={...} end
+    end
     function Fusion.AddProcFunRep(c,...)
       local mt=c:GetMetatable(false)
       if mt then mt.fusion_materials={...} end
+    end
+    function Fusion.AddContactProc(c,...)
+      local mt=c:GetMetatable(false)
+      if mt then mt.contact_fusion_proc={...} end
+    end
+    function Fusion.CheckWithHandler(fun,...)
+      local funs={fun,...}
+      return function(c,e,...)
+        if e and e.GetHandler and c==e:GetHandler() then return true end
+        for _,fil in ipairs(funs) do
+          if fil and fil(c,e,...) then return true end
+        end
+        return false
+      end
     end
     function Fusion.CreateSummonEff(params,...)
       local handler=type(params)=="table" and params.handler or params
@@ -62,11 +84,88 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       local mt=c:GetMetatable(false)
       if mt then mt.synchro_materials={...} end
     end
+    function Synchro.NonTuner(f,...)
+      local params={...}
+      return function(target,scard,sumtype,tp)
+        return target:IsNotTuner(scard,tp) and (not f or f(target,table.unpack(params)))
+      end
+    end
+    function Synchro.NonTunerEx(f,...)
+      local params={...}
+      return function(target,scard,sumtype,tp)
+        return target:IsNotTuner(scard,tp) and (not f or f(target,table.unpack(params),scard,sumtype,tp))
+      end
+    end
+    function Synchro.NonTunerEx2(f,...)
+      local params={...}
+      return function(target,scard,sumtype,tp)
+        return target:IsNotTuner(scard,tp) and (not f or f(target,scard,sumtype,tp,table.unpack(params)))
+      end
+    end
+    function Synchro.NonTunerCode(...)
+      local codes={...}
+      return function(target,scard,sumtype,tp)
+        return target:IsNotTuner(scard,tp) and target:IsSummonCode(scard,sumtype,tp,table.unpack(codes))
+      end
+    end
+    Pendulum=Pendulum or aux.PendulumProcedure or {}
+    aux.PendulumProcedure=Pendulum
+    Pendulum.AddProcedure=aux.FunctionWithNamedArgs(function(c,reg,desc)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_FIELD)
+      e1:SetDescription(desc or 1163)
+      e1:SetCode(EFFECT_SPSUMMON_PROC_G)
+      e1:SetProperty(EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_CANNOT_DISABLE)
+      e1:SetRange(LOCATION_PZONE)
+      e1:SetCondition(function(e,sc,inchain,re,rp)
+        if sc==nil then return true end
+        return Duel.IsPlayerCanPendulumSummon(sc:GetControler())
+      end)
+      e1:SetOperation(function(e,tp,eg,ep,ev,re,r,rp,sc,sg,inchain)
+        Duel.PendulumSummon(sc and sc:GetControler() or tp)
+      end)
+      e1:SetValue(SUMMON_TYPE_PENDULUM)
+      c:RegisterEffect(e1)
+      if reg==nil or reg then
+        local e2=Effect.CreateEffect(c)
+        e2:SetDescription(1160)
+        e2:SetType(EFFECT_TYPE_ACTIVATE)
+        e2:SetCode(EVENT_FREE_CHAIN)
+        e2:SetRange(LOCATION_HAND)
+        c:RegisterEffect(e2)
+      end
+    end,"handler","register","desc")
+    function Pendulum.Filter(c,e,tp,lscale,rscale,lvchk)
+      if lscale>rscale then lscale,rscale=rscale,lscale end
+      local lv=c.pendulum_level or c:GetLevel()
+      return (c:IsLocation(LOCATION_HAND) or (c:IsFaceup() and c:IsType(TYPE_PENDULUM)))
+        and (lvchk or (lv>lscale and lv<rscale) or c:IsHasEffect(511004423))
+        and c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_PENDULUM,tp,false,false)
+        and not c:IsForbidden()
+    end
+    function Pendulum.Condition()
+      return function(e,c,inchain,re,rp)
+        if c==nil then return true end
+        return Duel.IsPlayerCanPendulumSummon(c:GetControler())
+      end
+    end
+    function Pendulum.Operation()
+      return function(e,tp,eg,ep,ev,re,r,rp,c,sg,inchain)
+        Duel.PendulumSummon(c and c:GetControler() or tp)
+      end
+    end
+    function Pendulum.PlayerCanGainAdditionalPendulumSummon(player,effect_flag)
+      return Duel.IsTurnPlayer(player) and not Duel.IsPhase(PHASE_END)
+    end
     Cost=Cost or {}
-    function Cost.DetachFromSelf(count)
+    function Cost.DetachFromSelf(count,max,op)
+      max=max or count
       return function(e,tp,eg,ep,ev,re,r,rp,chk)
-        if chk==0 then return true end
-        return true
+        local c=e:GetHandler()
+        local min_count=type(count)=="function" and count(e,tp) or count
+        local max_count=type(max)=="function" and max(e,tp) or max
+        if chk==0 then return c and c:CheckRemoveOverlayCard(tp,min_count,REASON_COST) end
+        if c:RemoveOverlayCard(tp,min_count,max_count,REASON_COST)>0 and op then op(e,Duel.GetOperatedGroup()) end
       end
     end
     function Card.SetSPSummonOnce(c,id)
@@ -253,6 +352,21 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
     end
     Card.EnableGeminiState=Card.EnableGeminiStatus
     Card.IsGeminiState=Card.IsGeminiStatus
+    function Card.EnableCounterPermit(c,counter_type,location)
+      local mt=c:GetMetatable(false)
+      if mt then
+        mt.counter_place_list=mt.counter_place_list or {}
+        table.insert(mt.counter_place_list,counter_type)
+      end
+      local e0=Effect.CreateEffect(c)
+      e0:SetType(EFFECT_TYPE_SINGLE)
+      e0:SetProperty(EFFECT_FLAG_SINGLE_RANGE+EFFECT_FLAG_CANNOT_DISABLE)
+      if location then e0:SetRange(location) end
+      e0:SetCode(counter_type)
+      e0:SetValue(1)
+      c:RegisterEffect(e0)
+      return e0
+    end
     function Card.GetTributeRequirement(c)
       local mt=c:GetMetatable()
       if mt and mt.min_tribute_req and mt.max_tribute_req then return mt.min_tribute_req,mt.max_tribute_req end

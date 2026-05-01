@@ -24,6 +24,20 @@ describe("Lua script loading", () => {
     expect(host.getGlobalNumber("ATTRIBUTE_ALL")).toBe(0x85);
   });
 
+  it("installs standard Project Ignis race constants", () => {
+    const session = createDuel({ seed: 156, startingHandSize: 0 });
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("races " .. RACE_FIEND .. "/" .. RACE_ZOMBIE .. "/" .. RACE_DINOSAUR .. "/" .. RACE_CYBERSE .. "/" .. RACE_ILLUSION)
+      `,
+      "standard-races.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["races 8/16/65536/16777216/33554432"]);
+  });
+
   it("lets Lua scripts load other configured scripts once unless forced", () => {
     const session = createDuel({ seed: 91, startingHandSize: 0 });
     const scripts = new Map<string, string>([

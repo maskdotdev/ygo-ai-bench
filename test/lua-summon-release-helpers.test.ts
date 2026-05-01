@@ -107,6 +107,43 @@ describe("Lua summon and release helpers", () => {
     }
   });
 
+  it("lets Lua scripts register generic Fusion, Synchro, and cost procedure helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Procedure Probe", kind: "monster" },
+      { code: "200", name: "Discardable", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 157, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local s,id=GetID()
+      function s.initial_effect(c)
+        Fusion.AddProcMixRep(c,true,true,aux.FilterBoolFunctionEx(Card.IsRace,RACE_FIEND),1,99,aux.FilterBoolFunctionEx(Card.IsCode,100))
+        Fusion.AddProcMixN(c,true,true,aux.FilterBoolFunctionEx(Card.IsRace,RACE_FIEND),2)
+        Fusion.AddContactProc(c,function() return Group.CreateGroup() end,function() return true end,function() return true end)
+        Synchro.AddProcedure(c,nil,1,1,Synchro.NonTuner(nil),1,99)
+        Auxiliary.addLizardCheck(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetCost(Cost.AND(Cost.SoftOncePerChain(id),Cost.Discard()))
+        c:RegisterEffect(e)
+        local wrapped=Fusion.CheckWithHandler(aux.FALSE)
+        Debug.Message("procedure helpers " .. tostring(wrapped(c,{GetHandler=function() return c end})) .. "/" .. tostring(Synchro.NonTuner(nil)(c,c,0,0)))
+      end
+      `,
+      "c100.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(host.messages).toContain("procedure helpers true/true");
+  });
+
   it("lets Lua scripts query legal ritual material candidates", () => {
     const cards: DuelCardData[] = [
       { code: "100", alias: "101", name: "Aliased Ritual Material", kind: "monster" },

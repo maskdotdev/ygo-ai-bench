@@ -89,6 +89,57 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Onomat Ryzeal Lua 
   });
 });
 
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Magician Pendulum Lua deck probe", () => {
+  it("registers available Pendulum scripts without helper failures", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "magician-pendulum-mar-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 1");
+    expect(output).toContain("FALLBACK c100452013.lua");
+    expect(output).toContain("Local fallback stubs: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ritual of Light and Darkness Lua deck probe", () => {
+  it("keeps missing new-card scripts separate from helper compatibility failures", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "ritual-of-light-and-darkness-apr-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 10");
+    expect(output).toContain("Local fallback stubs: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Scripts not expected: 1");
+    expect(output).toContain("NO SCRIPT c46986414.lua");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
 function createProbeCards(main: string[], extra: string[]): DuelCardData[] {
   const extraCodes = new Set(extra);
   return Array.from(new Set([...main, ...extra])).map((code) => ({
