@@ -235,6 +235,31 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   lua.lua_setfield(L, -2, to_luastring("GetClassCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
+    const common = filterRef === undefined ? 0 : commonBinaryProperty(state, readGroupUids(state, 1), filterRef, readFilterArgs(state, 3));
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushboolean(state, common !== 0);
+    lua.lua_pushinteger(state, common);
+    return 2;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CheckSameProperty"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
+    const matches = filterRef === undefined || hasDistinctPropertyAssignment(state, readGroupUids(state, 1), filterRef, readFilterArgs(state, 3), false);
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushboolean(state, matches);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CheckDifferentProperty"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
+    const matches = filterRef === undefined || hasDistinctPropertyAssignment(state, readGroupUids(state, 1), filterRef, readFilterArgs(state, 3), true);
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushboolean(state, matches);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CheckDifferentPropertyBinary"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
     let mask = 0;
     if (filterRef !== undefined) {
       const args = readFilterArgs(state, 3);
@@ -394,6 +419,61 @@ function groupCardFilterValue(L: unknown, uid: string, filterRef: number, args: 
   const result = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : lua.lua_toboolean(L, -1) ? 1 : 0;
   lua.lua_pop(L, 1);
   return result;
+}
+
+function groupCardPropertyValues(L: unknown, uid: string, filterRef: number, args: LuaFilterArgs): number[] {
+  const top = lua.lua_gettop(L);
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, filterRef);
+  pushCardTable(L, uid);
+  for (let index = 0; index < args.count; index += 1) lua.lua_pushvalue(L, args.start + index);
+  const status = lua.lua_pcall(L, 1 + args.count, lua.LUA_MULTRET, 0);
+  if (status !== lua.LUA_OK) {
+    lua.lua_settop(L, top);
+    return [];
+  }
+  const values: number[] = [];
+  for (let index = top + 1; index <= lua.lua_gettop(L); index += 1) {
+    if (lua.lua_isnumber(L, index)) values.push(lua.lua_tointeger(L, index));
+  }
+  lua.lua_settop(L, top);
+  return values;
+}
+
+function commonBinaryProperty(L: unknown, uids: string[], filterRef: number, args: LuaFilterArgs): number {
+  let common: number | undefined;
+  for (const uid of uids) {
+    const value = groupCardPropertyValues(L, uid, filterRef, args)[0] ?? 0;
+    common = common === undefined ? value : common & value;
+    if (common === 0) return 0;
+  }
+  return common ?? 0;
+}
+
+function hasDistinctPropertyAssignment(L: unknown, uids: string[], filterRef: number, args: LuaFilterArgs, binary: boolean): boolean {
+  if (uids.length < 2) return true;
+  const options = uids.map((uid) => binary ? binaryFlags(groupCardPropertyValues(L, uid, filterRef, args)[0] ?? 0) : groupCardPropertyValues(L, uid, filterRef, args));
+  return assignDistinctProperty(options, 0, new Set());
+}
+
+function assignDistinctProperty(options: number[][], index: number, used: Set<number>): boolean {
+  if (index >= options.length) return true;
+  for (const value of options[index] ?? []) {
+    if (value === 0 || used.has(value)) continue;
+    used.add(value);
+    if (assignDistinctProperty(options, index + 1, used)) return true;
+    used.delete(value);
+  }
+  return false;
+}
+
+function binaryFlags(mask: number): number[] {
+  const values: number[] = [];
+  let bit = 1;
+  while (bit <= mask) {
+    if ((mask & bit) !== 0) values.push(bit);
+    bit <<= 1;
+  }
+  return values;
 }
 
 function compareGroupCards(L: unknown, a: string, b: string, comparatorRef: number, args: LuaFilterArgs): number {
@@ -583,6 +663,9 @@ const groupFieldNames = [
   "IsExists",
   "Match",
   "GetClassCount",
+  "CheckSameProperty",
+  "CheckDifferentProperty",
+  "CheckDifferentPropertyBinary",
   "GetBinClassCount",
   "GetSum",
   "GetMaxGroup",

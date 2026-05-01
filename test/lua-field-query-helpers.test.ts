@@ -1228,6 +1228,25 @@ describe("Lua field and query helpers", () => {
       local second = mixed:GetNext()
       local third = mixed:GetNext()
       local fourth = mixed:GetNext()
+      local same_common, same_value = Group.FromCards(first, third):CheckSameProperty(function(c)
+        if c:IsCode(100) then return 0x3 end
+        return 0x2
+      end)
+      local same_none, same_none_value = Group.FromCards(first, second):CheckSameProperty(function(c)
+        if c:IsCode(100) then return 0x1 end
+        return 0x2
+      end)
+      Debug.Message("group same property " .. tostring(same_common) .. "/" .. same_value .. "/" .. tostring(same_none) .. "/" .. same_none_value)
+      Debug.Message("group different property " .. tostring(Group.FromCards(first, second):CheckDifferentProperty(Card.GetCode)) .. "/" .. tostring(Group.FromCards(first, second):CheckDifferentProperty(function(c) return 1 end)))
+      Debug.Message("group different property multi " .. tostring(Group.FromCards(first, second):CheckDifferentProperty(function(c)
+        if c:IsCode(100) then return 1,2 end
+        return 2,3
+      end)))
+      Debug.Message("group different binary " .. tostring(Group.FromCards(first, second, third):CheckDifferentPropertyBinary(function(c)
+        if c:IsCode(100) then return 0x1 end
+        if c:IsCode(200) then return 0x3 end
+        return 0x4
+      end)) .. "/" .. tostring(Group.FromCards(first, second):CheckDifferentPropertyBinary(function(c) return 0x1 end)))
       Debug.Message("mixed codes " .. first:GetCode() .. "," .. second:GetCode() .. "," .. third:GetCode() .. "," .. fourth:GetCode())
       local own_grave = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
       local opponent_deck = Duel.GetFieldCard(1, LOCATION_DECK, 0)
@@ -1267,6 +1286,10 @@ describe("Lua field and query helpers", () => {
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("mixed count 4");
     expect(host.messages).toContain('mixed tostring Group: { "size": 4 }/Group: { "size": 4 }');
+    expect(host.messages).toContain("group same property true/2/false/0");
+    expect(host.messages).toContain("group different property true/false");
+    expect(host.messages).toContain("group different property multi true");
+    expect(host.messages).toContain("group different binary true/false");
     expect(host.messages).toContain("field count 4");
     expect(host.messages).toContain("field rush count 4");
     expect(host.messages).toContain("banished count 1");
