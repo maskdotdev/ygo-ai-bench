@@ -316,6 +316,10 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsDestructable", session, (_, uid) => Boolean(uid && canDestroyCard(session.state, uid)));
   pushBooleanGetter(L, "IsDiscardable", session, (card, uid) => Boolean(card && uid && card.location === "hand" && canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.cost)));
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCreateEffectRelation(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CreateEffectRelation"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushReleaseEffectRelation(state, session));
+  lua.lua_setfield(L, -2, to_luastring("ReleaseEffectRelation"));
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -530,6 +534,23 @@ function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   }
   for (const effect of effects) hostState.pushEffectTable(L, effect.id);
   return effects.length;
+}
+
+function pushCreateEffectRelation(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const effectId = readTableNumberField(L, 2, "__effect_id");
+  if (card && effectId !== undefined) {
+    card.effectRelationIds = card.effectRelationIds ?? [];
+    if (!card.effectRelationIds.includes(effectId)) card.effectRelationIds.push(effectId);
+  }
+  return 0;
+}
+
+function pushReleaseEffectRelation(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const effectId = readTableNumberField(L, 2, "__effect_id");
+  if (card && effectId !== undefined) card.effectRelationIds = (card.effectRelationIds ?? []).filter((id) => id !== effectId);
+  return 0;
 }
 
 function pushRitualLevel<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {

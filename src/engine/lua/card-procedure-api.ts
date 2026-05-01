@@ -182,6 +182,8 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
     function Card.IsGeminiStatus(c)
       return c:IsHasEffect(EFFECT_GEMINI_STATUS)~=nil
     end
+    Card.EnableGeminiState=Card.EnableGeminiStatus
+    Card.IsGeminiState=Card.IsGeminiStatus
     function Card.GetTributeRequirement(c)
       local mt=c:GetMetatable()
       if mt and mt.min_tribute_req and mt.max_tribute_req then return mt.min_tribute_req,mt.max_tribute_req end

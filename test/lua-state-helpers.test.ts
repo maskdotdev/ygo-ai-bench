@@ -1374,6 +1374,33 @@ describe("Lua state helpers", () => {
     expect(session.state.cards.find((card) => card.code === "100")?.cancelToGrave).toBe(false);
   });
 
+  it("stores Lua effect relation state on card instances", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Effect Relation Source", kind: "monster" }];
+    const session = createDuel({ seed: 30, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      c:CreateEffectRelation(e)
+      Debug.Message("effect relation created")
+      c:ReleaseEffectRelation(e)
+      Debug.Message("effect relation released")
+      `,
+      "effect-relation.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["effect relation created", "effect relation released"]);
+    expect(session.state.cards.find((card) => card.code === "100")?.effectRelationIds).toEqual([]);
+  });
+
   it("checks Rush trait change availability from current and original traits", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Rush Trait Source", kind: "monster", race: 0x2, attribute: 0x10 }];
     const session = createDuel({ seed: 31, startingHandSize: 1, cardReader: createCardReader(cards) });

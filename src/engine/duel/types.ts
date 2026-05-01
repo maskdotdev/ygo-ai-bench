@@ -79,6 +79,7 @@ export interface DuelCardInstance {
   reason?: number;
   reasonPlayer?: PlayerId;
   cancelToGrave?: boolean;
+  effectRelationIds?: number[];
   turnId?: number;
   summonType?: DuelSummonType;
   summonTypeCode?: number;
