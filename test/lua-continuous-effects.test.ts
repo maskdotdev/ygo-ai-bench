@@ -108,6 +108,7 @@ describe("Lua continuous effects", () => {
         e:SetRange(LOCATION_MZONE)
         e:SetTargetRange(LOCATION_MZONE,0)
         e:SetTarget(function(e,tc) return tc:IsCode(200) end)
+        e:SetValue(aux.tgoval)
         c:RegisterEffect(e)
       end
       `,
@@ -122,7 +123,10 @@ describe("Lua continuous effects", () => {
       local open=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local effect=Effect.CreateEffect(open)
       effect:SetOwnerPlayer(1)
+      local own_effect=Effect.CreateEffect(open)
+      own_effect:SetOwnerPlayer(0)
       Debug.Message("can target protected " .. tostring(protected:IsCanBeEffectTarget(effect)))
+      Debug.Message("can target protected own " .. tostring(protected:IsCanBeEffectTarget(own_effect)))
       Debug.Message("can target open " .. tostring(open:IsCanBeEffectTarget(effect)))
       Debug.Message("can target protected nil " .. tostring(protected:IsCanBeEffectTarget(nil)))
       `,
@@ -131,8 +135,9 @@ describe("Lua continuous effects", () => {
 
     expect(check.ok, check.error).toBe(true);
     expect(host.messages).toContain("can target protected false");
+    expect(host.messages).toContain("can target protected own true");
     expect(host.messages).toContain("can target open true");
-    expect(host.messages).toContain("can target protected nil false");
+    expect(host.messages).toContain("can target protected nil true");
   });
 
   it("returns active Lua effect tables from Card.IsHasEffect", () => {

@@ -1,7 +1,10 @@
+import type { PlayerId } from "#duel/types.js";
+
 export interface LuaCardApiEffectRecord {
   id: number;
   typeFlags?: number;
   sourceUid?: string;
+  ownerPlayer?: PlayerId;
   code?: number;
   property?: number;
   value?: number;

@@ -93,7 +93,7 @@ function pushIsCanBeEffectTarget<EffectRecord extends LuaCardApiEffectRecord>(L:
     lua.lua_pushboolean(L, false);
     return 1;
   }
-  const cannotTarget = matchingLuaEffects(session.state, card, 71, hostState).some((effect) => cannotTargetEffectApplies(L, effect, card, targetEffect, hostState));
+  const cannotTarget = matchingLuaEffects(session.state, card, 71, hostState).some((effect) => cannotTargetEffectApplies(L, session, effect, card, targetEffect, hostState));
   lua.lua_pushboolean(L, !cannotTarget);
   return 1;
 }
@@ -134,6 +134,7 @@ function immuneEffectApplies<EffectRecord extends LuaCardApiEffectRecord>(
 
 function cannotTargetEffectApplies<EffectRecord extends LuaCardApiEffectRecord>(
   L: unknown,
+  session: DuelSession,
   cannotTargetEffect: EffectRecord,
   card: DuelCardInstance,
   targetEffect: EffectRecord | undefined,
@@ -145,7 +146,7 @@ function cannotTargetEffectApplies<EffectRecord extends LuaCardApiEffectRecord>(
   lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, cannotTargetEffect.valueRef);
   hostState.pushEffectTable(L, cannotTargetEffect.id);
   hostState.pushEffectTable(L, targetEffect.id);
-  lua.lua_pushinteger(L, targetEffect.sourceUid === undefined ? 0 : targetEffect.sourceUid === cannotTargetEffect.sourceUid ? 0 : 1);
+  lua.lua_pushinteger(L, effectOwnerPlayer(session, targetEffect));
   const status = lua.lua_pcall(L, 3, 1, 0);
   if (status !== lua.LUA_OK) {
     lua.lua_pop(L, 1);
@@ -154,6 +155,12 @@ function cannotTargetEffectApplies<EffectRecord extends LuaCardApiEffectRecord>(
   const result = lua.lua_toboolean(L, -1);
   lua.lua_pop(L, 1);
   return Boolean(result);
+}
+
+function effectOwnerPlayer<EffectRecord extends LuaCardApiEffectRecord>(session: DuelSession, effect: EffectRecord): PlayerId {
+  if (effect.ownerPlayer !== undefined) return effect.ownerPlayer;
+  const source = effect.sourceUid ? session.state.cards.find((card) => card.uid === effect.sourceUid) : undefined;
+  return source?.controller ?? 0;
 }
 
 function cardTargetFilterApplies<EffectRecord extends LuaCardApiEffectRecord>(
