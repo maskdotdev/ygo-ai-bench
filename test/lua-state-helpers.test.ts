@@ -1348,6 +1348,32 @@ describe("Lua state helpers", () => {
     expect(hintLogs[1]?.detail).toMatch(/^1 selected: (100|200)$/);
   });
 
+  it("stores Lua cancel-to-grave state on card instances", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Cancel Grave Source", kind: "spell" }];
+    const session = createDuel({ seed: 29, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      c:CancelToGrave()
+      Debug.Message("cancel grave set")
+      c:CancelToGrave(false)
+      Debug.Message("cancel grave cleared")
+      `,
+      "cancel-to-grave.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["cancel grave set", "cancel grave cleared"]);
+    expect(session.state.cards.find((card) => card.code === "100")?.cancelToGrave).toBe(false);
+  });
+
   it("checks Lua sequence movement adjacency conditions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Blocked", kind: "monster" },

@@ -316,6 +316,12 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsRelateToEffect", session, (card) => Boolean(card));
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    if (card) card.cancelToGrave = lua.lua_isnoneornil(state, 2) ? true : lua.lua_toboolean(state, 2);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CancelToGrave"));
   installCardEffectQueryApi(L, session, hostState);
   lua.lua_pushcfunction(L, (state: unknown) => pushIsHasEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsHasEffect"));
