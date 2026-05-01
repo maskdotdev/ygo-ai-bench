@@ -27,6 +27,8 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("SetOperationInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, hostState.operationInfos));
   lua.lua_setfield(L, -2, to_luastring("GetOperationInfo"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationCount(state, hostState.operationInfos));
+  lua.lua_setfield(L, -2, to_luastring("GetOperationCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushClearOperationInfo(state, hostState.operationInfos));
   lua.lua_setfield(L, -2, to_luastring("ClearOperationInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSetOperationInfo(state, hostState.possibleOperationInfos));
@@ -126,6 +128,12 @@ function pushGetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]
   lua.lua_pushinteger(L, info.player);
   lua.lua_pushinteger(L, info.parameter);
   return 6;
+}
+
+function pushGetOperationCount(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {
+  const chainIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0;
+  lua.lua_pushinteger(L, operationInfos.filter((info) => info.chainIndex === chainIndex).length);
+  return 1;
 }
 
 function pushClearOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {

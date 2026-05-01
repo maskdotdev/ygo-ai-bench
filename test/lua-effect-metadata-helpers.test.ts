@@ -1037,6 +1037,7 @@ describe("Lua effect metadata helpers", () => {
         e:SetOperation(function(e,c)
           local ok,cat,g,count,p,param=Duel.GetOperationInfo(0, CATEGORY_TOHAND)
           Debug.Message("operation info " .. tostring(ok) .. "/" .. cat .. "/" .. g:GetCount() .. "/" .. count .. "/" .. p .. "/" .. param)
+          Debug.Message("operation count " .. Duel.GetOperationCount(0))
           local possible,pcat,pg,pcount,pp,pparam=Duel.GetPossibleOperationInfo(0, CATEGORY_DRAW)
           Debug.Message("possible operation info " .. tostring(possible) .. "/" .. pcat .. "/" .. pg:GetCount() .. "/" .. pcount .. "/" .. pp .. "/" .. pparam)
           local committed_draw=Duel.GetOperationInfo(0, CATEGORY_DRAW)
@@ -1062,6 +1063,7 @@ describe("Lua effect metadata helpers", () => {
     applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
     applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
     expect(host.messages).toContain("operation info true/8/1/1/0/0");
+    expect(host.messages).toContain("operation count 1");
     expect(host.messages).toContain("possible operation info true/65536/0/0/1/2");
     expect(host.messages).toContain("possible separate false");
     expect(host.messages).toContain("target relates true");
