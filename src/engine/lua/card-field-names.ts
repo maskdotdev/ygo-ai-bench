@@ -270,4 +270,5 @@ export const cardFieldNames = [
   "GetFlagEffectLabel",
   "SetFlagEffectLabel",
   "ResetFlagEffect",
+  "IsDeckMaster",
 ] as const;

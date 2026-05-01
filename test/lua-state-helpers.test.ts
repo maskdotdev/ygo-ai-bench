@@ -356,6 +356,7 @@ describe("Lua state helpers", () => {
       Debug.Message("duel type default " .. tostring(Duel.IsDuelType(DUEL_EMZONE)) .. "/" .. tostring(Duel.IsDuelType(DUEL_SEPARATE_PZONE)))
       Debug.Message("duel type high " .. tostring(Duel.IsDuelType(DUEL_NORMAL_SUMMON_FACEUP_DEF)))
       Debug.Message("deck master default " .. tostring(Duel.IsDeckMaster(0, 153000001)) .. "/" .. tostring(Duel.GetDeckMaster(0)==nil))
+      Debug.Message("deck master flag constant " .. FLAG_DECK_MASTER)
       Debug.Message("additional tribute default " .. tostring(Duel.IsPlayerCanAdditionalTributeSummon(0)))
       Duel.RegisterFlagEffect(0, 52112003, RESET_EVENT, 0, 1)
       Debug.Message("additional tribute flagged " .. tostring(Duel.IsPlayerCanAdditionalTributeSummon(0)))
@@ -373,6 +374,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("duel type default true/false");
     expect(host.messages).toContain("duel type high true");
     expect(host.messages).toContain("deck master default false/true");
+    expect(host.messages).toContain("deck master flag constant 153000000");
     expect(host.messages).toContain("additional tribute default true");
     expect(host.messages).toContain("additional tribute flagged false");
     expect(host.messages).toContain("additional tribute reset true");
@@ -445,6 +447,34 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("duel flag after 0");
     expect(host.messages).toContain("card flag after 0");
     expect(session.state.flagEffects).toHaveLength(0);
+  });
+
+  it("lets Lua scripts identify deck master flagged cards", () => {
+    const cards: DuelCardData[] = [{ code: "153000001", name: "Deck Master Probe", kind: "monster" }];
+    const session = createDuel({ seed: 178, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["153000001"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("deck master card default " .. tostring(c:IsDeckMaster()))
+      c:RegisterFlagEffect(FLAG_DECK_MASTER, RESET_EVENT, 0, 1)
+      Debug.Message("deck master card flagged " .. tostring(c:IsDeckMaster()) .. "/" .. c:GetFlagEffect(FLAG_DECK_MASTER))
+      c:ResetFlagEffect(FLAG_DECK_MASTER)
+      Debug.Message("deck master card reset " .. tostring(c:IsDeckMaster()))
+      `,
+      "deck-master-card-flag.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("deck master card default false");
+    expect(host.messages).toContain("deck master card flagged true/1");
+    expect(host.messages).toContain("deck master card reset false");
   });
 
   it("expires Lua flag effects at chain reset boundaries", () => {

@@ -4,6 +4,7 @@ import { readCardUid } from "#lua/api-utils.js";
 import type { DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
+const flagDeckMaster = 153000000;
 
 export function installCardFlagApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -58,4 +59,10 @@ export function installCardFlagApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ResetFlagEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    lua.lua_pushboolean(state, Boolean(uid && getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: uid }, flagDeckMaster) > 0));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsDeckMaster"));
 }
