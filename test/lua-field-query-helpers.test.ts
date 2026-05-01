@@ -1395,6 +1395,57 @@ describe("Lua field and query helpers", () => {
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ position: "faceUpAttack", faceUp: true });
   });
 
+  it("lets Lua scripts toggle Rush face-up attack or face-down defense", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Rush Attack", kind: "monster" },
+      { code: "200", name: "Rush Set", kind: "monster" },
+      { code: "300", name: "Rush Defense", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 156, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const attack = session.state.cards.find((card) => card.code === "100");
+    const set = session.state.cards.find((card) => card.code === "200");
+    const defense = session.state.cards.find((card) => card.code === "300");
+    expect(attack).toBeDefined();
+    expect(set).toBeDefined();
+    expect(defense).toBeDefined();
+    moveDuelCard(session.state, attack!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, set!.uid, "monsterZone", 0).position = "faceDownDefense";
+    set!.faceUp = false;
+    moveDuelCard(session.state, defense!.uid, "monsterZone", 0).position = "faceUpDefense";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local attack = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local set = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local defense = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Duel.ChangeToFaceupAttackOrFacedownDefense(attack, 0)
+      Debug.Message("rush attack toggle " .. attack:GetPosition() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Duel.ChangeToFaceupAttackOrFacedownDefense(set, 0)
+      Debug.Message("rush set toggle " .. set:GetPosition() .. "/" .. tostring(set:IsFaceup()))
+      Duel.ChangeToFaceupAttackOrFacedownDefense(defense, 0)
+      Debug.Message("rush defense toggle " .. defense:GetPosition())
+      Duel.ChangeToFaceupAttackOrFacedownDefense(defense, 0)
+      Debug.Message("rush repeat operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "rush-position-toggle.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("rush attack toggle 8/100");
+    expect(host.messages).toContain("rush set toggle 1/true");
+    expect(host.messages).toContain("rush defense toggle 1");
+    expect(host.messages).toContain("rush repeat operated 0");
+    expect(attack).toMatchObject({ position: "faceDownDefense", faceUp: false });
+    expect(set).toMatchObject({ position: "faceUpAttack", faceUp: true });
+    expect(defense).toMatchObject({ position: "faceUpAttack", faceUp: true });
+  });
+
   it("lets Lua scripts swap field card sequences", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Monster A", kind: "monster" },

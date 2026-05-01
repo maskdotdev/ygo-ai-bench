@@ -3,6 +3,7 @@ import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-stat
 import { createRng } from "#engine/rng.js";
 import {
   banishDuelCard,
+  canChangeDuelCardPosition,
   canMoveDuelCardToLocation,
   changeDuelCardPosition,
   detachDuelOverlayMaterials,
@@ -52,6 +53,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("SwapControl"));
   lua.lua_pushcfunction(L, (state: unknown) => pushChangePosition(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ChangePosition"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushChangeToFaceupAttackOrFacedownDefense(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("ChangeToFaceupAttackOrFacedownDefense"));
   lua.lua_pushcfunction(L, (state: unknown) => pushMoveToField(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("MoveToField"));
   lua.lua_pushcfunction(L, (state: unknown) => pushActivateFieldSpell(state, session, hostState));
@@ -205,6 +208,23 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
   setOperatedUids(hostState, changed);
   lua.lua_pushinteger(L, changed.length);
   return 1;
+}
+
+function pushChangeToFaceupAttackOrFacedownDefense(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const uid = readCardUid(L, 1);
+  const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+  const nextPosition = card ? faceupAttackOrFacedownDefensePosition(card) : undefined;
+  if (!uid || !card || !nextPosition || !canChangeDuelCardPosition(session.state, uid, nextPosition)) {
+    setOperatedUids(hostState, []);
+    return 0;
+  }
+  try {
+    changeDuelCardPosition(session.state, card.controller, uid, nextPosition);
+    setOperatedUids(hostState, [uid]);
+  } catch {
+    setOperatedUids(hostState, []);
+  }
+  return 0;
 }
 
 function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
@@ -607,6 +627,13 @@ function readMoveReason(L: unknown, index: number, extraReason: number): number 
 function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, position: CardPosition): void {
   card.position = position;
   card.faceUp = position !== "faceDownDefense";
+}
+
+function faceupAttackOrFacedownDefensePosition(card: DuelCardInstance): CardPosition | undefined {
+  if (card.position === "faceUpAttack") return "faceDownDefense";
+  if (card.position === "faceDownDefense") return "faceUpAttack";
+  if (card.position === "faceUpDefense") return "faceUpAttack";
+  return undefined;
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {
