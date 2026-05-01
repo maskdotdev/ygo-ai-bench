@@ -273,6 +273,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsPixie", code: "44663232", setcode: 0x53e },
       { method: "IsPriestess", code: "95511642", setcode: 0x53f },
       { method: "IsRaccoon", code: "92729410", setcode: 0x542 },
+      { method: "IsSeal", code: "63102017", setcode: 0x545 },
       { method: "IsStarvingVenemy", code: "22070401", setcode: 0x576 },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];

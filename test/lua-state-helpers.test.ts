@@ -1898,6 +1898,49 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("reason card 100/true/false/true");
   });
 
+  it("checks Lua card-to-card field relation", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Related Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Related Target", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 222, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((candidate) => candidate.code === "100");
+    const target = session.state.cards.find((candidate) => candidate.code === "200");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const related = host.loadScript(
+      `
+      local source=Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local target=Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      Debug.Message("card relation field " .. tostring(source:IsRelateToCard(target)) .. "/" .. tostring(target:IsRelateToCard(source)))
+      `,
+      "card-relation-field.lua",
+    );
+    expect(related.ok, related.error).toBe(true);
+    expect(host.messages).toContain("card relation field true/true");
+
+    moveDuelCard(session.state, target!.uid, "graveyard", 0);
+    const moved = host.loadScript(
+      `
+      local source=Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("card relation moved " .. tostring(source:IsRelateToCard(target)))
+      `,
+      "card-relation-moved.lua",
+    );
+    expect(moved.ok, moved.error).toBe(true);
+    expect(host.messages).toContain("card relation moved false");
+  });
+
   it("lets Lua scripts check destroyed-by-opponent-from-field conditions", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Destroyed Probe", kind: "monster" }];
     const session = createDuel({ seed: 207, startingHandSize: 1, cardReader: createCardReader(cards) });
