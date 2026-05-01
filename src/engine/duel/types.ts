@@ -90,6 +90,8 @@ export interface DuelCardInstance {
   summonPhase?: DuelPhase;
   summonMaterialUids?: string[];
   attackModifier?: number;
+  defenseModifier?: number;
+  levelModifier?: number;
   uniqueOnField?: {
     self: boolean;
     opponent: boolean;

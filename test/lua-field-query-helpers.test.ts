@@ -1274,6 +1274,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("stats " .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. c:GetLevel())
       Debug.Message("text stats " .. c:GetTextAttack() .. "/" .. c:GetTextDefense() .. "/" .. tostring(c:IsTextAttack(2500)) .. "/" .. tostring(c:IsTextDefense(2100)))
       Debug.Message("attack update " .. c:UpdateAttack(300, RESETS_STANDARD_PHASE_END) .. "/" .. c:GetAttack() .. "/" .. c:GetBaseAttack() .. "/" .. tostring(c:IsAttack(2800)) .. "/" .. tostring(c:IsTextAttack(2800)))
+      Debug.Message("defense update " .. c:UpdateDefense(-400, RESETS_STANDARD_PHASE_END) .. "/" .. c:GetDefense() .. "/" .. c:GetBaseDefense() .. "/" .. tostring(c:IsDefense(1700)) .. "/" .. tostring(c:IsTextDefense(1700)))
       Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsBaseAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsBaseDefense(2100)) .. "/" .. tostring(c:IsLevel(7)) .. "/" .. tostring(c:IsLevelBetween(8,6)) .. "/" .. tostring(c:IsLevelBetween(1,6)))
       Debug.Message("stat comparisons " .. tostring(c:IsAttackAbove(2400)) .. "/" .. tostring(c:IsAttackBelow(2600)) .. "/" .. tostring(c:IsDefenseAbove(2200)) .. "/" .. tostring(c:IsDefenseBelow(2200)) .. "/" .. tostring(c:IsLevelAbove(6)) .. "/" .. tostring(c:IsLevelBelow(6)))
       Debug.Message("original stat comparisons " .. tostring(c:IsOriginalAttack(2500)) .. "/" .. tostring(c:IsOriginalAttackAbove(2400)) .. "/" .. tostring(c:IsOriginalAttackBelow(2600)) .. "/" .. tostring(c:IsOriginalDefense(2100)) .. "/" .. tostring(c:IsOriginalDefenseAbove(2200)) .. "/" .. tostring(c:IsOriginalDefenseBelow(2200)) .. "/" .. tostring(c:IsOriginalLevelAbove(6)) .. "/" .. tostring(c:IsOriginalLevelBelow(6)))
@@ -1346,6 +1347,7 @@ describe("Lua field and query helpers", () => {
       function_synchro:SetValue(function(e,sc) return sc:GetLevel()+1 end)
       normal:RegisterEffect(function_synchro)
       Debug.Message("synchro levels " .. xyz:GetSynchroLevel() .. "/" .. c:GetSynchroLevel() .. "/" .. normal:GetSynchroLevel(c))
+      Debug.Message("level update " .. c:UpdateLevel(-20, RESETS_STANDARD_PHASE_END) .. "/" .. c:GetLevel() .. "/" .. c:GetOriginalLevel() .. "/" .. tostring(c:IsLevel(1)) .. "/" .. tostring(c:IsLevelBelow(2)))
       Debug.Message("scale hand " .. pendulum:GetScale() .. "/" .. pendulum:GetLeftScale() .. "/" .. pendulum:GetRightScale() .. "/" .. pendulum:GetOriginalLeftScale() .. "/" .. pendulum:GetOriginalRightScale() .. "/" .. tostring(pendulum:IsScale(3)) .. "/" .. tostring(pendulum:IsOddScale()) .. "/" .. tostring(pendulum:IsEvenScale()))
       Duel.MoveToField(pendulum,0,0,LOCATION_PZONE,POS_FACEUP,true,1)
       Debug.Message("scale pzone " .. pendulum:GetSequence() .. "/" .. pendulum:GetScale() .. "/" .. tostring(pendulum:IsOddScale()) .. "/" .. tostring(pendulum:IsEvenScale()))
@@ -1384,8 +1386,9 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("stats 2500/2100/7");
     expect(host.messages).toContain("text stats 2500/2100/true/true");
     expect(host.messages).toContain("attack update 300/2800/2500/true/true");
+    expect(host.messages).toContain("defense update -400/1700/2100/true/true");
     expect(host.messages).toContain("unknown text stats -2/-2/true/true");
-    expect(host.messages).toContain("stat predicates false/true/true/true/true/true/false");
+    expect(host.messages).toContain("stat predicates false/true/false/true/true/true/false");
     expect(host.messages).toContain("stat comparisons true/false/false/true/true/false");
     expect(host.messages).toContain("original stat comparisons true/true/true/true/false/true/true/false");
     expect(host.messages).toContain("code checks true/false/true");
@@ -1415,6 +1418,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("ritual function level 9");
     expect(host.messages).toContain("ritual summoning level 7");
     expect(host.messages).toContain("synchro levels 4/5/8");
+    expect(host.messages).toContain("level update -6/1/7/true/true");
     expect(host.messages).toContain("scale hand 3/3/8/3/8/true/true/false");
     expect(host.messages).toContain("scale pzone 0/3/true/false");
     expect(host.messages).toContain("race 2 true/true");
