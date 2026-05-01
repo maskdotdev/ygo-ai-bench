@@ -5,6 +5,8 @@ const { lua, lauxlib, to_luastring } = fengari;
 export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) => string): void {
   const source = `
     Cost=Cost or {}
+    function aux.NULL()
+    end
     function Cost.SelfBanish(e,tp,eg,ep,ev,re,r,rp,chk)
       local c=e:GetHandler()
       if chk==0 then return c and c:IsAbleToRemoveAsCost() end
@@ -18,6 +20,17 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
     end
     function aux.DoubleTributeCon(e,tp,eg,ep,ev,re,r,rp)
       return not Duel.IsPlayerAffectedByEffect(tp,FLAG_NO_TRIBUTE)
+    end
+    function aux.LavaCheck(sg,e,tp,mg)
+      return Duel.GetMZoneCount(1-tp,sg,tp)>0
+    end
+    function aux.LavaCondition(required,filter)
+      return function(e,c)
+        if c==nil then return true end
+        local tp=c:GetControler()
+        local mg=Duel.GetMatchingGroup(aux.AND(Card.IsReleasable,filter),tp,0,LOCATION_MZONE,nil)
+        return aux.SelectUnselectGroup(mg,e,tp,required,required,aux.LavaCheck,0):GetCount()>0
+      end
     end
     function aux.ReincarnationRitualFilter(c,rc,id,tp)
       return c:IsSummonCode(rc,SUMMON_TYPE_RITUAL,tp,id) and c:IsControler(tp) and c:IsLocation(LOCATION_MZONE)

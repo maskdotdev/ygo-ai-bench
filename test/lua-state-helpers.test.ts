@@ -1167,6 +1167,49 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("target count 2");
   });
 
+  it("provides no-op and Lava condition aux helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lava Source", kind: "monster" },
+      { code: "200", name: "Opponent Release", kind: "monster" },
+      { code: "300", name: "Filtered Release", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 173, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200", "300"] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const first = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    const second = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(first).toBeTruthy();
+    expect(second).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, first!.uid, "monsterZone", 1);
+    moveDuelCard(session.state, second!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      e:SetOperation(aux.NULL)
+      Debug.Message("null op " .. tostring(e:GetOperation()~=nil) .. "/" .. tostring(e:GetOperation()(e,0,nil,0,0,nil,0,0)==nil))
+      local one=aux.LavaCondition(1,nil)
+      local two=aux.LavaCondition(2,nil)
+      local filtered=aux.LavaCondition(1,aux.FilterBoolFunction(Card.IsCode,300))
+      local missing=aux.LavaCondition(1,aux.FilterBoolFunction(Card.IsCode,999))
+      Debug.Message("lava condition " .. tostring(one(e,c)) .. "/" .. tostring(two(e,c)) .. "/" .. tostring(filtered(e,c)) .. "/" .. tostring(missing(e,c)) .. "/" .. tostring(one(e,nil)))
+      `,
+      "aux-null-lava.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("null op true/true");
+    expect(host.messages).toContain("lava condition true/true/true/false/true");
+  });
+
   it("runs delayed Lua operations on matching phase transitions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Delay Source", kind: "monster" },
