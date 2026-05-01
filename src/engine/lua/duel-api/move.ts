@@ -93,6 +93,7 @@ function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: 
     const before = movementSnapshot(card);
     try {
       const result = moveDuelCardWithRedirects(session.state, uid, location, card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      assignReasonCard(result, hostState);
       if (requestedPosition) applySummonPosition(result, requestedPosition);
       if (didMove(result, before)) moved.push(uid);
     } catch {
@@ -598,6 +599,7 @@ function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMov
     const before = movementSnapshot(card);
     try {
       const result = mover(session.state, uid, card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      assignReasonCard(result, hostState);
       if (didMove(result, before)) moved.push(uid);
     } catch {
       // EDOPro-style helpers report the number of moved cards; illegal moves simply fail.
@@ -653,6 +655,7 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
     const before = movementSnapshot(card);
     try {
       const result = moveDuelCardWithRedirects(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      assignReasonCard(result, hostState);
       if (didMove(result, before)) moved.push(uid);
     } catch {
       // Redirected destination restrictions fail like other EDOPro-style move helpers.
@@ -665,6 +668,10 @@ function readMoveReason(L: unknown, index: number, extraReason: number): number 
   const reason = lua.lua_isnumber(L, index) ? lua.lua_tointeger(L, index) : undefined;
   if (reason === undefined && extraReason === 0) return undefined;
   return (reason ?? 0) | extraReason;
+}
+
+function assignReasonCard(card: DuelCardInstance, hostState: LuaDuelMoveApiHostState): void {
+  if (hostState.activeContext?.source) card.reasonCardUid = hostState.activeContext.source.uid;
 }
 
 function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, position: CardPosition): void {

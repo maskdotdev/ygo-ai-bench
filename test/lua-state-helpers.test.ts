@@ -1851,6 +1851,40 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("grave relation false/true");
   });
 
+  it("exposes Lua reason card helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Reason Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Reason Target", kind: "monster", typeFlags: 0x21 },
+      { code: "300", name: "Other Card", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 221, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((candidate) => candidate.code === "100");
+    const target = session.state.cards.find((candidate) => candidate.code === "200");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    const movedTarget = moveDuelCard(session.state, target!.uid, "graveyard", 0);
+    movedTarget.reasonCardUid = source!.uid;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local other=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("reason card " .. target:GetReasonCard():GetCode() .. "/" .. tostring(source:IsReasonCard(target)) .. "/" .. tostring(other:IsReasonCard(target)) .. "/" .. tostring(source:GetReasonCard()==nil))
+      `,
+      "reason-card.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("reason card 100/true/false/true");
+  });
+
   it("lets Lua scripts check destroyed-by-opponent-from-field conditions", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Destroyed Probe", kind: "monster" }];
     const session = createDuel({ seed: 207, startingHandSize: 1, cardReader: createCardReader(cards) });

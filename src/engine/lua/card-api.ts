@@ -307,6 +307,20 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberMatcher(L, "IsPreviousSetCard", session, (card, requested) => Boolean(card.previousLocation && card.data.setcodes?.includes(requested)));
   pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
   pushNumberMatcher(L, "IsReason", session, (card, requested) => ((card.reason ?? 0) & requested) !== 0);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    if (!card?.reasonCardUid) lua.lua_pushnil(state);
+    else pushCardTable(state, card.reasonCardUid);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetReasonCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const reasonCard = readCard(state, session);
+    const target = readCardArgument(state, session, 2);
+    lua.lua_pushboolean(state, Boolean(reasonCard && target?.reasonCardUid === reasonCard.uid));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsReasonCard"));
   pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
   pushNumberMatcher(L, "IsReasonPlayer", session, (card, requested) => (card.reasonPlayer ?? card.controller) === normalizePlayer(requested));
   pushNumberGetter(L, "GetTurnID", session, (card) => card?.turnId ?? 0);
@@ -853,6 +867,11 @@ function linkedSequences(sequence: number, markers: number): number[] {
 
 function readCard(L: unknown, session: DuelSession | undefined): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1);
+  return uid && session ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+}
+
+function readCardArgument(L: unknown, session: DuelSession | undefined, index: number): DuelCardInstance | undefined {
+  const uid = readCardUid(L, index);
   return uid && session ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
 }
 
