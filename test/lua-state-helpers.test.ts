@@ -568,6 +568,35 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("deck master card reset false");
   });
 
+  it("lets Lua scripts record unique-on-field metadata", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Unique Probe", kind: "monster" }];
+    const session = createDuel({ seed: 179, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      c:SetUniqueOnField(1,0,100,LOCATION_MZONE)
+      Debug.Message("unique registered " .. c:GetCode())
+      `,
+      "unique-on-field.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("unique registered 100");
+    expect(session.state.cards.find((card) => card.code === "100")?.uniqueOnField).toEqual({
+      self: true,
+      opponent: false,
+      code: 100,
+      locationMask: 0x4,
+    });
+  });
+
   it("lets Lua scripts query, summon, and clear deck master flagged cards", () => {
     const cards: DuelCardData[] = [{ code: "153000001", name: "Deck Master Probe", kind: "monster", attack: 1200, defense: 800 }];
     const session = createDuel({ seed: 167, startingHandSize: 1, cardReader: createCardReader(cards) });

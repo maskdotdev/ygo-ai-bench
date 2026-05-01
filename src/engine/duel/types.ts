@@ -89,6 +89,13 @@ export interface DuelCardInstance {
   summonPlayer?: PlayerId;
   summonPhase?: DuelPhase;
   summonMaterialUids?: string[];
+  attackModifier?: number;
+  uniqueOnField?: {
+    self: boolean;
+    opponent: boolean;
+    code: number;
+    locationMask: number;
+  };
   data: DuelCardData;
 }
 

@@ -1273,6 +1273,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("exact type " .. tostring(c:IsExactType(TYPE_MONSTER|TYPE_EFFECT)) .. "/" .. tostring(c:IsExactType(TYPE_MONSTER)))
       Debug.Message("stats " .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. c:GetLevel())
       Debug.Message("text stats " .. c:GetTextAttack() .. "/" .. c:GetTextDefense() .. "/" .. tostring(c:IsTextAttack(2500)) .. "/" .. tostring(c:IsTextDefense(2100)))
+      Debug.Message("attack update " .. c:UpdateAttack(300, RESETS_STANDARD_PHASE_END) .. "/" .. c:GetAttack() .. "/" .. c:GetBaseAttack() .. "/" .. tostring(c:IsAttack(2800)) .. "/" .. tostring(c:IsTextAttack(2800)))
       Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsBaseAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsBaseDefense(2100)) .. "/" .. tostring(c:IsLevel(7)) .. "/" .. tostring(c:IsLevelBetween(8,6)) .. "/" .. tostring(c:IsLevelBetween(1,6)))
       Debug.Message("stat comparisons " .. tostring(c:IsAttackAbove(2400)) .. "/" .. tostring(c:IsAttackBelow(2600)) .. "/" .. tostring(c:IsDefenseAbove(2200)) .. "/" .. tostring(c:IsDefenseBelow(2200)) .. "/" .. tostring(c:IsLevelAbove(6)) .. "/" .. tostring(c:IsLevelBelow(6)))
       Debug.Message("original stat comparisons " .. tostring(c:IsOriginalAttack(2500)) .. "/" .. tostring(c:IsOriginalAttackAbove(2400)) .. "/" .. tostring(c:IsOriginalAttackBelow(2600)) .. "/" .. tostring(c:IsOriginalDefense(2100)) .. "/" .. tostring(c:IsOriginalDefenseAbove(2200)) .. "/" .. tostring(c:IsOriginalDefenseBelow(2200)) .. "/" .. tostring(c:IsOriginalLevelAbove(6)) .. "/" .. tostring(c:IsOriginalLevelBelow(6)))
@@ -1382,9 +1383,10 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("exact type true/false");
     expect(host.messages).toContain("stats 2500/2100/7");
     expect(host.messages).toContain("text stats 2500/2100/true/true");
+    expect(host.messages).toContain("attack update 300/2800/2500/true/true");
     expect(host.messages).toContain("unknown text stats -2/-2/true/true");
-    expect(host.messages).toContain("stat predicates true/true/true/true/true/true/false");
-    expect(host.messages).toContain("stat comparisons true/true/false/true/true/false");
+    expect(host.messages).toContain("stat predicates false/true/true/true/true/true/false");
+    expect(host.messages).toContain("stat comparisons true/false/false/true/true/false");
     expect(host.messages).toContain("original stat comparisons true/true/true/true/false/true/true/false");
     expect(host.messages).toContain("code checks true/false/true");
     expect(host.messages).toContain("not code checks false/true");

@@ -70,6 +70,20 @@ export function installCardFlagApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    if (card) {
+      card.uniqueOnField = {
+        self: readBooleanFlag(state, 2),
+        opponent: readBooleanFlag(state, 3),
+        code: lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0,
+        locationMask: lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0x18,
+      };
+    }
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("SetUniqueOnField"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
     if (!card) return 0;
     const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : card.controller);
     clearDeckMaster(session, player);
@@ -88,6 +102,11 @@ function clearDeckMaster(session: DuelSession, player: PlayerId): void {
 
 function isDeckMaster(session: DuelSession, card: DuelCardInstance): boolean {
   return getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: card.uid }, flagDeckMaster) > 0;
+}
+
+function readBooleanFlag(L: unknown, index: number): boolean {
+  if (lua.lua_isnumber(L, index)) return lua.lua_tointeger(L, index) !== 0;
+  return lua.lua_toboolean(L, index);
 }
 
 function normalizePlayer(value: number): PlayerId {
