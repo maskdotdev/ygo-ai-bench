@@ -53,28 +53,38 @@ describe("Lua field and query helpers", () => {
       { code: "100", name: "Right Link", kind: "extra", typeFlags: 0x4000001, level: 2, linkMarkers: 0x20 },
       { code: "200", name: "Linked Monster", kind: "monster", typeFlags: 0x21 },
       { code: "300", name: "Unlinked Monster", kind: "monster", typeFlags: 0x21 },
+      { code: "400", name: "Left Link", kind: "extra", typeFlags: 0x4000001, level: 2, linkMarkers: 0x8 },
     ];
     const session = createDuel({ seed: 45, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["200", "300"], extra: ["100"] },
+      0: { main: ["200", "300"], extra: ["100", "400"] },
       1: { main: [] },
     });
     startDuel(session);
     const link = session.state.cards.find((card) => card.code === "100");
+    const leftLink = session.state.cards.find((card) => card.code === "400");
     const linked = session.state.cards.find((card) => card.code === "200");
     const unlinked = session.state.cards.find((card) => card.code === "300");
     expect(link).toBeDefined();
+    expect(leftLink).toBeDefined();
     expect(linked).toBeDefined();
     expect(unlinked).toBeDefined();
     const movedLink = moveDuelCard(session.state, link!.uid, "monsterZone", 0);
+    const movedLeftLink = moveDuelCard(session.state, leftLink!.uid, "monsterZone", 0);
     const movedLinked = moveDuelCard(session.state, linked!.uid, "monsterZone", 0);
     const movedUnlinked = moveDuelCard(session.state, unlinked!.uid, "monsterZone", 0);
     movedLink.faceUp = true;
+    movedLeftLink.faceUp = true;
     movedLinked.faceUp = true;
     movedUnlinked.faceUp = true;
     movedLink.position = "faceUpAttack";
+    movedLeftLink.position = "faceUpAttack";
     movedLinked.position = "faceUpAttack";
     movedUnlinked.position = "faceUpAttack";
+    movedLink.sequence = 0;
+    movedLinked.sequence = 1;
+    movedLeftLink.sequence = 2;
+    movedUnlinked.sequence = 4;
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -83,12 +93,14 @@ describe("Lua field and query helpers", () => {
       local linked=Duel.GetFieldCard(0,LOCATION_MZONE,1)
       local unlinked=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("linked checks " .. tostring(link:IsLinked()) .. "/" .. tostring(linked:IsLinked()) .. "/" .. tostring(unlinked:IsLinked()))
+      Debug.Message("linked zone counts " .. Duel.GetZoneWithLinkedCount(1,0) .. "/" .. Duel.GetZoneWithLinkedCount(2,0))
       `,
       "linked-card-predicate.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("linked checks true/true/false");
+    expect(host.messages).toContain("linked zone counts 2/2");
   });
 
   it("lets Lua scripts query monster zones and choose summon positions", () => {

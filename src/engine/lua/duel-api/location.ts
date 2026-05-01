@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
-import type { CardPosition, DuelSession, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -46,6 +46,13 @@ export function installDuelLocationApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("SelectField"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectFieldZone"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const count = Math.max(1, lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 1);
+    const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
+    lua.lua_pushinteger(state, linkedZoneMaskWithCount(session, player, count));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetZoneWithLinkedCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const positionMask = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0x1;
     lua.lua_pushinteger(state, positionMaskFromPosition(positionFromMask(positionMask) ?? "faceUpAttack"));
@@ -123,6 +130,28 @@ function openZoneBits(session: DuelSession, player: PlayerId, location: "monster
     if (!occupied.has(sequence) && (filter === 0 || (filter & bit) !== 0)) zones.push(bit);
   }
   return zones;
+}
+
+function linkedZoneMaskWithCount(session: DuelSession, player: PlayerId, count: number): number {
+  let mask = 0;
+  for (const zone of [0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40]) {
+    const linkedCount = session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && card.faceUp && linkedZoneMask(card) & zone).length;
+    if (linkedCount >= count) mask |= zone;
+  }
+  return mask;
+}
+
+function linkedZoneMask(card: DuelCardInstance): number {
+  if (((card.data.typeFlags ?? 0) & 0x4000001) !== 0x4000001) return 0;
+  return linkedSequences(card.sequence, card.data.linkMarkers ?? 0).reduce((mask, sequence) => mask | (1 << sequence), 0);
+}
+
+function linkedSequences(sequence: number, markers: number): number[] {
+  const sequences: number[] = [];
+  if ((markers & 0x8) !== 0) sequences.push(sequence - 1);
+  if ((markers & 0x20) !== 0) sequences.push(sequence + 1);
+  if ((markers & 0x1) !== 0 || (markers & 0x2) !== 0 || (markers & 0x4) !== 0) sequences.push(sequence);
+  return sequences.filter((target) => target >= 0 && target <= 6);
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {
