@@ -645,10 +645,11 @@ describe("Lua field and query helpers", () => {
       { code: "801", name: "Synchro Fixture", kind: "extra", typeFlags: 0x2001, level: 7 },
       { code: "901", name: "Pendulum Fixture", kind: "monster", typeFlags: 0x1000021, level: 4, leftScale: 3, rightScale: 8 },
       { code: "902", name: "Material Listing Fusion", kind: "extra", fusionMaterials: ["100", "800"] },
+      { code: "903", name: "Unknown Stat Fixture", kind: "monster", typeFlags: 0x21, attack: -2, defense: -2, level: 10 },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 12, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 13, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "201", "202", "203", "300", "400", "500", "600", "700", "800", "901"], extra: ["801", "902"] },
+      0: { main: ["100", "200", "201", "202", "203", "300", "400", "500", "600", "700", "800", "901", "903"], extra: ["801", "902"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -660,6 +661,7 @@ describe("Lua field and query helpers", () => {
       local c = monsters:GetFirst()
       Debug.Message("type " .. c:GetType())
       Debug.Message("stats " .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. c:GetLevel())
+      Debug.Message("text stats " .. c:GetTextAttack() .. "/" .. c:GetTextDefense() .. "/" .. tostring(c:IsTextAttack(2500)) .. "/" .. tostring(c:IsTextDefense(2100)))
       Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsLevel(7)))
       Debug.Message("stat comparisons " .. tostring(c:IsAttackAbove(2400)) .. "/" .. tostring(c:IsAttackBelow(2600)) .. "/" .. tostring(c:IsDefenseAbove(2200)) .. "/" .. tostring(c:IsDefenseBelow(2200)) .. "/" .. tostring(c:IsLevelAbove(6)) .. "/" .. tostring(c:IsLevelBelow(6)))
       Debug.Message("original stat comparisons " .. tostring(c:IsOriginalAttack(2500)) .. "/" .. tostring(c:IsOriginalAttackAbove(2400)) .. "/" .. tostring(c:IsOriginalAttackBelow(2600)) .. "/" .. tostring(c:IsOriginalDefense(2100)) .. "/" .. tostring(c:IsOriginalDefenseAbove(2200)) .. "/" .. tostring(c:IsOriginalDefenseBelow(2200)) .. "/" .. tostring(c:IsOriginalLevelAbove(6)) .. "/" .. tostring(c:IsOriginalLevelBelow(6)))
@@ -677,6 +679,8 @@ describe("Lua field and query helpers", () => {
       local synchro = Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 801), 0, LOCATION_EXTRA, 0, nil):GetFirst()
       local pendulum = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local material_fusion = Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 902), 0, LOCATION_EXTRA, 0, nil):GetFirst()
+      local unknown_stats = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 903), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("unknown text stats " .. unknown_stats:GetTextAttack() .. "/" .. unknown_stats:GetTextDefense() .. "/" .. tostring(Card.IsTextAttack(unknown_stats,-2)) .. "/" .. tostring(Card.IsTextDefense(unknown_stats,-2)))
       Debug.Message("material listed checks " .. tostring(material_fusion:ListsCodeAsMaterial(100)) .. "/" .. tostring(material_fusion:ListsCodeAsMaterial(700,800)) .. "/" .. tostring(material_fusion:ListsCodeAsMaterial(300)) .. "/" .. tostring(ritual:ListsCodeAsMaterial(100)))
       Debug.Message("original predicates " .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalLevel(7)))
       Debug.Message("not type " .. tostring(c:IsNotType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotType(TYPE_SPELL)))
@@ -739,6 +743,8 @@ describe("Lua field and query helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("type 33");
     expect(host.messages).toContain("stats 2500/2100/7");
+    expect(host.messages).toContain("text stats 2500/2100/true/true");
+    expect(host.messages).toContain("unknown text stats -2/-2/true/true");
     expect(host.messages).toContain("stat predicates true/true/true");
     expect(host.messages).toContain("stat comparisons true/true/false/true/true/false");
     expect(host.messages).toContain("original stat comparisons true/true/true/true/false/true/true/false");
