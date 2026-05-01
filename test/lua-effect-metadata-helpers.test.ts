@@ -185,7 +185,9 @@ describe("Lua effect metadata helpers", () => {
       local must_ritual=c:AddMustBeRitualSummoned()
       local first_ritual=c:AddMustFirstBeRitualSummoned()
       local must_synchro=c:AddMustBeSynchroSummoned()
+      local first_synchro=extra:AddMustFirstBeSynchroSummoned()
       local must_xyz=c:AddMustBeXyzSummoned()
+      local first_xyz=extra:AddMustFirstBeXyzSummoned()
       local must_link=c:AddMustBeLinkSummoned()
       local first_link=extra:AddMustFirstBeLinkSummoned()
       local must_pendulum=c:AddMustBePendulumSummoned()
@@ -209,7 +211,9 @@ describe("Lua effect metadata helpers", () => {
       Debug.Message("ritual summon limit " .. tostring(must_ritual:GetValue()(nil,nil,0,SUMMON_TYPE_RITUAL)) .. "/" .. tostring(must_ritual:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("first ritual limit " .. tostring(first_ritual:GetValue()(first_ritual,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(first_ritual:GetValue()(first_ritual,nil,0,SUMMON_TYPE_RITUAL)))
       Debug.Message("synchro summon limit " .. tostring(must_synchro:GetValue()(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(must_synchro:GetValue()(nil,nil,0,SUMMON_TYPE_XYZ)))
+      Debug.Message("first synchro limit " .. tostring(first_synchro:GetValue()(first_synchro,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(first_synchro:GetValue()(first_synchro,nil,0,SUMMON_TYPE_LINK)))
       Debug.Message("xyz summon limit " .. tostring(must_xyz:GetValue()(nil,nil,0,SUMMON_TYPE_XYZ)) .. "/" .. tostring(must_xyz:GetValue()(nil,nil,0,SUMMON_TYPE_SYNCHRO)))
+      Debug.Message("first xyz limit " .. tostring(first_xyz:GetValue()(first_xyz,nil,0,SUMMON_TYPE_XYZ)) .. "/" .. tostring(first_xyz:GetValue()(first_xyz,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("link summon limit " .. tostring(must_link:GetValue()(nil,nil,0,SUMMON_TYPE_LINK)) .. "/" .. tostring(must_link:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("first link limit " .. tostring(first_link:GetValue()(first_link,nil,0,SUMMON_TYPE_LINK)) .. "/" .. tostring(first_link:GetValue()(first_link,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("pendulum summon limit " .. tostring(must_pendulum:GetValue()(nil,nil,0,SUMMON_TYPE_PENDULUM)) .. "/" .. tostring(must_pendulum:GetValue()(nil,nil,0,SUMMON_TYPE_LINK)))
@@ -233,7 +237,9 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("ritual summon limit true/false");
     expect(host.messages).toContain("first ritual limit false/true");
     expect(host.messages).toContain("synchro summon limit true/false");
+    expect(host.messages).toContain("first synchro limit true/false");
     expect(host.messages).toContain("xyz summon limit true/false");
+    expect(host.messages).toContain("first xyz limit true/false");
     expect(host.messages).toContain("link summon limit true/false");
     expect(host.messages).toContain("first link limit true/false");
     expect(host.messages).toContain("pendulum summon limit true/false");

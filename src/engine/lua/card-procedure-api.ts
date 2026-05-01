@@ -85,12 +85,30 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       c:RegisterEffect(e0)
       return e0
     end
+    function Card.AddMustFirstBeSynchroSummoned(c)
+      local e0=Effect.CreateEffect(c)
+      e0:SetType(EFFECT_TYPE_SINGLE)
+      e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+      e0:SetCode(EFFECT_SPSUMMON_CONDITION)
+      e0:SetValue(function(e,sum_eff,sum_p,sum_type) return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (sum_type&SUMMON_TYPE_SYNCHRO)==SUMMON_TYPE_SYNCHRO end)
+      c:RegisterEffect(e0)
+      return e0
+    end
     function Card.AddMustBeXyzSummoned(c)
       local e0=Effect.CreateEffect(c)
       e0:SetType(EFFECT_TYPE_SINGLE)
       e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
       e0:SetCode(EFFECT_SPSUMMON_CONDITION)
       e0:SetValue(aux.xyzlimit)
+      c:RegisterEffect(e0)
+      return e0
+    end
+    function Card.AddMustFirstBeXyzSummoned(c)
+      local e0=Effect.CreateEffect(c)
+      e0:SetType(EFFECT_TYPE_SINGLE)
+      e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+      e0:SetCode(EFFECT_SPSUMMON_CONDITION)
+      e0:SetValue(function(e,sum_eff,sum_p,sum_type) return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (sum_type&SUMMON_TYPE_XYZ)==SUMMON_TYPE_XYZ end)
       c:RegisterEffect(e0)
       return e0
     end
