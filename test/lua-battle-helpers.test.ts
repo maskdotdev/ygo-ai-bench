@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import fs from "node:fs";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
@@ -100,6 +101,45 @@ describe("Lua battle helpers", () => {
 
     expect(session.state.attacksDeclared.filter((uid) => uid === attacker!.uid)).toHaveLength(2);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)).toBe(false);
+  });
+
+  it("loads Black Luster Soldier and grants another attack after battle destruction", () => {
+    const cards: DuelCardData[] = [
+      { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", attack: 3000 },
+      { code: "100", name: "First Target", kind: "monster", attack: 1000 },
+      { code: "200", name: "Second Target", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 106, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["70405001"] },
+      1: { main: ["100", "200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "70405001");
+    const firstTarget = session.state.cards.find((card) => card.controller === 1 && card.code === "100");
+    const secondTarget = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(firstTarget).toBeDefined();
+    expect(secondTarget).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, firstTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, secondTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c70405001.lua", "utf8"), "c70405001.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === firstTarget!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === attacker!.uid);
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(session.state.cards.find((card) => card.uid === firstTarget!.uid)).toMatchObject({ location: "graveyard", reason: 0x21 });
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === secondTarget!.uid)).toBe(true);
   });
 
   it("applies player-scoped Lua battle damage prevention effects", () => {
