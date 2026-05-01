@@ -1301,4 +1301,49 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages.join("\n")).toContain("manual target cards 2/");
     expect(host.messages).toContain("manual target changed 1/300");
   });
+
+  it("uses the Welcome Labrynth trap destruction helper", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Welcome Trap", kind: "trap", typeFlags: 0x4, setcodes: [0x117f] },
+      { code: "200", name: "Destroy Target", kind: "monster" },
+      { code: "300", name: "Anchor", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 15, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const trap = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(trap).toBeTruthy();
+    expect(target).toBeTruthy();
+    moveDuelCard(session.state, trap!.uid, "spellTrapZone", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local addeff=Effect.GlobalEffect()
+      addeff:SetType(EFFECT_TYPE_FIELD)
+      addeff:SetCode(CARD_LABRYNTH_LABYRINTH)
+      addeff:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+      addeff:SetTargetRange(1,0)
+      addeff:SetCountLimit(1, CARD_LABRYNTH_LABYRINTH)
+      Duel.RegisterEffect(addeff,0)
+      local activate=Effect.CreateEffect(c)
+      activate:SetType(EFFECT_TYPE_ACTIVATE)
+      Debug.Message("welcome before " .. tostring(addeff:CheckCountLimit(0)) .. "/" .. target:GetLocation())
+      aux.WelcomeLabrynthTrapDestroyOperation(activate,0)
+      Debug.Message("welcome after " .. tostring(addeff:CheckCountLimit(0)) .. "/" .. tostring(target:IsLocation(LOCATION_GRAVE)))
+      `,
+      "welcome-labrynth-helper.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("welcome before true/4");
+    expect(host.messages).toContain("welcome after false/true");
+  });
 });

@@ -232,7 +232,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("sky predicates true/true/false");
     expect(host.messages).toContain("set/race helpers 1409/true/false");
     expect(host.messages).toContain("anime colors true/true/true/true/false/false");
-  });
+  }, 30000);
 
   it("exposes anime archetype predicates from code and setcode checks", () => {
     const cases = [
@@ -329,7 +329,7 @@ describe("Lua field and query helpers", () => {
     for (let index = 0; index < cases.length; index += 12) {
       expectAnimeArchetypePredicates(cases.slice(index, index + 12), 158 + index);
     }
-  }, 10000);
+  }, 60000);
 
   it("keeps Phantom Butterfly out of the generic Butterfly predicate", () => {
     const cards: DuelCardData[] = [

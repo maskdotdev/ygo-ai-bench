@@ -4,6 +4,7 @@ import { pushGroupTable } from "#lua/group-api.js";
 import { readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import { installAuxUtilityApi } from "#lua/aux-utility-api.js";
 import { installEquipProcedureApi } from "#lua/equip-procedure-api.js";
+import { installLabrynthApi } from "#lua/labrynth-api.js";
 import { installMaleficApi } from "#lua/malefic-api.js";
 import { installNeosReturnApi } from "#lua/neos-return-api.js";
 import { installNormalProcedureApi } from "#lua/normal-procedure-api.js";
@@ -74,6 +75,7 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setglobal(L, to_luastring("aux"));
   installAuxUtilityApi(L, readLuaError);
   installEquipProcedureApi(L, readLuaError);
+  installLabrynthApi(L);
   installMaleficApi(L, readLuaError);
   installNeosReturnApi(L, readLuaError);
   installNormalProcedureApi(L, readLuaError);
