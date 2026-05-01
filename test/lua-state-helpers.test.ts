@@ -45,6 +45,38 @@ describe("Lua state helpers", () => {
     expect(defaultHost.messages).toContain("default hand draw counts 5/1");
   });
 
+  it("lets Lua scripts apply drawless startup adjustments", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Drawless One", kind: "monster" },
+      { code: "200", name: "Drawless Two", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 167, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "100", "200", "100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local first = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local second = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e = { reset=false, Reset=function(self) self.reset=true end }
+      aux.AddDrawless(first, true)
+      aux.AddDrawless(second, 2)
+      Debug.Message("drawless entries " .. tostring(aux.Drawless[first]) .. "/" .. tostring(aux.Drawless[second]))
+      aux.drawlessop(e)
+      Debug.Message("drawless adjusted " .. Duel.GetStartingHand(0) .. "/" .. tostring(e.reset))
+      `,
+      "drawless-startup.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("drawless entries 1/2");
+    expect(host.messages).toContain("drawless adjusted 2/true");
+  });
+
   it("lets Lua scripts skip the next matching phase", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Phase Source", kind: "monster" }];
     const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });

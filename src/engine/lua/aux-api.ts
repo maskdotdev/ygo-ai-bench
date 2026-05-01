@@ -44,6 +44,12 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setfield(L, -2, to_luastring("bdogcon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectUnselectGroup(state));
   lua.lua_setfield(L, -2, to_luastring("SelectUnselectGroup"));
+  lua.lua_newtable(L);
+  lua.lua_setfield(L, -2, to_luastring("Drawless"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAddDrawless(state));
+  lua.lua_setfield(L, -2, to_luastring("AddDrawless"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushDrawlessOperation(state, readLuaError, session));
+  lua.lua_setfield(L, -2, to_luastring("drawlessop"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckZonesReleaseSummonCheck(state, false));
   lua.lua_setfield(L, -2, to_luastring("CheckZonesReleaseSummonCheck"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckZonesReleaseSummonCheck(state, true));
@@ -263,6 +269,40 @@ function pushSelectUnselectGroup(L: unknown): number {
   return 1;
 }
 
+function pushAddDrawless(L: unknown): number {
+  if (!lua.lua_istable(L, 1)) return 0;
+  const type = lua.lua_type(L, 2);
+  const value = type === lua.LUA_TNUMBER ? lua.lua_tointeger(L, 2) : lua.lua_toboolean(L, 2) ? 1 : 0;
+  if (value <= 0) return 0;
+  lua.lua_getglobal(L, to_luastring("aux"));
+  lua.lua_getfield(L, -1, to_luastring("Drawless"));
+  lua.lua_pushvalue(L, 1);
+  lua.lua_pushinteger(L, value);
+  lua.lua_settable(L, -3);
+  lua.lua_pop(L, 2);
+  return 0;
+}
+
+function pushDrawlessOperation(L: unknown, readLuaError: (state: unknown) => string, session: DuelSession | undefined): number {
+  callLuaVoidMethod(L, 1, "Reset", readLuaError);
+  const reductions: [number, number] = [0, 0];
+  lua.lua_getglobal(L, to_luastring("aux"));
+  lua.lua_getfield(L, -1, to_luastring("Drawless"));
+  if (lua.lua_istable(L, -1)) {
+    lua.lua_pushnil(L);
+    while (lua.lua_next(L, -2) !== 0) {
+      const player = callLuaNumberMethod(L, -2, "GetControler", readLuaError);
+      const value = lua.lua_isnumber(L, -1) ? Math.max(0, lua.lua_tointeger(L, -1)) : 0;
+      if (player === 0) reductions[0] += value;
+      else if (player === 1) reductions[1] += value;
+      lua.lua_pop(L, 1);
+    }
+  }
+  lua.lua_pop(L, 2);
+  if (session) session.state.options.startingHandSize = Math.max(0, session.state.options.startingHandSize - Math.max(...reductions));
+  return 0;
+}
+
 function pushCheckZonesReleaseSummonCheck(L: unknown, requireMustIncluded: boolean): number {
   const mustUids = readGroupUids(L, 1);
   const oneOfUids = readGroupUids(L, 2);
@@ -276,6 +316,21 @@ function pushCheckZonesReleaseSummonCheck(L: unknown, requireMustIncluded: boole
     return 2;
   });
   return 1;
+}
+
+function callLuaVoidMethod(L: unknown, tableIndex: number, methodName: string, readLuaError: (state: unknown) => string): void {
+  const top = lua.lua_gettop(L);
+  const absoluteIndex = lua.lua_absindex(L, tableIndex);
+  if (!lua.lua_istable(L, absoluteIndex)) return;
+  lua.lua_getfield(L, absoluteIndex, to_luastring(methodName));
+  if (!lua.lua_isfunction(L, -1)) {
+    lua.lua_pop(L, lua.lua_gettop(L) - top);
+    return;
+  }
+  lua.lua_pushvalue(L, absoluteIndex);
+  const status = lua.lua_pcall(L, 1, 0, 0);
+  if (status !== lua.LUA_OK) lauxlib.luaL_error(L, to_luastring(readLuaError(L)));
+  lua.lua_pop(L, lua.lua_gettop(L) - top);
 }
 
 function zoneReleaseCheckMatches(L: unknown, checkRef: number | undefined, uids: string[]): boolean {
