@@ -141,6 +141,8 @@ export const cardFieldNames = [
   "IsStone",
   "IsTachyon",
   "IsTachyonDragon",
+  "IsTheWingedDragonofRa",
+  "IsToy",
   "IsEarth",
   "IsSky",
   "Is_V_",
