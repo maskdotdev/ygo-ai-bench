@@ -82,12 +82,66 @@ export function installSkillProcedureApi(L: unknown, readLuaError: (state: unkno
       return e1,e2
     end
 
+    function aux.VrainsSkillStartupOperation(c,skillcon,skillop,efftype)
+      return function(e,tp,eg,ep,ev,re,r,rp)
+        if skillop then
+          local e1=Effect.CreateEffect(c)
+          if efftype==EFFECT_NEGATE_SKILL then
+            e1:SetType(EFFECT_TYPE_FIELD)
+            e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+            e1:SetTargetRange(1,0)
+          else
+            e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+          end
+          e1:SetCode(efftype or EVENT_FREE_CHAIN)
+          if skillcon then e1:SetCondition(skillcon) end
+          e1:SetOperation(skillop)
+          Duel.RegisterEffect(e1,e:GetHandlerPlayer())
+          if efftype==EVENT_FREE_CHAIN then
+            local e2=Effect.CreateEffect(c)
+            e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+            e2:SetCode(EVENT_CHAIN_END)
+            if skillcon then e2:SetCondition(skillcon) end
+            e2:SetOperation(skillop)
+            Duel.RegisterEffect(e2,e:GetHandlerPlayer())
+          end
+        end
+      end
+    end
+
+    function aux.AddVrainsSkillProcedure(c,skillcon,skillop,efftype)
+      efftype=efftype or EVENT_FREE_CHAIN
+      local e1=Effect.CreateEffect(c)
+      e1:SetProperty(EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_CANNOT_DISABLE)
+      e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+      e1:SetCode(EVENT_STARTUP)
+      e1:SetRange(0x5f)
+      e1:SetLabel(VRAINS_SKILL_COVER)
+      e1:SetOperation(aux.VrainsSkillStartupOperation(c,skillcon,skillop,efftype))
+      c:RegisterEffect(e1)
+      return e1
+    end
+
+    function aux.CheckSkillNegation(e,tp)
+      local eff=Duel.IsPlayerAffectedByEffect(1-tp,EFFECT_NEGATE_SKILL)
+      if not eff then return false end
+      local con=eff:GetCondition()
+      if con and not con(eff,1-tp,e) then return false end
+      local op=eff:GetOperation()
+      if not op then return false end
+      local negated=op(eff,1-tp,e)
+      if negated then Duel.Hint(HINT_MESSAGE,tp,aux.Stringid(EFFECT_NEGATE_SKILL,1)) end
+      return negated or false
+    end
+
     Auxiliary=Auxiliary or aux
     Auxiliary.GetCover=aux.GetCover
     Auxiliary.AddSkillProcedure=aux.AddSkillProcedure
     Auxiliary.AddPreDrawSkillProcedure=aux.AddPreDrawSkillProcedure
     Auxiliary.AddFieldSkillProcedure=aux.AddFieldSkillProcedure
     Auxiliary.AddContinuousSkillProcedure=aux.AddContinuousSkillProcedure
+    Auxiliary.AddVrainsSkillProcedure=aux.AddVrainsSkillProcedure
+    Auxiliary.CheckSkillNegation=aux.CheckSkillNegation
   `;
   const status = lauxlib.luaL_loadbuffer(L, to_luastring(source), source.length, to_luastring("skill-procedure.lua"));
   if (status !== lua.LUA_OK || lua.lua_pcall(L, 0, 0, 0) !== lua.LUA_OK) throw new Error(readLuaError(L));

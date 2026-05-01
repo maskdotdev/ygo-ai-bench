@@ -175,6 +175,45 @@ describe("Lua effect metadata helpers", () => {
     expect(session.state.effects.filter((effect) => effect.sourceUid === session.state.cards[0]?.uid)).toHaveLength(6);
   });
 
+  it("registers Lua Vrains skill procedures and negation checks", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Vrains Skill", kind: "monster" }];
+    const session = createDuel({ seed: 85, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local startup=aux.AddVrainsSkillProcedure(c,function(e,tp) return tp==0 end,function(e,tp) Debug.Message("vrains op " .. tp) return true end)
+      Debug.Message("vrains startup " .. startup:GetCode() .. "/" .. startup:GetLabel())
+      startup:GetOperation()(startup,0,Group.CreateGroup(),0,0,nil,0,0)
+      local free=Duel.GetPlayerEffect(0,EVENT_FREE_CHAIN)
+      local chain_end=Duel.GetPlayerEffect(0,EVENT_CHAIN_END)
+      Debug.Message("vrains registered " .. tostring(free~=nil) .. "/" .. tostring(chain_end~=nil) .. "/" .. free:GetCode() .. "/" .. chain_end:GetCode())
+      local negate=Effect.CreateEffect(c)
+      negate:SetType(EFFECT_TYPE_FIELD)
+      negate:SetCode(EFFECT_NEGATE_SKILL)
+      negate:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+      negate:SetTargetRange(0,1)
+      negate:SetCondition(function(e,tp,target) return true end)
+      negate:SetOperation(function(e,tp,target) Debug.Message("negate target " .. target:GetCode()) return true end)
+      c:RegisterEffect(negate)
+      Debug.Message("skill negation " .. tostring(aux.CheckSkillNegation(free,0)))
+      `,
+      "vrains-skill-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("vrains startup 1000/300000001");
+    expect(host.messages).toContain("vrains registered true/true/1002/1026");
+    expect(host.messages).toContain("negate target 1002");
+    expect(host.messages).toContain("skill negation true");
+  });
+
   it("registers Lua card procedure status helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Procedure Status Source", kind: "monster", level: 7 },
