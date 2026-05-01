@@ -14,6 +14,32 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua movement helpers", () => {
+  it("lets Lua scripts use self-banish cost aliases", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Banish Cost", kind: "monster" }];
+    const session = createDuel({ seed: 83, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      Debug.Message("self banish check " .. tostring(Cost.SelfBanish(e,0,Group.CreateGroup(),0,0,nil,0,0,0)) .. "/" .. tostring(aux.bfgcost(e,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+      aux.bfgcost(e,0,Group.CreateGroup(),0,0,nil,0,0,1)
+      Debug.Message("self banish moved " .. tostring(c:IsLocation(LOCATION_REMOVED)) .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "self-banish-cost.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("self banish check true/true");
+    expect(host.messages).toContain("self banish moved true/100");
+  });
+
   it("lets Lua scripts move cards to the deck top", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Top A", kind: "monster" },

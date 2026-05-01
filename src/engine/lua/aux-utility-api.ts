@@ -4,6 +4,13 @@ const { lua, lauxlib, to_luastring } = fengari;
 
 export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) => string): void {
   const source = `
+    Cost=Cost or {}
+    function Cost.SelfBanish(e,tp,eg,ep,ev,re,r,rp,chk)
+      local c=e:GetHandler()
+      if chk==0 then return c and c:IsAbleToRemoveAsCost() end
+      Duel.Remove(c,POS_FACEUP,REASON_COST)
+    end
+    aux.bfgcost=Cost.SelfBanish
     local player_all_value = PLAYER_ALL or 2
     function aux.EquipLimit(f)
       return function(e,c)

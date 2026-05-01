@@ -22,6 +22,7 @@ export function installConstants(L: unknown): void {
     ZONES_EMZ: 0x60,
     POS_FACEUP_ATTACK: 0x1,
     POS_FACEDOWN_ATTACK: 0x2,
+    POS_FACEUP: 0x5,
     POS_FACEUP_DEFENSE: 0x4,
     POS_FACEDOWN_DEFENSE: 0x8,
     STATUS_DISABLED: 0x1,
