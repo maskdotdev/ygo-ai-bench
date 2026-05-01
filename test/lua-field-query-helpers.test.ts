@@ -289,6 +289,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("linked checks " .. tostring(link:IsLinked()) .. "/" .. tostring(linked:IsLinked()) .. "/" .. tostring(unlinked:IsLinked()))
       Debug.Message("linked zone counts " .. Duel.GetZoneWithLinkedCount(1,0) .. "/" .. Duel.GetZoneWithLinkedCount(2,0))
       Debug.Message("linked zones " .. link:GetLinkedZone(0) .. "/" .. Duel.GetLinkedZone(0) .. "/" .. link_group:GetLinkedZone(0) .. "/" .. Duel.GetLinkedZone(1))
+      Debug.Message("mmz pointed " .. aux.GetMMZonesPointedTo(0) .. "/" .. aux.GetMMZonesPointedTo(0,Card.IsCode,LOCATION_MZONE,0,nil,100) .. "/" .. aux.GetMMZonesPointedTo(0,Card.IsCode,LOCATION_MZONE,0,nil,400))
       Debug.Message("linked group " .. linked_group:GetCount() .. "/" .. link:GetLinkedGroupCount() .. "/" .. tostring(linked_group:IsContains(linked)) .. "/" .. tostring(linked_group:IsContains(unlinked)))
       Debug.Message("duel linked group " .. duel_linked_group:GetCount() .. "/" .. tostring(duel_linked_group:IsContains(linked)) .. "/" .. Duel.GetLinkedGroup(1,LOCATION_MZONE,0):GetCount())
       `,
@@ -299,6 +300,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("linked checks true/true/false");
     expect(host.messages).toContain("linked zone counts 2/2");
     expect(host.messages).toContain("linked zones 2/2/2/0");
+    expect(host.messages).toContain("mmz pointed 2/2/2");
     expect(host.messages).toContain("linked group 1/1/true/false");
     expect(host.messages).toContain("duel linked group 1/true/0");
   });

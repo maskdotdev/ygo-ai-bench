@@ -596,6 +596,15 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       end
       return function(sg) return Duel.GetMZoneCount(tp,sg,zone) end
     end
+    local function link_card_filter(c,f,...)
+      return c:IsFaceup() and c:IsType(TYPE_LINK) and (not f or f(c,...))
+    end
+    function aux.GetMMZonesPointedTo(player,by_filter,player_location,oppo_location,target_player,...)
+      local loc1=player_location==nil and LOCATION_MZONE or player_location
+      local loc2=oppo_location==nil and loc1 or oppo_location
+      target_player=target_player==nil and player or target_player
+      return Duel.GetMatchingGroup(link_card_filter,player,loc1,loc2,nil,by_filter,...):GetLinkedZone(target_player)&ZONES_MMZ
+    end
     function aux.dpcheck(fun)
       return function(sg,e,tp,mg)
         local c1=sg:GetClassCount(fun)
