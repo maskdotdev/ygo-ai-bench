@@ -10,16 +10,18 @@ import {
 } from "#duel/battle.js";
 import { openAttackResponseWindow } from "#duel/attack-response-window.js";
 import {
+  additionalBattleDamagePlayers,
   extraAttackCount,
+  hasPiercingBattleDamage,
   isAttackPrevented,
   isBattleTargetSelectionPrevented,
   isBattleTargetPrevented,
-  hasPiercingBattleDamage,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface CoreBattleHandlers {
+  additionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId[];
   battleDamagePlayer(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId;
   changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void;
@@ -74,7 +76,13 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
       const damagePlayer = handlers.battleDamagePlayer(state, damagedPlayer, battleCards);
       if (damagePlayer !== damagedPlayer) handlers.changeBattleDamage(state, damagedPlayer, 0, battleCards);
       handlers.changeBattleDamage(state, damagePlayer, amount, battleCards);
-      return handlers.damagePlayer(state, damagePlayer, state.battleDamage[damagePlayer]);
+      const applied = handlers.damagePlayer(state, damagePlayer, state.battleDamage[damagePlayer]);
+      for (const additionalPlayer of handlers.additionalBattleDamagePlayers(state, damagePlayer, battleCards)) {
+        if (additionalPlayer === damagePlayer) continue;
+        handlers.changeBattleDamage(state, additionalPlayer, applied, battleCards);
+        handlers.damagePlayer(state, additionalPlayer, state.battleDamage[additionalPlayer]);
+      }
+      return applied;
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
@@ -100,4 +108,8 @@ function canSelectBattleTarget(state: DuelState, player: PlayerId, card: DuelCar
 
 export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): boolean {
   return hasPiercingBattleDamage(state, card, handlers.createContinuousContext(state));
+}
+
+export function getCoreAdditionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[] | undefined, handlers: CoreBattleHandlers): PlayerId[] {
+  return additionalBattleDamagePlayers(state, player, battleCards ?? [], handlers.createContinuousContext(state));
 }

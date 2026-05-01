@@ -55,6 +55,7 @@ import {
   changeCoreDuelCardPosition,
   declareCoreDuelAttack,
   getCoreDuelAttackTargets,
+  getCoreAdditionalBattleDamagePlayers,
   hasCorePiercingBattleDamage,
   negateCoreDuelAttack,
   type CoreBattleHandlers,
@@ -135,6 +136,7 @@ const activationHandlers: DuelActivationHandlers = {
 };
 
 const battleContinuationHandlers: BattleContinuationHandlers = {
+  additionalBattleDamagePlayers: (state, player, battleCards) => getCoreAdditionalBattleDamagePlayers(state, player, battleCards, coreBattleHandlers),
   battleDamagePlayer: (state, player, battleCards) => reflectedDuelBattleDamagePlayerRule(state, player, createContinuousEffectContext(state), battleCards),
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
   changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
@@ -144,6 +146,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
 };
 
 const coreBattleHandlers: CoreBattleHandlers = {
+  additionalBattleDamagePlayers: (state, player, battleCards) => getCoreAdditionalBattleDamagePlayers(state, player, battleCards, coreBattleHandlers),
   battleDamagePlayer: (state, player, battleCards) => reflectedDuelBattleDamagePlayerRule(state, player, createContinuousEffectContext(state), battleCards),
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
   changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
