@@ -161,32 +161,6 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
         return aux.SelectUnselectGroup(mg,e,tp,required,required,aux.LavaCheck,0):GetCount()>0
       end
     end
-    local function each_card(cg,op)
-      if cg.GetFirst then
-        local tc=cg:GetFirst()
-        while tc do
-          op(tc)
-          tc=cg:GetNext()
-        end
-      else
-        op(cg)
-      end
-    end
-    function aux.RankUpUsing(cg,id,hint)
-      each_card(cg,function(c)
-        c:RegisterFlagEffect(511000685,RESET_EVENT|RESETS_STANDARD&(~RESET_TOFIELD),hint and EFFECT_FLAG_CLIENT_HINT or 0,1)
-        if id then c:SetFlagEffectLabel(511000685,id) end
-      end)
-    end
-    function aux.RankUpComplete(cg,hint)
-      each_card(cg,function(c)
-        c:RegisterFlagEffect(511015134,RESET_EVENT|RESETS_STANDARD&(~RESET_TOFIELD),hint and EFFECT_FLAG_CLIENT_HINT or 0,1)
-        if hint then c:SetFlagEffectLabel(511015134,hint) end
-      end)
-    end
-    function aux.ReincarnationRitualFilter(c,rc,id,tp)
-      return c:IsSummonCode(rc,SUMMON_TYPE_RITUAL,tp,id) and c:IsControler(tp) and c:IsLocation(LOCATION_MZONE)
-    end
     local player_all_value = PLAYER_ALL or 2
     function aux.EquipLimit(f)
       return function(e,c)

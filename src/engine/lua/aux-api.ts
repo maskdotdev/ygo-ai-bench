@@ -5,6 +5,7 @@ import { readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } fr
 import { installAuxUtilityApi } from "#lua/aux-utility-api.js";
 import { installNormalProcedureApi } from "#lua/normal-procedure-api.js";
 import { installPersistentProcedureApi } from "#lua/persistent-procedure-api.js";
+import { installRankUpApi } from "#lua/rank-up-api.js";
 import { installSkillProcedureApi } from "#lua/skill-procedure-api.js";
 import { installUnionProcedureApi } from "#lua/union-procedure-api.js";
 import type { DuelSession } from "#duel/types.js";
@@ -71,6 +72,7 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   installAuxUtilityApi(L, readLuaError);
   installNormalProcedureApi(L, readLuaError);
   installPersistentProcedureApi(L, readLuaError);
+  installRankUpApi(L, readLuaError);
   installUnionProcedureApi(L, readLuaError);
   installSkillProcedureApi(L, readLuaError);
   installAuxCompatibilityApi(L);

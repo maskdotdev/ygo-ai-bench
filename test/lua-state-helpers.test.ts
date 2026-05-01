@@ -1396,8 +1396,13 @@ describe("Lua state helpers", () => {
       local second=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       aux.RankUpUsing(Group.FromCards(first,second),84013237,aux.Stringid(84013237,1))
       aux.RankUpComplete(first,aux.Stringid(511015134,1))
+      local e1,e2=aux.EnableCheckRankUp(first,function(e,tp) return tp==0 end,function(e,tp) Debug.Message("rank up op " .. tp) end,84013237)
       Debug.Message("rank up using " .. first:GetFlagEffect(511000685) .. "/" .. second:GetFlagEffect(511000685) .. "/" .. first:GetFlagEffectLabel(511000685) .. "/" .. second:GetFlagEffectLabel(511000685))
       Debug.Message("rank up complete " .. first:GetFlagEffect(511015134) .. "/" .. second:GetFlagEffect(511015134) .. "/" .. first:GetFlagEffectLabel(511015134))
+      Debug.Message("rank up enable " .. e1:GetCode() .. "/" .. e2:GetCode() .. "/" .. tostring(e2:GetLabelObject()==e1) .. "/" .. tostring(e1:GetCondition()(e1,0,Group.CreateGroup(),0,0,nil,0,0)))
+      local ge=aux.EnableCheckReincarnation(first)
+      local repeated=aux.EnableCheckReincarnation(second)
+      Debug.Message("reincarnation enable " .. ge:GetType() .. "/" .. tostring(ge:GetLabelObject()~=nil) .. "/" .. tostring(repeated==nil))
       `,
       "rank-up-flags.lua",
     );
@@ -1405,6 +1410,8 @@ describe("Lua state helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("rank up using 1/1/84013237/84013237");
     expect(host.messages.some((message) => message.startsWith("rank up complete 1/0/"))).toBe(true);
+    expect(host.messages).toContain("rank up enable 1102/251/true/true");
+    expect(host.messages).toContain("reincarnation enable 8194/true/true");
   });
 
   it("runs delayed Lua operations on matching phase transitions", () => {
