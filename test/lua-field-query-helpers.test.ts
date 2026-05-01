@@ -52,10 +52,12 @@ describe("Lua field and query helpers", () => {
       { code: "800", name: "Action Spell", kind: "spell", typeFlags: 0x10000002 },
       { code: "801", name: "Action Trap", kind: "trap", typeFlags: 0x10000004 },
       { code: "802", name: "Action Field", kind: "spell", typeFlags: 0x10080002 },
+      { code: "82382815", name: "Champion Code", kind: "spell", typeFlags: 0x2 },
+      { code: "803", name: "Champion Set", kind: "monster", typeFlags: 0x21, setcodes: [0x152f] },
     ];
-    const session = createDuel({ seed: 44, startingHandSize: 12, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 44, startingHandSize: 14, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802"] },
+      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "82382815", "803"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -75,12 +77,15 @@ describe("Lua field and query helpers", () => {
       local action_spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local action_trap=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 801), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local action_field=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 802), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local champion_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 82382815), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local champion_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 803), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("exact type constants " .. TYPE_CONTINUOUS)
       Debug.Message("continuous trap " .. tostring(continuous_trap:IsContinuousTrap()) .. "/" .. tostring(continuous_trap:IsContinuousSpell()) .. "/" .. tostring(continuous_trap:IsRitualSpell()))
       Debug.Message("ritual spell " .. tostring(ritual_spell:IsRitualSpell()) .. "/" .. tostring(ritual_spell:IsContinuousTrap()))
       Debug.Message("continuous spell " .. tostring(continuous_spell:IsContinuousSpell()) .. "/" .. tostring(normal_spell:IsContinuousSpell()))
       Debug.Message("drone predicate " .. tostring(drone:IsDrone()) .. "/" .. tostring(normal_spell:IsDrone()))
       Debug.Message("action predicates " .. TYPE_ACTION .. "/" .. tostring(action_spell:IsActionCard()) .. "/" .. tostring(action_spell:IsActionSpell()) .. "/" .. tostring(action_trap:IsActionTrap()) .. "/" .. tostring(action_field:IsActionField()) .. "/" .. tostring(action_field:IsActionCard()))
+      Debug.Message("champion predicates " .. tostring(champion_code:IsChampion()) .. "/" .. tostring(champion_set:IsChampion()) .. "/" .. tostring(normal_spell:IsChampion()))
       Debug.Message("set/race helpers " .. drone:GetSetCard() .. "/" .. tostring(drone:IsRaceExcept(RACE_DRAGON)) .. "/" .. tostring(drone:IsRaceExcept(RACE_SPELLCASTER|RACE_DRAGON)))
       Debug.Message("anime colors " .. tostring(known_red:IsRed()) .. "/" .. tostring(setcode_red:IsRed()) .. "/" .. tostring(known_white:IsWhite()) .. "/" .. tostring(setcode_white:IsWhite()) .. "/" .. tostring(normal_spell:IsRed()) .. "/" .. tostring(normal_spell:IsWhite()))
       `,
@@ -94,6 +99,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("continuous spell true/false");
     expect(host.messages).toContain("drone predicate true/false");
     expect(host.messages).toContain("action predicates 268435456/true/true/true/true/false");
+    expect(host.messages).toContain("champion predicates true/true/false");
     expect(host.messages).toContain("set/race helpers 1409/true/false");
     expect(host.messages).toContain("anime colors true/true/true/true/false/false");
   });

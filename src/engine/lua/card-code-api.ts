@@ -91,6 +91,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsInfinity"));
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
   pushBooleanGetter(L, "IsWhite", session, (card) => Boolean(card && isAnimeArchetype(card, whiteSetcodes, whiteCodes)));
+  pushBooleanGetter(L, "IsChampion", session, (card) => Boolean(card && isAnimeArchetype(card, championSetcodes, championCodes)));
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
@@ -253,3 +254,6 @@ const whiteCodes = [
   "21579049",
   "57964143",
 ] as const;
+
+const championSetcodes = [0x152f] as const;
+const championCodes = ["82382815", "27553701"] as const;
