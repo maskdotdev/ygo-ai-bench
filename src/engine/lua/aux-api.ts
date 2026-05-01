@@ -236,6 +236,9 @@ function installEquipProcedure(L: unknown, readLuaError: (state: unknown) => str
         return et and (et:GetControler()==e:GetHandlerPlayer())==self
       end
     end
+    function aux.StatChangeDamageStepCondition()
+      return not Duel.IsDamageCalculated()
+    end
     function aux.FilterMaximumSideFunction(f,...)
       local params={...}
       return function(target)

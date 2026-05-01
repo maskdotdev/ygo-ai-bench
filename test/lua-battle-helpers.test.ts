@@ -194,6 +194,44 @@ describe("Lua battle helpers", () => {
     expect(session.state.battleDamage[1]).toBe(0);
   });
 
+  it("lets Lua scripts check stat change damage step timing", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Stat Timing Probe", kind: "monster" }];
+    const session = createDuel({ seed: 159, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const before = host.loadScript(
+      `Debug.Message("stat timing main " .. tostring(aux.StatChangeDamageStepCondition()) .. "/" .. Duel.GetCurrentPhase())`,
+      "stat-change-main.lua",
+    );
+    expect(before.ok, before.error).toBe(true);
+
+    session.state.phase = "battle";
+    session.state.battleStep = "damage";
+    const damageStep = host.loadScript(
+      `Debug.Message("stat timing damage " .. tostring(aux.StatChangeDamageStepCondition()) .. "/" .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsDamageCalculated()))`,
+      "stat-change-damage.lua",
+    );
+    expect(damageStep.ok, damageStep.error).toBe(true);
+
+    session.state.battleStep = "damageCalculation";
+    const damageCalculation = host.loadScript(
+      `Debug.Message("stat timing calculation " .. tostring(aux.StatChangeDamageStepCondition()) .. "/" .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsDamageCalculated()))`,
+      "stat-change-damage-calculation.lua",
+    );
+    expect(damageCalculation.ok, damageCalculation.error).toBe(true);
+
+    expect(host.messages).toEqual([
+      "stat timing main true/4",
+      "stat timing damage true/32/false",
+      "stat timing calculation false/64/true",
+    ]);
+  });
+
   it("lets Lua scripts record attack cost payment status", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Cost Attacker", kind: "monster", attack: 1800 },
