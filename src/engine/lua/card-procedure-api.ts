@@ -60,6 +60,17 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       if not mt then return 0 end
       return mt.MaximumAttack or 0
     end
+    function Card.AddMaximumAtkHandler(c)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE+EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_CANNOT_DISABLE)
+      e1:SetRange(LOCATION_MZONE)
+      e1:SetCondition(function(e) return e:GetHandler():IsMaximumMode() end)
+      e1:SetCode(EFFECT_SET_BASE_ATTACK)
+      e1:SetValue(c:GetMaximumAttack())
+      c:RegisterEffect(e1)
+      return e1
+    end
     function Card.IsLegend(c)
       local mt=c:GetMetatable(false)
       return c:IsHasEffect(EFFECT_IS_LEGEND)~=nil or (mt and mt.is_legend==true) or c:IsOriginalCode(160001000,160205001,160418001,160002000,160421015,160404001,160421016,160432004)

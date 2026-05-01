@@ -10,6 +10,7 @@ export const cardFieldNames = [
   "IsNouvellesSummoned",
   "GetTributeRequirement",
   "GetMaximumAttack",
+  "AddMaximumAtkHandler",
   "IsLegend",
   "GetToBeLinkedZone",
   "GetCode",
