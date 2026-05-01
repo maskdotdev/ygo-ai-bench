@@ -363,6 +363,16 @@ function installEffectCompatibilityApi(L: unknown, readLuaError: (state: unknown
       e1:SetOperation(apply_operation)
       return e1
     end
+    function Effect.HasRemainFieldCost(e)
+      return e:GetCost()==aux.RemainFieldCost
+    end
+    function Effect.HasDetachCost(e)
+      local cost=e:GetCost()
+      return cost~=nil and __duel_detach_costs~=nil and __duel_detach_costs[cost] or false
+    end
+    local create_effect,global_effect=Effect.CreateEffect,Effect.GlobalEffect
+    function Effect.CreateEffect(c) return setmetatable(create_effect(c),{__index=Effect}) end
+    function Effect.GlobalEffect() return setmetatable(global_effect(),{__index=Effect}) end
   `;
   const status = lauxlib.luaL_loadbuffer(L, to_luastring(source), source.length, to_luastring("effect-compat.lua"));
   if (status !== lua.LUA_OK || lua.lua_pcall(L, 0, 0, 0) !== lua.LUA_OK) throw new Error(readLuaError(L));

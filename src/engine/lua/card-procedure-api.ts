@@ -188,15 +188,18 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       return Duel.IsTurnPlayer(player) and not Duel.IsPhase(PHASE_END)
     end
     Cost=Cost or {}
+    __duel_detach_costs=__duel_detach_costs or setmetatable({}, {__mode="k"})
     function Cost.DetachFromSelf(count,max,op)
       max=max or count
-      return function(e,tp,eg,ep,ev,re,r,rp,chk)
+      local cost=function(e,tp,eg,ep,ev,re,r,rp,chk)
         local c=e:GetHandler()
         local min_count=type(count)=="function" and count(e,tp) or count
         local max_count=type(max)=="function" and max(e,tp) or max
         if chk==0 then return c and c:CheckRemoveOverlayCard(tp,min_count,REASON_COST) end
         if c:RemoveOverlayCard(tp,min_count,max_count,REASON_COST)>0 and op then op(e,Duel.GetOperatedGroup()) end
       end
+      __duel_detach_costs[cost]=true
+      return cost
     end
     function Card.SetSPSummonOnce(c,id)
       local mt=c:GetMetatable(false)

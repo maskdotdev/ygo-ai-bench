@@ -392,6 +392,38 @@ describe("Lua effect metadata helpers", () => {
     });
   });
 
+  it("classifies Lua effect cost helper families", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Cost Metadata Source", kind: "monster" }];
+    const session = createDuel({ seed: 166, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local detach=Effect.CreateEffect(c)
+      detach:SetCost(Cost.DetachFromSelf(1))
+      local remain=Effect.CreateEffect(c)
+      remain:SetCost(aux.RemainFieldCost)
+      local custom=Effect.CreateEffect(c)
+      custom:SetCost(function() return true end)
+      Debug.Message("cost families detach " .. tostring(detach:HasDetachCost()) .. "/" .. tostring(detach:HasRemainFieldCost()))
+      Debug.Message("cost families remain " .. tostring(remain:HasDetachCost()) .. "/" .. tostring(remain:HasRemainFieldCost()))
+      Debug.Message("cost families custom " .. tostring(custom:HasDetachCost()) .. "/" .. tostring(custom:HasRemainFieldCost()))
+      `,
+      "effect-cost-families.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("cost families detach true/false");
+    expect(host.messages).toContain("cost families remain false/true");
+    expect(host.messages).toContain("cost families custom false/false");
+  });
+
   it("registers Lua normal summon and set procedure effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Procedure Source", kind: "monster", level: 7 },
