@@ -1,5 +1,6 @@
 export const cardFieldNames = [
   "RegisterEffect",
+  "SetSPSummonOnce",
   "AddCannotBeSpecialSummoned",
   "AddMustBeSpecialSummoned",
   "AddMustBeSpecialSummonedByCardEffect",
@@ -120,7 +121,9 @@ export const cardFieldNames = [
   "IsMotor",
   "IsN39Utopia",
   "IsNeko",
+  "IsPaleozoic",
   "IsPapillon",
+  "IsParasite",
   "IsShark",
   "IsStarvingVenemy",
   "IsEarth",

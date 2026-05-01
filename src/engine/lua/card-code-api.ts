@@ -171,7 +171,9 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsMotor", session, (card) => Boolean(card && isAnimeArchetype(card, motorSetcodes, motorCodes)));
   pushBooleanGetter(L, "IsN39Utopia", session, (card) => Boolean(card && isAnimeArchetype(card, n39UtopiaSetcodes, n39UtopiaCodes) && !isAnimeArchetype(card, cn39UtopiaRaySetcodes, cn39UtopiaRayCodes)));
   pushBooleanGetter(L, "IsNeko", session, (card) => Boolean(card && isAnimeArchetype(card, nekoSetcodes, nekoCodes)));
+  pushBooleanGetter(L, "IsPaleozoic", session, (card) => Boolean(card && isAnimeArchetype(card, paleozoicSetcodes, paleozoicCodes)));
   pushBooleanGetter(L, "IsPapillon", session, (card) => Boolean(card && isAnimeArchetype(card, papillonSetcodes, papillonCodes)));
+  pushBooleanGetter(L, "IsParasite", session, (card) => Boolean(card && isAnimeArchetype(card, parasiteSetcodes, parasiteCodes)));
   pushBooleanGetter(L, "IsShark", session, (card) => Boolean(card && isAnimeArchetype(card, sharkSetcodes, sharkCodes)));
   pushBooleanGetter(L, "IsStarvingVenemy", session, (card) => Boolean(card && isAnimeArchetype(card, starvingVenemySetcodes, starvingVenemyCodes)));
   pushBooleanGetter(L, "IsEarth", session, (card) => Boolean(card && isAnimeArchetype(card, earthSetcodes, earthCodes) && !isAnimeArchetype(card, hellSetcodes, hellCodes)));
@@ -557,6 +559,10 @@ const n39UtopiaSetcodes = [0x539] as const;
 const n39UtopiaCodes = ["56832966", "86532744", "84013237", "62517849", "93777634", "84124261"] as const;
 const nekoSetcodes = [0x538] as const;
 const nekoCodes = ["8634636", "45452224", "67381587", "24101897", "28981598", "70975131", "24140059", "51777272", "11439455", "87772572", "46057733"] as const;
+const paleozoicSetcodes = [0x57e] as const;
+const paleozoicCodes = ["21225115", "57157964", "96897184"] as const;
+const parasiteSetcodes = [0x53d] as const;
+const parasiteCodes = ["49966595", "6205579"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
