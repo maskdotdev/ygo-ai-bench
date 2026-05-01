@@ -95,7 +95,11 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetSummonPlayer", session, (card) => card?.summonPlayer ?? card?.controller ?? 0);
   pushNumberGetter(L, "GetLocation", session, (card) => locationMaskFromLocation(card?.location));
   pushNumberGetter(L, "GetSequence", session, (card) => card?.sequence ?? 0);
+  pushNumberGetter(L, "GetFieldID", session, (card) => cardFieldId(card));
+  pushNumberGetter(L, "GetRealFieldID", session, (card) => cardFieldId(card));
   pushNumberMatcher(L, "IsSequence", session, (card, requested) => card.sequence === requested);
+  pushNumberMatcher(L, "IsFieldID", session, (card, requested) => cardFieldId(card) === requested);
+  pushNumberMatcher(L, "IsRealFieldID", session, (card, requested) => cardFieldId(card) === requested);
   pushNumberGetter(L, "GetPosition", session, (card) => positionMaskFromPosition(card?.position));
   pushNumberGetter(L, "GetOverlayCount", session, (card) => card?.overlayUids.length ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -325,6 +329,16 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
 
 function equippedCards(session: DuelSession, uid: string): DuelCardInstance[] {
   return session.state.cards.filter((card) => card.equippedToUid === uid && card.location === "spellTrapZone");
+}
+
+function cardFieldId(card: DuelCardInstance | undefined): number {
+  if (!card) return 0;
+  let value = 0x811c9dc5;
+  for (let index = 0; index < card.uid.length; index += 1) {
+    value ^= card.uid.charCodeAt(index);
+    value = Math.imul(value, 0x01000193) >>> 0;
+  }
+  return value & 0x7fffffff;
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {

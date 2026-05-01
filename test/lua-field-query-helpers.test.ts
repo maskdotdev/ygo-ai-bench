@@ -6,6 +6,38 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua field and query helpers", () => {
+  it("exposes stable Lua card field ids", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Field Id A", kind: "monster" },
+      { code: "200", name: "Field Id B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 46, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local a=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local b=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local fid=a:GetFieldID()
+      local rfid=a:GetRealFieldID()
+      Debug.Message("field id stable " .. tostring(fid==a:GetFieldID()) .. "/" .. tostring(fid>0))
+      Debug.Message("field id distinct " .. tostring(fid~=b:GetFieldID()))
+      Debug.Message("field id matchers " .. tostring(a:IsFieldID(fid)) .. "/" .. tostring(a:IsRealFieldID(rfid)) .. "/" .. tostring(b:IsFieldID(fid)))
+      `,
+      "card-field-id.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("field id stable true/true");
+    expect(host.messages).toContain("field id distinct true");
+    expect(host.messages).toContain("field id matchers true/true/false");
+  });
+
   it("exposes exact Lua card type predicates", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Continuous Trap", kind: "trap", typeFlags: 0x20004 },
