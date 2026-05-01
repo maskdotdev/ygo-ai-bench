@@ -159,6 +159,36 @@ describe("Lua effect metadata helpers", () => {
     });
   });
 
+  it("registers Lua normal summon and set procedure effects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Procedure Source", kind: "monster", level: 7 }];
+    const session = createDuel({ seed: 57, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local ns=aux.AddNormalSummonProcedure(c,true,true,1,1,SUMMON_TYPE_TRIBUTE,1234)
+      local ls=aux.AddNormalSummonProcedure(c,false,false,2,2)
+      local st=aux.AddNormalSetProcedure(c,true,true,1,1,SUMMON_TYPE_TRIBUTE,5678)
+      local lt=aux.AddNormalSetProcedure(c,false,false,2,2)
+      Debug.Message("normal proc codes " .. ns:GetCode() .. "/" .. ls:GetCode() .. "/" .. st:GetCode() .. "/" .. lt:GetCode())
+      Debug.Message("normal proc metadata " .. ns:GetDescription() .. "/" .. st:GetDescription() .. "/" .. ns:GetProperty() .. "/" .. ns:GetValue())
+      Debug.Message("normal proc callbacks " .. tostring(ns:GetCondition()(ns,c,0,0,0,nil)) .. "/" .. tostring(ls:GetCondition()(ls,nil,0,0,0,nil)) .. "/" .. tostring(ns:GetTarget()~=nil) .. "/" .. tostring(ns:GetOperation()~=nil))
+      `,
+      "normal-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("normal proc codes 32/33/36/37");
+    expect(host.messages).toContain("normal proc metadata 1234/5678/263168/285212672");
+    expect(host.messages).toContain("normal proc callbacks true/true/true/true");
+  });
+
   it("creates Mysterune quick-play effect metadata", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Runick Probe", kind: "spell" }];
     const session = createDuel({ seed: 161, startingHandSize: 1, cardReader: createCardReader(cards) });
