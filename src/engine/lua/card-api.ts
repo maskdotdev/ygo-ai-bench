@@ -11,6 +11,7 @@ import { installCardCodeApi } from "#lua/card-code-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { cardFieldNames } from "#lua/card-field-names.js";
+import { installCardLinkApi } from "#lua/card-link-api.js";
 import { installCardRelationApi } from "#lua/card-relation-api.js";
 import { installCardRushApi } from "#lua/card-rush-api.js";
 import { cardLink, cardRank, cardTypeFlags, installCardStatApi } from "#lua/card-stat-api.js";
@@ -73,6 +74,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   installCardCodeApi(L, session);
   installCardStatApi(L, session);
   installCardBattleApi(L, session);
+  installCardLinkApi(L, session);
   installEffectBackedStatHelpers(L, session, hostState);
   installStateHelpers(L, session, hostState);
   installCardFlagApi(L, session);

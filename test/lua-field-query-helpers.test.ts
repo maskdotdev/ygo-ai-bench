@@ -208,6 +208,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsCicada", code: "4997565", setcode: 0x50f },
       { method: "IsClear", code: "97811903", setcode: 0x510 },
       { method: "IsCN39UtopiaRay", code: "56840427", setcode: 0x1539 },
+      { method: "IsComicsHero", code: "77631175", setcode: 0x511 },
       { method: "IsDyson", code: "1992816", setcode: 0x519 },
       { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
@@ -255,7 +256,7 @@ describe("Lua field and query helpers", () => {
   it("lets Lua scripts check linked monster-zone cards", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Right Link", kind: "extra", typeFlags: 0x4000001, level: 2, linkMarkers: 0x20 },
-      { code: "200", name: "Linked Monster", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Co-linked Monster", kind: "extra", typeFlags: 0x4000001, level: 1, linkMarkers: 0x8 },
       { code: "300", name: "Unlinked Monster", kind: "monster", typeFlags: 0x21 },
       { code: "400", name: "Left Link", kind: "extra", typeFlags: 0x4000001, level: 2, linkMarkers: 0x8 },
     ];
@@ -300,6 +301,7 @@ describe("Lua field and query helpers", () => {
       local linked_group=link:GetLinkedGroup()
       local duel_linked_group=Duel.GetLinkedGroup(0,LOCATION_MZONE,0)
       Debug.Message("linked checks " .. tostring(link:IsLinked()) .. "/" .. tostring(linked:IsLinked()) .. "/" .. tostring(unlinked:IsLinked()))
+      Debug.Message("co-linked checks " .. tostring(link:IsCoLinked()) .. "/" .. tostring(link:IsCoLinked(2)) .. "/" .. tostring(linked:IsCoLinked()) .. "/" .. tostring(unlinked:IsCoLinked()))
       Debug.Message("linked zone counts " .. Duel.GetZoneWithLinkedCount(1,0) .. "/" .. Duel.GetZoneWithLinkedCount(2,0))
       Debug.Message("linked zones " .. link:GetLinkedZone(0) .. "/" .. Duel.GetLinkedZone(0) .. "/" .. link_group:GetLinkedZone(0) .. "/" .. Duel.GetLinkedZone(1))
       Debug.Message("mmz pointed " .. aux.GetMMZonesPointedTo(0) .. "/" .. aux.GetMMZonesPointedTo(0,Card.IsCode,LOCATION_MZONE,0,nil,100) .. "/" .. aux.GetMMZonesPointedTo(0,Card.IsCode,LOCATION_MZONE,0,nil,400))
@@ -316,12 +318,13 @@ describe("Lua field and query helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("linked checks true/true/false");
-    expect(host.messages).toContain("linked zone counts 2/2");
-    expect(host.messages).toContain("linked zones 2/2/2/0");
-    expect(host.messages).toContain("mmz pointed 2/2/2");
+    expect(host.messages).toContain("co-linked checks true/false/true/false");
+    expect(host.messages).toContain("linked zone counts 3/2");
+    expect(host.messages).toContain("linked zones 2/3/3/0");
+    expect(host.messages).toContain("mmz pointed 3/2/2");
     expect(host.messages).toContain("zpt helpers 1/true/false/true/true");
     expect(host.messages).toContain("linked group 1/1/true/false");
-    expect(host.messages).toContain("duel linked group 1/true/0");
+    expect(host.messages).toContain("duel linked group 2/true/0");
   });
 
   it("lets Lua scripts check Rikka releasable cards", () => {
