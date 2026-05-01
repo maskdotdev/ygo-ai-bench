@@ -297,6 +297,17 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       local eff=c:IsHasEffect(EFFECT_EXTRA_RELEASE_NONSUM)
       return not (c:IsControler(1-tp) and eff and eff.CheckCountLimit and eff:CheckCountLimit(tp)) and not c:IsHasEffect(EFFECT_EXTRA_RELEASE)
     end
+    function aux.ReleaseNonSumCheck(c,tp,e)
+      if c:IsControler(tp) then return false end
+      local chk=false
+      for _,eff in ipairs({c:GetCardEffect(EFFECT_EXTRA_RELEASE_NONSUM)}) do
+        local val=eff:GetValue()
+        if type(val)=="number" then chk=val~=0
+        else chk=val(eff,e,REASON_COST,tp) end
+        if chk then return true end
+      end
+      return chk
+    end
     function aux.IceBarrierDiscardFilter(c,tp)
       local eff=c:IsHasEffect(EFFECT_ICEBARRIER_REPLACE)
       return c:IsLocation(LOCATION_GRAVE) and eff and eff:CheckCountLimit(tp)

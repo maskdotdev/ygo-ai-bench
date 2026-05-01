@@ -522,6 +522,57 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("release check target hit true");
   });
 
+  it("lets Lua scripts identify opponent extra non-summon release effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Own Release Candidate", kind: "monster" },
+      { code: "200", name: "Opponent Numeric Release", kind: "monster" },
+      { code: "300", name: "Opponent Zero Release", kind: "monster" },
+      { code: "400", name: "Opponent Function Release", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 21, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200", "300", "400"] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", card.controller);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local own = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local numeric = Duel.GetFieldCard(1, LOCATION_MZONE, 0)
+      local zero = Duel.GetFieldCard(1, LOCATION_MZONE, 1)
+      local function_card = Duel.GetFieldCard(1, LOCATION_MZONE, 2)
+      local current = Effect.CreateEffect(own)
+      local numeric_effect = Effect.CreateEffect(numeric)
+      numeric_effect:SetType(EFFECT_TYPE_SINGLE)
+      numeric_effect:SetCode(EFFECT_EXTRA_RELEASE_NONSUM)
+      numeric_effect:SetValue(1)
+      numeric:RegisterEffect(numeric_effect)
+      local zero_effect = Effect.CreateEffect(zero)
+      zero_effect:SetType(EFFECT_TYPE_SINGLE)
+      zero_effect:SetCode(EFFECT_EXTRA_RELEASE_NONSUM)
+      zero_effect:SetValue(0)
+      zero:RegisterEffect(zero_effect)
+      local function_effect = Effect.CreateEffect(function_card)
+      function_effect:SetType(EFFECT_TYPE_SINGLE)
+      function_effect:SetCode(EFFECT_EXTRA_RELEASE_NONSUM)
+      function_effect:SetValue(function(e,ce,reason,tp) return ce==current and reason==REASON_COST and tp==0 end)
+      function_card:RegisterEffect(function_effect)
+      Debug.Message("release nonsum " .. tostring(aux.ReleaseNonSumCheck(own,0,current)) .. "/" .. tostring(aux.ReleaseNonSumCheck(numeric,0,current)) .. "/" .. tostring(aux.ReleaseNonSumCheck(zero,0,current)) .. "/" .. tostring(aux.ReleaseNonSumCheck(function_card,0,current)))
+      Debug.Message("release nonsum wrong player " .. tostring(aux.ReleaseNonSumCheck(function_card,1,current)))
+      `,
+      "release-nonsum-check.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("release nonsum false/true/false/true");
+    expect(host.messages).toContain("release nonsum wrong player false");
+  });
+
   it("lets Lua scripts collect must-be material effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Synchro Must Material", kind: "monster" },
