@@ -1633,6 +1633,17 @@ describe("Lua state helpers", () => {
     expect(applyResponse(session, fusion!).ok).toBe(true);
     const fusionCard = session.state.cards.find((card) => card.code === "900");
     expect(fusionCard?.summonType).toBe("fusion");
+
+    const fusionPredicateResult = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("fusion predicates " .. tostring(c:IsFusionSummoned()) .. "/" .. tostring(c:IsSpecialSummoned()) .. "/" .. tostring(c:IsRitualSummoned()))
+      `,
+      "summon-type-predicates.lua",
+    );
+    expect(fusionPredicateResult.ok, fusionPredicateResult.error).toBe(true);
+    expect(host.messages).toContain("fusion predicates true/true/false");
+
     fusionCard!.summonTypeCode = 0x40000000 + 151;
 
     const fusionResult = host.loadScript(
@@ -1642,7 +1653,7 @@ describe("Lua state helpers", () => {
       Debug.Message("fusion phase/materials " .. c:GetSummonPhase() .. "/" .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
       Debug.Message("fusion location " .. tostring(c:IsSummonLocation(LOCATION_EXTRA)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_HAND)))
       Debug.Message("fusion player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
-      Debug.Message("fusion special " .. tostring(c:IsSpecialSummoned()))
+      Debug.Message("fusion special " .. tostring(c:IsSpecialSummoned()) .. "/" .. tostring(c:IsFusionSummoned()) .. "/" .. tostring(c:IsRitualSummoned()))
       local e=Effect.CreateEffect(c)
       Debug.Message("custom summon type " .. c:GetSummonType() .. "/" .. tostring(aux.evospcon(e)) .. "/" .. tostring(aux.gbspcon(e)))
       Debug.Message("fusion status " .. tostring(c:IsStatus(STATUS_SUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_SPSUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_PROC_COMPLETE)))
@@ -1657,7 +1668,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("fusion phase/materials 4/2/2");
     expect(host.messages).toContain("fusion location true/false");
     expect(host.messages).toContain("fusion player/type 0/true/true");
-    expect(host.messages).toContain("fusion special true");
+    expect(host.messages).toContain("fusion special true/false/false");
     expect(host.messages).toContain("custom summon type 1073741975/true/false");
     expect(host.messages).toContain("fusion status false/true/true");
     expect(host.messages).toContain("fusion activity 2/1/1");
