@@ -162,6 +162,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsSynchroMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x2001) === 0x2001));
   pushBooleanGetter(L, "IsEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x21) === 0x21));
   pushBooleanGetter(L, "IsNonEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x20) === 0));
+  pushBooleanGetter(L, "IsLinked", session, (card) => Boolean(card && isLinkedMonsterZoneCard(session.state, card)));
   pushBooleanGetter(L, "IsDrone", session, (card) => Boolean(card?.data.setcodes?.includes(0x581)));
   pushBooleanGetter(L, "IsForbidden", session, () => false);
   pushBooleanGetter(L, "CheckAdjacent", session, (card) => Boolean(card && hasAdjacentMonsterZone(session.state, card)));
@@ -702,6 +703,31 @@ function readCardOrGroupUids(L: unknown, index: number): string[] {
 
 function linkMaterialRating(card: DuelCardInstance): number {
   return cardLink(card) || 1;
+}
+
+function isLinkedMonsterZoneCard(state: DuelState, card: DuelCardInstance): boolean {
+  if (card.location !== "monsterZone" || !card.faceUp) return false;
+  return monsterZoneCards(state).some((candidate) => {
+    if (candidate.uid === card.uid || !candidate.faceUp) return false;
+    return linkPointsTo(candidate, card) || linkPointsTo(card, candidate);
+  });
+}
+
+function monsterZoneCards(state: DuelState): DuelCardInstance[] {
+  return state.cards.filter((card) => card.location === "monsterZone");
+}
+
+function linkPointsTo(source: DuelCardInstance, target: DuelCardInstance): boolean {
+  if (source.controller !== target.controller || cardLink(source) <= 0) return false;
+  return linkedSequences(source.sequence, source.data.linkMarkers ?? 0).includes(target.sequence);
+}
+
+function linkedSequences(sequence: number, markers: number): number[] {
+  const sequences: number[] = [];
+  if ((markers & 0x8) !== 0) sequences.push(sequence - 1);
+  if ((markers & 0x20) !== 0) sequences.push(sequence + 1);
+  if ((markers & 0x1) !== 0 || (markers & 0x2) !== 0 || (markers & 0x4) !== 0) sequences.push(sequence);
+  return sequences.filter((target) => target >= 0 && target <= 6);
 }
 
 function createMaterialCheckContext(state: DuelState): ContinuousEffectContextFactory {
