@@ -317,17 +317,24 @@ describe("Lua field and query helpers", () => {
       .sort((a, b) => a.sequence - b.sequence)
       .map((card) => card.code);
     const expectedTop = expectedDeck.slice(0, 2);
+    const expectedBottom = expectedDeck.slice(-2);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
       `
       Duel.DisableShuffleCheck()
       local top = Duel.GetDecktopGroup(0, 2)
+      local bottom = Duel.GetDeckbottomGroup(0, 2)
       Debug.Message("top count " .. top:GetCount())
+      Debug.Message("bottom count " .. bottom:GetCount())
       local first = top:GetNext()
       local second = top:GetNext()
+      local first_bottom = bottom:GetNext()
+      local second_bottom = bottom:GetNext()
       Debug.Message("first top " .. first:GetCode())
       Debug.Message("second top " .. second:GetCode())
+      Debug.Message("first bottom " .. first_bottom:GetCode())
+      Debug.Message("second bottom " .. second_bottom:GetCode())
       Duel.SortDecktop(0, 0, 2)
       Debug.Message("sort top operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Duel.SortDeckbottom(0, 0, 2)
@@ -342,8 +349,11 @@ describe("Lua field and query helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("top count 2");
+    expect(host.messages).toContain("bottom count 2");
     expect(host.messages).toContain(`first top ${expectedTop[0]}`);
     expect(host.messages).toContain(`second top ${expectedTop[1]}`);
+    expect(host.messages).toContain(`first bottom ${expectedBottom[0]}`);
+    expect(host.messages).toContain(`second bottom ${expectedBottom[1]}`);
     expect(host.messages).toContain(`sort top operated 2/${expectedTop[0]}`);
     expect(host.messages).toContain(`sort bottom operated 2/${expectedDeck[expectedDeck.length - 2]}`);
     expect(host.messages).toContain(`confirmed 1: ${expectedTop.join(",")}`);
@@ -853,6 +863,9 @@ describe("Lua field and query helpers", () => {
       Debug.Message("attribute " .. c:GetAttribute() .. " " .. tostring(c:IsAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsOriginalAttribute(ATTRIBUTE_DARK)))
       local multi = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("attribute except " .. tostring(c:IsAttributeExcept(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsAttributeExcept(ATTRIBUTE_LIGHT)) .. "/" .. tostring(multi:IsAttributeExcept(ATTRIBUTE_DARK)) .. "/" .. tostring(multi:IsAttributeExcept(ATTRIBUTE_DARK|ATTRIBUTE_LIGHT)))
+      local attrs={}
+      for _,str in aux.GetAttributeStrings(ATTRIBUTE_LIGHT|ATTRIBUTE_DARK) do table.insert(attrs,str) end
+      Debug.Message("attribute strings " .. table.concat(attrs,","))
       Debug.Message("not attribute " .. tostring(c:IsNotAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsNotAttribute(ATTRIBUTE_LIGHT)))
       Debug.Message("not original attribute " .. tostring(c:IsNotOriginalAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsNotOriginalAttribute(ATTRIBUTE_LIGHT)))
       Debug.Message("spell count " .. Duel.GetMatchingGroupCount(aux.FilterBoolFunction(Card.IsType, TYPE_SPELL), 0, LOCATION_HAND, 0, nil))
@@ -906,6 +919,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not race false/true");
     expect(host.messages).toContain("attribute 32 true/true");
     expect(host.messages).toContain("attribute except false/true/true/false");
+    expect(host.messages).toContain("attribute strings 1014,1015");
     expect(host.messages).toContain("not attribute false/true");
     expect(host.messages).toContain("not original race false/true");
     expect(host.messages).toContain("not original attribute false/true");

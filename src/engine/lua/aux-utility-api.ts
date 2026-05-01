@@ -335,6 +335,32 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       if coin==COIN_TAILS then return 63 end
       return nil
     end
+    function aux.BitSplit(v)
+      local res={}
+      local i=0
+      while 2^i<=v do
+        local p=2^i
+        if v & p~=0 then table.insert(res,p) end
+        i=i+1
+      end
+      return pairs(res)
+    end
+    function aux.GetAttributeStrings(v)
+      local t={
+        [ATTRIBUTE_EARTH]=1010,
+        [ATTRIBUTE_WATER]=1011,
+        [ATTRIBUTE_FIRE]=1012,
+        [ATTRIBUTE_WIND]=1013,
+        [ATTRIBUTE_LIGHT]=1014,
+        [ATTRIBUTE_DARK]=1015,
+        [ATTRIBUTE_DIVINE]=1016
+      }
+      local res={}
+      for _,att in aux.BitSplit(v) do
+        if t[att] then table.insert(res,t[att]) end
+      end
+      return pairs(res)
+    end
     function aux.FieldSummonProcTg(fun1,fun2)
       return function(e,tp,eg,ep,ev,re,r,rp,chk,c,...)
         if not c then

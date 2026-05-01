@@ -88,6 +88,13 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetDecktopGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
+    const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
+    pushGroupTable(state, deckSegmentUids(session, player, count, "bottom"));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetDeckbottomGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGoatConfirm(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GoatConfirm"));
   lua.lua_pushcfunction(L, (state: unknown) => {
