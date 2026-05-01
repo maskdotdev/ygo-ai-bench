@@ -377,7 +377,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const summonType = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
-    const player = lua.lua_isnumber(state, 4) ? normalizePlayer(lua.lua_tointeger(state, 4)) : card?.controller;
+    const player = readSpecialSummonTargetPlayer(state, card);
     lua.lua_pushboolean(state, Boolean(card && player !== undefined && canSpecialSummonFromLua(session, card, player, summonType)));
     return 1;
   });
@@ -726,6 +726,12 @@ function isPendulumCard(card: DuelCardInstance): boolean {
 function readCardOrGroupUids(L: unknown, index: number): string[] {
   const cardUid = readCardUid(L, index);
   return cardUid ? [cardUid] : readGroupUids(L, index);
+}
+
+function readSpecialSummonTargetPlayer(L: unknown, card: DuelCardInstance | undefined): PlayerId | undefined {
+  if (lua.lua_isnumber(L, 8)) return normalizePlayer(lua.lua_tointeger(L, 8));
+  if (lua.lua_isnumber(L, 4)) return normalizePlayer(lua.lua_tointeger(L, 4));
+  return card?.controller;
 }
 
 function isLinkedMonsterZoneCard(state: DuelState, card: DuelCardInstance): boolean {

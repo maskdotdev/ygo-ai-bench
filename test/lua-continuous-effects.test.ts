@@ -421,6 +421,38 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("can special locked false");
   });
 
+  it("lets Lua scripts check special summons to a target player's field", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Special Check Target", kind: "monster" },
+      { code: "300", name: "Opponent Filler", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 53, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["300", "300", "300", "300", "300"] },
+    });
+    startDuel(session);
+
+    const target = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    expect(target).toBeTruthy();
+    for (const filler of session.state.cards.filter((card) => card.controller === 1 && card.code === "300")) {
+      moveDuelCard(session.state, filler.uid, "monsterZone", 1);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can special own open " .. tostring(target:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK,0)))
+      Debug.Message("can special opponent full " .. tostring(target:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK,1,0xff)))
+      `,
+      "can-be-special-target-player.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("can special own open true");
+    expect(host.messages).toContain("can special opponent full false");
+  });
+
   it("applies Lua continuous attack restrictions", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Locked Attacker", kind: "monster", attack: 1600 }];
     const session = createDuel({ seed: 40, startingHandSize: 1, cardReader: createCardReader(cards) });
