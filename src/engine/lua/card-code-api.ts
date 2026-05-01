@@ -128,6 +128,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsDart", session, (card) => Boolean(card && isAnimeArchetype(card, dartSetcodes, dartCodes)));
   pushBooleanGetter(L, "IsDice", session, (card) => Boolean(card && isAnimeArchetype(card, diceSetcodes, diceCodes)));
   pushBooleanGetter(L, "IsDog", session, (card) => Boolean(card && isAnimeArchetype(card, dogSetcodes, dogCodes)));
+  pushBooleanGetter(L, "IsDoll", session, (card) => Boolean(card && isAnimeArchetype(card, dollSetcodes, dollCodes)));
   pushBooleanGetter(L, "IsDyson", session, (card) => Boolean(card && isAnimeArchetype(card, dysonSetcodes, dysonCodes)));
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
   pushBooleanGetter(L, "IsWhite", session, (card) => Boolean(card && isAnimeArchetype(card, whiteSetcodes, whiteCodes)));
@@ -370,6 +371,26 @@ const dogCodes = [
   "6480253",
   "47929865",
   "94667532",
+] as const;
+
+const dollSetcodes = [0x517, 0x9d, 0x15c] as const;
+const dollCodes = [
+  "85639257",
+  "2903036",
+  "20590515",
+  "72657739",
+  "97520532",
+  "7593748",
+  "92418590",
+  "79086452",
+  "63825486",
+  "39806198",
+  "12678601",
+  "53303460",
+  "49563947",
+  "11449436",
+  "91939608",
+  "82579942",
 ] as const;
 
 const dysonSetcodes = [0x519] as const;

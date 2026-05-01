@@ -202,6 +202,7 @@ describe("Lua effect metadata helpers", () => {
       Debug.Message("double tribute available " .. tostring(c:CanBeDoubleTribute(FLAG_DOUBLE_TRIB_WINGEDBEAST,FLAG_DOUBLE_TRIB_LIGHT)))
       c:AddDoubleTribute(160005033,aux.TRUE,aux.TRUE,0,FLAG_DOUBLE_TRIB_WINGEDBEAST,FLAG_DOUBLE_TRIB_LIGHT)
       Debug.Message("double tribute unavailable " .. tostring(c:CanBeDoubleTribute(FLAG_DOUBLE_TRIB_WINGEDBEAST,FLAG_DOUBLE_TRIB_LIGHT)))
+      Debug.Message("double tribute flags " .. tostring(c:IsDoubleTribute(FLAG_DOUBLE_TRIB_WINGEDBEAST,FLAG_DOUBLE_TRIB_LIGHT)) .. "/" .. tostring(c:IsDoubleTribute(FLAG_DOUBLE_TRIB_WINGEDBEAST,FLAG_DOUBLE_TRIB_MACHINE)))
       c:RegisterFlagEffect(c:GetOriginalCode(),RESET_EVENT,0,1)
       local min,max=c:GetTributeRequirement()
       Debug.Message("card proc codes " .. revive:GetCode() .. "/" .. cannot:GetCode() .. "/" .. must:GetCode() .. "/" .. must_by_effect:GetCode() .. "/" .. must_dark_fusion:GetCode() .. "/" .. must_fusion:GetCode() .. "/" .. must_ritual:GetCode() .. "/" .. must_synchro:GetCode() .. "/" .. must_xyz:GetCode() .. "/" .. must_link:GetCode() .. "/" .. must_pendulum:GetCode() .. "/" .. cannot_normal:GetCode() .. "/" .. cannot_flip:GetCode() .. "/" .. gemini:GetCode() .. "/" .. gemini_state:GetCode() .. "/" .. maximum_atk:GetCode())
@@ -268,6 +269,7 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("side maximum callbacks nil/nil/true/false");
     expect(host.messages).toContain("double tribute available true");
     expect(host.messages).toContain("double tribute unavailable false");
+    expect(host.messages).toContain("double tribute flags true/false");
     expect(host.messages.some((message) => message.startsWith("double tribute proc 1/1/1/"))).toBe(true);
     expect(host.messages).toContain("card proc queries 2/2/3900/true/2/true");
   });

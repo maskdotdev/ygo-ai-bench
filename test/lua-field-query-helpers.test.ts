@@ -218,6 +218,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsDart", code: "43061293", setcode: 0x513 },
       { method: "IsDice", code: "16725505", setcode: 0x514 },
       { method: "IsDog", code: "72714226", setcode: 0x516 },
+      { method: "IsDoll", code: "85639257", setcode: 0x517 },
       { method: "IsDyson", code: "1992816", setcode: 0x519 },
       { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },

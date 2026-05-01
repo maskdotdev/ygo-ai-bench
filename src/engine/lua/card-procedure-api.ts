@@ -537,6 +537,12 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       if c:GetFlagEffect(totalFlags)~=0 then return false end
       return true
     end
+    function Card.IsDoubleTribute(c,...)
+      for _,flag in ipairs({...}) do
+        if c:GetFlagEffect(flag)==0 then return false end
+      end
+      return true
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
