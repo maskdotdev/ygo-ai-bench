@@ -47,32 +47,27 @@ import {
   type DuelActivationHandlers,
 } from "#duel/effect-activation.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
+import { getDuelAttackCostPaid as getDuelAttackCostPaidRule, positionChangeActions, setDuelAttackCostPaid as setDuelAttackCostPaidRule } from "#duel/battle.js";
 import {
-  attackActions,
-  canChangeDuelCardPosition as canChangeDuelCardPositionRule,
-  canDuelCardAttack as canDuelCardAttackRule,
-  changeDuelCardPosition as changeDuelCardPositionRule,
-  declareDuelAttack as declareDuelAttackRule,
-  getDuelAttackCostPaid as getDuelAttackCostPaidRule,
-  getDuelAttackTargets as getDuelAttackTargetsRule,
-  negateDuelAttack as negateDuelAttackRule,
-  positionChangeActions,
-  setDuelAttackCostPaid as setDuelAttackCostPaidRule,
-} from "#duel/battle.js";
+  appendBattleActions,
+  canCoreChangeDuelCardPosition,
+  canCoreDuelCardAttack,
+  changeCoreDuelCardPosition,
+  declareCoreDuelAttack,
+  getCoreDuelAttackTargets,
+  negateCoreDuelAttack,
+  type CoreBattleHandlers,
+} from "#duel/core-battle.js";
 import { battleWindowActions } from "#duel/battle-window-actions.js";
 import {
   continueAttackResponseWindow,
   markBattleWindowChainStarted,
-  openAttackResponseWindow,
   passAttackResponseWindow,
   passDamageResponseWindow,
 } from "#duel/attack-response-window.js";
 import type { BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
-  isAttackPrevented,
-  extraAttackCount,
   isBattleDamagePrevented,
-  isBattleTargetPrevented,
   isMaterialUsePrevented,
   isMoveToLocationPrevented,
   isReleasePrevented,
@@ -137,6 +132,14 @@ const activationHandlers: DuelActivationHandlers = {
 const battleContinuationHandlers: BattleContinuationHandlers = {
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
   changeBattleDamage: changeDuelBattleDamageWithPrevention,
+  damagePlayer: damageDuelPlayer,
+  destroyCard: destroyDuelCard,
+};
+
+const coreBattleHandlers: CoreBattleHandlers = {
+  collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
+  changeBattleDamage: changeDuelBattleDamageWithPrevention,
+  createContinuousContext: createContinuousEffectContext,
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
 };
@@ -322,19 +325,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...positionChangeActions(state, player));
     actions.push(...flipSummonActions(state, player));
   }
-  if (state.phase === "battle") {
-    const createContext = createContinuousEffectContext(state);
-    for (const action of attackActions(
-      state,
-      player,
-      (card) => extraAttackCount(state, card, createContext),
-      (card) => !isBattleTargetPrevented(state, card, createContext),
-    )) {
-      if (action.type !== "declareAttack") continue;
-      const attacker = findCard(state, action.attackerUid);
-      if (attacker && !isAttackPrevented(state, attacker, createContinuousEffectContext(state))) actions.push(action);
-    }
-  }
+  appendBattleActions(actions, state, player, coreBattleHandlers);
   const nextPhase = nextAvailableDuelPhase(state, player);
   if (nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
   actions.push({ type: "endTurn", player, label: "End turn" });
@@ -588,50 +579,27 @@ export function drawDuelCards(state: DuelState, player: PlayerId, count: number,
 }
 
 export function canDuelCardAttack(state: DuelState, uid: string): boolean {
-  const card = findCard(state, uid);
-  const createContext = createContinuousEffectContext(state);
-  return Boolean(card && !isAttackPrevented(state, card, createContext) && canDuelCardAttackRule(state, uid, extraAttackCount(state, card, createContext)));
+  return canCoreDuelCardAttack(state, uid, coreBattleHandlers);
 }
 
 export function getDuelAttackTargets(state: DuelState, attackerUid: string): DuelCardInstance[] {
-  const card = findCard(state, attackerUid);
-  const createContext = createContinuousEffectContext(state);
-  if (!card || isAttackPrevented(state, card, createContext)) return [];
-  return getDuelAttackTargetsRule(
-    state,
-    attackerUid,
-    extraAttackCount(state, card, createContext),
-    (target) => !isBattleTargetPrevented(state, target, createContext),
-  );
+  return getCoreDuelAttackTargets(state, attackerUid, coreBattleHandlers);
 }
 
 export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {
-  const attacker = findCard(state, attackerUid);
-  const createContext = createContinuousEffectContext(state);
-  if (attacker && isAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack`);
-  state.battleDamage = { 0: 0, 1: 0 };
-  const pendingTriggerCount = state.pendingTriggers.length;
-  declareDuelAttackRule(state, player, attackerUid, targetUid, {
-    collectEvent: (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
-    damagePlayer: (damagedPlayer, amount) => {
-      changeDuelBattleDamage(state, damagedPlayer, amount);
-      return damageDuelPlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
-    },
-    destroyCard: (uid, controller, reason, reasonPlayer) => destroyDuelCard(state, uid, controller, reason, reasonPlayer),
-  }, attacker ? extraAttackCount(state, attacker, createContext) : 0, (target) => !isBattleTargetPrevented(state, target, createContext));
-  if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
+  declareCoreDuelAttack(state, player, attackerUid, targetUid, coreBattleHandlers);
 }
 
 export function negateDuelAttack(state: DuelState): boolean {
-  return negateDuelAttackRule(state);
+  return negateCoreDuelAttack(state);
 }
 
 export function canChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition): boolean {
-  return canChangeDuelCardPositionRule(state, uid, position);
+  return canCoreChangeDuelCardPosition(state, uid, position);
 }
 
 export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition): DuelCardInstance {
-  return changeDuelCardPositionRule(state, player, uid, position, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
+  return changeCoreDuelCardPosition(state, player, uid, position, coreBattleHandlers);
 }
 
 function instantiateDeck(session: DuelSession, player: PlayerId, location: DuelLocation, codes: string[]): void {
