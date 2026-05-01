@@ -76,6 +76,7 @@ import {
   isSpecialSummonPrevented,
   leaveFieldRedirectLocation,
   moveDestinationRedirectLocation,
+  reflectedBattleDamagePlayer,
   shouldRedirectBanishMove,
   shouldRedirectToGraveyardMove,
   type ContinuousEffectContextFactory,
@@ -132,6 +133,7 @@ const activationHandlers: DuelActivationHandlers = {
 };
 
 const battleContinuationHandlers: BattleContinuationHandlers = {
+  battleDamagePlayer: reflectedDuelBattleDamagePlayer,
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
   changeBattleDamage: changeDuelBattleDamageWithPrevention,
   damagePlayer: damageDuelPlayer,
@@ -139,6 +141,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
 };
 
 const coreBattleHandlers: CoreBattleHandlers = {
+  battleDamagePlayer: reflectedDuelBattleDamagePlayer,
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
   changeBattleDamage: changeDuelBattleDamageWithPrevention,
   createContinuousContext: createContinuousEffectContext,
@@ -504,6 +507,11 @@ function changeDuelBattleDamageWithPrevention(state: DuelState, player: PlayerId
   const preventedByCard = isBattleDamagePreventedByCard(state, player, relatedBattleCards, createContinuousEffectContext(state));
   const changedAmount = changedBattleDamageAmount(state, player, amount, relatedBattleCards, createContinuousEffectContext(state));
   return changeDuelBattleDamage(state, player, prevented || preventedByCard ? 0 : changedAmount);
+}
+
+function reflectedDuelBattleDamagePlayer(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[] = []): PlayerId {
+  const relatedBattleCards = battleCards.length > 0 ? battleCards : currentBattleCards(state);
+  return reflectedBattleDamagePlayer(state, player, relatedBattleCards, createContinuousEffectContext(state));
 }
 
 function currentBattleCards(state: DuelState): DuelCardInstance[] {

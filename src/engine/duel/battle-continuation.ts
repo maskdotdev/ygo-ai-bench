@@ -2,6 +2,7 @@ import { resolvePendingDuelBattle } from "#duel/battle.js";
 import type { DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface BattleContinuationHandlers {
+  battleDamagePlayer(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId;
   collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void;
   changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   damagePlayer(state: DuelState, player: PlayerId, amount: number): number;
@@ -13,8 +14,11 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
   resolvePendingDuelBattle(state, {
     collectEvent: (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard),
     damagePlayer: (damagedPlayer, amount, battleCards) => {
-      handlers.changeBattleDamage(state, damagedPlayer, battleDamageOverrides?.[damagedPlayer] ?? amount, battleCards);
-      return handlers.damagePlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
+      const adjustedAmount = battleDamageOverrides?.[damagedPlayer] ?? amount;
+      const damagePlayer = handlers.battleDamagePlayer(state, damagedPlayer, battleCards);
+      if (damagePlayer !== damagedPlayer) handlers.changeBattleDamage(state, damagedPlayer, 0, battleCards);
+      handlers.changeBattleDamage(state, damagePlayer, adjustedAmount, battleCards);
+      return handlers.damagePlayer(state, damagePlayer, state.battleDamage[damagePlayer]);
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),
   });

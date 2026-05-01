@@ -19,6 +19,7 @@ import {
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface CoreBattleHandlers {
+  battleDamagePlayer(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId;
   changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void;
   createContinuousContext(state: DuelState): ContinuousEffectContextFactory;
@@ -68,8 +69,10 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
     collectEvent: (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard),
     damagePlayer: (damagedPlayer, amount, battleCards) => {
-      handlers.changeBattleDamage(state, damagedPlayer, amount, battleCards);
-      return handlers.damagePlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
+      const damagePlayer = handlers.battleDamagePlayer(state, damagedPlayer, battleCards);
+      if (damagePlayer !== damagedPlayer) handlers.changeBattleDamage(state, damagedPlayer, 0, battleCards);
+      handlers.changeBattleDamage(state, damagePlayer, amount, battleCards);
+      return handlers.damagePlayer(state, damagePlayer, state.battleDamage[damagePlayer]);
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),
   }, attacker ? extraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || canSelectBattleTarget(state, attacker.controller, target, createContext));
