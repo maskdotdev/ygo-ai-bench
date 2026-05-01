@@ -115,6 +115,44 @@ describe("Lua battle helpers", () => {
     expect(session.state.players[1].lifePoints).toBe(7200);
   });
 
+  it("lets Lua scripts force an attack between monsters", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Forced Attacker", kind: "monster", attack: 2200 },
+      { code: "200", name: "Forced Target", kind: "monster", attack: 900 },
+    ];
+    const session = createDuel({ seed: 92, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local attacker = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("force attack " .. tostring(Duel.ForceAttack(attacker,target)))
+      Debug.Message("force attacker " .. Duel.GetAttacker():GetCode() .. "/" .. Duel.GetAttackTarget():GetCode())
+      `,
+      "force-attack.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["force attack true", "force attacker 100/200"]);
+    expect(session.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
+    passBattleResponses(session);
+    expect(session.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("graveyard");
+    expect(session.state.players[1].lifePoints).toBe(6700);
+  });
+
   it("lets Lua scripts inspect battle position and destruction status", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Lua Battle Position Attacker", kind: "monster", attack: 1800 },

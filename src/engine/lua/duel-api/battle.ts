@@ -54,6 +54,11 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("ChainAttack"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, forceAttack(session, readCardUid(state, 1), readCardUid(state, 2)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ForceAttack"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushboolean(state, negateDuelAttack(session.state));
     return 1;
   });
@@ -156,6 +161,23 @@ function chainAttack(session: DuelSession, targetUid: string | undefined): boole
   session.state.currentAttack = { attackerUid: attacker.uid, targetUid: target.uid };
   session.state.pendingBattle = { ...session.state.currentAttack };
   session.state.battleStep = "attack";
+  session.state.waitingFor = target.controller;
+  return true;
+}
+
+function forceAttack(session: DuelSession, attackerUid: string | undefined, targetUid: string | undefined): boolean {
+  if (!attackerUid || !targetUid) return false;
+  const attacker = session.state.cards.find((card) => card.uid === attackerUid);
+  const target = session.state.cards.find((card) => card.uid === targetUid);
+  if (!attacker || !target || attacker.location !== "monsterZone" || target.location !== "monsterZone") return false;
+  if (attacker.controller === target.controller || attacker.uid === target.uid) return false;
+  session.state.currentAttack = { attackerUid: attacker.uid, targetUid: target.uid };
+  session.state.pendingBattle = { ...session.state.currentAttack };
+  session.state.battleStep = "attack";
+  session.state.attackPasses = [];
+  session.state.damagePasses = [];
+  session.state.attacksDeclared = session.state.attacksDeclared.filter((uid) => uid !== attacker.uid);
+  session.state.attacksDeclared.push(attacker.uid);
   session.state.waitingFor = target.controller;
   return true;
 }
