@@ -145,24 +145,40 @@ describe("Lua effect metadata helpers", () => {
   });
 
   it("registers Lua card procedure status helpers", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "Procedure Status Source", kind: "monster" }];
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Procedure Status Source", kind: "monster", level: 7 },
+      { code: "200", name: "Linked Zone Source", kind: "extra", typeFlags: 0x4000001, linkMarkers: 0x20 },
+      { code: "300", name: "Linked Zone Target", kind: "extra", typeFlags: 0x4000001, linkMarkers: 0x8 },
+    ];
     const session = createDuel({ seed: 93, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100"] },
+      0: { main: ["100"], extra: ["200", "300"] },
       1: { main: [] },
     });
     startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "200");
+    const target = session.state.cards.find((card) => card.code === "300");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0).sequence = 1;
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).sequence = 2;
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
       `
       local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      c:GetMetatable().MaximumAttack=3900
+      c:GetMetatable().is_legend=true
       local revive=c:EnableReviveLimit()
       local cannot=c:AddCannotBeSpecialSummoned()
       local must=c:AddMustBeSpecialSummoned()
       local gemini=c:EnableGeminiStatus()
+      local min,max=c:GetTributeRequirement()
       Debug.Message("card proc codes " .. revive:GetCode() .. "/" .. cannot:GetCode() .. "/" .. must:GetCode() .. "/" .. gemini:GetCode())
       Debug.Message("card proc effects " .. tostring(c:IsHasEffect(EFFECT_REVIVE_LIMIT)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_SPSUMMON_CONDITION)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_GEMINI_STATUS)~=nil) .. "/" .. tostring(c:IsGeminiStatus()))
+      Debug.Message("card proc queries " .. min .. "/" .. max .. "/" .. c:GetMaximumAttack() .. "/" .. tostring(c:IsLegend()) .. "/" .. source:GetToBeLinkedZone(target,0,true))
       `,
       "card-procedure-status.lua",
     );
@@ -170,6 +186,7 @@ describe("Lua effect metadata helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("card proc codes 31/30/30/75");
     expect(host.messages).toContain("card proc effects true/true/true/true");
+    expect(host.messages).toContain("card proc queries 2/2/3900/true/2");
   });
 
   it("stores Lua effect metadata setters on registered effects", () => {

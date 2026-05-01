@@ -31,6 +31,37 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
     function Card.IsGeminiStatus(c)
       return c:IsHasEffect(EFFECT_GEMINI_STATUS)~=nil
     end
+    function Card.GetTributeRequirement(c)
+      local mt=c:GetMetatable()
+      if mt and mt.min_tribute_req and mt.max_tribute_req then return mt.min_tribute_req,mt.max_tribute_req end
+      local level=c:GetLevel()
+      if level>=7 then return 2,2 end
+      if level>=5 then return 1,1 end
+      return 0,0
+    end
+    function Card.GetMaximumAttack(c)
+      local mt=c:GetMetatable(false)
+      if not mt then return 0 end
+      return mt.MaximumAttack or 0
+    end
+    function Card.IsLegend(c)
+      local mt=c:GetMetatable(false)
+      return c:IsHasEffect(EFFECT_IS_LEGEND)~=nil or (mt and mt.is_legend==true) or c:IsOriginalCode(160001000,160205001,160418001,160002000,160421015,160404001,160421016,160432004)
+    end
+    local function has_marker(c,marker)
+      return (c:GetLinkMarker()&marker)~=0
+    end
+    function Card.GetToBeLinkedZone(tc,c,tp,clink,emz)
+      if not tc:IsLocation(LOCATION_MZONE) then return 0 end
+      local seq=tc:GetSequence()
+      local zone=0
+      if tc:IsControler(tp) then
+        if has_marker(c,0x8) and seq<4 and (not clink or has_marker(tc,0x20)) then zone=zone|(1<<(seq+1)) end
+        if has_marker(c,0x20) and seq>0 and seq<=4 and (not clink or has_marker(tc,0x8)) then zone=zone|(1<<(seq-1)) end
+        if has_marker(c,0x2) and seq>=0 and seq<=4 and (not clink or has_marker(tc,0x2)) then zone=zone|(1<<seq) end
+      end
+      return zone&ZONES_MMZ
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
