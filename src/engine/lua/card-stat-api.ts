@@ -43,6 +43,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsOriginalDefenseAbove", session, (card, requested) => (card.data.defense ?? 0) >= requested);
   pushNumberMatcher(L, "IsOriginalDefenseBelow", session, (card, requested) => (card.data.defense ?? 0) <= requested);
   pushNumberGetter(L, "GetLevel", session, (card) => card?.data.level ?? 0);
+  pushNumberGetter(L, "Level", session, (card) => card?.data.level ?? 0);
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
   pushNumberGetter(L, "GetLeftScale", session, (card) => card?.data.leftScale ?? 0);
   pushNumberGetter(L, "GetRightScale", session, (card) => card?.data.rightScale ?? 0);

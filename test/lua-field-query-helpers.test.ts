@@ -294,6 +294,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsX", code: "18000338", setcode: 0x56c },
       { method: "IsY", code: "23915499", setcode: 0x56d },
       { method: "IsYomi", code: "12538374", setcode: 0x563 },
+      { method: "IsZ", code: "50319138", setcode: 0x56e },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];
     for (let index = 0; index < cases.length; index += 12) {
@@ -2504,9 +2505,9 @@ describe("Lua field and query helpers", () => {
 
   it("lets Lua scripts mutate and filter groups", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Group A", kind: "monster", attack: 1000 },
-      { code: "200", name: "Group B", kind: "monster", attack: 2000 },
-      { code: "300", name: "Group C", kind: "monster", attack: 3000 },
+      { code: "100", name: "Group A", kind: "monster", attack: 1000, level: 1 },
+      { code: "200", name: "Group B", kind: "monster", attack: 2000, level: 2 },
+      { code: "300", name: "Group C", kind: "monster", attack: 3000, level: 3 },
     ];
     const session = createDuel({ seed: 15, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -2584,6 +2585,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
       Debug.Message("bin class count " .. all:GetBinClassCount(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetCode()/100 or 0 end, 1500))
       Debug.Message("attack sum " .. all:GetSum(Card.GetAttack))
+      Debug.Message("level sum " .. all:GetSum(Card.Level))
       Debug.Message("attack sum vararg " .. all:GetSum(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetAttack() or 0 end, 1500))
       local max_group,max_attack = all:GetMaxGroup(Card.GetAttack)
       local min_group,min_attack = all:GetMinGroup(Card.GetAttack)
@@ -2682,6 +2684,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("class count 2");
     expect(host.messages).toContain("bin class count 2");
     expect(host.messages).toContain("attack sum 6000");
+    expect(host.messages).toContain("level sum 6");
     expect(host.messages).toContain("attack sum vararg 5000");
     expect(host.messages).toContain("max group 1/3000/300");
     expect(host.messages).toContain("min group 1/1000/100");
