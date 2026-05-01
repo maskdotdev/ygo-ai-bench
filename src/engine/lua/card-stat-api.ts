@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { readCardUid } from "#lua/api-utils.js";
-import type { DuelCardInstance, DuelSession } from "#duel/types.js";
+import type { DuelCardInstance, DuelSession, DuelState } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -46,8 +46,8 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsDefenseBelow", session, (card, requested) => currentDefense(card) <= requested);
   pushNumberMatcher(L, "IsOriginalDefenseAbove", session, (card, requested) => (card.data.defense ?? 0) >= requested);
   pushNumberMatcher(L, "IsOriginalDefenseBelow", session, (card, requested) => (card.data.defense ?? 0) <= requested);
-  pushNumberGetter(L, "GetLevel", session, (card) => currentLevel(card));
-  pushNumberGetter(L, "Level", session, (card) => currentLevel(card));
+  pushNumberGetter(L, "GetLevel", session, (card) => currentLevel(card, session.state));
+  pushNumberGetter(L, "Level", session, (card) => currentLevel(card, session.state));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLevel(state, session));
   lua.lua_setfield(L, -2, to_luastring("UpdateLevel"));
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
@@ -61,32 +61,32 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsScale", session, (card, requested) => cardScale(card) === requested);
   pushBooleanGetter(L, "IsOddScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 !== 0);
   pushBooleanGetter(L, "IsEvenScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 === 0);
-  pushBooleanGetter(L, "HasLevel", session, (card) => Boolean(card && currentLevel(card) > 0 && cardRank(card) === 0 && cardLink(card) === 0));
-  pushNumberMatcher(L, "IsLevel", session, (card, requested) => currentLevel(card) === requested);
+  pushBooleanGetter(L, "HasLevel", session, (card) => Boolean(card && currentLevel(card, session.state) > 0 && cardRank(card) === 0 && cardLink(card) === 0));
+  pushNumberMatcher(L, "IsLevel", session, (card, requested) => currentLevel(card, session.state) === requested);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const firstLevel = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
     const secondLevel = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
     const lower = firstLevel === undefined || secondLevel === undefined ? undefined : Math.min(firstLevel, secondLevel);
     const upper = firstLevel === undefined || secondLevel === undefined ? undefined : Math.max(firstLevel, secondLevel);
-    const level = currentLevel(card);
+    const level = currentLevel(card, session.state);
     lua.lua_pushboolean(state, Boolean(card && lower !== undefined && upper !== undefined && level >= lower && level <= upper));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsLevelBetween"));
-  pushNumberMatcher(L, "IsLevelAbove", session, (card, requested) => currentLevel(card) >= requested);
-  pushNumberMatcher(L, "IsLevelBelow", session, (card, requested) => currentLevel(card) <= requested);
+  pushNumberMatcher(L, "IsLevelAbove", session, (card, requested) => currentLevel(card, session.state) >= requested);
+  pushNumberMatcher(L, "IsLevelBelow", session, (card, requested) => currentLevel(card, session.state) <= requested);
   pushNumberMatcher(L, "IsOriginalLevel", session, (card, requested) => (card.data.level ?? 0) === requested);
   pushNumberMatcher(L, "IsOriginalLevelAbove", session, (card, requested) => (card.data.level ?? 0) >= requested);
   pushNumberMatcher(L, "IsOriginalLevelBelow", session, (card, requested) => (card.data.level ?? 0) <= requested);
-  pushNumberGetter(L, "GetRank", session, (card) => currentRank(card));
+  pushNumberGetter(L, "GetRank", session, (card) => currentRank(card, session.state));
   pushNumberGetter(L, "GetOriginalRank", session, (card) => cardRank(card));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateRank(state, session));
   lua.lua_setfield(L, -2, to_luastring("UpdateRank"));
-  pushBooleanGetter(L, "HasRank", session, (card) => currentRank(card) > 0);
-  pushNumberMatcher(L, "IsRank", session, (card, requested) => currentRank(card) === requested);
-  pushNumberMatcher(L, "IsRankAbove", session, (card, requested) => currentRank(card) >= requested);
-  pushNumberMatcher(L, "IsRankBelow", session, (card, requested) => currentRank(card) <= requested);
+  pushBooleanGetter(L, "HasRank", session, (card) => currentRank(card, session.state) > 0);
+  pushNumberMatcher(L, "IsRank", session, (card, requested) => currentRank(card, session.state) === requested);
+  pushNumberMatcher(L, "IsRankAbove", session, (card, requested) => currentRank(card, session.state) >= requested);
+  pushNumberMatcher(L, "IsRankBelow", session, (card, requested) => currentRank(card, session.state) <= requested);
   pushNumberMatcher(L, "IsOriginalRank", session, (card, requested) => cardRank(card) === requested);
   pushNumberMatcher(L, "IsOriginalRankAbove", session, (card, requested) => cardRank(card) >= requested);
   pushNumberMatcher(L, "IsOriginalRankBelow", session, (card, requested) => cardRank(card) <= requested);
@@ -286,12 +286,19 @@ function currentDefense(card: DuelCardInstance | undefined): number {
   return (card?.data.defense ?? 0) + (card?.defenseModifier ?? 0);
 }
 
-function currentLevel(card: DuelCardInstance | undefined): number {
-  return (card?.data.level ?? 0) + (card?.levelModifier ?? 0);
+function currentLevel(card: DuelCardInstance | undefined, state?: DuelState): number {
+  return (card?.data.level ?? 0) + (card?.levelModifier ?? 0) + statUpdateEffectValue(card, state, 130);
 }
 
-function currentRank(card: DuelCardInstance | undefined): number {
-  return cardRank(card) + (card?.rankModifier ?? 0);
+function currentRank(card: DuelCardInstance | undefined, state?: DuelState): number {
+  return cardRank(card) + (card?.rankModifier ?? 0) + statUpdateEffectValue(card, state, 132);
+}
+
+function statUpdateEffectValue(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number): number {
+  if (!card || !state) return 0;
+  return state.effects
+    .filter((effect) => effect.event === "continuous" && effect.code === code && effect.sourceUid === card.uid && effect.range.includes(card.location))
+    .reduce((total, effect) => total + (effect.value ?? 0), 0);
 }
 
 function currentLink(card: DuelCardInstance | undefined): number {

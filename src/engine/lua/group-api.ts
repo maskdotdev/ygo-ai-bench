@@ -218,9 +218,10 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
     const filterRef = readOptionalFunctionRef(state, 2);
     const excluded = readCardOrGroupUids(state, 3);
     const candidates = readGroupUids(state, 1).filter((uid) => !excluded.includes(uid));
-    const matches = filterRef !== undefined && candidates.length > 0 && candidates.every((uid) => groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 4)));
+    const matches = filterRef === undefined ? candidates : candidates.filter((uid) => groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 4)));
     releaseOptionalFunctionRef(state, filterRef);
-    lua.lua_pushboolean(state, matches);
+    setGroupUids(state, 1, matches);
+    lua.lua_pushvalue(state, 1);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Match"));

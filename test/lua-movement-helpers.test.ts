@@ -542,6 +542,54 @@ describe("Lua movement helpers", () => {
     });
   });
 
+  it("loads Phantom Knights Doomed Solleret and raises targeted Level and Rank from the GY", () => {
+    const cards: DuelCardData[] = [
+      { code: "101305019", name: "The Phantom Knights of Doomed Solleret", kind: "monster", setcodes: [0xdb] },
+      { code: "100", name: "Dark Level Target", kind: "monster", level: 3, attribute: 0x20 },
+      { code: "200", name: "Dark Rank Target", kind: "extra", typeFlags: 0x800001, level: 3, attribute: 0x20 },
+    ];
+    const session = createDuel({ seed: 112, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101305019", "100"], extra: ["200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "101305019");
+    const levelTarget = session.state.cards.find((card) => card.code === "100");
+    const rankTarget = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeDefined();
+    expect(levelTarget).toBeDefined();
+    expect(rankTarget).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "graveyard", 0);
+    moveDuelCard(session.state, levelTarget!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, rankTarget!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305019.lua", "utf8"), "c101305019.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const probe = host.loadScript(
+      `
+      local lv=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
+      local rk=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,200),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
+      Debug.Message("phantom level rank " .. lv:GetLevel() .. "/" .. rk:GetRank())
+      `,
+      "phantom-level-rank-probe.lua",
+    );
+    expect(probe.ok, probe.error).toBe(true);
+    expect(host.messages).toContain("phantom level rank 4/4");
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({
+      location: "banished",
+      reason: 0x80,
+    });
+  });
+
   it("loads Phantom Knights Decayed Cloak and searches a Phantom Knights monster from Deck", () => {
     const cards: DuelCardData[] = [
       { code: "101305018", name: "The Phantom Knights of Decayed Cloak", kind: "monster", setcodes: [0xdb] },

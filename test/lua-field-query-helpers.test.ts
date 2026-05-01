@@ -2732,9 +2732,9 @@ describe("Lua field and query helpers", () => {
       Debug.Message("filter count alias " .. all:FilterCount(function(tc,minatk) return tc:GetAttack() >= minatk end, excluded_group, 1000))
       Debug.Message("exists group excluded " .. tostring(all:IsExists(aux.FilterBoolFunction(Card.IsCode, 200), 1, excluded_group)))
       Debug.Message("exists group remainder " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 1, excluded_group, 2500)))
-      Debug.Message("match all " .. tostring(all:Match(function(tc,minatk) return tc:GetAttack() >= minatk end, nil, 1000)))
-      Debug.Message("match miss " .. tostring(all:Match(function(tc,minatk) return tc:GetAttack() >= minatk end, nil, 1500)))
-      Debug.Message("match excluded " .. tostring(all:Match(function(tc,minatk) return tc:GetAttack() >= minatk end, excluded_group, 1000)))
+      Debug.Message("match all " .. all:Clone():Match(function(tc,minatk) return tc:GetAttack() >= minatk end, nil, 1000):GetCount())
+      Debug.Message("match miss " .. all:Clone():Match(function(tc,minatk) return tc:GetAttack() >= minatk end, nil, 1500):GetCount())
+      Debug.Message("match excluded " .. all:Clone():Match(function(tc,minatk) return tc:GetAttack() >= minatk end, excluded_group, 1000):GetCount())
       Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
       Debug.Message("bin class count " .. all:GetBinClassCount(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetCode()/100 or 0 end, 1500))
       Debug.Message("attack sum " .. all:GetSum(Card.GetAttack))
@@ -2831,9 +2831,9 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("filter count alias 2");
     expect(host.messages).toContain("exists group excluded false");
     expect(host.messages).toContain("exists group remainder true");
-    expect(host.messages).toContain("match all true");
-    expect(host.messages).toContain("match miss false");
-    expect(host.messages).toContain("match excluded true");
+    expect(host.messages).toContain("match all 3");
+    expect(host.messages).toContain("match miss 2");
+    expect(host.messages).toContain("match excluded 2");
     expect(host.messages).toContain("class count 2");
     expect(host.messages).toContain("bin class count 2");
     expect(host.messages).toContain("attack sum 6000");
