@@ -40,6 +40,13 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("ListsCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && listedCodes(card).some((code) => listedCodeSetcodes(session, code).some((setcode) => requested.some((wanted) => isSetcodeMatch(wanted, setcode))))));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("ListsCodeWithArchetype"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
     lua.lua_pushboolean(state, Boolean(card && materialCodes(card).some((code) => readRequestedCodes(state, 2).includes(code))));
     return 1;
   });
@@ -156,6 +163,10 @@ function cardCodes(card: DuelCardInstance): string[] {
 
 function listedCodes(card: DuelCardInstance): string[] {
   return [...(card.data.listedNames ?? []), ...(card.data.fitMonster ?? [])].map(String);
+}
+
+function listedCodeSetcodes(session: DuelSession, code: string): number[] {
+  return session.state.cards.find((card) => card.code === code || card.data.alias === code)?.data.setcodes ?? [];
 }
 
 function materialCodes(card: DuelCardInstance): string[] {

@@ -1053,7 +1053,7 @@ describe("Lua field and query helpers", () => {
       { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5, setcodes: [0x564] },
       { code: "500", name: "Infinity Alias", kind: "monster", alias: "1378" },
       { code: "600", name: "Multi Attribute", kind: "monster", attribute: 0x30 },
-      { code: "700", name: "Ritual Fixture", kind: "monster", typeFlags: 0x81, level: 6, ritualMaterials: ["100"] },
+      { code: "700", name: "Ritual Fixture", kind: "monster", typeFlags: 0x81, level: 6, ritualMaterials: ["100"], setcodes: [0x456] },
       { code: "800", name: "Normal Fixture", kind: "monster", typeFlags: 0x11, level: 4 },
       { code: "801", name: "Synchro Fixture", kind: "extra", typeFlags: 0x2001, level: 7 },
       { code: "901", name: "Pendulum Fixture", kind: "monster", typeFlags: 0x1000021, level: 4, leftScale: 3, rightScale: 8 },
@@ -1084,7 +1084,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("code rule checks " .. c:GetOriginalCodeRule() .. "/" .. tostring(c:IsOriginalCodeRule(900)) .. "/" .. tostring(c:IsOriginalCodeRule(100)))
       Debug.Message("set checks " .. tostring(c:IsSetCard(0x123)) .. "/" .. tostring(c:IsOriginalSetCard(0x123)) .. "/" .. tostring(c:IsOriginalSetCard(0x456)) .. "/" .. tostring(c:IsNotSetCard(0x123)) .. "/" .. tostring(c:IsNotSetCard(0x456)))
       local property_filter=aux.PropertyTableFilter(Card.GetSetCard,0x123,0x456)
-      Debug.Message("listed checks " .. tostring(c:ListsCode(700)) .. "/" .. tostring(c:ListsCode(800)) .. "/" .. tostring(c:ListsCode(900)) .. "/" .. tostring(c:ListsCode(600,700)))
+      Debug.Message("listed checks " .. tostring(c:ListsCode(700)) .. "/" .. tostring(c:ListsCode(800)) .. "/" .. tostring(c:ListsCode(900)) .. "/" .. tostring(c:ListsCode(600,700)) .. "/" .. tostring(c:ListsCodeWithArchetype(0x456)) .. "/" .. tostring(c:ListsCodeWithArchetype(0x789)))
       local infinity = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("infinity checks " .. tostring(infinity:IsInfinity()) .. "/" .. tostring(c:IsInfinity()))
       local xyz = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -1187,7 +1187,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("code rule checks 100/false/true");
     expect(host.messages).toContain("set checks true/true/false/false/true");
     expect(host.messages).toContain("property table filter 291/nil");
-    expect(host.messages).toContain("listed checks true/true/false/true");
+    expect(host.messages).toContain("listed checks true/true/false/true/true/false");
     expect(host.messages).toContain("material listed checks true/true/false/true");
     expect(host.messages).toContain("material set listed checks true/false/false");
     expect(host.messages).toContain("listed archetype type checks true/false/true/false/false");

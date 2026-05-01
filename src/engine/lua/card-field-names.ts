@@ -17,6 +17,7 @@ export const cardFieldNames = [
   "IsCode",
   "IsNotCode",
   "ListsCode",
+  "ListsCodeWithArchetype",
   "ListsCodeAsMaterial",
   "ListsArchetypeAsMaterial",
   "ListsArchetype",
