@@ -10,6 +10,7 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
     if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
     if (!canUseEffectCount(state, effect)) continue;
     const source = findCard(state, effect.sourceUid);
+    if (effect.triggerSourceOnly && eventCard?.uid !== source?.uid) continue;
     if (!source || !effect.range.includes(source.location)) continue;
     if (!canChooseEffect(state, effect, source, eventName, eventCard)) continue;
     collected.push({ effect, source, index });

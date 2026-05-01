@@ -325,6 +325,67 @@ describe("Lua movement helpers", () => {
     }
   });
 
+  it("loads Skull Archfiend of Chaos and searches after being sent to the GY", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Skull Sender", kind: "monster" },
+      { code: "24088928", name: "Skull Archfiend of Chaos", kind: "monster" },
+      { code: "33599853", name: "Ritual of Light and Darkness", kind: "spell" },
+      { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", typeFlags: 0x81 },
+    ];
+    const session = createDuel({ seed: 101, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "24088928", "33599853", "70405001"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const sender = session.state.cards.find((card) => card.code === "100");
+    const source = session.state.cards.find((card) => card.code === "24088928");
+    const ritualSpell = session.state.cards.find((card) => card.code === "33599853");
+    const ritualMonster = session.state.cards.find((card) => card.code === "70405001");
+    expect(sender).toBeDefined();
+    expect(source).toBeDefined();
+    expect(ritualSpell).toBeDefined();
+    expect(ritualMonster).toBeDefined();
+    moveDuelCard(session.state, sender!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, ritualSpell!.uid, "deck", 0);
+    moveDuelCard(session.state, ritualMonster!.uid, "deck", 0);
+
+    const host = createLuaScriptHost(session);
+    const mover = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_MZONE)
+        e:SetOperation(function(e,tp)
+          local g=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 24088928), tp, LOCATION_MZONE, 0, 1, 1, nil)
+          Duel.SendtoGrave(g, REASON_EFFECT)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "skull-archfiend-sender.lua",
+    );
+    expect(mover.ok, mover.error).toBe(true);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c24088928.lua", "utf8"), "c24088928.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const sendAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sender!.uid);
+    expect(sendAction).toBeDefined();
+    expect(applyResponse(session, sendAction!).ok).toBe(true);
+    const triggerAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
+    expect(triggerAction).toBeDefined();
+    expect(applyResponse(session, triggerAction!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
+    expect(session.state.cards.find((card) => card.uid === ritualSpell!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
+    expect(session.state.cards.find((card) => card.uid === ritualMonster!.uid)).toMatchObject({ location: "hand", reason: 0x40 });
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },

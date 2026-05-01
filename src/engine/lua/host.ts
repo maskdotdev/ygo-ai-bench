@@ -670,6 +670,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(luaEffect.code === undefined ? {} : { code: luaEffect.code }),
     ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
+    ...(event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEvent) ? { triggerSourceOnly: true } : {}),
     ...(event === "trigger" ? { optional: luaEffectTriggerIsOptional(luaEffect.typeFlags) } : {}),
     range,
     oncePerTurn: (luaEffect.countLimit ?? 0) > 0,
@@ -753,10 +754,15 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
 }
 
 function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecord, event: DuelEffectDefinition["event"]): DuelLocation[] {
+  if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code))) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
   if (event === "continuous" || event === "summonProcedure" || event === "trigger") return [card.location];
   if ((luaEffect.typeFlags & 0x10) !== 0 && (card.kind === "spell" || card.kind === "trap")) return ["hand", "spellTrapZone"];
   if (card.kind === "spell" || card.kind === "trap") return ["spellTrapZone"];
   return ["monsterZone"];
+}
+
+function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEventName | undefined): boolean {
+  return (typeFlags & 0x1) !== 0 && ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) && triggerEvent === "sentToGraveyard";
 }
 
 function luaEffectTriggerIsOptional(typeFlags: number): boolean {
