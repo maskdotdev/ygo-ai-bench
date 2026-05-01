@@ -286,6 +286,10 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       if not c:IsRelateToEffect(e) or c:IsControler(1-tp) or not Duel.CheckLocation(tp,LOCATION_MZONE,seq) then return end
       Duel.MoveSequence(c,seq)
     end
+    function aux.ReleaseCostFilter(c,tp)
+      local eff=c:IsHasEffect(EFFECT_EXTRA_RELEASE_NONSUM)
+      return not (c:IsControler(1-tp) and eff and eff.CheckCountLimit and eff:CheckCountLimit(tp)) and not c:IsHasEffect(EFFECT_EXTRA_RELEASE)
+    end
     function aux.tgoval(e,re,rp)
       return rp~=e:GetHandlerPlayer()
     end

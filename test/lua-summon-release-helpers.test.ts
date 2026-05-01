@@ -380,6 +380,8 @@ describe("Lua summon and release helpers", () => {
       Debug.Message("release group count " .. Duel.GetReleaseGroupCount(0, filter, nil))
       Debug.Message("release group vararg " .. Duel.GetReleaseGroup(0, vararg_filter, nil, 300):GetCount())
       Debug.Message("release group count vararg " .. Duel.GetReleaseGroupCount(0, vararg_filter, nil, 300))
+      local releasable, excluded_release = Duel.GetReleaseGroup(0):Split(aux.ReleaseCostFilter, nil, 0)
+      Debug.Message("release cost split " .. releasable:GetCount() .. "/" .. excluded_release:GetCount())
       Debug.Message("can release two " .. tostring(Duel.CheckReleaseGroup(0, filter, 2, nil)))
       Debug.Message("can release three " .. tostring(Duel.CheckReleaseGroup(0, filter, 3, nil)))
       Debug.Message("can release ex two " .. tostring(Duel.CheckReleaseGroupEx(0, filter, 2, 2, nil)))
@@ -417,6 +419,7 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("release group count 2");
     expect(host.messages).toContain("release group vararg 2");
     expect(host.messages).toContain("release group count vararg 2");
+    expect(host.messages).toContain("release cost split 3/0");
     expect(host.messages).toContain("can release two true");
     expect(host.messages).toContain("can release three false");
     expect(host.messages).toContain("can release ex two true");

@@ -117,6 +117,25 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
     const excluded = readCardOrGroupUids(state, 3);
+    const matches: string[] = [];
+    const nonMatches: string[] = [];
+    for (const uid of readGroupUids(state, 1)) {
+      if (excluded.includes(uid)) {
+        nonMatches.push(uid);
+        continue;
+      }
+      if (filterRef !== undefined && groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 4))) matches.push(uid);
+      else nonMatches.push(uid);
+    }
+    releaseOptionalFunctionRef(state, filterRef);
+    pushGroupTable(state, matches);
+    pushGroupTable(state, nonMatches);
+    return 2;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Split"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
+    const excluded = readCardOrGroupUids(state, 3);
     const count = filterRef === undefined ? readGroupUids(state, 1).filter((uid) => !excluded.includes(uid)).length : readGroupUids(state, 1).filter((uid) => !excluded.includes(uid) && groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 4))).length;
     releaseOptionalFunctionRef(state, filterRef);
     lua.lua_pushinteger(state, count);
@@ -529,6 +548,7 @@ const groupFieldNames = [
   "Contains",
   "Equal",
   "Filter",
+  "Split",
   "FilterCount",
   "Sort",
   "ForEach",
