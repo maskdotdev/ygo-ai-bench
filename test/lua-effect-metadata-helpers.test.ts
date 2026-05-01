@@ -242,6 +242,64 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("persistent relation after true/false");
   });
 
+  it("registers Lua union procedures and union status helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Union Monster", kind: "monster", typeFlags: 0x400001 },
+      { code: "200", name: "Union Target", kind: "monster", typeFlags: 0x21 },
+      { code: "300", name: "Equipped Union", kind: "monster", typeFlags: 0x400001 },
+    ];
+    const session = createDuel({ seed: 59, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const union = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    const equipped = session.state.cards.find((card) => card.code === "300");
+    expect(union).toBeDefined();
+    expect(target).toBeDefined();
+    expect(equipped).toBeDefined();
+    union!.location = "monsterZone";
+    union!.sequence = 0;
+    union!.faceUp = true;
+    target!.location = "monsterZone";
+    target!.sequence = 1;
+    target!.faceUp = true;
+    equipped!.location = "spellTrapZone";
+    equipped!.sequence = 0;
+    equipped!.faceUp = true;
+    equipped!.equippedToUid = target!.uid;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local union = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local equipped = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      local e1,e2,e3,e4=aux.AddUnionProcedure(union,aux.FilterBoolFunction(Card.IsFaceup),true,false)
+      Debug.Message("union proc metadata " .. e1:GetDescription() .. "/" .. e1:GetCategory() .. "/" .. e1:GetProperty() .. "/" .. e1:GetRange() .. "/" .. e2:GetDescription() .. "/" .. e3:GetCode() .. "/" .. e4:GetCode())
+      Debug.Message("union proc callbacks " .. tostring(e1:GetTarget()~=nil) .. "/" .. tostring(e1:GetOperation()~=nil) .. "/" .. tostring(e2:GetCondition()~=nil) .. "/" .. tostring(e3:GetValue()~=nil))
+      Debug.Message("union state before " .. tostring(aux.IsUnionState(e1)))
+      aux.SetUnionState(union)
+      Debug.Message("union state after " .. tostring(aux.IsUnionState(e1)) .. "/" .. tostring(union:IsHasEffect(EFFECT_EQUIP_LIMIT)~=nil))
+      aux.SetUnionState(equipped)
+      local old_count,new_count=Card.GetUnionCount(target)
+      Debug.Message("union count " .. old_count .. "/" .. new_count)
+      Debug.Message("union equip checks " .. tostring(aux.CheckUnionEquip(union,target)) .. "/" .. tostring(aux.CheckUnionEquip(equipped,target)))
+      `,
+      "union-procedure.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("union proc metadata 1068/262144/16/4/2/45/78");
+    expect(host.messages).toContain("union proc callbacks true/true/true/true");
+    expect(host.messages).toContain("union state before false");
+    expect(host.messages).toContain("union state after true/true");
+    expect(host.messages).toContain("union count 0/1");
+    expect(host.messages).toContain("union equip checks true/false");
+  });
+
   it("creates Mysterune quick-play effect metadata", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Runick Probe", kind: "spell" }];
     const session = createDuel({ seed: 161, startingHandSize: 1, cardReader: createCardReader(cards) });
