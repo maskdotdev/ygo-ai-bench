@@ -38,6 +38,15 @@ export function installDuelScriptApi(L: unknown, hostState: LuaDuelScriptApiHost
   });
   lua.lua_setfield(L, -2, to_luastring("LoadCardScript"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (!lua.lua_isnumber(state, 1)) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardScriptTable(state, String(lua.lua_tointeger(state, 1)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetMetatable"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const currentCode = hostState.currentScriptCardCode;
     const aliasName = readCardScriptName(state);
     if (!currentCode || !aliasName) return 0;

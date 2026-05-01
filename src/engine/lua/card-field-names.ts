@@ -3,6 +3,7 @@ export const cardFieldNames = [
   "GetCode",
   "GetOriginalCode",
   "GetOriginalCodeRule",
+  "GetMetatable",
   "IsCode",
   "IsNotCode",
   "ListsCode",

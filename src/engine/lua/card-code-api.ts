@@ -10,6 +10,16 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetOriginalCodeRule", session, (card) => (card ? Number(card.code) : 0));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
+    if (!card) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardScriptTable(state, card.code);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetMetatable"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
     lua.lua_pushboolean(state, Boolean(card && requested && cardCodes(card).includes(requested)));
     return 1;
@@ -115,6 +125,15 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1) ?? readTableStringField(L, 1, "__duel_uid");
   return uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+}
+
+function pushCardScriptTable(L: unknown, code: string): void {
+  lua.lua_getglobal(L, to_luastring(`c${code}`));
+  if (lua.lua_istable(L, -1)) return;
+  lua.lua_pop(L, 1);
+  lua.lua_newtable(L);
+  lua.lua_pushvalue(L, -1);
+  lua.lua_setglobal(L, to_luastring(`c${code}`));
 }
 
 function cardCodes(card: DuelCardInstance): string[] {

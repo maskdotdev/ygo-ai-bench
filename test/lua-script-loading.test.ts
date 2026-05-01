@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createDuel } from "#duel/core.js";
+import { createDuel, loadDecks, startDuel } from "#duel/core.js";
+import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost, type LuaScriptSource } from "#lua/host.js";
 
 describe("Lua script loading", () => {
@@ -80,6 +81,38 @@ describe("Lua script loading", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toEqual(["loaded c100", "loaded c200", "card scripts true/true/true/true"]);
+  });
+
+  it("lets Lua scripts read card script metatables", () => {
+    const session = createDuel({
+      seed: 94,
+      startingHandSize: 1,
+      cardReader: createCardReader([{ code: "100", name: "Metatable Probe", kind: "monster" }]),
+    });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={material={200}}
+      local c=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local card_mt=c:GetMetatable()
+      local current_mt=c:GetMetatable(true)
+      local duel_mt=Duel.GetMetatable(100)
+      local missing_mt=Duel.GetMetatable(200)
+      missing_mt.created=true
+      Debug.Message("metatable material " .. card_mt.material[1] .. "/" .. current_mt.material[1] .. "/" .. duel_mt.material[1])
+      Debug.Message("metatable identity " .. tostring(card_mt==c100) .. "/" .. tostring(duel_mt==c100) .. "/" .. tostring(c200.created))
+      `,
+      "script-metatable.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("metatable material 200/200/200");
+    expect(host.messages).toContain("metatable identity true/true/true");
   });
 
   it("lets Lua card scripts alias their current script table to another card script", () => {
