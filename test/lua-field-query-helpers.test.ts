@@ -91,16 +91,19 @@ describe("Lua field and query helpers", () => {
       { code: "800", name: "Action Spell", kind: "spell", typeFlags: 0x10000002 },
       { code: "801", name: "Action Trap", kind: "trap", typeFlags: 0x10000004 },
       { code: "802", name: "Action Field", kind: "spell", typeFlags: 0x10080002 },
+      { code: "806", name: "Equip Trap", kind: "trap", typeFlags: 0x40004 },
       { code: "82382815", name: "Champion Code", kind: "spell", typeFlags: 0x2 },
       { code: "803", name: "Champion Set", kind: "monster", typeFlags: 0x21, setcodes: [0x152f] },
+      { code: "7391448", name: "Goyo Code", kind: "monster", typeFlags: 0x21 },
+      { code: "807", name: "Goyo Set", kind: "monster", typeFlags: 0x21, setcodes: [0x523] },
       { code: "42685062", name: "Earth Code", kind: "monster", typeFlags: 0x21 },
       { code: "804", name: "Earthbound Set", kind: "monster", typeFlags: 0x21, setcodes: [0x21] },
       { code: "49771608", name: "Sky Code", kind: "monster", typeFlags: 0x21 },
       { code: "805", name: "Sky Set", kind: "monster", typeFlags: 0x21, setcodes: [0x54a] },
     ];
-    const session = createDuel({ seed: 44, startingHandSize: 18, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 44, startingHandSize: 21, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "82382815", "803", "42685062", "804", "49771608", "805"] },
+      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "806", "82382815", "803", "7391448", "807", "42685062", "804", "49771608", "805"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -120,8 +123,11 @@ describe("Lua field and query helpers", () => {
       local action_spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local action_trap=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 801), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local action_field=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 802), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local equip_trap=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 806), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local champion_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 82382815), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local champion_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 803), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local goyo_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 7391448), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local goyo_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 807), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local earth_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 42685062), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local earth_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 804), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local sky_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 49771608), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -131,9 +137,11 @@ describe("Lua field and query helpers", () => {
       Debug.Message("ritual spell " .. tostring(ritual_spell:IsRitualSpell()) .. "/" .. tostring(ritual_spell:IsContinuousTrap()))
       Debug.Message("continuous spell " .. tostring(continuous_spell:IsContinuousSpell()) .. "/" .. tostring(normal_spell:IsContinuousSpell()))
       Debug.Message("continuous spelltrap " .. tostring(continuous_trap:IsContinuousSpellTrap()) .. "/" .. tostring(continuous_spell:IsContinuousSpellTrap()) .. "/" .. tostring(ritual_spell:IsContinuousSpellTrap()) .. "/" .. tostring(normal_spell:IsContinuousSpellTrap()))
+      Debug.Message("equip trap " .. tostring(equip_trap:IsEquipTrap()) .. "/" .. tostring(equip_trap:IsEquipCard()) .. "/" .. tostring(continuous_trap:IsEquipTrap()))
       Debug.Message("drone predicate " .. tostring(drone:IsDrone()) .. "/" .. tostring(normal_spell:IsDrone()))
       Debug.Message("action predicates " .. TYPE_ACTION .. "/" .. tostring(action_spell:IsActionCard()) .. "/" .. tostring(action_spell:IsActionSpell()) .. "/" .. tostring(action_trap:IsActionTrap()) .. "/" .. tostring(action_field:IsActionField()) .. "/" .. tostring(action_field:IsActionCard()))
       Debug.Message("champion predicates " .. tostring(champion_code:IsChampion()) .. "/" .. tostring(champion_set:IsChampion()) .. "/" .. tostring(normal_spell:IsChampion()))
+      Debug.Message("goyo predicates " .. tostring(goyo_code:IsGoyo()) .. "/" .. tostring(goyo_set:IsGoyo()) .. "/" .. tostring(normal_spell:IsGoyo()))
       Debug.Message("earth predicates " .. tostring(earth_code:IsEarth()) .. "/" .. tostring(earth_set:IsEarth()) .. "/" .. tostring(normal_spell:IsEarth()))
       Debug.Message("sky predicates " .. tostring(sky_code:IsSky()) .. "/" .. tostring(sky_set:IsSky()) .. "/" .. tostring(normal_spell:IsSky()))
       Debug.Message("set/race helpers " .. drone:GetSetCard() .. "/" .. tostring(drone:IsRaceExcept(RACE_DRAGON)) .. "/" .. tostring(drone:IsRaceExcept(RACE_SPELLCASTER|RACE_DRAGON)))
@@ -148,9 +156,11 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("ritual spell true/false");
     expect(host.messages).toContain("continuous spell true/false");
     expect(host.messages).toContain("continuous spelltrap true/true/false/false");
+    expect(host.messages).toContain("equip trap true/true/false");
     expect(host.messages).toContain("drone predicate true/false");
     expect(host.messages).toContain("action predicates 268435456/true/true/true/true/false");
     expect(host.messages).toContain("champion predicates true/true/false");
+    expect(host.messages).toContain("goyo predicates true/true/false");
     expect(host.messages).toContain("earth predicates true/true/false");
     expect(host.messages).toContain("sky predicates true/true/false");
     expect(host.messages).toContain("set/race helpers 1409/true/false");

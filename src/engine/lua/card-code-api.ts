@@ -102,6 +102,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
   pushBooleanGetter(L, "IsWhite", session, (card) => Boolean(card && isAnimeArchetype(card, whiteSetcodes, whiteCodes)));
   pushBooleanGetter(L, "IsChampion", session, (card) => Boolean(card && isAnimeArchetype(card, championSetcodes, championCodes)));
+  pushBooleanGetter(L, "IsGoyo", session, (card) => Boolean(card && isAnimeArchetype(card, goyoSetcodes, goyoCodes)));
   pushBooleanGetter(L, "IsEarth", session, (card) => Boolean(card && isAnimeArchetype(card, earthSetcodes, earthCodes)));
   pushBooleanGetter(L, "IsSky", session, (card) => Boolean(card && isAnimeArchetype(card, skySetcodes, skyCodes)));
 }
@@ -278,6 +279,9 @@ const whiteCodes = [
 
 const championSetcodes = [0x152f] as const;
 const championCodes = ["82382815", "27553701"] as const;
+
+const goyoSetcodes = [0x523] as const;
+const goyoCodes = ["49785720", "59255742", "7391448", "84305651", "63364266", "58901502", "98637386"] as const;
 
 const earthSetcodes = [0x51a, 0x21, 0x567] as const;
 const earthCodes = [

@@ -173,6 +173,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsActionField", session, (card) => (cardTypeFlags(card) & 0x10080000) === 0x10080000);
   pushBooleanGetter(L, "IsEquipCard", session, (card) => (cardTypeFlags(card) & 0x40000) !== 0);
   pushBooleanGetter(L, "IsEquipSpell", session, (card) => cardTypeFlags(card) === 0x40002);
+  pushBooleanGetter(L, "IsEquipTrap", session, (card) => (cardTypeFlags(card) & 0x40004) === 0x40004);
   pushBooleanGetter(L, "IsFieldSpell", session, (card) => (cardTypeFlags(card) & 0x80002) === 0x80002);
   pushBooleanGetter(L, "IsContinuousSpell", session, (card) => (cardTypeFlags(card) & 0x20002) === 0x20002);
   pushBooleanGetter(L, "IsRitualSpell", session, (card) => (cardTypeFlags(card) & 0x82) === 0x82);
