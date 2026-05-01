@@ -250,6 +250,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => (leaveFieldDestinationMask(card) & requested) !== 0);
   pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
   pushNumberGetter(L, "GetPreviousSequence", session, (card) => card?.previousSequence ?? 0);
+  pushNumberMatcher(L, "IsPreviousSequence", session, (card, requested) => card.previousSequence === requested);
   pushNumberGetter(L, "GetPreviousPosition", session, (card) => positionMaskFromPosition(card?.previousPosition));
   pushNumberGetter(L, "GetPreviousCode", session, (card) => (card?.previousLocation ? Number(card.code) : 0));
   lua.lua_pushcfunction(L, (state: unknown) => {

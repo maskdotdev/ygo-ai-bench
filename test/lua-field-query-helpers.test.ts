@@ -1201,10 +1201,13 @@ describe("Lua field and query helpers", () => {
       { code: "902", name: "Material Listing Fusion", kind: "extra", fusionMaterials: ["100", "800"], materialSetcodes: [0x3000 | 0x123] },
       { code: "903", name: "Unknown Stat Fixture", kind: "monster", typeFlags: 0x21, attack: -2, defense: -2, level: 10 },
       { code: "904", name: "Spirit Fixture", kind: "monster", typeFlags: 0x200021, level: 4 },
+      { code: "905", name: "Plus Fixture", kind: "monster", typeFlags: 0x20000001, level: 4 },
+      { code: "906", name: "Minus Fixture", kind: "monster", typeFlags: 0x40000001, level: 4 },
+      { code: "907", name: "Plus Minus Fixture", kind: "monster", typeFlags: 0x60000001, level: 4 },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 14, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 17, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "201", "202", "203", "300", "400", "500", "600", "700", "800", "901", "903", "904"], extra: ["801", "902"] },
+      0: { main: ["100", "200", "201", "202", "203", "300", "400", "500", "600", "700", "800", "901", "903", "904", "905", "906", "907"], extra: ["801", "902"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -1238,6 +1241,9 @@ describe("Lua field and query helpers", () => {
       local spirit = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 904), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local material_fusion = Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 902), 0, LOCATION_EXTRA, 0, nil):GetFirst()
       local unknown_stats = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 903), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local plus = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 905), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local minus = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 906), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local plus_minus = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 907), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       c:GetMetatable().listed_series={0x123,0x456}
       c:GetMetatable().listed_card_types={0x200000,0x400000}
       c:GetMetatable().counter_list={0x10,0x20}
@@ -1256,6 +1262,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(synchro:IsSynchroMonster()) .. "/" .. tostring(c:IsSynchroMonster()) .. "/" .. tostring(xyz:IsXyzMonster()) .. "/" .. tostring(c:IsXyzMonster()) .. "/" .. tostring(pendulum:IsPendulumMonster()) .. "/" .. tostring(c:IsPendulumMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()) .. "/" .. tostring(c:IsEffectMonster()) .. "/" .. tostring(normal:IsEffectMonster()) .. "/" .. tostring(c:IsForbidden()))
       Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:HasRank()) .. "/" .. tostring(normal:HasRank()) .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)))
       Debug.Message("spirit predicate " .. tostring(spirit:IsSpirit()) .. "/" .. tostring(c:IsSpirit()))
+      Debug.Message("plus minus predicate " .. tostring(plus:IsPlusOrMinus()) .. "/" .. tostring(minus:IsPlusOrMinus()) .. "/" .. tostring(plus_minus:IsPlusOrMinus()) .. "/" .. tostring(c:IsPlusOrMinus()))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
       Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()) .. "/" .. tostring(link:IsLineMonster()) .. "/" .. tostring(c:IsLineMonster()))
       Debug.Message("link comparisons " .. tostring(link:IsLinkAbove(2)) .. "/" .. tostring(link:IsLinkBelow(1)) .. "/" .. tostring(link:IsOriginalLinkAbove(3)) .. "/" .. tostring(link:IsOriginalLinkBelow(2)))
@@ -1343,6 +1350,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("named type predicates true/false/true/false/true/false/true/false/true/false/true/false/false");
     expect(host.messages).toContain("rank 4/4/true/false/true/true");
     expect(host.messages).toContain("spirit predicate true/false");
+    expect(host.messages).toContain("plus minus predicate true/true/false/false");
     expect(host.messages).toContain("has level true/false/false/false");
     expect(host.messages).toContain("main card types 1/2/2/5");
     expect(host.messages).toContain("rank comparisons true/false/true/true");

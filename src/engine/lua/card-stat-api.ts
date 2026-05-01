@@ -10,6 +10,10 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetMainCardType", session, (card) => cardMainTypeFlags(card));
   pushNumberMatcher(L, "IsType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
   pushNumberMatcher(L, "IsExactType", session, (card, requested) => cardTypeFlags(card) === requested);
+  pushBooleanGetter(L, "IsPlusOrMinus", session, (card) => {
+    const plusMinusType = cardTypeFlags(card) & 0x60000000;
+    return plusMinusType !== 0 && plusMinusType !== 0x60000000;
+  });
   pushNumberMatcher(L, "IsNotType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
   pushNumberMatcher(L, "IsNotOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);
