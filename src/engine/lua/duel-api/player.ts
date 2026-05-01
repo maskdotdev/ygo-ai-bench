@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard } from "#duel/core.js";
-import { findCard, moveDuelCard } from "#duel/card-state.js";
+import { findCard, hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { canAddDuelCardCounter, canRemoveDuelCounters, getDuelCardCounter, removeDuelCounters } from "#duel/counters.js";
 import { getDuelFlagEffectCount } from "#duel/flags.js";
@@ -33,6 +33,8 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanAdditionalTributeSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanNormalSet(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanMSet"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanSetSpellTrap(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CanPlayerSetSpellTrap"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummon(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummonCount(state, session));
@@ -86,6 +88,14 @@ function pushCanNormalSet(L: unknown, session: DuelSession): number {
   return 1;
 }
 
+function pushCanSetSpellTrap(L: unknown, session: DuelSession): number {
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const uid = readCardUid(L, 2);
+  const card = uid ? findCard(session.state, uid) : undefined;
+  lua.lua_pushboolean(L, hasZoneSpace(session.state, player, "spellTrapZone") && (!card || canSetAsSpellTrap(card)));
+  return 1;
+}
+
 function pushCanSpecialSummon(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const positionMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0x1;
@@ -93,6 +103,10 @@ function pushCanSpecialSummon(L: unknown, session: DuelSession): number {
   const uid = readCardUid(L, 5) ?? readCardUid(L, 2);
   lua.lua_pushboolean(L, canSpecialSummon(session, player, targetPlayer, positionMask, uid));
   return 1;
+}
+
+function canSetAsSpellTrap(card: DuelCardInstance): boolean {
+  return card.kind === "spell" || card.kind === "trap" || (card.location === "monsterZone" && ((card.data.typeFlags ?? 0) & 0x4) !== 0);
 }
 
 function pushCanSpecialSummonCount(L: unknown, session: DuelSession): number {

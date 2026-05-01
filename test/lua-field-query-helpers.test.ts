@@ -1554,6 +1554,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("sset rejected operated " .. Duel.GetOperatedGroup():GetCount())
       Debug.Message("sset empty result " .. Duel.SSet(Group.CreateGroup()))
       Debug.Message("sset empty operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("can set spell trap hand " .. tostring(Duel.CanPlayerSetSpellTrap(0, spell:GetFirst())) .. "/" .. tostring(Duel.CanPlayerSetSpellTrap(0, monster:GetFirst())))
       `,
       "basic-spell-trap-set.lua",
     );
@@ -1565,6 +1566,7 @@ describe("Lua field and query helpers", () => {
     expect(setHost.messages).toContain("sset rejected operated 0");
     expect(setHost.messages).toContain("sset empty result 0");
     expect(setHost.messages).toContain("sset empty operated 0");
+    expect(setHost.messages).toContain("can set spell trap hand true/false");
     expect(setSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
     expect(setSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
 
@@ -1588,6 +1590,34 @@ describe("Lua field and query helpers", () => {
     );
     expect(fullResult.ok, fullResult.error).toBe(true);
     expect(fullHost.messages).toContain("sset zone blocked 0");
+    const blockedResult = fullHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can set spell trap blocked " .. tostring(Duel.CanPlayerSetSpellTrap(0, target)))
+      `,
+      "basic-spell-trap-set-can-blocked.lua",
+    );
+    expect(blockedResult.ok, blockedResult.error).toBe(true);
+    expect(fullHost.messages).toContain("can set spell trap blocked false");
+
+    const trapMonsterSession = createDuel({ seed: 159, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(trapMonsterSession, {
+      0: { main: ["200", "500", "600", "700", "800", "900"] },
+      1: { main: [] },
+    });
+    startDuel(trapMonsterSession);
+    const trapMonster = trapMonsterSession.state.cards.find((card) => card.code === "200");
+    moveDuelCard(trapMonsterSession.state, trapMonster!.uid, "monsterZone", 0);
+    const trapMonsterHost = createLuaScriptHost(trapMonsterSession);
+    const trapMonsterResult = trapMonsterHost.loadScript(
+      `
+      local trap_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("can set trap monster " .. tostring(Duel.CanPlayerSetSpellTrap(0, trap_monster)))
+      `,
+      "basic-spell-trap-set-can-trap-monster.lua",
+    );
+    expect(trapMonsterResult.ok, trapMonsterResult.error).toBe(true);
+    expect(trapMonsterHost.messages).toContain("can set trap monster true");
   });
 
   it("lets Lua scripts tribute summon with explicit release cards", () => {
