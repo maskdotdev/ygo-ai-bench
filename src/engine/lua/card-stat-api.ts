@@ -72,6 +72,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetRace", session, (card) => card?.data.race ?? 0);
   pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
   pushNumberMatcher(L, "IsRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
+  pushNumberMatcher(L, "IsRaceExcept", session, (card, requested) => (((card.data.race ?? 0) & requested) !== (card.data.race ?? 0)));
   pushNumberMatcher(L, "IsNotRace", session, (card, requested) => ((card.data.race ?? 0) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
   pushNumberMatcher(L, "IsNotOriginalRace", session, (card, requested) => ((card.data.race ?? 0) & requested) === 0);

@@ -1178,6 +1178,7 @@ describe("Lua state helpers", () => {
       Debug.Message("normal type " .. tostring(c:IsSummonType(SUMMON_TYPE_NORMAL)) .. "/" .. c:GetSummonType())
       Debug.Message("normal location " .. tostring(c:IsSummonLocation(LOCATION_HAND)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_EXTRA)))
       Debug.Message("normal player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
+      Debug.Message("normal special " .. tostring(c:IsSpecialSummoned()))
       Debug.Message("normal status " .. tostring(c:IsStatus(STATUS_SUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_SPSUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_PROC_COMPLETE)) .. "/" .. tostring(c:IsStatus(STATUS_EFFECT_ENABLED)) .. "/" .. tostring(c:IsStatus(STATUS_NO_LEVEL)))
       Debug.Message("normal activity " .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON))
       `,
@@ -1189,6 +1190,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("normal type true/268435456");
     expect(host.messages).toContain("normal location true/false");
     expect(host.messages).toContain("normal player/type 0/true/false");
+    expect(host.messages).toContain("normal special false");
     expect(host.messages).toContain("normal status true/false/true/true/true");
     expect(host.messages).toContain("normal activity 1/1/0");
 
@@ -1205,6 +1207,7 @@ describe("Lua state helpers", () => {
       Debug.Message("fusion type " .. tostring(c:IsSummonType(SUMMON_TYPE_FUSION)) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_SPECIAL)))
       Debug.Message("fusion location " .. tostring(c:IsSummonLocation(LOCATION_EXTRA)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_HAND)))
       Debug.Message("fusion player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
+      Debug.Message("fusion special " .. tostring(c:IsSpecialSummoned()))
       local e=Effect.CreateEffect(c)
       Debug.Message("custom summon type " .. c:GetSummonType() .. "/" .. tostring(aux.evospcon(e)) .. "/" .. tostring(aux.gbspcon(e)))
       Debug.Message("fusion status " .. tostring(c:IsStatus(STATUS_SUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_SPSUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_PROC_COMPLETE)))
@@ -1218,6 +1221,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("fusion type false/true");
     expect(host.messages).toContain("fusion location true/false");
     expect(host.messages).toContain("fusion player/type 0/true/true");
+    expect(host.messages).toContain("fusion special true");
     expect(host.messages).toContain("custom summon type 1073741975/true/false");
     expect(host.messages).toContain("fusion status false/true/true");
     expect(host.messages).toContain("fusion activity 2/1/1");

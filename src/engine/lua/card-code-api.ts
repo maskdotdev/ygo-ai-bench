@@ -62,6 +62,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSetCard"));
+  pushNumberGetter(L, "GetSetCard", session, (card) => card?.data.setcodes?.[0] ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;

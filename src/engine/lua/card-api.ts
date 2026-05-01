@@ -241,6 +241,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushCanChangeControler(L, "IsControlerCanBeChanged", session);
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
   pushBooleanGetter(L, "IsTributeSummoned", session, (card) => Boolean(card && card.summonType === "tribute"));
+  pushBooleanGetter(L, "IsSpecialSummoned", session, (card) => Boolean(card && card.summonType !== undefined && card.summonType !== "normal" && card.summonType !== "tribute" && card.summonType !== "flip"));
   pushNumberMatcher(L, "IsSummonType", session, (card, requested) => isSummonTypeMatch(summonTypeMask(card), requested));
   pushNumberMatcher(L, "IsSummonLocation", session, (card, requested) => Boolean(card.summonType && (locationMaskFromLocation(card.previousLocation) & requested) !== 0));
   pushNumberMatcher(L, "IsSummonPlayer", session, (card, requested) => card.summonPlayer !== undefined && card.summonPlayer === normalizePlayer(requested));

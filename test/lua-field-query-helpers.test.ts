@@ -11,7 +11,7 @@ describe("Lua field and query helpers", () => {
       { code: "100", name: "Continuous Trap", kind: "trap", typeFlags: 0x20004 },
       { code: "200", name: "Ritual Spell", kind: "spell", typeFlags: 0x82 },
       { code: "300", name: "Continuous Spell", kind: "spell", typeFlags: 0x20002 },
-      { code: "400", name: "Drone Monster", kind: "monster", typeFlags: 0x21, setcodes: [0x581] },
+      { code: "400", name: "Drone Monster", kind: "monster", typeFlags: 0x21, race: 0x2, setcodes: [0x581] },
       { code: "500", name: "Normal Spell", kind: "spell", typeFlags: 0x2 },
     ];
     const session = createDuel({ seed: 44, startingHandSize: 5, cardReader: createCardReader(cards) });
@@ -34,6 +34,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("ritual spell " .. tostring(ritual_spell:IsRitualSpell()) .. "/" .. tostring(ritual_spell:IsContinuousTrap()))
       Debug.Message("continuous spell " .. tostring(continuous_spell:IsContinuousSpell()) .. "/" .. tostring(normal_spell:IsContinuousSpell()))
       Debug.Message("drone predicate " .. tostring(drone:IsDrone()) .. "/" .. tostring(normal_spell:IsDrone()))
+      Debug.Message("set/race helpers " .. drone:GetSetCard() .. "/" .. tostring(drone:IsRaceExcept(RACE_DRAGON)) .. "/" .. tostring(drone:IsRaceExcept(RACE_SPELLCASTER|RACE_DRAGON)))
       `,
       "exact-card-type-predicates.lua",
     );
@@ -44,6 +45,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("ritual spell true/false");
     expect(host.messages).toContain("continuous spell true/false");
     expect(host.messages).toContain("drone predicate true/false");
+    expect(host.messages).toContain("set/race helpers 1409/true/false");
   });
 
   it("lets Lua scripts check linked monster-zone cards", () => {
