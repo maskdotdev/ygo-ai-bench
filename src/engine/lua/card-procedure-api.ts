@@ -22,6 +22,24 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       c:RegisterEffect(e0)
       return e0
     end
+    function Card.AddMustBeSpecialSummonedByDarkFusion(c)
+      local mt=Duel.GetMetatable(c:GetOriginalCode())
+      mt.dark_calling=true
+      local e0=Effect.CreateEffect(c)
+      e0:SetType(EFFECT_TYPE_SINGLE)
+      e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+      e0:SetCode(EFFECT_SPSUMMON_CONDITION)
+      e0:SetValue(aux.EvilHeroLimit)
+      c:RegisterEffect(e0)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+      e1:SetCode(CARD_CLOCK_LIZARD or 51476410)
+      e1:SetCondition(function(e) return not Duel.IsPlayerAffectedByEffect(e:GetHandlerPlayer(),EFFECT_SUPREME_CASTLE or 72043279) end)
+      e1:SetValue(1)
+      c:RegisterEffect(e1)
+      return e0
+    end
     function Card.AddMustBeFusionSummoned(c)
       local e0=Effect.CreateEffect(c)
       e0:SetType(EFFECT_TYPE_SINGLE)
