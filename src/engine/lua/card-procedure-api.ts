@@ -152,6 +152,24 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       c:RegisterEffect(e1)
       return e1
     end
+    Maximum=Maximum or {}
+    function Maximum.centerCon(e)
+      return e:GetHandler():IsMaximumModeCenter()
+    end
+    function Maximum.eftg(e,c)
+      return c:IsType(TYPE_EFFECT) and c:IsMaximumModeSide()
+    end
+    function Card.AddCenterToSideEffectHandler(c,eff)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_GRANT)
+      e1:SetRange(LOCATION_MZONE)
+      e1:SetTargetRange(LOCATION_MZONE,0)
+      e1:SetCondition(Maximum.centerCon)
+      e1:SetTarget(Maximum.eftg)
+      e1:SetLabelObject(eff)
+      c:RegisterEffect(e1)
+      return e1
+    end
     function Card.IsLegend(c)
       local mt=c:GetMetatable(false)
       return c:IsHasEffect(EFFECT_IS_LEGEND)~=nil or (mt and mt.is_legend==true) or c:IsOriginalCode(160001000,160205001,160418001,160002000,160421015,160404001,160421016,160432004)
