@@ -148,6 +148,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsHand", session, (card) => Boolean(card && isAnimeArchetype(card, handSetcodes, handCodes)));
   pushBooleanGetter(L, "IsHarpieLadySisters", session, (card) => Boolean(card && isAnimeArchetype(card, harpieLadySistersSetcodes, harpieLadySistersCodes)));
   pushBooleanGetter(L, "IsHelios", session, (card) => Boolean(card && isAnimeArchetype(card, [], heliosCodes)));
+  pushBooleanGetter(L, "IsHell", session, (card) => Boolean(card && isAnimeArchetype(card, hellSetcodes, hellCodes)));
+  pushBooleanGetter(L, "IsHeraldic", session, (card) => Boolean(card && isAnimeArchetype(card, heraldicSetcodes, heraldicCodes)));
   pushBooleanGetter(L, "IsHeavyIndustry", session, (card) => Boolean(card && isAnimeArchetype(card, heavyIndustrySetcodes, heavyIndustryCodes)));
   pushBooleanGetter(L, "IsMantis", session, (card) => Boolean(card && isAnimeArchetype(card, mantisSetcodes, mantisCodes)));
   pushBooleanGetter(L, "IsMask", session, (card) => Boolean(card && isAnimeArchetype(card, maskSetcodes, maskCodes)));
@@ -155,7 +157,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsPapillon", session, (card) => Boolean(card && isAnimeArchetype(card, papillonSetcodes, papillonCodes)));
   pushBooleanGetter(L, "IsShark", session, (card) => Boolean(card && isAnimeArchetype(card, sharkSetcodes, sharkCodes)));
   pushBooleanGetter(L, "IsStarvingVenemy", session, (card) => Boolean(card && isAnimeArchetype(card, starvingVenemySetcodes, starvingVenemyCodes)));
-  pushBooleanGetter(L, "IsEarth", session, (card) => Boolean(card && isAnimeArchetype(card, earthSetcodes, earthCodes)));
+  pushBooleanGetter(L, "IsEarth", session, (card) => Boolean(card && isAnimeArchetype(card, earthSetcodes, earthCodes) && !isAnimeArchetype(card, hellSetcodes, hellCodes)));
   pushBooleanGetter(L, "IsSky", session, (card) => Boolean(card && isAnimeArchetype(card, skySetcodes, skyCodes)));
   pushBooleanGetter(L, "Is_V_", session, (card) => Boolean(card && isAnimeArchetype(card, vZexalSetcodes, vZexalCodes)));
 }
@@ -472,6 +474,10 @@ const handCodes = ["95929069", "40830387", "20403123", "55888045", "19642889", "
 const harpieLadySistersSetcodes = [0x1064] as const;
 const harpieLadySistersCodes = ["12206212"] as const;
 const heliosCodes = ["54493213", "80887952", "17286057", "51043053", "160214029"] as const;
+const hellSetcodes = [0x567] as const;
+const hellCodes = ["36029076", "46820049", "50916353", "64104037", "99370594", "61103515"] as const;
+const heraldicSetcodes = [0x566, 0x76] as const;
+const heraldicCodes = ["23649496", "47387961"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [

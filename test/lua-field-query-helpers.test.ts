@@ -106,12 +106,13 @@ describe("Lua field and query helpers", () => {
       { code: "811", name: "Shark Set", kind: "monster", typeFlags: 0x21, setcodes: [0x547] },
       { code: "42685062", name: "Earth Code", kind: "monster", typeFlags: 0x21 },
       { code: "804", name: "Earthbound Set", kind: "monster", typeFlags: 0x21, setcodes: [0x21] },
+      { code: "36029076", name: "Hell Code", kind: "monster", typeFlags: 0x21 },
       { code: "49771608", name: "Sky Code", kind: "monster", typeFlags: 0x21 },
       { code: "805", name: "Sky Set", kind: "monster", typeFlags: 0x21, setcodes: [0x54a] },
     ];
-    const session = createDuel({ seed: 44, startingHandSize: 29, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 44, startingHandSize: 30, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "806", "808", "812", "82382815", "803", "7391448", "807", "90276649", "809", "92341815", "810", "7500772", "811", "42685062", "804", "49771608", "805"] },
+      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "806", "808", "812", "82382815", "803", "7391448", "807", "90276649", "809", "92341815", "810", "7500772", "811", "42685062", "804", "36029076", "49771608", "805"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -146,6 +147,7 @@ describe("Lua field and query helpers", () => {
       local shark_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 811), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local earth_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 42685062), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local earth_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 804), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local hell_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 36029076), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local sky_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 49771608), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local sky_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 805), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("exact type constants " .. TYPE_CONTINUOUS)
@@ -164,6 +166,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("papillon predicates " .. tostring(papillon_code:IsPapillon()) .. "/" .. tostring(papillon_set:IsPapillon()) .. "/" .. tostring(normal_spell:IsPapillon()))
       Debug.Message("shark predicates " .. tostring(shark_code:IsShark()) .. "/" .. tostring(shark_set:IsShark()) .. "/" .. tostring(normal_spell:IsShark()))
       Debug.Message("earth predicates " .. tostring(earth_code:IsEarth()) .. "/" .. tostring(earth_set:IsEarth()) .. "/" .. tostring(normal_spell:IsEarth()))
+      Debug.Message("hell earth exclusion " .. tostring(hell_code:IsHell()) .. "/" .. tostring(hell_code:IsEarth()))
       Debug.Message("sky predicates " .. tostring(sky_code:IsSky()) .. "/" .. tostring(sky_set:IsSky()) .. "/" .. tostring(normal_spell:IsSky()))
       Debug.Message("set/race helpers " .. drone:GetSetCard() .. "/" .. tostring(drone:IsRaceExcept(RACE_DRAGON)) .. "/" .. tostring(drone:IsRaceExcept(RACE_SPELLCASTER|RACE_DRAGON)))
       Debug.Message("anime colors " .. tostring(known_red:IsRed()) .. "/" .. tostring(setcode_red:IsRed()) .. "/" .. tostring(known_white:IsWhite()) .. "/" .. tostring(setcode_white:IsWhite()) .. "/" .. tostring(normal_spell:IsRed()) .. "/" .. tostring(normal_spell:IsWhite()))
@@ -188,6 +191,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("papillon predicates true/true/false");
     expect(host.messages).toContain("shark predicates true/true/false");
     expect(host.messages).toContain("earth predicates true/true/false");
+    expect(host.messages).toContain("hell earth exclusion true/false");
     expect(host.messages).toContain("sky predicates true/true/false");
     expect(host.messages).toContain("set/race helpers 1409/true/false");
     expect(host.messages).toContain("anime colors true/true/true/true/false/false");
@@ -234,6 +238,8 @@ describe("Lua field and query helpers", () => {
       { method: "IsHand", code: "95929069", setcode: 0x527 },
       { method: "IsHarpieLadySisters", code: "12206212", setcode: 0x1064 },
       { method: "IsHelios", code: "54493213", setcode: 0 },
+      { method: "IsHell", code: "36029076", setcode: 0x567 },
+      { method: "IsHeraldic", code: "23649496", setcode: 0x566 },
       { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
       { method: "IsMask", code: "29549364", setcode: 0x583 },
