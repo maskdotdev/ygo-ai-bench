@@ -57,6 +57,36 @@ describe("duel battle", () => {
     expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.attacksDeclared).toContain(attacker!.uid);
   });
 
+  it("lets face-down non-monster cards in the monster zone be attacked", () => {
+    const localCards = [
+      ...cards,
+      { code: "900", name: "Hidden Spell Decoy", kind: "spell" as const, typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 32, startingHandSize: 1, cardReader: createCardReader(localCards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["900"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const decoy = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "900");
+    expect(attacker).toBeTruthy();
+    expect(decoy).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    const movedDecoy = moveDuelCard(session.state, decoy!.uid, "monsterZone", 1);
+    movedDecoy.position = "faceDownDefense";
+    movedDecoy.faceUp = false;
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(getDuelAttackTargets(session.state, attacker!.uid).map((card) => card.uid)).toEqual([decoy!.uid]);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "declareAttack" && action.targetUid === decoy!.uid)).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.targetUid === decoy!.uid)!).ok).toBe(true);
+    passAttackResponses(session);
+
+    expect(session.state.cards.find((card) => card.uid === decoy!.uid)).toMatchObject({ location: "graveyard" });
+  });
+
   it("offers quick effects during the attack response window before battle resolves", () => {
     const session = createDuel({ seed: 31, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

@@ -173,7 +173,7 @@ function canAttackWithCard(state: DuelState, card: DuelCardInstance, extraAttack
 }
 
 function getAttackTargets(state: DuelState, player: PlayerId): DuelCardInstance[] {
-  return getCards(state, otherPlayer(player), "monsterZone").filter((card) => isMonsterLike(card));
+  return getCards(state, otherPlayer(player), "monsterZone").filter((card) => canBeBattleTarget(card));
 }
 
 function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance, callbacks: DuelBattleCallbacks): void {
@@ -227,6 +227,10 @@ function getBattleDefense(card: DuelCardInstance): number {
 
 function isMonsterLike(card: DuelCardInstance): boolean {
   return card.kind === "monster" || card.kind === "extra";
+}
+
+function canBeBattleTarget(card: DuelCardInstance): boolean {
+  return isMonsterLike(card) || (card.location === "monsterZone" && !card.faceUp);
 }
 
 function isMonsterPosition(position: CardPosition): boolean {
