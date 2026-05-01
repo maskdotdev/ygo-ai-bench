@@ -48,6 +48,40 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("count limit reset true");
   });
 
+  it("resets matching card effects through aux.ResetEffects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Reset Effects Source", kind: "monster" }];
+    const session = createDuel({ seed: 96, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_CANNOT_ATTACK)
+      e:SetCountLimit(1, 99002)
+      c:RegisterEffect(e)
+      local found=c:GetCardEffect(EFFECT_CANNOT_ATTACK)
+      Debug.Message("card effect found " .. tostring(found~=nil))
+      found:UseCountLimit(0)
+      Debug.Message("card effect spent " .. tostring(found:CheckCountLimit(0)))
+      aux.ResetEffects(Group.FromCards(c), EFFECT_CANNOT_ATTACK)
+      Debug.Message("card effect reset " .. tostring(found:CheckCountLimit(0)))
+      `,
+      "aux-reset-effects.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("card effect found true");
+    expect(host.messages).toContain("card effect spent false");
+    expect(host.messages).toContain("card effect reset true");
+  });
+
   it("creates and registers Lua global effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Global Anchor", kind: "monster" }];
     const session = createDuel({ seed: 94, startingHandSize: 1, cardReader: createCardReader(cards) });

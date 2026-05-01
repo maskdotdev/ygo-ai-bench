@@ -567,6 +567,14 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       if count then return not total or total>=count end
       return total
     end
+    function aux.ResetEffects(g,eff)
+      for c in aux.Next(g) do
+        local effects={c:GetCardEffect(eff)}
+        for _,te in ipairs(effects) do
+          te:Reset()
+        end
+      end
+    end
     function aux.DelayedOperation(card_or_group,phase,flag,e,tp,oper,cond,reset,reset_count,hint,effect_desc)
       local group=(type(card_or_group)=="table" and card_or_group.GetCount) and card_or_group or Group.FromCards(card_or_group)
       if group:GetCount()==0 then return nil end
