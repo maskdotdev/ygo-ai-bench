@@ -4,6 +4,7 @@ export const cardFieldNames = [
   "AddMustBeSpecialSummoned",
   "AddMustBeFusionSummoned",
   "AddMustBeLinkSummoned",
+  "AddMustBePendulumSummoned",
   "AddCannotBeNormalSummoned",
   "AddCannotBeFlipSummoned",
   "EnableReviveLimit",
