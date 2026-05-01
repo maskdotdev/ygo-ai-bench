@@ -275,6 +275,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsCanBeEffectTarget", session, (card) => Boolean(card));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsImmuneToEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsImmuneToEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsCanBeDisabledByEffect(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("IsCanBeDisabledByEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsHasEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsHasEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsHasEffect(state, session, hostState));
@@ -484,6 +486,15 @@ function pushIsImmuneToEffect<EffectRecord extends LuaCardApiEffectRecord>(L: un
   }
   const immune = matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, targetEffect, hostState));
   lua.lua_pushboolean(L, immune);
+  return 1;
+}
+
+function pushIsCanBeDisabledByEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const card = readCard(L, session);
+  const effectId = lua.lua_istable(L, 2) ? readTableNumberField(L, 2, "__effect_id") : undefined;
+  const targetEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
+  const immune = card && targetEffect && ((targetEffect.property ?? 0) & 0x80) === 0 && matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, targetEffect, hostState));
+  lua.lua_pushboolean(L, Boolean(card && isNegatableCard(session.state, card) && !immune));
   return 1;
 }
 

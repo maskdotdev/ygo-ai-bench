@@ -1226,9 +1226,11 @@ describe("Lua continuous effects", () => {
       local monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
       local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local disable_effect=Effect.CreateEffect(monster)
       Debug.Message("monster negatable " .. tostring(monster:IsNegatable()) .. "/" .. tostring(monster:IsNegatableMonster()) .. "/" .. tostring(monster:IsNegatableSpellTrap()))
       Debug.Message("spell negatable " .. tostring(spell:IsNegatable()) .. "/" .. tostring(spell:IsNegatableMonster()) .. "/" .. tostring(spell:IsNegatableSpellTrap()))
       Debug.Message("hand negatable " .. tostring(hand:IsNegatable()) .. "/" .. tostring(hand:IsNegatableMonster()) .. "/" .. tostring(hand:IsNegatableSpellTrap()))
+      Debug.Message("disable by effect " .. tostring(monster:IsCanBeDisabledByEffect(disable_effect)) .. "/" .. tostring(spell:IsCanBeDisabledByEffect(disable_effect)) .. "/" .. tostring(hand:IsCanBeDisabledByEffect(disable_effect)))
       `,
       "negatable-before.lua",
     );
@@ -1236,6 +1238,7 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("monster negatable true/true/false");
     expect(host.messages).toContain("spell negatable true/false/true");
     expect(host.messages).toContain("hand negatable false/false/false");
+    expect(host.messages).toContain("disable by effect true/true/false");
 
     const register = host.loadScript(
       `
@@ -1267,6 +1270,63 @@ describe("Lua continuous effects", () => {
     );
     expect(after.ok, after.error).toBe(true);
     expect(host.messages).toContain("monster negatable disabled false/false");
+  });
+
+  it("checks immunity when testing whether Lua cards can be disabled by effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Immune Disable Target", kind: "monster" },
+      { code: "200", name: "Disable Probe", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 51, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+      card.faceUp = true;
+      card.position = "faceUpAttack";
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_IMMUNE_EFFECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetValue(function(e,te)
+          return te:GetOwnerPlayer()==1
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "disable-immunity-register.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const check = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local own_effect=Effect.CreateEffect(target)
+      own_effect:SetOwnerPlayer(0)
+      local opponent_effect=Effect.CreateEffect(target)
+      opponent_effect:SetOwnerPlayer(1)
+      local ignore_effect=Effect.CreateEffect(target)
+      ignore_effect:SetOwnerPlayer(1)
+      ignore_effect:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)
+      Debug.Message("disable immune " .. tostring(target:IsCanBeDisabledByEffect(own_effect)) .. "/" .. tostring(target:IsCanBeDisabledByEffect(opponent_effect)) .. "/" .. tostring(target:IsCanBeDisabledByEffect(ignore_effect)))
+      `,
+      "disable-immunity-check.lua",
+    );
+
+    expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain("disable immune true/false/true");
   });
 
   it("lets Lua scripts check whether cards can change control", () => {
