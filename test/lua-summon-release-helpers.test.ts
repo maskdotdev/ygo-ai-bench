@@ -490,10 +490,11 @@ describe("Lua summon and release helpers", () => {
       { code: "700", name: "Release Cost D", kind: "monster" },
       { code: "900", name: "Release Cost E", kind: "monster" },
       { code: "1100", name: "Target Group Card", kind: "monster" },
+      { code: "1300", name: "Extra Zone Check Card", kind: "extra" },
     ];
     const session = createDuel({ seed: 19, startingHandSize: 6, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "300", "500", "700", "900", "1100"] },
+      0: { main: ["100", "300", "500", "700", "900", "1100"], extra: ["1300"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -506,11 +507,15 @@ describe("Lua summon and release helpers", () => {
     const result = host.loadScript(
       `
       local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 1100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 1300), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
       Debug.Message("release check mmz " .. tostring(Duel.CheckReleaseGroupCost(0, nil, 1, false, aux.ReleaseCheckMMZ, nil)))
       local mmz_group = Duel.SelectReleaseGroupCost(0, nil, 1, 1, false, aux.ReleaseCheckMMZ, nil)
       Debug.Message("release select mmz " .. mmz_group:GetCount() .. "/" .. Duel.GetMZoneCount(0, mmz_group))
       Debug.Message("release check target hit " .. tostring(Duel.CheckReleaseGroupCost(0, nil, 1, false, aux.ReleaseCheckTarget, nil, target)))
       Debug.Message("release check target miss " .. tostring(Duel.CheckReleaseGroupCost(0, nil, 1, false, aux.ReleaseCheckTarget, nil, mmz_group)))
+      local hand_check = aux.ZoneCheckFunc(target:GetFirst(),0,0)
+      local extra_check = aux.ZoneCheckFunc(extra,0,0)
+      Debug.Message("zone check func " .. hand_check(mmz_group) .. "/" .. extra_check(mmz_group))
       `,
       "release-cost-aux-checks.lua",
     );
@@ -520,6 +525,7 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("release select mmz 1/1");
     expect(host.messages).toContain("release check target miss false");
     expect(host.messages).toContain("release check target hit true");
+    expect(host.messages).toContain("zone check func 1/1");
   });
 
   it("lets Lua scripts identify opponent extra non-summon release effects", () => {

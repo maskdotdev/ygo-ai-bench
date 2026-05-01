@@ -590,6 +590,12 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
     function aux.ReleaseCheckTarget(sg,tp,exg,dg)
       return dg and dg:IsExists(aux.TRUE,1,sg)
     end
+    function aux.ZoneCheckFunc(c,tp,zone)
+      if c:IsLocation(LOCATION_EXTRA) then
+        return function(sg) return Duel.GetLocationCountFromEx(tp,tp,sg,c) end
+      end
+      return function(sg) return Duel.GetMZoneCount(tp,sg,zone) end
+    end
     function aux.dpcheck(fun)
       return function(sg,e,tp,mg)
         local c1=sg:GetClassCount(fun)
