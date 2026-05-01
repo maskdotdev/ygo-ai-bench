@@ -145,6 +145,8 @@ export const cardFieldNames = [
   "IsToy",
   "IsToyArcV",
   "IsV",
+  "IsVirus",
+  "IsW",
   "IsEarth",
   "IsSky",
   "Is_V_",

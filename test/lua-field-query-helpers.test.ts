@@ -289,6 +289,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsToy", code: "56675280", setcode: 0x559 },
       { method: "IsToyArcV", code: "9001", setcode: 0x558, codeMatches: false },
       { method: "IsV", code: "97574404", setcode: 0x55a },
+      { method: "IsW", code: "23846921", setcode: 0x56b },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];
     for (let index = 0; index < cases.length; index += 12) {
@@ -322,6 +323,34 @@ describe("Lua field and query helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("phantom butterfly true/true");
     expect(host.messages).toContain("generic butterfly false/false");
+  });
+
+  it("lets Lua scripts identify exact Virus card codes", () => {
+    const cards: DuelCardData[] = [
+      { code: "86361354", name: "Virus Code", kind: "monster", typeFlags: 0x21 },
+      { code: "9000", name: "Normal Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "9001", name: "Alias Virus", kind: "monster", typeFlags: 0x21, alias: "86361354" },
+    ];
+    const session = createDuel({ seed: 307, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["86361354", "9000", "9001"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local virus=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 86361354), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local normal=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 9000), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local alias=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 9001), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("virus exact " .. tostring(virus:IsVirus()) .. "/" .. tostring(normal:IsVirus()) .. "/" .. tostring(alias:IsVirus()))
+      `,
+      "virus-code-predicate.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("virus exact true/false/false");
   });
 
   function expectAnimeArchetypePredicates(cases: { method: string; code: string; setcode: number; codeMatches?: boolean }[], seed: number): void {
