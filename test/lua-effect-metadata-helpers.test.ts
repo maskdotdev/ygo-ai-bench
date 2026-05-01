@@ -144,6 +144,34 @@ describe("Lua effect metadata helpers", () => {
     expect(session.state.effects[0]?.registryKey).toBe("lua:global:lua-1-22");
   });
 
+  it("registers Lua card procedure status helpers", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Procedure Status Source", kind: "monster" }];
+    const session = createDuel({ seed: 93, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local revive=c:EnableReviveLimit()
+      local cannot=c:AddCannotBeSpecialSummoned()
+      local must=c:AddMustBeSpecialSummoned()
+      local gemini=c:EnableGeminiStatus()
+      Debug.Message("card proc codes " .. revive:GetCode() .. "/" .. cannot:GetCode() .. "/" .. must:GetCode() .. "/" .. gemini:GetCode())
+      Debug.Message("card proc effects " .. tostring(c:IsHasEffect(EFFECT_REVIVE_LIMIT)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_SPSUMMON_CONDITION)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_GEMINI_STATUS)~=nil) .. "/" .. tostring(c:IsGeminiStatus()))
+      `,
+      "card-procedure-status.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("card proc codes 31/30/30/75");
+    expect(host.messages).toContain("card proc effects true/true/true/true");
+  });
+
   it("stores Lua effect metadata setters on registered effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Metadata Source", kind: "monster" }];
     const session = createDuel({ seed: 16, startingHandSize: 1, cardReader: createCardReader(cards) });

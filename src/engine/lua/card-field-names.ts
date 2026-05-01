@@ -1,5 +1,10 @@
 export const cardFieldNames = [
   "RegisterEffect",
+  "AddCannotBeSpecialSummoned",
+  "AddMustBeSpecialSummoned",
+  "EnableReviveLimit",
+  "EnableGeminiStatus",
+  "IsGeminiStatus",
   "GetCode",
   "GetOriginalCode",
   "GetOriginalCodeRule",

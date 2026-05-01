@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { installAuxApi, installConstants, installDebugApi } from "#lua/basic-api.js";
 import { installCardApi, pushCardTable } from "#lua/card-api.js";
+import { installCardProcedureApi } from "#lua/card-procedure-api.js";
 import { installDuelApi } from "#lua/duel-api/index.js";
 import { installGroupApi, pushGroupTable } from "#lua/group-api.js";
 import { scriptFilenameForCard } from "#engine/data-loaders.js";
@@ -126,6 +127,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   installDuelApi(L, session, hostState);
   installEffectApi(L, hostState, readLuaError);
   installCardApi(L, session, hostState, (card, luaEffect, state) => toDuelEffect(card, luaEffect, state, hostState));
+  installCardProcedureApi(L, readLuaError);
   installGroupApi(L, hostState, session);
 
   return {
