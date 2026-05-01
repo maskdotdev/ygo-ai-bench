@@ -2258,6 +2258,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("merged " .. g:GetCount() .. " " .. tostring(g:IsContains(c200)))
       local from_cards = Group.FromCards(c100, c200, c100)
       Debug.Message("from cards " .. from_cards:GetCount() .. " " .. tostring(from_cards:Equal(Group.FromCards(c200, c100))))
+      Debug.Message("includes group " .. tostring(g:Includes(Group.FromCards(c100, c200))) .. "/" .. tostring(Group.FromCards(c100):Includes(g)) .. "/" .. tostring(g:Includes(c300)))
       local without_high = g:Clone()
       without_high:Sub(high)
       Debug.Message("sub high " .. without_high:GetCount() .. " " .. tostring(without_high:IsContains(c100)))
@@ -2372,6 +2373,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("contains alias true/false");
     expect(host.messages).toContain("merged 3 true");
     expect(host.messages).toContain("from cards 2 true");
+    expect(host.messages).toContain("includes group true/false/true");
     expect(host.messages).toContain("sub high 1 true");
     expect(host.messages).toContain("clear group 0");
     expect(host.messages).toContain("selected group 2");

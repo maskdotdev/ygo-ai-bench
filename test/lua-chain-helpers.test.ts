@@ -723,12 +723,12 @@ describe("Lua chain helpers", () => {
         e:SetRange(LOCATION_HAND)
         e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
           local ec=eg:GetFirst()
-          Debug.Message("reason condition " .. tp .. "/" .. ep .. "/" .. rp .. "/" .. ec:GetControler() .. "/" .. ec:GetReasonPlayer())
+          Debug.Message("reason condition " .. tp .. "/" .. ep .. "/" .. rp .. "/" .. ec:GetControler() .. "/" .. ec:GetReasonPlayer() .. "/" .. Duel.GetReasonPlayer())
           return ec:IsCode(200) and rp==0
         end)
         e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
           local ceg,cep,cev,cre,cr,crp=Duel.GetChainEvent(0)
-          Debug.Message("reason operation " .. ep .. "/" .. rp .. "/" .. crp .. "/" .. ceg:GetFirst():GetReasonPlayer())
+          Debug.Message("reason operation " .. ep .. "/" .. rp .. "/" .. crp .. "/" .. ceg:GetFirst():GetReasonPlayer() .. "/" .. Duel.GetReasonPlayer())
         end)
         c:RegisterEffect(e)
       end
@@ -745,8 +745,8 @@ describe("Lua chain helpers", () => {
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
 
-    expect(host.messages).toContain("reason condition 1/1/0/1/0");
-    expect(host.messages).toContain("reason operation 1/0/0/0");
+    expect(host.messages).toContain("reason condition 1/1/0/1/0/0");
+    expect(host.messages).toContain("reason operation 1/0/0/0/0");
   });
 
   it("maps Lua trigger optionality from trigger type", () => {
