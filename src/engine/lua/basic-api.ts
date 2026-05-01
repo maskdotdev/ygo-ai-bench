@@ -64,6 +64,7 @@ export function installConstants(L: unknown): void {
     TYPE_FUSION: 0x40,
     TYPE_RITUAL: 0x80,
     TYPE_CONTINUOUS: 0x20000,
+    TYPE_EQUIP: 0x40000,
     TYPE_TRAPMONSTER: 0x100,
     TYPE_FIELD: 0x80000,
     TYPE_TUNER: 0x1000,
