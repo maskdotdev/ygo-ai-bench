@@ -40,6 +40,7 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   pushPhasePredicate(L, "IsStandbyPhase", session, (state) => state.phase === "standby");
   pushPhasePredicate(L, "IsMainPhase1", session, (state) => state.phase === "main1");
   pushPhasePredicate(L, "IsStartOfBattlePhase", session, isStartOfBattlePhase);
+  pushPhasePredicate(L, "IsStartStep", session, isStartOfBattlePhase);
   pushPhasePredicate(L, "IsBattleStep", session, (state) => state.phase === "battle" && state.battleStep === "attack");
   pushPhasePredicate(L, "IsEndOfBattlePhase", session, (state) => state.phase === "battle" && state.battleStep === undefined);
   pushPhasePredicate(L, "IsEndPhase", session, (state) => state.phase === "end");
