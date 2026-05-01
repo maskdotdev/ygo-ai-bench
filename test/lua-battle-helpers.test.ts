@@ -60,6 +60,48 @@ describe("Lua battle helpers", () => {
     expect(host.messages).toEqual(["can attack before false/false", "can attack during true/false", "can attack after false/1/1"]);
   });
 
+  it("lets continuous extra attack effects grant another attack", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Lua Extra Attacker", kind: "monster", attack: 1800 }];
+    const session = createDuel({ seed: 92, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    expect(attacker).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_EXTRA_ATTACK)
+        e:SetRange(LOCATION_MZONE)
+        e:SetValue(1)
+        c:RegisterEffect(e)
+      end
+      `,
+      "extra-attack.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    expect(session.state.attacksDeclared.filter((uid) => uid === attacker!.uid)).toHaveLength(2);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)).toBe(false);
+  });
+
   it("lets Lua scripts calculate battle damage", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Damage Attacker", kind: "monster", attack: 1800 },

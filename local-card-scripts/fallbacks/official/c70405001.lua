@@ -21,7 +21,15 @@ function s.initial_effect(c)
   e1:SetTarget(s.rmtg)
   e1:SetOperation(s.rmop)
   c:RegisterEffect(e1)
-  -- Battle-destroy trigger is omitted pending extra-attack grant support.
+  -- Battle destroys a monster: can make another attack this Battle Phase.
+  local e2=Effect.CreateEffect(c)
+  e2:SetDescription(aux.Stringid(id,1))
+  e2:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+  e2:SetCode(EVENT_BATTLE_DESTROYING)
+  e2:SetRange(LOCATION_MZONE)
+  e2:SetCondition(aux.bdocon)
+  e2:SetOperation(s.atkop)
+  c:RegisterEffect(e2)
 end
 s.listed_names={33599853}
 function s.rmfilter(c,e)
@@ -36,4 +44,14 @@ end
 function s.rmop(e,tp,eg,ep,ev,re,r,rp)
   local tc=Duel.GetFirstTarget()
   if tc and tc:IsRelateToEffect(e) then Duel.Remove(tc,POS_FACEUP,REASON_EFFECT) end
+end
+function s.atkop(e,tp,eg,ep,ev,re,r,rp)
+  local c=e:GetHandler()
+  if not c:IsRelateToEffect(e) or not c:IsFaceup() then return end
+  local e1=Effect.CreateEffect(c)
+  e1:SetType(EFFECT_TYPE_SINGLE)
+  e1:SetCode(EFFECT_EXTRA_ATTACK)
+  e1:SetValue(1)
+  e1:SetReset(RESET_PHASE+PHASE_END)
+  c:RegisterEffect(e1)
 end

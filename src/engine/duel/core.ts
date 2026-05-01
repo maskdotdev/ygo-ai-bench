@@ -70,6 +70,7 @@ import {
 import type { BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
   isAttackPrevented,
+  extraAttackCount,
   isMaterialUsePrevented,
   isMoveToLocationPrevented,
   isReleasePrevented,
@@ -320,7 +321,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...flipSummonActions(state, player));
   }
   if (state.phase === "battle") {
-    for (const action of attackActions(state, player)) {
+    for (const action of attackActions(state, player, (card) => extraAttackCount(state, card, createContinuousEffectContext(state)))) {
       if (action.type !== "declareAttack") continue;
       const attacker = findCard(state, action.attackerUid);
       if (attacker && !isAttackPrevented(state, attacker, createContinuousEffectContext(state))) actions.push(action);
@@ -569,18 +570,21 @@ export function drawDuelCards(state: DuelState, player: PlayerId, count: number,
 
 export function canDuelCardAttack(state: DuelState, uid: string): boolean {
   const card = findCard(state, uid);
-  return Boolean(card && !isAttackPrevented(state, card, createContinuousEffectContext(state)) && canDuelCardAttackRule(state, uid));
+  const createContext = createContinuousEffectContext(state);
+  return Boolean(card && !isAttackPrevented(state, card, createContext) && canDuelCardAttackRule(state, uid, extraAttackCount(state, card, createContext)));
 }
 
 export function getDuelAttackTargets(state: DuelState, attackerUid: string): DuelCardInstance[] {
   const card = findCard(state, attackerUid);
-  if (!card || isAttackPrevented(state, card, createContinuousEffectContext(state))) return [];
-  return getDuelAttackTargetsRule(state, attackerUid);
+  const createContext = createContinuousEffectContext(state);
+  if (!card || isAttackPrevented(state, card, createContext)) return [];
+  return getDuelAttackTargetsRule(state, attackerUid, extraAttackCount(state, card, createContext));
 }
 
 export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {
   const attacker = findCard(state, attackerUid);
-  if (attacker && isAttackPrevented(state, attacker, createContinuousEffectContext(state))) throw new Error(`${attacker.name} cannot attack`);
+  const createContext = createContinuousEffectContext(state);
+  if (attacker && isAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack`);
   state.battleDamage = { 0: 0, 1: 0 };
   const pendingTriggerCount = state.pendingTriggers.length;
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
@@ -590,7 +594,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
       return damageDuelPlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
     },
     destroyCard: (uid, controller, reason) => destroyDuelCard(state, uid, controller, reason),
-  });
+  }, attacker ? extraAttackCount(state, attacker, createContext) : 0);
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
 }
 
