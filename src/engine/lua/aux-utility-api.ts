@@ -935,6 +935,42 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       c:RegisterEffect(eff)
       return eff
     end
+    function aux.AddLavaProcedure(c,required,position,filter,value,description)
+      required=required or 1
+      position=position or POS_FACEUP
+      filter=filter or Card.IsMonster
+      local e1=Effect.CreateEffect(c)
+      if description then e1:SetDescription(description) end
+      e1:SetType(EFFECT_TYPE_FIELD)
+      e1:SetCode(EFFECT_SPSUMMON_PROC)
+      e1:SetProperty(EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_SPSUM_PARAM)
+      e1:SetRange(LOCATION_HAND)
+      e1:SetTargetRange(position,1)
+      e1:SetValue(value or 0)
+      e1:SetCondition(function(e,sc)
+        if sc==nil then return true end
+        return Duel.GetFieldGroupCount(sc:GetControler(),0,LOCATION_MZONE)>=required
+      end)
+      c:RegisterEffect(e1)
+      return e1
+    end
+    function aux.AddKaijuProcedure(c)
+      if c.SetUniqueOnField then c:SetUniqueOnField(1,0,aux.FilterBoolFunction(Card.IsSetCard,SET_KAIJU),LOCATION_MZONE) end
+      local e1=aux.AddLavaProcedure(c,1,POS_FACEUP_ATTACK)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_FIELD)
+      e2:SetCode(EFFECT_SPSUMMON_PROC)
+      e2:SetRange(LOCATION_HAND)
+      e2:SetProperty(EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_SPSUM_PARAM)
+      e2:SetTargetRange(POS_FACEUP_ATTACK,0)
+      e2:SetCondition(function(e,sc)
+        if sc==nil then return true end
+        local tp=sc:GetControler()
+        return Duel.GetLocationCount(tp,LOCATION_MZONE)>0 and Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsSetCard,SET_KAIJU),tp,0,LOCATION_MZONE,1,nil)
+      end)
+      c:RegisterEffect(e2)
+      return e1,e2
+    end
     function aux.RegisterClientHint(card,property,tp,player1,player2,str,reset,ct)
       if not card then return nil end
       local eff=Effect.CreateEffect(card)

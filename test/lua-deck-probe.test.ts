@@ -349,6 +349,110 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Solfachord Lua dec
   });
 });
 
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Phantom Knights Lua deck probe", () => {
+  it("uses local pre-release fallbacks for graveyard and Rank-Up coverage", () => {
+    const output = execFileSync(
+      "node",
+      ["--experimental-transform-types", "tools/probe-lua-deck.ts", "phantom-knights-mar-2026-v4.ydk", "--upstream", ".upstream/ignis"],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 6");
+    expect(output).toContain("FALLBACK c100452015.lua");
+    expect(output).toContain("FALLBACK c101305018.lua");
+    expect(output).toContain("FALLBACK c101305019.lua");
+    expect(output).toContain("FALLBACK c101305037.lua");
+    expect(output).toContain("FALLBACK c101305057.lua");
+    expect(output).toContain("FALLBACK c101305073.lua");
+    expect(output).toContain("Local fallback stubs: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Kashtira Lua deck probe", () => {
+  it("loads banish-control scripts without helper failures", () => {
+    const output = execFileSync(
+      "node",
+      ["--experimental-transform-types", "tools/probe-lua-deck.ts", "kashtira-2026.ydk", "--upstream", ".upstream/ignis"],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Mikanko Lua deck probe", () => {
+  it("registers equip and Kaiju-style summon procedure scripts", () => {
+    const output = execFileSync(
+      "node",
+      ["--experimental-transform-types", "tools/probe-lua-deck.ts", "mikanko-2026.ydk", "--upstream", ".upstream/ignis"],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 1");
+    expect(output).toContain("FALLBACK c18144507.lua");
+    expect(output).toContain("Local fallback stubs: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rikka Sunavalon Lua deck probe", () => {
+  it("loads plant resource scripts while preserving expected vanilla no-script cards", () => {
+    const output = execFileSync(
+      "node",
+      ["--experimental-transform-types", "tools/probe-lua-deck.ts", "rikka-sunavalon-2026.ydk", "--upstream", ".upstream/ignis"],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Scripts not expected: 1");
+    expect(output).toContain("NO SCRIPT c27520594.lua");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ancient Gear Lua deck probe", () => {
+  it("loads legacy Fusion/procedure scripts with alternate-art fallbacks", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "ancient-gear-legend-anthology-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 1");
+    expect(output).toContain("FALLBACK c18144507.lua");
+    expect(output).toContain("Local fallback stubs: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
 function createProbeCards(main: string[], extra: string[]): DuelCardData[] {
   const extraCodes = new Set(extra);
   return Array.from(new Set([...main, ...extra])).map((code) => ({
