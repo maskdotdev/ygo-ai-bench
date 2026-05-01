@@ -389,6 +389,11 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       if coin==COIN_TAILS then return 63 end
       return nil
     end
+    function aux.ComposeNumberDigitByDigit(tp,min,max)
+      local low=math.min(min or 0,max or min or 0)
+      local high=math.max(min or 0,max or min or 0)
+      return Duel.AnnounceNumberRange(tp,low,high)
+    end
     function aux.BitSplit(v)
       local res={}
       local i=0
