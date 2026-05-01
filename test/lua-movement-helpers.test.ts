@@ -386,6 +386,46 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.uid === ritualMonster!.uid)).toMatchObject({ location: "hand", reason: 0x40 });
   });
 
+  it("loads Black Chaos the Dark Chaos Magician and banishes an opponent card face-down", () => {
+    const cards: DuelCardData[] = [
+      { code: "44001993", name: "Black Chaos the Dark Chaos Magician", kind: "monster" },
+      { code: "100", name: "Opponent Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 102, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["44001993"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "44001993");
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c44001993.lua", "utf8"), "c44001993.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    while (session.state.chain.length > 0) {
+      const player = session.state.waitingFor ?? session.state.turnPlayer;
+      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+    }
+
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
+      location: "banished",
+      position: "faceDownDefense",
+      faceUp: false,
+      reason: 0x40,
+    });
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },
