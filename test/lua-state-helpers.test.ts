@@ -7,6 +7,44 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua state helpers", () => {
+  it("lets Lua scripts read starting hand and draw counts", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Count Probe", kind: "monster" }];
+    const session = createDuel({ seed: 165, startingHandSize: 3, drawPerTurn: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "100", "100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("hand draw counts " .. Duel.GetStartingHand(0) .. "/" .. Duel.GetDrawCount(0))
+      `,
+      "hand-draw-counts.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("hand draw counts 3/2");
+
+    const defaultSession = createDuel({ seed: 166, cardReader: createCardReader(cards) });
+    loadDecks(defaultSession, {
+      0: { main: ["100", "100", "100", "100", "100"] },
+      1: { main: [] },
+    });
+    startDuel(defaultSession);
+    const defaultHost = createLuaScriptHost(defaultSession);
+    const defaultResult = defaultHost.loadScript(
+      `
+      Debug.Message("default hand draw counts " .. Duel.GetStartingHand() .. "/" .. Duel.GetDrawCount())
+      `,
+      "default-hand-draw-counts.lua",
+    );
+
+    expect(defaultResult.ok, defaultResult.error).toBe(true);
+    expect(defaultHost.messages).toContain("default hand draw counts 5/1");
+  });
+
   it("lets Lua scripts skip the next matching phase", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Phase Source", kind: "monster" }];
     const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });
