@@ -59,10 +59,11 @@ export function isBattleDamagePrevented(state: DuelState, player: PlayerId, crea
 export function isBattleDamagePreventedByCard(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[], createContext: ContinuousEffectContextFactory): boolean {
   for (const card of battleCards) {
     for (const effect of state.effects) {
-      if (effect.event !== "continuous" || effect.code !== 200 || effect.sourceUid !== card.uid) continue;
+      if (effect.event !== "continuous" || (effect.code !== 200 && effect.code !== 201) || effect.sourceUid !== card.uid) continue;
       const source = findCard(state, effect.sourceUid);
       if (!source || !effect.range.includes(source.location)) continue;
-      if (effect.value !== 1 && player === source.controller) continue;
+      if (effect.code === 201 && player !== source.controller) continue;
+      if (effect.code === 200 && effect.value !== 1 && player === source.controller) continue;
       const ctx = createContext(effect, source, card);
       if (!effect.canActivate || effect.canActivate(ctx)) return true;
     }
