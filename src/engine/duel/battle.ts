@@ -7,6 +7,7 @@ export interface DuelBattleCallbacks {
   collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance): void;
   damagePlayer(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   destroyCard(uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
+  hasPiercingDamage?(card: DuelCardInstance): boolean;
 }
 
 export type DuelAttackTargetPredicate = (card: DuelCardInstance) => boolean;
@@ -224,6 +225,7 @@ function resolveAttackPositionBattle(state: DuelState, attacker: DuelCardInstanc
 function resolveDefensePositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetDefense: number, callbacks: DuelBattleCallbacks): void {
   if (attackerAttack > targetDefense) {
     if (destroyBattleCard(target, attacker.controller, callbacks)) callbacks.collectEvent("battleDestroyed", target);
+    if (callbacks.hasPiercingDamage?.(attacker)) callbacks.damagePlayer(target.controller, attackerAttack - targetDefense, [attacker, target]);
     return;
   }
   if (attackerAttack < targetDefense) callbacks.damagePlayer(attacker.controller, targetDefense - attackerAttack, [attacker, target]);

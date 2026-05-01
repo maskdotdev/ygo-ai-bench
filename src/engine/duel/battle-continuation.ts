@@ -7,6 +7,7 @@ export interface BattleContinuationHandlers {
   changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   damagePlayer(state: DuelState, player: PlayerId, amount: number): number;
   destroyCard(state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
+  hasPiercingDamage(state: DuelState, card: DuelCardInstance): boolean;
 }
 
 export function resolvePendingBattle(state: DuelState, handlers: BattleContinuationHandlers): void {
@@ -21,6 +22,7 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
       return handlers.damagePlayer(state, damagePlayer, state.battleDamage[damagePlayer]);
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),
+    hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
   });
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
 }

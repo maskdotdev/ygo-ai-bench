@@ -55,6 +55,7 @@ import {
   changeCoreDuelCardPosition,
   declareCoreDuelAttack,
   getCoreDuelAttackTargets,
+  hasCorePiercingBattleDamage,
   negateCoreDuelAttack,
   type CoreBattleHandlers,
 } from "#duel/core-battle.js";
@@ -139,6 +140,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
   changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
+  hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
 };
 
 const coreBattleHandlers: CoreBattleHandlers = {
@@ -148,6 +150,7 @@ const coreBattleHandlers: CoreBattleHandlers = {
   createContinuousContext: createContinuousEffectContext,
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
+  hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
 };
 
 const responseHandlers: DuelResponseHandlers = {

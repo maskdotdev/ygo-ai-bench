@@ -14,6 +14,7 @@ import {
   isAttackPrevented,
   isBattleTargetSelectionPrevented,
   isBattleTargetPrevented,
+  hasPiercingBattleDamage,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
@@ -25,6 +26,7 @@ export interface CoreBattleHandlers {
   createContinuousContext(state: DuelState): ContinuousEffectContextFactory;
   damagePlayer(state: DuelState, player: PlayerId, amount: number): number;
   destroyCard(state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
+  hasPiercingDamage(state: DuelState, card: DuelCardInstance): boolean;
 }
 
 export function appendBattleActions(actions: DuelAction[], state: DuelState, player: PlayerId, handlers: CoreBattleHandlers): void {
@@ -75,6 +77,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
       return handlers.damagePlayer(state, damagePlayer, state.battleDamage[damagePlayer]);
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),
+    hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
   }, attacker ? extraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || canSelectBattleTarget(state, attacker.controller, target, createContext));
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
 }
@@ -93,4 +96,8 @@ export function changeCoreDuelCardPosition(state: DuelState, player: PlayerId, u
 
 function canSelectBattleTarget(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   return !isBattleTargetPrevented(state, card, createContext) && !isBattleTargetSelectionPrevented(state, player, card, createContext);
+}
+
+export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): boolean {
+  return hasPiercingBattleDamage(state, card, handlers.createContinuousContext(state));
 }

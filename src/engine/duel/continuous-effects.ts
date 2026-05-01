@@ -102,6 +102,18 @@ export function reflectedBattleDamagePlayer(state: DuelState, player: PlayerId, 
   return player;
 }
 
+export function hasPiercingBattleDamage(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 203) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 85) continue;
