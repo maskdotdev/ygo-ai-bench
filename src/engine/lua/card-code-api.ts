@@ -114,7 +114,9 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsAstral", session, (card) => Boolean(card && isAnimeArchetype(card, astralSetcodes, astralCodes)));
   pushBooleanGetter(L, "IsAtlandis", session, (card) => Boolean(card && isAnimeArchetype(card, atlandisSetcodes, atlandisCodes)));
   pushBooleanGetter(L, "IsBlackwingTamer", session, (card) => Boolean(card && isAnimeArchetype(card, blackwingTamerSetcodes, blackwingTamerCodes)));
+  pushBooleanGetter(L, "IsButterfly", session, (card) => Boolean(card && isAnimeArchetype(card, butterflySetcodes, butterflyCodes)));
   pushBooleanGetter(L, "IsC", session, (card) => Boolean(card && isAnimeArchetype(card, cSetcodes, cCodes)));
+  pushBooleanGetter(L, "IsCat", session, (card) => Boolean(card && isAnimeArchetype(card, catSetcodes, catCodes)));
   pushBooleanGetter(L, "IsCicada", session, (card) => Boolean(card && isAnimeArchetype(card, cicadaSetcodes, cicadaCodes)));
   pushBooleanGetter(L, "IsDyson", session, (card) => Boolean(card && isAnimeArchetype(card, dysonSetcodes, dysonCodes)));
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
@@ -263,8 +265,33 @@ const atlandisCodes = ["9161357", "6387204"] as const;
 const blackwingTamerSetcodes = [0x2033] as const;
 const blackwingTamerCodes = ["81983656"] as const;
 
+const butterflySetcodes = [0x50c, 0x150c, 0x6a] as const;
+const butterflyCodes = ["16984449", "69243953", "57261568", "3966653", "63630268"] as const;
+
 const cSetcodes = [0x1048, 0x1073, 0x568] as const;
 const cCodes = ["15862758"] as const;
+
+const catSetcodes = [0x50e] as const;
+const catCodes = [
+  "19963185",
+  "74148483",
+  "28981598",
+  "54191698",
+  "70975131",
+  "84224627",
+  "43352213",
+  "88032456",
+  "2729285",
+  "22953211",
+  "32933942",
+  "5506791",
+  "25531465",
+  "96501677",
+  "51777272",
+  "11439455",
+  "14878871",
+  "52346240",
+] as const;
 
 const cicadaSetcodes = [0x50f] as const;
 const cicadaCodes = ["4997565", "79663524", "5068132"] as const;
