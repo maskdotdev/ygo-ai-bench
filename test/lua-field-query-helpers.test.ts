@@ -1050,7 +1050,7 @@ describe("Lua field and query helpers", () => {
       { code: "202", name: "Fixture Trap Monster", kind: "trap", typeFlags: 0x105, level: 4, race: 0x2, attribute: 0x20 },
       { code: "203", name: "Fixture Field Spell", kind: "spell", typeFlags: 0x80002 },
       { code: "300", name: "Rank Fixture", kind: "monster", typeFlags: 0x800001, attack: 1800, defense: 1200, level: 4 },
-      { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5 },
+      { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5, setcodes: [0x564] },
       { code: "500", name: "Infinity Alias", kind: "monster", alias: "1378" },
       { code: "600", name: "Multi Attribute", kind: "monster", attribute: 0x30 },
       { code: "700", name: "Ritual Fixture", kind: "monster", typeFlags: 0x81, level: 6, ritualMaterials: ["100"] },
@@ -1099,6 +1099,7 @@ describe("Lua field and query helpers", () => {
       c:GetMetatable().listed_series={0x123,0x456}
       c:GetMetatable().listed_card_types={0x200000,0x400000}
       c:GetMetatable().counter_list={0x10,0x20}
+      c:GetMetatable().counter_place_list={0x30,0x40}
       local property_match=property_filter(c)
       local property_miss=property_filter(normal)
       Debug.Message("property table filter " .. tostring(property_match) .. "/" .. tostring(property_miss))
@@ -1106,7 +1107,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("material listed checks " .. tostring(material_fusion:ListsCodeAsMaterial(100)) .. "/" .. tostring(material_fusion:ListsCodeAsMaterial(700,800)) .. "/" .. tostring(material_fusion:ListsCodeAsMaterial(300)) .. "/" .. tostring(ritual:ListsCodeAsMaterial(100)))
       Debug.Message("material set listed checks " .. tostring(material_fusion:ListsArchetypeAsMaterial(0x123)) .. "/" .. tostring(material_fusion:ListsArchetypeAsMaterial(0x223)) .. "/" .. tostring(ritual:ListsArchetypeAsMaterial(0x123)))
       Debug.Message("listed archetype type checks " .. tostring(c:ListsArchetype(0x123)) .. "/" .. tostring(c:ListsArchetype(0x789)) .. "/" .. tostring(c:ListsCardType(0x200000)) .. "/" .. tostring(c:ListsCardType(0x800000)) .. "/" .. tostring(ritual:ListsCardType(0x200000)))
-      Debug.Message("listed counter checks " .. tostring(c:ListsCounter(0x10)) .. "/" .. tostring(c:ListsCounter(0x30)) .. "/" .. tostring(ritual:ListsCounter(0x10)))
+      Debug.Message("listed counter checks " .. tostring(c:ListsCounter(0x10)) .. "/" .. tostring(c:ListsCounter(0x30)) .. "/" .. tostring(c:PlacesCounter(0x30)) .. "/" .. tostring(c:PlacesCounter(0x10)) .. "/" .. tostring(ritual:ListsCounter(0x10)))
       Debug.Message("original predicates " .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalLevel(7)))
       Debug.Message("not type " .. tostring(c:IsNotType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotType(TYPE_SPELL)))
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
@@ -1114,7 +1115,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:HasRank()) .. "/" .. tostring(normal:HasRank()) .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)))
       Debug.Message("spirit predicate " .. tostring(spirit:IsSpirit()) .. "/" .. tostring(c:IsSpirit()))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
-      Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()))
+      Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()) .. "/" .. tostring(link:IsLineMonster()) .. "/" .. tostring(c:IsLineMonster()))
       Debug.Message("link comparisons " .. tostring(link:IsLinkAbove(2)) .. "/" .. tostring(link:IsLinkBelow(1)) .. "/" .. tostring(link:IsOriginalLinkAbove(3)) .. "/" .. tostring(link:IsOriginalLinkBelow(2)))
       local fixed_ritual=Effect.CreateEffect(c)
       fixed_ritual:SetType(EFFECT_TYPE_SINGLE)
@@ -1190,7 +1191,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("material listed checks true/true/false/true");
     expect(host.messages).toContain("material set listed checks true/false/false");
     expect(host.messages).toContain("listed archetype type checks true/false/true/false/false");
-    expect(host.messages).toContain("listed counter checks true/false/false");
+    expect(host.messages).toContain("listed counter checks true/false/true/false/false");
     expect(host.messages).toContain("infinity checks true/false");
     expect(host.messages).toContain("original predicates true/true");
     expect(host.messages).toContain("not type false/true");
@@ -1201,7 +1202,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("has level true/false/false/false");
     expect(host.messages).toContain("main card types 1/2/2/5");
     expect(host.messages).toContain("rank comparisons true/false/true/true");
-    expect(host.messages).toContain("link 2/2/5/true/true/true/false");
+    expect(host.messages).toContain("link 2/2/5/true/true/true/false/true/false");
     expect(host.messages).toContain("link comparisons true/false/false/true");
     expect(host.messages).toContain("ritual fixed level 5");
     expect(host.messages).toContain("ritual function level 9");
