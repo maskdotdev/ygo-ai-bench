@@ -21,6 +21,9 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       local mt=c:GetMetatable(false)
       if mt then mt.fusion_materials={...} end
     end
+    function Fusion.AddProcFun2(c,f1,f2,insf)
+      return Fusion.AddProcMix(c,false,insf,f1,f2)
+    end
     function Fusion.AddContactProc(c,...)
       local mt=c:GetMetatable(false)
       if mt then mt.contact_fusion_proc={...} end
@@ -44,6 +47,13 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       e:SetCode(EVENT_FREE_CHAIN)
       e:SetTarget(Fusion.SummonEffTG())
       e:SetOperation(Fusion.SummonEffOP())
+      return e
+    end
+    function Fusion.RegisterSummonEff(c,...)
+      local is_table=type(c)=="table"
+      local e=Fusion.CreateSummonEff(is_table and c or c,...)
+      local handler=is_table and c.handler or c
+      if handler then handler:RegisterEffect(e) end
       return e
     end
     function Fusion.SummonEffTG(...)
@@ -83,6 +93,26 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
     function Synchro.AddProcedure(c,...)
       local mt=c:GetMetatable(false)
       if mt then mt.synchro_materials={...} end
+    end
+    function Synchro.CreateHandMaterialEffect(c,id,material_filter,synchro_filter,banish_mats,rc)
+      local e1=Effect.CreateEffect(rc or c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE+EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+      e1:SetCode(EFFECT_HAND_SYNCHRO)
+      e1:SetRange(LOCATION_MZONE)
+      e1:SetLabel(id or 0)
+      e1:SetValue(function(e,tc,sc)
+        if not tc or not tc:IsLocation(LOCATION_HAND) then return false end
+        if material_filter and not material_filter(tc) then return false end
+        if synchro_filter and not synchro_filter(sc) then return false end
+        return true
+      end)
+      return e1
+    end
+    function Synchro.AddHandMaterialEffect(c,...)
+      local e1=Synchro.CreateHandMaterialEffect(c,...)
+      c:RegisterEffect(e1)
+      return e1
     end
     function Synchro.NonTuner(f,...)
       local params={...}

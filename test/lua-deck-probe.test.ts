@@ -140,6 +140,127 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ritual of Light an
   });
 });
 
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Branded Dracotail Lua deck probe", () => {
+  it("uses local alternate-art fallbacks without helper failures", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "branded-dracotail-ycs-guatemala-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 1");
+    expect(output).toContain("FALLBACK c14558128.lua");
+    expect(output).toContain("Local fallback stubs: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Monarch Genesys Proto Lua deck probe", () => {
+  it("loads current Monarch scripts without fallback coverage", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "monarch-genesys-proto-ycs-dortmund-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Kewl Tune Lua deck probe", () => {
+  it("registers Synchro hand-material scripts without helper failures", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "kewl-tune-may-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("HERO Competitive Lua deck probe", () => {
+  it("registers Fusion spell/procedure scripts without helper failures", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "hero-competitive-may-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Scripts not expected: 1");
+    expect(output).toContain("NO SCRIPT c89943723.lua");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rokket Lua deck probe", () => {
+  it("uses the local Storm-Bane fallback without chain-condition crashes", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "rokket-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 1");
+    expect(output).toContain("FALLBACK c101303089.lua");
+    expect(output).toContain("Local fallback stubs: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
 function createProbeCards(main: string[], extra: string[]): DuelCardData[] {
   const extraCodes = new Set(extra);
   return Array.from(new Set([...main, ...extra])).map((code) => ({

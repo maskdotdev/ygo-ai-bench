@@ -783,6 +783,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
     ...(luaEffect.targetRange === undefined ? {} : { targetRange: luaEffect.targetRange }),
     ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
     canActivate: (ctx) =>
+      (luaEffect.code !== 1027 || hostState.session.state.chain.length > 0) &&
       callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, "condition", ctx) &&
       (event !== "summonProcedure" || callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.valueRef, true, "value", ctx)),
     cost: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.costRef, true, "cost", ctx),
