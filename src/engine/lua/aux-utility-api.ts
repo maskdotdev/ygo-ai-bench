@@ -605,6 +605,34 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       target_player=target_player==nil and player or target_player
       return Duel.GetMatchingGroup(link_card_filter,player,loc1,loc2,nil,by_filter,...):GetLinkedZone(target_player)&ZONES_MMZ
     end
+    function aux.zptfilter(c,ec)
+      return not c:IsLocation(LOCATION_MZONE) and (ec:GetLinkedZone(c:GetPreviousControler())&(1<<c:GetPreviousSequence()))~=0
+    end
+    function aux.zptgroup(eg,filter,c,tp)
+      local result=Group.CreateGroup()
+      local linked=c:GetLinkedGroup()
+      local fil=eg:Filter(function(cc) return not filter or filter(cc,tp) end,nil)
+      for tc in aux.Next(fil) do
+        if linked:IsContains(tc) then result:AddCard(tc) end
+      end
+      for tc in aux.Next(eg:Filter(aux.zptfilter,nil,c)) do
+        result:AddCard(tc)
+      end
+      return result
+    end
+    function aux.zptgroupcon(eg,filter,c,tp)
+      local linked=c:GetLinkedGroup()
+      local fil=eg:Filter(function(cc) return not filter or filter(cc,tp) end,nil)
+      for tc in aux.Next(fil) do
+        if linked:IsContains(tc) then return true end
+      end
+      return eg:IsExists(aux.zptfilter,1,nil,c)
+    end
+    function aux.zptcon(filter)
+      return function(e,tp,eg,ep,ev,re,r,rp)
+        return aux.zptgroupcon(eg,filter,e:GetHandler(),tp)
+      end
+    end
     function aux.dpcheck(fun)
       return function(sg,e,tp,mg)
         local c1=sg:GetClassCount(fun)
