@@ -290,6 +290,35 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       local eff=c:IsHasEffect(EFFECT_EXTRA_RELEASE_NONSUM)
       return not (c:IsControler(1-tp) and eff and eff.CheckCountLimit and eff:CheckCountLimit(tp)) and not c:IsHasEffect(EFFECT_EXTRA_RELEASE)
     end
+    function aux.IceBarrierDiscardFilter(c,tp)
+      local eff=c:IsHasEffect(EFFECT_ICEBARRIER_REPLACE)
+      return c:IsLocation(LOCATION_GRAVE) and eff and eff:CheckCountLimit(tp)
+    end
+    function aux.IceBarrierDiscardCost(f,discard,minc,maxc)
+      local filter=discard and Card.IsDiscardable or Card.IsAbleToGraveAsCost
+      if f then filter=aux.AND(f,filter) end
+      minc=minc or 1
+      maxc=maxc or 1
+      return function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then
+          return Duel.IsExistingMatchingCard(filter,tp,LOCATION_HAND,0,minc,nil)
+            or Duel.IsExistingMatchingCard(aux.IceBarrierDiscardFilter,tp,LOCATION_GRAVE,0,1,nil,tp)
+        end
+        local g=Duel.GetMatchingGroup(filter,tp,LOCATION_HAND,0,nil)
+        g:Merge(Duel.GetMatchingGroup(aux.IceBarrierDiscardFilter,tp,LOCATION_GRAVE,0,nil,tp))
+        local sg=g:Select(tp,minc,maxc)
+        local repl=sg:Filter(Card.IsHasEffect,nil,EFFECT_ICEBARRIER_REPLACE,tp)
+        local rm=0
+        if repl:GetCount()>0 then
+          repl:GetFirst():IsHasEffect(EFFECT_ICEBARRIER_REPLACE):UseCountLimit(tp)
+          rm=Duel.Remove(repl,POS_FACEUP,REASON_COST)
+          sg:Sub(repl)
+        end
+        if sg:GetCount()==0 then return rm end
+        local reason=discard and (REASON_COST+REASON_DISCARD) or REASON_COST
+        return Duel.SendtoGrave(sg,reason)+rm
+      end
+    end
     function aux.tgoval(e,re,rp)
       return rp~=e:GetHandlerPlayer()
     end

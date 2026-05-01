@@ -50,6 +50,52 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.map((card) => card.code).sort()).toEqual(["300"]);
   });
 
+  it("lets Lua scripts pay Ice Barrier discard costs", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Discard Cost", kind: "monster" },
+      { code: "200", name: "Replacement Cost", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 96, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const replacement = session.state.cards.find((card) => card.code === "200");
+    expect(replacement).toBeDefined();
+    moveDuelCard(session.state, replacement!.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local discard=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local replacement=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local re=Effect.CreateEffect(replacement)
+      re:SetType(EFFECT_TYPE_SINGLE)
+      re:SetCode(EFFECT_ICEBARRIER_REPLACE)
+      re:SetRange(LOCATION_GRAVE)
+      re:SetCountLimit(1, CARD_REVEALER_ICEBARRIER)
+      replacement:RegisterEffect(re)
+      local e=Effect.CreateEffect(discard)
+      local cost=aux.IceBarrierDiscardCost(nil,true,1,1)
+      Debug.Message("ice constants " .. EFFECT_ICEBARRIER_REPLACE .. "/" .. CARD_REVEALER_ICEBARRIER)
+      Debug.Message("ice hand check " .. tostring(cost(e,0,nil,0,0,nil,0,0,0)))
+      Debug.Message("ice hand paid " .. cost(e,0,nil,0,0,nil,0,0,1) .. "/" .. tostring(discard:IsLocation(LOCATION_GRAVE)))
+      local replacement_only=aux.IceBarrierDiscardCost(function(c) return false end,true,1,1)
+      Debug.Message("ice replace check " .. tostring(replacement_only(e,0,nil,0,0,nil,0,0,0)) .. "/" .. tostring(re:CheckCountLimit(0)))
+      Debug.Message("ice replace paid " .. replacement_only(e,0,nil,0,0,nil,0,0,1) .. "/" .. tostring(replacement:IsLocation(LOCATION_REMOVED)) .. "/" .. tostring(re:CheckCountLimit(0)))
+      `,
+      "ice-barrier-discard-cost.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("ice constants 18319762/18319762");
+    expect(host.messages).toContain("ice hand check true");
+    expect(host.messages).toContain("ice hand paid 1/true");
+    expect(host.messages).toContain("ice replace check true/true");
+    expect(host.messages).toContain("ice replace paid 1/true/false");
+  });
+
   it("lets Lua scripts use self-banish cost aliases", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Banish Cost", kind: "monster" }];
     const session = createDuel({ seed: 83, startingHandSize: 1, cardReader: createCardReader(cards) });
