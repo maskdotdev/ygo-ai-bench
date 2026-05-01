@@ -177,10 +177,12 @@ describe("Lua effect metadata helpers", () => {
       local cannot_normal=c:AddCannotBeNormalSummoned()
       local cannot_flip=c:AddCannotBeFlipSummoned()
       local gemini=c:EnableGeminiStatus()
+      c:AddDoubleTribute(160005033,aux.TRUE,aux.TRUE,0,FLAG_DOUBLE_TRIB_WINGEDBEAST,FLAG_DOUBLE_TRIB_LIGHT)
       c:RegisterFlagEffect(c:GetOriginalCode(),RESET_EVENT,0,1)
       local min,max=c:GetTributeRequirement()
       Debug.Message("card proc codes " .. revive:GetCode() .. "/" .. cannot:GetCode() .. "/" .. must:GetCode() .. "/" .. cannot_normal:GetCode() .. "/" .. cannot_flip:GetCode() .. "/" .. gemini:GetCode())
       Debug.Message("card proc effects " .. tostring(c:IsHasEffect(EFFECT_REVIVE_LIMIT)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_SPSUMMON_CONDITION)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_CANNOT_SUMMON)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_CANNOT_FLIP_SUMMON)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_GEMINI_STATUS)~=nil) .. "/" .. tostring(c:IsGeminiStatus()))
+      Debug.Message("double tribute proc " .. c:GetFlagEffect(FLAG_HAS_DOUBLE_TRIBUTE) .. "/" .. c:GetFlagEffect(FLAG_DOUBLE_TRIB_WINGEDBEAST) .. "/" .. c:GetFlagEffect(FLAG_DOUBLE_TRIB_LIGHT) .. "/" .. tostring(c:IsHasEffect(EFFECT_SUMMON_PROC)~=nil))
       Debug.Message("card proc queries " .. min .. "/" .. max .. "/" .. c:GetMaximumAttack() .. "/" .. tostring(c:IsLegend()) .. "/" .. source:GetToBeLinkedZone(target,0,true) .. "/" .. tostring(c:IsNouvellesSummoned()))
       `,
       "card-procedure-status.lua",
@@ -189,6 +191,7 @@ describe("Lua effect metadata helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("card proc codes 31/30/30/20/21/75");
     expect(host.messages).toContain("card proc effects true/true/true/true/true/true");
+    expect(host.messages).toContain("double tribute proc 1/1/1/true");
     expect(host.messages).toContain("card proc queries 2/2/3900/true/2/true");
   });
 

@@ -180,6 +180,30 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       Duel.RegisterEffect(e1,tp)
       return e1
     end
+    function Card.AddDoubleTribute(c,id,otfilter,eftg,reset,...)
+      for _,flag in ipairs({...}) do
+        c:RegisterFlagEffect(flag,reset,0,1)
+      end
+      c:RegisterFlagEffect(FLAG_HAS_DOUBLE_TRIBUTE,reset,0,1)
+      local e1=aux.summonproc(c,true,true,1,1,SUMMON_TYPE_TRIBUTE+100,aux.Stringid(id,0),otfilter)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_GRANT)
+      e2:SetRange(LOCATION_MZONE)
+      e2:SetTargetRange(LOCATION_HAND,LOCATION_HAND)
+      e2:SetTarget(eftg)
+      e2:SetLabelObject(e1)
+      if reset~=0 then e2:SetReset(reset) end
+      c:RegisterEffect(e2)
+      local e3=aux.summonproc3trib(c,aux.Stringid(id,1),otfilter)
+      local e4=Effect.CreateEffect(c)
+      e4:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_GRANT)
+      e4:SetRange(LOCATION_MZONE)
+      e4:SetTargetRange(LOCATION_HAND,LOCATION_HAND)
+      e4:SetTarget(aux.ThreeTribGrantTarget(eftg))
+      e4:SetLabelObject(e3)
+      if reset~=0 then e4:SetReset(reset) end
+      c:RegisterEffect(e4)
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
