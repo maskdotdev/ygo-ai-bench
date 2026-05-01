@@ -12,6 +12,38 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua effect metadata helpers", () => {
+  it("lets Lua scripts activate registered legal effects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Activate Source", kind: "monster" }];
+    const session = createDuel({ seed: 98, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+        Debug.Message("activate operation " .. e:GetHandler():GetCode() .. "/" .. tp)
+      end)
+      c:RegisterEffect(e)
+      Debug.Message("activate result " .. tostring(Duel.Activate(e)))
+      Debug.Message("activate repeat " .. tostring(Duel.Activate(e)))
+      `,
+      "duel-activate.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages.filter((message) => message === "activate operation 100/0")).toHaveLength(2);
+    expect(host.messages).toContain("activate result true");
+    expect(host.messages).toContain("activate repeat true");
+  });
+
   it("tracks Lua effect count-limit usage", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Count Limit Source", kind: "monster" }];
     const session = createDuel({ seed: 95, startingHandSize: 1, cardReader: createCardReader(cards) });

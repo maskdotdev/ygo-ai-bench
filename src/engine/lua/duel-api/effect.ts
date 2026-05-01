@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { applyResponse } from "#duel/core.js";
 import { readTableNumberField } from "#lua/api-utils.js";
 import type { DuelEffectContext, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -18,6 +19,8 @@ export function installDuelEffectApi(L: unknown, session: DuelSession, hostState
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushActivateResult(state, session));
+  lua.lua_setfield(L, -2, to_luastring("Activate"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushinteger(state, getReasonPlayer(session, hostState));
     return 1;
@@ -29,6 +32,25 @@ export function installDuelEffectApi(L: unknown, session: DuelSession, hostState
 
 function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
+}
+
+function pushActivateResult(L: unknown, session: DuelSession): number {
+  const effectId = readTableNumberField(L, 1, "__effect_id");
+  const duelEffectId = effectId === undefined ? undefined : `lua-${effectId}`;
+  const effect = session.state.effects.find((candidate) => candidate.id === duelEffectId);
+  if (!effect) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  const result = applyResponse(session, {
+    type: "activateEffect",
+    player: effect.controller,
+    uid: effect.sourceUid,
+    effectId: effect.id,
+    label: `Activate ${effect.id}`,
+  });
+  lua.lua_pushboolean(L, result.ok);
+  return 1;
 }
 
 function getReasonPlayer(session: DuelSession, hostState: LuaDuelEffectApiHostState): PlayerId {
