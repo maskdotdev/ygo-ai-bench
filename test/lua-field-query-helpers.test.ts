@@ -232,6 +232,8 @@ describe("Lua field and query helpers", () => {
       { method: "IsGorgonic", code: "64379261", setcode: 0x522 },
       { method: "IsGranel", code: "2137678", setcode: 0x524 },
       { method: "IsHand", code: "95929069", setcode: 0x527 },
+      { method: "IsHarpieLadySisters", code: "12206212", setcode: 0x1064 },
+      { method: "IsHelios", code: "54493213", setcode: 0 },
       { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
       { method: "IsMask", code: "29549364", setcode: 0x583 },
@@ -250,7 +252,7 @@ describe("Lua field and query helpers", () => {
       const setCodeCard = String(9100 + index);
       cards.push(
         { code: fixture.code, name: `${fixture.method} Code`, kind: "monster", typeFlags: 0x21 },
-        { code: setCodeCard, name: `${fixture.method} Set`, kind: "monster", typeFlags: 0x21, setcodes: [fixture.setcode] },
+        { code: setCodeCard, name: `${fixture.method} Set`, kind: "monster", typeFlags: 0x21, setcodes: fixture.setcode === 0 ? [] : [fixture.setcode] },
       );
       main.push(fixture.code, setCodeCard);
     }
@@ -278,7 +280,7 @@ describe("Lua field and query helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    for (const fixture of cases) expect(host.messages).toContain(`${fixture.method} true/true/false`);
+    for (const fixture of cases) expect(host.messages).toContain(`${fixture.method} true/${fixture.setcode === 0 ? "false" : "true"}/false`);
   }
 
   it("lets Lua scripts check linked monster-zone cards", () => {
