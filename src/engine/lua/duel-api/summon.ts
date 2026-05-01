@@ -164,8 +164,10 @@ function basicSummonLabel(type: "normalSummon" | "setMonster" | "setSpellTrap", 
 }
 
 function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState, summonType: LuaSummonType): number {
-  const targetUid = readCardUid(L, 1);
-  const materialUids = readCardOrGroupUids(L, 2);
+  const playerFirst = lua.lua_isnumber(L, 1) && readCardUid(L, 2) !== undefined;
+  const player = playerFirst ? readOptionalPlayer(L, 1) ?? session.state.turnPlayer : undefined;
+  const targetUid = readCardUid(L, playerFirst ? 2 : 1);
+  const materialUids = playerFirst ? readCardOrGroupUids(L, 3) : readCardOrGroupUids(L, 2);
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
   if (!target) {
     setOperatedUids(hostState, []);
@@ -173,10 +175,12 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     return 1;
   }
   try {
-    if (summonType === "FusionSummon") fusionSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    else if (summonType === "SynchroSummon") synchroSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    else if (summonType === "XyzSummon") xyzSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, target.controller, target.uid, materialUids);
+    const summonPlayer = player ?? target.controller;
+    const selectedMaterials = summonType === "XyzSummon" && materialUids.length === 0 ? defaultXyzMaterialUids(session, target, summonPlayer) : materialUids;
+    if (summonType === "FusionSummon") fusionSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
+    else if (summonType === "SynchroSummon") synchroSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
+    else if (summonType === "XyzSummon") xyzSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
+    else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
     else if (target.data.ritualMaterials?.length) ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids);
     else ritualSummonSelectedMaterials(session, target, materialUids);
     setOperatedUids(hostState, [target.uid]);
@@ -186,6 +190,18 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     lua.lua_pushinteger(L, 0);
   }
   return 1;
+}
+
+function defaultXyzMaterialUids(session: DuelSession, target: DuelCardInstance, player: PlayerId): string[] {
+  const count = target.data.xyzMaterials?.length || 2;
+  return session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && canBeXyzMaterial(card, target)).slice(0, count).map((card) => card.uid);
+}
+
+function canBeXyzMaterial(card: DuelCardInstance, target: DuelCardInstance): boolean {
+  if (!isMonsterLike(card) || card.uid === target.uid) return false;
+  if (target.data.xyzMaterials?.length) return target.data.xyzMaterials.some((code) => cardCodes(card).includes(code));
+  const rank = (cardTypeFlags(target) & 0x800000) !== 0 ? target.data.level ?? 0 : 0;
+  return rank > 0 && (card.data.level ?? 0) === rank;
 }
 
 function ritualSummonSelectedMaterials(session: DuelSession, target: DuelCardInstance, materialUids: string[]): void {
@@ -298,9 +314,11 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
 }
 
 function pushSpecialSummonComplete(L: unknown, hostState: LuaDuelSummonApiHostState): number {
-  setOperatedUids(hostState, hostState.pendingSpecialSummonUids ?? []);
+  const completed = hostState.pendingSpecialSummonUids ?? [];
+  setOperatedUids(hostState, completed);
   hostState.pendingSpecialSummonUids = [];
-  return 0;
+  lua.lua_pushinteger(L, completed.length);
+  return 1;
 }
 
 function pushNegateSummon(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {

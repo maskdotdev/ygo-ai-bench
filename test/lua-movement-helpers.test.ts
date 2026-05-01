@@ -747,6 +747,98 @@ describe("Lua movement helpers", () => {
     });
   });
 
+  it("loads Phantom Knights Umbrage Veil and summons itself as a trap monster", () => {
+    const cards: DuelCardData[] = [
+      { code: "101305073", name: "The Phantom Knights of Umbrage Veil", kind: "trap", setcodes: [0xdb] },
+      { code: "100", name: "Phantom Knights Anchor", kind: "monster", setcodes: [0xdb] },
+      { code: "200", name: "Opponent Attack", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 113, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101305073", "100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const trap = session.state.cards.find((card) => card.code === "101305073");
+    const anchor = session.state.cards.find((card) => card.code === "100");
+    const opponent = session.state.cards.find((card) => card.code === "200");
+    expect(trap).toBeDefined();
+    expect(anchor).toBeDefined();
+    expect(opponent).toBeDefined();
+    moveDuelCard(session.state, trap!.uid, "spellTrapZone", 0);
+    trap!.position = "faceDown";
+    trap!.faceUp = false;
+    moveDuelCard(session.state, anchor!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, opponent!.uid, "monsterZone", 1);
+    opponent!.position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305073.lua", "utf8"), "c101305073.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === trap!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === trap!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      position: "faceUpDefense",
+      faceUp: true,
+    });
+    expect(session.state.cards.find((card) => card.uid === opponent!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 1,
+      position: "faceUpDefense",
+    });
+  });
+
+  it("loads Phantom Knights Umbrage Veil and Xyz Summons from the GY", () => {
+    const cards: DuelCardData[] = [
+      { code: "101305073", name: "The Phantom Knights of Umbrage Veil", kind: "trap", setcodes: [0xdb] },
+      { code: "980", name: "Dark Rank 3 Xyz", kind: "extra", typeFlags: 0x800001, level: 3, attribute: 0x20 },
+      { code: "100", name: "Level 3 Material A", kind: "monster", level: 3 },
+      { code: "200", name: "Level 3 Material B", kind: "monster", level: 3 },
+    ];
+    const session = createDuel({ seed: 114, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101305073", "100", "200"], extra: ["980"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const trap = session.state.cards.find((card) => card.code === "101305073");
+    const xyz = session.state.cards.find((card) => card.code === "980");
+    const materials = session.state.cards.filter((card) => card.code === "100" || card.code === "200");
+    expect(trap).toBeDefined();
+    expect(xyz).toBeDefined();
+    expect(materials).toHaveLength(2);
+    moveDuelCard(session.state, trap!.uid, "graveyard", 0);
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305073.lua", "utf8"), "c101305073.lua");
+    expect(loaded.ok, loaded.error).toBe(true);
+    host.registerInitialEffects();
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === trap!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(session.state.cards.find((card) => card.uid === trap!.uid)).toMatchObject({
+      location: "banished",
+      reason: 0x80,
+    });
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "xyz",
+      overlayUids: expect.arrayContaining(materials.map((card) => card.uid)),
+    });
+    for (const material of materials) expect(session.state.cards.find((card) => card.uid === material.uid)?.location).toBe("overlay");
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },

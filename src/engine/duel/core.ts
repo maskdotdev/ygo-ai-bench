@@ -958,7 +958,7 @@ function otherPlayer(player: PlayerId): PlayerId {
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {
-  return card.kind === "monster" || (card.kind === "extra" && card.data.kind !== "spell" && card.data.kind !== "trap");
+  return card.kind === "monster" || (card.data.typeFlags !== undefined && (card.data.typeFlags & 0x1) !== 0) || (card.kind === "extra" && card.data.kind !== "spell" && card.data.kind !== "trap");
 }
 
 function isFaceUpPendulumExtraDeckCard(card: DuelCardInstance): boolean {

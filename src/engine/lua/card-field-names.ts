@@ -34,6 +34,8 @@ export const cardFieldNames = [
   "AddPiercing",
   "AddCenterToSideEffectHandler",
   "AddSideMaximumHandler",
+  "AddMonsterAttribute",
+  "AddMonsterAttributeComplete",
   "IsLegend",
   "GetToBeLinkedZone",
   "GetCode",

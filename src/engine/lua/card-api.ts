@@ -191,6 +191,15 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsPendulumMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1000001) === 0x1000001));
   pushBooleanGetter(L, "IsEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x21) === 0x21));
   pushBooleanGetter(L, "IsNonEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x20) === 0));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const monsterType = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    if (card) card.data.typeFlags = 0x1 | monsterType;
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("AddMonsterAttribute"));
+  lua.lua_pushcfunction(L, () => 0);
+  lua.lua_setfield(L, -2, to_luastring("AddMonsterAttributeComplete"));
   pushBooleanGetter(L, "IsLinked", session, (card) => Boolean(card && isLinkedMonsterZoneCard(session.state, card)));
   pushNumberGetter(L, "GetLinkedZone", session, (card) => (card ? linkedZoneMask(card) : 0));
   lua.lua_pushcfunction(L, (state: unknown) => {
