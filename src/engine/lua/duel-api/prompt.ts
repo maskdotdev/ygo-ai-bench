@@ -37,6 +37,8 @@ export function installDuelPromptApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("SelectEffectYesNo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectEffect(state));
   lua.lua_setfield(L, -2, to_luastring("SelectEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectCardsFromCodes(state));
+  lua.lua_setfield(L, -2, to_luastring("SelectCardsFromCodes"));
   pushAnnouncementHelper(L, "AnnounceNumber");
   lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceNumberRange(state));
   lua.lua_setfield(L, -2, to_luastring("AnnounceNumberRange"));
@@ -72,6 +74,46 @@ function pushSelectEffect(L: unknown): number {
   }
   lua.lua_pushnil(L);
   return 1;
+}
+
+function pushSelectCardsFromCodes(L: unknown): number {
+  const min = lua.lua_isnumber(L, 2) ? Math.max(0, lua.lua_tointeger(L, 2)) : 1;
+  const max = lua.lua_isnumber(L, 3) ? Math.max(0, lua.lua_tointeger(L, 3)) : min;
+  const includeIndexes = lua.lua_toboolean(L, 5);
+  const choices = readCodeChoices(L, 6);
+  const requestedCount = max === 0 ? choices.length : Math.max(min, max);
+  const count = Math.min(requestedCount, choices.length);
+  for (const choice of choices.slice(0, count)) {
+    if (includeIndexes) pushCodeIndexTable(L, choice.code, choice.index);
+    else lua.lua_pushinteger(L, choice.code);
+  }
+  return count;
+}
+
+function readCodeChoices(L: unknown, startIndex: number): Array<{ code: number; index: number }> {
+  const choices: Array<{ code: number; index: number }> = [];
+  for (let index = startIndex; index <= lua.lua_gettop(L); index += 1) {
+    if (lua.lua_isnumber(L, index)) choices.push({ code: lua.lua_tointeger(L, index), index: choices.length + 1 });
+    else if (lua.lua_istable(L, index)) readCodeTableChoices(L, index, choices);
+  }
+  return choices;
+}
+
+function readCodeTableChoices(L: unknown, tableIndex: number, choices: Array<{ code: number; index: number }>): void {
+  const count = lua.lua_rawlen(L, tableIndex);
+  for (let luaIndex = 1; luaIndex <= count; luaIndex += 1) {
+    lua.lua_rawgeti(L, tableIndex, luaIndex);
+    if (lua.lua_isnumber(L, -1)) choices.push({ code: lua.lua_tointeger(L, -1), index: choices.length + 1 });
+    lua.lua_pop(L, 1);
+  }
+}
+
+function pushCodeIndexTable(L: unknown, code: number, index: number): void {
+  lua.lua_newtable(L);
+  lua.lua_pushinteger(L, code);
+  lua.lua_rawseti(L, -2, 1);
+  lua.lua_pushinteger(L, index);
+  lua.lua_rawseti(L, -2, 2);
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {

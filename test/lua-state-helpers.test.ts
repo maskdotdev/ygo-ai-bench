@@ -462,7 +462,7 @@ describe("Lua state helpers", () => {
       "flag-phase-move-reset.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
@@ -514,7 +514,7 @@ describe("Lua state helpers", () => {
       "flag-repeat-labels.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
@@ -942,6 +942,10 @@ describe("Lua state helpers", () => {
       local attribute=Duel.AnnounceAttribute(0, ATTRIBUTE_LIGHT, ATTRIBUTE_DARK)
       local level=Duel.AnnounceLevel(0, 3, 5, 7)
       local ranged=Duel.AnnounceNumberRange(0, 2, 5, 2, 3)
+      local selected_code=Duel.SelectCardsFromCodes(0, 1, 1, false, false, 700, 800)
+      local selected_from_table=Duel.SelectCardsFromCodes(0, 1, 1, false, false, {900, 901})
+      local selected_index=Duel.SelectCardsFromCodes(0, 1, 1, false, true, 910, 920)
+      local selected_multi={Duel.SelectCardsFromCodes(0, 1, 2, false, true, 930, 940, 950)}
       local disabled=Duel.SelectDisableField(0, 1, LOCATION_MZONE, 0, 0)
       local selected=Duel.SelectField(0, 2, LOCATION_SZONE, LOCATION_MZONE, 0)
       local selected_zone=Duel.SelectFieldZone(0, 1, 0, LOCATION_MZONE, 0)
@@ -955,6 +959,7 @@ describe("Lua state helpers", () => {
       Debug.Message("prompt option " .. option .. "/" .. tostring(yes))
       Debug.Message("prompt effect " .. tostring(effect_yes) .. "/" .. tostring(effect_choice) .. "/" .. tostring(effect_none))
       Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. level .. "/" .. ranged)
+      Debug.Message("prompt card codes " .. selected_code .. "/" .. selected_from_table .. "/" .. selected_index[1] .. ":" .. selected_index[2] .. "/" .. selected_multi[1][1] .. ":" .. selected_multi[1][2] .. "," .. selected_multi[2][1] .. ":" .. selected_multi[2][2])
       Debug.Message("prompt another attribute " .. another_earth .. "/" .. another_mixed)
       Debug.Message("prompt zones " .. disabled .. "/" .. selected .. "/" .. selected_zone .. "/" .. ZONES_MMZ .. "/" .. ZONES_EMZ)
       Debug.Message("hint return " .. tostring(group_hint_result == nil) .. "/" .. tostring(card_hint_result == nil))
@@ -962,10 +967,11 @@ describe("Lua state helpers", () => {
       "prompt-helpers.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("prompt option 0/true");
     expect(host.messages).toContain("prompt effect true/2/nil");
     expect(host.messages).toContain("prompt announce 4/100/1/1/16/3/4");
+    expect(host.messages).toContain("prompt card codes 700/900/910:1/930:1,940:2");
     expect(host.messages).toContain("prompt another attribute 2/1");
     expect(host.messages).toContain("prompt zones 1/768/65536/31/96");
     expect(host.messages).toContain("hint return true/true");
