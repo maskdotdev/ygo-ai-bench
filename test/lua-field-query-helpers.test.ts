@@ -1324,7 +1324,7 @@ describe("Lua field and query helpers", () => {
       local quickplay = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 204), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("has level " .. tostring(c:HasLevel()) .. "/" .. tostring(xyz:HasLevel()) .. "/" .. tostring(link:HasLevel()) .. "/" .. tostring(spell:HasLevel()))
       Debug.Message("main card types " .. c:GetMainCardType() .. "/" .. spell:GetMainCardType() .. "/" .. equip:GetMainCardType() .. "/" .. trapmonster:GetMainCardType())
-      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()) .. "/" .. tostring(spell:IsEquipCard()) .. "/" .. tostring(equip:IsEquipCard()) .. "/" .. tostring(spell:IsEquipSpell()) .. "/" .. tostring(equip:IsEquipSpell()) .. "/" .. tostring(fieldspell:IsFieldSpell()) .. "/" .. tostring(spell:IsFieldSpell()) .. "/" .. tostring(quickplay:IsQuickPlaySpell()) .. "/" .. tostring(spell:IsQuickPlaySpell()) .. "/" .. tostring(trapmonster:IsTrapCard()) .. "/" .. tostring(trapmonster:IsTrapMonster()) .. "/" .. tostring(spell:IsTrapMonster()) .. "/" .. TYPE_EQUIP)
+      Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellCard()) .. "/" .. tostring(c:IsSpellCard()) .. "/" .. tostring(spell:IsSpellTrapCard()) .. "/" .. tostring(trapmonster:IsSpellTrapCard()) .. "/" .. tostring(c:IsSpellTrapCard()) .. "/" .. tostring(spell:IsEquipCard()) .. "/" .. tostring(equip:IsEquipCard()) .. "/" .. tostring(spell:IsEquipSpell()) .. "/" .. tostring(equip:IsEquipSpell()) .. "/" .. tostring(fieldspell:IsFieldSpell()) .. "/" .. tostring(spell:IsFieldSpell()) .. "/" .. tostring(quickplay:IsQuickPlaySpell()) .. "/" .. tostring(spell:IsQuickPlaySpell()) .. "/" .. tostring(trapmonster:IsTrapCard()) .. "/" .. tostring(trapmonster:IsTrapMonster()) .. "/" .. tostring(spell:IsTrapMonster()) .. "/" .. TYPE_EQUIP)
       Debug.Message("cost checks " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
       Duel.SendtoGrave(c, REASON_EFFECT)
       Debug.Message("cost after move " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
@@ -1381,7 +1381,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not original race false/true");
     expect(host.messages).toContain("not original attribute false/true");
     expect(host.messages).toContain("spell count 4");
-    expect(host.messages).toContain("spell trap checks false/true/false/true/false/true/true/false/true/false/true/true/false/262144");
+    expect(host.messages).toContain("spell trap checks false/true/true/false/true/true/false/false/true/false/true/true/false/true/false/true/true/false/262144");
     expect(host.messages).toContain("cost checks true/true");
     expect(host.messages).toContain("cost after move false/false");
     expect(host.messages).toContain("spell material checks false/false");
