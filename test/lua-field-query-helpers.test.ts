@@ -156,6 +156,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("continuous trap " .. tostring(continuous_trap:IsContinuousTrap()) .. "/" .. tostring(continuous_trap:IsContinuousSpell()) .. "/" .. tostring(continuous_trap:IsRitualSpell()))
       Debug.Message("ritual spell " .. tostring(ritual_spell:IsRitualSpell()) .. "/" .. tostring(ritual_spell:IsContinuousTrap()))
       Debug.Message("continuous spell " .. tostring(continuous_spell:IsContinuousSpell()) .. "/" .. tostring(normal_spell:IsContinuousSpell()))
+      Debug.Message("normal spell " .. tostring(normal_spell:IsNormalSpell()) .. "/" .. tostring(continuous_spell:IsNormalSpell()) .. "/" .. tostring(link_spell:IsNormalSpell()))
       Debug.Message("continuous spelltrap " .. tostring(continuous_trap:IsContinuousSpellTrap()) .. "/" .. tostring(continuous_spell:IsContinuousSpellTrap()) .. "/" .. tostring(ritual_spell:IsContinuousSpellTrap()) .. "/" .. tostring(normal_spell:IsContinuousSpellTrap()))
       Debug.Message("equip trap " .. tostring(equip_trap:IsEquipTrap()) .. "/" .. tostring(equip_trap:IsEquipCard()) .. "/" .. tostring(continuous_trap:IsEquipTrap()))
       Debug.Message("normal trap " .. tostring(normal_trap:IsNormalTrap()) .. "/" .. tostring(continuous_trap:IsNormalTrap()) .. "/" .. tostring(equip_trap:IsNormalTrap()) .. "/" .. tostring(action_trap:IsNormalTrap()))
@@ -182,6 +183,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("continuous trap true/false/false");
     expect(host.messages).toContain("ritual spell true/false");
     expect(host.messages).toContain("continuous spell true/false");
+    expect(host.messages).toContain("normal spell true/false/false");
     expect(host.messages).toContain("continuous spelltrap true/true/false/false");
     expect(host.messages).toContain("equip trap true/true/false");
     expect(host.messages).toContain("normal trap true/false/false/false");
@@ -263,6 +265,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsMosquito", code: "94113093", setcode: 0x536 },
       { method: "IsMotor", code: "82556058", setcode: 0x537 },
       { method: "IsN39Utopia", code: "56832966", setcode: 0x539 },
+      { method: "IsNeko", code: "8634636", setcode: 0x538 },
       { method: "IsStarvingVenemy", code: "22070401", setcode: 0x576 },
       { method: "Is_V_", code: "33725002", setcode: 0x155a },
     ];

@@ -170,6 +170,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsMosquito", session, (card) => Boolean(card && isAnimeArchetype(card, mosquitoSetcodes, mosquitoCodes)));
   pushBooleanGetter(L, "IsMotor", session, (card) => Boolean(card && isAnimeArchetype(card, motorSetcodes, motorCodes)));
   pushBooleanGetter(L, "IsN39Utopia", session, (card) => Boolean(card && isAnimeArchetype(card, n39UtopiaSetcodes, n39UtopiaCodes) && !isAnimeArchetype(card, cn39UtopiaRaySetcodes, cn39UtopiaRayCodes)));
+  pushBooleanGetter(L, "IsNeko", session, (card) => Boolean(card && isAnimeArchetype(card, nekoSetcodes, nekoCodes)));
   pushBooleanGetter(L, "IsPapillon", session, (card) => Boolean(card && isAnimeArchetype(card, papillonSetcodes, papillonCodes)));
   pushBooleanGetter(L, "IsShark", session, (card) => Boolean(card && isAnimeArchetype(card, sharkSetcodes, sharkCodes)));
   pushBooleanGetter(L, "IsStarvingVenemy", session, (card) => Boolean(card && isAnimeArchetype(card, starvingVenemySetcodes, starvingVenemyCodes)));
@@ -554,6 +555,8 @@ const motorSetcodes = [0x537] as const;
 const motorCodes = ["82556058", "83315222", "78394032", "77672444"] as const;
 const n39UtopiaSetcodes = [0x539] as const;
 const n39UtopiaCodes = ["56832966", "86532744", "84013237", "62517849", "93777634", "84124261"] as const;
+const nekoSetcodes = [0x538] as const;
+const nekoCodes = ["8634636", "45452224", "67381587", "24101897", "28981598", "70975131", "24140059", "51777272", "11439455", "87772572", "46057733"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
