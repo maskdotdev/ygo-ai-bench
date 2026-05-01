@@ -1,7 +1,9 @@
 import fengari from "fengari";
+import { moveDuelCard } from "#duel/card-state.js";
 import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
+import { duelReason } from "#duel/reasons.js";
 import { readCardUid } from "#lua/api-utils.js";
-import type { DuelSession } from "#duel/types.js";
+import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 const flagDeckMaster = 153000000;
@@ -65,4 +67,29 @@ export function installCardFlagApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDeckMaster"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    if (!card) return 0;
+    const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : card.controller);
+    clearDeckMaster(session, player);
+    moveDuelCard(session.state, card.uid, "deck", player, duelReason.rule, player);
+    registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: card.uid }, flagDeckMaster, 0, 0, 0);
+    return 0;
+  });
+  lua.lua_setfield(L, -2, to_luastring("MoveToDeckMasterZone"));
+}
+
+function clearDeckMaster(session: DuelSession, player: PlayerId): void {
+  for (const card of session.state.cards.filter((candidate) => candidate.controller === player && isDeckMaster(session, candidate))) {
+    resetDuelFlagEffect(session.state, { ownerType: "card", ownerId: card.uid }, flagDeckMaster);
+  }
+}
+
+function isDeckMaster(session: DuelSession, card: DuelCardInstance): boolean {
+  return getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: card.uid }, flagDeckMaster) > 0;
+}
+
+function normalizePlayer(value: number): PlayerId {
+  return value === 1 ? 1 : 0;
 }

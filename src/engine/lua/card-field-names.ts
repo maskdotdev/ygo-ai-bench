@@ -306,6 +306,7 @@ export const cardFieldNames = [
   "CanChangeIntoTypeRush",
   "CanChangeIntoAttributeRush",
   "HasContinuousRushEffect",
+  "NegateContinuousRushEffects",
   "IsMonster",
   "IsMonsterCard",
   "IsSpell",
@@ -488,4 +489,5 @@ export const cardFieldNames = [
   "SetFlagEffectLabel",
   "ResetFlagEffect",
   "IsDeckMaster",
+  "MoveToDeckMasterZone",
 ] as const;

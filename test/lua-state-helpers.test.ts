@@ -98,6 +98,8 @@ describe("Lua state helpers", () => {
       Debug.Message("continuous rush before " .. tostring(c:HasContinuousRushEffect()))
       c:RegisterFlagEffect(160015036, RESET_EVENT, 0, 1)
       Debug.Message("continuous rush after " .. tostring(c:HasContinuousRushEffect()))
+      c:NegateContinuousRushEffects(RESETS_STANDARD_PHASE_END)
+      Debug.Message("continuous rush negated " .. c:GetFlagEffect(160015136))
       Duel.SkipPhase(0, PHASE_BATTLE, RESET_PHASE + PHASE_END, 1)
       Debug.Message("able skipped " .. tostring(Duel.IsAbleToEnterBP()))
       Debug.Message("piercing skipped " .. tostring(c:CanGetPiercingRush()))
@@ -111,6 +113,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("piercing blocked false");
     expect(host.messages).toContain("continuous rush before false");
     expect(host.messages).toContain("continuous rush after true");
+    expect(host.messages).toContain("continuous rush negated 1");
     expect(host.messages).toContain("able skipped false");
     expect(host.messages).toContain("piercing skipped false");
 
@@ -591,6 +594,38 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("deck master summon 1/4/true/153000001");
     expect(host.messages).toContain("deck master clear 1/true/false");
     expect(session.state.cards.find((card) => card.code === "153000001")).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
+  });
+
+  it("lets Lua scripts move cards into the deck master zone", () => {
+    const cards: DuelCardData[] = [
+      { code: "153000001", name: "Deck Master First", kind: "monster", attack: 1200, defense: 800 },
+      { code: "153000002", name: "Deck Master Second", kind: "monster", attack: 1300, defense: 900 },
+    ];
+    const session = createDuel({ seed: 169, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["153000001", "153000002"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local first=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 153000001), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local second=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 153000002), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      first:MoveToDeckMasterZone(0)
+      Debug.Message("deck master moved " .. tostring(first:IsDeckMaster()) .. "/" .. Duel.GetDeckMaster(0):GetCode() .. "/" .. first:GetLocation())
+      second:MoveToDeckMasterZone(0)
+      Debug.Message("deck master replaced " .. tostring(first:IsDeckMaster()) .. "/" .. tostring(second:IsDeckMaster()) .. "/" .. Duel.GetDeckMaster(0):GetCode())
+      `,
+      "deck-master-move-card.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("deck master moved true/153000001/1");
+    expect(host.messages).toContain("deck master replaced false/true/153000002");
+    expect(session.state.cards.find((card) => card.code === "153000001")).toMatchObject({ location: "deck" });
+    expect(session.state.cards.find((card) => card.code === "153000002")).toMatchObject({ location: "deck" });
   });
 
   it("expires Lua flag effects at chain reset boundaries", () => {

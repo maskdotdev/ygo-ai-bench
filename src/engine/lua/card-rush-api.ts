@@ -1,11 +1,12 @@
 import fengari from "fengari";
-import { getDuelFlagEffectCount } from "#duel/flags.js";
+import { getDuelFlagEffectCount, registerDuelFlagEffect } from "#duel/flags.js";
 import { matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { readTableStringField } from "#lua/api-utils.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api.js";
 import type { DuelCardInstance, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
+const flagNegateContinuousRushEffect = 160015136;
 
 export function installCardRushApi<EffectRecord extends LuaCardApiEffectRecord>(
   L: unknown,
@@ -18,6 +19,8 @@ export function installCardRushApi<EffectRecord extends LuaCardApiEffectRecord>(
   lua.lua_setfield(L, -2, to_luastring("CanChangeIntoAttributeRush"));
   lua.lua_pushcfunction(L, (state: unknown) => pushHasContinuousRushEffect(state, session));
   lua.lua_setfield(L, -2, to_luastring("HasContinuousRushEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushNegateContinuousRushEffects(state, session));
+  lua.lua_setfield(L, -2, to_luastring("NegateContinuousRushEffects"));
 }
 
 function pushCanChangeRaceRush<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
@@ -62,6 +65,13 @@ function pushHasContinuousRushEffect(L: unknown, session: DuelSession): number {
 function hasContinuousRushEffect(session: DuelSession, card: DuelCardInstance): boolean {
   if (getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: card.uid }, 160015036) > 0) return true;
   return false;
+}
+
+function pushNegateContinuousRushEffects(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const resets = lua.lua_isnumber(L, 2) ? Math.trunc(lua.lua_tonumber(L, 2)) : 0;
+  if (card) registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: card.uid }, flagNegateContinuousRushEffect, resets, 0, 0);
+  return 0;
 }
 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {
