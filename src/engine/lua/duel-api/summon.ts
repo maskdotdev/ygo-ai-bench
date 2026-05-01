@@ -6,6 +6,7 @@ import {
 } from "#duel/continuous-effects.js";
 import {
   applyResponse,
+  canSpecialSummonDuelCard,
   fusionSummonDuelCard,
   linkSummonDuelCard,
   ritualSummonDuelCard,
@@ -18,6 +19,7 @@ import {
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions } from "#duel/summon.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
@@ -51,6 +53,8 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("GetRitualMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => pushReleaseRitualMaterial(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ReleaseRitualMaterial"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushPendulumSummon(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("PendulumSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonStep(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummonStep"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonComplete(state, hostState));
@@ -177,6 +181,32 @@ function pushReleaseRitualMaterial(L: unknown, session: DuelSession, hostState: 
   return 1;
 }
 
+function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
+  const zoneCount = availableMonsterZoneCount(session, player, []);
+  const scales = pendulumScales(session, player);
+  if (!isMainPhaseForPlayer(session, player) || zoneCount <= 0 || !scales) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+
+  const [lowScale, highScale] = scales;
+  const summonedUids: string[] = [];
+  for (const card of pendulumSummonCandidates(session, player, lowScale, highScale).slice(0, zoneCount)) {
+    try {
+      const summoned = specialSummonDuelCard(session.state, card.uid, player);
+      applySummonPosition(summoned, "faceUpAttack");
+      summonedUids.push(card.uid);
+    } catch {
+      // EDOPro-style helpers report successful summons only.
+    }
+  }
+  setOperatedUids(hostState, summonedUids);
+  lua.lua_pushinteger(L, summonedUids.length);
+  return 1;
+}
+
 function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
   const uid = readCardUid(L, 1);
   const target = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
@@ -269,6 +299,37 @@ function canBeRitualMaterial(state: DuelState, card: DuelCardInstance, target: D
   );
 }
 
+function pendulumSummonCandidates(session: DuelSession, player: PlayerId, lowScale: number, highScale: number): DuelCardInstance[] {
+  return session.state.cards
+    .filter((card) => canPendulumSummonCard(session, player, card, lowScale, highScale))
+    .sort((a, b) => locationSort(a.location) - locationSort(b.location) || a.sequence - b.sequence);
+}
+
+function canPendulumSummonCard(session: DuelSession, player: PlayerId, card: DuelCardInstance, lowScale: number, highScale: number): boolean {
+  if (card.controller !== player || !isPendulumMonster(card)) return false;
+  if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
+  const level = card.data.level ?? 0;
+  if (level <= lowScale || level >= highScale) return false;
+  return canSpecialSummonDuelCard(session.state, card.uid, player);
+}
+
+function pendulumScales(session: DuelSession, player: PlayerId): [number, number] | undefined {
+  const left = pendulumZoneCard(session, player, 0);
+  const right = pendulumZoneCard(session, player, 1);
+  if (!left || !right) return undefined;
+  const low = Math.min(pendulumScale(left), pendulumScale(right));
+  const high = Math.max(pendulumScale(left), pendulumScale(right));
+  return low < high ? [low, high] : undefined;
+}
+
+function pendulumZoneCard(session: DuelSession, player: PlayerId, sequence: number): DuelCardInstance | undefined {
+  return session.state.cards.find((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence && isPendulumCard(card));
+}
+
+function pendulumScale(card: DuelCardInstance): number {
+  return card.data.leftScale ?? card.data.rightScale ?? 0;
+}
+
 function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {
   if (!target) return true;
   if (target.uid === card.uid) return false;
@@ -308,6 +369,18 @@ function createMaterialCheckContext(state: DuelState): ContinuousEffectContextFa
 
 function isMonsterLike(card: DuelCardInstance): boolean {
   return (cardTypeFlags(card) & 0x1) !== 0;
+}
+
+function isMainPhaseForPlayer(session: DuelSession, player: PlayerId): boolean {
+  return session.state.turnPlayer === player && (session.state.phase === "main1" || session.state.phase === "main2");
+}
+
+function isPendulumMonster(card: DuelCardInstance): boolean {
+  return isMonsterLike(card) && isPendulumCard(card);
+}
+
+function isPendulumCard(card: DuelCardInstance): boolean {
+  return ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
 }
 
 function cardTypeFlags(card: DuelCardInstance): number {

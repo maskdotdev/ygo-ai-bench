@@ -1029,4 +1029,56 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
     expect(session.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false });
   });
+
+  it("lets Lua scripts pendulum summon legal hand and face-up extra deck monsters", () => {
+    const cards: DuelCardData[] = [
+      { code: "101", name: "Lua Low Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1 },
+      { code: "102", name: "Lua High Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 8, rightScale: 8 },
+      { code: "301", name: "Lua Pendulum Hand", kind: "monster", typeFlags: 0x1000001, level: 4 },
+      { code: "302", name: "Lua Pendulum Extra", kind: "monster", typeFlags: 0x1000001, level: 5 },
+      { code: "303", name: "Lua Pendulum Out Of Scale", kind: "monster", typeFlags: 0x1000001, level: 9 },
+    ];
+    const session = createDuel({ seed: 35, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101", "102", "301", "302", "303"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const lowScale = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "101");
+    const highScale = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "102");
+    const handPendulum = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "301");
+    const extraPendulum = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "302");
+    const outOfScale = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "303");
+    expect(lowScale).toBeTruthy();
+    expect(highScale).toBeTruthy();
+    expect(handPendulum).toBeTruthy();
+    expect(extraPendulum).toBeTruthy();
+    expect(outOfScale).toBeTruthy();
+    moveDuelCard(session.state, lowScale!.uid, "spellTrapZone", 0).sequence = 0;
+    moveDuelCard(session.state, highScale!.uid, "spellTrapZone", 0).sequence = 1;
+    moveDuelCard(session.state, extraPendulum!.uid, "extraDeck", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("pendulum before " .. tostring(Duel.IsPlayerCanPendulumSummon(0)))
+      Debug.Message("pendulum summon " .. Duel.PendulumSummon(0))
+      Debug.Message("pendulum operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("pendulum field " .. Duel.GetFieldGroupCount(0, LOCATION_MZONE, 0))
+      Debug.Message("pendulum after " .. tostring(Duel.IsPlayerCanPendulumSummon(0)))
+      `,
+      "pendulum-summon.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("pendulum before true");
+    expect(host.messages).toContain("pendulum summon 2");
+    expect(host.messages).toContain("pendulum operated 2");
+    expect(host.messages).toContain("pendulum field 2");
+    expect(host.messages).toContain("pendulum after false");
+    expect(session.state.cards.find((card) => card.uid === handPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
+    expect(session.state.cards.find((card) => card.uid === extraPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
+    expect(session.state.cards.find((card) => card.uid === outOfScale!.uid)).toMatchObject({ location: "hand" });
+  });
 });
