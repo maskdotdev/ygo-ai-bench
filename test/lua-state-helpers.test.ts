@@ -105,6 +105,37 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("lp0 markers true/true");
   });
 
+  it("lets Lua scripts check skill activation timing", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Skill Probe", kind: "monster" }];
+    const session = createDuel({ seed: 169, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const mainResult = host.loadScript(
+      `
+      Debug.Message("skill main " .. tostring(aux.CanActivateSkill(0)) .. "/" .. tostring(Auxiliary.CanActivateSkill(0)) .. "/" .. tostring(aux.CanActivateSkill(1)))
+      `,
+      "skill-main.lua",
+    );
+    expect(mainResult.ok, mainResult.error).toBe(true);
+
+    session.state.phase = "battle";
+    const battleResult = host.loadScript(
+      `
+      Debug.Message("skill battle " .. tostring(aux.CanActivateSkill(0)))
+      `,
+      "skill-battle.lua",
+    );
+
+    expect(battleResult.ok, battleResult.error).toBe(true);
+    expect(host.messages).toContain("skill main true/true/false");
+    expect(host.messages).toContain("skill battle false");
+  });
+
   it("lets Lua scripts skip the next matching phase", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Phase Source", kind: "monster" }];
     const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });

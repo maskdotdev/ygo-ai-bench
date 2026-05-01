@@ -76,6 +76,11 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
 
 function installAuxCompatibilityApi(L: unknown): void {
   const source = `
+    function aux.CanActivateSkill(tp)
+      return Duel.GetCurrentChain()==0 and Duel.IsTurnPlayer(tp) and Duel.IsMainPhase()
+    end
+    Auxiliary=Auxiliary or aux
+    Auxiliary.CanActivateSkill=aux.CanActivateSkill
     function aux.LP0ActivationValidity(eff)
       local ge1=Effect.GlobalEffect()
       ge1:SetType(EFFECT_TYPE_FIELD)
