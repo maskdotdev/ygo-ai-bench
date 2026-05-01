@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { isCardDisabled } from "#duel/continuous-effects.js";
 import { moveDuelCard } from "#duel/core.js";
 import { readTableNumberField, readTableStringField } from "#lua/api-utils.js";
+import { pushCardTable } from "#lua/card-api.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api.js";
 import type { ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import type { DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -15,6 +16,8 @@ export function installCardEffectQueryApi<EffectRecord extends LuaCardApiEffectR
 ): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushIsImmuneToEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsImmuneToEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsCanBeEffectTarget(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("IsCanBeEffectTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsCanBeDisabledByEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsCanBeDisabledByEffect"));
 }
@@ -78,6 +81,23 @@ function pushIsImmuneToEffect<EffectRecord extends LuaCardApiEffectRecord>(L: un
   return 1;
 }
 
+function pushIsCanBeEffectTarget<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  const card = readCard(L, session);
+  const effectId = lua.lua_istable(L, 2) ? readTableNumberField(L, 2, "__effect_id") : undefined;
+  const targetEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
+  if (!card) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  if (targetEffect && ((targetEffect.property ?? 0) & 0x80) === 0 && matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, targetEffect, hostState))) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  const cannotTarget = matchingLuaEffects(session.state, card, 71, hostState).some((effect) => cannotTargetEffectApplies(L, effect, card, targetEffect, hostState));
+  lua.lua_pushboolean(L, !cannotTarget);
+  return 1;
+}
+
 function pushIsCanBeDisabledByEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
   const card = readCard(L, session);
   const effectId = lua.lua_istable(L, 2) ? readTableNumberField(L, 2, "__effect_id") : undefined;
@@ -102,6 +122,50 @@ function immuneEffectApplies<EffectRecord extends LuaCardApiEffectRecord>(
   lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, immuneEffect.valueRef);
   hostState.pushEffectTable(L, immuneEffect.id);
   hostState.pushEffectTable(L, targetEffect.id);
+  const status = lua.lua_pcall(L, 2, 1, 0);
+  if (status !== lua.LUA_OK) {
+    lua.lua_pop(L, 1);
+    return false;
+  }
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
+}
+
+function cannotTargetEffectApplies<EffectRecord extends LuaCardApiEffectRecord>(
+  L: unknown,
+  cannotTargetEffect: EffectRecord,
+  card: DuelCardInstance,
+  targetEffect: EffectRecord | undefined,
+  hostState: LuaCardApiState<EffectRecord>,
+): boolean {
+  if (cannotTargetEffect.targetRef !== undefined && !cardTargetFilterApplies(L, cannotTargetEffect, card, hostState)) return false;
+  if (cannotTargetEffect.valueRef === undefined) return (cannotTargetEffect.value ?? 1) !== 0;
+  if (!targetEffect) return false;
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, cannotTargetEffect.valueRef);
+  hostState.pushEffectTable(L, cannotTargetEffect.id);
+  hostState.pushEffectTable(L, targetEffect.id);
+  lua.lua_pushinteger(L, targetEffect.sourceUid === undefined ? 0 : targetEffect.sourceUid === cannotTargetEffect.sourceUid ? 0 : 1);
+  const status = lua.lua_pcall(L, 3, 1, 0);
+  if (status !== lua.LUA_OK) {
+    lua.lua_pop(L, 1);
+    return false;
+  }
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
+}
+
+function cardTargetFilterApplies<EffectRecord extends LuaCardApiEffectRecord>(
+  L: unknown,
+  effect: EffectRecord,
+  card: DuelCardInstance,
+  hostState: LuaCardApiState<EffectRecord>,
+): boolean {
+  if (effect.targetRef === undefined) return true;
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, effect.targetRef);
+  hostState.pushEffectTable(L, effect.id);
+  pushCardTable(L, card.uid);
   const status = lua.lua_pcall(L, 2, 1, 0);
   if (status !== lua.LUA_OK) {
     lua.lua_pop(L, 1);

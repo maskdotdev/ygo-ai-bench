@@ -6,6 +6,7 @@ export interface LuaCardApiEffectRecord {
   property?: number;
   value?: number;
   valueRef?: number;
+  targetRef?: number;
   labelObjectId?: number;
   reset?: {
     flags: number;
