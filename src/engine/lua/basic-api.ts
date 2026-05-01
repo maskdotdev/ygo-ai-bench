@@ -79,6 +79,7 @@ export function installConstants(L: unknown): void {
     ATTRIBUTE_LIGHT: 0x10,
     ATTRIBUTE_DARK: 0x20,
     ATTRIBUTE_DIVINE: 0x40,
+    CARD_SUMMON_GATE: 29724053,
     COIN_TAILS: 0,
     COIN_HEADS: 1,
     CATEGORY_DESTROY: 0x1,

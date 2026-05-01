@@ -457,6 +457,19 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       end
       return true
     end
+    local card_summon_gate = CARD_SUMMON_GATE or 29724053
+    function aux.CheckSummonGate(tp,count)
+      local total=nil
+      for _,eff in ipairs({Duel.GetPlayerEffect(tp,card_summon_gate)}) do
+        local value=eff:GetValue()
+        if value then
+          if type(value)=="function" then value=value(tp) end
+          total=total and math.min(total,value) or value
+        end
+      end
+      if count then return not total or total>=count end
+      return total
+    end
     function aux.ChangeBattleDamage(player,value)
       return function(e,damp)
         if player==0 then

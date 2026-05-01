@@ -735,6 +735,21 @@ describe("Lua state helpers", () => {
       local reset_second=aux.AddValuesReset(function() reset_count=reset_count+10 end)
       Debug.Message("values reset setup " .. reset_effect:GetCode() .. "/" .. reset_effect:GetCountLimit() .. "/" .. tostring(reset_second==nil))
       Debug.Message("values reset call " .. tostring(aux.ValuesReset()) .. "/" .. reset_count)
+      local gate_low=Effect.CreateEffect(faceup_monster)
+      gate_low:SetType(EFFECT_TYPE_FIELD)
+      gate_low:SetCode(CARD_SUMMON_GATE)
+      gate_low:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+      gate_low:SetTargetRange(1,0)
+      gate_low:SetValue(2)
+      Duel.RegisterEffect(gate_low,0)
+      local gate_high=Effect.CreateEffect(faceup_monster)
+      gate_high:SetType(EFFECT_TYPE_FIELD)
+      gate_high:SetCode(CARD_SUMMON_GATE)
+      gate_high:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+      gate_high:SetTargetRange(1,0)
+      gate_high:SetValue(function(tp) return tp==0 and 4 or 1 end)
+      Duel.RegisterEffect(gate_high,0)
+      Debug.Message("summon gate " .. tostring(aux.CheckSummonGate(0)) .. "/" .. tostring(aux.CheckSummonGate(0,2)) .. "/" .. tostring(aux.CheckSummonGate(0,3)) .. "/" .. tostring(aux.CheckSummonGate(1)) .. "/" .. tostring(aux.CheckSummonGate(1,3)))
       local named = aux.FunctionWithNamedArgs(function(a,b,...)
         local total=0
         for _,value in ipairs({...}) do total=total+value end
@@ -885,6 +900,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("field summon tg true/false/true/false");
     expect(host.messages).toContain("values reset setup 1210/1/true");
     expect(host.messages).toContain("values reset call false/11");
+    expect(host.messages).toContain("summon gate 2/true/false/nil/true");
     expect(host.messages).toContain("named args A/B/7/X/Y/11");
     expect(host.messages).toContain("cannot mat true/false/true");
     expect(host.messages).toContain("chkf mmz true/false");
