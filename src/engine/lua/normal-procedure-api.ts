@@ -62,6 +62,41 @@ export function installNormalProcedureApi(L: unknown, readLuaError: (state: unkn
       c:RegisterEffect(e1)
       return e1
     end
+    function aux.summonproc(c,ns,opt,min,max,val,desc,f,sumop)
+      val=val or SUMMON_TYPE_TRIBUTE
+      local e1=Effect.CreateEffect(c)
+      if desc then e1:SetDescription(desc) end
+      e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      if ns and opt then
+        e1:SetCode(EFFECT_SUMMON_PROC)
+      else
+        e1:SetCode(EFFECT_LIMIT_SUMMON_PROC)
+        update_tribute_req(c,min,max)
+      end
+      if ns then
+        e1:SetCondition(aux.NormalSummonCondition1(min or 0,max or min or 0,f,opt))
+        e1:SetTarget(aux.NormalSummonTarget(min or 0,max or min or 0,f))
+        e1:SetOperation(aux.NormalSummonOperation(min or 0,max or min or 0,sumop))
+      else
+        e1:SetCondition(aux.NormalSummonCondition2())
+      end
+      e1:SetValue(val)
+      return e1
+    end
+    function aux.summonproc3trib(c,desc,otfilter)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      if desc then e1:SetDescription(desc) end
+      e1:SetCode(EFFECT_SUMMON_PROC)
+      e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+      e1:SetCondition(aux.NormalSummonCondition1(3,3,otfilter,false))
+      e1:SetTarget(aux.NormalSummonTarget(3,3,otfilter))
+      e1:SetOperation(aux.NormalSummonOperation(3,3,nil))
+      e1:SetValue(SUMMON_TYPE_TRIBUTE+1)
+      c:RegisterEffect(e1)
+      return e1
+    end
     function aux.NormalSetCondition1(min,max,f,opt)
       return aux.NormalSummonCondition1(min,max,f,opt)
     end

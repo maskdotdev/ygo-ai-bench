@@ -278,9 +278,13 @@ describe("Lua effect metadata helpers", () => {
       local ls=aux.AddNormalSummonProcedure(c,false,false,2,2)
       local st=aux.AddNormalSetProcedure(c,true,true,1,1,SUMMON_TYPE_TRIBUTE,5678)
       local lt=aux.AddNormalSetProcedure(c,false,false,2,2)
+      local rush=aux.summonproc(c,true,true,1,1,SUMMON_TYPE_TRIBUTE+100,9012)
+      local rush3=aux.summonproc3trib(c,3456,aux.TRUE)
       Debug.Message("normal proc codes " .. ns:GetCode() .. "/" .. ls:GetCode() .. "/" .. st:GetCode() .. "/" .. lt:GetCode())
       Debug.Message("normal proc metadata " .. ns:GetDescription() .. "/" .. st:GetDescription() .. "/" .. ns:GetProperty() .. "/" .. ns:GetValue())
       Debug.Message("normal proc callbacks " .. tostring(ns:GetCondition()(ns,c,0,0,0,nil)) .. "/" .. tostring(ls:GetCondition()(ls,nil,0,0,0,nil)) .. "/" .. tostring(ns:GetTarget()~=nil) .. "/" .. tostring(ns:GetOperation()~=nil))
+      Debug.Message("rush proc metadata " .. rush:GetCode() .. "/" .. rush:GetDescription() .. "/" .. rush:GetValue() .. "/" .. rush3:GetCode() .. "/" .. rush3:GetDescription() .. "/" .. rush3:GetValue())
+      Debug.Message("rush proc registered " .. tostring(c:GetCardEffect(EFFECT_SUMMON_PROC)~=nil))
       `,
       "normal-procedure.lua",
     );
@@ -289,6 +293,8 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("normal proc codes 32/33/36/37");
     expect(host.messages).toContain("normal proc metadata 1234/5678/263168/285212672");
     expect(host.messages).toContain("normal proc callbacks true/true/true/true");
+    expect(host.messages).toContain("rush proc metadata 32/9012/285212772/32/3456/285212673");
+    expect(host.messages).toContain("rush proc registered true");
   });
 
   it("registers Lua persistent trap procedures and target filters", () => {
