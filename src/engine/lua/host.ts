@@ -59,6 +59,7 @@ interface LuaEffectRecord {
   costRef?: number;
   targetRef?: number;
   operationRef?: number;
+  tableRef?: number;
 }
 
 interface LuaHostState {
@@ -273,6 +274,11 @@ function readLuaError(L: unknown): string {
 
 function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): void {
   const { effects, session } = hostState;
+  const existing = effects.get(id);
+  if (existing?.tableRef !== undefined) {
+    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, existing.tableRef);
+    return;
+  }
   lua.lua_newtable(L);
   lua.lua_pushinteger(L, id);
   lua.lua_setfield(L, -2, to_luastring("__effect_id"));
@@ -453,8 +459,9 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
     clearLuaEffectCountUsage(hostState, effect);
     return 0;
   });
-  pushEffectMethod(L, effects, "Delete", (_, effect) => {
+  pushEffectMethod(L, effects, "Delete", (state, effect) => {
     deleteRegisteredLuaEffects(session, effect);
+    if (effect.tableRef !== undefined) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, effect.tableRef);
     effects.delete(effect.id);
     return 0;
   });
@@ -471,6 +478,11 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
     effect.operationRef = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
     return 0;
   });
+  const effect = effects.get(id);
+  if (effect) {
+    lua.lua_pushvalue(L, -1);
+    effect.tableRef = lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX);
+  }
 }
 
 function pushEffectMethod(L: unknown, effects: Map<number, LuaEffectRecord>, name: string, handler: (state: unknown, effect: LuaEffectRecord) => number): void {
@@ -485,7 +497,8 @@ function pushEffectMethod(L: unknown, effects: Map<number, LuaEffectRecord>, nam
 function cloneLuaEffectRecord(hostState: LuaHostState, effect: LuaEffectRecord): number {
   const id = hostState.nextEffectId;
   hostState.nextEffectId += 1;
-  const clone: LuaEffectRecord = { ...effect, id };
+  const { tableRef: _tableRef, ...cloneSource } = effect;
+  const clone: LuaEffectRecord = { ...cloneSource, id };
   if (effect.range) clone.range = [...effect.range];
   if (effect.targetRange) clone.targetRange = [...effect.targetRange];
   if (effect.hintTiming) clone.hintTiming = [...effect.hintTiming];

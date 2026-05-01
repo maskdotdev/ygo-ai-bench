@@ -712,6 +712,7 @@ describe("Lua chain helpers", () => {
         end)
         e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
           Duel.SendtoGrave(Duel.GetFirstTarget(), REASON_EFFECT)
+          Debug.Message("source reason effect " .. tostring(Duel.GetReasonEffect()==e) .. "/" .. Duel.GetReasonEffect():GetHandler():GetCode())
         end)
         c:RegisterEffect(e)
       end
@@ -729,6 +730,7 @@ describe("Lua chain helpers", () => {
         e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
           local ceg,cep,cev,cre,cr,crp=Duel.GetChainEvent(0)
           Debug.Message("reason operation " .. ep .. "/" .. rp .. "/" .. crp .. "/" .. ceg:GetFirst():GetReasonPlayer() .. "/" .. Duel.GetReasonPlayer())
+          Debug.Message("trigger reason effect " .. tostring(Duel.GetReasonEffect()==e) .. "/" .. Duel.GetReasonEffect():GetHandler():GetCode())
         end)
         c:RegisterEffect(e)
       end
@@ -746,7 +748,9 @@ describe("Lua chain helpers", () => {
     expect(applyResponse(session, trigger!).ok).toBe(true);
 
     expect(host.messages).toContain("reason condition 1/1/0/1/0/0");
+    expect(host.messages).toContain("source reason effect true/100");
     expect(host.messages).toContain("reason operation 1/0/0/0/0");
+    expect(host.messages).toContain("trigger reason effect true/400");
   });
 
   it("maps Lua trigger optionality from trigger type", () => {

@@ -6,6 +6,7 @@ const { lua, to_luastring } = fengari;
 
 export interface LuaDuelEffectApiHostState {
   activeContext?: DuelEffectContext | undefined;
+  pushEffectTable: (state: unknown, id: number) => void;
   registerEffect: (state: unknown, id: number, player: PlayerId) => boolean;
 }
 
@@ -22,6 +23,8 @@ export function installDuelEffectApi(L: unknown, session: DuelSession, hostState
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetReasonPlayer"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushReasonEffect(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("GetReasonEffect"));
 }
 
 function normalizePlayer(value: number): PlayerId {
@@ -30,4 +33,12 @@ function normalizePlayer(value: number): PlayerId {
 
 function getReasonPlayer(session: DuelSession, hostState: LuaDuelEffectApiHostState): PlayerId {
   return hostState.activeContext?.eventCard?.reasonPlayer ?? hostState.activeContext?.eventCard?.controller ?? hostState.activeContext?.player ?? session.state.turnPlayer;
+}
+
+function pushReasonEffect(L: unknown, session: DuelSession, hostState: LuaDuelEffectApiHostState): number {
+  const effectId = (hostState.activeContext?.chainLink ?? session.state.chain[session.state.chain.length - 1])?.effectId;
+  const id = Number(effectId?.match(/^lua-(\d+)/)?.[1]);
+  if (Number.isFinite(id)) hostState.pushEffectTable(L, id);
+  else lua.lua_pushnil(L);
+  return 1;
 }
