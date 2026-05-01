@@ -99,13 +99,23 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsInfinity"));
+  pushBooleanGetter(L, "IsAngel", session, (card) => Boolean(card && isAnimeArchetype(card, angelSetcodes, angelCodes)));
+  pushBooleanGetter(L, "IsAtlandis", session, (card) => Boolean(card && isAnimeArchetype(card, atlandisSetcodes, atlandisCodes)));
+  pushBooleanGetter(L, "IsBlackwingTamer", session, (card) => Boolean(card && isAnimeArchetype(card, blackwingTamerSetcodes, blackwingTamerCodes)));
+  pushBooleanGetter(L, "IsC", session, (card) => Boolean(card && isAnimeArchetype(card, cSetcodes, cCodes)));
+  pushBooleanGetter(L, "IsCicada", session, (card) => Boolean(card && isAnimeArchetype(card, cicadaSetcodes, cicadaCodes)));
+  pushBooleanGetter(L, "IsDyson", session, (card) => Boolean(card && isAnimeArchetype(card, dysonSetcodes, dysonCodes)));
   pushBooleanGetter(L, "IsRed", session, (card) => Boolean(card && isAnimeArchetype(card, redSetcodes, redCodes)));
   pushBooleanGetter(L, "IsWhite", session, (card) => Boolean(card && isAnimeArchetype(card, whiteSetcodes, whiteCodes)));
   pushBooleanGetter(L, "IsChampion", session, (card) => Boolean(card && isAnimeArchetype(card, championSetcodes, championCodes)));
   pushBooleanGetter(L, "IsGoyo", session, (card) => Boolean(card && isAnimeArchetype(card, goyoSetcodes, goyoCodes)));
+  pushBooleanGetter(L, "IsHeavyIndustry", session, (card) => Boolean(card && isAnimeArchetype(card, heavyIndustrySetcodes, heavyIndustryCodes)));
+  pushBooleanGetter(L, "IsMantis", session, (card) => Boolean(card && isAnimeArchetype(card, mantisSetcodes, mantisCodes)));
+  pushBooleanGetter(L, "IsMask", session, (card) => Boolean(card && isAnimeArchetype(card, maskSetcodes, maskCodes)));
   pushBooleanGetter(L, "IsMelodiousSongtress", session, (card) => Boolean(card && isAnimeArchetype(card, melodiousSongtressSetcodes, melodiousSongtressCodes)));
   pushBooleanGetter(L, "IsPapillon", session, (card) => Boolean(card && isAnimeArchetype(card, papillonSetcodes, papillonCodes)));
   pushBooleanGetter(L, "IsShark", session, (card) => Boolean(card && isAnimeArchetype(card, sharkSetcodes, sharkCodes)));
+  pushBooleanGetter(L, "IsStarvingVenemy", session, (card) => Boolean(card && isAnimeArchetype(card, starvingVenemySetcodes, starvingVenemyCodes)));
   pushBooleanGetter(L, "IsEarth", session, (card) => Boolean(card && isAnimeArchetype(card, earthSetcodes, earthCodes)));
   pushBooleanGetter(L, "IsSky", session, (card) => Boolean(card && isAnimeArchetype(card, skySetcodes, skyCodes)));
 }
@@ -191,6 +201,47 @@ function matchesAnyCodeAtOrAfter(L: unknown, card: DuelCardInstance, start: numb
   }
   return false;
 }
+
+const angelSetcodes = [0x154a, 0xef] as const;
+const angelCodes = [
+  "79575620",
+  "39996157",
+  "15914410",
+  "53334641",
+  "16972957",
+  "42216237",
+  "42418084",
+  "18378582",
+  "59509952",
+  "81146288",
+  "85399281",
+  "47852924",
+  "74137509",
+  "17653779",
+  "9032529",
+  "79571449",
+  "2130625",
+  "49674183",
+  "69992868",
+  "96470883",
+  "11398951",
+  "19280589",
+] as const;
+
+const atlandisSetcodes = [0x506] as const;
+const atlandisCodes = ["9161357", "6387204"] as const;
+
+const blackwingTamerSetcodes = [0x2033] as const;
+const blackwingTamerCodes = ["81983656"] as const;
+
+const cSetcodes = [0x1048, 0x1073, 0x568] as const;
+const cCodes = ["15862758"] as const;
+
+const cicadaSetcodes = [0x50f] as const;
+const cicadaCodes = ["4997565", "79663524", "5068132"] as const;
+
+const dysonSetcodes = [0x519] as const;
+const dysonCodes = ["1992816", "32559361"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [
@@ -286,6 +337,31 @@ const championCodes = ["82382815", "27553701"] as const;
 const goyoSetcodes = [0x523] as const;
 const goyoCodes = ["49785720", "59255742", "7391448", "84305651", "63364266", "58901502", "98637386"] as const;
 
+const heavyIndustrySetcodes = [0x529] as const;
+const heavyIndustryCodes = ["42851643", "29515122", "13647631"] as const;
+
+const mantisSetcodes = [0x535] as const;
+const mantisCodes = ["58818411", "31600513", "53754104"] as const;
+
+const maskSetcodes = [0x583] as const;
+const maskCodes = [
+  "29549364",
+  "13676474",
+  "77581312",
+  "48948935",
+  "94377247",
+  "49064413",
+  "10189126",
+  "82432018",
+  "57882509",
+  "56948373",
+  "3149764",
+  "16392422",
+  "20765952",
+  "28933734",
+  "22610082",
+] as const;
+
 const melodiousSongtressSetcodes = [0x209b] as const;
 const melodiousSongtressCodes = ["90276649", "14763299", "62895219", "64881644"] as const;
 
@@ -331,6 +407,9 @@ const sharkCodes = [
   "70156946",
   "11845050",
 ] as const;
+
+const starvingVenemySetcodes = [0x576] as const;
+const starvingVenemyCodes = ["22070401", "93729065"] as const;
 
 const earthSetcodes = [0x51a, 0x21, 0x567] as const;
 const earthCodes = [

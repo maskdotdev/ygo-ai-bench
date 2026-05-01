@@ -189,6 +189,56 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("anime colors true/true/true/true/false/false");
   });
 
+  it("exposes anime archetype predicates from code and setcode checks", () => {
+    const cases = [
+      { method: "IsAngel", code: "79575620", setcode: 0x154a },
+      { method: "IsAtlandis", code: "9161357", setcode: 0x506 },
+      { method: "IsBlackwingTamer", code: "81983656", setcode: 0x2033 },
+      { method: "IsC", code: "15862758", setcode: 0x1048 },
+      { method: "IsCicada", code: "4997565", setcode: 0x50f },
+      { method: "IsDyson", code: "1992816", setcode: 0x519 },
+      { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
+      { method: "IsMantis", code: "58818411", setcode: 0x535 },
+      { method: "IsMask", code: "29549364", setcode: 0x583 },
+      { method: "IsStarvingVenemy", code: "22070401", setcode: 0x576 },
+    ];
+    const cards: DuelCardData[] = [{ code: "9000", name: "Normal Spell", kind: "spell", typeFlags: 0x2 }];
+    const main = ["9000"];
+    for (const [index, fixture] of cases.entries()) {
+      const setCodeCard = String(9100 + index);
+      cards.push(
+        { code: fixture.code, name: `${fixture.method} Code`, kind: "monster", typeFlags: 0x21 },
+        { code: setCodeCard, name: `${fixture.method} Set`, kind: "monster", typeFlags: 0x21, setcodes: [fixture.setcode] },
+      );
+      main.push(fixture.code, setCodeCard);
+    }
+    const session = createDuel({ seed: 158, startingHandSize: main.length, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const luaCases = cases.map((fixture, index) => `{ "${fixture.method}", ${fixture.code}, ${9100 + index} }`).join(",\n");
+    const result = host.loadScript(
+      `
+      local normal=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 9000), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local cases={${luaCases}}
+      for _, fixture in ipairs(cases) do
+        local method=fixture[1]
+        local code_card=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, fixture[2]), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+        local set_card=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, fixture[3]), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+        Debug.Message(method .. " " .. tostring(code_card[method](code_card)) .. "/" .. tostring(set_card[method](set_card)) .. "/" .. tostring(normal[method](normal)))
+      end
+      `,
+      "anime-archetype-predicates.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    for (const fixture of cases) expect(host.messages).toContain(`${fixture.method} true/true/false`);
+  });
+
   it("lets Lua scripts check linked monster-zone cards", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Right Link", kind: "extra", typeFlags: 0x4000001, level: 2, linkMarkers: 0x20 },
