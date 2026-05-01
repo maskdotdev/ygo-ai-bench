@@ -3,6 +3,7 @@ export const cardFieldNames = [
   "AddCannotBeSpecialSummoned",
   "AddMustBeSpecialSummoned",
   "AddMustBeFusionSummoned",
+  "AddMustBeRitualSummoned",
   "AddMustBeLinkSummoned",
   "AddMustBePendulumSummoned",
   "AddCannotBeNormalSummoned",

@@ -176,6 +176,7 @@ describe("Lua effect metadata helpers", () => {
       local cannot=c:AddCannotBeSpecialSummoned()
       local must=c:AddMustBeSpecialSummoned()
       local must_fusion=c:AddMustBeFusionSummoned()
+      local must_ritual=c:AddMustBeRitualSummoned()
       local must_link=c:AddMustBeLinkSummoned()
       local must_pendulum=c:AddMustBePendulumSummoned()
       local cannot_normal=c:AddCannotBeNormalSummoned()
@@ -184,9 +185,10 @@ describe("Lua effect metadata helpers", () => {
       c:AddDoubleTribute(160005033,aux.TRUE,aux.TRUE,0,FLAG_DOUBLE_TRIB_WINGEDBEAST,FLAG_DOUBLE_TRIB_LIGHT)
       c:RegisterFlagEffect(c:GetOriginalCode(),RESET_EVENT,0,1)
       local min,max=c:GetTributeRequirement()
-      Debug.Message("card proc codes " .. revive:GetCode() .. "/" .. cannot:GetCode() .. "/" .. must:GetCode() .. "/" .. must_fusion:GetCode() .. "/" .. must_link:GetCode() .. "/" .. must_pendulum:GetCode() .. "/" .. cannot_normal:GetCode() .. "/" .. cannot_flip:GetCode() .. "/" .. gemini:GetCode() .. "/" .. maximum_atk:GetCode())
+      Debug.Message("card proc codes " .. revive:GetCode() .. "/" .. cannot:GetCode() .. "/" .. must:GetCode() .. "/" .. must_fusion:GetCode() .. "/" .. must_ritual:GetCode() .. "/" .. must_link:GetCode() .. "/" .. must_pendulum:GetCode() .. "/" .. cannot_normal:GetCode() .. "/" .. cannot_flip:GetCode() .. "/" .. gemini:GetCode() .. "/" .. maximum_atk:GetCode())
       Debug.Message("card proc effects " .. tostring(c:IsHasEffect(EFFECT_REVIVE_LIMIT)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_SPSUMMON_CONDITION)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_CANNOT_SUMMON)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_CANNOT_FLIP_SUMMON)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_GEMINI_STATUS)~=nil) .. "/" .. tostring(c:IsGeminiStatus()))
       Debug.Message("fusion summon limit " .. tostring(must_fusion:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(must_fusion:GetValue()(nil,nil,0,SUMMON_TYPE_SYNCHRO)))
+      Debug.Message("ritual summon limit " .. tostring(must_ritual:GetValue()(nil,nil,0,SUMMON_TYPE_RITUAL)) .. "/" .. tostring(must_ritual:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("link summon limit " .. tostring(must_link:GetValue()(nil,nil,0,SUMMON_TYPE_LINK)) .. "/" .. tostring(must_link:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("pendulum summon limit " .. tostring(must_pendulum:GetValue()(nil,nil,0,SUMMON_TYPE_PENDULUM)) .. "/" .. tostring(must_pendulum:GetValue()(nil,nil,0,SUMMON_TYPE_LINK)))
       Debug.Message("maximum atk handler " .. maximum_atk:GetValue() .. "/" .. maximum_atk:GetRange() .. "/" .. tostring(maximum_atk:GetCondition()(maximum_atk)))
@@ -197,9 +199,10 @@ describe("Lua effect metadata helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("card proc codes 31/30/30/30/30/30/20/21/75/103");
+    expect(host.messages).toContain("card proc codes 31/30/30/30/30/30/30/20/21/75/103");
     expect(host.messages).toContain("card proc effects true/true/true/true/true/true");
     expect(host.messages).toContain("fusion summon limit true/false");
+    expect(host.messages).toContain("ritual summon limit true/false");
     expect(host.messages).toContain("link summon limit true/false");
     expect(host.messages).toContain("pendulum summon limit true/false");
     expect(host.messages).toContain("maximum atk handler 3900/4/false");
