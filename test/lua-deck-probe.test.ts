@@ -261,6 +261,94 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rokket Lua deck pr
   });
 });
 
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Labrynth Lua deck probe", () => {
+  it("loads trap-control scripts without helper failures", () => {
+    const output = execFileSync(
+      "node",
+      ["--experimental-transform-types", "tools/probe-lua-deck.ts", "labrynth-2026.ydk", "--upstream", ".upstream/ignis"],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Voiceless Voice Lua deck probe", () => {
+  it("registers Ritual procedure scripts without helper failures", () => {
+    const output = execFileSync(
+      "node",
+      ["--experimental-transform-types", "tools/probe-lua-deck.ts", "voiceless-voice-2026.ydk", "--upstream", ".upstream/ignis"],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Marincess Lua deck probe", () => {
+  it("loads Link-heavy scripts without helper failures", () => {
+    const output = execFileSync(
+      "node",
+      ["--experimental-transform-types", "tools/probe-lua-deck.ts", "marincess-2026.ydk", "--upstream", ".upstream/ignis"],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Exosister Lua deck probe", () => {
+  it("registers Xyz and Spirit-adjacent scripts without helper failures", () => {
+    const output = execFileSync(
+      "node",
+      ["--experimental-transform-types", "tools/probe-lua-deck.ts", "exosister-ots-mar-2026.ydk", "--upstream", ".upstream/ignis"],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Solfachord Lua deck probe", () => {
+  it("uses alternate-art fallbacks for non-Magician Pendulum coverage", () => {
+    const output = execFileSync(
+      "node",
+      ["--experimental-transform-types", "tools/probe-lua-deck.ts", "solfachord-2026.ydk", "--upstream", ".upstream/ignis"],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Metadata source: cards.cdb");
+    expect(output).toContain("Local fallback scripts: 2");
+    expect(output).toContain("FALLBACK c14558128.lua");
+    expect(output).toContain("FALLBACK c65741787.lua");
+    expect(output).toContain("Local fallback stubs: 0");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+});
+
 function createProbeCards(main: string[], extra: string[]): DuelCardData[] {
   const extraCodes = new Set(extra);
   return Array.from(new Set([...main, ...extra])).map((code) => ({

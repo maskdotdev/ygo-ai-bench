@@ -20,6 +20,7 @@ export const cardFieldNames = [
   "AddCannotBeNormalSummoned",
   "AddCannotBeFlipSummoned",
   "EnableReviveLimit",
+  "EnableUnsummonable",
   "EnableGeminiStatus",
   "EnableGeminiState",
   "IsGeminiStatus",

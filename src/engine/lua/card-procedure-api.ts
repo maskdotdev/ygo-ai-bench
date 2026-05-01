@@ -79,6 +79,30 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       e:SetOperation(function() return true end)
       return e
     end
+    function Ritual.AddProc(c,...)
+      local is_table=type(c)=="table"
+      local e=Ritual.CreateProc(is_table and c or c,...)
+      local handler=is_table and c.handler or c
+      if handler then handler:RegisterEffect(e) end
+      return e
+    end
+    Ritual.AddProcGreater=aux.FunctionWithNamedArgs(function(c,...)
+      return Ritual.AddProc(c,...)
+    end,"handler","filter","lv","desc","extrafil","extraop","matfilter","stage2","location","forcedselection","customoperation","specificmatfilter","requirementfunc","sumpos","extratg","self")
+    function Ritual.AddWholeLevelTribute(c,condition)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_RITUAL_LEVEL)
+      e:SetValue(function(e,ritual_card)
+        local lv=e:GetHandler():GetLevel()
+        if condition and ritual_card and condition(ritual_card,e) then
+          return (lv<<16)|(ritual_card:GetLevel() or lv)
+        end
+        return lv
+      end)
+      c:RegisterEffect(e)
+      return e
+    end
     Link=Link or {}
     function Link.AddProcedure(c,...)
       local mt=c:GetMetatable(false)
@@ -186,6 +210,26 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
     end
     function Pendulum.PlayerCanGainAdditionalPendulumSummon(player,effect_flag)
       return Duel.IsTurnPlayer(player) and not Duel.IsPhase(PHASE_END)
+    end
+    Spirit=Spirit or {}
+    FLAG_SPIRIT_RETURN=FLAG_SPIRIT_RETURN or 2
+    function Spirit.AddProcedure(c,...)
+      local e1=Effect.CreateEffect(c)
+      e1:SetDescription(1105)
+      e1:SetCategory(CATEGORY_TOHAND)
+      e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_F)
+      e1:SetCode(EVENT_PHASE+PHASE_END)
+      e1:SetRange(LOCATION_MZONE)
+      e1:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return e:GetHandler():IsAbleToHand() end
+        Duel.SetOperationInfo(0,CATEGORY_TOHAND,e:GetHandler(),1,0,0)
+      end)
+      e1:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+        local c=e:GetHandler()
+        if c:IsRelateToEffect(e) then Duel.SendtoHand(c,nil,REASON_EFFECT) end
+      end)
+      c:RegisterEffect(e1)
+      return e1
     end
     Cost=Cost or {}
     __duel_detach_costs=__duel_detach_costs or setmetatable({}, {__mode="k"})
@@ -373,6 +417,7 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       c:RegisterEffect(e0)
       return e0
     end
+    Card.EnableUnsummonable=Card.EnableReviveLimit
     function Card.EnableGeminiStatus(c)
       local e0=Effect.CreateEffect(c)
       e0:SetType(EFFECT_TYPE_SINGLE)
