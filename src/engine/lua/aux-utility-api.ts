@@ -336,6 +336,28 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
         return not fun2 or fun2(e,tp,eg,ep,ev,re,r,rp,chk,c,...)
       end
     end
+    function aux.ValuesReset()
+      if not aux.ToResetFuncTable then return false end
+      for _,resetfunc in pairs(aux.ToResetFuncTable) do
+        resetfunc()
+      end
+      return false
+    end
+    function aux.AddValuesReset(resetfunc)
+      if not resetfunc then return nil end
+      if not aux.ToResetFuncTable then
+        aux.ToResetFuncTable={resetfunc}
+        local ge=Effect.GlobalEffect()
+        ge:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        ge:SetCode(EVENT_TURN_END)
+        ge:SetCountLimit(1)
+        ge:SetCondition(aux.ValuesReset)
+        Duel.RegisterEffect(ge,0)
+        return ge
+      end
+      table.insert(aux.ToResetFuncTable,resetfunc)
+      return nil
+    end
     local function get_multi(tab,key,...)
       if not key then return nil end
       return (tab[key]~=nil and tab[key]) or get_multi(tab,...)

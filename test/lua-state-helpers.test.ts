@@ -730,6 +730,11 @@ describe("Lua state helpers", () => {
       Debug.Message("coin hint " .. aux.GetCoinEffectHintString(COIN_HEADS) .. "/" .. aux.GetCoinEffectHintString(COIN_TAILS) .. "/" .. tostring(aux.GetCoinEffectHintString(9)))
       local field_tg = aux.FieldSummonProcTg(function(e,tp) return tp==0 end,function(e,tp,eg,ep,ev,re,r,rp,chk,c,minatk) return c:GetAttack()>=minatk end)
       Debug.Message("field summon tg " .. tostring(field_tg(nil,0,Group.CreateGroup(),0,0,nil,0,0,0,nil)) .. "/" .. tostring(field_tg(nil,1,Group.CreateGroup(),0,0,nil,0,0,0,nil)) .. "/" .. tostring(field_tg(nil,0,Group.CreateGroup(),0,0,nil,0,0,0,faceup_monster,900)) .. "/" .. tostring(field_tg(nil,0,Group.CreateGroup(),0,0,nil,0,0,0,faceup_monster,2000)))
+      local reset_count=0
+      local reset_effect=aux.AddValuesReset(function() reset_count=reset_count+1 end)
+      local reset_second=aux.AddValuesReset(function() reset_count=reset_count+10 end)
+      Debug.Message("values reset setup " .. reset_effect:GetCode() .. "/" .. reset_effect:GetCountLimit() .. "/" .. tostring(reset_second==nil))
+      Debug.Message("values reset call " .. tostring(aux.ValuesReset()) .. "/" .. reset_count)
       local named = aux.FunctionWithNamedArgs(function(a,b,...)
         local total=0
         for _,value in ipairs({...}) do total=total+value end
@@ -878,6 +883,8 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("or count 2");
     expect(host.messages).toContain("coin hint 62/63/nil");
     expect(host.messages).toContain("field summon tg true/false/true/false");
+    expect(host.messages).toContain("values reset setup 1210/1/true");
+    expect(host.messages).toContain("values reset call false/11");
     expect(host.messages).toContain("named args A/B/7/X/Y/11");
     expect(host.messages).toContain("cannot mat true/false/true");
     expect(host.messages).toContain("chkf mmz true/false");
