@@ -22,6 +22,8 @@ export const cardFieldNames = [
   "IsChampion",
   "IsGoyo",
   "IsMelodiousSongtress",
+  "IsPapillon",
+  "IsShark",
   "IsEarth",
   "IsSky",
   "GetOwner",

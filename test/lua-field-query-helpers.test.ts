@@ -99,14 +99,18 @@ describe("Lua field and query helpers", () => {
       { code: "807", name: "Goyo Set", kind: "monster", typeFlags: 0x21, setcodes: [0x523] },
       { code: "90276649", name: "Melodious Songtress Code", kind: "monster", typeFlags: 0x21 },
       { code: "809", name: "Melodious Songtress Set", kind: "monster", typeFlags: 0x21, setcodes: [0x209b] },
+      { code: "92341815", name: "Papillon Code", kind: "monster", typeFlags: 0x21 },
+      { code: "810", name: "Papillon Set", kind: "monster", typeFlags: 0x21, setcodes: [0x53c] },
+      { code: "7500772", name: "Shark Code", kind: "monster", typeFlags: 0x21 },
+      { code: "811", name: "Shark Set", kind: "monster", typeFlags: 0x21, setcodes: [0x547] },
       { code: "42685062", name: "Earth Code", kind: "monster", typeFlags: 0x21 },
       { code: "804", name: "Earthbound Set", kind: "monster", typeFlags: 0x21, setcodes: [0x21] },
       { code: "49771608", name: "Sky Code", kind: "monster", typeFlags: 0x21 },
       { code: "805", name: "Sky Set", kind: "monster", typeFlags: 0x21, setcodes: [0x54a] },
     ];
-    const session = createDuel({ seed: 44, startingHandSize: 24, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 44, startingHandSize: 28, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "806", "808", "82382815", "803", "7391448", "807", "90276649", "809", "42685062", "804", "49771608", "805"] },
+      0: { main: ["100", "200", "300", "400", "500", "95453143", "89631139", "600", "700", "800", "801", "802", "806", "808", "82382815", "803", "7391448", "807", "90276649", "809", "92341815", "810", "7500772", "811", "42685062", "804", "49771608", "805"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -134,6 +138,10 @@ describe("Lua field and query helpers", () => {
       local goyo_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 807), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local melodious_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 90276649), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local melodious_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 809), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local papillon_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 92341815), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local papillon_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 810), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local shark_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 7500772), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local shark_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 811), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local earth_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 42685062), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local earth_set=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 804), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local sky_code=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 49771608), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -150,6 +158,8 @@ describe("Lua field and query helpers", () => {
       Debug.Message("champion predicates " .. tostring(champion_code:IsChampion()) .. "/" .. tostring(champion_set:IsChampion()) .. "/" .. tostring(normal_spell:IsChampion()))
       Debug.Message("goyo predicates " .. tostring(goyo_code:IsGoyo()) .. "/" .. tostring(goyo_set:IsGoyo()) .. "/" .. tostring(normal_spell:IsGoyo()))
       Debug.Message("melodious songtress predicates " .. tostring(melodious_code:IsMelodiousSongtress()) .. "/" .. tostring(melodious_set:IsMelodiousSongtress()) .. "/" .. tostring(normal_spell:IsMelodiousSongtress()))
+      Debug.Message("papillon predicates " .. tostring(papillon_code:IsPapillon()) .. "/" .. tostring(papillon_set:IsPapillon()) .. "/" .. tostring(normal_spell:IsPapillon()))
+      Debug.Message("shark predicates " .. tostring(shark_code:IsShark()) .. "/" .. tostring(shark_set:IsShark()) .. "/" .. tostring(normal_spell:IsShark()))
       Debug.Message("earth predicates " .. tostring(earth_code:IsEarth()) .. "/" .. tostring(earth_set:IsEarth()) .. "/" .. tostring(normal_spell:IsEarth()))
       Debug.Message("sky predicates " .. tostring(sky_code:IsSky()) .. "/" .. tostring(sky_set:IsSky()) .. "/" .. tostring(normal_spell:IsSky()))
       Debug.Message("set/race helpers " .. drone:GetSetCard() .. "/" .. tostring(drone:IsRaceExcept(RACE_DRAGON)) .. "/" .. tostring(drone:IsRaceExcept(RACE_SPELLCASTER|RACE_DRAGON)))
@@ -171,6 +181,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("champion predicates true/true/false");
     expect(host.messages).toContain("goyo predicates true/true/false");
     expect(host.messages).toContain("melodious songtress predicates true/true/false");
+    expect(host.messages).toContain("papillon predicates true/true/false");
+    expect(host.messages).toContain("shark predicates true/true/false");
     expect(host.messages).toContain("earth predicates true/true/false");
     expect(host.messages).toContain("sky predicates true/true/false");
     expect(host.messages).toContain("set/race helpers 1409/true/false");

@@ -104,6 +104,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsChampion", session, (card) => Boolean(card && isAnimeArchetype(card, championSetcodes, championCodes)));
   pushBooleanGetter(L, "IsGoyo", session, (card) => Boolean(card && isAnimeArchetype(card, goyoSetcodes, goyoCodes)));
   pushBooleanGetter(L, "IsMelodiousSongtress", session, (card) => Boolean(card && isAnimeArchetype(card, melodiousSongtressSetcodes, melodiousSongtressCodes)));
+  pushBooleanGetter(L, "IsPapillon", session, (card) => Boolean(card && isAnimeArchetype(card, papillonSetcodes, papillonCodes)));
+  pushBooleanGetter(L, "IsShark", session, (card) => Boolean(card && isAnimeArchetype(card, sharkSetcodes, sharkCodes)));
   pushBooleanGetter(L, "IsEarth", session, (card) => Boolean(card && isAnimeArchetype(card, earthSetcodes, earthCodes)));
   pushBooleanGetter(L, "IsSky", session, (card) => Boolean(card && isAnimeArchetype(card, skySetcodes, skyCodes)));
 }
@@ -286,6 +288,49 @@ const goyoCodes = ["49785720", "59255742", "7391448", "84305651", "63364266", "5
 
 const melodiousSongtressSetcodes = [0x209b] as const;
 const melodiousSongtressCodes = ["90276649", "14763299", "62895219", "64881644"] as const;
+
+const papillonSetcodes = [0x53c] as const;
+const papillonCodes = ["92341815", "91140491", "16366944", "8910240"] as const;
+
+const sharkSetcodes = [0x547] as const;
+const sharkCodes = [
+  "7500772",
+  "23672629",
+  "10532969",
+  "49221191",
+  "7150545",
+  "14306092",
+  "84224627",
+  "23536866",
+  "32393580",
+  "20838380",
+  "20358953",
+  "50449881",
+  "71923655",
+  "44223284",
+  "69155991",
+  "70655556",
+  "63193879",
+  "5014629",
+  "51227866",
+  "25484449",
+  "64319467",
+  "17643265",
+  "34290067",
+  "37798171",
+  "37279508",
+  "65676461",
+  "59479050",
+  "31320433",
+  "17201174",
+  "440556",
+  "70101178",
+  "87047161",
+  "37792478",
+  "47840168",
+  "70156946",
+  "11845050",
+] as const;
 
 const earthSetcodes = [0x51a, 0x21, 0x567] as const;
 const earthCodes = [
