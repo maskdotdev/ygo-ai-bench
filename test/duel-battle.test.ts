@@ -87,6 +87,39 @@ describe("duel battle", () => {
     expect(session.state.cards.find((card) => card.uid === decoy!.uid)).toMatchObject({ location: "graveyard" });
   });
 
+  it("omits monsters protected from battle targeting", () => {
+    const session = createDuel({ seed: 33, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "100"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const targets = queryPublicState(session).cards.filter((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(targets).toHaveLength(2);
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    const protectedTarget = specialSummonDuelCard(session.state, targets[0]!.uid, 1);
+    const legalTarget = specialSummonDuelCard(session.state, targets[1]!.uid, 1);
+
+    registerEffect(session, {
+      id: "cannot-be-battle-target",
+      sourceUid: protectedTarget.uid,
+      controller: 1,
+      event: "continuous",
+      code: 70,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(getDuelAttackTargets(session.state, attacker!.uid).map((card) => card.uid)).toEqual([legalTarget.uid]);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "declareAttack" && action.targetUid === protectedTarget.uid)).toBe(false);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "declareAttack" && action.targetUid === legalTarget.uid)).toBe(true);
+    expect(applyResponse(session, { type: "declareAttack", player: 0, attackerUid: attacker!.uid, targetUid: protectedTarget.uid, label: "Attack protected" }).ok).toBe(false);
+  });
+
   it("offers quick effects during the attack response window before battle resolves", () => {
     const session = createDuel({ seed: 31, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

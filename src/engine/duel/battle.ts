@@ -9,23 +9,33 @@ export interface DuelBattleCallbacks {
   destroyCard(uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
 }
 
+export type DuelAttackTargetPredicate = (card: DuelCardInstance) => boolean;
+
 export function canDuelCardAttack(state: DuelState, uid: string, extraAttacks = 0): boolean {
   const card = findCard(state, uid);
   return Boolean(card && canAttackWithCard(state, card, extraAttacks));
 }
 
-export function getDuelAttackTargets(state: DuelState, attackerUid: string, extraAttacks = 0): DuelCardInstance[] {
+export function getDuelAttackTargets(state: DuelState, attackerUid: string, extraAttacks = 0, canAttackTarget: DuelAttackTargetPredicate = () => true): DuelCardInstance[] {
   const attacker = findCard(state, attackerUid);
   if (!attacker || !canAttackWithCard(state, attacker, extraAttacks)) return [];
-  return getAttackTargets(state, attacker.controller);
+  return getAttackTargets(state, attacker.controller, canAttackTarget);
 }
 
-export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid: string | undefined, callbacks: DuelBattleCallbacks, extraAttacks = 0): void {
+export function declareDuelAttack(
+  state: DuelState,
+  player: PlayerId,
+  attackerUid: string,
+  targetUid: string | undefined,
+  callbacks: DuelBattleCallbacks,
+  extraAttacks = 0,
+  canAttackTarget: DuelAttackTargetPredicate = () => true,
+): void {
   const attacker = requireControlledCard(state, player, attackerUid, "monsterZone");
   if (state.phase !== "battle") throw new Error("Attacks can only be declared during the battle phase");
   if (!canAttackWithCard(state, attacker, extraAttacks)) throw new Error(`${attacker.name} cannot attack`);
 
-  const targets = getAttackTargets(state, player);
+  const targets = getAttackTargets(state, player, canAttackTarget);
   const target = targetUid === undefined ? undefined : findCard(state, targetUid);
   if (targets.length > 0) {
     if (!target || !targets.some((candidate) => candidate.uid === target.uid)) throw new Error("Attack target is not legal");
@@ -134,10 +144,15 @@ export function positionChangeActions(state: DuelState, player: PlayerId): DuelA
   return actions;
 }
 
-export function attackActions(state: DuelState, player: PlayerId, extraAttacksForCard: (card: DuelCardInstance) => number = () => 0): DuelAction[] {
+export function attackActions(
+  state: DuelState,
+  player: PlayerId,
+  extraAttacksForCard: (card: DuelCardInstance) => number = () => 0,
+  canAttackTarget: DuelAttackTargetPredicate = () => true,
+): DuelAction[] {
   const actions: DuelAction[] = [];
   const attackers = getCards(state, player, "monsterZone").filter((card) => canAttackWithCard(state, card, extraAttacksForCard(card)));
-  const targets = getAttackTargets(state, player);
+  const targets = getAttackTargets(state, player, canAttackTarget);
   for (const attacker of attackers) {
     if (targets.length === 0) {
       actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, label: `${attacker.name}: Direct attack` });
@@ -172,8 +187,8 @@ function canAttackWithCard(state: DuelState, card: DuelCardInstance, extraAttack
   return state.attacksDeclared.filter((uid) => uid === card.uid).length <= Math.max(0, extraAttacks);
 }
 
-function getAttackTargets(state: DuelState, player: PlayerId): DuelCardInstance[] {
-  return getCards(state, otherPlayer(player), "monsterZone").filter((card) => canBeBattleTarget(card));
+function getAttackTargets(state: DuelState, player: PlayerId, canAttackTarget: DuelAttackTargetPredicate): DuelCardInstance[] {
+  return getCards(state, otherPlayer(player), "monsterZone").filter((card) => canBeBattleTarget(card) && canAttackTarget(card));
 }
 
 function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance, callbacks: DuelBattleCallbacks): void {

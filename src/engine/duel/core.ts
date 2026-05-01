@@ -72,6 +72,7 @@ import {
   isAttackPrevented,
   extraAttackCount,
   isBattleDamagePrevented,
+  isBattleTargetPrevented,
   isMaterialUsePrevented,
   isMoveToLocationPrevented,
   isReleasePrevented,
@@ -322,7 +323,13 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...flipSummonActions(state, player));
   }
   if (state.phase === "battle") {
-    for (const action of attackActions(state, player, (card) => extraAttackCount(state, card, createContinuousEffectContext(state)))) {
+    const createContext = createContinuousEffectContext(state);
+    for (const action of attackActions(
+      state,
+      player,
+      (card) => extraAttackCount(state, card, createContext),
+      (card) => !isBattleTargetPrevented(state, card, createContext),
+    )) {
       if (action.type !== "declareAttack") continue;
       const attacker = findCard(state, action.attackerUid);
       if (attacker && !isAttackPrevented(state, attacker, createContinuousEffectContext(state))) actions.push(action);
@@ -590,7 +597,12 @@ export function getDuelAttackTargets(state: DuelState, attackerUid: string): Due
   const card = findCard(state, attackerUid);
   const createContext = createContinuousEffectContext(state);
   if (!card || isAttackPrevented(state, card, createContext)) return [];
-  return getDuelAttackTargetsRule(state, attackerUid, extraAttackCount(state, card, createContext));
+  return getDuelAttackTargetsRule(
+    state,
+    attackerUid,
+    extraAttackCount(state, card, createContext),
+    (target) => !isBattleTargetPrevented(state, target, createContext),
+  );
 }
 
 export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {
@@ -606,7 +618,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
       return damageDuelPlayer(state, damagedPlayer, state.battleDamage[damagedPlayer]);
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => destroyDuelCard(state, uid, controller, reason, reasonPlayer),
-  }, attacker ? extraAttackCount(state, attacker, createContext) : 0);
+  }, attacker ? extraAttackCount(state, attacker, createContext) : 0, (target) => !isBattleTargetPrevented(state, target, createContext));
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
 }
 
