@@ -435,6 +435,55 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("release summon forced true");
   });
 
+  it("lets Lua scripts evaluate release summon zone selection checks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Release Summon Target", kind: "monster", level: 6 },
+      { code: "300", name: "Must Release", kind: "monster" },
+      { code: "400", name: "One Of A", kind: "monster" },
+      { code: "500", name: "One Of B", kind: "monster" },
+      { code: "600", name: "Zone Filler A", kind: "monster" },
+      { code: "700", name: "Zone Filler B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 42, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "400", "500", "600", "700"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["300", "400", "500", "600", "700"]) {
+      const card = session.state.cards.find((candidate) => candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local must = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      local oneof = Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(400) or tc:IsCode(500) end, 0, LOCATION_MZONE, 0, 2, 2, nil)
+      local pick_one = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      local pick_two = Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(400) or tc:IsCode(500) end, 0, LOCATION_MZONE, 0, 2, 2, nil)
+      local check = aux.ZoneCheckFunc(target,0,0xff)
+      local loose = aux.CheckZonesReleaseSummonCheck(must,oneof,check)
+      local strict = aux.CheckZonesReleaseSummonCheckSelection(must,oneof,check)
+      local ok1,stop1 = loose(pick_one,nil,0,nil)
+      local ok2,stop2 = loose(pick_two,nil,0,nil)
+      local ok3,stop3 = strict(pick_one,nil,0,nil)
+      local with_must = pick_one:Clone()
+      with_must:Merge(must)
+      local ok4,stop4 = strict(with_must,nil,0,nil)
+      Debug.Message("release zone loose " .. tostring(ok1) .. "/" .. tostring(stop1) .. "/" .. tostring(ok2) .. "/" .. tostring(stop2))
+      Debug.Message("release zone strict " .. tostring(ok3) .. "/" .. tostring(stop3) .. "/" .. tostring(ok4) .. "/" .. tostring(stop4))
+      `,
+      "release-summon-zone-check.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("release zone loose true/false/false/true");
+    expect(host.messages).toContain("release zone strict false/false/true/false");
+  });
+
   it("lets Lua scripts check, select, and release monster-zone groups", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Release A", kind: "monster" },

@@ -44,6 +44,10 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setfield(L, -2, to_luastring("bdogcon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectUnselectGroup(state));
   lua.lua_setfield(L, -2, to_luastring("SelectUnselectGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckZonesReleaseSummonCheck(state, false));
+  lua.lua_setfield(L, -2, to_luastring("CheckZonesReleaseSummonCheck"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckZonesReleaseSummonCheck(state, true));
+  lua.lua_setfield(L, -2, to_luastring("CheckZonesReleaseSummonCheckSelection"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAuxNext(state));
   lua.lua_setfield(L, -2, to_luastring("Next"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAuxIsZone(state, readLuaError));
@@ -259,11 +263,45 @@ function pushSelectUnselectGroup(L: unknown): number {
   return 1;
 }
 
+function pushCheckZonesReleaseSummonCheck(L: unknown, requireMustIncluded: boolean): number {
+  const mustUids = readGroupUids(L, 1);
+  const oneOfUids = readGroupUids(L, 2);
+  const checkRef = readOptionalFunctionRef(L, 3);
+  lua.lua_pushjsfunction(L, (state: unknown) => {
+    const selected = readGroupUids(state, 1);
+    const candidate = uniqueUids([...selected, ...mustUids]);
+    const oneOfCount = selected.filter((uid) => oneOfUids.includes(uid)).length;
+    lua.lua_pushboolean(state, (!requireMustIncluded || includesAll(selected, mustUids)) && oneOfCount < 2 && zoneReleaseCheckMatches(state, checkRef, candidate));
+    lua.lua_pushboolean(state, oneOfCount >= 2);
+    return 2;
+  });
+  return 1;
+}
+
+function zoneReleaseCheckMatches(L: unknown, checkRef: number | undefined, uids: string[]): boolean {
+  if (checkRef === undefined) return true;
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, checkRef);
+  pushGroupTable(L, uids);
+  const status = lua.lua_pcall(L, 1, 1, 0);
+  if (status !== lua.LUA_OK) return false;
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
+}
+
 function selectGroupUids(uids: string[], min: number, max: number): string[] {
   const boundedMin = Math.max(0, min);
   if (uids.length < boundedMin) return [];
   const limit = max > 0 ? Math.max(boundedMin, max) : uids.length;
   return uids.slice(0, limit);
+}
+
+function includesAll(uids: string[], included: string[]): boolean {
+  return included.every((uid) => uids.includes(uid));
+}
+
+function uniqueUids(uids: string[]): string[] {
+  return [...new Set(uids)];
 }
 
 function selectSubGroup(L: unknown, uids: string[], filterRef: number, min: number, max: number, argsStart: number): string[] | undefined {
