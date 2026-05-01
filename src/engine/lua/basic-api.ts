@@ -71,6 +71,7 @@ export function installConstants(L: unknown): void {
     TYPE_XYZ: 0x800000,
     TYPE_PENDULUM: 0x1000000,
     TYPE_LINK: 0x4000000,
+    TYPE_ACTION: 0x10000000,
     RACE_WARRIOR: 0x1,
     RACE_SPELLCASTER: 0x2,
     RACE_PLANT: 0x400,
