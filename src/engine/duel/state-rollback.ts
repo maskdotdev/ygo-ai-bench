@@ -10,6 +10,7 @@ export interface DuelStateRollback {
   phase: DuelState["phase"];
   randomCounter: number;
   lastDiceResults: number[];
+  lastCoinResults: number[];
   players: Record<PlayerId, DuelPlayerState>;
   cards: DuelCardInstance[];
   effects: DuelEffectDefinition[];
@@ -50,6 +51,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     phase: state.phase,
     randomCounter: state.randomCounter,
     lastDiceResults: [...state.lastDiceResults],
+    lastCoinResults: [...state.lastCoinResults],
     players: { 0: { ...state.players[0] }, 1: { ...state.players[1] } },
     cards: state.cards.map((card) => ({ ...card, overlayUids: [...card.overlayUids] })),
     effects: state.effects.map((effect) => ({ ...effect, range: [...effect.range], ...(effect.reset ? { reset: { ...effect.reset } } : {}) })),
@@ -94,6 +96,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.phase = rollback.phase;
   state.randomCounter = rollback.randomCounter;
   state.lastDiceResults = rollback.lastDiceResults;
+  state.lastCoinResults = rollback.lastCoinResults;
   state.players = rollback.players;
   state.cards = rollback.cards;
   state.effects = rollback.effects;

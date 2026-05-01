@@ -61,6 +61,31 @@ describe("Lua random helpers", () => {
     expect(session.state.randomCounter).toBe(3);
   });
 
+  it("lets Lua scripts override and read coin results", () => {
+    const session = setupSession(161);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local empty={Duel.GetCoinResult()}
+      local a,b=Duel.TossCoin(0,2)
+      local tossed={Duel.GetCoinResult()}
+      Duel.SetCoinResult(COIN_HEADS, COIN_TAILS, 7)
+      local forced={Duel.GetCoinResult()}
+      Debug.Message("coin result empty " .. #empty)
+      Debug.Message("coin result tossed " .. a .. "," .. b .. "/" .. tossed[1] .. "," .. tossed[2])
+      Debug.Message("coin result forced " .. forced[1] .. "," .. forced[2] .. "," .. forced[3])
+      `,
+      "coin-result.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("coin result empty 0");
+    expect(host.messages[1]).toMatch(/^coin result tossed ([01]),([01])\/\1,\2$/);
+    expect(host.messages).toContain("coin result forced 1,0,1");
+    expect(session.state.lastCoinResults).toEqual([1, 0, 1]);
+    expect(session.state.randomCounter).toBe(2);
+  });
+
   it("preserves coin-call progression across snapshots", () => {
     const original = setupSession(156);
     const firstHost = createLuaScriptHost(original);
@@ -131,6 +156,25 @@ describe("Lua random helpers", () => {
     expect(session.state.lastDiceResults).toHaveLength(2);
   });
 
+  it("lets Lua scripts override dice results", () => {
+    const session = setupSession(169);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local a=Duel.TossDice(0,1)
+      Duel.SetDiceResult(2, 9, -1)
+      local forced={Duel.GetDiceResult()}
+      Debug.Message("dice result forced " .. a .. "/" .. forced[1] .. "," .. forced[2] .. "," .. forced[3])
+      `,
+      "dice-result-forced.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages[0]).toMatch(/^dice result forced [1-6]\/2,6,1$/);
+    expect(session.state.lastDiceResults).toEqual([2, 6, 1]);
+    expect(session.state.randomCounter).toBe(1);
+  });
+
   it("preserves dice progression across snapshots", () => {
     const original = setupSession(153);
     const firstHost = createLuaScriptHost(original);
@@ -186,6 +230,31 @@ describe("Lua random helpers", () => {
       Debug.Message("after dice result " .. a .. "," .. b)
       `,
       "dice-result-after-snapshot.lua",
+    );
+
+    expect(restoredResult.ok, restoredResult.error).toBe(true);
+    expect(restoredHost.messages[0]?.replace("after", "before")).toBe(firstHost.messages[0]);
+  });
+
+  it("preserves last coin results across snapshots", () => {
+    const original = setupSession(162);
+    const firstHost = createLuaScriptHost(original);
+    const first = firstHost.loadScript(
+      `
+      Duel.SetCoinResult(COIN_TAILS, COIN_HEADS)
+      Debug.Message("before coin result " .. table.concat({Duel.GetCoinResult()}, ","))
+      `,
+      "coin-result-before-snapshot.lua",
+    );
+    expect(first.ok, first.error).toBe(true);
+
+    const restored = restoreDuel(serializeDuel(original), createCardReader(cards));
+    const restoredHost = createLuaScriptHost(restored);
+    const restoredResult = restoredHost.loadScript(
+      `
+      Debug.Message("after coin result " .. table.concat({Duel.GetCoinResult()}, ","))
+      `,
+      "coin-result-after-snapshot.lua",
     );
 
     expect(restoredResult.ok, restoredResult.error).toBe(true);

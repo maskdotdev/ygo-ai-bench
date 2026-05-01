@@ -10,8 +10,14 @@ export function installDuelRandomApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("TossDice"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetDiceResult(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetDiceResult"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSetDiceResult(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SetDiceResult"));
   lua.lua_pushcfunction(L, (state: unknown) => pushTossCoin(state, session));
   lua.lua_setfield(L, -2, to_luastring("TossCoin"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetCoinResult(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetCoinResult"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSetCoinResult(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SetCoinResult"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceCoin(state));
   lua.lua_setfield(L, -2, to_luastring("AnnounceCoin"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCallCoin(state, session));
@@ -44,6 +50,11 @@ function pushGetDiceResult(L: unknown, session: DuelSession): number {
   return session.state.lastDiceResults.length;
 }
 
+function pushSetDiceResult(L: unknown, session: DuelSession): number {
+  session.state.lastDiceResults = readIntegerResults(L).map((result) => Math.min(6, Math.max(1, result)));
+  return 0;
+}
+
 function rollDie(session: DuelSession): number {
   const rng = createRng(`${session.state.seed}:dice:${session.state.randomCounter}`);
   session.state.randomCounter += 1;
@@ -55,9 +66,20 @@ function pushTossCoin(L: unknown, session: DuelSession): number {
   const count = Math.max(1, Math.trunc(lua.lua_isnumber(L, 2) ? lua.lua_tonumber(L, 2) : 1));
   const results: number[] = [];
   for (let index = 0; index < count; index += 1) results.push(tossCoin(session));
+  session.state.lastCoinResults = results;
   pushDuelLog(session.state, "tossCoin", player === 1 ? 1 : 0, undefined, results.join(","));
   for (const result of results) lua.lua_pushinteger(L, result);
   return results.length;
+}
+
+function pushGetCoinResult(L: unknown, session: DuelSession): number {
+  for (const result of session.state.lastCoinResults) lua.lua_pushinteger(L, result);
+  return session.state.lastCoinResults.length;
+}
+
+function pushSetCoinResult(L: unknown, session: DuelSession): number {
+  session.state.lastCoinResults = readIntegerResults(L).map((result) => result === 0 ? 0 : 1);
+  return 0;
 }
 
 function pushAnnounceCoin(L: unknown): number {
@@ -100,6 +122,14 @@ function pushCountTails(L: unknown): number {
   }
   lua.lua_pushinteger(L, count);
   return 1;
+}
+
+function readIntegerResults(L: unknown): number[] {
+  const results: number[] = [];
+  for (let index = 1; index <= lua.lua_gettop(L); index += 1) {
+    if (lua.lua_isnumber(L, index)) results.push(Math.trunc(lua.lua_tonumber(L, index)));
+  }
+  return results;
 }
 
 function pushGetRandomNumber(L: unknown, session: DuelSession): number {

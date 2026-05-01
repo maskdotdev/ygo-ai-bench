@@ -94,6 +94,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       cards: snapshot.state.cards.map((card) => ({ ...card, data: { ...card.data }, overlayUids: [...card.overlayUids], ...(card.counters ? { counters: { ...card.counters } } : {}) })),
       effects: snapshot.state.effects.flatMap((effect) => restoreEffect(effect, effectRegistry)),
       lastDiceResults: [...(snapshot.state.lastDiceResults ?? [])],
+      lastCoinResults: [...(snapshot.state.lastCoinResults ?? [])],
       chain: snapshot.state.chain.map(copyChainLink),
       chainLimits: [],
       chainPasses: [...snapshot.state.chainPasses],

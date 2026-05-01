@@ -201,6 +201,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     phase: "draw",
     randomCounter: 0,
     lastDiceResults: [],
+    lastCoinResults: [],
     players: {
       0: { id: 0, lifePoints: options.startingLifePoints ?? 8000, normalSummonAvailable: true },
       1: { id: 1, lifePoints: options.startingLifePoints ?? 8000, normalSummonAvailable: true },

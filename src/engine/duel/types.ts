@@ -243,6 +243,7 @@ export interface DuelState {
   phase: DuelPhase;
   randomCounter: number;
   lastDiceResults: number[];
+  lastCoinResults: number[];
   players: Record<PlayerId, DuelPlayerState>;
   cards: DuelCardInstance[];
   effects: DuelEffectDefinition[];
