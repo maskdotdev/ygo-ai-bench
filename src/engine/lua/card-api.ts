@@ -23,7 +23,7 @@ import {
   readTableNumberField,
   readTableStringField,
 } from "#lua/api-utils.js";
-import type { CardPosition, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -36,6 +36,10 @@ export interface LuaCardApiEffectRecord {
   value?: number;
   valueRef?: number;
   labelObjectId?: number;
+  reset?: {
+    flags: number;
+    count?: number;
+  };
 }
 
 export interface LuaCardApiState<EffectRecord extends LuaCardApiEffectRecord> {
@@ -88,6 +92,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetOwner", session, (card) => card?.owner ?? 0);
   pushNumberMatcher(L, "IsOwner", session, (card, requested) => card.owner === normalizePlayer(requested));
   pushNumberGetter(L, "GetControler", session, (card) => card?.controller ?? 0);
+  pushNumberGetter(L, "GetSummonPlayer", session, (card) => card?.summonPlayer ?? card?.controller ?? 0);
   pushNumberGetter(L, "GetLocation", session, (card) => locationMaskFromLocation(card?.location));
   pushNumberGetter(L, "GetSequence", session, (card) => card?.sequence ?? 0);
   pushNumberMatcher(L, "IsSequence", session, (card, requested) => card.sequence === requested);
@@ -149,7 +154,9 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushZonePredicate(L, "IsInMainMZone", session, (card) => card.location === "monsterZone" && card.sequence >= 0 && card.sequence <= 4);
   pushZonePredicate(L, "IsInExtraMZone", session, (card) => card.location === "monsterZone" && card.sequence >= 5 && card.sequence <= 6);
   pushBooleanGetter(L, "CanAttack", session, (card) => Boolean(card && canDuelCardAttack(session.state, card.uid)));
+  pushBooleanGetter(L, "CanGetPiercingRush", session, (card) => Boolean(card && canGetPiercingRush(session.state, card, hostState)));
   pushBooleanGetter(L, "IsMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0));
+  pushBooleanGetter(L, "IsMonsterCard", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0));
   pushBooleanGetter(L, "IsSpell", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x2) !== 0));
   pushBooleanGetter(L, "IsTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x4) !== 0));
   pushBooleanGetter(L, "IsSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x6) !== 0));
@@ -158,6 +165,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsContinuousSpell", session, (card) => (cardTypeFlags(card) & 0x20002) === 0x20002);
   pushBooleanGetter(L, "IsRitualSpell", session, (card) => (cardTypeFlags(card) & 0x82) === 0x82);
   pushBooleanGetter(L, "IsContinuousTrap", session, (card) => (cardTypeFlags(card) & 0x20004) === 0x20004);
+  pushBooleanGetter(L, "IsFusionMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x41) === 0x41));
   pushBooleanGetter(L, "IsRitualMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x81) === 0x81));
   pushBooleanGetter(L, "IsSynchroMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x2001) === 0x2001));
   pushBooleanGetter(L, "IsEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x21) === 0x21));
@@ -711,6 +719,25 @@ function isLinkedMonsterZoneCard(state: DuelState, card: DuelCardInstance): bool
     if (candidate.uid === card.uid || !candidate.faceUp) return false;
     return linkPointsTo(candidate, card) || linkPointsTo(card, candidate);
   });
+}
+
+function canEnterBattlePhase(state: DuelState): boolean {
+  return nextAvailablePhase(state, state.turnPlayer) === "battle";
+}
+
+function canGetPiercingRush<EffectRecord extends LuaCardApiEffectRecord>(state: DuelState, card: DuelCardInstance, hostState: LuaCardApiState<EffectRecord>): boolean {
+  if ((cardTypeFlags(card) & 0x1) === 0 || !canEnterBattlePhase(state)) return false;
+  if (matchingLuaEffects(state, card, 85, hostState).length > 0) return false;
+  const pierceEffects = matchingLuaEffects(state, card, 203, hostState);
+  return pierceEffects.length === 0 || pierceEffects.some((effect) => (effect.reset?.flags ?? 0) === 0);
+}
+
+function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
+  const phaseOrder = ["draw", "standby", "main1", "battle", "main2", "end"] satisfies DuelPhase[];
+  for (const phase of phaseOrder.slice(phaseOrder.indexOf(state.phase) + 1)) {
+    if (!state.skippedPhases.some((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0)) return phase;
+  }
+  return undefined;
 }
 
 function monsterZoneCards(state: DuelState): DuelCardInstance[] {

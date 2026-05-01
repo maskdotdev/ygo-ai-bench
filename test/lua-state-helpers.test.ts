@@ -49,15 +49,27 @@ describe("Lua state helpers", () => {
     const main = host.loadScript(
       `
       Debug.Message("able main " .. tostring(Duel.IsAbleToEnterBP()))
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("piercing main " .. tostring(c:CanGetPiercingRush()))
+      local e = Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_CANNOT_ATTACK)
+      e:SetRange(LOCATION_HAND)
+      c:RegisterEffect(e)
+      Debug.Message("piercing blocked " .. tostring(c:CanGetPiercingRush()))
       Duel.SkipPhase(0, PHASE_BATTLE, RESET_PHASE + PHASE_END, 1)
       Debug.Message("able skipped " .. tostring(Duel.IsAbleToEnterBP()))
+      Debug.Message("piercing skipped " .. tostring(c:CanGetPiercingRush()))
       `,
       "battle-phase-able-main.lua",
     );
 
     expect(main.ok, main.error).toBe(true);
     expect(host.messages).toContain("able main true");
+    expect(host.messages).toContain("piercing main true");
+    expect(host.messages).toContain("piercing blocked false");
     expect(host.messages).toContain("able skipped false");
+    expect(host.messages).toContain("piercing skipped false");
 
     const next = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase");
     expect(next).toMatchObject({ phase: "main2" });
@@ -66,12 +78,14 @@ describe("Lua state helpers", () => {
     const after = host.loadScript(
       `
       Debug.Message("able main2 " .. tostring(Duel.IsAbleToEnterBP()))
+      Debug.Message("is main phase 2 " .. tostring(Duel.IsMainPhase2()))
       `,
       "battle-phase-able-main2.lua",
     );
 
     expect(after.ok, after.error).toBe(true);
     expect(host.messages).toContain("able main2 false");
+    expect(host.messages).toContain("is main phase 2 true");
   });
 
   it("lets Lua scripts raise events for trigger effects", () => {
@@ -1142,7 +1156,7 @@ describe("Lua state helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Summon A", kind: "monster" },
       { code: "300", name: "Summon B", kind: "monster" },
-      { code: "900", name: "Summon Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
+      { code: "900", name: "Summon Fusion", kind: "extra", typeFlags: 0x41, fusionMaterials: ["100", "300"] },
     ];
     const session = createDuel({ seed: 19, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -1163,6 +1177,7 @@ describe("Lua state helpers", () => {
       Debug.Message("phase activity after summon " .. tostring(Duel.CheckPhaseActivity()))
       Debug.Message("normal type " .. tostring(c:IsSummonType(SUMMON_TYPE_NORMAL)) .. "/" .. c:GetSummonType())
       Debug.Message("normal location " .. tostring(c:IsSummonLocation(LOCATION_HAND)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_EXTRA)))
+      Debug.Message("normal player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
       Debug.Message("normal status " .. tostring(c:IsStatus(STATUS_SUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_SPSUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_PROC_COMPLETE)) .. "/" .. tostring(c:IsStatus(STATUS_EFFECT_ENABLED)) .. "/" .. tostring(c:IsStatus(STATUS_NO_LEVEL)))
       Debug.Message("normal activity " .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON))
       `,
@@ -1173,6 +1188,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("phase activity after summon true");
     expect(host.messages).toContain("normal type true/268435456");
     expect(host.messages).toContain("normal location true/false");
+    expect(host.messages).toContain("normal player/type 0/true/false");
     expect(host.messages).toContain("normal status true/false/true/true/true");
     expect(host.messages).toContain("normal activity 1/1/0");
 
@@ -1188,6 +1204,7 @@ describe("Lua state helpers", () => {
       local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("fusion type " .. tostring(c:IsSummonType(SUMMON_TYPE_FUSION)) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_SPECIAL)))
       Debug.Message("fusion location " .. tostring(c:IsSummonLocation(LOCATION_EXTRA)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_HAND)))
+      Debug.Message("fusion player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
       local e=Effect.CreateEffect(c)
       Debug.Message("custom summon type " .. c:GetSummonType() .. "/" .. tostring(aux.evospcon(e)) .. "/" .. tostring(aux.gbspcon(e)))
       Debug.Message("fusion status " .. tostring(c:IsStatus(STATUS_SUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_SPSUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_PROC_COMPLETE)))
@@ -1200,6 +1217,7 @@ describe("Lua state helpers", () => {
     expect(fusionResult.ok).toBe(true);
     expect(host.messages).toContain("fusion type false/true");
     expect(host.messages).toContain("fusion location true/false");
+    expect(host.messages).toContain("fusion player/type 0/true/true");
     expect(host.messages).toContain("custom summon type 1073741975/true/false");
     expect(host.messages).toContain("fusion status false/true/true");
     expect(host.messages).toContain("fusion activity 2/1/1");

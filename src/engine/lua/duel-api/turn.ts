@@ -37,6 +37,11 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsMainPhase"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, session.state.phase === "main2");
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsMainPhase2"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushboolean(state, session.state.phase === "battle");
     return 1;
   });
