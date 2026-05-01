@@ -61,6 +61,26 @@ describe("Lua random helpers", () => {
     expect(session.state.randomCounter).toBe(3);
   });
 
+  it("lets Lua scripts decode random event payload counts", () => {
+    const session = setupSession(160);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local coin_ev = 3 | (2 << 8) | (1 << 16)
+      local dice_ev = 4 | (5 << 16)
+      Debug.Message("coin ev " .. aux.GetCoinCountFromEv(coin_ev) .. "/" .. aux.GetCoinHeadsFromEv(coin_ev) .. "/" .. aux.GetCoinTailsFromEv(coin_ev))
+      Debug.Message("dice ev " .. aux.GetDiceCountSelfFromEv(dice_ev) .. "/" .. aux.GetDiceCountOppoFromEv(dice_ev))
+      Debug.Message("empty ev " .. aux.GetCoinCountFromEv(nil) .. "/" .. aux.GetDiceCountSelfFromEv(nil))
+      `,
+      "random-event-counts.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("coin ev 3/2/1");
+    expect(host.messages).toContain("dice ev 4/5");
+    expect(host.messages).toContain("empty ev 0/0");
+  });
+
   it("lets Lua scripts override and read coin results", () => {
     const session = setupSession(161);
     const host = createLuaScriptHost(session);

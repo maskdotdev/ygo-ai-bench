@@ -389,6 +389,21 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       if coin==COIN_TAILS then return 63 end
       return nil
     end
+    function aux.GetCoinCountFromEv(ev)
+      return (ev or 0) & 0xff
+    end
+    function aux.GetCoinHeadsFromEv(ev)
+      return ((ev or 0) >> 8) & 0xff
+    end
+    function aux.GetCoinTailsFromEv(ev)
+      return ((ev or 0) >> 16) & 0xff
+    end
+    function aux.GetDiceCountSelfFromEv(ev)
+      return (ev or 0) & 0xffff
+    end
+    function aux.GetDiceCountOppoFromEv(ev)
+      return ((ev or 0) >> 16) & 0xffff
+    end
     function aux.ComposeNumberDigitByDigit(tp,min,max)
       local low=math.min(min or 0,max or min or 0)
       local high=math.max(min or 0,max or min or 0)
