@@ -32,29 +32,11 @@ import {
   readTableStringField,
 } from "#lua/api-utils.js";
 import type { CardPosition, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
 const { lua, to_luastring } = fengari;
 
-export interface LuaCardApiEffectRecord {
-  id: number;
-  typeFlags?: number;
-  sourceUid?: string;
-  code?: number;
-  property?: number;
-  value?: number;
-  valueRef?: number;
-  labelObjectId?: number;
-  reset?: {
-    flags: number;
-    count?: number;
-  };
-}
-
-export interface LuaCardApiState<EffectRecord extends LuaCardApiEffectRecord> {
-  effects: Map<number, EffectRecord>;
-  operatedUids?: string[];
-  pushEffectTable: (state: unknown, id: number) => void;
-}
+export type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
 export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   L: unknown,
