@@ -174,6 +174,8 @@ describe("Lua effect metadata helpers", () => {
       c:GetMetatable().MaximumAttack=3900
       c:GetMetatable().is_legend=true
       local maximum_atk=c:AddMaximumAtkHandler()
+      local setcodes=c:AddSetcodesRule(100,true,0x123,0x456)
+      local piercing=c:AddPiercing(RESETS_STANDARD_PHASE_END,c,function(e) return true end,EFFECT_FLAG_OATH)
       local side_grant=c:AddCenterToSideEffectHandler(maximum_atk)
       local revive=c:EnableReviveLimit()
       local cannot=c:AddCannotBeSpecialSummoned()
@@ -219,6 +221,11 @@ describe("Lua effect metadata helpers", () => {
       Debug.Message("pendulum summon limit " .. tostring(must_pendulum:GetValue()(nil,nil,0,SUMMON_TYPE_PENDULUM)) .. "/" .. tostring(must_pendulum:GetValue()(nil,nil,0,SUMMON_TYPE_LINK)))
       Debug.Message("first pendulum limit " .. tostring(first_pendulum:GetValue()(first_pendulum,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(first_pendulum:GetValue()(first_pendulum,nil,0,SUMMON_TYPE_PENDULUM)))
       Debug.Message("maximum atk handler " .. maximum_atk:GetValue() .. "/" .. maximum_atk:GetRange() .. "/" .. tostring(maximum_atk:GetCondition()(maximum_atk)))
+      local first_setcode=math.min(setcodes[1]:GetValue(),setcodes[2]:GetValue())
+      local second_setcode=math.max(setcodes[1]:GetValue(),setcodes[2]:GetValue())
+      Debug.Message("setcodes rule " .. #setcodes .. "/" .. setcodes[1]:GetCode() .. "/" .. first_setcode .. "/" .. second_setcode .. "/" .. tostring(setcodes[1]:GetCondition()(setcodes[1])))
+      local piercing_reset,piercing_reset_count=piercing:GetReset()
+      Debug.Message("piercing rule " .. piercing:GetCode() .. "/" .. piercing:GetDescription() .. "/" .. piercing:GetProperty() .. "/" .. piercing_reset_count .. "/" .. tostring(piercing:GetCondition()(piercing)))
       local grant_self,grant_opp=side_grant:GetTargetRange()
       Debug.Message("center side grant " .. side_grant:GetType() .. "/" .. side_grant:GetRange() .. "/" .. grant_self .. "/" .. grant_opp .. "/" .. tostring(side_grant:GetLabelObject()==maximum_atk) .. "/" .. tostring(side_grant:GetCondition()(side_grant)) .. "/" .. tostring(side_grant:GetTarget()(side_grant,c)))
       Debug.Message("double tribute proc " .. c:GetFlagEffect(FLAG_HAS_DOUBLE_TRIBUTE) .. "/" .. c:GetFlagEffect(FLAG_DOUBLE_TRIB_WINGEDBEAST) .. "/" .. c:GetFlagEffect(FLAG_DOUBLE_TRIB_LIGHT) .. "/" .. tostring(c:IsHasEffect(EFFECT_SUMMON_PROC)~=nil))
@@ -245,6 +252,8 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("pendulum summon limit true/false");
     expect(host.messages).toContain("first pendulum limit false/true");
     expect(host.messages).toContain("maximum atk handler 3900/4/false");
+    expect(host.messages).toContain("setcodes rule 2/334/291/1110/true");
+    expect(host.messages).toContain("piercing rule 203/3208/67633152/0/true");
     expect(host.messages).toContain("center side grant 8194/4/4/0/true/false/false");
     expect(host.messages).toContain("double tribute proc 1/1/1/true");
     expect(host.messages).toContain("card proc queries 2/2/3900/true/2/true");

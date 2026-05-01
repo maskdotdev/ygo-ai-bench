@@ -25,6 +25,8 @@ export const cardFieldNames = [
   "GetTributeRequirement",
   "GetMaximumAttack",
   "AddMaximumAtkHandler",
+  "AddSetcodesRule",
+  "AddPiercing",
   "AddCenterToSideEffectHandler",
   "IsLegend",
   "GetToBeLinkedZone",

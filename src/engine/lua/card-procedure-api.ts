@@ -206,6 +206,49 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       c:RegisterEffect(e1)
       return e1
     end
+    local function setcodecondition(e)
+      local c=e:GetHandler()
+      local label=e:GetLabel()
+      if label>0 and c:GetOriginalCodeRule()==label then
+        return c:IsCode(c:GetOriginalCodeRule())
+      else
+        return true
+      end
+    end
+    function Card.AddSetcodesRule(c,code,copyable,...)
+      local prop=0
+      if not copyable then prop=EFFECT_FLAG_UNCOPYABLE end
+      local t={}
+      for _,setcode in pairs({...}) do
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+prop)
+        e:SetCode(EFFECT_ADD_SETCODE)
+        e:SetValue(setcode)
+        e:SetLabel(code)
+        e:SetCondition(setcodecondition)
+        c:RegisterEffect(e)
+        table.insert(t,e)
+      end
+      return t
+    end
+    function Card.AddPiercing(c,reset,rc,condition,properties)
+      local e1=nil
+      if rc then
+        e1=Effect.CreateEffect(rc)
+      else
+        e1=Effect.CreateEffect(c)
+      end
+      e1:SetDescription(3208)
+      if not properties then properties=0 end
+      e1:SetProperty(EFFECT_FLAG_CLIENT_HINT+properties)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetCode(EFFECT_PIERCE)
+      if condition then e1:SetCondition(condition) end
+      if reset then e1:SetReset(reset) end
+      c:RegisterEffect(e1)
+      return e1
+    end
     Maximum=Maximum or {}
     function Maximum.centerCon(e)
       return e:GetHandler():IsMaximumModeCenter()
