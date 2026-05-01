@@ -183,11 +183,13 @@ describe("Lua effect metadata helpers", () => {
       local must_fusion=c:AddMustBeFusionSummoned()
       local first_fusion=extra:AddMustFirstBeFusionSummoned()
       local must_ritual=c:AddMustBeRitualSummoned()
+      local first_ritual=c:AddMustFirstBeRitualSummoned()
       local must_synchro=c:AddMustBeSynchroSummoned()
       local must_xyz=c:AddMustBeXyzSummoned()
       local must_link=c:AddMustBeLinkSummoned()
       local first_link=extra:AddMustFirstBeLinkSummoned()
       local must_pendulum=c:AddMustBePendulumSummoned()
+      local first_pendulum=c:AddMustFirstBePendulumSummoned()
       local cannot_normal=c:AddCannotBeNormalSummoned()
       local cannot_flip=c:AddCannotBeFlipSummoned()
       local gemini=c:EnableGeminiStatus()
@@ -205,11 +207,13 @@ describe("Lua effect metadata helpers", () => {
       Debug.Message("fusion summon limit " .. tostring(must_fusion:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(must_fusion:GetValue()(nil,nil,0,SUMMON_TYPE_SYNCHRO)))
       Debug.Message("first fusion limit " .. tostring(first_fusion:GetValue()(first_fusion,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(first_fusion:GetValue()(first_fusion,nil,0,SUMMON_TYPE_LINK)))
       Debug.Message("ritual summon limit " .. tostring(must_ritual:GetValue()(nil,nil,0,SUMMON_TYPE_RITUAL)) .. "/" .. tostring(must_ritual:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)))
+      Debug.Message("first ritual limit " .. tostring(first_ritual:GetValue()(first_ritual,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(first_ritual:GetValue()(first_ritual,nil,0,SUMMON_TYPE_RITUAL)))
       Debug.Message("synchro summon limit " .. tostring(must_synchro:GetValue()(nil,nil,0,SUMMON_TYPE_SYNCHRO)) .. "/" .. tostring(must_synchro:GetValue()(nil,nil,0,SUMMON_TYPE_XYZ)))
       Debug.Message("xyz summon limit " .. tostring(must_xyz:GetValue()(nil,nil,0,SUMMON_TYPE_XYZ)) .. "/" .. tostring(must_xyz:GetValue()(nil,nil,0,SUMMON_TYPE_SYNCHRO)))
       Debug.Message("link summon limit " .. tostring(must_link:GetValue()(nil,nil,0,SUMMON_TYPE_LINK)) .. "/" .. tostring(must_link:GetValue()(nil,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("first link limit " .. tostring(first_link:GetValue()(first_link,nil,0,SUMMON_TYPE_LINK)) .. "/" .. tostring(first_link:GetValue()(first_link,nil,0,SUMMON_TYPE_FUSION)))
       Debug.Message("pendulum summon limit " .. tostring(must_pendulum:GetValue()(nil,nil,0,SUMMON_TYPE_PENDULUM)) .. "/" .. tostring(must_pendulum:GetValue()(nil,nil,0,SUMMON_TYPE_LINK)))
+      Debug.Message("first pendulum limit " .. tostring(first_pendulum:GetValue()(first_pendulum,nil,0,SUMMON_TYPE_FUSION)) .. "/" .. tostring(first_pendulum:GetValue()(first_pendulum,nil,0,SUMMON_TYPE_PENDULUM)))
       Debug.Message("maximum atk handler " .. maximum_atk:GetValue() .. "/" .. maximum_atk:GetRange() .. "/" .. tostring(maximum_atk:GetCondition()(maximum_atk)))
       local grant_self,grant_opp=side_grant:GetTargetRange()
       Debug.Message("center side grant " .. side_grant:GetType() .. "/" .. side_grant:GetRange() .. "/" .. grant_self .. "/" .. grant_opp .. "/" .. tostring(side_grant:GetLabelObject()==maximum_atk) .. "/" .. tostring(side_grant:GetCondition()(side_grant)) .. "/" .. tostring(side_grant:GetTarget()(side_grant,c)))
@@ -227,11 +231,13 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("fusion summon limit true/false");
     expect(host.messages).toContain("first fusion limit true/false");
     expect(host.messages).toContain("ritual summon limit true/false");
+    expect(host.messages).toContain("first ritual limit false/true");
     expect(host.messages).toContain("synchro summon limit true/false");
     expect(host.messages).toContain("xyz summon limit true/false");
     expect(host.messages).toContain("link summon limit true/false");
     expect(host.messages).toContain("first link limit true/false");
     expect(host.messages).toContain("pendulum summon limit true/false");
+    expect(host.messages).toContain("first pendulum limit false/true");
     expect(host.messages).toContain("maximum atk handler 3900/4/false");
     expect(host.messages).toContain("center side grant 8194/4/4/0/true/false/false");
     expect(host.messages).toContain("double tribute proc 1/1/1/true");
