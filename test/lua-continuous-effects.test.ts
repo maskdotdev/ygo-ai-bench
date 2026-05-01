@@ -1272,6 +1272,44 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("monster negatable disabled false/false/true");
   });
 
+  it("lets Lua scripts register standard card effect negation", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Negation Source", kind: "monster" },
+      { code: "200", name: "Negation Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 71, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(source).toBeTruthy();
+    expect(target).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("negate before " .. tostring(target:IsDisabled()))
+      target:NegateEffects(source, RESET_PHASE|PHASE_END, true, 2)
+      Debug.Message("negate after " .. tostring(target:IsDisabled()))
+      `,
+      "card-negate-effects.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("negate before false");
+    expect(host.messages).toContain("negate after true");
+    expect(session.state.effects.some((effect) => effect.sourceUid === target!.uid && effect.code === 2 && effect.reset?.count === 2)).toBe(true);
+    expect(session.state.effects.some((effect) => effect.sourceUid === target!.uid && effect.code === 8)).toBe(true);
+  });
+
   it("checks immunity when testing whether Lua cards can be disabled by effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Immune Disable Target", kind: "monster" },

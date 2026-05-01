@@ -292,6 +292,7 @@ export const cardFieldNames = [
   "IsCanBeEffectTarget",
   "IsImmuneToEffect",
   "IsCanBeDisabledByEffect",
+  "NegateEffects",
   "IsHasEffect",
   "IsNegatable",
   "IsNegatableMonster",

@@ -676,6 +676,9 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
 function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
   if (code === 34) return "summonProcedure";
   if (
+    code === 2 ||
+    code === 8 ||
+    code === 10 ||
     code === 22 ||
     code === 40 ||
     code === 41 ||

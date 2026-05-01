@@ -108,6 +108,29 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
     function Card.IsLineMonster(c)
       return c:IsSetCard(0x564)
     end
+    function Card.NegateEffects(tc,c,reset,negates_cards,ct)
+      if not reset then reset=RESET_EVENT|RESETS_STANDARD end
+      reset=reset|(RESET_EVENT|RESETS_STANDARD)
+      local trap_monster_chk=negates_cards and tc:IsType(TYPE_TRAPMONSTER)
+      if trap_monster_chk then reset=reset&~(RESET_TOFIELD|RESET_LEAVE|RESET_TURN_SET) end
+      if not ct then ct=1 end
+      Duel.NegateRelatedChain(tc,RESET_TURN_SET)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
+      e1:SetCode(EFFECT_DISABLE)
+      e1:SetReset(reset,ct)
+      tc:RegisterEffect(e1)
+      local e2=e1:Clone()
+      e2:SetCode(EFFECT_DISABLE_EFFECT)
+      e2:SetValue(RESET_TURN_SET)
+      tc:RegisterEffect(e2)
+      if trap_monster_chk then
+        local e3=e1:Clone()
+        e3:SetCode(EFFECT_DISABLE_TRAPMONSTER)
+        tc:RegisterEffect(e3)
+      end
+    end
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
