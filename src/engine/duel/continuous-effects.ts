@@ -71,6 +71,22 @@ export function isBattleDamagePreventedByCard(state: DuelState, player: PlayerId
   return false;
 }
 
+export function changedBattleDamageAmount(state: DuelState, player: PlayerId, amount: number, battleCards: DuelCardInstance[], createContext: ContinuousEffectContextFactory): number {
+  let value = amount;
+  for (const card of battleCards) {
+    for (const effect of state.effects) {
+      if (effect.event !== "continuous" || effect.code !== 208 || effect.sourceUid !== card.uid) continue;
+      const source = findCard(state, effect.sourceUid);
+      if (!source || !effect.range.includes(source.location)) continue;
+      const ctx = createContext(effect, source, card);
+      if (effect.canActivate && !effect.canActivate(ctx)) continue;
+      const next = effect.battleDamageValue?.(ctx, player) ?? effect.value;
+      value = applyBattleDamageValue(value, next);
+    }
+  }
+  return value;
+}
+
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 85) continue;
@@ -81,6 +97,13 @@ export function isAttackPrevented(state: DuelState, card: DuelCardInstance, crea
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
+}
+
+function applyBattleDamageValue(amount: number, value: number | undefined): number {
+  if (value === undefined || value < 0) return amount;
+  if (value === 0x80000000) return amount * 2;
+  if (value === 0x80000001) return Math.floor(amount / 2);
+  return value;
 }
 
 export function isBattleTargetPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {

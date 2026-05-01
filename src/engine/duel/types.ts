@@ -170,6 +170,7 @@ export interface DuelEffectDefinition {
   property?: number;
   targetRange?: [number, number?];
   hintTiming?: [number, number?];
+  battleDamageValue?: (ctx: DuelEffectContext, player: PlayerId) => number | undefined;
   valueCardPredicate?: (ctx: DuelEffectContext, card: DuelCardInstance) => boolean;
   valuePredicate?: (ctx: DuelEffectContext, reasonPlayer?: PlayerId) => boolean;
   canActivate?: (ctx: DuelEffectContext) => boolean;

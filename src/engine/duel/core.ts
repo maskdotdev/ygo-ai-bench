@@ -67,6 +67,7 @@ import {
 } from "#duel/attack-response-window.js";
 import type { BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
+  changedBattleDamageAmount,
   isBattleDamagePrevented,
   isBattleDamagePreventedByCard,
   isMaterialUsePrevented,
@@ -501,7 +502,8 @@ function changeDuelBattleDamageWithPrevention(state: DuelState, player: PlayerId
   const relatedBattleCards = battleCards.length > 0 ? battleCards : currentBattleCards(state);
   const prevented = isBattleDamagePrevented(state, player, createContinuousEffectContext(state));
   const preventedByCard = isBattleDamagePreventedByCard(state, player, relatedBattleCards, createContinuousEffectContext(state));
-  return changeDuelBattleDamage(state, player, prevented || preventedByCard ? 0 : amount);
+  const changedAmount = changedBattleDamageAmount(state, player, amount, relatedBattleCards, createContinuousEffectContext(state));
+  return changeDuelBattleDamage(state, player, prevented || preventedByCard ? 0 : changedAmount);
 }
 
 function currentBattleCards(state: DuelState): DuelCardInstance[] {
