@@ -1210,6 +1210,36 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("lava condition true/true/true/false/true");
   });
 
+  it("marks cards with Rank-Up usage helper flags", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Rank Up First", kind: "monster" },
+      { code: "200", name: "Rank Up Second", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 174, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local first=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local second=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      aux.RankUpUsing(Group.FromCards(first,second),84013237,aux.Stringid(84013237,1))
+      aux.RankUpComplete(first,aux.Stringid(511015134,1))
+      Debug.Message("rank up using " .. first:GetFlagEffect(511000685) .. "/" .. second:GetFlagEffect(511000685) .. "/" .. first:GetFlagEffectLabel(511000685) .. "/" .. second:GetFlagEffectLabel(511000685))
+      Debug.Message("rank up complete " .. first:GetFlagEffect(511015134) .. "/" .. second:GetFlagEffect(511015134) .. "/" .. first:GetFlagEffectLabel(511015134))
+      `,
+      "rank-up-flags.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("rank up using 1/1/84013237/84013237");
+    expect(host.messages.some((message) => message.startsWith("rank up complete 1/0/"))).toBe(true);
+  });
+
   it("runs delayed Lua operations on matching phase transitions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Delay Source", kind: "monster" },
