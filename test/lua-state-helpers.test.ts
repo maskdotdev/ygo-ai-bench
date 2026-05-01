@@ -918,7 +918,7 @@ describe("Lua state helpers", () => {
       Debug.Message("is zone " .. tostring(aux.IsZone(faceup_monster,1,0)) .. "/" .. tostring(aux.IsZone(faceup_monster,2,0)) .. "/" .. tostring(aux.IsZone(faceup_monster,1<<16,1)))
       Debug.Message("sp elim faceup mzone " .. tostring(aux.SpElimFilter(faceup_monster, true)) .. "/" .. tostring(aux.SpElimFilter(faceup_monster, true, true)))
       Debug.Message("sp elim facedown mzone " .. tostring(aux.SpElimFilter(facedown_monster, true, true)) .. "/" .. tostring(aux.SpElimFilter(facedown_monster, false, true)))
-      Debug.Message("maximum defaults " .. tostring(faceup_monster:IsMaximumMode()) .. "/" .. tostring(faceup_monster:IsMaximumModeCenter()) .. "/" .. tostring(faceup_monster:IsMaximumModeLeft()) .. "/" .. tostring(faceup_monster:IsMaximumModeSide()) .. "/" .. tostring(faceup_monster:IsNotMaximumModeSide()))
+      Debug.Message("maximum defaults " .. tostring(faceup_monster:IsMaximumMode()) .. "/" .. tostring(faceup_monster:IsMaximumModeCenter()) .. "/" .. tostring(faceup_monster:IsMaximumModeLeft()) .. "/" .. tostring(faceup_monster:IsMaximumModeRight()) .. "/" .. tostring(faceup_monster:IsMaximumModeSide()) .. "/" .. tostring(faceup_monster:IsNotMaximumModeSide()))
       local maximum_wrapped = aux.FilterMaximumSideFunctionEx(function(c,minatk) return c:IsFaceup() and c:GetAttack() >= minatk end, 900)
       Debug.Message("maximum ex count " .. Duel.GetMatchingGroupCount(maximum_wrapped, 0, LOCATION_MZONE, 0, nil))
       Debug.Message("maximum side count " .. Duel.GetMatchingGroupCount(aux.FilterMaximumSideFunction(function(c) return c:IsFaceup() end), 0, LOCATION_MZONE, 0, nil))
@@ -1117,7 +1117,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("is zone true/false/true");
     expect(host.messages).toContain("sp elim faceup mzone false/true");
     expect(host.messages).toContain("sp elim facedown mzone false/true");
-    expect(host.messages).toContain("maximum defaults false/false/false/false/true");
+    expect(host.messages).toContain("maximum defaults false/false/false/false/false/true");
     expect(host.messages).toContain("maximum ex count 1");
     expect(host.messages).toContain("maximum side count 0");
     expect(host.messages).toContain("not count 1");

@@ -165,6 +165,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsMantis", session, (card) => Boolean(card && isAnimeArchetype(card, mantisSetcodes, mantisCodes)));
   pushBooleanGetter(L, "IsMask", session, (card) => Boolean(card && isAnimeArchetype(card, maskSetcodes, maskCodes)));
   pushBooleanGetter(L, "IsMelodiousSongtress", session, (card) => Boolean(card && isAnimeArchetype(card, melodiousSongtressSetcodes, melodiousSongtressCodes)));
+  pushBooleanGetter(L, "IsMesozoic", session, (card) => Boolean(card && isAnimeArchetype(card, mesozoicSetcodes, mesozoicCodes)));
   pushBooleanGetter(L, "IsPapillon", session, (card) => Boolean(card && isAnimeArchetype(card, papillonSetcodes, papillonCodes)));
   pushBooleanGetter(L, "IsShark", session, (card) => Boolean(card && isAnimeArchetype(card, sharkSetcodes, sharkCodes)));
   pushBooleanGetter(L, "IsStarvingVenemy", session, (card) => Boolean(card && isAnimeArchetype(card, starvingVenemySetcodes, starvingVenemyCodes)));
@@ -532,6 +533,8 @@ const lampSetcodes = [0x532] as const;
 const lampCodes = ["24434049", "54912977", "97590747", "98049915", "42596828", "35834119", "2144946", "39838559", "1061200", "99510761", "91584698", "42002073", "63545455", "18236002"] as const;
 const landstarSetcodes = [0x533] as const;
 const landstarCodes = ["3573512", "83602069"] as const;
+const mesozoicSetcodes = [0x57d] as const;
+const mesozoicCodes = ["83656563", "59531356"] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [

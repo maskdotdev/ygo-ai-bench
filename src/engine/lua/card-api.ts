@@ -224,6 +224,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsMaximumMode", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeCenter", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeLeft", session, () => false);
+  pushBooleanGetter(L, "IsMaximumModeRight", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeSide", session, () => false);
   pushBooleanGetter(L, "IsNotMaximumModeSide", session, () => true);
   pushBooleanGetter(L, "WasMaximumMode", session, () => false);
