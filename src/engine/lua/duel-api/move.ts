@@ -30,6 +30,8 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   pushMoveHelper(L, "SendtoGrave", session, hostState, (state, uid, controller, reason, reasonPlayer) => sendDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer));
   pushMoveHelper(L, "Destroy", session, hostState, (state, uid, controller, reason, reasonPlayer) => destroyDuelCard(state, uid, controller, reason, reasonPlayer), duelReason.destroy);
   pushMoveHelper(L, "Remove", session, hostState, (state, uid, controller, reason, reasonPlayer) => banishDuelCard(state, uid, controller, reason, reasonPlayer));
+  lua.lua_pushcfunction(L, (state: unknown) => pushRemoveCards(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("RemoveCards"));
   pushMoveHelper(L, "Release", session, hostState, (state, uid, controller, reason, reasonPlayer) => sendDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer), duelReason.release);
   pushMoveToLocationHelper(L, "SendtoHand", session, hostState, "hand", 3);
   pushMoveToLocationHelper(L, "SendtoDeck", session, hostState, "deck", 4);
@@ -91,6 +93,18 @@ function pushMoveToLocationHelper(L: unknown, fieldName: string, session: DuelSe
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function pushRemoveCards(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  const requested = new Set(readCardOrGroupUids(L, 1));
+  const removed = session.state.cards.filter((card) => requested.has(card.uid)).map((card) => card.uid);
+  if (removed.length > 0) {
+    for (const uid of removed) removeOverlayReference(session.state, uid);
+    session.state.cards = session.state.cards.filter((card) => !requested.has(card.uid));
+  }
+  setOperatedUids(hostState, removed);
+  lua.lua_pushinteger(L, removed.length);
+  return 1;
 }
 
 function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {

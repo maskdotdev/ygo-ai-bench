@@ -14,6 +14,42 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua movement helpers", () => {
+  it("lets Lua scripts remove cards from the duel", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Removed From Duel A", kind: "monster" },
+      { code: "200", name: "Removed From Duel B", kind: "monster" },
+      { code: "300", name: "Remaining Field", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 94, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local remove_group = Duel.GetMatchingGroup(function(c) return c:IsCode(100) or c:IsCode(200) end, 0, LOCATION_MZONE, 0, nil)
+      Debug.Message("remove cards result " .. Duel.RemoveCards(remove_group, 0, -2, REASON_RULE))
+      Debug.Message("remove cards operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("remove cards field " .. Duel.GetFieldGroupCount(0, LOCATION_MZONE, 0))
+      Debug.Message("remove cards hidden " .. Duel.GetMatchingGroupCount(function(c) return c:IsCode(100) or c:IsCode(200) end, 0, LOCATION_MZONE + LOCATION_GRAVE + LOCATION_REMOVED, 0, nil))
+      `,
+      "remove-cards.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("remove cards result 2");
+    expect(host.messages).toContain("remove cards operated 2");
+    expect(host.messages).toContain("remove cards field 1");
+    expect(host.messages).toContain("remove cards hidden 0");
+    expect(session.state.cards.map((card) => card.code).sort()).toEqual(["300"]);
+  });
+
   it("lets Lua scripts use self-banish cost aliases", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Banish Cost", kind: "monster" }];
     const session = createDuel({ seed: 83, startingHandSize: 1, cardReader: createCardReader(cards) });
