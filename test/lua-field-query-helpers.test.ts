@@ -217,6 +217,7 @@ describe("Lua field and query helpers", () => {
       { method: "IsDarkness", code: "18967507", setcode: 0x316 },
       { method: "IsDart", code: "43061293", setcode: 0x513 },
       { method: "IsDice", code: "16725505", setcode: 0x514 },
+      { method: "IsDog", code: "72714226", setcode: 0x516 },
       { method: "IsDyson", code: "1992816", setcode: 0x519 },
       { method: "IsHeavyIndustry", code: "42851643", setcode: 0x529 },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
@@ -1185,6 +1186,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("attribute " .. c:GetAttribute() .. " " .. tostring(c:IsAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsOriginalAttribute(ATTRIBUTE_DARK)))
       local multi = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("attribute except " .. tostring(c:IsAttributeExcept(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsAttributeExcept(ATTRIBUTE_LIGHT)) .. "/" .. tostring(multi:IsAttributeExcept(ATTRIBUTE_DARK)) .. "/" .. tostring(multi:IsAttributeExcept(ATTRIBUTE_DARK|ATTRIBUTE_LIGHT)))
+      Debug.Message("different attribute " .. tostring(c:IsDifferentAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsDifferentAttribute(ATTRIBUTE_LIGHT)) .. "/" .. tostring(multi:IsDifferentAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(multi:IsDifferentAttribute(ATTRIBUTE_DARK|ATTRIBUTE_LIGHT)))
       local attrs={}
       for _,str in aux.GetAttributeStrings(ATTRIBUTE_LIGHT|ATTRIBUTE_DARK) do table.insert(attrs,str) end
       Debug.Message("attribute strings " .. table.concat(attrs,","))
@@ -1246,6 +1248,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not race false/true");
     expect(host.messages).toContain("attribute 32 true/true");
     expect(host.messages).toContain("attribute except false/true/true/false");
+    expect(host.messages).toContain("different attribute false/true/true/false");
     expect(host.messages).toContain("attribute strings 1014,1015");
     expect(host.messages).toContain("not attribute false/true");
     expect(host.messages).toContain("not original race false/true");
