@@ -51,11 +51,13 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLevel(state, session));
   lua.lua_setfield(L, -2, to_luastring("UpdateLevel"));
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
-  pushNumberGetter(L, "GetLeftScale", session, (card) => card?.data.leftScale ?? 0);
-  pushNumberGetter(L, "GetRightScale", session, (card) => card?.data.rightScale ?? 0);
+  pushNumberGetter(L, "GetLeftScale", session, (card) => currentLeftScale(card));
+  pushNumberGetter(L, "GetRightScale", session, (card) => currentRightScale(card));
   pushNumberGetter(L, "GetOriginalLeftScale", session, (card) => card?.data.leftScale ?? 0);
   pushNumberGetter(L, "GetOriginalRightScale", session, (card) => card?.data.rightScale ?? 0);
   pushNumberGetter(L, "GetScale", session, (card) => cardScale(card));
+  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateScale(state, session));
+  lua.lua_setfield(L, -2, to_luastring("UpdateScale"));
   pushNumberMatcher(L, "IsScale", session, (card, requested) => cardScale(card) === requested);
   pushBooleanGetter(L, "IsOddScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 !== 0);
   pushBooleanGetter(L, "IsEvenScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 === 0);
@@ -144,8 +146,8 @@ export function cardLink(card: DuelCardInstance | undefined): number {
 
 export function cardScale(card: DuelCardInstance | undefined): number {
   if (!isPendulumCardData(card)) return 0;
-  if (card.location !== "spellTrapZone") return card.data.leftScale ?? 0;
-  return card.sequence === 0 || card.sequence === 1 || card.sequence === 6 ? card.data.leftScale ?? 0 : card.data.rightScale ?? 0;
+  if (card.location !== "spellTrapZone") return currentLeftScale(card);
+  return card.sequence === 0 || card.sequence === 1 || card.sequence === 6 ? currentLeftScale(card) : currentRightScale(card);
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
@@ -262,6 +264,20 @@ function pushUpdateLink(L: unknown, session: DuelSession): number {
   return 1;
 }
 
+function pushUpdateScale(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  if (!isPendulumCardData(card) || currentLeftScale(card) === 0) {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const before = currentLeftScale(card);
+  if (before + amount <= 0) amount = -(before - 1);
+  card.scaleModifier = (card.scaleModifier ?? 0) + amount;
+  lua.lua_pushinteger(L, currentLeftScale(card) - before);
+  return 1;
+}
+
 function currentAttack(card: DuelCardInstance | undefined): number {
   return (card?.data.attack ?? 0) + (card?.attackModifier ?? 0);
 }
@@ -280,6 +296,14 @@ function currentRank(card: DuelCardInstance | undefined): number {
 
 function currentLink(card: DuelCardInstance | undefined): number {
   return cardLink(card) + (card?.linkModifier ?? 0);
+}
+
+function currentLeftScale(card: DuelCardInstance | undefined): number {
+  return (card?.data.leftScale ?? 0) + (card?.scaleModifier ?? 0);
+}
+
+function currentRightScale(card: DuelCardInstance | undefined): number {
+  return (card?.data.rightScale ?? 0) + (card?.scaleModifier ?? 0);
 }
 
 function isPendulumCardData(card: DuelCardInstance | undefined): card is DuelCardInstance {

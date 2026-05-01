@@ -205,6 +205,7 @@ export const cardFieldNames = [
   "GetOriginalLeftScale",
   "GetOriginalRightScale",
   "GetScale",
+  "UpdateScale",
   "IsScale",
   "IsOddScale",
   "IsEvenScale",

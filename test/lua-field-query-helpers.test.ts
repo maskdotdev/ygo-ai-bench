@@ -1353,6 +1353,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("scale hand " .. pendulum:GetScale() .. "/" .. pendulum:GetLeftScale() .. "/" .. pendulum:GetRightScale() .. "/" .. pendulum:GetOriginalLeftScale() .. "/" .. pendulum:GetOriginalRightScale() .. "/" .. tostring(pendulum:IsScale(3)) .. "/" .. tostring(pendulum:IsOddScale()) .. "/" .. tostring(pendulum:IsEvenScale()))
       Duel.MoveToField(pendulum,0,0,LOCATION_PZONE,POS_FACEUP,true,1)
       Debug.Message("scale pzone " .. pendulum:GetSequence() .. "/" .. pendulum:GetScale() .. "/" .. tostring(pendulum:IsOddScale()) .. "/" .. tostring(pendulum:IsEvenScale()))
+      Debug.Message("scale update " .. pendulum:UpdateScale(-10, RESETS_STANDARD_PHASE_END) .. "/" .. pendulum:GetScale() .. "/" .. pendulum:GetLeftScale() .. "/" .. pendulum:GetRightScale() .. "/" .. pendulum:GetOriginalLeftScale() .. "/" .. pendulum:GetOriginalRightScale() .. "/" .. tostring(pendulum:IsScale(1)))
       Debug.Message("race " .. c:GetRace() .. " " .. tostring(c:IsRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsOriginalRace(RACE_SPELLCASTER)))
       Debug.Message("not race " .. tostring(c:IsNotRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotRace(RACE_DRAGON)))
       Debug.Message("not original race " .. tostring(c:IsNotOriginalRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotOriginalRace(RACE_DRAGON)))
@@ -1425,6 +1426,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("level update -6/1/7/true/true");
     expect(host.messages).toContain("scale hand 3/3/8/3/8/true/true/false");
     expect(host.messages).toContain("scale pzone 0/3/true/false");
+    expect(host.messages).toContain("scale update -2/1/1/6/3/8/true");
     expect(host.messages).toContain("race 2 true/true");
     expect(host.messages).toContain("not race false/true");
     expect(host.messages).toContain("attribute 32 true/true");
