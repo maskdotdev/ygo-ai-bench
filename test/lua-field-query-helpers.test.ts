@@ -1304,6 +1304,45 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("specific link summonable true/false");
   });
 
+  it("checks Lua reincarnation ritual material filters", () => {
+    const cards: DuelCardData[] = [
+      { code: "940", name: "Reincarnation Material", kind: "monster" },
+      { code: "941", name: "Wrong Reincarnation Material", kind: "monster" },
+      { code: "950", name: "Reincarnation Ritual", kind: "monster", typeFlags: 0x81 },
+    ];
+    const session = createDuel({ seed: 93, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "941", "950"] },
+      1: { main: ["940"] },
+    });
+    startDuel(session);
+
+    const material = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const wrong = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "941");
+    const opponent = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "940");
+    expect(material).toBeDefined();
+    expect(wrong).toBeDefined();
+    expect(opponent).toBeDefined();
+    moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, wrong!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, opponent!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local rc = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 950), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local material = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local wrong = Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      local opponent = Duel.GetFieldCard(1, LOCATION_MZONE, 0)
+      Debug.Message("reincarnation ritual " .. tostring(aux.ReincarnationRitualFilter(material, rc, 940, 0)) .. "/" .. tostring(aux.ReincarnationRitualFilter(wrong, rc, 940, 0)) .. "/" .. tostring(aux.ReincarnationRitualFilter(opponent, rc, 940, 0)))
+      `,
+      "reincarnation-ritual-filter.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("reincarnation ritual true/false/false");
+  });
+
   it("checks Lua card summon predicates", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Summonable Monster", kind: "monster", level: 4 },

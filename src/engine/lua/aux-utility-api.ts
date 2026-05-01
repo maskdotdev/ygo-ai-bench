@@ -15,6 +15,9 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       local c=e:GetHandler()
       return c:IsPreviousControler(tp) and c:IsReason(REASON_DESTROY) and rp==1-tp
     end
+    function aux.ReincarnationRitualFilter(c,rc,id,tp)
+      return c:IsSummonCode(rc,SUMMON_TYPE_RITUAL,tp,id) and c:IsControler(tp) and c:IsLocation(LOCATION_MZONE)
+    end
     local player_all_value = PLAYER_ALL or 2
     function aux.EquipLimit(f)
       return function(e,c)
