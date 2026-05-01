@@ -1630,6 +1630,33 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("grave relation false/true");
   });
 
+  it("lets Lua scripts check destroyed-by-opponent-from-field conditions", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Destroyed Probe", kind: "monster" }];
+    const session = createDuel({ seed: 207, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const card = session.state.cards.find((candidate) => candidate.code === "100");
+    expect(card).toBeDefined();
+    moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, card!.uid, "graveyard", 0, duelReason.destroy | duelReason.effect, 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
+      local e = Effect.CreateEffect(c)
+      Debug.Message("dogcon values " .. tostring(aux.dogcon(e,0,nil,0,0,nil,0,1)) .. "/" .. tostring(aux.dogcon(e,0,nil,0,0,nil,0,0)) .. "/" .. tostring(aux.dogcon(e,1,nil,0,0,nil,0,0)))
+      `,
+      "aux-dogcon.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("dogcon values true/false/false");
+  });
+
   it("lets Lua scripts check whether cards have non-zero attack", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Nonzero Attack", kind: "monster", attack: 1500, defense: 1200 },

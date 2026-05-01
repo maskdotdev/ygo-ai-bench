@@ -11,6 +11,10 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       Duel.Remove(c,POS_FACEUP,REASON_COST)
     end
     aux.bfgcost=Cost.SelfBanish
+    function aux.dogcon(e,tp,eg,ep,ev,re,r,rp)
+      local c=e:GetHandler()
+      return c:IsPreviousControler(tp) and c:IsReason(REASON_DESTROY) and rp==1-tp
+    end
     local player_all_value = PLAYER_ALL or 2
     function aux.EquipLimit(f)
       return function(e,c)
