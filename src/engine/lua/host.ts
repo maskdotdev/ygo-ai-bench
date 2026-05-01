@@ -707,6 +707,7 @@ function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unk
 
 function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
   if (code === 34) return "summonProcedure";
+  if (code === 1027) return "quick";
   if (
     code === 2 ||
     code === 8 ||
@@ -770,6 +771,7 @@ function luaEffectTriggerIsOptional(typeFlags: number): boolean {
 }
 
 function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, kind: LuaEffectCallbackKind, legacyArgs: boolean, ctx?: DuelEffectContext): number {
+  const chainLink = luaEffect.code === 1027 ? hostState.session.state.chain[hostState.session.state.chain.length - 1] : undefined;
   pushLuaEffectTable(L, luaEffect.id, hostState);
   if (legacyArgs) {
     pushCardTable(L, card.uid);
@@ -777,11 +779,11 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
   }
   lua.lua_pushinteger(L, ctx?.player ?? card.controller);
   pushGroupTable(L, ctx?.eventCard ? [ctx.eventCard.uid] : []);
-  lua.lua_pushinteger(L, ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
-  lua.lua_pushinteger(L, 0);
+  lua.lua_pushinteger(L, chainLink?.player ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
+  lua.lua_pushinteger(L, chainLink ? hostState.session.state.chain.length : 0);
   pushRelatedEffectTable(L, hostState);
   lua.lua_pushinteger(L, ctx?.eventCard?.reason ?? 0);
-  lua.lua_pushinteger(L, ctx?.eventCard?.reasonPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
+  lua.lua_pushinteger(L, chainLink?.player ?? ctx?.eventCard?.reasonPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
   if (kind === "cost" || kind === "target") {
     lua.lua_pushinteger(L, ctx?.checkOnly ? 0 : 1);
     return 9;

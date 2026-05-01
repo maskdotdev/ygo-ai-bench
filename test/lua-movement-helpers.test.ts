@@ -893,6 +893,69 @@ describe("Lua movement helpers", () => {
     });
   });
 
+  it("loads Chaos Hats and hides listed Spell/Trap decoys through a chain replacement", () => {
+    const cards: DuelCardData[] = [
+      { code: "2372506", name: "Chaos Hats", kind: "trap", typeFlags: 0x4 },
+      { code: "100", name: "Listed Faceup Monster", kind: "monster", listedNames: ["33599853"] },
+      { code: "200", name: "Listed Decoy Spell", kind: "spell", typeFlags: 0x2, listedNames: ["33599853"] },
+      { code: "300", name: "Listed Decoy Trap", kind: "trap", typeFlags: 0x4, listedNames: ["33599853"] },
+      { code: "900", name: "Opponent Chain Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 116, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["900"] },
+      1: { main: ["2372506", "100", "200", "300"] },
+    });
+    startDuel(session);
+
+    const trap = session.state.cards.find((card) => card.code === "2372506");
+    const listedMonster = session.state.cards.find((card) => card.code === "100");
+    expect(trap).toBeDefined();
+    expect(listedMonster).toBeDefined();
+    moveDuelCard(session.state, trap!.uid, "spellTrapZone", 1);
+    trap!.faceUp = false;
+    moveDuelCard(session.state, listedMonster!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c900={}
+      function c900.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("opponent original operation")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "opponent-chain-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    const hats = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c2372506.lua", "utf8"), "c2372506.lua");
+    expect(hats.ok, hats.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const hatsAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.uid === trap!.uid);
+    expect(hatsAction).toBeDefined();
+    expect(applyResponse(session, hatsAction!).ok).toBe(true);
+
+    expect(host.messages).not.toContain("opponent original operation");
+    expect(session.state.cards.find((card) => card.uid === listedMonster!.uid)).toMatchObject({
+      location: "monsterZone",
+      faceUp: false,
+      position: "faceDownDefense",
+    });
+    const hiddenCodes = session.state.cards.filter((card) => card.location === "monsterZone" && !card.faceUp).map((card) => card.code).sort();
+    expect(hiddenCodes).toHaveLength(2);
+    expect(hiddenCodes).toContain("100");
+    expect(["200", "300"]).toContain(hiddenCodes.find((code) => code !== "100"));
+  });
+
   it("lets Lua scripts pay Ice Barrier discard costs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Discard Cost", kind: "monster" },
