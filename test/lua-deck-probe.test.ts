@@ -66,7 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Onomat Ryzeal Lua deck probe with local fallbacks", () => {
-  it("uses the local Bagooska fallback stub instead of reporting a missing script", () => {
+  it("uses the local Bagooska alias fallback instead of reporting a missing script", () => {
     const output = execFileSync(
       "node",
       [
@@ -81,8 +81,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Onomat Ryzeal Lua 
 
     expect(output).toContain("Metadata source: cards.cdb");
     expect(output).toContain("Local fallback scripts: 1");
-    expect(output).toContain("STUB c90590304.lua");
-    expect(output).toContain("Local fallback stubs: 1");
+    expect(output).toContain("FALLBACK c90590304.lua");
+    expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
