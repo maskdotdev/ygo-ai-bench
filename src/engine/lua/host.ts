@@ -24,8 +24,17 @@ export interface LuaScriptHost {
   loadScript(code: string, name: string): LuaScriptLoadResult;
   loadCardScript(cardCode: string | number, source: LuaScriptSource): LuaScriptLoadResult;
   registerInitialEffects(): number;
+  registerInitialEffectsDetailed(): LuaInitialEffectRegistrationResult[];
   getGlobalString(name: string): string | undefined;
   getGlobalNumber(name: string): number | undefined;
+}
+
+export interface LuaInitialEffectRegistrationResult {
+  code: string;
+  uid: string;
+  ok: boolean;
+  skipped?: boolean;
+  error?: string;
 }
 
 export interface LuaScriptSource {
@@ -121,6 +130,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     },
   };
   lualib.luaL_openlibs(L);
+  installTracebackHandler(L);
   installConstants(L);
   installDebugApi(L, hostState.messages);
   installAuxApi(L, readLuaError, session);
@@ -129,38 +139,29 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   installCardApi(L, session, hostState, (card, luaEffect, state) => toDuelEffect(card, luaEffect, state, hostState));
   installCardProcedureApi(L, readLuaError);
   installGroupApi(L, hostState, session);
+  installGetIdCompatibilityApi(L, hostState);
 
   return {
     messages: hostState.messages,
     loadScript(code, name) {
-      return runLuaScript(L, code, name);
+      return runLuaCardScript(L, hostState, code, name);
     },
     loadCardScript(cardCode, source) {
       const name = scriptFilenameForCard(cardCode);
       const code = source.readScript(name);
       if (code === undefined) return { ok: false, name, error: `Script ${name} was not found` };
-      return runLuaScript(L, code, name);
+      return runLuaCardScript(L, hostState, code, name);
     },
     registerInitialEffects() {
       let count = 0;
-      for (const card of session.state.cards) {
-        lua.lua_getglobal(L, to_luastring(`c${card.code}`));
-        if (!lua.lua_istable(L, -1)) {
-          lua.lua_pop(L, 1);
-          continue;
-        }
-        lua.lua_getfield(L, -1, to_luastring("initial_effect"));
-        if (!lua.lua_isfunction(L, -1)) {
-          lua.lua_pop(L, 2);
-          continue;
-        }
-        pushCardTable(L, card.uid);
-        const status = lua.lua_pcall(L, 1, 0, 0);
-        lua.lua_pop(L, 1);
-        if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
-        count += 1;
+      for (const result of registerLuaInitialEffectsDetailed(L, session)) {
+        if (result.error) throw new Error(result.error);
+        if (!result.skipped) count += 1;
       }
       return count;
+    },
+    registerInitialEffectsDetailed() {
+      return registerLuaInitialEffectsDetailed(L, session);
     },
     getGlobalString(name) {
       lua.lua_getglobal(L, to_luastring(name));
@@ -177,6 +178,73 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   };
 }
 
+function registerLuaInitialEffectsDetailed(L: unknown, session: DuelSession): LuaInitialEffectRegistrationResult[] {
+  const results: LuaInitialEffectRegistrationResult[] = [];
+  for (const card of session.state.cards) {
+    lua.lua_getglobal(L, to_luastring(`c${card.code}`));
+    if (!lua.lua_istable(L, -1)) {
+      lua.lua_pop(L, 1);
+      results.push({ code: card.code, uid: card.uid, ok: true, skipped: true });
+      continue;
+    }
+    lua.lua_getfield(L, -1, to_luastring("initial_effect"));
+    if (!lua.lua_isfunction(L, -1)) {
+      lua.lua_pop(L, 2);
+      results.push({ code: card.code, uid: card.uid, ok: true, skipped: true });
+      continue;
+    }
+    lua.lua_getglobal(L, to_luastring("__duel_call_initial_effect"));
+    lua.lua_insert(L, -2);
+    pushCardTable(L, card.uid);
+    const status = lua.lua_pcall(L, 2, 2, 0);
+    if (status !== lua.LUA_OK) {
+      const error = readLuaError(L);
+      lua.lua_pop(L, 1);
+      results.push({ code: card.code, uid: card.uid, ok: false, error });
+      continue;
+    }
+    const ok = Boolean(lua.lua_toboolean(L, -2));
+    if (!ok) {
+      const error = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) ?? "Lua script error" : readLuaError(L);
+      lua.lua_pop(L, 3);
+      results.push({ code: card.code, uid: card.uid, ok: false, error });
+      continue;
+    }
+    lua.lua_pop(L, 3);
+    results.push({ code: card.code, uid: card.uid, ok: true });
+  }
+  return results;
+}
+
+function installTracebackHandler(L: unknown): void {
+  const source = `
+    local function __duel_format_error_value(value, depth, seen)
+      local value_type=type(value)
+      if value_type~="table" then return tostring(value) end
+      if seen[value] then return "<cycle>" end
+      if depth<=0 then return tostring(value) end
+      seen[value]=true
+      local parts={}
+      for key,field in pairs(value) do
+        parts[#parts+1]=tostring(key) .. "=" .. __duel_format_error_value(field, depth-1, seen)
+      end
+      seen[value]=nil
+      table.sort(parts)
+      if #parts==0 then return tostring(value) end
+      return "{" .. table.concat(parts, ", ") .. "}"
+    end
+    function __duel_traceback(err)
+      return debug.traceback(__duel_format_error_value(err, 3, {}), 2)
+    end
+    function __duel_call_initial_effect(fn, card)
+      return xpcall(function() return fn(card) end, __duel_traceback)
+    end
+  `;
+  const status = lauxlib.luaL_loadbuffer(L, to_luastring(source), source.length, to_luastring("__duel_traceback.lua"));
+  if (status === lua.LUA_OK) lua.lua_pcall(L, 0, 0, 0);
+  else lua.lua_pop(L, 1);
+}
+
 function loadLuaScriptFile(L: unknown, hostState: LuaHostState, name: string, forced: boolean): LuaScriptLoadResult {
   if (!forced && hostState.loadedScripts.has(name)) return { ok: true, name };
   const code = hostState.scriptSource?.readScript(name);
@@ -189,8 +257,16 @@ function loadLuaScriptFile(L: unknown, hostState: LuaHostState, name: string, fo
   return result;
 }
 
+function runLuaCardScript(L: unknown, hostState: LuaHostState, code: string, name: string): LuaScriptLoadResult {
+  const previousCode = hostState.currentScriptCardCode;
+  hostState.currentScriptCardCode = cardCodeFromScriptName(name) ?? previousCode;
+  const result = runLuaScript(L, code, name);
+  hostState.currentScriptCardCode = previousCode;
+  return result;
+}
+
 function cardCodeFromScriptName(name: string): string | undefined {
-  return /^c(\d+)\.lua$/.exec(name)?.[1];
+  return /^c(\d+)\.lua$/.exec(name.split(/[\\/]/).at(-1) ?? name)?.[1];
 }
 
 function runLuaScript(L: unknown, code: string, name: string): LuaScriptLoadResult {
@@ -222,6 +298,28 @@ function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (st
   lua.lua_setfield(L, -2, to_luastring("GlobalEffect"));
   lua.lua_setglobal(L, to_luastring("Effect"));
   installEffectCompatibilityApi(L, readLuaError);
+}
+
+function installGetIdCompatibilityApi(L: unknown, hostState: LuaHostState): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const code = hostState.currentScriptCardCode;
+    if (!code) {
+      lua.lua_pushnil(state);
+      lua.lua_pushinteger(state, 0);
+      return 2;
+    }
+    const globalName = `c${code}`;
+    lua.lua_getglobal(state, to_luastring(globalName));
+    if (!lua.lua_istable(state, -1)) {
+      lua.lua_pop(state, 1);
+      lua.lua_newtable(state);
+      lua.lua_pushvalue(state, -1);
+      lua.lua_setglobal(state, to_luastring(globalName));
+    }
+    lua.lua_pushinteger(state, Number(code));
+    return 2;
+  });
+  lua.lua_setglobal(L, to_luastring("GetID"));
 }
 
 function installEffectCompatibilityApi(L: unknown, readLuaError: (state: unknown) => string): void {
@@ -271,9 +369,34 @@ function installEffectCompatibilityApi(L: unknown, readLuaError: (state: unknown
 }
 
 function readLuaError(L: unknown): string {
+  const tableMessage = readLuaErrorTableMessage(L);
+  if (tableMessage) {
+    lua.lua_pop(L, 1);
+    return tableMessage;
+  }
+  if (lua.lua_isstring(L, -1)) {
+    const message = lua.lua_tojsstring(L, -1) ?? "Lua script error";
+    lua.lua_pop(L, 1);
+    return message;
+  }
+  lauxlib.luaL_tolstring(L, -1);
   const message = lua.lua_tojsstring(L, -1) ?? "Lua script error";
-  lua.lua_pop(L, 1);
+  lua.lua_pop(L, 2);
   return message;
+}
+
+function readLuaErrorTableMessage(L: unknown): string | undefined {
+  if (!lua.lua_istable(L, -1)) return undefined;
+  const absoluteIndex = lua.lua_gettop(L);
+  const fields: string[] = [];
+  lua.lua_pushnil(L);
+  while (lua.lua_next(L, absoluteIndex) !== 0) {
+    const key = lua.lua_tojsstring(L, -2) ?? (lua.lua_isnumber(L, -2) ? String(lua.lua_tonumber(L, -2)) : undefined);
+    const value = lua.lua_tojsstring(L, -1) ?? (lua.lua_isnumber(L, -1) ? String(lua.lua_tonumber(L, -1)) : undefined);
+    if (key && value) fields.push(`${key}: ${value}`);
+    lua.lua_pop(L, 1);
+  }
+  return fields.length ? fields.join("; ") : undefined;
 }
 
 function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): void {
@@ -491,9 +614,13 @@ function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): vo
 
 function pushEffectMethod(L: unknown, effects: Map<number, LuaEffectRecord>, name: string, handler: (state: unknown, effect: LuaEffectRecord) => number): void {
   lua.lua_pushjsfunction(L, (state: unknown) => {
-    const effectId = readTableNumberField(state, 1, "__effect_id");
-    const effect = effectId === undefined ? undefined : effects.get(effectId);
-    return effect ? handler(state, effect) : 0;
+    try {
+      const effectId = readTableNumberField(state, 1, "__effect_id");
+      const effect = effectId === undefined ? undefined : effects.get(effectId);
+      return effect ? handler(state, effect) : 0;
+    } catch (error) {
+      return lauxlib.luaL_error(state, to_luastring(error instanceof Error ? error.message : String(error)));
+    }
   });
   lua.lua_setfield(L, -2, to_luastring(name));
 }
@@ -631,7 +758,7 @@ function getEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef" 
 
 function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unknown, hostState: LuaHostState): DuelEffectDefinition {
   const event = luaEffectEvent(luaEffect.typeFlags, luaEffect.code);
-  const range = luaEffect.range ?? [card.location];
+  const range = luaEffect.range ?? luaEffectDefaultRange(card, luaEffect, event);
   const triggerEvent = triggerEventFromCode(luaEffect.code);
   if (!luaEffect.isGlobal) luaEffect.sourceUid = card.uid;
   return {
@@ -720,7 +847,16 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
   if ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) return "trigger";
   if ((typeFlags & 0x100) !== 0 || (typeFlags & 0x400) !== 0) return "quick";
   if ((typeFlags & 0x800) !== 0) return "continuous";
+  if ((typeFlags & 0x40) !== 0 || (typeFlags & 0x10) !== 0) return "ignition";
+  if ((typeFlags & (0x1 | 0x4 | 0x1000 | 0x2000 | 0x4000)) !== 0) return "continuous";
   return "ignition";
+}
+
+function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecord, event: DuelEffectDefinition["event"]): DuelLocation[] {
+  if (event === "continuous" || event === "summonProcedure" || event === "trigger") return [card.location];
+  if ((luaEffect.typeFlags & 0x10) !== 0 && (card.kind === "spell" || card.kind === "trap")) return ["hand", "spellTrapZone"];
+  if (card.kind === "spell" || card.kind === "trap") return ["spellTrapZone"];
+  return ["monsterZone"];
 }
 
 function luaEffectTriggerIsOptional(typeFlags: number): boolean {

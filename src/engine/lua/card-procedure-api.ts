@@ -4,6 +4,75 @@ const { lua, lauxlib, to_luastring } = fengari;
 
 export function installCardProcedureApi(L: unknown, readLuaError: (state: unknown) => string): void {
   const source = `
+    Fusion=Fusion or {}
+    function Fusion.AddProcMix(c,...)
+      local mt=c:GetMetatable(false)
+      if mt then mt.fusion_materials={...} end
+    end
+    function Fusion.AddProcFunRep(c,...)
+      local mt=c:GetMetatable(false)
+      if mt then mt.fusion_materials={...} end
+    end
+    function Fusion.CreateSummonEff(params,...)
+      local handler=type(params)=="table" and params.handler or params
+      local e=Effect.CreateEffect(handler)
+      if type(params)=="table" and params.desc then e:SetDescription(params.desc) end
+      e:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_FUSION_SUMMON)
+      e:SetType(EFFECT_TYPE_ACTIVATE)
+      e:SetCode(EVENT_FREE_CHAIN)
+      e:SetTarget(Fusion.SummonEffTG())
+      e:SetOperation(Fusion.SummonEffOP())
+      return e
+    end
+    function Fusion.SummonEffTG(...)
+      return function(e,tp,eg,ep,ev,re,r,rp,chk) return chk~=0 or true end
+    end
+    function Fusion.SummonEffOP(...)
+      return function(e,tp,eg,ep,ev,re,r,rp) return true end
+    end
+    function Fusion.OnFieldMat(f) return f end
+    function Fusion.BanishMaterial(...) return true end
+    function Fusion.IsMonsterFilter(f)
+      return function(c,...) return c:IsMonster() and (not f or f(c,...)) end
+    end
+    Ritual=Ritual or {}
+    function Ritual.CreateProc(params)
+      local handler=type(params)=="table" and params.handler or params
+      local e=Effect.CreateEffect(handler)
+      if type(params)=="table" and params.desc then e:SetDescription(params.desc) end
+      e:SetCategory(CATEGORY_SPECIAL_SUMMON)
+      e:SetType(EFFECT_TYPE_ACTIVATE)
+      e:SetCode(EVENT_FREE_CHAIN)
+      e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk) return chk~=0 or true end)
+      e:SetOperation(function() return true end)
+      return e
+    end
+    Link=Link or {}
+    function Link.AddProcedure(c,...)
+      local mt=c:GetMetatable(false)
+      if mt then mt.link_materials={...} end
+    end
+    Xyz=Xyz or {}
+    function Xyz.AddProcedure(c,...)
+      local mt=c:GetMetatable(false)
+      if mt then mt.xyz_materials={...} end
+    end
+    Synchro=Synchro or {}
+    function Synchro.AddProcedure(c,...)
+      local mt=c:GetMetatable(false)
+      if mt then mt.synchro_materials={...} end
+    end
+    Cost=Cost or {}
+    function Cost.DetachFromSelf(count)
+      return function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return true end
+        return true
+      end
+    end
+    function Card.SetSPSummonOnce(c,id)
+      local mt=c:GetMetatable(false)
+      if mt then mt.spsummon_once=id end
+    end
     function Card.AddCannotBeSpecialSummoned(c)
       local e0=Effect.CreateEffect(c)
       e0:SetType(EFFECT_TYPE_SINGLE)

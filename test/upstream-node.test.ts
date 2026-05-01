@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import { createCardReader, createUpstreamSourceConfig, normalizeCdbRows } from "#engine/data-loaders.js";
 import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
@@ -44,6 +45,54 @@ describe("Node upstream workspace loader", () => {
     expect(result).toEqual({ ok: true, name: "c100.lua" });
     expect(host.getGlobalString("loaded_name")).toBe("fixture script");
     expect(host.messages).toContain("fixture script");
+  });
+
+  it("prefers Project Ignis official scripts before root scripts", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script", "official"), { recursive: true });
+    fs.writeFileSync(path.join(root, "script", "c100.lua"), "loaded_name = 'root script'\n", "utf8");
+    fs.writeFileSync(path.join(root, "script", "official", "c100.lua"), "loaded_name = 'official script'\n", "utf8");
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+
+    expect(workspace.readCardScript(100)).toContain("official script");
+    expect(workspace.scriptPaths("c100.lua").map((candidate) => path.relative(root, candidate))).toEqual([
+      path.join("script", "official", "c100.lua"),
+      path.join("script", "c100.lua"),
+    ]);
+  });
+
+  it("loads card metadata from a local CDB database", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "cdb"), { recursive: true });
+    const databasePath = path.join(root, "cdb", "cards.cdb");
+    const sqlite = [
+      "create table datas(id integer, alias integer, setcode integer, type integer, atk integer, def integer, level integer, race integer, attribute integer);",
+      "create table texts(id integer, name text);",
+      "insert into datas values(100,0,4660,33,2500,2100,7,2,32);",
+      "insert into texts values(100,'Dark Metadata Probe');",
+    ].join("");
+    expect(() => fs.rmSync(databasePath, { force: true })).not.toThrow();
+    execFileSync("sqlite3", [databasePath, sqlite]);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+
+    expect(workspace.readDatabaseCards("cards.cdb")).toEqual([
+      expect.objectContaining({
+        code: "100",
+        name: "Dark Metadata Probe",
+        kind: "monster",
+        typeFlags: 33,
+        attack: 2500,
+        defense: 2100,
+        level: 7,
+        race: 2,
+        attribute: 32,
+        setcodes: [4660],
+      }),
+    ]);
   });
 
   it("registers a basic Lua ignition effect into the duel engine", () => {

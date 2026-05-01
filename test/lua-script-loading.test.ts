@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost, type LuaScriptSource } from "#lua/host.js";
 
@@ -81,6 +81,163 @@ describe("Lua script loading", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toEqual(["loaded c100", "loaded c200", "card scripts true/true/true/true"]);
+  });
+
+  it("supports Project Ignis GetID card script bindings", () => {
+    const session = createDuel({
+      seed: 95,
+      startingHandSize: 1,
+      cardReader: createCardReader([{ code: "100", name: "GetID Probe", kind: "monster" }]),
+    });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local s,id=GetID()
+      function s.initial_effect(c)
+        Debug.Message("getid " .. id .. "/" .. tostring(s==c100))
+      end
+      `,
+      "c100.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(host.messages).toContain("getid 100/true");
+  });
+
+  it("formats Lua table errors with their fields and traceback", () => {
+    const session = createDuel({
+      seed: 96,
+      startingHandSize: 1,
+      cardReader: createCardReader([{ code: "100", name: "Error Probe", kind: "monster" }]),
+    });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local s,id=GetID()
+      function s.initial_effect(c)
+        error({api="Missing.Helper", detail={card=id}})
+      end
+      `,
+      "c100.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    const registration = host.registerInitialEffectsDetailed()[0]!;
+
+    expect(registration.ok).toBe(false);
+    expect(registration.error).toContain("api=Missing.Helper");
+    expect(registration.error).toContain("card=100");
+    expect(registration.error).toContain("stack traceback");
+  });
+
+  it("exposes newer Project Ignis timing constants and card procedure methods", () => {
+    const session = createDuel({
+      seed: 97,
+      startingHandSize: 1,
+      cardReader: createCardReader([{ code: "100", name: "Procedure Probe", kind: "monster" }]),
+    });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local s,id=GetID()
+      function s.initial_effect(c)
+        Debug.Message("timing " .. TIMINGS_CHECK_MONSTER_E .. "/" .. TIMING_SUMMON)
+        c:SetSPSummonOnce(id)
+      end
+      `,
+      "c100.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(host.messages).toContain("timing 480/64");
+  });
+
+  it("supports Project Ignis reveal cost helpers", () => {
+    const session = createDuel({
+      seed: 99,
+      startingHandSize: 1,
+      cardReader: createCardReader([
+        { code: "100", name: "Reveal Source", kind: "monster" },
+        { code: "200", name: "Reveal Extra", kind: "extra" },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100"], extra: ["200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local s,id=GetID()
+      function s.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetCost(Cost.Reveal(function(tc) return tc:IsCode(200) end,nil,1,1,function(e,tp,g)
+          Debug.Message("revealed " .. g:GetCount() .. "/" .. g:GetFirst():GetCode())
+        end,LOCATION_EXTRA))
+        c:RegisterEffect(e)
+      end
+      `,
+      "c100.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(host.messages).toContain("revealed 1/200");
+  });
+
+  it("does not expose range-less monster setup effects from the deck as activations", () => {
+    const session = createDuel({
+      seed: 98,
+      startingHandSize: 0,
+      cardReader: createCardReader([{ code: "100", name: "Setup Probe", kind: "monster" }]),
+    });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local s,id=GetID()
+      function s.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        c:RegisterEffect(e)
+        local e2=Effect.CreateEffect(c)
+        e2:SetType(EFFECT_TYPE_IGNITION)
+        c:RegisterEffect(e2)
+      end
+      `,
+      "c100.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(getLegalActions(session, 0).some((action) => action.type === "activateEffect")).toBe(false);
   });
 
   it("lets Lua scripts read card script metatables", () => {

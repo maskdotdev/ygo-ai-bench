@@ -3,11 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "imports": {
+    "#cards/*.js": "./src/cards/*.ts",
+    "#duel/*.js": "./src/engine/duel/*.ts",
+    "#engine/*.js": "./src/engine/*.ts",
+    "#lua/*.js": "./src/engine/lua/*.ts",
+    "#lua/duel-api/*.js": "./src/engine/lua/duel-api/*.ts",
+    "#playtest/*.js": "./src/playtest/*.ts"
+  },
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "build": "vite build && vite build --config vite.bridge.config.ts",
     "dev": "vite --host 127.0.0.1",
+    "setup:upstream": "node tools/setup-upstream.mjs",
+    "probe:lua-deck": "node --experimental-transform-types tools/probe-lua-deck.ts",
     "scan:lua-api": "node tools/scan-lua-api-usage.mjs"
   },
   "devDependencies": {

@@ -12,6 +12,30 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       if chk==0 then return c and c:IsAbleToRemoveAsCost() end
       Duel.Remove(c,POS_FACEUP,REASON_COST)
     end
+    function Cost.Reveal(filter,other,min,max,op,location)
+      local min_type=type(min)
+      local max_type=type(max)
+      location=location or LOCATION_HAND
+      local function filter_final(c,e,tp)
+        return (not filter or filter(c,e,tp)) and not c:IsPublic()
+      end
+      return function(e,tp,eg,ep,ev,re,r,rp,chk)
+        local min_count=(min_type=="function" and min(e,tp)) or (min==nil and 1) or min
+        local max_count=(max_type=="function" and max(e,tp)) or (max==nil and min_count) or max
+        local exclude=other and e:GetHandler() or nil
+        if chk==0 then
+          return min_count>0 and max_count>=min_count
+            and Duel.IsExistingMatchingCard(filter_final,tp,location,0,min_count,exclude,e,tp)
+        end
+        Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_CONFIRM)
+        local g=Duel.SelectMatchingCard(tp,filter_final,tp,location,0,min_count,max_count,exclude,e,tp)
+        Duel.ConfirmCards(1-tp,g)
+        if g:IsExists(Card.IsLocation,1,nil,LOCATION_HAND) then Duel.ShuffleHand(tp) end
+        if g:IsExists(Card.IsLocation,1,nil,LOCATION_DECK) then Duel.ShuffleDeck(tp) end
+        if g:IsExists(Card.IsLocation,1,nil,LOCATION_EXTRA) then Duel.ShuffleExtra(tp) end
+        if op then op(e,tp,g) end
+      end
+    end
     aux.bfgcost=Cost.SelfBanish
     aux.RitualSummoningLevel=nil
     function aux.dogcon(e,tp,eg,ep,ev,re,r,rp)
