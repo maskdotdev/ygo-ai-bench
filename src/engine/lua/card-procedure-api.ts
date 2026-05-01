@@ -4,7 +4,8 @@ const { lua, lauxlib, to_luastring } = fengari;
 
 export function installCardProcedureApi(L: unknown, readLuaError: (state: unknown) => string): void {
   const source = `
-    Fusion=Fusion or {}
+    aux.FusionProcedure=aux.FusionProcedure or Fusion or {}
+    Fusion=aux.FusionProcedure
     function Fusion.AddProcMix(c,...)
       local mt=c:GetMetatable(false)
       if mt then mt.fusion_materials={...} end
@@ -67,7 +68,8 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
     function Fusion.IsMonsterFilter(f)
       return function(c,...) return c:IsMonster() and (not f or f(c,...)) end
     end
-    Ritual=Ritual or {}
+    aux.RitualProcedure=aux.RitualProcedure or Ritual or {}
+    Ritual=aux.RitualProcedure
     function Ritual.CreateProc(params)
       local handler=type(params)=="table" and params.handler or params
       local e=Effect.CreateEffect(handler)
@@ -103,17 +105,20 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       c:RegisterEffect(e)
       return e
     end
-    Link=Link or {}
+    aux.LinkProcedure=aux.LinkProcedure or Link or {}
+    Link=aux.LinkProcedure
     function Link.AddProcedure(c,...)
       local mt=c:GetMetatable(false)
       if mt then mt.link_materials={...} end
     end
-    Xyz=Xyz or {}
+    aux.XyzProcedure=aux.XyzProcedure or Xyz or {}
+    Xyz=aux.XyzProcedure
     function Xyz.AddProcedure(c,...)
       local mt=c:GetMetatable(false)
       if mt then mt.xyz_materials={...} end
     end
-    Synchro=Synchro or {}
+    aux.SynchroProcedure=aux.SynchroProcedure or Synchro or {}
+    Synchro=aux.SynchroProcedure
     function Synchro.AddProcedure(c,...)
       local mt=c:GetMetatable(false)
       if mt then mt.synchro_materials={...} end
@@ -161,6 +166,99 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       return function(target,scard,sumtype,tp)
         return target:IsNotTuner(scard,tp) and target:IsSummonCode(scard,sumtype,tp,table.unpack(codes))
       end
+    end
+    FLAG_ARMOR=FLAG_ARMOR or 110000103
+    TYPE_PLUSMINUS=TYPE_PLUSMINUS or 0x60000000
+    aux.ArmorProcedure=aux.ArmorProcedure or Armor or {}
+    Armor=aux.ArmorProcedure
+    function Armor.CannotAttack(e)
+      return Duel.HasFlagEffect(e:GetHandlerPlayer(),FLAG_ARMOR) and Duel.GetFlagEffectLabel(e:GetHandlerPlayer(),FLAG_ARMOR)~=e:GetHandler():GetFieldID()
+    end
+    function Armor.AttackRegister(e,tp,eg,ep,ev,re,r,rp)
+      Duel.RegisterFlagEffect(tp,FLAG_ARMOR,RESET_PHASE|PHASE_END,0,1,e:GetHandler():GetFieldID())
+    end
+    function Armor.RedirectAttackCondition(e,tp,eg,ep,ev,re,r,rp)
+      local at=Duel.GetAttackTarget()
+      return r~=REASON_REPLACE and at and at:IsFaceup() and at:IsControler(tp) and at:IsType(TYPE_ARMOR or 0)
+    end
+    function Armor.RedirectAttackFilter(c,code)
+      return c:IsFaceup() and c:IsType(TYPE_ARMOR or 0) and not c:IsCode(code)
+    end
+    function Armor.RedirectAttackTarget(e,tp,eg,ep,ev,re,r,rp,chk,chkc)
+      local at=Duel.GetAttackTarget()
+      local code=at and at:GetCode() or 0
+      if chkc then return chkc:IsLocation(LOCATION_MZONE) and chkc:IsControler(tp) and chkc~=at and Armor.RedirectAttackFilter(chkc,code) end
+      if chk==0 then return at and Duel.IsExistingTarget(Armor.RedirectAttackFilter,tp,LOCATION_MZONE,0,1,at,code) end
+      Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATTACKTARGET)
+      Duel.SelectTarget(tp,Armor.RedirectAttackFilter,tp,LOCATION_MZONE,0,1,1,at,code)
+    end
+    function Armor.RedirectAttackOperation(e,tp,eg,ep,ev,re,r,rp)
+      local tc=Duel.GetFirstTarget()
+      if tc and tc:IsRelateToEffect(e) then Duel.ChangeAttackTarget(tc) end
+    end
+    function Armor.AddProcedure(c)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetCode(EFFECT_CANNOT_ATTACK_ANNOUNCE)
+      e1:SetCondition(Armor.CannotAttack)
+      c:RegisterEffect(e1)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
+      e2:SetCode(EVENT_ATTACK_ANNOUNCE)
+      e2:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
+      e2:SetOperation(Armor.AttackRegister)
+      c:RegisterEffect(e2)
+      local e3=Effect.CreateEffect(c)
+      e3:SetDescription(549)
+      e3:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)
+      e3:SetCode(EVENT_BE_BATTLE_TARGET)
+      e3:SetProperty(EFFECT_FLAG_CARD_TARGET)
+      e3:SetRange(LOCATION_MZONE)
+      e3:SetCondition(Armor.RedirectAttackCondition)
+      e3:SetTarget(Armor.RedirectAttackTarget)
+      e3:SetOperation(Armor.RedirectAttackOperation)
+      c:RegisterEffect(e3)
+      return e1,e2,e3
+    end
+    aux.PlusMinusProcedure=aux.PlusMinusProcedure or PlusMinus or {}
+    PlusMinus=aux.PlusMinusProcedure
+    function Card.IsPlusOrMinus(c)
+      local tpe=c:GetType()&(TYPE_PLUSMINUS or 0)
+      return tpe~=0 and tpe~=(TYPE_PLUSMINUS or 0)
+    end
+    function PlusMinus.nacon(e,tp,eg,ep,ev,re,r,rp)
+      local c=e:GetHandler()
+      local bc=c.GetBattleTarget and c:GetBattleTarget() or Duel.GetAttackTarget()
+      return c:IsPlusOrMinus() and bc and bc:IsFaceup() and bc:IsType(c:GetType()&(TYPE_PLUSMINUS or 0))
+    end
+    function PlusMinus.naop(e,tp,eg,ep,ev,re,r,rp)
+      Duel.NegateAttack()
+    end
+    function PlusMinus.attractcon(e)
+      return e:GetHandler():IsPlusOrMinus()
+    end
+    function PlusMinus.attract(e,c)
+      local handler=e:GetHandler()
+      return c:IsFaceup() and c:IsType(handler:GetType()&(TYPE_PLUSMINUS or 0))
+    end
+    function PlusMinus.AddMagneticProcedure(c)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+      e1:SetCode(EVENT_ADJUST)
+      e1:SetRange(LOCATION_MZONE)
+      e1:SetCondition(PlusMinus.nacon)
+      e1:SetOperation(PlusMinus.naop)
+      c:RegisterEffect(e1)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_SINGLE)
+      e2:SetCode(EFFECT_MUST_ATTACK)
+      e2:SetCondition(PlusMinus.attractcon)
+      c:RegisterEffect(e2)
+      local e3=e2:Clone()
+      e3:SetCode(EFFECT_MUST_ATTACK_MONSTER)
+      e3:SetValue(PlusMinus.attract)
+      c:RegisterEffect(e3)
+      return e1,e2,e3
     end
     Pendulum=Pendulum or aux.PendulumProcedure or {}
     aux.PendulumProcedure=Pendulum
@@ -512,7 +610,8 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       c:RegisterEffect(e1)
       return e1
     end
-    Maximum=Maximum or {}
+    aux.MaximumProcedure=aux.MaximumProcedure or Maximum or {}
+    Maximum=aux.MaximumProcedure
     function Maximum.centerCon(e)
       return e:GetHandler():IsMaximumModeCenter()
     end

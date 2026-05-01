@@ -127,6 +127,8 @@ describe("Lua summon and release helpers", () => {
         Fusion.AddProcMixN(c,true,true,aux.FilterBoolFunctionEx(Card.IsRace,RACE_FIEND),2)
         Fusion.AddContactProc(c,function() return Group.CreateGroup() end,function() return true end,function() return true end)
         Synchro.AddProcedure(c,nil,1,1,Synchro.NonTuner(nil),1,99)
+        local armor1,armor2,armor3=Armor.AddProcedure(c)
+        local magnetic1,magnetic2,magnetic3=PlusMinus.AddMagneticProcedure(c)
         Auxiliary.addLizardCheck(c)
         local e=Effect.CreateEffect(c)
         e:SetType(EFFECT_TYPE_IGNITION)
@@ -134,6 +136,8 @@ describe("Lua summon and release helpers", () => {
         c:RegisterEffect(e)
         local wrapped=Fusion.CheckWithHandler(aux.FALSE)
         Debug.Message("procedure helpers " .. tostring(wrapped(c,{GetHandler=function() return c end})) .. "/" .. tostring(Synchro.NonTuner(nil)(c,c,0,0)))
+        Debug.Message("procedure namespaces " .. tostring(aux.FusionProcedure==Fusion) .. "/" .. tostring(aux.RitualProcedure==Ritual) .. "/" .. tostring(aux.SynchroProcedure==Synchro) .. "/" .. tostring(aux.XyzProcedure==Xyz) .. "/" .. tostring(aux.LinkProcedure==Link) .. "/" .. tostring(aux.MaximumProcedure==Maximum))
+        Debug.Message("unofficial procedures " .. tostring(aux.ArmorProcedure==Armor) .. "/" .. armor1:GetCode() .. "/" .. armor3:GetCode() .. "/" .. tostring(aux.PlusMinusProcedure==PlusMinus) .. "/" .. magnetic2:GetCode() .. "/" .. magnetic3:GetCode())
       end
       `,
       "c100.lua",
@@ -142,6 +146,8 @@ describe("Lua summon and release helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     expect(host.messages).toContain("procedure helpers true/true");
+    expect(host.messages).toContain("procedure namespaces true/true/true/true/true/true");
+    expect(host.messages).toContain("unofficial procedures true/86/1131/true/191/344");
   });
 
   it("lets Lua scripts register temporary and continuous Lizard checks", () => {
