@@ -4,6 +4,30 @@ const { lua, lauxlib, to_luastring } = fengari;
 
 export function installEffectCompatibilityApi(L: unknown, readLuaError: (state: unknown) => string): void {
   const source = `
+    Cost=Cost or {}
+    __duel_self_discard_costs=__duel_self_discard_costs or setmetatable({}, {__mode="k"})
+    __duel_self_changepos_costs=__duel_self_changepos_costs or setmetatable({}, {__mode="k"})
+    function Cost.SelfDiscard(e,tp,eg,ep,ev,re,r,rp,chk)
+      local c=e:GetHandler()
+      if chk==0 then return c and c:IsDiscardable() end
+      Duel.SendtoGrave(c,REASON_DISCARD|REASON_COST)
+    end
+    __duel_self_discard_costs[Cost.SelfDiscard]=true
+    function Cost.SelfDiscardToGrave(e,tp,eg,ep,ev,re,r,rp,chk)
+      local c=e:GetHandler()
+      if chk==0 then return c and c:IsDiscardable() and c:IsAbleToGraveAsCost() end
+      Duel.SendtoGrave(c,REASON_DISCARD|REASON_COST)
+    end
+    __duel_self_discard_costs[Cost.SelfDiscardToGrave]=true
+    function Cost.SelfChangePosition(position)
+      local cost=function(e,tp,eg,ep,ev,re,r,rp,chk)
+        local c=e:GetHandler()
+        if chk==0 then return c and c:IsCanChangePosition() and not c:IsPosition(position) and ((position&POS_FACEDOWN)==0 or c:IsCanTurnSet()) end
+        Duel.ChangePosition(c,position)
+      end
+      __duel_self_changepos_costs[cost]=true
+      return cost
+    end
     function Effect.CreateMysteruneQPEffect(c,id,uniquecat,uniquetg,uniqueop,rmcount,uniqueprop,uniquecode)
       uniquecat=uniquecat or 0
       rmcount=rmcount or 0
@@ -49,6 +73,14 @@ export function installEffectCompatibilityApi(L: unknown, readLuaError: (state: 
     function Effect.HasDetachCost(e)
       local cost=e:GetCost()
       return cost~=nil and __duel_detach_costs~=nil and __duel_detach_costs[cost] or false
+    end
+    function Effect.HasSelfDiscardCost(e)
+      local cost=e:GetCost()
+      return cost~=nil and __duel_self_discard_costs[cost] or false
+    end
+    function Effect.HasSelfChangePositionCost(e)
+      local cost=e:GetCost()
+      return cost~=nil and __duel_self_changepos_costs[cost] or false
     end
     local create_effect,global_effect=Effect.CreateEffect,Effect.GlobalEffect
     function Effect.CreateEffect(c) return setmetatable(create_effect(c),{__index=Effect}) end

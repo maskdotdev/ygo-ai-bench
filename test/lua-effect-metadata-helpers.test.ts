@@ -409,11 +409,17 @@ describe("Lua effect metadata helpers", () => {
       detach:SetCost(Cost.DetachFromSelf(1))
       local remain=Effect.CreateEffect(c)
       remain:SetCost(aux.RemainFieldCost)
+      local discard=Effect.CreateEffect(c)
+      discard:SetCost(Cost.SelfDiscard)
+      local change_pos=Effect.CreateEffect(c)
+      change_pos:SetCost(Cost.SelfChangePosition(POS_FACEUP_DEFENSE))
       local custom=Effect.CreateEffect(c)
       custom:SetCost(function() return true end)
       Debug.Message("cost families detach " .. tostring(detach:HasDetachCost()) .. "/" .. tostring(detach:HasRemainFieldCost()))
       Debug.Message("cost families remain " .. tostring(remain:HasDetachCost()) .. "/" .. tostring(remain:HasRemainFieldCost()))
-      Debug.Message("cost families custom " .. tostring(custom:HasDetachCost()) .. "/" .. tostring(custom:HasRemainFieldCost()))
+      Debug.Message("cost families discard " .. tostring(discard:HasSelfDiscardCost()) .. "/" .. tostring(discard:HasSelfChangePositionCost()))
+      Debug.Message("cost families change position " .. tostring(change_pos:HasSelfDiscardCost()) .. "/" .. tostring(change_pos:HasSelfChangePositionCost()))
+      Debug.Message("cost families custom " .. tostring(custom:HasDetachCost()) .. "/" .. tostring(custom:HasRemainFieldCost()) .. "/" .. tostring(custom:HasSelfDiscardCost()) .. "/" .. tostring(custom:HasSelfChangePositionCost()))
       `,
       "effect-cost-families.lua",
     );
@@ -421,7 +427,9 @@ describe("Lua effect metadata helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("cost families detach true/false");
     expect(host.messages).toContain("cost families remain false/true");
-    expect(host.messages).toContain("cost families custom false/false");
+    expect(host.messages).toContain("cost families discard true/false");
+    expect(host.messages).toContain("cost families change position false/true");
+    expect(host.messages).toContain("cost families custom false/false/false/false");
   });
 
   it("registers Lua normal summon and set procedure effects", () => {
