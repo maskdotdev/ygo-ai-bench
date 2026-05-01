@@ -157,6 +157,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsIvy", session, (card) => Boolean(card && isAnimeArchetype(card, ivySetcodes, ivyCodes)));
   pushBooleanGetter(L, "IsJester", session, (card) => Boolean(card && isAnimeArchetype(card, jesterSetcodes, jesterCodes)));
   pushBooleanGetter(L, "IsJutte", session, (card) => Boolean(card && isAnimeArchetype(card, jutteSetcodes, jutteCodes)));
+  pushBooleanGetter(L, "IsKangaroo", session, (card) => Boolean(card && isAnimeArchetype(card, [], kangarooCodes)));
+  pushBooleanGetter(L, "IsKing", session, (card) => Boolean(card && isAnimeArchetype(card, kingSetcodes, kingCodes) && !isAnimeArchetype(card, championSetcodes, championCodes)));
   pushBooleanGetter(L, "IsMantis", session, (card) => Boolean(card && isAnimeArchetype(card, mantisSetcodes, mantisCodes)));
   pushBooleanGetter(L, "IsMask", session, (card) => Boolean(card && isAnimeArchetype(card, maskSetcodes, maskCodes)));
   pushBooleanGetter(L, "IsMelodiousSongtress", session, (card) => Boolean(card && isAnimeArchetype(card, melodiousSongtressSetcodes, melodiousSongtressCodes)));
@@ -496,6 +498,20 @@ const jesterSetcodes = [0x52c] as const;
 const jesterCodes = ["94703021", "72992744", "8487449", "88722973"] as const;
 const jutteSetcodes = [0x52d] as const;
 const jutteCodes = ["60410769"] as const;
+const kangarooCodes = ["78613627", "95789089", "511001684"] as const;
+const kingSetcodes = [0x52f, 0xf8, 0x81, 0xda] as const;
+const kingCodes = [
+  "60990740", "13662809", "44223284", "17573739", "89832901", "41925941", "78651105", "19028307", "99426834", "16768387", "6214884", "67136033",
+  "2926176", "21686473", "47198668", "56619314", "74069667", "92536468", "73360025", "53375573", "53982768", "72426662", "29424328", "11250655",
+  "68400115", "40732515", "57274196", "45425051", "10833828", "18710707", "30646525", "19012345", "5818798", "22910685", "47879985", "19748583",
+  "64514622", "14462257", "30459350", "61740673", "90434657", "3056267", "20438745", "83986578", "79109599", "24590232", "55818463", "46700124",
+  "70406920", "89222931", "96938777", "21223277", "54702678", "34408491", "96381979", "32995007", "30741334", "44852429", "8463720", "15939229",
+  "74583607", "987311", "71612253", "82956492", "51497409", "3758046", "75326861", "70583986", "29515122", "28290705", "27337596", "62242678",
+  "35058857", "47387961", "6901008", "18891691", "63571750", "89959682", "43791861", "51371017", "82213171", "10071456", "29155212",
+  "4179849", "71411377", "5901497", "58477767", "19254117", "33950246", "51452091", "16509093", "93016201", "26586849", "56058888", "72405967",
+  "86742443", "86327225", "61370518", "88307361", "29762407", "80955168", "72709014", "24857466", "52589809", "5309481", "10613952", "84025439",
+  "38180759", "22858242", "85457355", "4997565", "19299793",
+] as const;
 
 const redSetcodes = [0x543, 0x3b, 0x1045] as const;
 const redCodes = [

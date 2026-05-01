@@ -247,6 +247,8 @@ describe("Lua field and query helpers", () => {
       { method: "IsIvy", code: "30069398", setcode: 0x52b },
       { method: "IsJester", code: "94703021", setcode: 0x52c },
       { method: "IsJutte", code: "60410769", setcode: 0x52d },
+      { method: "IsKangaroo", code: "78613627", setcode: 0 },
+      { method: "IsKing", code: "60990740", setcode: 0x52f },
       { method: "IsMantis", code: "58818411", setcode: 0x535 },
       { method: "IsMask", code: "29549364", setcode: 0x583 },
       { method: "IsStarvingVenemy", code: "22070401", setcode: 0x576 },
