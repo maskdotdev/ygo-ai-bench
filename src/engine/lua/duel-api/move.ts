@@ -672,6 +672,8 @@ function readMoveReason(L: unknown, index: number, extraReason: number): number 
 
 function assignReasonCard(card: DuelCardInstance, hostState: LuaDuelMoveApiHostState): void {
   if (hostState.activeContext?.source) card.reasonCardUid = hostState.activeContext.source.uid;
+  const effectId = Number(hostState.activeContext?.chainLink?.effectId.match(/^lua-(\d+)/)?.[1]);
+  if (Number.isFinite(effectId)) card.reasonEffectId = effectId;
 }
 
 function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, position: CardPosition): void {

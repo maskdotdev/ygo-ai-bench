@@ -321,6 +321,20 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsReasonCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    if (card?.reasonEffectId === undefined) lua.lua_pushnil(state);
+    else hostState.pushEffectTable(state, card.reasonEffectId);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetReasonEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const effectId = readTableNumberField(state, 2, "__effect_id");
+    lua.lua_pushboolean(state, Boolean(card && effectId !== undefined && card.reasonEffectId === effectId));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsReasonEffect"));
   pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
   pushNumberMatcher(L, "IsReasonPlayer", session, (card, requested) => (card.reasonPlayer ?? card.controller) === normalizePlayer(requested));
   pushNumberGetter(L, "GetTurnID", session, (card) => card?.turnId ?? 0);

@@ -1,8 +1,10 @@
 import fengari from "fengari";
+import { getDuelFlagEffectLabel } from "#duel/flags.js";
 import { readTableStringField } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelPhase, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
+const cardSalamangreatSanctuary = 1295111;
 
 export function installCardSummonApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
@@ -21,6 +23,7 @@ export function installCardSummonApi(L: unknown, session: DuelSession): void {
   pushSummonTypePredicate(L, "IsXyzSummoned", session, 0x49000000);
   pushSummonTypePredicate(L, "IsPendulumSummoned", session, 0x4a000000);
   pushSummonTypePredicate(L, "IsLinkSummoned", session, 0x4c000000);
+  pushBooleanGetter(L, "IsReincarnationSummoned", session, (card) => isReincarnationSummoned(session, card));
 }
 
 function pushSummonTypePredicate(L: unknown, fieldName: string, session: DuelSession, summonMask: number): void {
@@ -91,6 +94,12 @@ function phaseMask(phase: DuelPhase | undefined): number {
   if (phase === "main2") return 0x100;
   if (phase === "end") return 0x200;
   return 0;
+}
+
+function isReincarnationSummoned(session: DuelSession, card: DuelCardInstance | undefined): boolean {
+  if (!card) return false;
+  const label = getDuelFlagEffectLabel(session.state, { ownerType: "card", ownerId: card.uid }, cardSalamangreatSanctuary);
+  return (label & ((card.summonPlayer ?? card.controller) + 1)) !== 0;
 }
 
 function isSummonTypeMatch(actual: number, requested: number): boolean {

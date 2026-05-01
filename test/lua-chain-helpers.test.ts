@@ -713,6 +713,8 @@ describe("Lua chain helpers", () => {
         e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
           Duel.SendtoGrave(Duel.GetFirstTarget(), REASON_EFFECT)
           Debug.Message("source reason effect " .. tostring(Duel.GetReasonEffect()==e) .. "/" .. Duel.GetReasonEffect():GetHandler():GetCode())
+          local reason_target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_GRAVE, 1, 1, nil):GetFirst()
+          Debug.Message("card reason effect " .. tostring(reason_target:GetReasonEffect()==e) .. "/" .. tostring(reason_target:IsReasonEffect(e)))
         end)
         c:RegisterEffect(e)
       end
@@ -749,6 +751,7 @@ describe("Lua chain helpers", () => {
 
     expect(host.messages).toContain("reason condition 1/1/0/1/0/0");
     expect(host.messages).toContain("source reason effect true/100");
+    expect(host.messages).toContain("card reason effect true/true");
     expect(host.messages).toContain("reason operation 1/0/0/0/0");
     expect(host.messages).toContain("trigger reason effect true/400");
   });

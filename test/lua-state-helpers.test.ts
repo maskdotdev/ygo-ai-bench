@@ -1644,6 +1644,19 @@ describe("Lua state helpers", () => {
     expect(fusionPredicateResult.ok, fusionPredicateResult.error).toBe(true);
     expect(host.messages).toContain("fusion predicates true/true/false");
 
+    const reincarnationResult = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("reincarnation before " .. tostring(c:IsReincarnationSummoned()))
+      c:RegisterFlagEffect(1295111, RESET_EVENT|RESETS_STANDARD, 0, 1, c:GetSummonPlayer()+1)
+      Debug.Message("reincarnation after " .. tostring(c:IsReincarnationSummoned()))
+      `,
+      "summon-type-reincarnation.lua",
+    );
+    expect(reincarnationResult.ok, reincarnationResult.error).toBe(true);
+    expect(host.messages).toContain("reincarnation before false");
+    expect(host.messages).toContain("reincarnation after true");
+
     fusionCard!.summonTypeCode = 0x40000000 + 151;
 
     const fusionResult = host.loadScript(
