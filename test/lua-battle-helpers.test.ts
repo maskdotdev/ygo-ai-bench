@@ -232,6 +232,54 @@ describe("Lua battle helpers", () => {
     ]);
   });
 
+  it("lets Lua scripts detect effect damage operation info", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Damage Condition Probe", kind: "monster" }];
+    const session = createDuel({ seed: 160, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      Duel.SetOperationInfo(3,CATEGORY_DAMAGE,nil,1,1,500)
+      Debug.Message("damcon damage " .. tostring(aux.damcon1(e,1,nil,0,3,nil,0,0)) .. "/" .. tostring(aux.damcon1(e,0,nil,0,3,nil,0,0)))
+      local reverse_damage=Effect.GlobalEffect()
+      reverse_damage:SetType(EFFECT_TYPE_FIELD)
+      reverse_damage:SetCode(EFFECT_REVERSE_DAMAGE)
+      reverse_damage:SetTargetRange(1,0)
+      Duel.RegisterEffect(reverse_damage,0)
+      Duel.SetOperationInfo(4,CATEGORY_DAMAGE,nil,1,0,900)
+      Debug.Message("damcon reverse damage blocked " .. tostring(aux.damcon1(e,0,nil,0,4,nil,0,0)))
+      local reverse_recover=Effect.GlobalEffect()
+      reverse_recover:SetType(EFFECT_TYPE_FIELD)
+      reverse_recover:SetCode(EFFECT_REVERSE_RECOVER)
+      reverse_recover:SetTargetRange(1,0)
+      Duel.RegisterEffect(reverse_recover,1)
+      Duel.SetOperationInfo(5,CATEGORY_RECOVER,nil,1,1,700)
+      Debug.Message("damcon recover reversed " .. tostring(aux.damcon1(e,1,nil,0,5,nil,0,0)))
+      local no_damage=Effect.GlobalEffect()
+      no_damage:SetType(EFFECT_TYPE_FIELD)
+      no_damage:SetCode(EFFECT_NO_EFFECT_DAMAGE)
+      no_damage:SetTargetRange(1,0)
+      Duel.RegisterEffect(no_damage,0)
+      Duel.SetOperationInfo(6,CATEGORY_DAMAGE,nil,1,0,900)
+      Debug.Message("damcon no damage blocked " .. tostring(aux.damcon1(e,0,nil,0,6,nil,0,0)))
+      `,
+      "damage-condition.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("damcon damage true/false");
+    expect(host.messages).toContain("damcon reverse damage blocked false");
+    expect(host.messages).toContain("damcon recover reversed true");
+    expect(host.messages).toContain("damcon no damage blocked false");
+  });
+
   it("lets Lua scripts record attack cost payment status", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Cost Attacker", kind: "monster", attack: 1800 },
