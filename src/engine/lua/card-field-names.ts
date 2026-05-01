@@ -19,6 +19,7 @@ export const cardFieldNames = [
   "IsRed",
   "IsWhite",
   "IsChampion",
+  "IsEarth",
   "GetOwner",
   "IsOwner",
   "GetControler",
