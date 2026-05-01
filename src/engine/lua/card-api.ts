@@ -98,6 +98,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetSequence", session, (card) => card?.sequence ?? 0);
   pushNumberGetter(L, "GetFieldID", session, (card) => cardFieldId(card));
   pushNumberGetter(L, "GetRealFieldID", session, (card) => cardFieldId(card));
+  pushNumberGetter(L, "GetCardID", session, (card) => cardFieldId(card));
   pushNumberMatcher(L, "IsSequence", session, (card, requested) => card.sequence === requested);
   pushNumberMatcher(L, "IsFieldID", session, (card, requested) => cardFieldId(card) === requested);
   pushNumberMatcher(L, "IsRealFieldID", session, (card, requested) => cardFieldId(card) === requested);

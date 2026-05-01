@@ -394,6 +394,13 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       local high=math.max(min or 0,max or min or 0)
       return Duel.AnnounceNumberRange(tp,low,high)
     end
+    function aux.GrouptoCardid(g)
+      local res={}
+      for card in aux.Next(g) do
+        res[card:GetCardID()]=true
+      end
+      return res
+    end
     function aux.BitSplit(v)
       local res={}
       local i=0

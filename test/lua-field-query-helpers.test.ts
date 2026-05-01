@@ -25,9 +25,11 @@ describe("Lua field and query helpers", () => {
       local b=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local fid=a:GetFieldID()
       local rfid=a:GetRealFieldID()
+      local cid=a:GetCardID()
       Debug.Message("field id stable " .. tostring(fid==a:GetFieldID()) .. "/" .. tostring(fid>0))
       Debug.Message("field id distinct " .. tostring(fid~=b:GetFieldID()))
       Debug.Message("field id matchers " .. tostring(a:IsFieldID(fid)) .. "/" .. tostring(a:IsRealFieldID(rfid)) .. "/" .. tostring(b:IsFieldID(fid)))
+      Debug.Message("card id alias " .. tostring(cid==fid) .. "/" .. tostring(cid==a:GetCardID()))
       `,
       "card-field-id.lua",
     );
@@ -36,6 +38,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("field id stable true/true");
     expect(host.messages).toContain("field id distinct true");
     expect(host.messages).toContain("field id matchers true/true/false");
+    expect(host.messages).toContain("card id alias true/true");
   });
 
   it("exposes exact Lua card type predicates", () => {

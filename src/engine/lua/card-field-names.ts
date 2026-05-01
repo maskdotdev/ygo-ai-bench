@@ -114,6 +114,7 @@ export const cardFieldNames = [
   "GetSequence",
   "GetFieldID",
   "GetRealFieldID",
+  "GetCardID",
   "IsSequence",
   "IsFieldID",
   "IsRealFieldID",
