@@ -1,4 +1,5 @@
 import { markDuelPhaseActivity, recordSpecialSummonActivity } from "#duel/activity.js";
+import { clearChainLimits, clearStaleChainLimits } from "#duel/chain-limits.js";
 import { isDuelMonsterLike, isFaceUpPendulumExtraDeckCard } from "#duel/card-predicates.js";
 import {
   findCard,
@@ -103,7 +104,6 @@ export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/
 import type {
   ApplyDuelResponseResult,
   CardPosition,
-  ChainLimit,
   ChainLink,
   DuelAction,
   DuelCardInstance,
@@ -572,12 +572,7 @@ function hasChainResponses(state: DuelState, player: PlayerId): boolean {
   return hasQuickEffectResponses(state, player, canChooseEffect);
 }
 
-export function addDuelChainLimit(state: DuelState, limit: Omit<ChainLimit, "expiresAtChainLength">): void {
-  state.chainLimits.push({
-    ...limit,
-    ...(limit.untilChainEnd ? {} : { expiresAtChainLength: state.chain.length + 1 }),
-  });
-}
+export { addDuelChainLimit } from "#duel/chain-limits.js";
 
 function pushChainLink(
   state: DuelState,
@@ -671,19 +666,6 @@ function resolveChain(state: DuelState): void {
   state.status = "awaiting";
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
   continueAttackResponseWindow(state, battleContinuationHandlers);
-}
-
-function clearStaleChainLimits(state: DuelState): void {
-  clearChainLimits(state, (limit) => !limit.untilChainEnd && (limit.expiresAtChainLength ?? 0) < state.chain.length);
-}
-
-function clearChainLimits(state: DuelState, shouldClear: (limit: ChainLimit) => boolean = () => true): void {
-  const remaining: ChainLimit[] = [];
-  for (const limit of state.chainLimits) {
-    if (shouldClear(limit)) limit.release?.();
-    else remaining.push(limit);
-  }
-  state.chainLimits = remaining;
 }
 
 export function negateDuelChainLink(state: DuelState, chainLinkId: string, player: PlayerId, cardName: string): boolean {
