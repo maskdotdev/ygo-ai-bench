@@ -63,7 +63,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsScale", session, (card, requested) => cardScale(card) === requested);
   pushBooleanGetter(L, "IsOddScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 !== 0);
   pushBooleanGetter(L, "IsEvenScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 === 0);
-  pushBooleanGetter(L, "HasLevel", session, (card) => Boolean(card && currentLevel(card, session.state) > 0 && cardRank(card) === 0 && cardLink(card) === 0));
+  pushBooleanGetter(L, "HasLevel", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && cardRank(card) === 0 && cardLink(card) === 0));
   pushNumberMatcher(L, "IsLevel", session, (card, requested) => currentLevel(card, session.state) === requested);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);

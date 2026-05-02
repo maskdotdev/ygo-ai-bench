@@ -1353,10 +1353,11 @@ describe("Lua field and query helpers", () => {
       { code: "905", name: "Plus Fixture", kind: "monster", typeFlags: 0x20000001, level: 4 },
       { code: "906", name: "Minus Fixture", kind: "monster", typeFlags: 0x40000001, level: 4 },
       { code: "907", name: "Plus Minus Fixture", kind: "monster", typeFlags: 0x60000001, level: 4 },
+      { code: "908", name: "Zero Level Fixture", kind: "monster", typeFlags: 0x1, level: 0 },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 18, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 19, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "201", "202", "203", "204", "300", "400", "500", "600", "700", "800", "901", "903", "904", "905", "906", "907"], extra: ["801", "902"] },
+      0: { main: ["100", "200", "201", "202", "203", "204", "300", "400", "500", "600", "700", "800", "901", "903", "904", "905", "906", "907", "908"], extra: ["801", "902"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -1483,7 +1484,8 @@ describe("Lua field and query helpers", () => {
       local trapmonster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 202), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local fieldspell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 203), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local quickplay = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 204), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      Debug.Message("has level " .. tostring(c:HasLevel()) .. "/" .. tostring(xyz:HasLevel()) .. "/" .. tostring(link:HasLevel()) .. "/" .. tostring(spell:HasLevel()))
+      local zero_level = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 908), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("has level " .. tostring(c:HasLevel()) .. "/" .. tostring(xyz:HasLevel()) .. "/" .. tostring(link:HasLevel()) .. "/" .. tostring(spell:HasLevel()) .. "/" .. tostring(zero_level:HasLevel()))
       Debug.Message("main card types " .. c:GetMainCardType() .. "/" .. spell:GetMainCardType() .. "/" .. equip:GetMainCardType() .. "/" .. trapmonster:GetMainCardType())
       Debug.Message("spell trap checks " .. tostring(c:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellTrap()) .. "/" .. tostring(spell:IsSpellCard()) .. "/" .. tostring(c:IsSpellCard()) .. "/" .. tostring(spell:IsSpellTrapCard()) .. "/" .. tostring(trapmonster:IsSpellTrapCard()) .. "/" .. tostring(c:IsSpellTrapCard()) .. "/" .. tostring(spell:IsEquipCard()) .. "/" .. tostring(equip:IsEquipCard()) .. "/" .. tostring(spell:IsEquipSpell()) .. "/" .. tostring(equip:IsEquipSpell()) .. "/" .. tostring(fieldspell:IsFieldSpell()) .. "/" .. tostring(spell:IsFieldSpell()) .. "/" .. tostring(quickplay:IsQuickPlaySpell()) .. "/" .. tostring(spell:IsQuickPlaySpell()) .. "/" .. tostring(trapmonster:IsTrapCard()) .. "/" .. tostring(trapmonster:IsTrapMonster()) .. "/" .. tostring(spell:IsTrapMonster()) .. "/" .. TYPE_EQUIP)
       Debug.Message("cost checks " .. tostring(c:IsDiscardable()) .. "/" .. tostring(c:IsAbleToGraveAsCost()))
@@ -1523,7 +1525,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("rank 4/4/true/false/true/true");
     expect(host.messages).toContain("spirit predicate true/false");
     expect(host.messages).toContain("plus minus predicate true/true/false/false");
-    expect(host.messages).toContain("has level true/false/false/false");
+    expect(host.messages).toContain("has level true/false/false/false/true");
     expect(host.messages).toContain("main card types 1/2/2/5");
     expect(host.messages).toContain("rank comparisons true/false/true/true");
     expect(host.messages).toContain("rank update -3/1/4/true/true");
