@@ -54,7 +54,13 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   lua.lua_setfield(L, -2, to_luastring("IsPreviousPosition"));
   pushNumberGetter(L, "GetPreviousControler", session, (card) => card?.previousController ?? 0);
   pushNumberMatcher(L, "IsPreviousControler", session, (card, requested) => card.previousController === normalizePlayer(requested));
-  pushNumberMatcher(L, "IsPreviousCode", session, (card, requested) => Boolean(card.previousLocation && cardCodes(card).includes(String(requested))));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requestedCodes = readRequestedCodes(state, 2);
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requestedCodes.some((code) => cardCodes(card).includes(code))));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPreviousCode"));
   pushNumberMatcher(L, "IsPreviousTypeOnField", session, (card, requested) => Boolean(card.previousLocation && (cardTypeFlags(card) & requested) !== 0));
   pushNumberMatcher(L, "IsPreviousAttackOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.attack ?? 0) === requested));
   pushNumberMatcher(L, "IsPreviousDefenseOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.defense ?? 0) === requested));
