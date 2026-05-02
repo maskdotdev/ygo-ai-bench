@@ -147,13 +147,16 @@ export function battleDamageReason(state: DuelState, player: PlayerId, battleCar
 export function battleDestroyRedirectLocation(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): DuelLocation | undefined {
   const card = findCard(state, uid);
   if (!card) return undefined;
-  const battlingUids = new Set([state.currentAttack?.attackerUid, state.currentAttack?.targetUid].filter((id): id is string => Boolean(id)));
+  const battlingUids = [state.currentAttack?.attackerUid, state.currentAttack?.targetUid].filter((id): id is string => Boolean(id));
+  const battleOpponent = battlingUids.find((id) => id !== uid);
+  const destroyer = battleOpponent ? findCard(state, battleOpponent) : undefined;
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 204) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    const sourceDestroyedOpponent = battlingUids.has(source.uid) && battlingUids.has(card.uid) && source.uid !== card.uid;
-    if (!sourceDestroyedOpponent && !continuousEffectAffectsCard(effect, source, card)) continue;
+    const sourceDestroyedOpponent = source.uid === destroyer?.uid;
+    const fieldEffectTargetsDestroyer = destroyer && source.uid !== destroyer.uid && continuousEffectAffectsCard(effect, source, destroyer);
+    if (!sourceDestroyedOpponent && !fieldEffectTargetsDestroyer && !continuousEffectAffectsCard(effect, source, card)) continue;
     const redirectLocation = locationFromRedirectValue(effect.value);
     if (!redirectLocation) continue;
     const ctx = createContext(effect, source, card);
@@ -406,7 +409,7 @@ function isFieldLocation(location: DuelLocation): boolean {
 
 function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
   if (source.uid === card.uid) return true;
-  return ((effect.property ?? 0) & 0x800) !== 0 && continuousEffectTargetsPlayer(effect, source, card.controller);
+  return (effect.targetRange !== undefined || ((effect.property ?? 0) & 0x800) !== 0) && continuousEffectTargetsPlayer(effect, source, card.controller);
 }
 
 function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {

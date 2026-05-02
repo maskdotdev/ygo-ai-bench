@@ -620,6 +620,57 @@ describe("Lua battle helpers", () => {
     expect(session.state.log.some((entry) => entry.action === "destroy" && entry.card === "Redirect Target" && entry.detail === "Destroyed and moved to banished")).toBe(true);
   });
 
+  it("applies Lua field-scoped battle destroy redirect effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Field Redirect Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Field Redirect Target", kind: "monster", attack: 1000 },
+      { code: "300", name: "Field Redirect Source", kind: "monster", attack: 500 },
+    ];
+    const session = createDuel({ seed: 120, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const source = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_BATTLE_DESTROY_REDIRECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(LOCATION_MZONE,0)
+        e:SetTarget(function(e,c) return c:IsCode(100) end)
+        e:SetValue(LOCATION_REMOVED)
+        c:RegisterEffect(e)
+      end
+      `,
+      "field-battle-destroy-redirect.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "banished", reason: 0x4000021 });
+    expect(session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone" });
+  });
+
   it("passes the battle opponent to Lua indestructible battle value callbacks", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Indestructible Check Attacker", kind: "monster", attack: 1800 },
