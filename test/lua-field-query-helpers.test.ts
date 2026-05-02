@@ -1414,6 +1414,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("original predicates " .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalLevel(7)))
       Debug.Message("not type " .. tostring(c:IsNotType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotType(TYPE_SPELL)))
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
+      Debug.Message("type varargs " .. tostring(c:IsType(TYPE_SPELL,TYPE_EFFECT)) .. "/" .. tostring(c:IsType({TYPE_SPELL,TYPE_EFFECT})) .. "/" .. tostring(c:IsType(TYPE_SPELL,TYPE_TRAP)) .. "/" .. tostring(c:IsOriginalType(TYPE_SPELL,TYPE_EFFECT)) .. "/" .. tostring(c:IsOriginalType({TYPE_SPELL,TYPE_EFFECT})) .. "/" .. tostring(c:IsNotType(TYPE_SPELL,TYPE_TRAP)) .. "/" .. tostring(c:IsNotType({TYPE_SPELL,TYPE_TRAP})) .. "/" .. tostring(c:IsNotType(TYPE_SPELL,TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL,TYPE_TRAP)) .. "/" .. tostring(c:IsNotOriginalType({TYPE_SPELL,TYPE_TRAP})) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL,TYPE_EFFECT)))
       Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(synchro:IsSynchroMonster()) .. "/" .. tostring(c:IsSynchroMonster()) .. "/" .. tostring(xyz:IsXyzMonster()) .. "/" .. tostring(c:IsXyzMonster()) .. "/" .. tostring(pendulum:IsPendulumMonster()) .. "/" .. tostring(c:IsPendulumMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()) .. "/" .. tostring(c:IsEffectMonster()) .. "/" .. tostring(normal:IsEffectMonster()) .. "/" .. tostring(c:IsForbidden()))
       Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:HasRank()) .. "/" .. tostring(normal:HasRank()) .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)) .. "/" .. zero_rank:GetRank() .. "/" .. tostring(zero_rank:HasRank()))
       Debug.Message("rank varargs " .. tostring(xyz:IsRank(3,4)) .. "/" .. tostring(xyz:IsRank({3,4})) .. "/" .. tostring(xyz:IsRank(2,3)) .. "/" .. tostring(xyz:IsOriginalRank(3,4)) .. "/" .. tostring(xyz:IsOriginalRank({3,4})))
@@ -1463,6 +1464,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not race " .. tostring(c:IsNotRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotRace(RACE_DRAGON)))
       Debug.Message("not original race " .. tostring(c:IsNotOriginalRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotOriginalRace(RACE_DRAGON)))
       Debug.Message("attribute " .. c:GetAttribute() .. " " .. tostring(c:IsAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsOriginalAttribute(ATTRIBUTE_DARK)))
+      Debug.Message("race attr varargs " .. tostring(c:IsRace(RACE_DRAGON,RACE_SPELLCASTER)) .. "/" .. tostring(c:IsRace({RACE_DRAGON,RACE_SPELLCASTER})) .. "/" .. tostring(c:IsRace(RACE_DRAGON)) .. "/" .. tostring(c:IsOriginalRace(RACE_DRAGON,RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotRace(RACE_DRAGON,RACE_ZOMBIE)) .. "/" .. tostring(c:IsNotRace({RACE_DRAGON,RACE_ZOMBIE})) .. "/" .. tostring(c:IsNotRace(RACE_DRAGON,RACE_SPELLCASTER)) .. "/" .. tostring(c:IsAttribute(ATTRIBUTE_LIGHT,ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsAttribute({ATTRIBUTE_LIGHT,ATTRIBUTE_DARK})) .. "/" .. tostring(c:IsAttribute(ATTRIBUTE_LIGHT)) .. "/" .. tostring(c:IsOriginalAttribute(ATTRIBUTE_LIGHT,ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsNotAttribute(ATTRIBUTE_LIGHT,ATTRIBUTE_FIRE)) .. "/" .. tostring(c:IsNotAttribute({ATTRIBUTE_LIGHT,ATTRIBUTE_FIRE})) .. "/" .. tostring(c:IsNotAttribute(ATTRIBUTE_LIGHT,ATTRIBUTE_DARK)))
       c:AssumeProperty(ASSUME_CODE, 999)
       c:AssumeProperty(ASSUME_TYPE, TYPE_MONSTER|TYPE_TUNER)
       c:AssumeProperty(ASSUME_LEVEL, 3)
@@ -1529,6 +1531,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("original predicates true/true");
     expect(host.messages).toContain("not type false/true");
     expect(host.messages).toContain("not original type false/true");
+    expect(host.messages).toContain("type varargs true/true/false/true/true/true/true/false/true/true/false");
     expect(host.messages).toContain("named type predicates true/false/true/false/true/false/true/false/true/false/true/false/false");
     expect(host.messages).toContain("rank 4/4/true/false/true/true/0/true");
     expect(host.messages).toContain("rank varargs true/true/false/true/true");
@@ -1555,6 +1558,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("race 2 true/true");
     expect(host.messages).toContain("not race false/true");
     expect(host.messages).toContain("attribute 32 true/true");
+    expect(host.messages).toContain("race attr varargs true/true/false/true/true/true/false/true/true/false/true/true/true/false");
     expect(host.messages).toContain("assumed metadata 999/4097/3/2/16/8192/1200/800/4/40");
     expect(host.messages).toContain("assumed predicates true/true/true/true/true/true/true/true");
     expect(host.messages).toContain("assumed reset 100/33/1/0/32/2/2800/1700/5/5");
