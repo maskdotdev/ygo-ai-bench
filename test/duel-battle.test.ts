@@ -619,6 +619,61 @@ describe("duel battle", () => {
     expect(session.state.log.some((entry) => entry.detail === "Replayed direct attack")).toBe(true);
   });
 
+  it("opens a replay decision when the opponent monster count changes before damage", () => {
+    const session = createDuel({ seed: 54, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const targets = queryPublicState(session).cards.filter((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(targets).toHaveLength(3);
+    expect(quickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    const originalTarget = moveDuelCard(session.state, targets[0]!.uid, "monsterZone", 1);
+    originalTarget.position = "faceUpAttack";
+    registerEffect(session, {
+      id: "add-target-before-damage",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      operation(ctx) {
+        const added = ctx.moveCard(targets[1]!.uid, "monsterZone", 1);
+        added.position = "faceUpAttack";
+        ctx.log("Attack target count changed before damage");
+      },
+    });
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === originalTarget.uid)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "add-target-before-damage")!).ok).toBe(true);
+    passUntilReplayDecision(session);
+
+    expect(session.state.battleWindow?.kind).toBe("replayDecision");
+    const replayActions = getDuelLegalActions(session, 0);
+    expect(replayActions.some((action) => action.type === "cancelAttack" && action.attackerUid === attacker!.uid)).toBe(true);
+    expect(replayActions.some((action) => action.type === "replayAttack" && action.attackerUid === attacker!.uid && action.targetUid === originalTarget.uid)).toBe(true);
+    expect(replayActions.some((action) => action.type === "replayAttack" && action.attackerUid === attacker!.uid && action.targetUid === targets[1]!.uid)).toBe(true);
+    const replayNewTarget = replayActions.find((action) => action.type === "replayAttack" && action.targetUid === targets[1]!.uid);
+    expect(replayNewTarget).toBeTruthy();
+    expect(applyResponse(session, replayNewTarget!).ok).toBe(true);
+    passAttackResponses(session);
+
+    expect(session.state.pendingBattle).toBeUndefined();
+    expect(session.state.cards.find((card) => card.uid === originalTarget.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === targets[1]!.uid)?.location).toBe("graveyard");
+    expect(session.state.players[1].lifePoints).toBe(7700);
+    expect(session.state.log.some((entry) => entry.detail === "Attack target count changed before damage")).toBe(true);
+    expect(session.state.log.some((entry) => entry.detail === `Replayed attack on ${targets[1]!.name}`)).toBe(true);
+  });
+
   it("skips battle resolution when the attacker leaves before damage", () => {
     const session = createDuel({ seed: 34, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

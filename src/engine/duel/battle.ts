@@ -50,7 +50,7 @@ export function declareDuelAttack(
   state.attacksDeclared.push(attacker.uid);
   state.attackCostPaid = 0;
   recordAttackActivity(state, player, attacker);
-  state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
+  state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }), replayTargetCount: targets.length };
   state.pendingBattle = { ...state.currentAttack };
   if (target) recordBattledPair(state, attacker.uid, target.uid);
   openBattleWindowState(state, target ? "attackTargetConfirmation" : "attackDeclaration", "attack", player);
@@ -98,6 +98,10 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
     openReplayDecisionWindow(state, attacker);
     return false;
   }
+  if (pending.replayTargetCount !== undefined && pending.replayTargetCount !== getAttackTargets(state, attacker.controller).length) {
+    openReplayDecisionWindow(state, attacker);
+    return false;
+  }
   try {
     if (!target) {
       callbacks.damagePlayer(otherPlayer(attacker.controller), getBattleAttack(attacker, callbacks), [attacker]);
@@ -137,7 +141,7 @@ export function replayDuelAttack(state: DuelState, player: PlayerId, attackerUid
   } else if (targetUid !== undefined) {
     throw new Error("Replay direct attacks cannot have a target");
   }
-  state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
+  state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }), replayTargetCount: targets.length };
   state.pendingBattle = { ...state.currentAttack };
   if (target) recordBattledPair(state, attacker.uid, target.uid);
   pushDuelLog(state, "attackReplay", player, attacker.name, target ? `Replayed attack on ${target.name}` : "Replayed direct attack");
