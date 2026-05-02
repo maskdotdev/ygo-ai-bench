@@ -304,6 +304,46 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("fusion forced handler 100");
   });
 
+  it("lets Lua Fusion code procedure helpers store expanded material metadata", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Fusion Code Procedure A", kind: "monster" },
+      { code: "200", name: "Fusion Code Procedure B", kind: "monster" },
+      { code: "300", name: "Fusion Code Procedure C", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 163, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Fusion.AddProcCode2(target,111,222,true,false)
+      local mix2 = target:GetMetatable(false).fusion_materials
+      Debug.Message("fusion code2 " .. tostring(mix2[1]) .. "/" .. tostring(mix2[2]) .. "/" .. mix2[3] .. "/" .. mix2[4])
+      Fusion.AddProcCodeRep(target,333,3,false,true)
+      local rep = target:GetMetatable(false).fusion_materials
+      Debug.Message("fusion code rep " .. tostring(rep[1]) .. "/" .. tostring(rep[2]) .. "/" .. rep[3] .. "/" .. rep[4] .. "/" .. rep[5])
+      Fusion.AddProcCodeRep2(target,444,2,4,true,true)
+      local rep2 = target:GetMetatable(false).fusion_materials
+      Debug.Message("fusion code rep2 " .. tostring(rep2[1]) .. "/" .. tostring(rep2[2]) .. "/" .. rep2[3] .. "/" .. rep2[4] .. "/" .. rep2[5])
+      Fusion.AddProcCodeFun(target,555,Card.IsMonster,2,true,false)
+      local codefun = target:GetMetatable(false).fusion_materials
+      Debug.Message("fusion code fun " .. tostring(codefun[1]) .. "/" .. tostring(codefun[2]) .. "/" .. codefun[3] .. "/" .. tostring(type(codefun[4])) .. "/" .. tostring(type(codefun[5])))
+      `,
+      "fusion-code-procedure-helpers.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("fusion code2 true/false/111/222");
+    expect(host.messages).toContain("fusion code rep false/true/333/333/333");
+    expect(host.messages).toContain("fusion code rep2 true/true/444/2/4");
+    expect(host.messages).toContain("fusion code fun true/false/555/function/function");
+  });
+
   it("lets Lua scripts register temporary and continuous Lizard checks", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Lizard Probe", kind: "monster" }];
     const session = createDuel({ seed: 158, startingHandSize: 1, cardReader: createCardReader(cards) });
