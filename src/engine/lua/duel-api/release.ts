@@ -81,10 +81,10 @@ function pushCheckTribute(L: unknown, session: DuelSession): number {
   const maximum = Math.max(minimum, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : minimum);
   const materials = readCardOrGroupUids(L, 4);
   const materialSet = materials.length > 0 ? new Set(materials) : undefined;
-  const available = tributeCandidateCount(session, player, target?.uid, materialSet);
-  const selected = Math.min(available, maximum);
-  const openZones = monsterZoneCapacity(session, player) - monsterZoneCount(session, player);
-  lua.lua_pushboolean(L, Boolean(target && selected >= minimum && (openZones > 0 || selected > 0)));
+  const zoneMask = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : undefined;
+  const candidates = tributeCandidateUids(session, player, target?.uid, materialSet);
+  const selected = tributeZoneSelection(session, player, candidates, minimum, maximum, zoneMask);
+  lua.lua_pushboolean(L, Boolean(target && selected && selected.length >= minimum));
   return 1;
 }
 
@@ -113,9 +113,10 @@ function pushSelectTribute(L: unknown, session: DuelSession): number {
   const maximum = Math.max(minimum, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : minimum);
   const materials = readCardOrGroupUids(L, 5);
   const materialSet = materials.length > 0 ? new Set(materials) : undefined;
-  const selectionLimit = maximum > 0 ? maximum : minimum;
-  const selected = selectionLimit > 0 ? tributeCandidateUids(session, player, target?.uid, materialSet).slice(0, selectionLimit) : [];
-  pushGroupTable(L, selected.length >= minimum ? selected : []);
+  const zoneMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : undefined;
+  const candidates = tributeCandidateUids(session, player, target?.uid, materialSet);
+  const selected = tributeZoneSelection(session, player, candidates, minimum, maximum, zoneMask);
+  pushGroupTable(L, selected && selected.length >= minimum ? selected : []);
   return 1;
 }
 
@@ -298,10 +299,6 @@ function isReleasableMonster(session: DuelSession, card: DuelCardInstance, playe
   return canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.cost);
 }
 
-function tributeCandidateCount(session: DuelSession, player: PlayerId, targetUid: string | undefined, materialSet: Set<string> | undefined): number {
-  return tributeCandidateUids(session, player, targetUid, materialSet).length;
-}
-
 function tributeCandidateUids(session: DuelSession, player: PlayerId, targetUid: string | undefined, materialSet: Set<string> | undefined): string[] {
   return session.state.cards
     .filter((card) => {
@@ -313,6 +310,29 @@ function tributeCandidateUids(session: DuelSession, player: PlayerId, targetUid:
     })
     .sort((a, b) => a.sequence - b.sequence)
     .map((card) => card.uid);
+}
+
+function tributeZoneSelection(session: DuelSession, player: PlayerId, candidates: string[], minimum: number, maximum: number, zoneMask: number | undefined): string[] | undefined {
+  const limit = maximum > 0 ? maximum : minimum;
+  for (let count = minimum; count <= Math.min(limit, candidates.length); count += 1) {
+    const selected = candidates.slice(0, count);
+    if (hasAvailableTributeSummonZone(session, player, selected, zoneMask)) return selected;
+  }
+  return undefined;
+}
+
+function hasAvailableTributeSummonZone(session: DuelSession, player: PlayerId, selectedUids: string[], zoneMask: number | undefined): boolean {
+  const selected = new Set(selectedUids);
+  const occupied = new Set(
+    session.state.cards
+      .filter((card) => card.controller === player && card.location === "monsterZone" && !selected.has(card.uid))
+      .map((card) => card.sequence),
+  );
+  if (zoneMask === undefined || zoneMask === 0) return occupied.size < monsterZoneCapacity(session, player);
+  for (let sequence = 0; sequence < monsterZoneCapacity(session, player); sequence += 1) {
+    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) return true;
+  }
+  return false;
 }
 
 function selectedReleasableMonsterUids(session: DuelSession, player: PlayerId, excluded: string[], selectedUids: string[], includeHand = false): string[] {

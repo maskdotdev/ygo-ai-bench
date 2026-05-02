@@ -388,6 +388,8 @@ describe("Lua summon and release helpers", () => {
       Debug.Message("tribute full two " .. tostring(Duel.CheckTribute(two, 2, 2, nil)))
       Debug.Message("tribute limited two " .. tostring(Duel.CheckTribute(two, 2, 2, free)))
       Debug.Message("tribute locked only " .. tostring(Duel.CheckTribute(one, 1, 1, locked)))
+      Debug.Message("tribute zone free " .. tostring(Duel.CheckTribute(one, 1, 1, free, 0, 0x1)))
+      Debug.Message("tribute zone blocked " .. tostring(Duel.CheckTribute(one, 1, 1, free, 0, 0x4)))
       Debug.Message("tribute group " .. tribute_group:GetCount() .. "/" .. tribute_group:FilterCount(function(c) return c:IsCode(500) end, nil))
       Debug.Message("tribute limited group " .. limited_group:GetCount() .. "/" .. limited_group:FilterCount(function(c) return c:IsCode(300) or c:IsCode(400) end, nil))
       Debug.Message("tribute locked group " .. locked_group:GetCount())
@@ -404,6 +406,8 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("tribute full two true");
     expect(host.messages).toContain("tribute limited two true");
     expect(host.messages).toContain("tribute locked only false");
+    expect(host.messages).toContain("tribute zone free true");
+    expect(host.messages).toContain("tribute zone blocked false");
     expect(host.messages).toContain("tribute group 4/0");
     expect(host.messages).toContain("tribute limited group 2/2");
     expect(host.messages).toContain("tribute locked group 0");
@@ -459,6 +463,10 @@ describe("Lua summon and release helpers", () => {
       Debug.Message("selected tribute two " .. selected_two:GetCount() .. "/" .. selected_two:FilterCount(function(c) return c:IsCode(300) or c:IsCode(400) end, nil))
       local selected_locked = Duel.SelectTribute(0, one, 1, 1, locked)
       Debug.Message("selected tribute locked " .. selected_locked:GetCount())
+      local selected_zone = Duel.SelectTribute(0, one, 1, 1, limited, 0, 0x1)
+      Debug.Message("selected tribute zone " .. selected_zone:GetCount() .. "/" .. selected_zone:GetFirst():GetCode())
+      local selected_zone_blocked = Duel.SelectTribute(0, one, 1, 1, limited, 0, 0x4)
+      Debug.Message("selected tribute zone blocked " .. selected_zone_blocked:GetCount())
       `,
       "select-tribute.lua",
     );
@@ -467,6 +475,8 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("selected tribute one 1/300");
     expect(host.messages).toContain("selected tribute two 2/2");
     expect(host.messages).toContain("selected tribute locked 0");
+    expect(host.messages).toContain("selected tribute zone 1/300");
+    expect(host.messages).toContain("selected tribute zone blocked 0");
   });
 
   it("lets Lua scripts check and select release summon materials with zone pressure", () => {
