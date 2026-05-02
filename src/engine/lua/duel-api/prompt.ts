@@ -48,8 +48,10 @@ export function installDuelPromptApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("AnnounceNumberRange"));
   pushAnnouncementHelper(L, "AnnounceCard");
   pushAnnouncementHelper(L, "AnnounceType");
-  pushAnnouncementHelper(L, "AnnounceRace");
-  pushAnnouncementHelper(L, "AnnounceAttribute");
+  lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceMaskChoice(state, raceAll, 0x2000000));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceRace"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceMaskChoice(state, attributeAll, 0x40));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceAttribute"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceAnotherAttribute(state, session));
   lua.lua_setfield(L, -2, to_luastring("AnnounceAnotherAttribute"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceAnotherRace(state, session));
@@ -145,6 +147,12 @@ function pushAnnouncementHelper(L: unknown, fieldName: string): void {
 function pushFirstAnnouncementValue(L: unknown, fallback: number): number {
   const value = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : fallback;
   lua.lua_pushinteger(L, value);
+  return 1;
+}
+
+function pushAnnounceMaskChoice(L: unknown, fallbackMask: number, maxBit: number): number {
+  const mask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : fallbackMask;
+  lua.lua_pushinteger(L, firstSingleBitThrough(mask, maxBit) ?? firstSingleBitThrough(fallbackMask, maxBit) ?? 0);
   return 1;
 }
 
