@@ -44,7 +44,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           1: { main: ["300", "400"] },
         },
         before: {
-          source: "local-scope",
+          source: "edopro",
           windowId: 0,
           waitingFor: 0,
           phase: "main1",
@@ -54,7 +54,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
             snapshotRestore: true,
             after: {
-              source: "local-scope",
+              source: "edopro",
               windowId: 1,
               waitingFor: 0,
               phase: "main1",
@@ -65,6 +65,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          windowId: 1,
           locations: { monsterZone: ["100"] },
           logIncludes: ["Normal Summoned"],
         },
@@ -96,7 +97,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
           makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
             after: {
-              source: "local-scope",
+              source: "edopro",
               windowId: 2,
               waitingFor: 1,
               phase: "battle",
@@ -111,14 +112,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
               },
               pendingBattle: true,
               currentAttack: true,
-              legalActions: [{ type: "passAttack", player: 1, count: 1 }],
+              legalActions: [{ type: "passAttack", player: 1, windowId: 2, windowKind: "battle", count: 1 }],
               absentLegalActions: [{ type: "passDamage", player: 1 }],
             },
           }),
           makeScriptedStep(makeResponseSelector("passAttack", 1), {
             snapshotRestore: true,
             before: {
-              source: "local-scope",
+              source: "edopro",
               windowId: 2,
               waitingFor: 1,
               battleStep: "attack",
@@ -132,14 +133,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
               },
               pendingBattle: true,
               currentAttack: true,
-              legalActions: [{ type: "passAttack", player: 1, count: 1 }],
+              legalActions: [{ type: "passAttack", player: 1, windowId: 2, windowKind: "battle", count: 1 }],
             },
           }),
           makeScriptedStep(makeResponseSelector("passAttack", 0)),
           makeScriptedStep(makeResponseSelector("passDamage", 1), {
             snapshotRestore: true,
             before: {
-              source: "local-scope",
+              source: "edopro",
               battleStep: "damage",
               battleWindow: {
                 kind: "startDamageStep",
@@ -150,14 +151,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
               },
               pendingBattle: true,
               currentAttack: true,
-              legalActions: [{ type: "passDamage", player: 1, count: 1 }],
+              legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
             },
           }),
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
           makeScriptedStep(makeResponseSelector("passDamage", 1), {
             snapshotRestore: true,
             before: {
-              source: "local-scope",
+              source: "edopro",
               battleStep: "damage",
               battleWindow: {
                 kind: "beforeDamageCalculation",
@@ -168,14 +169,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
               },
               pendingBattle: true,
               currentAttack: true,
-              legalActions: [{ type: "passDamage", player: 1, count: 1 }],
+              legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
             },
           }),
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
           makeScriptedStep(makeResponseSelector("passDamage", 1), {
             snapshotRestore: true,
             before: {
-              source: "local-scope",
+              source: "edopro",
               battleStep: "damageCalculation",
               battleWindow: {
                 kind: "duringDamageCalculation",
@@ -186,14 +187,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
               },
               pendingBattle: true,
               currentAttack: true,
-              legalActions: [{ type: "passDamage", player: 1, count: 1 }],
+              legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
             },
           }),
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
           makeScriptedStep(makeResponseSelector("passDamage", 1), {
             snapshotRestore: true,
             before: {
-              source: "local-scope",
+              source: "edopro",
               battleStep: "damage",
               battleWindow: {
                 kind: "afterDamageCalculation",
@@ -204,14 +205,14 @@ describe("EDOPro compatibility harness scaffolding", () => {
               },
               pendingBattle: true,
               currentAttack: true,
-              legalActions: [{ type: "passDamage", player: 1, count: 1 }],
+              legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
             },
           }),
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
           makeScriptedStep(makeResponseSelector("passDamage", 1), {
             snapshotRestore: true,
             before: {
-              source: "local-scope",
+              source: "edopro",
               battleStep: "damage",
               battleWindow: {
                 kind: "endDamageStep",
@@ -222,16 +223,23 @@ describe("EDOPro compatibility harness scaffolding", () => {
               },
               pendingBattle: true,
               currentAttack: true,
-              legalActions: [{ type: "passDamage", player: 1, count: 1 }],
+              legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
             },
           }),
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
         ],
         expected: {
           phase: "battle",
+          waitingFor: 0,
           lifePoints: { 1: 6200 },
           pendingBattle: false,
           currentAttack: false,
+          battleWindow: null,
+          chain: [],
+          pendingTriggers: [],
+          prompt: null,
+          legalActions: [{ type: "changePhase", player: 0, phase: "main2", count: 1 }],
+          absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
           locations: { monsterZone: ["100"] },
           logIncludes: ["Direct attack"],
         },
@@ -278,9 +286,16 @@ describe("EDOPro compatibility harness scaffolding", () => {
         ],
         expected: {
           phase: "battle",
+          waitingFor: 0,
           lifePoints: { 1: 6200 },
           pendingBattle: false,
           currentAttack: false,
+          battleWindow: null,
+          chain: [],
+          pendingTriggers: [],
+          prompt: null,
+          legalActions: [{ type: "changePhase", player: 0, phase: "main2", count: 1 }],
+          absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
           locations: { monsterZone: ["100"] },
           logIncludes: ["Fixture attack-window quick resolved", "Direct attack"],
         },
@@ -341,11 +356,249 @@ describe("EDOPro compatibility harness scaffolding", () => {
         ],
         expected: {
           phase: "battle",
+          waitingFor: 0,
           lifePoints: { 1: 6200 },
           pendingBattle: false,
           currentAttack: false,
+          battleWindow: null,
+          chain: [],
+          pendingTriggers: [],
+          prompt: null,
+          legalActions: [{ type: "changePhase", player: 0, phase: "main2", count: 1 }],
+          absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
           locations: { monsterZone: ["100"] },
           logIncludes: ["Fixture damage-step quick resolved", "Fixture damage-calculation quick resolved", "Direct attack"],
+        },
+      },
+      {
+        name: "replay decision after target leaves fixture",
+        options: { seed: 44, startingHandSize: 2 },
+        decks: {
+          0: { main: ["100", "300"] },
+          1: { main: ["400", "400"] },
+        },
+        setup: {
+          moveCards: [
+            { player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+            { player: 1, code: "400", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          ],
+          effects: [
+            {
+              id: "fixture-remove-target-before-damage",
+              player: 0,
+              code: "300",
+              location: "hand",
+              event: "quick",
+              range: ["hand"],
+              oncePerTurn: true,
+              moveCardsOnResolve: [{ player: 1, code: "400", from: "monsterZone", to: "graveyard" }],
+              logMessage: "Fixture target left before damage",
+            },
+          ],
+        },
+        responses: [
+          makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
+          makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1" })),
+          makeScriptedStep(makeResponseSelector("passAttack", 1)),
+          makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-remove-target-before-damage" })),
+          makeScriptedStep(makeResponseSelector("passAttack", 1)),
+          makeScriptedStep(makeResponseSelector("passAttack", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0), {
+            after: {
+              source: "edopro",
+              battleStep: "attack",
+              battleWindow: {
+                kind: "replayDecision",
+                step: "attack",
+                attackerUid: "p0-deck-100-0",
+                responsePlayer: 0,
+                attackNegated: false,
+              },
+              pendingBattle: true,
+              currentAttack: true,
+              legalActions: [
+                { type: "cancelAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", count: 1 },
+                { type: "replayAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", count: 1 },
+              ],
+              absentLegalActions: [{ type: "passDamage", player: 0 }],
+              logIncludes: ["Replay decision pending"],
+            },
+          }),
+          makeScriptedStep(makeResponseSelector("cancelAttack", 0, { attackerUid: "p0-deck-100-0" }), {
+            snapshotRestore: true,
+            before: {
+              source: "edopro",
+              battleWindow: {
+                kind: "replayDecision",
+                step: "attack",
+                attackerUid: "p0-deck-100-0",
+                responsePlayer: 0,
+              },
+              pendingBattle: true,
+              currentAttack: true,
+              legalActions: [{ type: "cancelAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", count: 1 }],
+            },
+          }),
+        ],
+        expected: {
+          phase: "battle",
+          waitingFor: 0,
+          lifePoints: { 1: 8000 },
+          pendingBattle: false,
+          currentAttack: false,
+          battleWindow: null,
+          chain: [],
+          pendingTriggers: [],
+          prompt: null,
+          legalActions: [{ type: "changePhase", player: 0, phase: "main2", count: 1 }],
+          absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
+          attacksDeclared: ["p0-deck-100-0"],
+          attackCanceledUids: [],
+          attackedTargetUids: ["p1-deck-400-1"],
+          battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1" }],
+          locations: { monsterZone: ["100"], graveyard: ["400"] },
+          locationCounts: { monsterZone: { "100": 1 }, graveyard: { "400": 1 } },
+          cards: [
+            { uid: "p0-deck-100-0", location: "monsterZone", controller: 0 },
+            { uid: "p1-deck-400-1", location: "graveyard", controller: 1 },
+          ],
+          logIncludes: ["Fixture target left before damage", "Replay decision pending", "Canceled replay attack"],
+        },
+      },
+      {
+        name: "replay decision after target count changes fixture",
+        options: { seed: 45, startingHandSize: 3 },
+        decks: {
+          0: { main: ["100", "300", "300"] },
+          1: { main: ["400", "400", "400"] },
+        },
+        setup: {
+          moveCards: [
+            { player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+            { player: 1, code: "400", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          ],
+          effects: [
+            {
+              id: "fixture-add-target-before-damage",
+              player: 0,
+              code: "300",
+              location: "hand",
+              event: "quick",
+              range: ["hand"],
+              oncePerTurn: true,
+              moveCardsOnResolve: [{ player: 1, code: "400", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
+              logMessage: "Fixture target count changed before damage",
+            },
+          ],
+        },
+        responses: [
+          makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
+          makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2" })),
+          makeScriptedStep(makeResponseSelector("passAttack", 1)),
+          makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-add-target-before-damage" })),
+          makeScriptedStep(makeResponseSelector("passAttack", 1)),
+          makeScriptedStep(makeResponseSelector("passAttack", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0), {
+            after: {
+              source: "edopro",
+              battleWindow: {
+                kind: "replayDecision",
+                step: "attack",
+                attackerUid: "p0-deck-100-0",
+                responsePlayer: 0,
+              },
+              pendingBattle: true,
+              currentAttack: true,
+              legalActions: [
+                { type: "cancelAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", count: 1 },
+                { type: "replayAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2", count: 1 },
+                { type: "replayAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1", count: 1 },
+              ],
+              logIncludes: ["Replay decision pending"],
+            },
+          }),
+          makeScriptedStep(makeResponseSelector("replayAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1" }), {
+            snapshotRestore: true,
+            before: {
+              source: "edopro",
+              battleWindow: { kind: "replayDecision", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+              pendingBattle: true,
+              currentAttack: true,
+              legalActions: [{ type: "replayAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1", count: 1 }],
+            },
+            after: {
+              source: "edopro",
+              battleWindow: {
+                kind: "attackNegationResponse",
+                step: "attack",
+                attackerUid: "p0-deck-100-0",
+                targetUid: "p1-deck-400-1",
+                responsePlayer: 1,
+              },
+              pendingBattle: true,
+              currentAttack: true,
+              legalActions: [{ type: "passAttack", player: 1, count: 1 }],
+              logIncludes: ["Replayed attack on Fixture Defender"],
+            },
+          }),
+          makeScriptedStep(makeResponseSelector("passAttack", 1)),
+          makeScriptedStep(makeResponseSelector("passAttack", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+          makeScriptedStep(makeResponseSelector("passDamage", 1)),
+          makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        ],
+        expected: {
+          phase: "battle",
+          waitingFor: 0,
+          lifePoints: { 1: 7700 },
+          pendingBattle: false,
+          currentAttack: false,
+          battleWindow: null,
+          chain: [],
+          pendingTriggers: [],
+          prompt: null,
+          legalActions: [{ type: "changePhase", player: 0, phase: "main2", count: 1 }],
+          absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
+          attacksDeclared: ["p0-deck-100-0"],
+          attackCanceledUids: [],
+          attackedTargetUids: ["p1-deck-400-2", "p1-deck-400-1"],
+          battlePairs: [
+            { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2" },
+            { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1" },
+          ],
+          locations: { monsterZone: ["100", "400"], graveyard: ["400"] },
+          locationCounts: { monsterZone: { "100": 1, "400": 1 }, graveyard: { "400": 1 } },
+          cards: [
+            { uid: "p0-deck-100-0", location: "monsterZone", controller: 0 },
+            { uid: "p1-deck-400-2", location: "monsterZone", controller: 1 },
+            { uid: "p1-deck-400-1", location: "graveyard", controller: 1 },
+          ],
+          logIncludes: ["Fixture target count changed before damage", "Replay decision pending", "Replayed attack on Fixture Defender"],
         },
       },
     ];
@@ -353,6 +606,250 @@ describe("EDOPro compatibility harness scaffolding", () => {
     for (const fixture of fixtures) {
       expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(battleCards) })).toEqual({ ok: true, failures: [] });
     }
+  });
+
+  it("reports fixture effect movement failures with rollback", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Fixture Ignition", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Fixture Filler", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Fixture Defender", kind: "monster", attack: 1500, defense: 1600 },
+    ];
+    const result = runScriptedDuelFixture(
+      {
+        name: "missing fixture move rollback",
+        options: { seed: 46, startingHandSize: 2 },
+        decks: {
+          0: { main: ["100", "300"] },
+          1: { main: ["400", "400"] },
+        },
+        setup: {
+          effects: [
+            {
+              id: "fixture-missing-move",
+              player: 0,
+              code: "100",
+              location: "hand",
+              event: "ignition",
+              range: ["hand"],
+              moveCardsOnResolve: [{ player: 1, code: "999", from: "hand", to: "graveyard" }],
+            },
+          ],
+        },
+        responses: [
+          makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-missing-move" })),
+        ],
+        expected: {
+          windowId: 0,
+          phase: "main1",
+          pendingBattle: false,
+          currentAttack: false,
+          locations: { hand: ["100", "300", "400"] },
+          locationCounts: { graveyard: { "999": 0 }, hand: { "100": 1, "300": 1, "400": 2 } },
+        },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures[0]).toEqual({
+      fixture: "missing fixture move rollback",
+      message: "Fixture effect could not move 999 for player 1",
+    });
+    expect(result.failures).toHaveLength(1);
+  });
+
+  it("runs a scripted trigger-controller fast-effect fixture", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Fixture Summon", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Fixture Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Fixture Quick", kind: "monster", attack: 1200, defense: 1200 },
+    ];
+    const result = runScriptedDuelFixture(
+      {
+        name: "trigger controller fast effect fixture",
+        options: { seed: 49, startingHandSize: 3 },
+        decks: {
+          0: { main: ["100", "300", "500"] },
+          1: { main: ["100", "100", "100"] },
+        },
+        setup: {
+          effects: [
+            {
+              id: "fixture-normal-summon-trigger",
+              player: 0,
+              code: "300",
+              location: "hand",
+              event: "trigger",
+              triggerEvent: "normalSummoned",
+              range: ["hand"],
+              logMessage: "Fixture trigger resolved",
+            },
+            {
+              id: "fixture-self-fast-quick",
+              player: 0,
+              code: "500",
+              location: "hand",
+              event: "quick",
+              range: ["hand"],
+              logMessage: "Fixture self fast quick resolved",
+            },
+          ],
+        },
+        responses: [
+          makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
+            after: {
+              source: "edopro",
+              windowId: 1,
+              waitingFor: 0,
+              pendingTriggers: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", triggerBucket: "turnOptional", eventCardUid: "p0-deck-100-0" }],
+              legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-normal-summon-trigger", triggerBucket: "turnOptional", count: 1 }],
+            },
+          }),
+          makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-normal-summon-trigger" }), {
+            after: {
+              source: "edopro",
+              windowId: 2,
+              waitingFor: 0,
+              chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+              pendingTriggers: [],
+              legalActions: [
+                { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "fixture-self-fast-quick", count: 1 },
+                { type: "passChain", player: 0, windowId: 2, windowKind: "chainResponse", count: 1 },
+              ],
+              absentLegalActions: [{ type: "activateEffect", player: 1 }],
+            },
+          }),
+          makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-self-fast-quick" }), {
+            snapshotRestore: true,
+            before: {
+              source: "edopro",
+              windowId: 2,
+              waitingFor: 0,
+              legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "fixture-self-fast-quick", count: 1 }],
+            },
+          }),
+        ],
+        expected: {
+          windowId: 3,
+          phase: "main1",
+          waitingFor: 0,
+          chain: [],
+          pendingTriggers: [],
+          prompt: null,
+          locations: { monsterZone: ["100"], hand: ["300", "500"] },
+          logIncludes: ["Fixture self fast quick resolved", "Fixture trigger resolved"],
+          legalActions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+        },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result).toEqual({ ok: true, failures: [] });
+  });
+
+  it("runs a scripted opponent fast-effect response fixture", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Fixture Summon", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Fixture Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Fixture Quick", kind: "monster", attack: 1200, defense: 1200 },
+    ];
+    const result = runScriptedDuelFixture(
+      {
+        name: "opponent fast effect response fixture",
+        options: { seed: 50, startingHandSize: 3 },
+        decks: {
+          0: { main: ["100", "300", "500"] },
+          1: { main: ["500", "100", "100"] },
+        },
+        setup: {
+          effects: [
+            {
+              id: "fixture-normal-summon-trigger",
+              player: 0,
+              code: "300",
+              location: "hand",
+              event: "trigger",
+              triggerEvent: "normalSummoned",
+              range: ["hand"],
+              logMessage: "Fixture trigger resolved",
+            },
+            {
+              id: "fixture-opponent-fast-quick",
+              player: 1,
+              code: "500",
+              location: "hand",
+              event: "quick",
+              range: ["hand"],
+              logMessage: "Fixture opponent fast quick resolved",
+            },
+            {
+              id: "fixture-turn-fast-quick",
+              player: 0,
+              code: "500",
+              location: "hand",
+              event: "quick",
+              range: ["hand"],
+              logMessage: "Fixture turn fast quick resolved",
+            },
+          ],
+        },
+        responses: [
+          makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+          makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-normal-summon-trigger" }), {
+            after: {
+              source: "edopro",
+              windowId: 2,
+              waitingFor: 1,
+              chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+              pendingTriggers: [],
+              legalActions: [
+                { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "fixture-opponent-fast-quick", count: 1 },
+                { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+              ],
+              absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-turn-fast-quick" }],
+            },
+          }),
+          makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-fast-quick" }), {
+            snapshotRestore: true,
+            before: {
+              source: "edopro",
+              windowId: 2,
+              waitingFor: 1,
+              legalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "fixture-opponent-fast-quick", count: 1 }],
+            },
+            after: {
+              source: "edopro",
+              windowId: 3,
+              waitingFor: 0,
+              chain: [
+                { player: 0, effectId: "fixture-normal-summon-trigger" },
+                { player: 1, effectId: "fixture-opponent-fast-quick" },
+              ],
+              legalActions: [
+                { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-turn-fast-quick", count: 1 },
+                { type: "passChain", player: 0, windowId: 3, windowKind: "chainResponse", count: 1 },
+              ],
+            },
+          }),
+          makeScriptedStep(makeResponseSelector("passChain", 0)),
+          makeScriptedStep(makeResponseSelector("passChain", 1)),
+        ],
+        expected: {
+          windowId: 5,
+          phase: "main1",
+          waitingFor: 0,
+          chain: [],
+          pendingTriggers: [],
+          prompt: null,
+          locations: { monsterZone: ["100"], hand: ["300", "500"] },
+          logIncludes: ["Fixture opponent fast quick resolved", "Fixture trigger resolved"],
+          legalActions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+        },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result).toEqual({ ok: true, failures: [] });
   });
 
   it("selects extra deck scripted fixture responses by material uids", () => {
