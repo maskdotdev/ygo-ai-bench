@@ -898,6 +898,37 @@ describe("Lua summon and release helpers", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "500")?.location).toBe("monsterZone");
   });
 
+  it("lets Lua scripts use self tribute cost aliases", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Self Tribute Cost", kind: "monster" }];
+    const session = createDuel({ seed: 189, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      Debug.Message("self tribute check " .. tostring(Cost.SelfTribute(e,0,Group.CreateGroup(),0,0,nil,0,0,0)) .. "/" .. tostring(Cost.SelfRelease(e,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+      Cost.SelfRelease(e,0,Group.CreateGroup(),0,0,nil,0,0,1)
+      Debug.Message("self tribute moved " .. tostring(c:IsLocation(LOCATION_GRAVE)) .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("self tribute reason " .. tostring(c:IsReason(REASON_RELEASE)) .. "/" .. tostring(c:IsReason(REASON_COST)))
+      `,
+      "self-tribute-cost.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("self tribute check true/true");
+    expect(host.messages).toContain("self tribute moved true/100");
+    expect(host.messages).toContain("self tribute reason true/true");
+  });
+
   it("lets Lua scripts check and select release cost groups", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Cost Field A", kind: "monster" },

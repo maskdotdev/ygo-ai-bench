@@ -10,6 +10,11 @@ export function installAuxCostApi(L: unknown, readLuaError: (state: unknown) => 
       if chk==0 then return c and c:IsAbleToRemoveAsCost() end
       Duel.Remove(c,POS_FACEUP,REASON_COST)
     end
+    function Cost.SelfTribute(e,tp,eg,ep,ev,re,r,rp,chk)
+      local c=e:GetHandler()
+      if chk==0 then return c and c:IsReleasable() end
+      Duel.Release(c,REASON_COST)
+    end
     function Cost.SelfReveal(e,tp,eg,ep,ev,re,r,rp,chk)
       local c=e:GetHandler()
       if chk==0 then return c and not c:IsPublic() end
@@ -207,6 +212,7 @@ export function installAuxCostApi(L: unknown, readLuaError: (state: unknown) => 
         if op then op(e,tp,g) end
       end
     end
+    Cost.SelfRelease=Cost.SelfTribute
     aux.bfgcost=Cost.SelfBanish
   `;
   const status = lauxlib.luaL_dostring(L, to_luastring(source));
