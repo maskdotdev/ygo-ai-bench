@@ -6,7 +6,9 @@ import {
   loadDecks,
   queryPublicState,
   registerEffect,
+  restoreDuel,
   sendDuelCardToGraveyard,
+  serializeDuel,
   startDuel,
 } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
@@ -553,6 +555,73 @@ describe("duel chains", () => {
     expect(session.state.log.filter((entry) => entry.detail === "Stale pass source resolved")).toHaveLength(1);
   });
 
+  it("rejects stale chain pass responses captured before snapshot restore", () => {
+    const session = createDuel({ seed: 98, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(source).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    registerEffect(session, {
+      id: "restore-stale-pass-source",
+      registryKey: "restore-stale-pass-source",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Restore stale pass source resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "restore-stale-pass-quick",
+      registryKey: "restore-stale-pass-quick",
+      sourceUid: quickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Restore stale pass quick resolved");
+      },
+    });
+
+    const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-stale-pass-source");
+    expect(sourceAction).toBeTruthy();
+    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(1);
+    const stalePass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(stalePass).toBeTruthy();
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-stale-pass-source": (effect) => ({
+        ...effect,
+        operation(ctx) {
+          ctx.log("Restore stale pass source resolved");
+        },
+      }),
+      "restore-stale-pass-quick": (effect) => ({
+        ...effect,
+        operation(ctx) {
+          ctx.log("Restore stale pass quick resolved");
+        },
+      }),
+    });
+    const quick = getDuelLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-stale-pass-quick");
+    expect(quick).toBeTruthy();
+    expect(applyResponse(restored, quick!).ok).toBe(true);
+    const replay = applyResponse(restored, stalePass!);
+
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    expect(restored.state.chain).toHaveLength(0);
+    expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass source resolved")).toHaveLength(1);
+    expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass quick resolved")).toHaveLength(1);
+  });
+
   it("rejects stale quick responses after their chain window closes", () => {
     const session = createDuel({ seed: 97, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -604,6 +673,73 @@ describe("duel chains", () => {
     expect(session.state.chain).toHaveLength(0);
     expect(session.state.log.filter((entry) => entry.detail === "Stale self quick resolved")).toHaveLength(0);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "stale-self-quick")).toBe(true);
+  });
+
+  it("rejects stale quick responses captured before snapshot restore", () => {
+    const session = createDuel({ seed: 99, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    registerEffect(session, {
+      id: "restore-stale-quick-source",
+      registryKey: "restore-stale-quick-source",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Restore stale quick source resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "restore-stale-self-quick",
+      registryKey: "restore-stale-self-quick",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Restore stale self quick resolved");
+      },
+    });
+
+    const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-stale-quick-source");
+    expect(sourceAction).toBeTruthy();
+    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(0);
+    const staleQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-stale-self-quick");
+    expect(staleQuick).toBeTruthy();
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-stale-quick-source": (effect) => ({
+        ...effect,
+        operation(ctx) {
+          ctx.log("Restore stale quick source resolved");
+        },
+      }),
+      "restore-stale-self-quick": (effect) => ({
+        ...effect,
+        operation(ctx) {
+          ctx.log("Restore stale self quick resolved");
+        },
+      }),
+    });
+    const pass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
+    expect(pass).toBeTruthy();
+    expect(applyResponse(restored, pass!).ok).toBe(true);
+    const replay = applyResponse(restored, staleQuick!);
+
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    expect(restored.state.chain).toHaveLength(0);
+    expect(restored.state.log.filter((entry) => entry.detail === "Restore stale quick source resolved")).toHaveLength(1);
+    expect(restored.state.log.some((entry) => entry.detail === "Restore stale self quick resolved")).toBe(false);
   });
 
   it("resets once-per-turn effect usage on a later turn", () => {
