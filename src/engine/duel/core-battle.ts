@@ -17,6 +17,7 @@ import {
   isAttackPrevented,
   isBattleTargetSelectionPrevented,
   isBattleTargetPrevented,
+  isDirectAttackPrevented,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
@@ -44,7 +45,9 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
   )) {
     if (action.type !== "declareAttack") continue;
     const attacker = findCard(state, action.attackerUid);
-    if (attacker && !isAttackPrevented(state, attacker, createContext)) actions.push(action);
+    if (!attacker || isAttackPrevented(state, attacker, createContext)) continue;
+    if (action.targetUid === undefined && isDirectAttackPrevented(state, attacker, createContext)) continue;
+    actions.push(action);
   }
 }
 
@@ -70,6 +73,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
   const attacker = findCard(state, attackerUid);
   const createContext = handlers.createContinuousContext(state);
   if (attacker && isAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack`);
+  if (attacker && targetUid === undefined && isDirectAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack directly`);
   state.battleDamage = { 0: 0, 1: 0 };
   const pendingTriggerCount = state.pendingTriggers.length;
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
