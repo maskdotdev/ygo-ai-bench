@@ -1378,9 +1378,9 @@ describe("Lua field and query helpers", () => {
       Debug.Message("stat varargs " .. tostring(c:IsAttack(2500,2800)) .. "/" .. tostring(c:IsAttack(2500,2600)) .. "/" .. tostring(c:IsBaseAttack(2400,2500)) .. "/" .. tostring(c:IsDefense(2100,1700)) .. "/" .. tostring(c:IsBaseDefense(1700,2100)) .. "/" .. tostring(c:IsTextDefense(2100,1700)) .. "/" .. tostring(c:IsLevel(6,7)))
       Debug.Message("stat comparisons " .. tostring(c:IsAttackAbove(2400)) .. "/" .. tostring(c:IsAttackBelow(2600)) .. "/" .. tostring(c:IsDefenseAbove(2200)) .. "/" .. tostring(c:IsDefenseBelow(2200)) .. "/" .. tostring(c:IsLevelAbove(6)) .. "/" .. tostring(c:IsLevelBelow(6)))
       Debug.Message("original stat comparisons " .. tostring(c:IsOriginalAttack(2500,2400)) .. "/" .. tostring(c:IsOriginalAttackAbove(2400)) .. "/" .. tostring(c:IsOriginalAttackBelow(2600)) .. "/" .. tostring(c:IsOriginalDefense(2100,1700)) .. "/" .. tostring(c:IsOriginalDefenseAbove(2200)) .. "/" .. tostring(c:IsOriginalDefenseBelow(2200)) .. "/" .. tostring(c:IsOriginalLevel(6,7)) .. "/" .. tostring(c:IsOriginalLevelAbove(6)) .. "/" .. tostring(c:IsOriginalLevelBelow(6)))
-      Debug.Message("code checks " .. tostring(c:IsCode(900)) .. "/" .. tostring(c:IsCode(900,100)) .. "/" .. tostring(c:IsOriginalCode(900)) .. "/" .. tostring(c:IsOriginalCode(100)))
+      Debug.Message("code checks " .. tostring(c:IsCode(900)) .. "/" .. tostring(c:IsCode(900,100)) .. "/" .. tostring(c:IsOriginalCode(900)) .. "/" .. tostring(c:IsOriginalCode(900,100)) .. "/" .. tostring(c:IsOriginalCode(100)))
       Debug.Message("not code checks " .. tostring(c:IsNotCode(900)) .. "/" .. tostring(c:IsNotCode(900,100)) .. "/" .. tostring(c:IsNotCode(901)))
-      Debug.Message("code rule checks " .. c:GetOriginalCodeRule() .. "/" .. tostring(c:IsOriginalCodeRule(900)) .. "/" .. tostring(c:IsOriginalCodeRule(100)))
+      Debug.Message("code rule checks " .. c:GetOriginalCodeRule() .. "/" .. tostring(c:IsOriginalCodeRule(900)) .. "/" .. tostring(c:IsOriginalCodeRule(900,100)) .. "/" .. tostring(c:IsOriginalCodeRule(100)))
       Debug.Message("set checks " .. tostring(c:IsSetCard(0x123)) .. "/" .. tostring(c:IsSetCard({0x456,0x123})) .. "/" .. tostring(c:IsOriginalSetCard(0x123)) .. "/" .. tostring(c:IsOriginalSetCard({0x456,0x123})) .. "/" .. tostring(c:IsOriginalSetCard(0x456)) .. "/" .. tostring(c:IsNotSetCard(0x123)) .. "/" .. tostring(c:IsNotSetCard({0x123,0x456})) .. "/" .. tostring(c:IsNotSetCard(0x456)))
       local property_filter=aux.PropertyTableFilter(Card.GetSetCard,0x123,0x456)
       Debug.Message("listed checks " .. tostring(c:ListsCode(700)) .. "/" .. tostring(c:ListsCode(800)) .. "/" .. tostring(c:ListsCode(900)) .. "/" .. tostring(c:ListsCode(600,700)) .. "/" .. tostring(c:ListsCodeWithArchetype(0x456)) .. "/" .. tostring(c:ListsCodeWithArchetype(0x789)))
@@ -1513,9 +1513,9 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("stat varargs true/false/true/true/true/true/true");
     expect(host.messages).toContain("stat comparisons true/false/false/true/true/false");
     expect(host.messages).toContain("original stat comparisons true/true/true/true/false/true/true/true/false");
-    expect(host.messages).toContain("code checks true/true/false/true");
+    expect(host.messages).toContain("code checks true/true/false/true/true");
     expect(host.messages).toContain("not code checks false/false/true");
-    expect(host.messages).toContain("code rule checks 100/false/true");
+    expect(host.messages).toContain("code rule checks 100/false/true/true");
     expect(host.messages).toContain("set checks true/true/true/true/false/false/false/true");
     expect(host.messages).toContain("property table filter 291/nil");
     expect(host.messages).toContain("listed checks true/true/false/true/true/false");

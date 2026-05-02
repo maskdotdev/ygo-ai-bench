@@ -61,15 +61,15 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("ListsArchetypeAsMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
+    const requested = readRequestedCodes(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.includes(card.code)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsOriginalCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested && card.code === requested));
+    const requested = readRequestedCodes(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.includes(card.code)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsOriginalCodeRule"));
