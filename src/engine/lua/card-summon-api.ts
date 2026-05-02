@@ -10,7 +10,14 @@ const cardSalamangreatSanctuary = 1295111;
 export function installCardSummonApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
   pushNumberGetter(L, "GetSummonPhase", session, (card) => phaseMask(card?.summonPhase));
-  pushNumberMatcher(L, "IsSummonPhase", session, (card, requested) => phaseMask(card.summonPhase) === requested);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2);
+    const phase = phaseMask(card?.summonPhase);
+    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => phase === value || (phase & value) !== 0)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSummonPhase"));
   pushBooleanGetter(L, "IsSummonPhaseMain", session, (card) => {
     const phase = phaseMask(card?.summonPhase);
     return phase === 0x4 || phase === 0x100;
