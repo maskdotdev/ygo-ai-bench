@@ -26,6 +26,12 @@ export function installCardRelationApi<EffectRecord extends LuaCardApiEffectReco
   lua.lua_setfield(L, -2, to_luastring("GetFirstCardTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetCardTargetCount(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetCardTargetCount"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetOwnerTarget(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetOwnerTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetFirstOwnerTarget(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetFirstOwnerTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetOwnerTargetCount(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetOwnerTargetCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsHasCardTarget(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsHasCardTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCreateRelation(state, session));
@@ -91,6 +97,27 @@ function pushGetFirstCardTarget(L: unknown, session: DuelSession): number {
 function pushGetCardTargetCount(L: unknown, session: DuelSession): number {
   const card = readCard(L, session, 1);
   lua.lua_pushinteger(L, card?.cardTargetUids?.length ?? 0);
+  return 1;
+}
+
+function pushGetOwnerTarget(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session, 1);
+  pushGroupTable(L, ownerTargetUids(session, card));
+  return 1;
+}
+
+function pushGetFirstOwnerTarget(L: unknown, session: DuelSession): number {
+  const uid = ownerTargetUids(session, readCard(L, session, 1))[0];
+  if (!uid) {
+    lua.lua_pushnil(L);
+    return 1;
+  }
+  pushCardTable(L, uid);
+  return 1;
+}
+
+function pushGetOwnerTargetCount(L: unknown, session: DuelSession): number {
+  lua.lua_pushinteger(L, ownerTargetUids(session, readCard(L, session, 1)).length);
   return 1;
 }
 
@@ -185,4 +212,9 @@ function setCardTarget(card: DuelCardInstance | undefined, target: DuelCardInsta
   card.cardTargetUids = card.cardTargetUids ?? [];
   if (!card.cardTargetUids.includes(target.uid)) card.cardTargetUids.push(target.uid);
   return true;
+}
+
+function ownerTargetUids(session: DuelSession, card: DuelCardInstance | undefined): string[] {
+  if (!card) return [];
+  return session.state.cards.filter((candidate) => candidate.cardTargetUids?.includes(card.uid)).map((candidate) => candidate.uid);
 }

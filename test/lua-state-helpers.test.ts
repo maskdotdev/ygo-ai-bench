@@ -1674,9 +1674,11 @@ describe("Lua state helpers", () => {
       Debug.Message("card target set " .. tostring(source:SetCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
       Debug.Message("card relation create " .. tostring(source:CreateRelation(second,RESET_EVENT+RESETS_STANDARD)) .. "/" .. tostring(source:IsHasCardTarget(second)))
       Debug.Message("card target group " .. source:GetCardTargetCount() .. "/" .. source:GetCardTarget():GetCount() .. "/" .. source:GetFirstCardTarget():GetCode())
+      Debug.Message("owner target first " .. first:GetOwnerTargetCount() .. "/" .. first:GetOwnerTarget():GetCount() .. "/" .. first:GetFirstOwnerTarget():GetCode())
       source:CancelCardTarget(first)
       Debug.Message("card target cancel " .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
       Debug.Message("card target group after " .. source:GetCardTargetCount() .. "/" .. source:GetCardTarget():GetCount() .. "/" .. source:GetFirstCardTarget():GetCode())
+      Debug.Message("owner target after " .. first:GetOwnerTargetCount() .. "/" .. first:GetOwnerTarget():GetCount() .. "/" .. tostring(first:GetFirstOwnerTarget()==nil))
       `,
       "card-target-relation.lua",
     );
@@ -1687,8 +1689,10 @@ describe("Lua state helpers", () => {
       "card target set true/true/false",
       "card relation create true/true",
       "card target group 2/2/200",
+      "owner target first 1/1/100",
       "card target cancel false/true",
       "card target group after 1/1/300",
+      "owner target after 0/0/true",
     ]);
     expect(session.state.cards.find((card) => card.code === "100")?.cardTargetUids).toHaveLength(1);
   });
