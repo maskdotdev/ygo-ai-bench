@@ -7,7 +7,7 @@ import { registerDuelFlagEffect } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
-import { cardCodes } from "#lua/card-code-utils.js";
+import { cardCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
 import { canBeMaterial, canMoveCardToDeckOrExtraAsCost, isMonsterLike } from "#lua/card-eligibility-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
@@ -91,7 +91,13 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetFieldID", session, (card) => cardFieldId(card));
   pushNumberGetter(L, "GetRealFieldID", session, (card) => cardFieldId(card));
   pushNumberGetter(L, "GetCardID", session, (card) => cardFieldId(card));
-  pushNumberMatcher(L, "IsSequence", session, (card, requested) => card.sequence === requested);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.includes(card.sequence)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSequence"));
   pushNumberMatcher(L, "IsFieldID", session, (card, requested) => cardFieldId(card) === requested);
   pushNumberMatcher(L, "IsRealFieldID", session, (card, requested) => cardFieldId(card) === requested);
   pushNumberGetter(L, "GetPosition", session, (card) => positionMaskFromPosition(card?.position));

@@ -19,7 +19,13 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   pushNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => (leaveFieldDestinationMask(card) & requested) !== 0);
   pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
   pushNumberGetter(L, "GetPreviousSequence", session, (card) => card?.previousSequence ?? 0);
-  pushNumberMatcher(L, "IsPreviousSequence", session, (card, requested) => card.previousSequence === requested);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requested.includes(card.previousSequence ?? -1)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPreviousSequence"));
   pushNumberGetter(L, "GetPreviousPosition", session, (card) => positionMaskFromPosition(card?.previousPosition));
   pushNumberGetter(L, "GetPreviousCode", session, (card) => (card?.previousLocation ? Number(card.code) : 0));
   lua.lua_pushcfunction(L, (state: unknown) => {
