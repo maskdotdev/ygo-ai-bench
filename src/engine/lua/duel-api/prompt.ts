@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
 import { readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { cardTypeFlags } from "#lua/card-stat-api.js";
 import type { DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -46,7 +47,8 @@ export function installDuelPromptApi(L: unknown, session: DuelSession, hostState
   pushAnnouncementHelper(L, "AnnounceNumber");
   lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceNumberRange(state));
   lua.lua_setfield(L, -2, to_luastring("AnnounceNumberRange"));
-  pushAnnouncementHelper(L, "AnnounceCard");
+  lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceCard(state, session));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceCard"));
   pushAnnouncementHelper(L, "AnnounceType");
   lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceMaskChoice(state, raceAll, 0x2000000));
   lua.lua_setfield(L, -2, to_luastring("AnnounceRace"));
@@ -149,6 +151,25 @@ function pushFirstAnnouncementValue(L: unknown, fallback: number): number {
   const value = readFirstAnnouncementValue(L, 2) ?? fallback;
   lua.lua_pushinteger(L, value);
   return 1;
+}
+
+function pushAnnounceCard(L: unknown, session: DuelSession): number {
+  const value = readFirstAnnouncementValue(L, 2);
+  const code = value !== undefined ? announceCardCodeForValue(session, value) : firstKnownCardCode(session);
+  lua.lua_pushinteger(L, code ?? 0);
+  return 1;
+}
+
+function announceCardCodeForValue(session: DuelSession, value: number): number | undefined {
+  if (session.state.cards.some((card) => Number(card.code) === value)) return value;
+  if (value > 0xff && !session.state.cards.some((card) => (cardTypeFlags(card) & value) !== 0)) return value;
+  return firstKnownCardCode(session, value);
+}
+
+function firstKnownCardCode(session: DuelSession, typeMask?: number): number | undefined {
+  const cards = [...session.state.cards].sort((left, right) => Number(left.code) - Number(right.code));
+  const card = cards.find((candidate) => typeMask === undefined || typeMask === 0 || (cardTypeFlags(candidate) & typeMask) !== 0);
+  return card ? Number(card.code) : undefined;
 }
 
 function readFirstAnnouncementValue(L: unknown, index: number): number | undefined {
