@@ -1,7 +1,6 @@
 import fengari from "fengari";
-import { canDuelCardAttack, registerEffect } from "#duel/core.js";
+import { registerEffect } from "#duel/core.js";
 import { isCardDisabled } from "#duel/continuous-effects.js";
-import { duelReason } from "#duel/reasons.js";
 import { installCardAdjacentApi } from "#lua/card-adjacent-api.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
@@ -33,7 +32,7 @@ import {
   readTableNumberField,
   readTableStringField,
 } from "#lua/api-utils.js";
-import type { DuelCardInstance, DuelEffectDefinition, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
 const { lua, to_luastring } = fengari;
@@ -62,7 +61,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   installCardTableApi(L);
   installCardCodeApi(L, session);
   installCardStatApi(L, session);
-  installCardBattleApi(L, session);
+  installCardBattleApi(L, session, hostState);
   installCardLinkApi(L, session);
   installCardReasonApi(L, session, hostState);
   installCardStatusApi(L, session, hostState);
@@ -76,11 +75,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   installCardOverlayApi(L, session, hostState);
   installCardEquipApi(L, session, hostState);
   installCardCounterApi(L, session);
-  pushBooleanGetter(L, "CanAttack", session, (card) => Boolean(card && canDuelCardAttack(session.state, card.uid)));
-  lua.lua_pushcfunction(L, (state: unknown) => pushCanChainAttack(state, session));
-  lua.lua_setfield(L, -2, to_luastring("CanChainAttack"));
-  pushNumberGetter(L, "GetAttackAnnouncedCount", session, (card) => (card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0));
-  pushBooleanGetter(L, "CanGetPiercingRush", session, (card) => Boolean(card && canGetPiercingRush(session.state, card, hostState)));
   installCardRushApi(L, session, hostState);
   installCardTypePredicateApi(L, session);
   installCardLinkedApi(L, session);
@@ -132,14 +126,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   installCardMaterialApi(L, session);
 }
 
-function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, getter(readCard(state, session)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring(fieldName));
-}
-
 function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined, uid: string | undefined) => boolean): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 1);
@@ -163,17 +149,6 @@ function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   return effects.length;
 }
 
-function canEnterBattlePhase(state: DuelState): boolean {
-  return nextAvailablePhase(state, state.turnPlayer) === "battle";
-}
-
-function canGetPiercingRush<EffectRecord extends LuaCardApiEffectRecord>(state: DuelState, card: DuelCardInstance, hostState: LuaCardApiState<EffectRecord>): boolean {
-  if ((cardTypeFlags(card) & 0x1) === 0 || !canEnterBattlePhase(state)) return false;
-  if (matchingLuaEffects(state, card, 85, hostState).length > 0) return false;
-  const pierceEffects = matchingLuaEffects(state, card, 203, hostState);
-  return pierceEffects.length === 0 || pierceEffects.some((effect) => (effect.reset?.flags ?? 0) === 0);
-}
-
 function pushIsRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
   const card = readCard(L, session);
   const player = normalizePlayer(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : session.state.turnPlayer);
@@ -184,14 +159,6 @@ function pushIsRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(L: u
 function isRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(state: DuelState, card: DuelCardInstance, player: PlayerId, hostState: LuaCardApiState<EffectRecord>): boolean {
   if (((card.data.race ?? 0) & 0x400) !== 0) return true;
   return card.controller === otherPlayer(player) && matchingLuaEffects(state, card, 76869711, hostState).length > 0;
-}
-
-function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
-  const phaseOrder = ["draw", "standby", "main1", "battle", "main2", "end"] satisfies DuelPhase[];
-  for (const phase of phaseOrder.slice(phaseOrder.indexOf(state.phase) + 1)) {
-    if (!state.skippedPhases.some((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0)) return phase;
-  }
-  return undefined;
 }
 
 function readCard(L: unknown, session: DuelSession | undefined): DuelCardInstance | undefined {
@@ -210,12 +177,4 @@ function otherPlayer(player: PlayerId): PlayerId {
 function isRelatedToBattle(state: DuelState, uid: string): boolean {
   const battle = state.currentAttack ?? state.pendingBattle;
   return battle?.attackerUid === uid || battle?.targetUid === uid;
-}
-
-function pushCanChainAttack(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const requestedAllowance = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 1;
-  const attackCount = card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0;
-  lua.lua_pushboolean(L, Boolean(card && attackCount > 0 && canDuelCardAttack(session.state, card.uid, requestedAllowance)));
-  return 1;
 }

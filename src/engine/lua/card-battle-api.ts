@@ -1,14 +1,27 @@
 import fengari from "fengari";
+import { canDuelCardAttack } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
+import { matchingLuaEffects } from "#lua/card-effect-query-api.js";
+import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
-import type { CardPosition, DuelCardInstance, DuelSession } from "#duel/types.js";
+import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
+import type { CardPosition, DuelCardInstance, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installCardBattleApi(L: unknown, session: DuelSession): void {
+export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord>(
+  L: unknown,
+  session: DuelSession,
+  hostState: LuaCardApiState<EffectRecord>,
+): void {
+  pushBooleanGetter(L, "CanAttack", session, (card) => Boolean(card && canDuelCardAttack(session.state, card.uid)));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanChainAttack(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CanChainAttack"));
+  pushNumberGetter(L, "GetAttackAnnouncedCount", session, (card) => (card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0));
+  pushBooleanGetter(L, "CanGetPiercingRush", session, (card) => Boolean(card && canGetPiercingRush(session.state, card, hostState)));
   pushNumberGetter(L, "GetBattlePosition", session, (card) => positionMaskFromPosition(card?.battlePosition ?? card?.position));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
@@ -74,6 +87,33 @@ function battledOpponentUids(session: DuelSession, card: DuelCardInstance | unde
 
 function isBattleDestroyed(card: DuelCardInstance): boolean {
   return (card.reason ?? 0) === ((card.reason ?? 0) | duelReason.battle | duelReason.destroy);
+}
+
+function pushCanChainAttack(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const requestedAllowance = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 1;
+  const attackCount = card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0;
+  lua.lua_pushboolean(L, Boolean(card && attackCount > 0 && canDuelCardAttack(session.state, card.uid, requestedAllowance)));
+  return 1;
+}
+
+function canGetPiercingRush<EffectRecord extends LuaCardApiEffectRecord>(state: DuelState, card: DuelCardInstance, hostState: LuaCardApiState<EffectRecord>): boolean {
+  if ((cardTypeFlags(card) & 0x1) === 0 || !canEnterBattlePhase(state)) return false;
+  if (matchingLuaEffects(state, card, 85, hostState).length > 0) return false;
+  const pierceEffects = matchingLuaEffects(state, card, 203, hostState);
+  return pierceEffects.length === 0 || pierceEffects.some((effect) => (effect.reset?.flags ?? 0) === 0);
+}
+
+function canEnterBattlePhase(state: DuelState): boolean {
+  return nextAvailablePhase(state, state.turnPlayer) === "battle";
+}
+
+function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
+  const phaseOrder = ["draw", "standby", "main1", "battle", "main2", "end"] satisfies DuelPhase[];
+  for (const phase of phaseOrder.slice(phaseOrder.indexOf(state.phase) + 1)) {
+    if (!state.skippedPhases.some((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0)) return phase;
+  }
+  return undefined;
 }
 
 function positionMaskFromPosition(position: CardPosition | undefined): number {
