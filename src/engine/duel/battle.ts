@@ -1,5 +1,6 @@
 import { findCard, getCards, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
 import { recordAttackActivity } from "#duel/activity.js";
+import { clearBattleWindowState, markBattleWindowAttackNegated, openBattleWindowState } from "#duel/battle-window-state.js";
 import { duelReason } from "#duel/reasons.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
@@ -52,7 +53,7 @@ export function declareDuelAttack(
   state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
   state.pendingBattle = { ...state.currentAttack };
   if (target) recordBattledPair(state, attacker.uid, target.uid);
-  state.battleStep = "attack";
+  openBattleWindowState(state, target ? "attackTargetConfirmation" : "attackDeclaration", "attack", player);
   if (!target) {
     pushDuelLog(state, "attack", player, attacker.name, "Direct attack");
     callbacks.collectEvent("attackDeclared", attacker);
@@ -68,12 +69,13 @@ export function negateDuelAttack(state: DuelState): boolean {
   if (!attack) return false;
   const attacker = findCard(state, attack.attackerUid);
   if (attacker && !state.attackCanceledUids.includes(attacker.uid)) state.attackCanceledUids.push(attacker.uid);
+  markBattleWindowAttackNegated(state);
   delete state.currentAttack;
   delete state.pendingBattle;
   state.attackPasses = [];
   state.damagePasses = [];
   state.attackCostPaid = 0;
-  delete state.battleStep;
+  clearBattleWindowState(state);
   pushDuelLog(state, "attack", attacker?.controller ?? state.turnPlayer, attacker?.name, "Negated attack");
   return true;
 }
@@ -88,7 +90,7 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
     state.attackPasses = [];
     state.damagePasses = [];
     state.attackCostPaid = 0;
-    delete state.battleStep;
+    clearBattleWindowState(state);
     return false;
   }
   const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
@@ -105,7 +107,7 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
     state.attackPasses = [];
     state.damagePasses = [];
     state.attackCostPaid = 0;
-    delete state.battleStep;
+    clearBattleWindowState(state);
   }
 }
 

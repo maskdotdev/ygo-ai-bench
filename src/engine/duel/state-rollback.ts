@@ -1,3 +1,4 @@
+import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import type { ChainLink, DuelBattlePair, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelState, PendingTrigger, PlayerId } from "#duel/types.js";
 
 export interface DuelStateRollback {
@@ -35,6 +36,7 @@ export interface DuelStateRollback {
   attackPasses: PlayerId[];
   damagePasses: PlayerId[];
   battleStep: DuelState["battleStep"] | undefined;
+  battleWindow: DuelState["battleWindow"] | undefined;
   positionsChanged: string[];
   currentAttack: DuelState["currentAttack"] | undefined;
   pendingBattle: DuelState["pendingBattle"] | undefined;
@@ -85,6 +87,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     attackPasses: [...state.attackPasses],
     damagePasses: [...state.damagePasses],
     battleStep: state.battleStep,
+    battleWindow: state.battleWindow ? copyBattleWindowState(state.battleWindow) : undefined,
     positionsChanged: [...state.positionsChanged],
     currentAttack: state.currentAttack ? { ...state.currentAttack } : undefined,
     pendingBattle: state.pendingBattle
@@ -134,6 +137,8 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.damagePasses = rollback.damagePasses;
   if (rollback.battleStep) state.battleStep = rollback.battleStep;
   else delete state.battleStep;
+  if (rollback.battleWindow) state.battleWindow = copyBattleWindowState(rollback.battleWindow);
+  else delete state.battleWindow;
   state.positionsChanged = rollback.positionsChanged;
   if (rollback.currentAttack) state.currentAttack = rollback.currentAttack;
   else delete state.currentAttack;

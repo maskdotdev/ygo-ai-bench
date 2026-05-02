@@ -1,4 +1,5 @@
 import { resetDuelActivityCounts } from "#duel/activity.js";
+import { clearBattleWindowState } from "#duel/battle-window-state.js";
 import { getCards, moveDuelCard, pushDuelLog } from "#duel/card-state.js";
 import { pruneResetEffectsAfterPhase } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterPhase } from "#duel/flags.js";
@@ -89,7 +90,7 @@ function clearBattleState(state: DuelState): void {
   state.attackPasses = [];
   state.damagePasses = [];
   state.attackCostPaid = 0;
-  delete state.battleStep;
+  clearBattleWindowState(state);
 }
 
 function isPhaseSkipped(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {

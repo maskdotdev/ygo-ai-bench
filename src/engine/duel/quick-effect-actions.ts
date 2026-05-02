@@ -1,3 +1,4 @@
+import { currentBattleWindowKind } from "#duel/battle-window-state.js";
 import { findCard } from "#duel/card-state.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
 import type { DuelAction, DuelCardInstance, DuelEffectDefinition, DuelState, PlayerId } from "#duel/types.js";
@@ -24,8 +25,11 @@ export function hasQuickEffectResponses(state: DuelState, player: PlayerId, canC
 }
 
 function quickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition): boolean {
-  if (state.battleStep === "damage") return Boolean((effect.property ?? 0) & 0x4000);
-  if (state.battleStep === "damageCalculation") return Boolean((effect.property ?? 0) & 0x8000);
+  const kind = currentBattleWindowKind(state);
+  if (kind === "duringDamageCalculation") return Boolean((effect.property ?? 0) & 0x8000);
+  if (kind === "startDamageStep" || kind === "beforeDamageCalculation" || kind === "afterDamageCalculation" || kind === "endDamageStep") {
+    return Boolean((effect.property ?? 0) & 0x4000);
+  }
   return true;
 }
 

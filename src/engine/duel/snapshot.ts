@@ -1,4 +1,5 @@
 import { copyDuelActivityCounts } from "#duel/activity.js";
+import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import type {
   DuelCardInstance,
@@ -43,6 +44,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
     attackPasses: [...state.attackPasses],
     damagePasses: [...state.damagePasses],
     ...(state.battleStep === undefined ? {} : { battleStep: state.battleStep }),
+    ...(state.battleWindow === undefined ? {} : { battleWindow: copyBattleWindowState(state.battleWindow) }),
     positionsChanged: [...state.positionsChanged],
     log: state.log.map((entry) => ({ ...entry })),
   };
@@ -78,6 +80,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       attackPasses: [...session.state.attackPasses],
       damagePasses: [...session.state.damagePasses],
       ...(session.state.battleStep === undefined ? {} : { battleStep: session.state.battleStep }),
+      ...(session.state.battleWindow === undefined ? {} : { battleWindow: copyBattleWindowState(session.state.battleWindow) }),
       positionsChanged: [...session.state.positionsChanged],
       ...(session.state.currentAttack === undefined ? {} : { currentAttack: { ...session.state.currentAttack } }),
       ...(session.state.pendingBattle === undefined ? {} : { pendingBattle: copyPendingBattle(session.state.pendingBattle) }),
@@ -124,6 +127,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       attackPasses: [...snapshot.state.attackPasses],
       damagePasses: [...snapshot.state.damagePasses],
       ...(snapshot.state.battleStep === undefined ? {} : { battleStep: snapshot.state.battleStep }),
+      ...(snapshot.state.battleWindow === undefined ? {} : { battleWindow: copyBattleWindowState(snapshot.state.battleWindow) }),
       positionsChanged: [...snapshot.state.positionsChanged],
       ...(snapshot.state.currentAttack === undefined ? {} : { currentAttack: { ...snapshot.state.currentAttack } }),
       ...(snapshot.state.pendingBattle === undefined ? {} : { pendingBattle: copyPendingBattle(snapshot.state.pendingBattle) }),

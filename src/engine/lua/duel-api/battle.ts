@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { changeDuelBattleDamage, damageDuelPlayer, getDuelAttackCostPaid, getDuelBattleDamage, negateDuelAttack, setDuelAttackCostPaid } from "#duel/core.js";
 import { recordBattledPair } from "#duel/battle.js";
+import { clearBattleWindowState, openBattleWindowState } from "#duel/battle-window-state.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -165,7 +166,7 @@ function chainAttack(session: DuelSession, targetUid: string | undefined): boole
   if (targetUid === undefined) {
     delete session.state.currentAttack;
     delete session.state.pendingBattle;
-    delete session.state.battleStep;
+    clearBattleWindowState(session.state);
     session.state.waitingFor = attacker.controller;
     return true;
   }
@@ -173,7 +174,7 @@ function chainAttack(session: DuelSession, targetUid: string | undefined): boole
   session.state.currentAttack = { attackerUid: attacker.uid, targetUid: target.uid };
   session.state.pendingBattle = { ...session.state.currentAttack };
   recordBattledPair(session.state, attacker.uid, target.uid);
-  session.state.battleStep = "attack";
+  openBattleWindowState(session.state, "attackTargetConfirmation", "attack", target.controller);
   session.state.waitingFor = target.controller;
   return true;
 }
@@ -187,7 +188,7 @@ function forceAttack(session: DuelSession, attackerUid: string | undefined, targ
   session.state.currentAttack = { attackerUid: attacker.uid, targetUid: target.uid };
   session.state.pendingBattle = { ...session.state.currentAttack };
   recordBattledPair(session.state, attacker.uid, target.uid);
-  session.state.battleStep = "attack";
+  openBattleWindowState(session.state, "attackTargetConfirmation", "attack", target.controller);
   session.state.attackPasses = [];
   session.state.damagePasses = [];
   session.state.attacksDeclared = session.state.attacksDeclared.filter((uid) => uid !== attacker.uid);

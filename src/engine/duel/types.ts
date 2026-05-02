@@ -263,6 +263,26 @@ export type DuelPromptState =
   | { id: string; type: "selectYesNo"; player: PlayerId; description?: number; returnTo?: PlayerId };
 
 export type BattleStep = "attack" | "damage" | "damageCalculation";
+export type BattleWindowKind =
+  | "attackDeclaration"
+  | "attackTargetConfirmation"
+  | "attackNegationResponse"
+  | "replayDecision"
+  | "startDamageStep"
+  | "beforeDamageCalculation"
+  | "duringDamageCalculation"
+  | "afterDamageCalculation"
+  | "endDamageStep";
+
+export interface BattleWindowState {
+  id: number;
+  kind: BattleWindowKind;
+  step: BattleStep;
+  attackerUid: string;
+  targetUid?: string;
+  responsePlayer: PlayerId;
+  attackNegated: boolean;
+}
 
 export interface DuelBattlePair {
   attackerUid: string;
@@ -309,6 +329,7 @@ export interface DuelState {
   attackPasses: PlayerId[];
   damagePasses: PlayerId[];
   battleStep?: BattleStep;
+  battleWindow?: BattleWindowState;
   positionsChanged: string[];
   currentAttack?: {
     attackerUid: string;
@@ -397,6 +418,7 @@ export interface PublicDuelState {
   attackPasses: PlayerId[];
   damagePasses: PlayerId[];
   battleStep?: BattleStep;
+  battleWindow?: BattleWindowState;
   positionsChanged: string[];
   log: DuelLogEntry[];
 }
@@ -434,7 +456,35 @@ export interface ScriptedResponseSelector {
   occurrence?: number;
 }
 
-export type ScriptedDuelStep = DuelResponse | ScriptedResponseSelector;
+export interface ScriptedLegalActionExpectation extends ScriptedResponseSelector {
+  count?: number;
+}
+
+export interface ScriptedDuelWindowExpectation {
+  source?: "edopro" | "local-scope";
+  windowId?: number;
+  waitingFor?: PlayerId;
+  phase?: DuelPhase;
+  battleStep?: BattleStep;
+  battleWindow?: Partial<BattleWindowState>;
+  pendingBattle?: boolean;
+  currentAttack?: boolean;
+  chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCardUid">>>;
+  pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCardUid">>>;
+  prompt?: Partial<DuelPromptState>;
+  legalActions?: ScriptedLegalActionExpectation[];
+  absentLegalActions?: ScriptedLegalActionExpectation[];
+  logIncludes?: string[];
+}
+
+export interface ScriptedDuelStepWithAssertions {
+  response: DuelResponse | ScriptedResponseSelector;
+  before?: ScriptedDuelWindowExpectation;
+  after?: ScriptedDuelWindowExpectation;
+  snapshotRestore?: boolean;
+}
+
+export type ScriptedDuelStep = ScriptedDuelStepWithAssertions;
 
 export interface ScriptedFixtureMove {
   player: PlayerId;
@@ -467,6 +517,7 @@ export interface ScriptedDuelFixture {
     moveCards?: ScriptedFixtureMove[];
     effects?: ScriptedFixtureEffect[];
   };
+  before?: ScriptedDuelWindowExpectation;
   responses: ScriptedDuelStep[];
   expected: {
     phase?: DuelPhase;

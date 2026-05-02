@@ -2460,7 +2460,11 @@ describe("Lua battle helpers", () => {
 
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
     expect(session.state.battleStep).toBe("damageCalculation");
+    expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
 
     expect(legalEffectCodes(session, 1)).toEqual([]);
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
@@ -2469,8 +2473,7 @@ describe("Lua battle helpers", () => {
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
     expect(host.messages).toContain("lua damage calculation quick 64/true/true/true");
 
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    passBattleResponses(session);
     expect(session.state.players[1].lifePoints).toBe(6200);
     expect(session.state.pendingBattle).toBeUndefined();
     const endStep = host.loadScript(
@@ -2528,7 +2531,11 @@ describe("Lua battle helpers", () => {
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
     expect(session.state.battleStep).toBe("damageCalculation");
+    expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
 
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
     expect(legalEffectCodes(session, 0)).toEqual(["300"]);
@@ -2538,8 +2545,7 @@ describe("Lua battle helpers", () => {
     expect(session.state.pendingBattle?.battleDamageOverrides).toEqual({ 1: 600 });
     expect(host.messages).toEqual(["lua damage before 0", "lua damage changed 600", "lua damage after 600"]);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    passBattleResponses(session);
     expect(session.state.players[1].lifePoints).toBe(7400);
     expect(session.state.battleDamage[1]).toBe(600);
     expect(session.state.pendingBattle).toBeUndefined();

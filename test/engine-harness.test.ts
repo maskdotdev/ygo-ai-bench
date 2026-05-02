@@ -101,4 +101,41 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(host.getGlobalString("calculation_calculated")).toBe("true");
     expect(host.getGlobalString("calculation_is_phase")).toBe("true");
   });
+
+  it("uses explicit battle windows before the legacy battleStep mirror in Lua phase helpers", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const session = createDuel({ seed: 5, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+    session.state.phase = "battle";
+    session.state.battleStep = "attack";
+    session.state.battleWindow = {
+      id: 0,
+      kind: "duringDamageCalculation",
+      step: "damageCalculation",
+      attackerUid: "p0-deck-100-0",
+      responsePlayer: 1,
+      attackNegated: false,
+    };
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      explicit_phase = Duel.GetCurrentPhase()
+      explicit_damage_step = tostring(Duel.IsDamageStep())
+      explicit_damage_calculated = tostring(Duel.IsDamageCalculated())
+      explicit_battle_step = tostring(Duel.IsBattleStep())
+      `,
+      "explicit-battle-window-phase.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.getGlobalNumber("explicit_phase")).toBe(0x40);
+    expect(host.getGlobalString("explicit_damage_step")).toBe("true");
+    expect(host.getGlobalString("explicit_damage_calculated")).toBe("true");
+    expect(host.getGlobalString("explicit_battle_step")).toBe("false");
+  });
 });
