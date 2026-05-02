@@ -167,7 +167,7 @@ export function battleDestroyRedirectLocation(state: DuelState, uid: string, cre
 
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   for (const effect of state.effects) {
-    if (effect.event !== "continuous" || effect.code !== 85) continue;
+    if (effect.event !== "continuous" || (effect.code !== 85 && effect.code !== 86)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectAffectsCard(effect, source, card)) continue;
