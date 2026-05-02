@@ -2,7 +2,7 @@ import fengari from "fengari";
 import { getDuelFlagEffectLabel } from "#duel/flags.js";
 import { readTableStringField } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
-import type { DuelCardInstance, DuelPhase, DuelSession } from "#duel/types.js";
+import type { DuelCardInstance, DuelPhase, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 const cardSalamangreatSanctuary = 1295111;
@@ -10,6 +10,21 @@ const cardSalamangreatSanctuary = 1295111;
 export function installCardSummonApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetSummonType", session, (card) => summonTypeMask(card));
   pushNumberGetter(L, "GetSummonPhase", session, (card) => phaseMask(card?.summonPhase));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2);
+    const summonLocation = locationMaskFromLocation(card?.previousLocation);
+    lua.lua_pushboolean(state, Boolean(card?.summonType && requested.some((value) => (summonLocation & value) !== 0)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSummonLocation"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedPlayers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card?.summonPlayer !== undefined && requested.includes(card.summonPlayer)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSummonPlayer"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
@@ -117,6 +132,25 @@ function phaseMask(phase: DuelPhase | undefined): number {
   if (phase === "main2") return 0x100;
   if (phase === "end") return 0x200;
   return 0;
+}
+
+function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
+  if (location === "deck") return 0x01;
+  if (location === "hand") return 0x02;
+  if (location === "monsterZone") return 0x04;
+  if (location === "spellTrapZone") return 0x08;
+  if (location === "graveyard") return 0x10;
+  if (location === "banished") return 0x20;
+  if (location === "extraDeck") return 0x40;
+  return 0;
+}
+
+function readRequestedPlayers(L: unknown, startIndex: number): PlayerId[] {
+  return readRequestedNumbers(L, startIndex).map(normalizePlayer);
+}
+
+function normalizePlayer(value: number): PlayerId {
+  return value === 1 ? 1 : 0;
 }
 
 function isReincarnationSummoned(session: DuelSession, card: DuelCardInstance | undefined): boolean {

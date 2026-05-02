@@ -6,7 +6,6 @@ import { installCardAdjacentApi } from "#lua/card-adjacent-api.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
 import { installCardColumnApi } from "#lua/card-column-api.js";
-import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import { installCardControlApi } from "#lua/card-control-api.js";
 import { installCardCounterApi } from "#lua/card-counter-api.js";
 import { isMonsterLike } from "#lua/card-eligibility-api.js";
@@ -104,15 +103,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   installCardColumnApi(L, session);
   installCardControlApi(L, session);
   installCardSummonApi(L, session);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = readRequestedNumbers(state, 2);
-    const summonLocation = locationMaskFromLocation(card?.previousLocation);
-    lua.lua_pushboolean(state, Boolean(card?.summonType && requested.some((value) => (summonLocation & value) !== 0)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsSummonLocation"));
-  pushPlayerMatcher(L, "IsSummonPlayer", session, (card, requested) => card.summonPlayer !== undefined && requested.includes(card.summonPlayer));
   installCardMoveAbilityApi(L, session);
   installCardRelationApi(L, session, hostState);
   pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && isRelatedToBattle(session.state, uid)));
@@ -145,16 +135,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     lua.lua_pushinteger(state, getter(readCard(state, session)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring(fieldName));
-}
-
-function pushPlayerMatcher(L: unknown, fieldName: string, session: DuelSession, matcher: (card: DuelCardInstance, requested: PlayerId[]) => boolean): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = readRequestedPlayers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && requested.length > 0 && matcher(card, requested)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
@@ -223,10 +203,6 @@ function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
 }
 
-function readRequestedPlayers(L: unknown, startIndex: number): PlayerId[] {
-  return readRequestedNumbers(L, startIndex).map(normalizePlayer);
-}
-
 function otherPlayer(player: PlayerId): PlayerId {
   return player === 0 ? 1 : 0;
 }
@@ -242,15 +218,4 @@ function pushCanChainAttack(L: unknown, session: DuelSession): number {
   const attackCount = card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0;
   lua.lua_pushboolean(L, Boolean(card && attackCount > 0 && canDuelCardAttack(session.state, card.uid, requestedAllowance)));
   return 1;
-}
-
-function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
-  if (location === "deck") return 0x01;
-  if (location === "hand") return 0x02;
-  if (location === "monsterZone") return 0x04;
-  if (location === "spellTrapZone") return 0x08;
-  if (location === "graveyard") return 0x10;
-  if (location === "banished") return 0x20;
-  if (location === "extraDeck") return 0x40;
-  return 0;
 }
