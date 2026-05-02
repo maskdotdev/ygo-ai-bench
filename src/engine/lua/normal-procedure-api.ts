@@ -31,12 +31,33 @@ export function installNormalProcedureApi(L: unknown, readLuaError: (state: unkn
     end
     function aux.NormalSummonTarget(min,max,f)
       return function(e,tp,eg,ep,ev,re,r,rp,chk,c,minc,zone,relzone,exeff)
-        return true
+        local mg=Duel.GetTributeGroup(c)
+        if f then
+          mg:Match(f,nil,tp)
+        end
+        if chk==0 then
+          return Duel.CheckTribute(c,min,max,mg,tp,zone)
+        end
+        local g=Duel.SelectTribute(tp,c,min,max,mg,tp,zone,Duel.IsSummonCancelable())
+        if g and #g>0 then
+          g:KeepAlive()
+          e:SetLabelObject(g)
+          return true
+        end
+        return false
       end
     end
     function aux.NormalSummonOperation(min,max,sumop)
       return function(e,tp,eg,ep,ev,re,r,rp,c,minc,zone,relzone,exeff)
-        if sumop then return sumop(Group.CreateGroup(),e,tp,eg,ep,ev,re,r,rp,c,minc,zone,relzone,exeff) end
+        local g=e:GetLabelObject()
+        if not g then return end
+        c:SetMaterial(g)
+        Duel.Release(g,REASON_SUMMON+REASON_MATERIAL)
+        if sumop then
+          sumop(g:Clone(),e,tp,eg,ep,ev,re,r,rp,c,minc,zone,relzone,exeff)
+        end
+        g:DeleteGroup()
+        e:SetLabelObject(nil)
       end
     end
     function aux.AddNormalSummonProcedure(c,ns,opt,min,max,val,desc,f,sumop)
