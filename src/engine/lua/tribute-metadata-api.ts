@@ -12,11 +12,14 @@ export function readMaxTributeRequirement(L: unknown, card: DuelCardInstance | u
 }
 
 export function applyLuaNormalTributeMetadata(L: unknown, card: DuelCardInstance): void {
+  const min = readMinTributeRequirement(L, card);
   const max = readMaxTributeRequirement(L, card);
-  if (max === undefined) return;
+  if (min === undefined && max === undefined) return;
   const base = baseNormalTributeCount(card);
-  const current = card.data.normalTributes ?? base;
-  if (max > current && max > base) card.data.normalTributes = max;
+  card.data.normalTributeMin = min ?? card.data.normalTributeMin ?? base;
+  card.data.normalTributeMax = max ?? card.data.normalTributeMax ?? card.data.normalTributeMin;
+  if (min !== max) delete card.data.normalTributes;
+  if (min === max && min !== undefined) card.data.normalTributes = min;
 }
 
 function readTributeRequirementField(L: unknown, card: DuelCardInstance | undefined, fieldName: string): number | undefined {

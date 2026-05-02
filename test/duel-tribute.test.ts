@@ -233,4 +233,37 @@ describe("duel tribute summons", () => {
     expect(action.tributeUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
     expect(result.state.log.some((entry) => entry.action === "tributeSummon" && entry.detail === "Tribute Summoned with 3 tribute(s)")).toBe(true);
   });
+
+  it("supports card metadata normal summon tribute ranges", () => {
+    const customCards = [
+      ...cards,
+      { code: "9001", name: "Reduced Tribute Monster", kind: "monster" as const, level: 7, normalTributeMin: 1, normalTributeMax: 2 },
+    ];
+    const session = createDuel({ seed: 1, startingHandSize: 4, cardReader: createCardReader(customCards) });
+    loadDecks(session, {
+      0: { main: ["9001", "100", "300", "500"] },
+      1: { main: ["400", "400", "400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const tributeMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "9001");
+    const tributes = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.uid !== tributeMonster!.uid);
+    expect(tributeMonster).toBeTruthy();
+    for (const card of tributes) moveDuelCard(session.state, card.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "normalSummon" && candidate.uid === tributeMonster!.uid)).toBe(false);
+    const actions = getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "tributeSummon" && candidate.uid === tributeMonster!.uid);
+    expect(actions.some((action) => action.type === "tributeSummon" && action.tributeUids.length === 1)).toBe(true);
+    expect(actions.some((action) => action.type === "tributeSummon" && action.tributeUids.length === 2)).toBe(true);
+    expect(actions.some((action) => action.type === "tributeSummon" && action.tributeUids.length === 3)).toBe(false);
+
+    const action = actions.find((candidate) => candidate.type === "tributeSummon" && candidate.tributeUids.length === 1);
+    expect(action).toBeTruthy();
+    if (!action || action.type !== "tributeSummon") throw new Error("Expected reduced tribute action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("monsterZone");
+    expect(result.state.log.some((entry) => entry.action === "tributeSummon" && entry.detail === "Tribute Summoned with 1 tribute(s)")).toBe(true);
+  });
 });

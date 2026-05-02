@@ -18,7 +18,7 @@ type ExtraDeckSummonType = "fusion" | "synchro" | "Xyz" | "Link";
 export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector, canSummonWithoutTribute: DuelNormalSummonPredicate = () => false): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
-  if (tributeCountForNormalSummon(card) > 0 && !canSummonWithoutTribute(card)) throw new Error(`${card.name} requires a Tribute Summon`);
+  if (tributeRangeForNormalSummon(card).min > 0 && !canSummonWithoutTribute(card)) throw new Error(`${card.name} requires a Tribute Summon`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
   requireZoneSpace(state, player, "monsterZone");
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
@@ -58,12 +58,12 @@ export function tributeSummonDuelCard(
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
-  const requiredTributes = tributeCountForNormalSummon(card);
-  if (requiredTributes <= 0) throw new Error(`${card.name} does not require tributes`);
+  const tributeRange = tributeRangeForNormalSummon(card);
+  if (tributeRange.max <= 0) throw new Error(`${card.name} does not require tributes`);
   const uniqueTributes = [...new Set(tributeUids)];
   if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
   const tributeUnits = uniqueTributes.reduce((sum, tributeUid) => sum + tributeUnitCount(state, requireControlledCard(state, player, tributeUid, "monsterZone")), 0);
-  if (tributeUnits !== requiredTributes) throw new Error(`${card.name} requires ${requiredTributes} tribute(s)`);
+  if (tributeUnits < tributeRange.min || tributeUnits > tributeRange.max) throw new Error(`${card.name} requires ${formatTributeRange(tributeRange)} tribute(s)`);
   for (const tributeUid of uniqueTributes) {
     const tribute = requireControlledCard(state, player, tributeUid, "monsterZone");
     if (!canReleaseMaterial(tribute.uid)) throw new Error(`${tribute.name} cannot be released`);
@@ -84,7 +84,7 @@ export function tributeSummonDuelCard(
   card.summonMaterialUids = uniqueTributes;
   state.players[player].normalSummonAvailable = false;
   recordNormalSummonActivity(state, player, card);
-  pushDuelLog(state, "tributeSummon", player, card.name, `Tribute Summoned with ${requiredTributes} tribute(s)`);
+  pushDuelLog(state, "tributeSummon", player, card.name, `Tribute Summoned with ${tributeUnits} tribute(s)`);
   collectEvent("normalSummoned", card);
 }
 
@@ -270,7 +270,7 @@ export function normalSummonActions(state: DuelState, player: PlayerId, hand: Du
   if (!state.players[player].normalSummonAvailable || !hasZoneSpace(state, player, "monsterZone")) return [];
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
-    if (tributeCountForNormalSummon(card) === 0 || canSummonWithoutTribute(card)) actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
+    if (tributeRangeForNormalSummon(card).min === 0 || canSummonWithoutTribute(card)) actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
     actions.push({ type: "setMonster", player, uid: card.uid, label: `Set ${card.name}` });
   }
   return actions;
@@ -281,11 +281,13 @@ export function tributeSummonActions(state: DuelState, player: PlayerId, hand: D
   const availableTributes = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canReleaseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
-    const tributeCount = tributeCountForNormalSummon(card);
-    if (tributeCount <= 0 || availableTributes.reduce((sum, material) => sum + tributeUnitCount(state, material), 0) < tributeCount) continue;
-    for (const tributeUids of tributeCombinations(state, availableTributes, tributeCount)) {
-      const tributeNames = tributeUids.map((tributeUid) => findCard(state, tributeUid)?.name ?? tributeUid).join(", ");
-      actions.push({ type: "tributeSummon", player, uid: card.uid, tributeUids, label: `Tribute Summon ${card.name} using ${tributeNames}` });
+    const tributeRange = tributeRangeForNormalSummon(card);
+    if (tributeRange.max <= 0 || availableTributes.reduce((sum, material) => sum + tributeUnitCount(state, material), 0) < tributeRange.min) continue;
+    for (let tributeCount = Math.max(1, tributeRange.min); tributeCount <= tributeRange.max; tributeCount += 1) {
+      for (const tributeUids of tributeCombinations(state, availableTributes, tributeCount)) {
+        const tributeNames = tributeUids.map((tributeUid) => findCard(state, tributeUid)?.name ?? tributeUid).join(", ");
+        actions.push({ type: "tributeSummon", player, uid: card.uid, tributeUids, label: `Tribute Summon ${card.name} using ${tributeNames}` });
+      }
     }
   }
   return actions;
@@ -383,8 +385,22 @@ function extraDeckSummonActions(
   return actions;
 }
 
-function tributeCountForNormalSummon(card: DuelCardInstance): number {
-  if (card.data.normalTributes !== undefined) return Math.max(0, card.data.normalTributes);
+function tributeRangeForNormalSummon(card: DuelCardInstance): { min: number; max: number } {
+  if (card.data.normalTributes !== undefined) {
+    const count = Math.max(0, card.data.normalTributes);
+    return { min: count, max: count };
+  }
+  const base = baseNormalTributeCount(card);
+  const min = Math.max(0, card.data.normalTributeMin ?? base);
+  const max = Math.max(min, card.data.normalTributeMax ?? min);
+  return { min, max };
+}
+
+function formatTributeRange(range: { min: number; max: number }): string {
+  return range.min === range.max ? `${range.min}` : `${range.min}-${range.max}`;
+}
+
+function baseNormalTributeCount(card: DuelCardInstance): number {
   const level = card.data.level ?? 4;
   if (level >= 7) return 2;
   if (level >= 5) return 1;

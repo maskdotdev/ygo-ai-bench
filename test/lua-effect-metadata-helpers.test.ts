@@ -632,6 +632,50 @@ describe("Lua effect metadata helpers", () => {
     expect(session.state.log.at(-1)?.detail).toBe("Tribute Summoned with 3 tribute(s)");
   });
 
+  it("applies Lua reduced normal summon tribute ranges to legal actions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Reduced Tribute Target", kind: "monster", level: 7 },
+      { code: "200", name: "Lua Reduced Material A", kind: "monster", level: 4 },
+      { code: "300", name: "Lua Reduced Material B", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 258, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["200", "300"]) {
+      const material = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === code);
+      expect(material).toBeDefined();
+      moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        aux.AddNormalSummonProcedure(c,true,false,1,2,SUMMON_TYPE_TRIBUTE+1,2222)
+      end
+      `,
+      "reduced-tribute-metadata.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const target = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(target).toBeDefined();
+    const actions = getDuelLegalActions(session, 0).filter((action) => action.type === "tributeSummon" && action.uid === target!.uid);
+    expect(actions.some((action) => action.type === "tributeSummon" && action.tributeUids.length === 1)).toBe(true);
+    expect(actions.some((action) => action.type === "tributeSummon" && action.tributeUids.length === 2)).toBe(true);
+
+    const summon = actions.find((action) => action.type === "tributeSummon" && action.tributeUids.length === 1);
+    expect(summon).toBeDefined();
+    const response = applyResponse(session, summon!);
+    expect(response.ok, response.error).toBe(true);
+    expect(session.state.log.at(-1)?.detail).toBe("Tribute Summoned with 1 tribute(s)");
+  });
+
   it("executes Lua normal summon procedure tribute operations", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Procedure Tribute Target", kind: "monster", level: 6 },

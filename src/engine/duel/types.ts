@@ -40,6 +40,8 @@ export interface DuelCardData {
   alias?: string;
   level?: number;
   normalTributes?: number;
+  normalTributeMin?: number;
+  normalTributeMax?: number;
   leftScale?: number;
   rightScale?: number;
   linkMarkers?: number;
