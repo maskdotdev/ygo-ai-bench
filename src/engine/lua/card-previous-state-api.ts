@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { readCardUid } from "#lua/api-utils.js";
-import { cardCodes } from "#lua/card-code-utils.js";
+import { cardCodes, isSetcodeMatch, readRequestedNumbers } from "#lua/card-code-utils.js";
 import { cardLink, cardRank, cardTypeFlags } from "#lua/card-stat-api.js";
 import type { CardPosition, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -69,7 +69,13 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   pushNumberMatcher(L, "IsPreviousLinkOnField", session, (card, requested) => Boolean(card.previousLocation && cardLink(card) === requested));
   pushNumberMatcher(L, "IsPreviousRaceOnField", session, (card, requested) => Boolean(card.previousLocation && ((card.data.race ?? 0) & requested) !== 0));
   pushNumberMatcher(L, "IsPreviousAttributeOnField", session, (card, requested) => Boolean(card.previousLocation && ((card.data.attribute ?? 0) & requested) !== 0));
-  pushNumberMatcher(L, "IsPreviousSetCard", session, (card, requested) => Boolean(card.previousLocation && card.data.setcodes?.includes(requested)));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requested.some((wanted) => card.data.setcodes?.some((setcode) => isSetcodeMatch(wanted, setcode)))));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPreviousSetCard"));
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
