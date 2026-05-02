@@ -384,6 +384,7 @@ function extraDeckSummonActions(
 }
 
 function tributeCountForNormalSummon(card: DuelCardInstance): number {
+  if (card.data.normalTributes !== undefined) return Math.max(0, card.data.normalTributes);
   const level = card.data.level ?? 4;
   if (level >= 7) return 2;
   if (level >= 5) return 1;
