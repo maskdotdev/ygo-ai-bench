@@ -1673,14 +1673,23 @@ describe("Lua state helpers", () => {
       Debug.Message("card target before " .. tostring(source:IsHasCardTarget(first)))
       Debug.Message("card target set " .. tostring(source:SetCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
       Debug.Message("card relation create " .. tostring(source:CreateRelation(second,RESET_EVENT+RESETS_STANDARD)) .. "/" .. tostring(source:IsHasCardTarget(second)))
+      Debug.Message("card target group " .. source:GetCardTargetCount() .. "/" .. source:GetCardTarget():GetCount() .. "/" .. source:GetFirstCardTarget():GetCode())
       source:CancelCardTarget(first)
       Debug.Message("card target cancel " .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
+      Debug.Message("card target group after " .. source:GetCardTargetCount() .. "/" .. source:GetCardTarget():GetCount() .. "/" .. source:GetFirstCardTarget():GetCode())
       `,
       "card-target-relation.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["card target before false", "card target set true/true/false", "card relation create true/true", "card target cancel false/true"]);
+    expect(host.messages).toEqual([
+      "card target before false",
+      "card target set true/true/false",
+      "card relation create true/true",
+      "card target group 2/2/200",
+      "card target cancel false/true",
+      "card target group after 1/1/300",
+    ]);
     expect(session.state.cards.find((card) => card.code === "100")?.cardTargetUids).toHaveLength(1);
   });
 

@@ -1,6 +1,8 @@
 import fengari from "fengari";
 import { readTableNumberField, readTableStringField } from "#lua/api-utils.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api.js";
+import { pushCardTable } from "#lua/card-table-api.js";
+import { pushGroupTable } from "#lua/group-api.js";
 import type { DuelCardInstance, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -18,6 +20,12 @@ export function installCardRelationApi<EffectRecord extends LuaCardApiEffectReco
   lua.lua_setfield(L, -2, to_luastring("SetCardTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCancelCardTarget(state, session));
   lua.lua_setfield(L, -2, to_luastring("CancelCardTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetCardTarget(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetCardTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetFirstCardTarget(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetFirstCardTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetCardTargetCount(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetCardTargetCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsHasCardTarget(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsHasCardTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCreateRelation(state, session));
@@ -61,6 +69,29 @@ function pushCancelCardTarget(L: unknown, session: DuelSession): number {
   const target = readCard(L, session, 2);
   if (card && target) card.cardTargetUids = (card.cardTargetUids ?? []).filter((uid) => uid !== target.uid);
   return 0;
+}
+
+function pushGetCardTarget(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session, 1);
+  pushGroupTable(L, card?.cardTargetUids ?? []);
+  return 1;
+}
+
+function pushGetFirstCardTarget(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session, 1);
+  const uid = card?.cardTargetUids?.[0];
+  if (!uid) {
+    lua.lua_pushnil(L);
+    return 1;
+  }
+  pushCardTable(L, uid);
+  return 1;
+}
+
+function pushGetCardTargetCount(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session, 1);
+  lua.lua_pushinteger(L, card?.cardTargetUids?.length ?? 0);
+  return 1;
 }
 
 function pushIsHasCardTarget(L: unknown, session: DuelSession): number {
