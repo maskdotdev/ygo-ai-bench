@@ -226,6 +226,38 @@ export function isDirectAttackPrevented(state: DuelState, card: DuelCardInstance
   return false;
 }
 
+export function mustAttackMonsterTargetAllowed(
+  state: DuelState,
+  attacker: DuelCardInstance,
+  target: DuelCardInstance,
+  createContext: ContinuousEffectContextFactory,
+): boolean {
+  let hasRestriction = false;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 344) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, attacker)) continue;
+    const ctx = createContext(effect, source, target);
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    hasRestriction = true;
+    if (!effect.valueCardPredicate || effect.valueCardPredicate(ctx, target)) return true;
+  }
+  return !hasRestriction;
+}
+
+export function hasMustAttackMonsterRestriction(state: DuelState, attacker: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 344) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, attacker)) continue;
+    const ctx = createContext(effect, source, attacker);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
 export function extraAttackCount(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): number {
   let count = 0;
   for (const effect of state.effects) {

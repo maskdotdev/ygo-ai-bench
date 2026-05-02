@@ -13,11 +13,13 @@ import {
   additionalBattleDamagePlayers,
   battleDamageReason,
   extraAttackCount,
+  hasMustAttackMonsterRestriction,
   hasPiercingBattleDamage,
   isAttackPrevented,
   isBattleTargetSelectionPrevented,
   isBattleTargetPrevented,
   isDirectAttackPrevented,
+  mustAttackMonsterTargetAllowed,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
@@ -46,7 +48,9 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
     if (action.type !== "declareAttack") continue;
     const attacker = findCard(state, action.attackerUid);
     if (!attacker || isAttackPrevented(state, attacker, createContext)) continue;
-    if (action.targetUid === undefined && isDirectAttackPrevented(state, attacker, createContext)) continue;
+    if (action.targetUid === undefined && (isDirectAttackPrevented(state, attacker, createContext) || hasMustAttackMonsterRestriction(state, attacker, createContext))) continue;
+    const target = action.targetUid === undefined ? undefined : findCard(state, action.targetUid);
+    if (target && !canAttackMonsterTarget(state, attacker, target, createContext)) continue;
     actions.push(action);
   }
 }
@@ -65,7 +69,7 @@ export function getCoreDuelAttackTargets(state: DuelState, attackerUid: string, 
     state,
     attackerUid,
     extraAttackCount(state, card, createContext),
-    (target) => canSelectBattleTarget(state, card.controller, target, createContext),
+    (target) => canSelectBattleTarget(state, card.controller, target, createContext) && canAttackMonsterTarget(state, card, target, createContext),
   );
 }
 
@@ -74,6 +78,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
   const createContext = handlers.createContinuousContext(state);
   if (attacker && isAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack`);
   if (attacker && targetUid === undefined && isDirectAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack directly`);
+  if (attacker && targetUid === undefined && hasMustAttackMonsterRestriction(state, attacker, createContext)) throw new Error(`${attacker.name} must attack a monster`);
   state.battleDamage = { 0: 0, 1: 0 };
   const pendingTriggerCount = state.pendingTriggers.length;
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
@@ -92,7 +97,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
-  }, attacker ? extraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || canSelectBattleTarget(state, attacker.controller, target, createContext));
+  }, attacker ? extraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && canAttackMonsterTarget(state, attacker, target, createContext)));
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
 }
 
@@ -110,6 +115,10 @@ export function changeCoreDuelCardPosition(state: DuelState, player: PlayerId, u
 
 function canSelectBattleTarget(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   return !isBattleTargetPrevented(state, card, createContext) && !isBattleTargetSelectionPrevented(state, player, card, createContext);
+}
+
+function canAttackMonsterTarget(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  return mustAttackMonsterTargetAllowed(state, attacker, target, createContext);
 }
 
 export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): boolean {
