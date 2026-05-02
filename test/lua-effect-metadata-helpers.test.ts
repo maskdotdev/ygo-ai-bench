@@ -582,6 +582,56 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("three tribute released 3/3");
   });
 
+  it("applies Lua normal summon tribute metadata to legal actions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Three Tribute Target", kind: "monster", level: 7 },
+      { code: "200", name: "Lua Material A", kind: "monster", level: 4 },
+      { code: "300", name: "Lua Material B", kind: "monster", level: 4 },
+      { code: "400", name: "Lua Material C", kind: "monster", level: 4 },
+      { code: "500", name: "Lua Material D", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 257, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const code of ["200", "300", "400", "500"]) {
+      const material = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === code);
+      expect(material).toBeDefined();
+      moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        aux.AddNormalSummonProcedure(c,true,false,3,3,SUMMON_TYPE_TRIBUTE+1,1111)
+      end
+      `,
+      "three-tribute-metadata.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const target = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(target).toBeDefined();
+    const actions = getDuelLegalActions(session, 0);
+    expect(actions.some((action) => action.type === "tributeSummon" && action.uid === target!.uid && action.tributeUids.length === 2)).toBe(false);
+    const summon = actions.find((action) => action.type === "tributeSummon" && action.uid === target!.uid && action.tributeUids.length === 3);
+    expect(summon).toBeDefined();
+
+    const response = applyResponse(session, summon!);
+    expect(response.ok, response.error).toBe(true);
+    expect(target!.location).toBe("monsterZone");
+    if (!summon || summon.type !== "tributeSummon") throw new Error("Expected three-tribute summon action");
+    for (const uid of summon.tributeUids) {
+      expect(session.state.cards.find((card) => card.uid === uid)?.location).toBe("graveyard");
+    }
+    expect(session.state.log.at(-1)?.detail).toBe("Tribute Summoned with 3 tribute(s)");
+  });
+
   it("executes Lua normal summon procedure tribute operations", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Procedure Tribute Target", kind: "monster", level: 6 },

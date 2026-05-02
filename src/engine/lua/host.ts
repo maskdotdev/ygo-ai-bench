@@ -10,6 +10,7 @@ import { scriptFilenameForCard } from "#engine/data-loaders.js";
 import { registerEffect } from "#duel/core.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
+import { applyLuaNormalTributeMetadata } from "#lua/tribute-metadata-api.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaHostState, LuaInitialEffectRegistrationResult, LuaScriptHost, LuaScriptLoadResult, LuaScriptSource } from "#lua/host-types.js";
 
@@ -136,6 +137,7 @@ function registerLuaInitialEffectsDetailed(L: unknown, session: DuelSession): Lu
       continue;
     }
     lua.lua_pop(L, 3);
+    applyLuaNormalTributeMetadata(L, card);
     results.push({ code: card.code, uid: card.uid, ok: true });
   }
   return results;
