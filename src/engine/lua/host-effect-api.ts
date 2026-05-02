@@ -3,6 +3,7 @@ import { registerEffect } from "#duel/core.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { callLuaEffectBattleDamageValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
+import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
 import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
@@ -595,29 +596,6 @@ function pushRelatedEffectTable(L: unknown, hostState: LuaHostState): void {
   const id = Number(link?.effectId.match(/^lua-(\d+)/)?.[1]);
   if (Number.isFinite(id)) pushLuaEffectTable(L, id, hostState);
   else lua.lua_pushnil(L);
-}
-
-function locationMaskFromLocation(location: DuelLocation | undefined): number {
-  if (location === "deck") return 0x01;
-  if (location === "hand") return 0x02;
-  if (location === "monsterZone") return 0x04;
-  if (location === "spellTrapZone") return 0x08;
-  if (location === "graveyard") return 0x10;
-  if (location === "banished") return 0x20;
-  if (location === "extraDeck") return 0x40;
-  return 0;
-}
-
-function locationMaskFromLocations(locations: DuelLocation[]): number {
-  let mask = 0;
-  if (locations.includes("deck")) mask |= 0x01;
-  if (locations.includes("hand")) mask |= 0x02;
-  if (locations.includes("monsterZone")) mask |= 0x04;
-  if (locations.includes("spellTrapZone")) mask |= 0x08;
-  if (locations.includes("graveyard")) mask |= 0x10;
-  if (locations.includes("banished")) mask |= 0x20;
-  if (locations.includes("extraDeck")) mask |= 0x40;
-  return mask;
 }
 
 type LuaEffectCallbackKind = "condition" | "cost" | "target" | "operation" | "value";
