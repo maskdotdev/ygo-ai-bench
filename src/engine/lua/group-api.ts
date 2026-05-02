@@ -15,18 +15,12 @@ export interface LuaGroupApiState {
 export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selectedUids: [] }, session?: DuelSession): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
-    pushGroupTable(state, []);
+    pushGroupTable(state, readCardUidsFromStack(state));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("CreateGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const uids: string[] = [];
-    const top = lua.lua_gettop(state);
-    for (let index = 1; index <= top; index += 1) {
-      const uid = readCardUid(state, index);
-      if (uid) uids.push(uid);
-    }
-    pushGroupTable(state, uniqueUids(uids));
+    pushGroupTable(state, readCardUidsFromStack(state));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("FromCards"));
@@ -678,6 +672,16 @@ function groupPredicateMatches(L: unknown, uids: string[], filterRef: number, ar
   const result = lua.lua_toboolean(L, -1);
   lua.lua_pop(L, 1);
   return Boolean(result);
+}
+
+function readCardUidsFromStack(state: unknown): string[] {
+  const uids: string[] = [];
+  const top = lua.lua_gettop(state);
+  for (let index = 1; index <= top; index += 1) {
+    const uid = readCardUid(state, index);
+    if (uid) uids.push(uid);
+  }
+  return uniqueUids(uids);
 }
 
 const groupFieldNames = [
