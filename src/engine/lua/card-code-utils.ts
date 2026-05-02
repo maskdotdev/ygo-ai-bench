@@ -25,6 +25,14 @@ export function readRequestedCodes(L: unknown, start: number): string[] {
   const codes: string[] = [];
   for (let index = start; index <= lua.lua_gettop(L); index += 1) {
     if (lua.lua_isnumber(L, index)) codes.push(String(lua.lua_tointeger(L, index)));
+    if (lua.lua_istable(L, index)) {
+      const count = lua.lua_rawlen(L, index);
+      for (let luaIndex = 1; luaIndex <= count; luaIndex += 1) {
+        lua.lua_rawgeti(L, index, luaIndex);
+        if (lua.lua_isnumber(L, -1)) codes.push(String(lua.lua_tointeger(L, -1)));
+        lua.lua_pop(L, 1);
+      }
+    }
   }
   return codes;
 }
@@ -33,6 +41,14 @@ export function readRequestedNumbers(L: unknown, start: number): number[] {
   const values: number[] = [];
   for (let index = start; index <= lua.lua_gettop(L); index += 1) {
     if (lua.lua_isnumber(L, index)) values.push(lua.lua_tointeger(L, index));
+    if (lua.lua_istable(L, index)) {
+      const count = lua.lua_rawlen(L, index);
+      for (let luaIndex = 1; luaIndex <= count; luaIndex += 1) {
+        lua.lua_rawgeti(L, index, luaIndex);
+        if (lua.lua_isnumber(L, -1)) values.push(lua.lua_tointeger(L, -1));
+        lua.lua_pop(L, 1);
+      }
+    }
   }
   return values;
 }
