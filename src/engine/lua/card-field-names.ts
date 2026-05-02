@@ -397,6 +397,7 @@ export const cardFieldNames = [
   "WasFaceup",
   "WasFacedown",
   "IsColumn",
+  "GetColumnGroup",
   "GetColumnZone",
   "IsPreviousLocation",
   "IsPreviousPosition",

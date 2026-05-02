@@ -2031,12 +2031,13 @@ describe("Lua state helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "State Probe", kind: "monster", typeFlags: 0x21, attack: 1700, defense: 1300, level: 4, race: 0x2, attribute: 0x20, setcodes: [0x123] },
       { code: "200", name: "Column Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "201", name: "Adjacent Spell", kind: "spell", typeFlags: 0x2 },
       { code: "900", name: "Hidden Extra", kind: "extra" },
       { code: "901", name: "Previous Link", kind: "extra", typeFlags: 0x4000001, attack: 1500, level: 2 },
     ];
-    const session = createDuel({ seed: 20, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 20, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200"], extra: ["900", "901"] },
+      0: { main: ["100", "200", "201"], extra: ["900", "901"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -2048,6 +2049,10 @@ describe("Lua state helpers", () => {
     expect(columnSpell).toBeDefined();
     const movedColumnSpell = moveDuelCard(session.state, columnSpell!.uid, "spellTrapZone", 0);
     movedColumnSpell.sequence = 0;
+    const adjacentSpell = session.state.cards.find((card) => card.code === "201" && card.controller === 0);
+    expect(adjacentSpell).toBeDefined();
+    const movedAdjacentSpell = moveDuelCard(session.state, adjacentSpell!.uid, "spellTrapZone", 0);
+    movedAdjacentSpell.sequence = 1;
     const link = session.state.cards.find((card) => card.code === "901" && card.controller === 0);
     expect(link).toBeDefined();
     const movedLink = moveDuelCard(session.state, link!.uid, "monsterZone", 0);
@@ -2072,6 +2077,9 @@ describe("Lua state helpers", () => {
       Debug.Message("activity counts " .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_FLIPSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_ATTACK) .. "/" .. Duel.GetBattledCount(0))
       Debug.Message("maximum previous checks " .. tostring(c:WasMaximumMode()) .. "/" .. tostring(c:WasMaximumModeCenter()) .. "/" .. tostring(c:WasMaximumModeSide()))
       Debug.Message("column checks " .. tostring(c:IsColumn(column_spell)) .. "/" .. tostring(c:IsColumn(hidden)))
+      local column_group = c:GetColumnGroup()
+      local adjacent_column_group = c:GetColumnGroup(0,1)
+      Debug.Message("column group " .. column_group:GetCount() .. "/" .. tostring(column_group:IsContains(column_spell)) .. "/" .. tostring(column_group:IsContains(c)) .. "/" .. adjacent_column_group:GetCount() .. "/" .. tostring(adjacent_column_group:IsContains(column_spell)) .. "/" .. tostring(adjacent_column_group:IsContains(Duel.GetFieldCard(0, LOCATION_SZONE, 1))))
       Debug.Message("column zones " .. c:GetColumnZone(LOCATION_MZONE) .. "/" .. c:GetColumnZone(LOCATION_SZONE) .. "/" .. c:GetColumnZone(LOCATION_MZONE,0,1,0) .. "/" .. c:GetColumnZone(LOCATION_MZONE,0,0,1))
       Debug.Message("used summon legality " .. tostring(Duel.IsPlayerCanSummon(0, c)) .. "/" .. tostring(Duel.IsPlayerCanMSet(0, c)) .. "/" .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, c)))
       Duel.SendtoGrave(c, REASON_EFFECT)
@@ -2096,7 +2104,7 @@ describe("Lua state helpers", () => {
       "card-state.lua",
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("card state 0/true/true/true/false/0/4/0/1");
     expect(host.messages).toContain("sequence checks true/true/true/false");
     expect(host.messages).toContain("original meta 100/33/4/2/32");
@@ -2108,6 +2116,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("activity counts 1/1/0/0/0/0");
     expect(host.messages).toContain("maximum previous checks false/false/false");
     expect(host.messages).toContain("column checks true/false");
+    expect(host.messages).toContain("column group 1/true/false/3/true/true");
     expect(host.messages).toContain("column zones 1/256/3/65536");
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
