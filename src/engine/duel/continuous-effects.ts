@@ -200,6 +200,14 @@ function otherPlayer(player: PlayerId): PlayerId {
   return player === 0 ? 1 : 0;
 }
 
+function opponentMonsterCount(state: DuelState, player: PlayerId): number {
+  return state.cards.filter((card) => card.controller === otherPlayer(player) && card.location === "monsterZone").length;
+}
+
+function attackCount(state: DuelState, uid: string): number {
+  return state.attacksDeclared.filter((attackerUid) => attackerUid === uid).length;
+}
+
 export function isBattleTargetPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 70) continue;
@@ -327,6 +335,19 @@ export function extraAttackCount(state: DuelState, card: DuelCardInstance, creat
     if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
     if (!effect.canActivate || effect.canActivate(ctx)) count += Math.max(1, effect.value ?? 1);
+  }
+  return count;
+}
+
+export function attackAllMonsterCount(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): number {
+  let count = 0;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 193) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) count = Math.max(count, opponentMonsterCount(state, card.controller) + attackCount(state, card.uid));
   }
   return count;
 }
