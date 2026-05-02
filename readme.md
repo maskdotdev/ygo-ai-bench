@@ -97,12 +97,28 @@ npm run scan:lua-api -- --limit 50
 
 The full duel engine exposes `serializeDuel(session)` and `restoreDuel(snapshot)` for deterministic test fixtures, browser handoff, and long-running playtest state. Snapshots contain serializable duel state only; callback functions are intentionally stripped.
 
-Supported effect persistence:
+Current restore behavior:
 
 - Static continuous effects persist automatically when they have no callback-driven activation, cost, target, or operation.
-- Lua card effects should be restored with `restoreDuelWithLuaScripts(snapshot, source, cardReader)`. The helper reloads required card scripts, registers their `initial_effect` functions, keeps only Lua registry keys that existed in the snapshot, and reports `restoredRegistryKeys` plus `missingRegistryKeys`.
+- Lua card effects should be restored with `restoreDuelWithLuaScripts(snapshot, source, cardReader)`. The helper reloads required card scripts, registers their `initial_effect` functions, keeps only Lua registry keys that existed in the snapshot, and reports `restoreComplete`, `restoredRegistryKeys`, `missingRegistryKeys`, and Lua chain-limit predicate diagnostics. Browser reconnect code should treat `restoreComplete === false` as unsafe for legal-action display because missing Lua callbacks can expose illegal responses.
 - Manual TypeScript effects with callbacks must provide a stable `registryKey` and be restored with a `DuelEffectRestoreRegistry` passed to `restoreDuel(snapshot, cardReader, registry)`.
 - Effects without a static shape or registry key are omitted from snapshots by design, because replaying arbitrary closures would not be browser-safe or deterministic.
+
+Minimal Lua restore guard:
+
+```ts
+import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts, serializeDuel } from './src/engine';
+
+const snapshot = serializeDuel(session);
+const restored = restoreDuelWithLuaScripts(snapshot, scriptSource, cardReader);
+
+if (!restored.restoreComplete) {
+  // Do not expose legal actions from this session until the missing scripts or callbacks are resolved.
+  console.warn(restored.missingRegistryKeys, restored.missingChainLimitRegistryKeys);
+}
+
+const legalActions = getLuaRestoreLegalActions(restored, 0);
+```
 
 Minimal manual registry example:
 
@@ -121,6 +137,20 @@ const registry: DuelEffectRestoreRegistry = {
 
 const restored = restoreDuel(snapshot, cardReader, registry);
 ```
+
+## Parity fixture metadata
+
+Scripted duel fixtures should label expectation blocks with `source` when they are meant to prove parity or track backlog:
+
+```ts
+after: {
+  source: 'parity-backlog',
+  note: 'EDOPro keeps optional if triggers available after mandatory when triggers enter the chain',
+  legalActions: [{ type: 'activateTrigger', player: 0, effectId: 'fixture-optional-if', count: 1 }],
+}
+```
+
+Use `source: 'edopro'` only for expectations backed by observed EDOPro behavior. Use `source: 'parity-backlog'` for known gaps, and include a `note` that points to the missing EDOPro behavior rather than treating it as out of scope.
 
 ## Included decks
 
