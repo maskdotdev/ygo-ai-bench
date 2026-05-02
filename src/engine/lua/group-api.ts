@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { copyGlobalFunctionToField, readCardUid, readGroupUids, readOptionalFunctionRef, readTableNumberField, releaseOptionalFunctionRef, setGroupUids } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { linkedZoneMaskForUids } from "#lua/duel-api/location.js";
+import { binaryFlags, bitCount } from "#lua/group-bit-utils.js";
 import { installGroupCompatibilityApi } from "#lua/group-compatibility-api.js";
 import { groupFieldNames } from "#lua/group-field-names.js";
 import { sameUidSet, selectGroupUids, uniqueUids } from "#lua/group-uid-utils.js";
@@ -540,16 +541,6 @@ function assignDistinctProperty(options: number[][], index: number, used: Set<nu
   return false;
 }
 
-function binaryFlags(mask: number): number[] {
-  const values: number[] = [];
-  let bit = 1;
-  while (bit <= mask) {
-    if ((mask & bit) !== 0) values.push(bit);
-    bit <<= 1;
-  }
-  return values;
-}
-
 function compareGroupCards(L: unknown, a: string, b: string, comparatorRef: number, args: LuaFilterArgs): number {
   lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, comparatorRef);
   pushCardTable(L, a);
@@ -583,16 +574,6 @@ function readCardOrGroupUids(L: unknown, index: number): string[] {
   const uid = readCardUid(L, index);
   if (uid) return [uid];
   return readGroupUids(L, index);
-}
-
-function bitCount(value: number): number {
-  let remaining = value >>> 0;
-  let count = 0;
-  while (remaining !== 0) {
-    remaining &= remaining - 1;
-    count += 1;
-  }
-  return count;
 }
 
 function pushExtremeGroup(L: unknown, direction: "max" | "min"): number {
