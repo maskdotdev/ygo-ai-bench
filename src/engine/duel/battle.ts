@@ -7,6 +7,7 @@ export interface DuelBattleCallbacks {
   collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance): void;
   damagePlayer(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   destroyCard(uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
+  getAttackValue?(card: DuelCardInstance): number;
   hasPiercingDamage?(card: DuelCardInstance): boolean;
 }
 
@@ -90,7 +91,7 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
   try {
     if (!target) {
-      callbacks.damagePlayer(otherPlayer(attacker.controller), getBattleAttack(attacker), [attacker]);
+      callbacks.damagePlayer(otherPlayer(attacker.controller), getBattleAttack(attacker, callbacks), [attacker]);
       return true;
     }
     if (target.location === "monsterZone") resolveBattle(state, attacker, target, callbacks);
@@ -198,8 +199,8 @@ function getAttackTargets(state: DuelState, player: PlayerId, canAttackTarget: D
 function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance, callbacks: DuelBattleCallbacks): void {
   attacker.battlePosition = attacker.position;
   target.battlePosition = target.position;
-  const attackerAttack = getBattleAttack(attacker);
-  const targetStat = target.position === "faceUpAttack" ? getBattleAttack(target) : getBattleDefense(target);
+  const attackerAttack = getBattleAttack(attacker, callbacks);
+  const targetStat = target.position === "faceUpAttack" ? getBattleAttack(target, callbacks) : getBattleDefense(target);
   if (target.position === "faceUpAttack") {
     resolveAttackPositionBattle(state, attacker, attackerAttack, target, targetStat, callbacks);
     return;
@@ -237,8 +238,8 @@ function destroyBattleCard(card: DuelCardInstance, reasonPlayer: PlayerId, callb
   return result.uid === card.uid && result.location !== previousLocation;
 }
 
-function getBattleAttack(card: DuelCardInstance): number {
-  return Math.max(0, card.data.attack ?? 0);
+function getBattleAttack(card: DuelCardInstance, callbacks?: DuelBattleCallbacks): number {
+  return Math.max(0, callbacks?.getAttackValue?.(card) ?? card.data.attack ?? 0);
 }
 
 function getBattleDefense(card: DuelCardInstance): number {

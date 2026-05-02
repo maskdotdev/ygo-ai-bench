@@ -103,6 +103,44 @@ describe("Lua battle helpers", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)).toBe(false);
   });
 
+  it("applies Lua defense-attack effects to battle damage", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Defense Attacker", kind: "monster", attack: 500, defense: 2000 }];
+    const session = createDuel({ seed: 127, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    expect(attacker).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_DEFENSE_ATTACK)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+      `,
+      "defense-attack.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    expect(session.state.battleDamage[1]).toBe(2000);
+    expect(session.state.players[1].lifePoints).toBe(6000);
+  });
+
   it("loads Black Luster Soldier and grants another attack after battle destruction", () => {
     const cards: DuelCardData[] = [
       { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", attack: 3000 },

@@ -56,6 +56,7 @@ import {
   declareCoreDuelAttack,
   getCoreDuelAttackTargets,
   getCoreAdditionalBattleDamagePlayers,
+  getCoreBattleAttackValue,
   getCoreBattleDamageReason,
   hasCoreMustAttackAction,
   hasCorePiercingBattleDamage,
@@ -143,6 +144,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
   changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
+  getAttackValue: (state, card) => getCoreBattleAttackValue(state, card, coreBattleHandlers),
   hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
 };
 
@@ -155,6 +157,7 @@ const coreBattleHandlers: CoreBattleHandlers = {
   createContinuousContext: createContinuousEffectContext,
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
+  getAttackValue: (state, card) => getCoreBattleAttackValue(state, card, coreBattleHandlers),
   hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
 };
 
