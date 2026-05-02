@@ -428,12 +428,14 @@ describe("Lua continuous effects", () => {
       local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("can special target " .. tostring(target:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK)))
       Debug.Message("can special opponent " .. tostring(target:IsCanBeSpecialSummoned(nil,0,1,false,false,POS_FACEUP_ATTACK)))
+      Debug.Message("can special bad pos " .. tostring(target:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEDOWN_ATTACK)))
       `,
       "can-be-special-before.lua",
     );
     expect(before.ok, before.error).toBe(true);
     expect(host.messages).toContain("can special target true");
     expect(host.messages).toContain("can special opponent true");
+    expect(host.messages).toContain("can special bad pos false");
 
     for (const filler of session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && card.code === "300").slice(0, 5)) {
       moveDuelCard(session.state, filler.uid, "monsterZone", 0);
