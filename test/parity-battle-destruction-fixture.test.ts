@@ -1,0 +1,329 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+
+describe("EDOPro parity battle destruction fixtures", () => {
+  it("destroys both attack-position monsters with equal ATK", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Equal Attacker", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Equal Target", kind: "monster", attack: 1800, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "equal attack battle destruction fixture",
+      options: { seed: 92, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 1, code: "200", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the attack-response window before resolving equal-ATK battle destruction",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passAttack", 1)),
+        makeScriptedStep(makeResponseSelector("passAttack", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0), {
+          snapshotRestore: "after",
+          after: {
+            source: "edopro",
+            note: "EDOPro destroys both attack-position monsters with equal ATK and applies no battle damage",
+            waitingFor: 0,
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            lifePoints: { 0: 8000, 1: 8000 },
+            battleDamage: { 0: 0, 1: 0 },
+            attacksDeclared: ["p0-deck-100-0"],
+            battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+            locations: { graveyard: ["100", "200"] },
+            logIncludes: ["Destroyed"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final fixture state preserves mutual equal-ATK battle destruction",
+        phase: "battle",
+        waitingFor: 0,
+        pendingBattle: false,
+        currentAttack: false,
+        battleWindow: null,
+        lifePoints: { 0: 8000, 1: 8000 },
+        battleDamage: { 0: 0, 1: 0 },
+        attacksDeclared: ["p0-deck-100-0"],
+        battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+        locations: { graveyard: ["100", "200"] },
+        logIncludes: ["Destroyed"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+
+  it("destroys the attacking monster when it battles a stronger attack-position target", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Weaker Attacker", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "200", name: "Stronger Target", kind: "monster", attack: 1800, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "weaker attack position attacker destruction fixture",
+      options: { seed: 93, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 1, code: "200", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the attack-response window before resolving a weaker attacker into a stronger attack-position target",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passAttack", 1)),
+        makeScriptedStep(makeResponseSelector("passAttack", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0), {
+          snapshotRestore: "after",
+          after: {
+            source: "edopro",
+            note: "EDOPro destroys only the weaker attack-position attacker and applies reflected battle damage to its controller",
+            waitingFor: 0,
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            lifePoints: { 0: 7400, 1: 8000 },
+            battleDamage: { 0: 600, 1: 0 },
+            attacksDeclared: ["p0-deck-100-0"],
+            battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+            locations: { monsterZone: ["200"], graveyard: ["100"] },
+            logIncludes: ["600", "Destroyed"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final fixture state preserves weaker-attacker battle destruction and reflected damage",
+        phase: "battle",
+        waitingFor: 0,
+        pendingBattle: false,
+        currentAttack: false,
+        battleWindow: null,
+        lifePoints: { 0: 7400, 1: 8000 },
+        battleDamage: { 0: 600, 1: 0 },
+        attacksDeclared: ["p0-deck-100-0"],
+        battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+        locations: { monsterZone: ["200"], graveyard: ["100"] },
+        logIncludes: ["600", "Destroyed"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+
+  it("keeps both monsters when ATK equals DEF in defense-position battle", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Equal Defense Attacker", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Equal Defense Target", kind: "monster", attack: 500, defense: 1800 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "equal attack defense battle fixture",
+      options: { seed: 94, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 1, code: "200", from: "hand", to: "monsterZone", position: "faceUpDefense" },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the attack-response window before resolving equal ATK versus DEF battle",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passAttack", 1)),
+        makeScriptedStep(makeResponseSelector("passAttack", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0), {
+          snapshotRestore: "after",
+          after: {
+            source: "edopro",
+            note: "EDOPro applies no damage and destroys neither monster when ATK equals a defense-position target's DEF",
+            waitingFor: 0,
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            lifePoints: { 0: 8000, 1: 8000 },
+            battleDamage: { 0: 0, 1: 0 },
+            attacksDeclared: ["p0-deck-100-0"],
+            battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+            locations: { monsterZone: ["100", "200"] },
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final fixture state preserves no destruction and no damage for equal ATK versus DEF battle",
+        phase: "battle",
+        waitingFor: 0,
+        pendingBattle: false,
+        currentAttack: false,
+        battleWindow: null,
+        lifePoints: { 0: 8000, 1: 8000 },
+        battleDamage: { 0: 0, 1: 0 },
+        attacksDeclared: ["p0-deck-100-0"],
+        battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+        locations: { monsterZone: ["100", "200"] },
+        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+
+  it("prevents battle destruction with battle-indestructible effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Battle Breaker", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Battle Indestructible Target", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "battle indestructible fixture",
+      options: { seed: 91, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 1, code: "200", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+        ],
+        effects: [
+          {
+            id: "fixture-battle-indestructible",
+            player: 1,
+            code: "200",
+            location: "monsterZone",
+            event: "continuous",
+            effectCode: 42,
+            range: ["monsterZone"],
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the normal attack-response window before checking battle destruction prevention",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passAttack", 1)),
+        makeScriptedStep(makeResponseSelector("passAttack", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0), {
+          snapshotRestore: "after",
+          after: {
+            source: "edopro",
+            note: "EDOPro still applies battle damage but keeps a battle-indestructible monster on the field",
+            waitingFor: 0,
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            lifePoints: { 0: 8000, 1: 7200 },
+            battleDamage: { 0: 0, 1: 800 },
+            attacksDeclared: ["p0-deck-100-0"],
+            battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+            locations: { monsterZone: ["100", "200"] },
+            logIncludes: ["800", "Destruction prevented"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final fixture state preserves battle damage without battle destruction for indestructible targets",
+        phase: "battle",
+        waitingFor: 0,
+        pendingBattle: false,
+        currentAttack: false,
+        battleWindow: null,
+        lifePoints: { 0: 8000, 1: 7200 },
+        battleDamage: { 0: 0, 1: 800 },
+        attacksDeclared: ["p0-deck-100-0"],
+        battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+        locations: { monsterZone: ["100", "200"] },
+        logIncludes: ["800", "Destruction prevented"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
