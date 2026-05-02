@@ -90,6 +90,7 @@ import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
 import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
+import { getPromptResponseActions, resolveDuelPrompt, stampDuelActions } from "#duel/prompt-response.js";
 import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
@@ -107,7 +108,6 @@ import type {
   DuelEventName,
   DuelLocation,
   DuelPhase,
-  DuelPromptState,
   DuelResponse,
   DuelSession,
   DuelState,
@@ -185,7 +185,7 @@ const responseHandlers: DuelResponseHandlers = {
   passChain,
   passAttack: (state, player) => passAttackResponseWindow(state, player, battleContinuationHandlers),
   passDamage: (state, player) => passDamageResponseWindow(state, player, battleContinuationHandlers),
-  resolvePrompt,
+  resolvePrompt: resolveDuelPrompt,
   activateTrigger(session, player, triggerId) {
     activateDuelPendingTrigger(session, player, triggerId, activationHandlers);
   },
@@ -220,19 +220,19 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   const actions: DuelAction[] = [];
   if (state.prompt) {
     actions.push(...getPromptResponseActions(state.prompt, player));
-    return stampActions(actions, state.actionWindowId);
+    return stampDuelActions(actions, state.actionWindowId);
   }
   if (state.chain.length) {
     actions.push(...getChainResponseActions(state, player));
-    return stampActions(actions, state.actionWindowId);
+    return stampDuelActions(actions, state.actionWindowId);
   }
   if (state.pendingTriggers.length) {
     actions.push(...getPendingTriggerActions(state, player));
-    return stampActions(actions, state.actionWindowId);
+    return stampDuelActions(actions, state.actionWindowId);
   }
   if (state.pendingBattle) {
     actions.push(...battleWindowActions(state, player, quickEffectActions));
-    return stampActions(actions, state.actionWindowId);
+    return stampDuelActions(actions, state.actionWindowId);
   }
   const hand = getCards(state, player, "hand");
   if (state.phase === "main1" || state.phase === "main2") {
@@ -266,7 +266,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   const nextPhase = nextAvailableDuelPhase(state, player);
   if (!mustAttack && nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
   if (!mustAttack) actions.push({ type: "endTurn", player, label: "End turn" });
-  return stampActions(actions, state.actionWindowId);
+  return stampDuelActions(actions, state.actionWindowId);
 }
 
 export function applyResponse(session: DuelSession, response: DuelResponse): ApplyDuelResponseResult {
@@ -582,31 +582,6 @@ function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction
   return actions;
 }
 
-function getPromptResponseActions(prompt: DuelPromptState, player: PlayerId): DuelAction[] {
-  if (prompt.player !== player) return [];
-  if (prompt.type === "selectOption") {
-    return prompt.options.map((option) => ({ type: "selectOption", player, promptId: prompt.id, option, label: `Select option ${option}` }));
-  }
-  return [
-    { type: "selectYesNo", player, promptId: prompt.id, yes: true, label: "Yes" },
-    { type: "selectYesNo", player, promptId: prompt.id, yes: false, label: "No" },
-  ];
-}
-
-function resolvePrompt(state: DuelState, response: Extract<DuelResponse, { type: "selectOption" | "selectYesNo" }>): void {
-  const prompt = state.prompt;
-  if (!prompt || prompt.id !== response.promptId || prompt.player !== response.player || prompt.type !== response.type) throw new Error("Prompt response does not match the pending prompt");
-  if (prompt.type === "selectOption") {
-    if (response.type !== "selectOption" || !prompt.options.includes(response.option)) throw new Error(`Option ${response.type === "selectOption" ? response.option : ""} is not legal`);
-    pushDuelLog(state, "selectOption", response.player, undefined, `Selected option ${response.option}`);
-  } else {
-    if (response.type !== "selectYesNo") throw new Error("Prompt response does not match the pending prompt");
-    pushDuelLog(state, "selectYesNo", response.player, undefined, response.yes ? "Selected yes" : "Selected no");
-  }
-  state.waitingFor = prompt.returnTo ?? state.turnPlayer;
-  delete state.prompt;
-}
-
 function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
   return getQuickEffectActions(state, player, canChooseEffect);
 }
@@ -635,10 +610,6 @@ function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source:
 
 function hasChainResponses(state: DuelState, player: PlayerId): boolean {
   return hasQuickEffectResponses(state, player, canChooseEffect);
-}
-
-function stampActions(actions: DuelAction[], windowId: number): DuelAction[] {
-  return actions.map((action) => ({ ...action, windowId }));
 }
 
 export function addDuelChainLimit(state: DuelState, limit: Omit<ChainLimit, "expiresAtChainLength">): void {
