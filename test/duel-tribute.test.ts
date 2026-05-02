@@ -167,4 +167,39 @@ describe("duel tribute summons", () => {
     expect(result.state.cards.find((card) => card.uid === source!.uid)?.location).toBe("monsterZone");
     expect(result.state.log.some((entry) => entry.action === "normalSummon" && entry.card === "Two Tribute Monster")).toBe(true);
   });
+
+  it("allows one double-tribute material to tribute summon a level 7 monster", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["700", "100", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const tributeMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "700");
+    const doubleTribute = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(tributeMonster).toBeTruthy();
+    expect(doubleTribute).toBeTruthy();
+    moveDuelCard(session.state, doubleTribute!.uid, "monsterZone", 0);
+    registerEffect(session, {
+      id: "double-tribute-material",
+      sourceUid: doubleTribute!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 150,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "tributeSummon" && candidate.uid === tributeMonster!.uid && candidate.tributeUids.length === 1);
+    expect(action).toBeTruthy();
+    expect(action?.type).toBe("tributeSummon");
+    if (!action || action.type !== "tributeSummon") throw new Error("Expected double-tribute action");
+    const result = applyResponse(session, action);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === doubleTribute!.uid)?.location).toBe("graveyard");
+    expect(result.state.log.some((entry) => entry.action === "tributeSummon" && entry.detail === "Tribute Summoned with 2 tribute(s)")).toBe(true);
+  });
 });

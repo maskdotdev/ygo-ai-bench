@@ -1,6 +1,7 @@
 import { findCard, getCards, hasZoneSpace, moveDuelCard, pushDuelLog, requireControlledCard, requireZoneSpace } from "#duel/card-state.js";
 import { recordFlipSummonActivity, recordNormalSetActivity, recordNormalSummonActivity, recordSpecialSummonActivity } from "#duel/activity.js";
 import { duelReason } from "#duel/reasons.js";
+import { tributeUnitCount } from "#duel/double-tribute.js";
 import type { DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 export type DuelEventCollector = (eventName: DuelEventName, eventCard?: DuelCardInstance) => void;
@@ -59,10 +60,10 @@ export function tributeSummonDuelCard(
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
   const requiredTributes = tributeCountForNormalSummon(card);
   if (requiredTributes <= 0) throw new Error(`${card.name} does not require tributes`);
-  if (tributeUids.length !== requiredTributes) throw new Error(`${card.name} requires ${requiredTributes} tribute(s)`);
-
   const uniqueTributes = [...new Set(tributeUids)];
   if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
+  const tributeUnits = uniqueTributes.reduce((sum, tributeUid) => sum + tributeUnitCount(state, requireControlledCard(state, player, tributeUid, "monsterZone")), 0);
+  if (tributeUnits !== requiredTributes) throw new Error(`${card.name} requires ${requiredTributes} tribute(s)`);
   for (const tributeUid of uniqueTributes) {
     const tribute = requireControlledCard(state, player, tributeUid, "monsterZone");
     if (!canReleaseMaterial(tribute.uid)) throw new Error(`${tribute.name} cannot be released`);
@@ -281,8 +282,8 @@ export function tributeSummonActions(state: DuelState, player: PlayerId, hand: D
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
     const tributeCount = tributeCountForNormalSummon(card);
-    if (tributeCount <= 0 || availableTributes.length < tributeCount) continue;
-    for (const tributeUids of tributeCombinations(availableTributes, tributeCount)) {
+    if (tributeCount <= 0 || availableTributes.reduce((sum, material) => sum + tributeUnitCount(state, material), 0) < tributeCount) continue;
+    for (const tributeUids of tributeCombinations(state, availableTributes, tributeCount)) {
       const tributeNames = tributeUids.map((tributeUid) => findCard(state, tributeUid)?.name ?? tributeUid).join(", ");
       actions.push({ type: "tributeSummon", player, uid: card.uid, tributeUids, label: `Tribute Summon ${card.name} using ${tributeNames}` });
     }
@@ -389,15 +390,16 @@ function tributeCountForNormalSummon(card: DuelCardInstance): number {
   return 0;
 }
 
-function tributeCombinations(cards: DuelCardInstance[], count: number): string[][] {
+function tributeCombinations(state: DuelState, cards: DuelCardInstance[], count: number): string[][] {
   if (count === 0) return [[]];
-  if (cards.length < count) return [];
-  if (count === 1) return cards.map((card) => [card.uid]);
+  if (cards.reduce((sum, card) => sum + tributeUnitCount(state, card), 0) < count) return [];
   const results: string[][] = [];
-  for (let index = 0; index <= cards.length - count; index += 1) {
+  for (let index = 0; index < cards.length; index += 1) {
     const head = cards[index];
     if (!head) continue;
-    for (const tail of tributeCombinations(cards.slice(index + 1), count - 1)) {
+    const remaining = count - tributeUnitCount(state, head);
+    if (remaining < 0) continue;
+    for (const tail of tributeCombinations(state, cards.slice(index + 1), remaining)) {
       results.push([head.uid, ...tail]);
     }
   }
