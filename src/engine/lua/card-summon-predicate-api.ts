@@ -39,7 +39,7 @@ function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const ignoreCount = lua.lua_toboolean(state, 2);
-    const minTributes = lua.lua_isnumber(state, 4) ? Math.max(0, lua.lua_tointeger(state, 4)) : readMinTributeRequirement(state, card) ?? 0;
+    const minTributes = lua.lua_isnumber(state, 4) ? Math.max(0, lua.lua_tointeger(state, 4)) : readMinTributeRequirement(state, card);
     const actions = card ? summonActionsForCard(session, card, ignoreCount, minTributes) : [];
     lua.lua_pushboolean(
       state,
@@ -52,19 +52,50 @@ function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
-function summonActionsForCard(session: DuelSession, card: DuelCardInstance, ignoreCount: boolean, minTributes: number): DuelAction[] {
+function summonActionsForCard(session: DuelSession, card: DuelCardInstance, ignoreCount: boolean, minTributes: number | undefined): DuelAction[] {
   const readActions = (): DuelAction[] => [
     ...(canUseNoTributeSummon(session, card) ? [{ type: "normalSummon" as const, player: card.controller, uid: card.uid, label: `Normal Summon ${card.name}` }] : normalSummonActions(session.state, card.controller, [card])),
-    ...(minTributes > 0 ? tributeSummonActions(session.state, card.controller, [card]) : []),
+    ...tributeSummonActions(session.state, card.controller, [card]),
   ];
-  if (!ignoreCount) return readActions();
+  const readWithTributeOverride = (): DuelAction[] => withMinTributeOverride(card, minTributes, readActions);
+  if (!ignoreCount) return readWithTributeOverride();
   const previous = session.state.players[card.controller].normalSummonAvailable;
   session.state.players[card.controller].normalSummonAvailable = true;
   try {
-    return readActions();
+    return readWithTributeOverride();
   } finally {
     session.state.players[card.controller].normalSummonAvailable = previous;
   }
+}
+
+function withMinTributeOverride(card: DuelCardInstance, minTributes: number | undefined, readActions: () => DuelAction[]): DuelAction[] {
+  if (minTributes === undefined) return readActions();
+  const previousExact = card.data.normalTributes;
+  const previousMin = card.data.normalTributeMin;
+  const previousMax = card.data.normalTributeMax;
+  const maxTributes = Math.max(minTributes, previousExact ?? previousMax ?? baseNormalTributeCount(card));
+  try {
+    delete card.data.normalTributes;
+    card.data.normalTributeMin = minTributes;
+    card.data.normalTributeMax = maxTributes;
+    return readActions();
+  } finally {
+    restoreOptionalNumber(card.data, "normalTributes", previousExact);
+    restoreOptionalNumber(card.data, "normalTributeMin", previousMin);
+    restoreOptionalNumber(card.data, "normalTributeMax", previousMax);
+  }
+}
+
+function restoreOptionalNumber(target: DuelCardInstance["data"], field: "normalTributes" | "normalTributeMin" | "normalTributeMax", value: number | undefined): void {
+  if (value === undefined) delete target[field];
+  else target[field] = value;
+}
+
+function baseNormalTributeCount(card: DuelCardInstance): number {
+  const level = card.data.level ?? 4;
+  if (level >= 7) return 2;
+  if (level >= 5) return 1;
+  return 0;
 }
 
 function canUseNoTributeSummon(session: DuelSession, card: DuelCardInstance): boolean {

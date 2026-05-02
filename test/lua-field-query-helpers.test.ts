@@ -1798,12 +1798,12 @@ describe("Lua field and query helpers", () => {
     const zoneResult = zoneHost.loadScript(
       `
       local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      Debug.Message("mzone blocked predicates " .. tostring(tribute:IsSummonableCard()) .. "/" .. tostring(tribute:IsMSetable()) .. "/" .. tostring(tribute:IsSpecialSummonable()))
+      Debug.Message("mzone filled predicates " .. tostring(tribute:IsSummonableCard()) .. "/" .. tostring(tribute:IsMSetable()) .. "/" .. tostring(tribute:IsSpecialSummonable()))
       `,
       "card-summon-predicate-mzone-block.lua",
     );
     expect(zoneResult.ok, zoneResult.error).toBe(true);
-    expect(zoneHost.messages).toContain("mzone blocked predicates false/false/false");
+    expect(zoneHost.messages).toContain("mzone filled predicates true/false/false");
 
     for (const code of ["830", "840", "850", "860", "870"]) {
       const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
@@ -1820,6 +1820,34 @@ describe("Lua field and query helpers", () => {
     );
     expect(spellTrapResult.ok, spellTrapResult.error).toBe(true);
     expect(spellTrapHost.messages).toContain("szone blocked predicates false/false");
+  });
+
+  it("uses Lua summon predicate tribute minimum overrides", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Override Tribute Target", kind: "monster", level: 7 },
+      { code: "200", name: "Override Tribute Material", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 188, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const material = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(material).toBeDefined();
+    moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("summon min override " .. tostring(tribute:IsSummonable(true,nil,1)) .. "/" .. tostring(tribute:IsSummonable(true,nil,2)) .. "/" .. tostring(tribute:CanSummonOrSet(true,nil,1)))
+      `,
+      "card-summon-min-override.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("summon min override true/false/true");
   });
 
   it("checks Lua player summon legality with tribute metadata", () => {
