@@ -8,6 +8,7 @@ import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
 import { readMinTributeRequirement } from "#lua/tribute-metadata-api.js";
 import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -224,6 +225,7 @@ function normalSummonAvailability(session: DuelSession, player: PlayerId, card: 
   const readAvailable = (): boolean => {
     const hand = card ? [card] : session.state.cards.filter((candidate) => candidate.controller === player && candidate.location === "hand" && isMonsterLike(candidate.kind));
     const actions = [...normalSummonActions(session.state, player, hand), ...tributeSummonActions(session.state, player, hand)];
+    if (card && isNoTributePlayerAffected(session, player)) return availableMonsterZoneCount(session, player, []) > 0;
     if (card && minTributes > 0 && canSummonWithMetadataTributes(session, player, card, minTributes)) return true;
     return card ? actions.some((action) => actionHasUid(action, card.uid) && (action.type === "normalSummon" || action.type === "tributeSummon")) : actions.some((action) => action.type === "normalSummon" || action.type === "tributeSummon");
   };

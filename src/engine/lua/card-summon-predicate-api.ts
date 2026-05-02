@@ -3,6 +3,8 @@ import { canSpecialSummonDuelCard } from "#duel/core.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { positionFromMask, readTableStringField } from "#lua/api-utils.js";
 import { canSpecialSummonFromLua } from "#lua/card-eligibility-api.js";
+import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
+import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
 import { readMinTributeRequirement } from "#lua/tribute-metadata-api.js";
 import type { DuelAction, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -52,7 +54,7 @@ function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession
 
 function summonActionsForCard(session: DuelSession, card: DuelCardInstance, ignoreCount: boolean, minTributes: number): DuelAction[] {
   const readActions = (): DuelAction[] => [
-    ...normalSummonActions(session.state, card.controller, [card]),
+    ...(canUseNoTributeSummon(session, card) ? [{ type: "normalSummon" as const, player: card.controller, uid: card.uid, label: `Normal Summon ${card.name}` }] : normalSummonActions(session.state, card.controller, [card])),
     ...(minTributes > 0 ? tributeSummonActions(session.state, card.controller, [card]) : []),
   ];
   if (!ignoreCount) return readActions();
@@ -63,6 +65,10 @@ function summonActionsForCard(session: DuelSession, card: DuelCardInstance, igno
   } finally {
     session.state.players[card.controller].normalSummonAvailable = previous;
   }
+}
+
+function canUseNoTributeSummon(session: DuelSession, card: DuelCardInstance): boolean {
+  return session.state.players[card.controller].normalSummonAvailable && availableMonsterZoneCount(session, card.controller, []) > 0 && isNoTributePlayerAffected(session, card.controller);
 }
 
 function actionMatchesKind(action: DuelAction, kind: "normalSummon" | "setMonster" | "summonOrSet"): boolean {

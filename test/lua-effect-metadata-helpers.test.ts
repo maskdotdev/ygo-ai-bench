@@ -1134,10 +1134,13 @@ describe("Lua effect metadata helpers", () => {
   });
 
   it("registers Rush no-tribute check effects for cards and players", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "No Tribute Source", kind: "monster" }];
-    const session = createDuel({ seed: 102, startingHandSize: 1, cardReader: createCardReader(cards) });
+    const cards: DuelCardData[] = [
+      { code: "100", name: "No Tribute Source", kind: "monster" },
+      { code: "200", name: "No Tribute Target", kind: "monster", level: 7 },
+    ];
+    const session = createDuel({ seed: 102, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100"] },
+      0: { main: ["100", "200"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -1149,10 +1152,13 @@ describe("Lua effect metadata helpers", () => {
     const result = host.loadScript(
       `
       local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("no tribute summon before " .. tostring(Duel.IsPlayerCanSummon(0,target)) .. "/" .. tostring(target:IsSummonable()))
       local e1=c:AddNoTributeCheck(160001029,1,1,0)
       local self_range,opp_range=e1:GetTargetRange()
       local reset,reset_count=e1:GetReset()
       Debug.Message("card no tribute " .. e1:GetCode() .. "/" .. e1:GetDescription() .. "/" .. self_range .. "/" .. opp_range .. "/" .. reset_count .. "/" .. tostring(e1:IsHasProperty(EFFECT_FLAG_CLIENT_HINT)))
+      Debug.Message("no tribute summon after " .. tostring(Duel.IsPlayerCanSummon(0,target)) .. "/" .. tostring(target:IsSummonable()))
       local e2=Duel.AddNoTributeCheck(c,0,160001029,2,0,1)
       local player_effect=Duel.IsPlayerAffectedByEffect(1,FLAG_NO_TRIBUTE)
       local self2,opp2=e2:GetTargetRange()
@@ -1162,7 +1168,9 @@ describe("Lua effect metadata helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("no tribute summon before false/false");
     expect(host.messages.some((message) => message.startsWith("card no tribute 160001029/") && message.endsWith("/1/0/1/true"))).toBe(true);
+    expect(host.messages).toContain("no tribute summon after true/true");
     expect(host.messages).toContain("duel no tribute true/0/1");
   });
 
