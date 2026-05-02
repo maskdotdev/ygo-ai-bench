@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { createDuel, loadDecks, registerEffect, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -2056,6 +2056,17 @@ describe("Lua field and query helpers", () => {
     const tributeMaterial = tributeSetSession.state.cards.find((card) => card.code === "500");
     expect(tributeMaterial).toBeTruthy();
     moveDuelCard(tributeSetSession.state, tributeMaterial!.uid, "monsterZone", 0);
+    registerEffect(tributeSetSession, {
+      id: "tribute-set-material-sent",
+      sourceUid: tributeMaterial!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "sentToGraveyard",
+      range: ["graveyard"],
+      operation(ctx) {
+        ctx.log(`Tribute set material trigger ${ctx.eventCard?.code ?? ""}`);
+      },
+    });
     const tributeSetHost = createLuaScriptHost(tributeSetSession);
     const tributeSetResult = tributeSetHost.loadScript(
       `
@@ -2071,6 +2082,7 @@ describe("Lua field and query helpers", () => {
     expect(tributeSetHost.messages).toContain("tribute mset operated 1/950");
     expect(tributeSetSession.state.cards.find((card) => card.code === "950")).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false, summonType: "tribute" });
     expect(tributeSetSession.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "graveyard" });
+    expect(tributeSetSession.state.pendingTriggers.map((trigger) => trigger.effectId)).toContain("tribute-set-material-sent");
 
     const lockedTributeSetSession = createDuel({ seed: 92, startingHandSize: 2, cardReader: createCardReader([...cards, { code: "950", name: "Locked Tribute Set Source", kind: "monster", level: 5 }]) });
     loadDecks(lockedTributeSetSession, {

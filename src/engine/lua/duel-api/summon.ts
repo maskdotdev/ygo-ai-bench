@@ -159,6 +159,7 @@ function setLuaMonsterWithTributes(session: DuelSession, target: DuelCardInstanc
       tributeUids,
       (uid, controller, moveReason) => ({ card: sendDuelCardToGraveyard(session.state, uid, controller, moveReason) }),
       (uid) => canMoveDuelCardToLocation(session.state, uid, "graveyard", reason),
+      (eventName, eventCard) => collectTriggerEffectsRule(session.state, eventName, () => true, eventCard),
     );
     return { ok: true };
   } catch {

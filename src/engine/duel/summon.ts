@@ -54,12 +54,13 @@ export function tributeSetDuelCard(
   tributeUids: string[],
   moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
   canReleaseMaterial: DuelMaterialPredicate = () => true,
+  collectEvent?: DuelEventCollector,
 ): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
   const { uniqueTributes, tributeUnits } = validateNormalTributes(state, player, card, tributeUids, canReleaseMaterial);
-  releaseNormalTributes(state, player, card, uniqueTributes, moveMaterial, `Tributed to Set ${card.name}`);
+  releaseNormalTributes(state, player, card, uniqueTributes, moveMaterial, `Tributed to Set ${card.name}`, collectEvent);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
   card.position = "faceDownDefense";
   card.faceUp = false;
