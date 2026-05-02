@@ -146,9 +146,22 @@ function pushAnnouncementHelper(L: unknown, fieldName: string): void {
 }
 
 function pushFirstAnnouncementValue(L: unknown, fallback: number): number {
-  const value = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : fallback;
+  const value = readFirstAnnouncementValue(L, 2) ?? fallback;
   lua.lua_pushinteger(L, value);
   return 1;
+}
+
+function readFirstAnnouncementValue(L: unknown, index: number): number | undefined {
+  if (lua.lua_isnumber(L, index)) return lua.lua_tointeger(L, index);
+  if (!lua.lua_istable(L, index)) return undefined;
+  const count = lua.lua_rawlen(L, index);
+  for (let luaIndex = 1; luaIndex <= count; luaIndex += 1) {
+    lua.lua_rawgeti(L, index, luaIndex);
+    const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
+    lua.lua_pop(L, 1);
+    if (value !== undefined) return value;
+  }
+  return undefined;
 }
 
 function pushAnnounceMaskChoice(L: unknown, fallbackMask: number, maxBit: number): number {
