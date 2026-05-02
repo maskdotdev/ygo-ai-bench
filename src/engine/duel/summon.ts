@@ -2,6 +2,7 @@ import { findCard, getCards, hasZoneSpace, moveDuelCard, pushDuelLog, requireCon
 import { recordFlipSummonActivity, recordNormalSetActivity, recordNormalSummonActivity, recordSpecialSummonActivity } from "#duel/activity.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeUnitCount } from "#duel/double-tribute.js";
+import { cardCombinations, cardMatchesCode, isMonsterLike, materialCodesMatch } from "#duel/summon-materials.js";
 import type { DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 export type DuelEventCollector = (eventName: DuelEventName, eventCard?: DuelCardInstance) => void;
@@ -660,38 +661,7 @@ function linkRating(card: DuelCardInstance): number {
   return card.data.linkMaterials?.length ?? 0;
 }
 
-function cardCombinations(cards: DuelCardInstance[], count: number): DuelCardInstance[][] {
-  if (count === 0) return [[]];
-  if (cards.length < count) return [];
-  const results: DuelCardInstance[][] = [];
-  for (let index = 0; index <= cards.length - count; index += 1) {
-    const head = cards[index];
-    if (!head) continue;
-    for (const tail of cardCombinations(cards.slice(index + 1), count - 1)) results.push([head, ...tail]);
-  }
-  return results;
-}
-
 function synchroMaterialCodes(card: DuelCardInstance): string[] | undefined {
   const materials = card.data.synchroMaterials;
   return materials ? [materials.tuner, ...materials.nonTuners] : undefined;
-}
-
-function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
-  if (materials.length !== requiredCodes.length) return false;
-  const used = new Set<string>();
-  for (const code of requiredCodes) {
-    const material = materials.find((candidate) => !used.has(candidate.uid) && cardMatchesCode(candidate, code));
-    if (!material) return false;
-    used.add(material.uid);
-  }
-  return used.size === materials.length;
-}
-
-function cardMatchesCode(card: DuelCardInstance, code: string): boolean {
-  return card.code === code || card.data.alias === code;
-}
-
-function isMonsterLike(card: DuelCardInstance): boolean {
-  return card.kind === "monster" || (card.kind === "extra" && card.data.kind !== "spell" && card.data.kind !== "trap");
 }
