@@ -74,27 +74,24 @@ import {
   isMoveToLocationPrevented,
   isReleasePrevented,
   isSpecialSummonPrevented,
-  battleDestroyRedirectLocation,
-  leaveFieldRedirectLocation,
-  moveDestinationRedirectLocation,
-  shouldRedirectBanishMove,
-  shouldRedirectToGraveyardMove,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import {
   changeDuelBattleDamageWithPrevention as changeDuelBattleDamageWithPreventionRule,
   reflectedDuelBattleDamagePlayer as reflectedDuelBattleDamagePlayerRule,
 } from "#duel/core-battle-damage.js";
+import {
+  banishCoreDuelCard,
+  destroyCoreDuelCard,
+  detachCoreDuelOverlayMaterials,
+  moveCoreDuelCardWithRedirects,
+  sendCoreDuelCardToGraveyard,
+  type CoreMovementHandlers,
+} from "#duel/core-movement.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
-import {
-  applyDestroyPrevention,
-  applyDestroyReplacement,
-  applyReleaseReplacement,
-  applySendReplacement,
-  type ReplacementEffectHandlers,
-} from "#duel/replacement-effects.js";
+import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
 import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
 import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
@@ -158,6 +155,13 @@ const coreBattleHandlers: CoreBattleHandlers = {
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
   hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
+};
+
+const coreMovementHandlers: CoreMovementHandlers = {
+  canMoveCardToLocation: canMoveDuelCardToLocation,
+  collectTrigger: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
+  createContinuousContext: createContinuousEffectContext,
+  createReplacementHandlers: createReplacementEffectHandlers,
 };
 
 const responseHandlers: DuelResponseHandlers = {
@@ -404,91 +408,23 @@ function requireDuelMoveAllowed(state: DuelState, uid: string, to: DuelLocation,
 }
 
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance {
-  if ((reason & duelReason.release) !== 0 && isReleasePrevented(state, uid, reason, createContinuousEffectContext(state))) throw new Error(`Card ${uid} cannot be released`);
-  const replacementHandlers = createReplacementEffectHandlers(state);
-  const replacement = applyReleaseReplacement(state, uid, controller, reason, replacementHandlers);
-  if (replacement) return replacement;
-  const sendReplacement = applySendReplacement(state, uid, controller, reason, replacementHandlers);
-  if (sendReplacement) return sendReplacement;
-  const createContext = createContinuousEffectContext(state);
-  if (shouldRedirectToGraveyardMove(state, uid, createContext)) return banishDuelCard(state, uid, controller, reason | duelReason.redirect, reasonPlayer);
-  const redirectLocation = leaveFieldRedirectLocation(state, uid, "graveyard", createContext);
-  if (redirectLocation && redirectLocation !== "graveyard") return moveDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer);
-  requireDuelMoveAllowed(state, uid, "graveyard", reason);
-  const card = moveDuelCard(state, uid, "graveyard", controller, reason, reasonPlayer);
-  pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
-  collectLeaveFieldTriggers(state, card);
-  collectTriggerEffects(state, "sentToGraveyard", card);
-  return card;
+  return sendCoreDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers);
 }
 
 export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId): DuelCardInstance {
-  const replacementHandlers = createReplacementEffectHandlers(state);
-  const indestructible = applyDestroyPrevention(state, uid, controller, reason, reasonPlayer, replacementHandlers);
-  if (indestructible) return indestructible;
-  const replacement = applyDestroyReplacement(state, uid, controller, reason, replacementHandlers);
-  if (replacement) return replacement;
-  const createContext = createContinuousEffectContext(state);
-  const battleRedirectLocation = (reason & duelReason.battle) !== 0 ? battleDestroyRedirectLocation(state, uid, createContext) : undefined;
-  if (battleRedirectLocation && battleRedirectLocation !== "graveyard") {
-    const moveReason = reason | duelReason.redirect;
-    requireDuelMoveAllowed(state, uid, battleRedirectLocation, moveReason);
-    const card = moveDuelCard(state, uid, battleRedirectLocation, controller, moveReason, reasonPlayer);
-    pushDuelLog(state, "destroy", card.controller, card.name, `Destroyed and moved to ${battleRedirectLocation}`);
-    collectLeaveFieldTriggers(state, card);
-    collectTriggerEffects(state, "destroyed", card);
-    if (battleRedirectLocation === "banished") collectTriggerEffects(state, "banished", card);
-    return card;
-  }
-  requireDuelMoveAllowed(state, uid, "graveyard", reason);
-  const card = moveDuelCard(state, uid, "graveyard", controller, reason, reasonPlayer);
-  pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
-  collectLeaveFieldTriggers(state, card);
-  collectTriggerEffects(state, "destroyed", card);
-  collectTriggerEffects(state, "sentToGraveyard", card);
-  return card;
+  return destroyCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers);
 }
 
 export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance {
-  const createContext = createContinuousEffectContext(state);
-  if (shouldRedirectBanishMove(state, uid, createContext)) return sendDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect, reasonPlayer);
-  const redirectLocation = leaveFieldRedirectLocation(state, uid, "banished", createContext);
-  if (redirectLocation && redirectLocation !== "banished") return moveDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer);
-  requireDuelMoveAllowed(state, uid, "banished", reason);
-  const card = moveDuelCard(state, uid, "banished", controller, reason, reasonPlayer);
-  pushDuelLog(state, "banish", card.controller, card.name, "Banished");
-  collectLeaveFieldTriggers(state, card);
-  collectTriggerEffects(state, "banished", card);
-  return card;
+  return banishCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers);
 }
 
 export function moveDuelCardWithRedirects(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance {
-  const createContext = createContinuousEffectContext(state);
-  const redirectLocation = moveDestinationRedirectLocation(state, uid, to, createContext) ?? leaveFieldRedirectLocation(state, uid, to, createContext);
-  const destination = redirectLocation ?? to;
-  const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
-  requireDuelMoveAllowed(state, uid, destination, moveReason);
-  const card = moveDuelCard(state, uid, destination, controller, moveReason, reasonPlayer);
-  collectLeaveFieldTriggers(state, card);
-  return card;
+  return moveCoreDuelCardWithRedirects(state, uid, to, controller, reason, reasonPlayer, coreMovementHandlers);
 }
 
 export function detachDuelOverlayMaterials(state: DuelState, uid: string, count: number, controller?: PlayerId, reason: number = duelReason.cost): DuelCardInstance[] {
-  const card = findCard(state, uid);
-  if (!card) throw new Error(`Card ${uid} is not in the duel`);
-  const detachCount = Math.max(0, Math.floor(count));
-  if (detachCount === 0) return [];
-  if (card.overlayUids.length < detachCount) throw new Error(`${card.name} does not have enough overlay materials`);
-  const detachedUids = card.overlayUids.slice(0, detachCount);
-  card.overlayUids = card.overlayUids.slice(detachCount);
-  const detached: DuelCardInstance[] = [];
-  for (const materialUid of detachedUids) {
-    const material = moveDuelCard(state, materialUid, "graveyard", controller ?? card.controller, reason);
-    pushDuelLog(state, "detachOverlay", material.controller, material.name, `Detached from ${card.name}`);
-    collectTriggerEffects(state, "sentToGraveyard", material);
-    detached.push(material);
-  }
-  return detached;
+  return detachCoreDuelOverlayMaterials(state, uid, count, controller, reason, coreMovementHandlers);
 }
 
 export function damageDuelPlayer(state: DuelState, player: PlayerId, amount: number, reason = 0): number {
@@ -796,18 +732,6 @@ function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source:
   if (effect.cost && !effect.cost(ctx)) return false;
   if (effect.target && !effect.target(ctx)) return false;
   return true;
-}
-
-function moveDuelCardToRedirectedLocation(state: DuelState, uid: string, location: DuelLocation, controller: PlayerId | undefined, reason: number, reasonPlayer?: PlayerId): DuelCardInstance {
-  if (location === "graveyard") return sendDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect, reasonPlayer);
-  if (location === "banished") return banishDuelCard(state, uid, controller, reason | duelReason.redirect, reasonPlayer);
-  return moveDuelCard(state, uid, location, controller, reason | duelReason.redirect, reasonPlayer);
-}
-
-function collectLeaveFieldTriggers(state: DuelState, card: DuelCardInstance): void {
-  if (card.previousLocation !== "monsterZone" && card.previousLocation !== "spellTrapZone") return;
-  if (card.location === "monsterZone" || card.location === "spellTrapZone") return;
-  collectTriggerEffects(state, "leftField", card);
 }
 
 function hasChainResponses(state: DuelState, player: PlayerId): boolean {
