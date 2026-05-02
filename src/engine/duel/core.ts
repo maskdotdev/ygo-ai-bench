@@ -541,7 +541,9 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
 }
 
 export function negateDuelAttack(state: DuelState): boolean {
-  return negateCoreDuelAttack(state);
+  const disabled = negateCoreDuelAttack(state);
+  if (disabled) collectTriggerEffects(state, "attackDisabled");
+  return disabled;
 }
 
 export function canChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition): boolean {

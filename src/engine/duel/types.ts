@@ -19,6 +19,7 @@ export type DuelEventName =
   | "turnStarted"
   | "adjust"
   | "attackDeclared"
+  | "attackDisabled"
   | "battleDestroyed"
   | "positionChanged"
   | "flipSummoned";

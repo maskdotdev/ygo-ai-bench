@@ -1373,6 +1373,60 @@ describe("Lua battle helpers", () => {
     expect(session.state.log.some((entry) => entry.action === "attack" && entry.detail === "Negated attack")).toBe(true);
   });
 
+  it("raises Lua attack-disabled triggers when an attack is negated", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Target", kind: "monster", attack: 1000 },
+      { code: "300", name: "Attack Disabled Listener", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 130, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+    session.state.phase = "battle";
+    session.state.currentAttack = { attackerUid: attacker!.uid, targetUid: target!.uid };
+    session.state.pendingBattle = { attackerUid: attacker!.uid, targetUid: target!.uid };
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_ATTACK_DISABLED)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("attack disabled trigger")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "attack-disabled-trigger.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const result = host.loadScript(`Debug.Message("negate disabled " .. tostring(Duel.NegateAttack()))`, "negate-disabled.lua");
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("negate disabled true");
+    expect(session.state.eventHistory.some((event) => event.eventName === "attackDisabled")).toBe(true);
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("attack disabled trigger");
+  });
+
   it("lets Lua scripts inspect and change recorded battle damage", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Damage Probe", kind: "monster" }];
     const session = createDuel({ seed: 45, startingHandSize: 1, cardReader: createCardReader(cards) });
