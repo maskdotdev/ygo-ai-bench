@@ -5,6 +5,7 @@ import { cardFieldId, pushCardTable } from "#lua/card-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
 import { cardTypeFlags, readCardDataByCode } from "#lua/duel-api/query-card-data.js";
 import { changeTargetCard, effectiveTargetUids } from "#lua/duel-api/query-target-state.js";
+import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { findSubGroupSelection, findSumGreaterSelection, findSumSelection } from "#lua/group-selection-utils.js";
 import { uniqueUids } from "#lua/group-uid-utils.js";
@@ -526,11 +527,6 @@ function readFilterArgs(L: unknown, start: number): LuaFilterArgs {
   return { start, count: Math.max(0, lua.lua_gettop(L) - start + 1) };
 }
 
-function readCardOrGroupUids(L: unknown, index: number): string[] {
-  const cardUid = readCardUid(L, index);
-  return cardUid ? [cardUid] : readGroupUids(L, index);
-}
-
 function fieldGroupUids(session: DuelSession, player: PlayerId, selfMask: number, opponentMask: number): string[] {
   return [
     ...matchingCardUids(session, player, selfMask),
@@ -628,13 +624,6 @@ function cardCodes(card: DuelCardInstance): string[] {
 
 function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
-}
-
-function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
-  if (!lua.lua_isnumber(L, index)) return undefined;
-  const value = lua.lua_tointeger(L, index);
-  if (value !== 0 && value !== 1) return undefined;
-  return value;
 }
 
 function otherPlayer(player: PlayerId): PlayerId {
