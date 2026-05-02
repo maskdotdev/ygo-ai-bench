@@ -14,6 +14,7 @@ import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCa
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { cardFieldNames } from "#lua/card-field-names.js";
 import { installCardLinkApi } from "#lua/card-link-api.js";
+import { installCardPreviousStateApi } from "#lua/card-previous-state-api.js";
 import { installCardReasonApi } from "#lua/card-reason-api.js";
 import { installCardRelationApi } from "#lua/card-relation-api.js";
 import { installCardRushApi } from "#lua/card-rush-api.js";
@@ -255,37 +256,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsLocation"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushboolean(state, Boolean(card && (locationMaskFromLocation(card.location) & locationMask) !== 0));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsDestination"));
-  pushNumberGetter(L, "GetDestination", session, (card) => leaveFieldDestinationMask(card));
-  pushNumberGetter(L, "GetLeaveFieldDest", session, (card) => leaveFieldDestinationMask(card));
-  pushNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => (leaveFieldDestinationMask(card) & requested) !== 0);
-  pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
-  pushNumberGetter(L, "GetPreviousSequence", session, (card) => card?.previousSequence ?? 0);
-  pushNumberMatcher(L, "IsPreviousSequence", session, (card, requested) => card.previousSequence === requested);
-  pushNumberGetter(L, "GetPreviousPosition", session, (card) => positionMaskFromPosition(card?.previousPosition));
-  pushNumberGetter(L, "GetPreviousCode", session, (card) => (card?.previousLocation ? Number(card.code) : 0));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    lua.lua_pushboolean(state, Boolean(card?.previousLocation && readRequestedCodes(state, 2).includes(card.code)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsPreviousCodeOnField"));
-  pushNumberGetter(L, "GetPreviousTypeOnField", session, (card) => (card?.previousLocation ? cardTypeFlags(card) : 0));
-  pushNumberGetter(L, "GetPreviousAttackOnField", session, (card) => (card?.previousLocation ? card.data.attack ?? 0 : 0));
-  pushNumberGetter(L, "GetPreviousDefenseOnField", session, (card) => (card?.previousLocation ? card.data.defense ?? 0 : 0));
-  pushNumberGetter(L, "GetPreviousLevelOnField", session, (card) => (card?.previousLocation ? card.data.level ?? 0 : 0));
-  pushNumberGetter(L, "GetPreviousRankOnField", session, (card) => (card?.previousLocation ? cardRank(card) : 0));
-  pushNumberGetter(L, "GetPreviousLinkOnField", session, (card) => (card?.previousLocation ? cardLink(card) : 0));
-  pushNumberGetter(L, "GetPreviousRaceOnField", session, (card) => (card?.previousLocation ? card.data.race ?? 0 : 0));
-  pushNumberGetter(L, "GetPreviousAttributeOnField", session, (card) => (card?.previousLocation ? card.data.attribute ?? 0 : 0));
-  pushBooleanGetter(L, "WasFaceup", session, (card) => Boolean(card?.previousLocation && card.previousFaceUp));
-  pushBooleanGetter(L, "WasFacedown", session, (card) => Boolean(card?.previousLocation && !card.previousFaceUp));
+  installCardPreviousStateApi(L, session);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const targetUid = readCardUid(state, 2);
@@ -296,32 +267,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("IsColumn"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetColumnZone(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetColumnZone"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushboolean(state, Boolean(card?.previousLocation && locationsFromMask(locationMask).includes(card.previousLocation)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsPreviousLocation"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requestedPosition = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card?.previousPosition && requestedPosition && card.previousPosition === requestedPosition));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsPreviousPosition"));
-  pushNumberGetter(L, "GetPreviousControler", session, (card) => card?.previousController ?? 0);
-  pushNumberMatcher(L, "IsPreviousControler", session, (card, requested) => card.previousController === normalizePlayer(requested));
-  pushNumberMatcher(L, "IsPreviousCode", session, (card, requested) => Boolean(card.previousLocation && cardCodes(card).includes(String(requested))));
-  pushNumberMatcher(L, "IsPreviousTypeOnField", session, (card, requested) => Boolean(card.previousLocation && (cardTypeFlags(card) & requested) !== 0));
-  pushNumberMatcher(L, "IsPreviousAttackOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.attack ?? 0) === requested));
-  pushNumberMatcher(L, "IsPreviousDefenseOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.defense ?? 0) === requested));
-  pushNumberMatcher(L, "IsPreviousLevelOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.level ?? 0) === requested));
-  pushNumberMatcher(L, "IsPreviousRankOnField", session, (card, requested) => Boolean(card.previousLocation && cardRank(card) === requested));
-  pushNumberMatcher(L, "IsPreviousLinkOnField", session, (card, requested) => Boolean(card.previousLocation && cardLink(card) === requested));
-  pushNumberMatcher(L, "IsPreviousRaceOnField", session, (card, requested) => Boolean(card.previousLocation && ((card.data.race ?? 0) & requested) !== 0));
-  pushNumberMatcher(L, "IsPreviousAttributeOnField", session, (card, requested) => Boolean(card.previousLocation && ((card.data.attribute ?? 0) & requested) !== 0));
-  pushNumberMatcher(L, "IsPreviousSetCard", session, (card, requested) => Boolean(card.previousLocation && card.data.setcodes?.includes(requested)));
   pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
   pushNumberMatcher(L, "IsReason", session, (card, requested) => ((card.reason ?? 0) & requested) !== 0);
   pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
