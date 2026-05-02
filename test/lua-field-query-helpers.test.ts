@@ -3104,6 +3104,8 @@ describe("Lua field and query helpers", () => {
       Debug.Message("exists high " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 2, nil, 1500)))
       Debug.Message("filter group excluded " .. without_c200:GetCount() .. " " .. tostring(without_c200:IsContains(c200)))
       Debug.Message("filter count alias " .. all:FilterCount(function(tc,minatk) return tc:GetAttack() >= minatk end, excluded_group, 1000))
+      local filter_selected = all:FilterSelect(0, function(tc,minatk) return tc:GetAttack() >= minatk end, 1, 2, excluded_group, 1500)
+      Debug.Message("filter select " .. filter_selected:GetCount() .. " " .. tostring(filter_selected:IsContains(c200)) .. "/" .. tostring(filter_selected:IsContains(c300)))
       Debug.Message("exists group excluded " .. tostring(all:IsExists(aux.FilterBoolFunction(Card.IsCode, 200), 1, excluded_group)))
       Debug.Message("exists group remainder " .. tostring(all:IsExists(function(tc,minatk) return tc:GetAttack() >= minatk end, 1, excluded_group, 2500)))
       Debug.Message("match all " .. all:Clone():Match(function(tc,minatk) return tc:GetAttack() >= minatk end, nil, 1000):GetCount())

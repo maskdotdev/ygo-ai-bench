@@ -173,6 +173,20 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   });
   lua.lua_setfield(L, -2, to_luastring("FilterCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 3);
+    const min = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 1;
+    const max = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : min;
+    const excluded = readCardOrGroupUids(state, 6);
+    const matches =
+      filterRef === undefined
+        ? readGroupUids(state, 1).filter((uid) => !excluded.includes(uid))
+        : readGroupUids(state, 1).filter((uid) => !excluded.includes(uid) && groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 7)));
+    releaseOptionalFunctionRef(state, filterRef);
+    pushGroupTable(state, selectGroupUids(matches, min, max));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("FilterSelect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const comparatorRef = readOptionalFunctionRef(state, 2);
     if (comparatorRef !== undefined) {
       const args = readFilterArgs(state, 3);
@@ -723,6 +737,7 @@ const groupFieldNames = [
   "Filter",
   "Split",
   "FilterCount",
+  "FilterSelect",
   "Sort",
   "ForEach",
   "Clone",
