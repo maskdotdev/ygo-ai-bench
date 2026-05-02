@@ -68,11 +68,3 @@ export function isAnimeArchetype(card: DuelCardInstance, setcodes: readonly numb
 export function isSetcodeMatch(requested: number, setcode: number): boolean {
   return (setcode & 0xfff) === (requested & 0xfff) && (setcode & requested) === requested;
 }
-
-export function matchesAnyCodeAtOrAfter(L: unknown, card: DuelCardInstance, start: number): boolean {
-  const codes = cardCodes(card);
-  for (let index = start; index <= lua.lua_gettop(L); index += 1) {
-    if (lua.lua_isnumber(L, index) && codes.includes(String(lua.lua_tointeger(L, index)))) return true;
-  }
-  return false;
-}

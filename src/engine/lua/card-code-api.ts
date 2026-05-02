@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { readCardUid, readTableStringField } from "#lua/api-utils.js";
 import { installCardCodeAnimeApi } from "#lua/card-code-anime-api.js";
-import { cardCodes, cardSetcodes, isSetcodeMatch, listedCodes, listedCodeSetcodes, matchesAnyCodeAtOrAfter, materialCodes, materialSetcodes, readRequestedCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
+import { cardCodes, cardSetcodes, isSetcodeMatch, listedCodes, listedCodeSetcodes, materialCodes, materialSetcodes, readRequestedCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -76,7 +76,8 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const firstCodeIndex = lua.lua_isnumber(state, 4) ? 4 : 2;
-    lua.lua_pushboolean(state, Boolean(card && matchesAnyCodeAtOrAfter(state, card, firstCodeIndex)));
+    const requested = readRequestedCodes(state, firstCodeIndex);
+    lua.lua_pushboolean(state, Boolean(card && requested.some((code) => cardCodes(card).includes(code))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSummonCode"));
