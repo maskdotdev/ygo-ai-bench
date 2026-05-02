@@ -1543,6 +1543,8 @@ describe("Lua state helpers", () => {
       local upstream_race=Duel.AnnounceRace(0, 1, RACE_DRAGON|RACE_SPELLCASTER)
       local upstream_attribute=Duel.AnnounceAttribute(0, 1, ATTRIBUTE_FIRE|ATTRIBUTE_DARK)
       local level=Duel.AnnounceLevel(0, 3, 5, 7)
+      local default_level=Duel.AnnounceLevel(0)
+      local excluded_level=Duel.AnnounceLevel(0, 3, 5, 3, 4)
       local ranged=Duel.AnnounceNumberRange(0, 2, 5, 2, 3)
       local selected_code=Duel.SelectCardsFromCodes(0, 1, 1, false, false, 700, 800)
       local selected_from_table=Duel.SelectCardsFromCodes(0, 1, 1, false, false, {900, 901})
@@ -1564,7 +1566,7 @@ describe("Lua state helpers", () => {
       local card_hint_result=Duel.HintSelection(single)
       Debug.Message("prompt option " .. option .. "/" .. tostring(yes) .. "/" .. tostring(everyone) .. "/" .. tostring(any))
       Debug.Message("prompt effect " .. tostring(effect_yes) .. "/" .. tostring(effect_choice) .. "/" .. tostring(effect_none))
-      Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. upstream_race .. "/" .. upstream_attribute .. "/" .. level .. "/" .. ranged)
+      Debug.Message("prompt announce " .. number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. upstream_race .. "/" .. upstream_attribute .. "/" .. level .. "/" .. default_level .. "/" .. excluded_level .. "/" .. ranged)
       Debug.Message("prompt card codes " .. selected_code .. "/" .. selected_from_table .. "/" .. selected_index[1] .. ":" .. selected_index[2] .. "/" .. selected_multi[1][1] .. ":" .. selected_multi[1][2] .. "," .. selected_multi[2][1] .. ":" .. selected_multi[2][2])
       Debug.Message("prompt another attribute " .. another_earth .. "/" .. another_mixed .. "/" .. another_card_attribute)
       Debug.Message("prompt another race " .. another_warrior_race .. "/" .. another_mixed_race .. "/" .. another_card_race)
@@ -1577,7 +1579,7 @@ describe("Lua state helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("prompt option 0/true/true/true");
     expect(host.messages).toContain("prompt effect true/2/nil");
-    expect(host.messages).toContain("prompt announce 4/100/1/2/32/2/4/3/4");
+    expect(host.messages).toContain("prompt announce 4/100/1/2/32/2/4/3/1/5/4");
     expect(host.messages).toContain("prompt card codes 700/900/910:1/930:1,940:2");
     expect(host.messages).toContain("prompt another attribute 2/1/2");
     expect(host.messages).toContain("prompt another race 2/1/1");

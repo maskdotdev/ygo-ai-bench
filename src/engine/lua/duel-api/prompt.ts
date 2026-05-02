@@ -56,7 +56,8 @@ export function installDuelPromptApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("AnnounceAnotherAttribute"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceAnotherRace(state, session));
   lua.lua_setfield(L, -2, to_luastring("AnnounceAnotherRace"));
-  pushAnnouncementHelper(L, "AnnounceLevel");
+  lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceLevel(state));
+  lua.lua_setfield(L, -2, to_luastring("AnnounceLevel"));
 }
 
 function pushHintSelection(L: unknown, session: DuelSession): number {
@@ -202,6 +203,25 @@ function pushAnnounceNumberRange(L: unknown): number {
   for (let value = low; value <= high; value += 1) {
     if (!exceptions.has(value)) {
       lua.lua_pushinteger(L, value);
+      return 1;
+    }
+  }
+  lua.lua_pushinteger(L, low);
+  return 1;
+}
+
+function pushAnnounceLevel(L: unknown): number {
+  const min = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 1;
+  const max = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 12;
+  const exceptions = new Set<number>();
+  for (let index = 4; index <= lua.lua_gettop(L); index += 1) {
+    if (lua.lua_isnumber(L, index)) exceptions.add(lua.lua_tointeger(L, index));
+  }
+  const low = Math.min(min, max);
+  const high = Math.max(min, max);
+  for (let level = low; level <= high; level += 1) {
+    if (!exceptions.has(level)) {
+      lua.lua_pushinteger(L, level);
       return 1;
     }
   }
