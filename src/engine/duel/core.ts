@@ -6,7 +6,6 @@ import {
   hasZoneSpace,
   moveDuelCard,
   pushDuelLog,
-  requireControlledCard,
   requireZoneSpace,
 } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
@@ -94,6 +93,7 @@ import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#d
 import { getPromptResponseActions, resolveDuelPrompt, stampDuelActions } from "#duel/prompt-response.js";
 import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
+import { setSpellTrap } from "#duel/spell-trap.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, nextAvailableDuelPhase } from "#duel/turn-flow.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
@@ -445,16 +445,6 @@ export function canChangeDuelCardPosition(state: DuelState, uid: string, positio
 
 export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition): DuelCardInstance {
   return changeCoreDuelCardPosition(state, player, uid, position, coreBattleHandlers);
-}
-
-function setSpellTrap(state: DuelState, player: PlayerId, uid: string): void {
-  const card = requireControlledCard(state, player, uid, "hand");
-  if (card.kind !== "spell" && card.kind !== "trap") throw new Error(`${card.name} is not a spell/trap`);
-  requireZoneSpace(state, player, "spellTrapZone");
-  moveDuelCard(state, uid, "spellTrapZone", player, duelReason.rule);
-  card.position = "faceDown";
-  card.faceUp = false;
-  pushDuelLog(state, "set", player, card.name, "Set from hand");
 }
 
 function createEffectContext(
