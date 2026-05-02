@@ -64,8 +64,8 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   pushNumberMatcher(L, "IsPreviousTypeOnField", session, (card, requested) => Boolean(card.previousLocation && (cardTypeFlags(card) & requested) !== 0));
   pushNumberMatcher(L, "IsPreviousAttackOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.attack ?? 0) === requested));
   pushNumberMatcher(L, "IsPreviousDefenseOnField", session, (card, requested) => Boolean(card.previousLocation && hasDefense(card) && (card.data.defense ?? 0) === requested));
-  pushNumberMatcher(L, "IsPreviousLevelOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.level ?? 0) === requested));
-  pushNumberMatcher(L, "IsPreviousRankOnField", session, (card, requested) => Boolean(card.previousLocation && cardRank(card) === requested));
+  pushNumberMatcher(L, "IsPreviousLevelOnField", session, (card, requested) => Boolean(card.previousLocation && hasLevel(card) && (card.data.level ?? 0) === requested));
+  pushNumberMatcher(L, "IsPreviousRankOnField", session, (card, requested) => Boolean(card.previousLocation && hasRank(card) && cardRank(card) === requested));
   pushNumberMatcher(L, "IsPreviousLinkOnField", session, (card, requested) => Boolean(card.previousLocation && cardLink(card) === requested));
   pushNumberMatcher(L, "IsPreviousRaceOnField", session, (card, requested) => Boolean(card.previousLocation && ((card.data.race ?? 0) & requested) !== 0));
   pushNumberMatcher(L, "IsPreviousAttributeOnField", session, (card, requested) => Boolean(card.previousLocation && ((card.data.attribute ?? 0) & requested) !== 0));
@@ -113,6 +113,14 @@ function readRequestedCodes(L: unknown, startIndex: number): string[] {
 
 function hasDefense(card: DuelCardInstance): boolean {
   return (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x4000000) === 0;
+}
+
+function hasLevel(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x1) !== 0 && cardRank(card) === 0 && cardLink(card) === 0;
+}
+
+function hasRank(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x800000) !== 0;
 }
 
 function locationsFromMask(mask: number): DuelCardInstance["location"][] {

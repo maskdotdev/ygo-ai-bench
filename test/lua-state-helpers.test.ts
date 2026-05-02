@@ -2081,9 +2081,9 @@ describe("Lua state helpers", () => {
       local link = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
       Duel.SendtoGrave(link, REASON_EFFECT)
       local grave_link = Duel.GetFieldCard(0, LOCATION_GRAVE, 1)
-      Debug.Message("previous link defense " .. grave_link:GetPreviousDefenseOnField() .. "/" .. tostring(grave_link:IsPreviousDefenseOnField(0)))
+      Debug.Message("previous link defense " .. grave_link:GetPreviousDefenseOnField() .. "/" .. tostring(grave_link:IsPreviousDefenseOnField(0)) .. "/" .. tostring(grave_link:IsPreviousLevelOnField(2)))
       Debug.Message("previous level " .. g:GetPreviousLevelOnField() .. "/" .. tostring(g:IsPreviousLevelOnField(4)) .. "/" .. tostring(g:IsPreviousLevelOnField(7)))
-      Debug.Message("previous extra stats " .. g:GetPreviousRankOnField() .. "/" .. tostring(g:IsPreviousRankOnField(4)) .. "/" .. g:GetPreviousLinkOnField() .. "/" .. tostring(g:IsPreviousLinkOnField(2)))
+      Debug.Message("previous extra stats " .. g:GetPreviousRankOnField() .. "/" .. tostring(g:IsPreviousRankOnField(4)) .. "/" .. tostring(g:IsPreviousRankOnField(0)) .. "/" .. g:GetPreviousLinkOnField() .. "/" .. tostring(g:IsPreviousLinkOnField(2)))
       Debug.Message("previous traits " .. g:GetPreviousRaceOnField() .. "/" .. tostring(g:IsPreviousRaceOnField(RACE_SPELLCASTER)) .. "/" .. g:GetPreviousAttributeOnField() .. "/" .. tostring(g:IsPreviousAttributeOnField(ATTRIBUTE_DARK)))
       Debug.Message("previous visibility " .. tostring(g:WasFaceup()) .. "/" .. tostring(g:WasFacedown()))
       Debug.Message("reason player " .. g:GetReasonPlayer() .. "/" .. tostring(g:IsReasonPlayer(0)) .. "/" .. tostring(g:IsReasonPlayer(1)))
@@ -2110,9 +2110,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("previous identity 100/true/false/true/true/true");
     expect(host.messages).toContain("previous type 33/true/false");
     expect(host.messages).toContain("previous stats 1700/true/1300/true");
-    expect(host.messages).toContain("previous link defense 0/false");
+    expect(host.messages).toContain("previous link defense 0/false/false");
     expect(host.messages).toContain("previous level 4/true/false");
-    expect(host.messages).toContain("previous extra stats 0/false/0/false");
+    expect(host.messages).toContain("previous extra stats 0/false/false/0/false");
     expect(host.messages).toContain("previous traits 2/true/32/true");
     expect(host.messages).toContain("previous visibility true/false");
     expect(host.messages).toContain("reason player 0/true/false");
