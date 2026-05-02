@@ -622,6 +622,45 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("normal proc released 1/1/true");
   });
 
+  it("executes Lua normal set procedure tribute operations", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Procedure Set Target", kind: "monster", level: 6 },
+      { code: "200", name: "Procedure Set Material", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 158, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const material = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(material).toBeDefined();
+    moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e=aux.AddNormalSetProcedure(c,true,true,1,1,SUMMON_TYPE_TRIBUTE,2222)
+      Debug.Message("normal set proc relzone blocked " .. tostring(e:GetTarget()(e,0,nil,0,0,nil,0,0,0,c,0,0,0x2,nil)))
+      Debug.Message("normal set proc target check " .. tostring(e:GetTarget()(e,0,nil,0,0,nil,0,0,0,c,0,0,0x1,nil)))
+      Debug.Message("normal set proc target select " .. tostring(e:GetTarget()(e,0,nil,0,0,nil,0,0,1,c,0,0,0x1,nil)))
+      local g=e:GetLabelObject()
+      Debug.Message("normal set proc selected " .. g:GetCount() .. "/" .. g:GetFirst():GetCode())
+      e:GetOperation()(e,0,nil,0,0,nil,0,0,c,0,0,0,nil)
+      Debug.Message("normal set proc released " .. c:GetMaterialCount() .. "/" .. Duel.GetMatchingGroupCount(aux.TRUE,0,LOCATION_GRAVE,0,nil) .. "/" .. tostring(e:GetLabelObject()==nil))
+      `,
+      "normal-set-procedure-operation.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("normal set proc relzone blocked false");
+    expect(host.messages).toContain("normal set proc target check true");
+    expect(host.messages).toContain("normal set proc target select true");
+    expect(host.messages).toContain("normal set proc selected 1/200");
+    expect(host.messages).toContain("normal set proc released 1/1/true");
+  });
+
   it("registers Lua persistent trap procedures and target filters", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Persistent Trap", kind: "trap", typeFlags: 0x4 },

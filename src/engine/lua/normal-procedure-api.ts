@@ -16,6 +16,15 @@ export function installNormalProcedureApi(L: unknown, readLuaError: (state: unkn
       if min~=nil and (mt.min_tribute_req==nil or min<mt.min_tribute_req) then mt.min_tribute_req=min end
       if max~=nil and (mt.max_tribute_req==nil or max>mt.max_tribute_req) then mt.max_tribute_req=max end
     end
+    function aux.IsZone(c,zone,tp)
+      if not c or zone==nil then return true end
+      local seq=c:GetSequence()
+      local rzone=c:IsControler(tp) and (1 << seq) or (1 << (16+seq))
+      if c:IsSequence(5) or c:IsSequence(6) then
+        rzone=rzone | (c:IsControler(tp) and (1 << (16+11-seq)) or (1 << (11-seq)))
+      end
+      return (rzone & zone) > 0
+    end
     function aux.NormalSummonCondition1(min,max,f,opt)
       return function(e,c,minc,zone,relzone,exeff)
         if c==nil then return true end
@@ -32,6 +41,9 @@ export function installNormalProcedureApi(L: unknown, readLuaError: (state: unkn
     function aux.NormalSummonTarget(min,max,f)
       return function(e,tp,eg,ep,ev,re,r,rp,chk,c,minc,zone,relzone,exeff)
         local mg=Duel.GetTributeGroup(c)
+        if relzone and relzone~=0 then
+          mg:Match(aux.IsZone,nil,relzone,tp)
+        end
         if f then
           mg:Match(f,nil,tp)
         end

@@ -80,7 +80,7 @@ function pushCheckTribute(L: unknown, session: DuelSession): number {
   const minimum = Math.max(0, lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : target ? normalSummonTributeCount(target) : 0);
   const maximum = Math.max(minimum, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : minimum);
   const materials = readCardOrGroupUids(L, 4);
-  const materialSet = materials.length > 0 ? new Set(materials) : undefined;
+  const materialSet = materialRestrictionSet(L, 4, materials);
   const zoneMask = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : undefined;
   const candidates = tributeCandidateUids(session, player, target?.uid, materialSet);
   const selected = tributeZoneSelection(session, player, candidates, minimum, maximum, zoneMask);
@@ -100,7 +100,7 @@ function pushTributeGroup(L: unknown, session: DuelSession): number {
   const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
   const player = readOptionalPlayer(L, 2) ?? target?.controller ?? session.state.turnPlayer;
   const materials = readCardOrGroupUids(L, 3);
-  const materialSet = materials.length > 0 ? new Set(materials) : undefined;
+  const materialSet = materialRestrictionSet(L, 3, materials);
   pushGroupTable(L, tributeCandidateUids(session, player, target?.uid, materialSet));
   return 1;
 }
@@ -112,7 +112,7 @@ function pushSelectTribute(L: unknown, session: DuelSession): number {
   const minimum = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : target ? normalSummonTributeCount(target) : 0);
   const maximum = Math.max(minimum, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : minimum);
   const materials = readCardOrGroupUids(L, 5);
-  const materialSet = materials.length > 0 ? new Set(materials) : undefined;
+  const materialSet = materialRestrictionSet(L, 5, materials);
   const zoneMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : undefined;
   const candidates = tributeCandidateUids(session, player, target?.uid, materialSet);
   const selected = tributeZoneSelection(session, player, candidates, minimum, maximum, zoneMask);
@@ -310,6 +310,10 @@ function tributeCandidateUids(session: DuelSession, player: PlayerId, targetUid:
     })
     .sort((a, b) => a.sequence - b.sequence)
     .map((card) => card.uid);
+}
+
+function materialRestrictionSet(L: unknown, index: number, materials: string[]): Set<string> | undefined {
+  return lua.lua_isnoneornil(L, index) ? undefined : new Set(materials);
 }
 
 function tributeZoneSelection(session: DuelSession, player: PlayerId, candidates: string[], minimum: number, maximum: number, zoneMask: number | undefined): string[] | undefined {
