@@ -293,6 +293,53 @@ describe("Lua battle state helpers", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.targetUid === openTarget!.uid)).toBe(false);
   });
 
+  it("applies targeted field only-be-attacked effects only to selected defenders", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Only Be Attacked Source", kind: "monster", attack: 1000 },
+      { code: "200", name: "Attacker", kind: "monster", attack: 1800 },
+      { code: "300", name: "Guarded Target", kind: "monster", attack: 1000 },
+      { code: "400", name: "Open Target", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 136, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: ["300", "400"] } });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "200");
+    const guardedTarget = session.state.cards.find((card) => card.controller === 1 && card.code === "300");
+    const openTarget = session.state.cards.find((card) => card.controller === 1 && card.code === "400");
+    expect(source).toBeDefined();
+    expect(attacker).toBeDefined();
+    expect(guardedTarget).toBeDefined();
+    expect(openTarget).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, guardedTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, openTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_ONLY_BE_ATTACKED)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTarget(function(e,c) return c:IsCode(300) end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "targeted-only-be-attacked.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.targetUid === guardedTarget!.uid)).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.targetUid === openTarget!.uid)).toBe(false);
+  });
+
   it("applies Lua first-attack restrictions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "First Attacker", kind: "monster", attack: 1800 },
@@ -333,6 +380,47 @@ describe("Lua battle state helpers", () => {
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === firstAttacker!.uid)!).ok).toBe(true);
     passBattleResponses(session);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === laterAttacker!.uid)).toBe(true);
+  });
+
+  it("applies targeted field first-attack effects only to selected attackers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "First Attack Source", kind: "monster", attack: 1000 },
+      { code: "200", name: "First Attacker", kind: "monster", attack: 1800 },
+      { code: "300", name: "Later Attacker", kind: "monster", attack: 1600 },
+    ];
+    const session = createDuel({ seed: 137, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0).position = "faceUpAttack";
+    }
+    const firstAttacker = session.state.cards.find((card) => card.code === "200");
+    const laterAttacker = session.state.cards.find((card) => card.code === "300");
+    expect(firstAttacker).toBeDefined();
+    expect(laterAttacker).toBeDefined();
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_FIRST_ATTACK)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTarget(function(e,c) return c:IsCode(200) end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "targeted-first-attack.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === firstAttacker!.uid)).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === laterAttacker!.uid)).toBe(false);
   });
 
   it("applies Lua must-attack phase restrictions", () => {
