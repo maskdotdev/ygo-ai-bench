@@ -171,6 +171,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushZonePredicate(L, "IsInMainMZone", session, (card) => card.location === "monsterZone" && card.sequence >= 0 && card.sequence <= 4);
   pushZonePredicate(L, "IsInExtraMZone", session, (card) => card.location === "monsterZone" && card.sequence >= 5 && card.sequence <= 6);
   pushBooleanGetter(L, "CanAttack", session, (card) => Boolean(card && canDuelCardAttack(session.state, card.uid)));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanChainAttack(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CanChainAttack"));
   pushNumberGetter(L, "GetAttackAnnouncedCount", session, (card) => (card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0));
   pushBooleanGetter(L, "CanGetPiercingRush", session, (card) => Boolean(card && canGetPiercingRush(session.state, card, hostState)));
   installCardRushApi(L, session, hostState);
@@ -883,6 +885,14 @@ function hasAdjacentMonsterZone(state: DuelState, card: DuelCardInstance): boole
       sequence <= 4 &&
       !state.cards.some((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && candidate.sequence === sequence),
   );
+}
+
+function pushCanChainAttack(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const requestedAllowance = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 1;
+  const attackCount = card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0;
+  lua.lua_pushboolean(L, Boolean(card && attackCount > 0 && canDuelCardAttack(session.state, card.uid, requestedAllowance)));
+  return 1;
 }
 
 function canChangePosition(state: DuelState, card: DuelCardInstance, requested: CardPosition | undefined): boolean {

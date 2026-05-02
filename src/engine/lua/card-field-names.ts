@@ -317,6 +317,7 @@ export const cardFieldNames = [
   "IsInMainMZone",
   "IsInExtraMZone",
   "CanAttack",
+  "CanChainAttack",
   "GetAttackAnnouncedCount",
   "CanGetPiercingRush",
   "CanChangeIntoTypeRush",

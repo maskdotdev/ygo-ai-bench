@@ -533,8 +533,8 @@ export function drawDuelCards(state: DuelState, player: PlayerId, count: number,
   return drawDuelCardsFromDeck(state, player, Math.max(0, count), detail);
 }
 
-export function canDuelCardAttack(state: DuelState, uid: string): boolean {
-  return canCoreDuelCardAttack(state, uid, coreBattleHandlers);
+export function canDuelCardAttack(state: DuelState, uid: string, extraAttackAllowance = 0): boolean {
+  return canCoreDuelCardAttack(state, uid, coreBattleHandlers, extraAttackAllowance);
 }
 
 export function getDuelAttackTargets(state: DuelState, attackerUid: string): DuelCardInstance[] {

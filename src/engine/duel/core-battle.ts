@@ -67,11 +67,16 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
   }
 }
 
-export function canCoreDuelCardAttack(state: DuelState, uid: string, handlers: CoreBattleHandlers): boolean {
+export function canCoreDuelCardAttack(state: DuelState, uid: string, handlers: CoreBattleHandlers, extraAttackAllowance = 0): boolean {
   const card = findCard(state, uid);
   const createContext = handlers.createContinuousContext(state);
   const firstAttackers = firstAttackRequiredUids(state, card?.controller ?? state.turnPlayer, createContext);
-  return Boolean(card && isFirstAttackAllowed(firstAttackers, card) && !isAttackPrevented(state, card, createContext) && canDuelCardAttackRule(state, uid, totalExtraAttackCount(state, card, createContext)));
+  return Boolean(
+    card &&
+      isFirstAttackAllowed(firstAttackers, card) &&
+      !isAttackPrevented(state, card, createContext) &&
+      canDuelCardAttackRule(state, uid, totalExtraAttackCount(state, card, createContext) + Math.max(0, extraAttackAllowance)),
+  );
 }
 
 export function hasCoreMustAttackAction(state: DuelState, player: PlayerId, actions: DuelAction[], handlers: CoreBattleHandlers): boolean {

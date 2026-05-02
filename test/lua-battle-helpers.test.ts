@@ -53,12 +53,13 @@ describe("Lua battle helpers", () => {
       `
       local attacker = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("can attack after " .. tostring(attacker:CanAttack()) .. "/" .. attacker:GetAttackAnnouncedCount() .. "/" .. Duel.GetBattledCount(0))
+      Debug.Message("can chain attack after " .. tostring(attacker:CanChainAttack()) .. "/" .. tostring(attacker:CanChainAttack(0)))
       `,
       "can-attack-after.lua",
     );
 
     expect(after.ok, after.error).toBe(true);
-    expect(host.messages).toEqual(["can attack before false/false", "can attack during true/false", "can attack after false/1/1"]);
+    expect(host.messages).toEqual(["can attack before false/false", "can attack during true/false", "can attack after false/1/1", "can chain attack after true/false"]);
   });
 
   it("lets continuous extra attack effects grant another attack", () => {
