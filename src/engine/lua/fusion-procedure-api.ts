@@ -63,6 +63,14 @@ export const fusionProcedureSource = `
     local mt=c:GetMetatable(false)
     if mt then mt.contact_fusion_proc={...} end
   end
+  function Fusion.ContactOp(f)
+    return function(e,tp,eg,ep,ev,re,r,rp,c)
+      local g=e:GetLabelObject()
+      c:SetMaterial(g)
+      f(g,tp,c)
+      g:DeleteGroup()
+    end
+  end
   function Fusion.CheckWithHandler(fun,...)
     local funs={fun,...}
     return function(c,e,...)

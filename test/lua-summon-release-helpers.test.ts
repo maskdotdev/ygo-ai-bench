@@ -364,6 +364,46 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("fusion code2 funrep true/false/function/2/6/777/888");
   });
 
+  it("lets Lua Fusion contact operations apply label group materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Contact Fusion Target", kind: "monster" },
+      { code: "200", name: "Contact Fusion Material A", kind: "monster" },
+      { code: "300", name: "Contact Fusion Material B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 164, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local materials = Duel.SelectMatchingCard(0, function(c) return c:IsCode(200) or c:IsCode(300) end, 0, LOCATION_HAND, 0, 2, 2, nil)
+      local e = Effect.CreateEffect(target)
+      e:SetLabelObject(materials)
+      local op = Fusion.ContactOp(function(g,tp,c)
+        Debug.Message("fusion contact callback " .. g:GetCount() .. "/" .. tp .. "/" .. c:GetCode())
+      end)
+      op(e,0,Group.CreateGroup(),0,0,nil,0,0,target)
+      Debug.Message("fusion contact materials " .. target:GetMaterialCount())
+      `,
+      "fusion-contact-op.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("fusion contact callback 2/0/100");
+    expect(host.messages).toContain("fusion contact materials 2");
+    expect(session.state.cards.find((card) => card.code === "100")?.summonMaterialUids).toEqual(
+      expect.arrayContaining([
+        session.state.cards.find((card) => card.code === "200")!.uid,
+        session.state.cards.find((card) => card.code === "300")!.uid,
+      ]),
+    );
+  });
+
   it("lets Lua scripts register temporary and continuous Lizard checks", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Lizard Probe", kind: "monster" }];
     const session = createDuel({ seed: 158, startingHandSize: 1, cardReader: createCardReader(cards) });
