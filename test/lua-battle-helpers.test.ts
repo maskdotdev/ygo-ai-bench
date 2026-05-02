@@ -1486,6 +1486,7 @@ describe("Lua battle helpers", () => {
       local attacker=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local idle=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("oppo battle duel cards " .. Duel.GetAttacker():GetCode() .. "/" .. Duel.GetAttackTarget():GetCode())
       Debug.Message("oppo battle attacker " .. tostring(attacker:IsRelateToBattle()) .. "/" .. tostring(attacker:IsStatus(STATUS_OPPO_BATTLE)))
       Debug.Message("oppo battle target " .. tostring(target:IsRelateToBattle()) .. "/" .. tostring(target:IsStatus(STATUS_OPPO_BATTLE)))
       Debug.Message("oppo battle idle " .. tostring(idle:IsRelateToBattle()) .. "/" .. tostring(idle:IsStatus(STATUS_OPPO_BATTLE)))
@@ -1494,7 +1495,12 @@ describe("Lua battle helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["oppo battle attacker true/true", "oppo battle target true/true", "oppo battle idle false/false"]);
+    expect(host.messages).toEqual([
+      "oppo battle duel cards 100/200",
+      "oppo battle attacker true/true",
+      "oppo battle target true/true",
+      "oppo battle idle false/false",
+    ]);
   });
 
   it("tracks attacked monsters for Lua battle history queries", () => {

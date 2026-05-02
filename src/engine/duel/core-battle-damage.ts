@@ -47,7 +47,8 @@ export function reflectedDuelBattleDamagePlayer(
 }
 
 function currentBattleCards(state: DuelState): DuelCardInstance[] {
-  const attacker = state.currentAttack?.attackerUid ? findCard(state, state.currentAttack.attackerUid) : undefined;
-  const target = state.currentAttack?.targetUid ? findCard(state, state.currentAttack.targetUid) : undefined;
+  const battle = state.currentAttack ?? state.pendingBattle;
+  const attacker = battle?.attackerUid ? findCard(state, battle.attackerUid) : undefined;
+  const target = battle?.targetUid ? findCard(state, battle.targetUid) : undefined;
   return [attacker, target].filter((card): card is DuelCardInstance => Boolean(card));
 }

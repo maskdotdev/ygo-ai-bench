@@ -10,7 +10,7 @@ const { lua, to_luastring } = fengari;
 
 export function installDuelBattleApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const attackerUid = session.state.currentAttack?.attackerUid;
+    const attackerUid = currentBattle(session)?.attackerUid;
     if (!attackerUid) {
       lua.lua_pushnil(state);
       return 1;
@@ -20,7 +20,7 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetAttacker"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const targetUid = session.state.currentAttack?.targetUid;
+    const targetUid = currentBattle(session)?.targetUid;
     if (!targetUid) {
       lua.lua_pushnil(state);
       return 1;
@@ -96,6 +96,10 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsAttackCostPaid"));
+}
+
+function currentBattle(session: DuelSession): DuelSession["state"]["currentAttack"] {
+  return session.state.currentAttack ?? session.state.pendingBattle;
 }
 
 function pushCalculateDamage(L: unknown, session: DuelSession): number {

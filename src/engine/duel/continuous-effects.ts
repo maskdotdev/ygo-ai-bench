@@ -159,7 +159,8 @@ export function hasDefenseAttack(state: DuelState, card: DuelCardInstance, creat
 export function battleDestroyRedirectLocation(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): DuelLocation | undefined {
   const card = findCard(state, uid);
   if (!card) return undefined;
-  const battlingUids = [state.currentAttack?.attackerUid, state.currentAttack?.targetUid].filter((id): id is string => Boolean(id));
+  const battle = state.currentAttack ?? state.pendingBattle;
+  const battlingUids = [battle?.attackerUid, battle?.targetUid].filter((id): id is string => Boolean(id));
   const battleOpponent = battlingUids.find((id) => id !== uid);
   const destroyer = battleOpponent ? findCard(state, battleOpponent) : undefined;
   for (const effect of state.effects) {
