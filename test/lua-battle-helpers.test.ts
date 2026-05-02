@@ -1605,6 +1605,47 @@ describe("Lua battle helpers", () => {
     expect(session.state.log.some((entry) => entry.action === "attack" && entry.detail === "Negated attack")).toBe(true);
   });
 
+  it("lets Lua scripts negate a pending attack window", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Pending Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Pending Target", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 145, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+    session.state.phase = "battle";
+    session.state.pendingBattle = { attackerUid: attacker!.uid, targetUid: target!.uid };
+    session.state.battleStep = "attack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local attacker = Duel.GetAttacker()
+      Debug.Message("pending attacker " .. attacker:GetCode() .. "/" .. Duel.GetAttackTarget():GetCode())
+      Debug.Message("pending negate " .. tostring(Duel.NegateAttack()))
+      Debug.Message("pending canceled " .. tostring(attacker:IsStatus(STATUS_ATTACK_CANCELED)))
+      Debug.Message("pending after nil " .. tostring(Duel.GetAttacker() == nil))
+      `,
+      "negate-pending-attack.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["pending attacker 100/200", "pending negate true", "pending canceled true", "pending after nil true"]);
+    expect(session.state.pendingBattle).toBeUndefined();
+    expect(session.state.battleStep).toBeUndefined();
+    expect(session.state.attackCanceledUids).toEqual([attacker!.uid]);
+  });
+
   it("raises Lua attack-disabled triggers when an attack is negated", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Attacker", kind: "monster", attack: 1800 },
