@@ -82,6 +82,81 @@ describe("duel fusion summons", () => {
     expect(result.state.log.some((entry) => entry.detail === "Fusion special summoned Fusion Test Monster")).toBe(true);
   });
 
+  it("queues material triggers when fusion materials are consumed", () => {
+    const session = createDuel({ seed: 21, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const material = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    expect(material).toBeTruthy();
+    expect(fusion).toBeTruthy();
+    registerEffect(session, {
+      id: "fusion-material-used-trigger",
+      sourceUid: material!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "usedAsMaterial",
+      triggerSourceOnly: true,
+      range: ["graveyard"],
+      operation(ctx) {
+        ctx.log(`Fusion material used ${ctx.eventCard?.code ?? ""}`);
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "usedAsMaterial", eventCardUid: material!.uid }));
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "fusion-material-used-trigger");
+    expect(trigger).toBeTruthy();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(session.state.log.some((entry) => entry.detail === "Fusion material used 100")).toBe(true);
+  });
+
+  it("queues pre-material triggers before fusion materials leave their original location", () => {
+    const session = createDuel({ seed: 22, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const material = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    expect(material).toBeTruthy();
+    expect(fusion).toBeTruthy();
+    registerEffect(session, {
+      id: "fusion-pre-material-trigger",
+      sourceUid: material!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "preUsedAsMaterial",
+      triggerSourceOnly: true,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log(`Fusion material pre-used ${ctx.eventCard?.code ?? ""}`);
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === material!.uid)?.location).toBe("graveyard");
+    expect(result.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "preUsedAsMaterial", eventCardUid: material!.uid }));
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "fusion-pre-material-trigger");
+    expect(trigger).toBeTruthy();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(session.state.log.some((entry) => entry.detail === "Fusion material pre-used 100")).toBe(true);
+  });
+
   it("matches explicit fusion materials through card aliases", () => {
     const session = createDuel({
       seed: 1,

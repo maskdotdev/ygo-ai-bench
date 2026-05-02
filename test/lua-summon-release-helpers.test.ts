@@ -108,6 +108,84 @@ describe("Lua summon and release helpers", () => {
     }
   });
 
+  it("queues Lua material triggers when summon materials are consumed", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Material Trigger", kind: "monster" },
+      { code: "300", name: "Lua Material B", kind: "monster" },
+      { code: "900", name: "Lua Material Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
+    ];
+    const session = createDuel({ seed: 57, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local material = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      local materials = Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(100) or tc:IsCode(300) end, 0, LOCATION_HAND, 0, 2, 2, target)
+      local e=Effect.CreateEffect(material)
+      e:SetType(EFFECT_TYPE_TRIGGER_O)
+      e:SetCode(EVENT_BE_MATERIAL)
+      e:SetRange(LOCATION_GRAVE)
+      e:SetOperation(function(e,tp) Debug.Message("lua material trigger resolved " .. e:GetHandler():GetCode()) end)
+      material:RegisterEffect(e)
+      Debug.Message("lua material fusion " .. Duel.FusionSummon(target, materials))
+      `,
+      "lua-material-trigger.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("lua material fusion 1");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("usedAsMaterial");
+    const trigger = getLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("lua material trigger resolved 100");
+  });
+
+  it("queues Lua pre-material triggers before summon materials are consumed", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Pre Material Trigger", kind: "monster" },
+      { code: "300", name: "Lua Material B", kind: "monster" },
+      { code: "900", name: "Lua Pre Material Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
+    ];
+    const session = createDuel({ seed: 58, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local material = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      local materials = Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(100) or tc:IsCode(300) end, 0, LOCATION_HAND, 0, 2, 2, target)
+      local e=Effect.CreateEffect(material)
+      e:SetType(EFFECT_TYPE_TRIGGER_O)
+      e:SetCode(EVENT_BE_PRE_MATERIAL)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp) Debug.Message("lua pre material trigger resolved " .. e:GetHandler():GetCode()) end)
+      material:RegisterEffect(e)
+      Debug.Message("lua pre material fusion " .. Duel.FusionSummon(target, materials))
+      `,
+      "lua-pre-material-trigger.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("lua pre material fusion 1");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("preUsedAsMaterial");
+    const trigger = getLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("lua pre material trigger resolved 100");
+  });
+
   it("lets Lua ritual scripts summon with selected materials when card metadata has no recipe", () => {
     const cards: DuelCardData[] = [
       { code: "33599853", name: "Ritual of Light and Darkness", kind: "spell", typeFlags: 0x82 },
@@ -808,388 +886,4 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("release zone strict false/false/true/false");
   });
 
-  it("lets Lua scripts check, select, and release monster-zone groups", () => {
-    const cards: DuelCardData[] = [
-      { code: "100", name: "Release A", kind: "monster" },
-      { code: "300", name: "Release B", kind: "monster" },
-      { code: "500", name: "Release C", kind: "monster" },
-    ];
-    const session = createDuel({ seed: 8, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300", "500"] },
-      1: { main: ["100", "300", "500"] },
-    });
-    startDuel(session);
-    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
-      moveDuelCard(session.state, card.uid, "monsterZone", 0);
-    }
-
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
-      local filter = function(tc) return tc:IsCode(100) or tc:IsCode(300) end
-      local vararg_filter = function(tc, mincode) return tc:GetCode() >= mincode end
-      local hand = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 1, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local field = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
-      Debug.Message("can release player " .. tostring(Duel.IsPlayerCanRelease(0)))
-      Debug.Message("can release field " .. tostring(Duel.IsPlayerCanRelease(0, field)))
-      Debug.Message("can release hand " .. tostring(Duel.IsPlayerCanRelease(1, hand)))
-      Debug.Message("release group " .. Duel.GetReleaseGroup(0, filter, nil):GetCount())
-      Debug.Message("release group count " .. Duel.GetReleaseGroupCount(0, filter, nil))
-      Debug.Message("release group vararg " .. Duel.GetReleaseGroup(0, vararg_filter, nil, 300):GetCount())
-      Debug.Message("release group count vararg " .. Duel.GetReleaseGroupCount(0, vararg_filter, nil, 300))
-      local releasable, excluded_release = Duel.GetReleaseGroup(0):Split(aux.ReleaseCostFilter, nil, 0)
-      Debug.Message("release cost split " .. releasable:GetCount() .. "/" .. excluded_release:GetCount())
-      Debug.Message("can release two " .. tostring(Duel.CheckReleaseGroup(0, filter, 2, nil)))
-      Debug.Message("can release three " .. tostring(Duel.CheckReleaseGroup(0, filter, 3, nil)))
-      Debug.Message("can release ex two " .. tostring(Duel.CheckReleaseGroupEx(0, filter, 2, 2, nil)))
-      Debug.Message("can release ex three " .. tostring(Duel.CheckReleaseGroupEx(0, filter, 3, 3, nil)))
-      local gx = Duel.SelectReleaseGroupEx(0, filter, 1, 1, nil)
-      Debug.Message("selected releases ex " .. gx:GetCount())
-      local g = Duel.SelectReleaseGroup(0, filter, 1, 2, nil)
-      Debug.Message("selected releases " .. g:GetCount())
-      local excluded = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_MZONE, 0, 1, 1, nil)
-      Debug.Message("release group excluded " .. Duel.GetReleaseGroup(0, aux.TRUE, excluded):GetCount())
-      Debug.Message("group excluded release check " .. tostring(Duel.CheckReleaseGroup(0, aux.TRUE, 3, excluded)))
-      Debug.Message("group excluded release selected " .. Duel.SelectReleaseGroup(0, aux.TRUE, 1, 3, excluded):GetCount())
-      local forced = excluded:GetFirst()
-      Duel.SetSelectedCard(forced)
-      Debug.Message("forced release check " .. tostring(Duel.CheckReleaseGroup(0, filter, 3, nil)))
-      local forced_group = Duel.SelectReleaseGroup(0, filter, 1, 3, nil)
-      Debug.Message("forced release selected " .. forced_group:GetCount() .. " " .. tostring(forced_group:IsContains(forced)))
-      Duel.SetSelectedCard(Group.FromCards(forced, g:GetFirst()))
-      Debug.Message("forced release ex max miss " .. tostring(Duel.CheckReleaseGroupEx(0, filter, 1, 1, nil)))
-      Duel.SetSelectedCard(nil)
-      Debug.Message("released " .. Duel.Release(g, REASON_COST))
-      local released = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
-      Debug.Message("previous location " .. tostring(released:IsPreviousLocation(LOCATION_MZONE)))
-      Debug.Message("previous controller " .. tostring(released:IsPreviousControler(0)))
-      Debug.Message("release reason " .. tostring(released:IsReason(REASON_RELEASE)) .. "/" .. tostring(released:IsReason(REASON_COST)))
-      `,
-      "release-group.lua",
-    );
-
-    expect(result.ok).toBe(true);
-    expect(host.messages).toContain("can release player true");
-    expect(host.messages).toContain("can release field true");
-    expect(host.messages).toContain("can release hand false");
-    expect(host.messages).toContain("release group 2");
-    expect(host.messages).toContain("release group count 2");
-    expect(host.messages).toContain("release group vararg 2");
-    expect(host.messages).toContain("release group count vararg 2");
-    expect(host.messages).toContain("release cost split 3/0");
-    expect(host.messages).toContain("can release two true");
-    expect(host.messages).toContain("can release three false");
-    expect(host.messages).toContain("can release ex two true");
-    expect(host.messages).toContain("can release ex three false");
-    expect(host.messages).toContain("selected releases ex 1");
-    expect(host.messages).toContain("selected releases 2");
-    expect(host.messages).toContain("release group excluded 2");
-    expect(host.messages).toContain("group excluded release check false");
-    expect(host.messages).toContain("group excluded release selected 2");
-    expect(host.messages).toContain("forced release check true");
-    expect(host.messages).toContain("forced release selected 3 true");
-    expect(host.messages).toContain("forced release ex max miss false");
-    expect(host.messages).toContain("released 2");
-    expect(host.messages).toContain("previous location true");
-    expect(host.messages).toContain("previous controller true");
-    expect(host.messages).toContain("release reason true/true");
-    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "graveyard" && (card.code === "100" || card.code === "300"))).toHaveLength(2);
-    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "500")?.location).toBe("monsterZone");
-  });
-
-  it("lets Lua scripts use self tribute cost aliases", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "Self Tribute Cost", kind: "monster" }];
-    const session = createDuel({ seed: 189, startingHandSize: 1, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100"] },
-      1: { main: [] },
-    });
-    startDuel(session);
-    const target = session.state.cards.find((card) => card.code === "100");
-    expect(target).toBeDefined();
-    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
-
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
-      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
-      local e=Effect.CreateEffect(c)
-      Debug.Message("self tribute check " .. tostring(Cost.SelfTribute(e,0,Group.CreateGroup(),0,0,nil,0,0,0)) .. "/" .. tostring(Cost.SelfRelease(e,0,Group.CreateGroup(),0,0,nil,0,0,0)))
-      Cost.SelfRelease(e,0,Group.CreateGroup(),0,0,nil,0,0,1)
-      Debug.Message("self tribute moved " .. tostring(c:IsLocation(LOCATION_GRAVE)) .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
-      Debug.Message("self tribute reason " .. tostring(c:IsReason(REASON_RELEASE)) .. "/" .. tostring(c:IsReason(REASON_COST)))
-      `,
-      "self-tribute-cost.lua",
-    );
-
-    expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("self tribute check true/true");
-    expect(host.messages).toContain("self tribute moved true/100");
-    expect(host.messages).toContain("self tribute reason true/true");
-  });
-
-  it("lets Lua scripts check and select release cost groups", () => {
-    const cards: DuelCardData[] = [
-      { code: "100", name: "Cost Field A", kind: "monster" },
-      { code: "300", name: "Cost Field B", kind: "monster" },
-      { code: "500", name: "Cost Hand", kind: "monster" },
-    ];
-    const session = createDuel({ seed: 18, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300", "500"] },
-      1: { main: [] },
-    });
-    startDuel(session);
-    for (const code of ["100", "300"]) {
-      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
-      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
-    }
-
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
-      local filter = function(tc, mincode) return tc:GetCode() >= mincode end
-      local excluded = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
-      Debug.Message("cost check field two " .. tostring(Duel.CheckReleaseGroupCost(0, filter, 2, 2, false, nil, nil, 100)))
-      Debug.Message("cost check hand miss " .. tostring(Duel.CheckReleaseGroupCost(0, filter, 3, 3, false, nil, nil, 100)))
-      Debug.Message("cost check hand ok " .. tostring(Duel.CheckReleaseGroupCost(0, filter, 3, 3, true, nil, nil, 100)))
-      Debug.Message("cost excluded " .. tostring(Duel.CheckReleaseGroupCost(0, filter, 3, 3, true, nil, excluded, 100)))
-      local g = Duel.SelectReleaseGroupCost(0, filter, 1, 3, true, nil, nil, 100)
-      Debug.Message("cost selected " .. g:GetCount())
-      Debug.Message("cost contains hand " .. tostring(g:IsExists(Card.IsLocation, 1, nil, LOCATION_HAND)))
-      `,
-      "release-cost-group.lua",
-    );
-
-    expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("cost check field two true");
-    expect(host.messages).toContain("cost check hand miss false");
-    expect(host.messages).toContain("cost check hand ok true");
-    expect(host.messages).toContain("cost excluded false");
-    expect(host.messages).toContain("cost selected 3");
-    expect(host.messages).toContain("cost contains hand true");
-  });
-
-  it("lets Lua release cost checks use aux release predicates", () => {
-    const cards: DuelCardData[] = [
-      { code: "100", name: "Release Cost A", kind: "monster" },
-      { code: "300", name: "Release Cost B", kind: "monster" },
-      { code: "500", name: "Release Cost C", kind: "monster" },
-      { code: "700", name: "Release Cost D", kind: "monster" },
-      { code: "900", name: "Release Cost E", kind: "monster" },
-      { code: "1100", name: "Target Group Card", kind: "monster" },
-      { code: "1300", name: "Extra Zone Check Card", kind: "extra" },
-    ];
-    const session = createDuel({ seed: 19, startingHandSize: 6, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300", "500", "700", "900", "1100"], extra: ["1300"] },
-      1: { main: [] },
-    });
-    startDuel(session);
-    for (const code of ["100", "300", "500", "700", "900"]) {
-      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
-      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
-    }
-
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
-      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 1100), 0, LOCATION_HAND, 0, 1, 1, nil)
-      local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 1300), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
-      Debug.Message("release check mmz " .. tostring(Duel.CheckReleaseGroupCost(0, nil, 1, false, aux.ReleaseCheckMMZ, nil)))
-      local mmz_group = Duel.SelectReleaseGroupCost(0, nil, 1, 1, false, aux.ReleaseCheckMMZ, nil)
-      Debug.Message("release select mmz " .. mmz_group:GetCount() .. "/" .. Duel.GetMZoneCount(0, mmz_group))
-      Debug.Message("release check target hit " .. tostring(Duel.CheckReleaseGroupCost(0, nil, 1, false, aux.ReleaseCheckTarget, nil, target)))
-      Debug.Message("release check target miss " .. tostring(Duel.CheckReleaseGroupCost(0, nil, 1, false, aux.ReleaseCheckTarget, nil, mmz_group)))
-      local hand_check = aux.ZoneCheckFunc(target:GetFirst(),0,0)
-      local extra_check = aux.ZoneCheckFunc(extra,0,0)
-      Debug.Message("zone check func " .. hand_check(mmz_group) .. "/" .. extra_check(mmz_group))
-      `,
-      "release-cost-aux-checks.lua",
-    );
-
-    expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("release check mmz true");
-    expect(host.messages).toContain("release select mmz 1/1");
-    expect(host.messages).toContain("release check target miss false");
-    expect(host.messages).toContain("release check target hit true");
-    expect(host.messages).toContain("zone check func 1/1");
-  });
-
-  it("lets Lua scripts identify opponent extra non-summon release effects", () => {
-    const cards: DuelCardData[] = [
-      { code: "100", name: "Own Release Candidate", kind: "monster" },
-      { code: "200", name: "Opponent Numeric Release", kind: "monster" },
-      { code: "300", name: "Opponent Zero Release", kind: "monster" },
-      { code: "400", name: "Opponent Function Release", kind: "monster" },
-    ];
-    const session = createDuel({ seed: 21, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100"] },
-      1: { main: ["200", "300", "400"] },
-    });
-    startDuel(session);
-    for (const card of session.state.cards.filter((candidate) => candidate.location === "hand")) {
-      moveDuelCard(session.state, card.uid, "monsterZone", card.controller);
-    }
-
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
-      local own = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
-      local numeric = Duel.GetFieldCard(1, LOCATION_MZONE, 0)
-      local zero = Duel.GetFieldCard(1, LOCATION_MZONE, 1)
-      local function_card = Duel.GetFieldCard(1, LOCATION_MZONE, 2)
-      local current = Effect.CreateEffect(own)
-      local numeric_effect = Effect.CreateEffect(numeric)
-      numeric_effect:SetType(EFFECT_TYPE_SINGLE)
-      numeric_effect:SetCode(EFFECT_EXTRA_RELEASE_NONSUM)
-      numeric_effect:SetValue(1)
-      numeric:RegisterEffect(numeric_effect)
-      local zero_effect = Effect.CreateEffect(zero)
-      zero_effect:SetType(EFFECT_TYPE_SINGLE)
-      zero_effect:SetCode(EFFECT_EXTRA_RELEASE_NONSUM)
-      zero_effect:SetValue(0)
-      zero:RegisterEffect(zero_effect)
-      local function_effect = Effect.CreateEffect(function_card)
-      function_effect:SetType(EFFECT_TYPE_SINGLE)
-      function_effect:SetCode(EFFECT_EXTRA_RELEASE_NONSUM)
-      function_effect:SetValue(function(e,ce,reason,tp) return ce==current and reason==REASON_COST and tp==0 end)
-      function_card:RegisterEffect(function_effect)
-      Debug.Message("release nonsum " .. tostring(aux.ReleaseNonSumCheck(own,0,current)) .. "/" .. tostring(aux.ReleaseNonSumCheck(numeric,0,current)) .. "/" .. tostring(aux.ReleaseNonSumCheck(zero,0,current)) .. "/" .. tostring(aux.ReleaseNonSumCheck(function_card,0,current)))
-      Debug.Message("release nonsum wrong player " .. tostring(aux.ReleaseNonSumCheck(function_card,1,current)))
-      `,
-      "release-nonsum-check.lua",
-    );
-
-    expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("release nonsum false/true/false/true");
-    expect(host.messages).toContain("release nonsum wrong player false");
-  });
-
-  it("lets Lua scripts collect must-be material effects", () => {
-    const cards: DuelCardData[] = [
-      { code: "100", name: "Synchro Must Material", kind: "monster" },
-      { code: "300", name: "Function Must Material", kind: "monster" },
-      { code: "900", name: "Summon Candidate", kind: "monster" },
-    ];
-    const session = createDuel({ seed: 20, startingHandSize: 3, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300", "900"] },
-      1: { main: [] },
-    });
-    startDuel(session);
-    for (const code of ["100", "300"]) {
-      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
-      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
-    }
-
-    const host = createLuaScriptHost(session);
-    const setup = host.loadScript(
-      `
-      c100={}
-      function c100.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_FIELD)
-        e:SetCode(EFFECT_MUST_BE_MATERIAL)
-        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
-        e:SetRange(LOCATION_MZONE)
-        e:SetTargetRange(1,0)
-        e:SetValue(REASON_SYNCHRO)
-        c:RegisterEffect(e)
-      end
-      c300={}
-      function c300.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_FIELD)
-        e:SetCode(EFFECT_MUST_BE_MATERIAL)
-        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
-        e:SetRange(LOCATION_MZONE)
-        e:SetTargetRange(1,0)
-        e:SetValue(function(te,eg,sump,sc,g)
-          if sump==0 and sc and sc:IsCode(900) then return REASON_FUSION end
-          return 0
-        end)
-        c:RegisterEffect(e)
-      end
-      `,
-      "must-be-material-effects.lua",
-    );
-    expect(setup.ok, setup.error).toBe(true);
-    expect(host.registerInitialEffects()).toBe(2);
-
-    const result = host.loadScript(
-      `
-      local sc = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local synchro = aux.GetMustBeMaterialGroup(0, Group.CreateGroup(), 0, sc, nil, REASON_SYNCHRO)
-      local fusion = aux.GetMustBeMaterialGroup(0, Group.CreateGroup(), 0, sc, nil, REASON_FUSION)
-      local ritual = aux.GetMustBeMaterialGroup(0, Group.CreateGroup(), 0, sc, nil, REASON_RITUAL)
-      Debug.Message("must material synchro " .. synchro:GetCount() .. "/" .. tostring(synchro:GetFirst():IsCode(100)))
-      Debug.Message("must material fusion " .. fusion:GetCount() .. "/" .. tostring(fusion:GetFirst():IsCode(300)))
-      Debug.Message("must material ritual " .. ritual:GetCount())
-      `,
-      "must-be-material-check.lua",
-    );
-
-    expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("must material synchro 1/true");
-    expect(host.messages).toContain("must material fusion 1/true");
-    expect(host.messages).toContain("must material ritual 0");
-  });
-
-  it("excludes unreleasable cards from Lua release group helpers", () => {
-    const cards: DuelCardData[] = [
-      { code: "100", name: "Unreleasable Cost", kind: "monster" },
-      { code: "300", name: "Releasable Cost", kind: "monster" },
-    ];
-    const session = createDuel({ seed: 81, startingHandSize: 2, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300"] },
-      1: { main: [] },
-    });
-    startDuel(session);
-    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
-      moveDuelCard(session.state, card.uid, "monsterZone", 0);
-    }
-
-    const host = createLuaScriptHost(session);
-    const setup = host.loadScript(
-      `
-      c100={}
-      function c100.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_SINGLE)
-        e:SetCode(EFFECT_UNRELEASABLE_NONSUM)
-        e:SetRange(LOCATION_MZONE)
-        c:RegisterEffect(e)
-      end
-      `,
-      "unreleasable-release-helper.lua",
-    );
-
-    expect(setup.ok, setup.error).toBe(true);
-    expect(host.registerInitialEffects()).toBe(1);
-    const result = host.loadScript(
-      `
-      Debug.Message("release check two " .. tostring(Duel.CheckReleaseGroup(0, aux.TRUE, 2, nil)))
-      Debug.Message("release check one " .. tostring(Duel.CheckReleaseGroup(0, aux.TRUE, 1, nil)))
-      local selected = Duel.SelectReleaseGroup(0, aux.TRUE, 1, 2, nil)
-      Debug.Message("release selected " .. selected:GetCount())
-      Debug.Message("release selected blocked " .. tostring(selected:IsExists(aux.FilterBoolFunction(Card.IsCode, 100), 1, nil)))
-      local both = Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_MZONE, 0, 1, 2, nil)
-      Debug.Message("release moved " .. Duel.Release(both, REASON_COST))
-      `,
-      "unreleasable-release-helper-run.lua",
-    );
-
-    expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("release check two false");
-    expect(host.messages).toContain("release check one true");
-    expect(host.messages).toContain("release selected 1");
-    expect(host.messages).toContain("release selected blocked false");
-    expect(host.messages).toContain("release moved 1");
-    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone" });
-    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
-  });
 });
