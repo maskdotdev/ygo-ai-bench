@@ -215,10 +215,21 @@ function canAdditionalSummon(session: DuelSession, player: PlayerId): boolean {
 
 function canNormalSet(session: DuelSession, player: PlayerId, uid: string | undefined, ignoreCount: boolean): boolean {
   if (!isMainPhaseForPlayer(session, player)) return false;
-  if (!ignoreCount && !session.state.players[player].normalSummonAvailable) return false;
   const card = uid ? findCard(session.state, uid) : undefined;
   if (card && (card.controller !== player || card.location !== "hand" || !isMonsterLike(card.kind))) return false;
-  return availableMonsterZoneCount(session, player, []) > 0;
+  const readAvailable = (): boolean => {
+    const hand = card ? [card] : session.state.cards.filter((candidate) => candidate.controller === player && candidate.location === "hand" && isMonsterLike(candidate.kind));
+    const actions = [...normalSummonActions(session.state, player, hand), ...tributeSummonActions(session.state, player, hand)];
+    return card ? actions.some((action) => actionHasUid(action, card.uid) && (action.type === "setMonster" || action.type === "tributeSummon")) : actions.some((action) => action.type === "setMonster" || action.type === "tributeSummon");
+  };
+  if (!ignoreCount) return readAvailable();
+  const previous = session.state.players[player].normalSummonAvailable;
+  session.state.players[player].normalSummonAvailable = true;
+  try {
+    return readAvailable();
+  } finally {
+    session.state.players[player].normalSummonAvailable = previous;
+  }
 }
 
 function normalSummonAvailability(session: DuelSession, player: PlayerId, card: DuelCardInstance | undefined, ignoreCount: boolean, minTributes: number): boolean {
