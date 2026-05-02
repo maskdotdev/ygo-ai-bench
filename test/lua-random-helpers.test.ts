@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData, DuelSession } from "#duel/types.js";
@@ -32,6 +32,7 @@ describe("Lua random helpers", () => {
     expect(firstMessages[0]).toMatch(/^coin call true\/(true|false)$/);
     expect(firstMessages[1]).toBe("coin constants 1/0");
     expect(first.state.randomCounter).toBe(1);
+    expect(first.state.lastCoinResults).toHaveLength(1);
     expect(first.state.log.some((entry) => entry.action === "callCoin" && entry.detail.includes("/"))).toBe(true);
   });
 
@@ -279,6 +280,132 @@ describe("Lua random helpers", () => {
 
     expect(restoredResult.ok, restoredResult.error).toBe(true);
     expect(restoredHost.messages[0]?.replace("after", "before")).toBe(firstHost.messages[0]);
+  });
+
+  it("queues Lua toss triggers after coin and dice tosses", () => {
+    const session = setupSession(170);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local coin=Effect.CreateEffect(watcher)
+      coin:SetType(EFFECT_TYPE_TRIGGER_O)
+      coin:SetCode(EVENT_TOSS_COIN)
+      coin:SetRange(LOCATION_HAND)
+      coin:SetOperation(function(e,tp) Debug.Message("coin trigger resolved " .. table.concat({Duel.GetCoinResult()}, ",")) end)
+      watcher:RegisterEffect(coin)
+
+      local dice=Effect.CreateEffect(watcher)
+      dice:SetType(EFFECT_TYPE_TRIGGER_O)
+      dice:SetCode(EVENT_TOSS_DICE)
+      dice:SetRange(LOCATION_HAND)
+      dice:SetOperation(function(e,tp) Debug.Message("dice trigger resolved " .. table.concat({Duel.GetDiceResult()}, ",")) end)
+      watcher:RegisterEffect(dice)
+
+      local a,b=Duel.TossCoin(0,2)
+      Debug.Message("coin tossed " .. a .. "," .. b)
+      `,
+      "random-toss-triggers.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages[0]).toMatch(/^coin tossed [01],[01]$/);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossed"]);
+    const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(coinTrigger).toBeDefined();
+    expect(applyResponse(session, coinTrigger!).ok).toBe(true);
+    expect(host.messages[1]).toMatch(/^coin trigger resolved [01],[01]$/);
+
+    const diceResult = host.loadScript(
+      `
+      local a,b=Duel.TossDice(0,2)
+      Debug.Message("dice tossed " .. a .. "," .. b)
+      `,
+      "random-toss-dice-trigger.lua",
+    );
+    expect(diceResult.ok, diceResult.error).toBe(true);
+    expect(host.messages[2]).toMatch(/^dice tossed [1-6],[1-6]$/);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["diceTossed"]);
+    const diceTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(diceTrigger).toBeDefined();
+    expect(applyResponse(session, diceTrigger!).ok).toBe(true);
+    expect(host.messages[3]).toMatch(/^dice trigger resolved [1-6],[1-6]$/);
+  });
+
+  it("queues Lua coin toss triggers after called coins", () => {
+    const session = setupSession(171);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local coin=Effect.CreateEffect(watcher)
+      coin:SetType(EFFECT_TYPE_TRIGGER_O)
+      coin:SetCode(EVENT_TOSS_COIN)
+      coin:SetRange(LOCATION_HAND)
+      coin:SetOperation(function(e,tp) Debug.Message("called coin trigger resolved " .. table.concat({Duel.GetCoinResult()}, ",")) end)
+      watcher:RegisterEffect(coin)
+
+      Debug.Message("coin called " .. tostring(Duel.CallCoin(0)))
+      `,
+      "random-call-coin-trigger.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages[0]).toMatch(/^coin called (true|false)$/);
+    expect(session.state.lastCoinResults).toHaveLength(1);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossed"]);
+    const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(coinTrigger).toBeDefined();
+    expect(applyResponse(session, coinTrigger!).ok).toBe(true);
+    expect(host.messages[1]).toMatch(/^called coin trigger resolved [01]$/);
+  });
+
+  it("maps raised Lua toss-negate event codes to matching triggers", () => {
+    const session = setupSession(172);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local coin=Effect.CreateEffect(watcher)
+      coin:SetType(EFFECT_TYPE_TRIGGER_O)
+      coin:SetCode(EVENT_TOSS_COIN_NEGATE)
+      coin:SetRange(LOCATION_HAND)
+      coin:SetOperation(function(e,tp,eg) Debug.Message("coin negate trigger " .. eg:GetFirst():GetCode()) end)
+      watcher:RegisterEffect(coin)
+
+      local dice=Effect.CreateEffect(watcher)
+      dice:SetType(EFFECT_TYPE_TRIGGER_O)
+      dice:SetCode(EVENT_TOSS_DICE_NEGATE)
+      dice:SetRange(LOCATION_HAND)
+      dice:SetOperation(function(e,tp,eg) Debug.Message("dice negate trigger " .. eg:GetFirst():GetCode()) end)
+      watcher:RegisterEffect(dice)
+
+      Duel.RaiseEvent(watcher, EVENT_TOSS_COIN_NEGATE, nil, REASON_EFFECT, 0, 0, 0)
+      Debug.Message("coin negate check " .. tostring(Duel.CheckEvent(EVENT_TOSS_COIN_NEGATE)) .. "/" .. tostring(Duel.CheckEvent(EVENT_TOSS_DICE_NEGATE)))
+      `,
+      "random-toss-negate-events.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("coin negate check true/false");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossNegated"]);
+    const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(coinTrigger).toBeDefined();
+    expect(applyResponse(session, coinTrigger!).ok).toBe(true);
+    expect(host.messages).toContain("coin negate trigger 100");
+
+    const diceResult = host.loadScript(
+      `
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Duel.RaiseEvent(watcher, EVENT_TOSS_DICE_NEGATE, nil, REASON_EFFECT, 0, 0, 0)
+      `,
+      "random-dice-negate-event.lua",
+    );
+    expect(diceResult.ok, diceResult.error).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["diceTossNegated"]);
+    const diceTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(diceTrigger).toBeDefined();
+    expect(applyResponse(session, diceTrigger!).ok).toBe(true);
+    expect(host.messages).toContain("dice negate trigger 100");
   });
 
   it("lets Lua scripts get deterministic random numbers", () => {

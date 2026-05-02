@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, destroyDuelCard, loadDecks, queryPublicState, registerEffect, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, destroyDuelCard, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
+import { createLuaScriptHost } from "#lua/host.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("duel destruction", () => {
@@ -66,5 +67,47 @@ describe("duel destruction", () => {
 
     destroyDuelCard(session.state, protectedCard!.uid, 0);
     expect(queryPublicState(session).cards.find((card) => card.uid === protectedCard!.uid)?.location).toBe("graveyard");
+  });
+
+  it("queues Lua destroy triggers before destroyed triggers", () => {
+    const session = createDuel({ seed: 2, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const target = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(target).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_DESTROY)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          Debug.Message("lua destroy resolved " .. eg:GetFirst():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-destroy-trigger.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    destroyDuelCard(session.state, target!.uid, 0);
+
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["destroying"]);
+    expect(session.state.eventHistory.map((event) => event.eventName)).toContain("destroying");
+    expect(session.state.eventHistory.map((event) => event.eventName)).toContain("destroyed");
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("lua destroy resolved 100");
   });
 });

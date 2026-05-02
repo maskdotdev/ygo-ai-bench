@@ -14,6 +14,7 @@ import {
   specialSummonDuelCard,
   startDuel,
 } from "#duel/core.js";
+import { duelActivity } from "#duel/activity.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -38,7 +39,14 @@ describe("duel position changes", () => {
     expect(setResult.state.cards.find((card) => card.uid === monster!.uid)?.position).toBe("faceDownDefense");
     expect(setResult.state.cards.find((card) => card.uid === monster!.uid)?.faceUp).toBe(false);
     expect(setResult.state.players[0].normalSummonAvailable).toBe(false);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "flipSummon" && candidate.uid === monster!.uid)).toBe(false);
 
+    const endTurn = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
+    expect(endTurn).toBeTruthy();
+    expect(applyResponse(session, endTurn!).ok).toBe(true);
+    const opponentEndTurn = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn");
+    expect(opponentEndTurn).toBeTruthy();
+    expect(applyResponse(session, opponentEndTurn!).ok).toBe(true);
     const flipAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === monster!.uid);
     expect(flipAction).toBeTruthy();
     const flipResult = applyResponse(session, flipAction!);
@@ -98,6 +106,168 @@ describe("duel position changes", () => {
     expect(result.state.log.some((entry) => entry.detail === "Flip summoned Normal Test Monster")).toBe(true);
   });
 
+  it("queues Lua flip summon success triggers after Flip Summons", () => {
+    const session = createDuel({ seed: 2, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const monster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(monster).toBeTruthy();
+    moveDuelCard(session.state, monster!.uid, "monsterZone", 0).position = "faceDownDefense";
+    session.state.cards.find((card) => card.uid === monster!.uid)!.faceUp = false;
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_FLIP_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          Debug.Message("lua flip summon success resolved " .. eg:GetFirst():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-flip-summon-success-trigger.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    flipSummonDuelCard(session.state, 0, monster!.uid);
+
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummoned"]);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("lua flip summon success resolved 100");
+  });
+
+  it("queues Lua monster set triggers after Sets", () => {
+    const session = createDuel({ seed: 3, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const monster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(monster).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_MSET)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          Debug.Message("lua monster set resolved " .. eg:GetFirst():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-monster-set-trigger.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === monster!.uid);
+    expect(setAction).toBeTruthy();
+    expect(applyResponse(session, setAction!).ok).toBe(true);
+
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["monsterSet"]);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("lua monster set resolved 100");
+  });
+
+  it("blocks manual position changes for monsters summoned or set this turn", () => {
+    const session = createDuel({ seed: 4, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const set = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(summoned).toBeTruthy();
+    expect(set).toBeTruthy();
+    specialSummonDuelCard(session.state, summoned!.uid, 0);
+    moveDuelCard(session.state, set!.uid, "monsterZone", 0).position = "faceDownDefense";
+    session.state.cards.find((card) => card.uid === set!.uid)!.faceUp = false;
+    session.state.activityHistory.push({ player: 0, activity: duelActivity.normalSummon, cardUid: set!.uid });
+
+    expect(canChangeDuelCardPosition(session.state, summoned!.uid, "faceUpDefense")).toBe(false);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "changePosition" && candidate.uid === summoned!.uid)).toBe(false);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "flipSummon" && candidate.uid === set!.uid)).toBe(false);
+  });
+
+  it("restores same-turn position and Flip Summon lockouts", () => {
+    const session = createDuel({ seed: 5, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const set = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(summoned).toBeTruthy();
+    expect(set).toBeTruthy();
+    specialSummonDuelCard(session.state, summoned!.uid, 0);
+    moveDuelCard(session.state, set!.uid, "monsterZone", 0).position = "faceDownDefense";
+    session.state.cards.find((card) => card.uid === set!.uid)!.faceUp = false;
+    session.state.activityHistory.push({ player: 0, activity: duelActivity.normalSummon, cardUid: set!.uid });
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+
+    expect(restored.state.activityHistory).toEqual(session.state.activityHistory);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "changePosition" && candidate.uid === summoned!.uid)).toBe(false);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "flipSummon" && candidate.uid === set!.uid)).toBe(false);
+  });
+
+  it("reoffers restored position and Flip Summon legal actions after the turn cycles", () => {
+    const session = createDuel({ seed: 6, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const set = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(summoned).toBeTruthy();
+    expect(set).toBeTruthy();
+    specialSummonDuelCard(session.state, summoned!.uid, 0);
+    const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === set!.uid);
+    expect(setAction).toBeTruthy();
+    expect(applyResponse(session, setAction!).ok).toBe(true);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(applyResponse(restored, getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    expect(applyResponse(restored, getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+
+    const changePosition = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "changePosition" && candidate.uid === summoned!.uid && candidate.position === "faceUpDefense");
+    expect(changePosition).toBeTruthy();
+    expect(applyResponse(restored, changePosition!).ok).toBe(true);
+    expect(restored.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ position: "faceUpDefense", faceUp: true });
+
+    const flipSummon = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === set!.uid);
+    expect(flipSummon).toBeTruthy();
+    expect(applyResponse(restored, flipSummon!).ok).toBe(true);
+    expect(restored.state.cards.find((card) => card.uid === set!.uid)).toMatchObject({ position: "faceUpAttack", faceUp: true, summonType: "flip" });
+  });
+
   it("changes monster battle position once per turn", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -108,7 +278,8 @@ describe("duel position changes", () => {
 
     const monster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
     expect(monster).toBeTruthy();
-    specialSummonDuelCard(session.state, monster!.uid, 0);
+    moveDuelCard(session.state, monster!.uid, "monsterZone", 0).position = "faceUpAttack";
+    session.state.cards.find((card) => card.uid === monster!.uid)!.faceUp = true;
     expect(canChangeDuelCardPosition(session.state, monster!.uid, "faceUpDefense")).toBe(true);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePosition" && candidate.uid === monster!.uid && candidate.position === "faceUpDefense");
@@ -134,7 +305,8 @@ describe("duel position changes", () => {
     const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
     expect(monster).toBeTruthy();
     expect(triggerSource).toBeTruthy();
-    specialSummonDuelCard(session.state, monster!.uid, 0);
+    moveDuelCard(session.state, monster!.uid, "monsterZone", 0).position = "faceUpAttack";
+    session.state.cards.find((card) => card.uid === monster!.uid)!.faceUp = true;
     registerEffect(session, {
       id: "position-trigger",
       sourceUid: triggerSource!.uid,

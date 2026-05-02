@@ -1,9 +1,44 @@
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost, type LuaScriptSource } from "#lua/host.js";
 
 describe("Lua script loading", () => {
+  it("runs startup effects during the Lua deck probe CLI", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "probe-startup-"));
+    const deckPath = path.join(root, "startup.ydk");
+    const scriptRoot = path.join(root, "script");
+    fs.mkdirSync(scriptRoot, { recursive: true });
+    fs.writeFileSync(deckPath, "#main\n100\n#extra\n!side\n");
+    fs.writeFileSync(
+      path.join(scriptRoot, "c100.lua"),
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EVENT_STARTUP)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp) Debug.Message("startup probe " .. tostring(Duel.CheckEvent(EVENT_STARTUP))) end)
+        c:RegisterEffect(e)
+      end
+      `,
+    );
+
+    const output = execFileSync("node", ["--experimental-transform-types", "tools/probe-lua-deck.ts", deckPath, "--upstream", root], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    });
+
+    expect(output).toContain("Registered initial_effect calls: 1");
+    expect(output).toContain("Startup effects executed: 1");
+    expect(output).toContain("First failing API/helper: none detected");
+  });
+
   it("lets Lua scripts extend unofficial race and attribute masks", () => {
     const session = createDuel({ seed: 155, startingHandSize: 0 });
     const host = createLuaScriptHost(session);

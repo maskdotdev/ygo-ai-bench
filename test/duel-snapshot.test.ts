@@ -116,6 +116,54 @@ describe("duel snapshot persistence", () => {
     expect(result.state.cards.find((card) => card.uid === source!.uid)?.location).toBe("graveyard");
   });
 
+  it("preserves pending trigger timing metadata across snapshots", () => {
+    const session = createDuel({ seed: 123, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const triggerSource = findPublicCard(session, 0, "hand", "100");
+    const moved = findPublicCard(session, 0, "hand", "300");
+    expect(triggerSource).toBeTruthy();
+    expect(moved).toBeTruthy();
+    registerEffect(session, {
+      id: "snapshot-delayed-trigger",
+      registryKey: "delayed-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "sentToGraveyard",
+      triggerTiming: "if",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Restored delayed trigger resolved");
+      },
+    });
+
+    sendDuelCardToGraveyard(session.state, moved!.uid, 0);
+    expect(session.state.pendingTriggers).toHaveLength(1);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "delayed-trigger": (effect) => ({
+        ...effect,
+        operation(ctx) {
+          ctx.log("Restored delayed trigger resolved");
+        },
+      }),
+    });
+
+    expect(restored.state.effects[0]).toMatchObject({ triggerTiming: "if", triggerEvent: "sentToGraveyard" });
+    expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "snapshot-delayed-trigger");
+    expect(action).toBeTruthy();
+    const result = applyResponse(restored, action!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.log.some((entry) => entry.detail === "Restored delayed trigger resolved")).toBe(true);
+  });
+
   it("keeps reset-pruned effects gone across snapshots", () => {
     const session = createDuel({ seed: 121, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
