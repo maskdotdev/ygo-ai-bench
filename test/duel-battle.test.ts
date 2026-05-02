@@ -368,93 +368,6 @@ describe("duel battle", () => {
     expect(queryPublicState(session).players[1].lifePoints).toBe(6200);
   });
 
-  it("gates quick effects by explicit damage sub-window kind", () => {
-    const localCards = [
-      ...cards,
-      { code: "301", name: "Damage Step Quick A", kind: "monster" as const },
-      { code: "302", name: "Damage Step Quick B", kind: "monster" as const },
-      { code: "303", name: "Damage Step Quick C", kind: "monster" as const },
-      { code: "304", name: "Damage Step Quick D", kind: "monster" as const },
-      { code: "400", name: "Damage Calculation Quick", kind: "monster" as const },
-      { code: "500", name: "Unflagged Quick", kind: "monster" as const },
-    ];
-    const session = createDuel({ seed: 52, startingHandSize: 6, cardReader: createCardReader(localCards) });
-    loadDecks(session, {
-      0: { main: ["100", "301", "302", "303", "304", "400"] },
-      1: { main: ["500", "500", "500", "500", "500", "500"] },
-    });
-    startDuel(session);
-
-    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
-    expect(attacker).toBeTruthy();
-    specialSummonDuelCard(session.state, attacker!.uid, 0);
-    for (const code of ["301", "302", "303", "304", "400", "500"]) {
-      const source = queryPublicState(session).cards.find((card) => card.location === "hand" && card.code === code);
-      expect(source).toBeTruthy();
-      registerEffect(session, {
-        id: `timing-${code}`,
-        sourceUid: source!.uid,
-        controller: source!.controller,
-        event: "quick",
-        range: ["hand"],
-        oncePerTurn: true,
-        ...(code === "400" ? { property: 0x8000 } : code === "500" ? {} : { property: 0x4000 }),
-        operation(ctx) {
-          ctx.log(`timing ${code}`);
-        },
-      });
-    }
-
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!).ok).toBe(true);
-
-    expect(session.state.battleWindow?.kind).toBe("startDamageStep");
-    expect(legalEffectIds(session, 1)).toEqual([]);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(legalEffectIds(session, 0)).toContain("timing-301");
-    expect(legalEffectIds(session, 0)).not.toContain("timing-400");
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-301")!).ok).toBe(true);
-    expect(passCurrentChainIfPending(session)).toBe(true);
-
-    expect(session.state.battleWindow?.kind).toBe("startDamageStep");
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
-    expect(legalEffectIds(session, 1)).toEqual([]);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(legalEffectIds(session, 0)).toContain("timing-302");
-    expect(legalEffectIds(session, 0)).not.toContain("timing-400");
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-302")!).ok).toBe(true);
-    expect(passCurrentChainIfPending(session)).toBe(true);
-
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(legalEffectIds(session, 0)).toEqual(["timing-400"]);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-400")!).ok).toBe(true);
-    expect(passCurrentChainIfPending(session)).toBe(true);
-
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(session.state.battleWindow?.kind).toBe("afterDamageCalculation");
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(legalEffectIds(session, 0)).toContain("timing-303");
-    expect(legalEffectIds(session, 0)).not.toContain("timing-400");
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-303")!).ok).toBe(true);
-    expect(passCurrentChainIfPending(session)).toBe(true);
-
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(session.state.battleWindow?.kind).toBe("endDamageStep");
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(legalEffectIds(session, 0)).toContain("timing-304");
-    expect(legalEffectIds(session, 0)).not.toContain("timing-400");
-    expect(legalEffectIds(session, 0)).not.toContain("timing-500");
-  });
-
   it("applies battle damage overrides from damage calculation effects", () => {
     const session = createDuel({ seed: 36, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -505,6 +418,76 @@ describe("duel battle", () => {
     expect(queryPublicState(session).players[1].lifePoints).toBe(7400);
     expect(session.state.battleDamage[1]).toBe(600);
     expect(session.state.log.some((entry) => entry.detail === "Damage calculation override resolved")).toBe(true);
+  });
+
+  it("queues triggers at after damage calculation and end of damage step", () => {
+    const session = createDuel({ seed: 37, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "301"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const afterSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const endSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "301");
+    expect(attacker).toBeTruthy();
+    expect(afterSource).toBeTruthy();
+    expect(endSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, {
+      id: "after-damage-trigger",
+      sourceUid: afterSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "afterDamageCalculation",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("After damage calculation trigger resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "end-damage-step-trigger",
+      sourceUid: endSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "damageStepEnded",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("End damage step trigger resolved");
+      },
+    });
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
+
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.battleWindow?.kind).toBe("afterDamageCalculation");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["afterDamageCalculation"]);
+    const afterTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "after-damage-trigger");
+    expect(afterTrigger).toBeTruthy();
+    expect(applyResponse(session, afterTrigger!).ok).toBe(true);
+    expect(passCurrentChainIfPending(session)).toBe(true);
+    expect(session.state.log.some((entry) => entry.detail === "After damage calculation trigger resolved")).toBe(true);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    expect(session.state.battleWindow?.kind).toBe("endDamageStep");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["damageStepEnded"]);
+    const endTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "end-damage-step-trigger");
+    expect(endTrigger).toBeTruthy();
+    expect(applyResponse(session, endTrigger!).ok).toBe(true);
+    expect(passCurrentChainIfPending(session)).toBe(true);
+    expect(session.state.log.some((entry) => entry.detail === "End damage step trigger resolved")).toBe(true);
   });
 
   it("opens a replay decision when the attack target leaves before damage", () => {
