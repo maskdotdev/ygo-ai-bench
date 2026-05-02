@@ -350,7 +350,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsReleasableByEffect", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.release | duelReason.effect)));
   pushBooleanGetter(L, "IsDiscardable", session, (card, uid) => Boolean(card && uid && card.location === "hand" && canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.cost)));
   installCardRelationApi(L, session, hostState);
-  pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && (session.state.currentAttack?.attackerUid === uid || session.state.currentAttack?.targetUid === uid)));
+  pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && isRelatedToBattle(session.state, uid)));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     if (card) card.cancelToGrave = lua.lua_isnoneornil(state, 2) ? true : lua.lua_toboolean(state, 2);
@@ -866,9 +866,19 @@ function cardStatusMask(state: DuelState, card: DuelCardInstance): number {
   if (card.summonType && card.summonType !== "normal" && card.summonType !== "tribute" && card.summonType !== "flip") mask |= 0x40000000;
   if (card.summonType) mask |= 0x8;
   if ((card.reason ?? 0) & duelReason.battle) mask |= 0x4000;
-  if (state.currentAttack?.targetUid === card.uid) mask |= 0x10000000;
+  if (isOpposingMonsterBattle(state, card.uid)) mask |= 0x10000000;
   if (state.chain.some((link) => link.sourceUid === card.uid)) mask |= 0x10000;
   return mask;
+}
+
+function isRelatedToBattle(state: DuelState, uid: string): boolean {
+  const battle = state.currentAttack ?? state.pendingBattle;
+  return battle?.attackerUid === uid || battle?.targetUid === uid;
+}
+
+function isOpposingMonsterBattle(state: DuelState, uid: string): boolean {
+  const battle = state.currentAttack ?? state.pendingBattle;
+  return Boolean(battle?.targetUid && (battle.attackerUid === uid || battle.targetUid === uid));
 }
 
 function canTurnSet(card: DuelCardInstance): boolean {

@@ -1455,6 +1455,48 @@ describe("Lua battle helpers", () => {
     expect(host.messages).toContain("card battle target idle nil true");
   });
 
+  it("marks both monsters as opposing battle participants for Lua status checks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Status Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Status Defender", kind: "monster", attack: 1000 },
+      { code: "300", name: "Status Idle", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 135, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const idle = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(idle).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, idle!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+    session.state.phase = "battle";
+    session.state.pendingBattle = { attackerUid: attacker!.uid, targetUid: target!.uid };
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local attacker=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local idle=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("oppo battle attacker " .. tostring(attacker:IsRelateToBattle()) .. "/" .. tostring(attacker:IsStatus(STATUS_OPPO_BATTLE)))
+      Debug.Message("oppo battle target " .. tostring(target:IsRelateToBattle()) .. "/" .. tostring(target:IsStatus(STATUS_OPPO_BATTLE)))
+      Debug.Message("oppo battle idle " .. tostring(idle:IsRelateToBattle()) .. "/" .. tostring(idle:IsStatus(STATUS_OPPO_BATTLE)))
+      `,
+      "opposing-battle-status.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["oppo battle attacker true/true", "oppo battle target true/true", "oppo battle idle false/false"]);
+  });
+
   it("tracks attacked monsters for Lua battle history queries", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "History Attacker", kind: "monster", attack: 1800 },
