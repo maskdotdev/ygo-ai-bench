@@ -2359,6 +2359,75 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("field counter blocked false");
   });
 
+  it("lets Lua scripts use selected effect and replaceable cost helpers", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Replace Cost Source", kind: "monster" }];
+    const session = createDuel({ seed: 79, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      e:SetDescription(701)
+      Debug.Message("hint selected check " .. tostring(Cost.HintSelectedEffect(e,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+      Cost.HintSelectedEffect(e,0,Group.CreateGroup(),0,0,nil,0,0,1)
+
+      local replacement=Effect.CreateEffect(c)
+      replacement:SetType(EFFECT_TYPE_FIELD)
+      replacement:SetCode(EFFECT_COST_REPLACE)
+      replacement:SetRange(LOCATION_MZONE)
+      replacement:SetTargetRange(1,0)
+      replacement:SetDescription(702)
+      replacement:SetValue(1)
+      replacement:SetCountLimit(1)
+      replacement:SetOperation(function(repl,extracon,source_effect,tp)
+        Debug.Message("replace operation " .. repl:GetDescription() .. "/" .. source_effect:GetDescription() .. "/" .. tostring(extracon(source_effect,tp)))
+        return "replaced"
+      end)
+      c:RegisterEffect(replacement)
+
+      local base_count=0
+      local base=function(effect,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return false end
+        base_count=base_count+1
+        Debug.Message("base paid " .. base_count)
+        return "base"
+      end
+      local replaced=Cost.Replaceable(base,function(effect,tp) return effect:GetDescription()==701 end)
+      Debug.Message("replace check " .. tostring(replaced(e,0,Group.CreateGroup(),0,0,nil,0,0,0)) .. "/" .. tostring(replacement:CheckCountLimit(0)))
+      Debug.Message("replace result " .. replaced(e,0,Group.CreateGroup(),0,0,nil,0,0,1) .. "/" .. tostring(replacement:CheckCountLimit(0)))
+      Debug.Message("replace blocked " .. tostring(replaced(e,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+
+      local fallback=Cost.Replaceable(function(effect,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return true end
+        Debug.Message("fallback base paid")
+        return "fallback"
+      end)
+      Debug.Message("fallback result " .. fallback(e,0,Group.CreateGroup(),0,0,nil,0,0,1))
+      Debug.Message("alias check " .. tostring(aux.CostWithReplace==Cost.Replaceable))
+      `,
+      "replaceable-cost.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("hint selected check true");
+    expect(host.messages).toContain("replace check true/true");
+    expect(host.messages).toContain("replace operation 702/701/true");
+    expect(host.messages).toContain("replace result replaced/false");
+    expect(host.messages).toContain("replace blocked false");
+    expect(host.messages).toContain("fallback base paid");
+    expect(host.messages).toContain("fallback result fallback");
+    expect(host.messages).toContain("alias check true");
+  });
+
   it("lets Lua scripts check whether cards can change battle position", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Face-up Monster", kind: "monster" },

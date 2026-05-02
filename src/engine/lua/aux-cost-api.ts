@@ -46,6 +46,49 @@ export function installAuxCostApi(L: unknown, readLuaError: (state: unknown) => 
         Duel.RemoveCounter(tp,1,0,counter_type,count,REASON_COST)
       end
     end
+    function Cost.HintSelectedEffect(e,tp,eg,ep,ev,re,r,rp,chk)
+      if chk==0 then return true end
+      Duel.Hint(HINT_OPSELECTED,1-tp,e:GetDescription())
+    end
+    local function replace_effect_allowed(eff,extracon,e,tp,...)
+      if eff.CheckCountLimit and not eff:CheckCountLimit(tp) then return false end
+      local value=eff:GetValue()
+      return value==1 or (type(value)=="function" and value(eff,extracon,e,tp,...))
+    end
+    local function selected_replace_effect(base_chk,extracon,e,tp,...)
+      local effects={}
+      for _,eff in ipairs({Duel.GetPlayerEffect(tp,EFFECT_COST_REPLACE)}) do
+        if replace_effect_allowed(eff,extracon,e,tp,...) then table.insert(effects,eff) end
+      end
+      if #effects==0 then return nil end
+      if #effects==1 then
+        if base_chk and not Duel.SelectEffectYesNo(tp,effects[1]:GetHandler()) then return nil end
+        return effects[1]
+      end
+      return effects[Duel.SelectOption(tp,false,table.unpack(effects))+1]
+    end
+    function Cost.Replaceable(base,extracon)
+      extracon=extracon or aux.TRUE
+      return function(e,tp,eg,ep,ev,re,r,rp,chk)
+        local base_chk=base(e,tp,eg,ep,ev,re,r,rp,0)
+        if chk==0 then
+          if base_chk then return true end
+          return selected_replace_effect(false,extracon,e,tp,eg,ep,ev,re,r,rp,chk)~=nil
+        end
+        local eff=selected_replace_effect(base_chk,extracon,e,tp,eg,ep,ev,re,r,rp,chk)
+        if not eff then return base(e,tp,eg,ep,ev,re,r,rp,1) end
+        Duel.Hint(HINT_CARD,0,eff:GetHandler():GetOriginalCode())
+        local operation=eff:GetOperation()
+        if not operation then
+          if eff.UseCountLimit then eff:UseCountLimit(tp) end
+          return
+        end
+        local result={operation(eff,extracon,e,tp,eg,ep,ev,re,r,rp,chk)}
+        if eff.UseCountLimit then eff:UseCountLimit(tp) end
+        return table.unpack(result)
+      end
+    end
+    aux.CostWithReplace=Cost.Replaceable
     function Cost.PayLP(lp_value,pay_until)
       if not pay_until then
         if lp_value>=1 then
