@@ -56,6 +56,7 @@ import {
   declareCoreDuelAttack,
   getCoreDuelAttackTargets,
   getCoreAdditionalBattleDamagePlayers,
+  getCoreBattleDamageReason,
   hasCorePiercingBattleDamage,
   negateCoreDuelAttack,
   type CoreBattleHandlers,
@@ -138,6 +139,7 @@ const activationHandlers: DuelActivationHandlers = {
 const battleContinuationHandlers: BattleContinuationHandlers = {
   additionalBattleDamagePlayers: (state, player, battleCards) => getCoreAdditionalBattleDamagePlayers(state, player, battleCards, coreBattleHandlers),
   battleDamagePlayer: (state, player, battleCards) => reflectedDuelBattleDamagePlayerRule(state, player, createContinuousEffectContext(state), battleCards),
+  battleDamageReason: (state, player, battleCards) => getCoreBattleDamageReason(state, player, battleCards, coreBattleHandlers),
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
   changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
   damagePlayer: damageDuelPlayer,
@@ -148,6 +150,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
 const coreBattleHandlers: CoreBattleHandlers = {
   additionalBattleDamagePlayers: (state, player, battleCards) => getCoreAdditionalBattleDamagePlayers(state, player, battleCards, coreBattleHandlers),
   battleDamagePlayer: (state, player, battleCards) => reflectedDuelBattleDamagePlayerRule(state, player, createContinuousEffectContext(state), battleCards),
+  battleDamageReason: (state, player, battleCards) => getCoreBattleDamageReason(state, player, battleCards, coreBattleHandlers),
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
   changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
   createContinuousContext: createContinuousEffectContext,
@@ -475,10 +478,10 @@ export function detachDuelOverlayMaterials(state: DuelState, uid: string, count:
   return detached;
 }
 
-export function damageDuelPlayer(state: DuelState, player: PlayerId, amount: number): number {
+export function damageDuelPlayer(state: DuelState, player: PlayerId, amount: number, reason = 0): number {
   const value = Math.max(0, Math.floor(amount));
   state.players[player].lifePoints = Math.max(0, state.players[player].lifePoints - value);
-  pushDuelLog(state, "damage", player, undefined, String(value));
+  pushDuelLog(state, (reason & duelReason.effect) !== 0 && (reason & duelReason.battle) === 0 ? "effectDamage" : "damage", player, undefined, String(value));
   if (state.players[player].lifePoints <= 0) state.status = "ended";
   return value;
 }

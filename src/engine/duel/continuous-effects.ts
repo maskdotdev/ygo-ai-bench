@@ -1,4 +1,5 @@
 import { findCard } from "#duel/card-state.js";
+import { duelReason } from "#duel/reasons.js";
 import type {
   DuelCardInstance,
   DuelEffectContext,
@@ -127,6 +128,20 @@ export function additionalBattleDamagePlayers(state: DuelState, player: PlayerId
     }
   }
   return [...players];
+}
+
+export function battleDamageReason(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[], createContext: ContinuousEffectContextFactory): number {
+  for (const card of battleCards) {
+    for (const effect of state.effects) {
+      if (effect.event !== "continuous" || effect.code !== 205 || effect.sourceUid !== card.uid) continue;
+      const source = findCard(state, effect.sourceUid);
+      if (!source || !effect.range.includes(source.location)) continue;
+      if (player === source.controller) continue;
+      const ctx = createContext(effect, source, card);
+      if (!effect.canActivate || effect.canActivate(ctx)) return duelReason.effect;
+    }
+  }
+  return duelReason.battle;
 }
 
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {

@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
 import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelSession, DuelWinner, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -36,7 +37,8 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushinteger(state, damageDuelPlayer(session.state, player, value));
+    const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
+    lua.lua_pushinteger(state, damageDuelPlayer(session.state, player, value, reason));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Damage"));
