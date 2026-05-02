@@ -1,4 +1,5 @@
 import { markDuelPhaseActivity, recordSpecialSummonActivity } from "#duel/activity.js";
+import { isDuelMonsterLike, isFaceUpPendulumExtraDeckCard } from "#duel/card-predicates.js";
 import {
   findCard,
   canMoveDuelCardToLocation as canMoveDuelCardToLocationRule,
@@ -298,7 +299,7 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
 
 export function canSpecialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId): boolean {
   const card = findCard(state, uid);
-  if (!card || !isMonsterLike(card)) return false;
+  if (!card || !isDuelMonsterLike(card)) return false;
   const summonController = controller ?? card.controller;
   if (isSpecialSummonPrevented(state, summonController, createContinuousEffectContext(state), card)) return false;
   if (!hasZoneSpace(state, summonController, "monsterZone")) return false;
@@ -308,7 +309,7 @@ export function canSpecialSummonDuelCard(state: DuelState, uid: string, controll
 
 function canAttemptSpecialSummonProcedure(state: DuelState, uid: string): boolean {
   const card = findCard(state, uid);
-  if (!card || !isMonsterLike(card)) return false;
+  if (!card || !isDuelMonsterLike(card)) return false;
   if (isSpecialSummonPrevented(state, card.controller, createContinuousEffectContext(state), card)) return false;
   if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card)) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
@@ -697,12 +698,4 @@ export function negateDuelChainLink(state: DuelState, chainLinkId: string, playe
 
 function otherPlayer(player: PlayerId): PlayerId {
   return player === 0 ? 1 : 0;
-}
-
-function isMonsterLike(card: DuelCardInstance): boolean {
-  return card.kind === "monster" || (card.data.typeFlags !== undefined && (card.data.typeFlags & 0x1) !== 0) || (card.kind === "extra" && card.data.kind !== "spell" && card.data.kind !== "trap");
-}
-
-function isFaceUpPendulumExtraDeckCard(card: DuelCardInstance): boolean {
-  return card.faceUp && ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
 }
