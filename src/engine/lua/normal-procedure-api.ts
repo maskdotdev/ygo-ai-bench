@@ -29,8 +29,15 @@ export function installNormalProcedureApi(L: unknown, readLuaError: (state: unkn
       return function(e,c,minc,zone,relzone,exeff)
         if c==nil then return true end
         local tp=c:GetControler()
+        local mg=Duel.GetTributeGroup(c)
+        if relzone and relzone~=0 then
+          mg:Match(aux.IsZone,nil,relzone,tp)
+        end
+        if f then
+          mg:Match(f,nil,tp)
+        end
         local tributes=maplevel(c:GetLevel())
-        return (not opt or (tributes>0 and tributes~=max)) and (minc or 0)<=min
+        return (not opt or (tributes>0 and tributes~=max)) and (minc or 0)<=min and Duel.CheckTribute(c,min,max,mg,tp,zone)
       end
     end
     function aux.NormalSummonCondition2()

@@ -622,6 +622,40 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("normal proc released 1/1/true");
   });
 
+  it("checks Lua normal summon procedure tribute availability in conditions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Procedure Condition Target", kind: "monster", level: 7 },
+      { code: "200", name: "Procedure Condition Material", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 159, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e=aux.AddNormalSummonProcedure(c,true,true,1,1,SUMMON_TYPE_TRIBUTE,3333)
+      Debug.Message("normal proc condition empty " .. tostring(e:GetCondition()(e,c,0,0,0,nil)))
+      local material=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Duel.MoveToField(material,0,0,LOCATION_MZONE,POS_FACEUP_ATTACK,true)
+      Debug.Message("normal proc condition ready " .. tostring(e:GetCondition()(e,c,0,0,0,nil)))
+      Debug.Message("normal proc condition relzone blocked " .. tostring(e:GetCondition()(e,c,0,0,0x2,nil)))
+      Debug.Message("normal proc condition relzone ready " .. tostring(e:GetCondition()(e,c,0,0,0x1,nil)))
+      `,
+      "normal-procedure-condition.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("normal proc condition empty false");
+    expect(host.messages).toContain("normal proc condition ready true");
+    expect(host.messages).toContain("normal proc condition relzone blocked false");
+    expect(host.messages).toContain("normal proc condition relzone ready true");
+  });
+
   it("executes Lua normal set procedure tribute operations", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Procedure Set Target", kind: "monster", level: 6 },
