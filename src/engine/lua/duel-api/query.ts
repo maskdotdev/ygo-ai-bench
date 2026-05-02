@@ -4,6 +4,7 @@ import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#due
 import { cardFieldId, pushCardTable } from "#lua/card-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
 import { cardTypeFlags, readCardDataByCode } from "#lua/duel-api/query-card-data.js";
+import { changeTargetCard, effectiveTargetUids } from "#lua/duel-api/query-target-state.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { uniqueUids } from "#lua/group-uid-utils.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
@@ -422,22 +423,6 @@ function pushFirstTarget(L: unknown, session: DuelSession, hostState: LuaDuelQue
   }
   pushCardTable(L, target);
   return 1;
-}
-
-function effectiveTargetUids(session: DuelSession, hostState: LuaDuelQueryApiHostState): string[] {
-  if (hostState.activeTargetUids?.length) return hostState.activeTargetUids;
-  if (hostState.activeContext?.chainLink) return hostState.activeContext.targetUids;
-  const chainTargetUids = session.state.chain[session.state.chain.length - 1]?.targetUids;
-  return chainTargetUids ?? [];
-}
-
-function changeTargetCard(hostState: LuaDuelQueryApiHostState, uids: string[]): void {
-  if (hostState.activeTargetUids) hostState.activeTargetUids.splice(0, hostState.activeTargetUids.length, ...uids);
-  if (hostState.activeContext) hostState.activeContext.setTargets(uids);
-  const link = hostState.activeContext?.chainLink;
-  if (!link) return;
-  if (uids.length) link.targetUids = [...uids];
-  else delete link.targetUids;
 }
 
 function readMatchingQuery(L: unknown, session: DuelSession, filterIndex: number, playerIndex: number, selfIndex: number, opponentIndex: number, excludedIndex: number, argsIndex: number): MatchingQuery {
