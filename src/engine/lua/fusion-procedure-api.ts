@@ -64,6 +64,11 @@ export const fusionProcedureSource = `
     if sg and sg.Clear then sg:Clear() end
     return moved
   end
+  function Fusion.ShuffleMaterial(e,tc,tp,sg)
+    local moved=Duel.SendtoDeck(sg,nil,2,REASON_EFFECT+REASON_MATERIAL+REASON_FUSION)
+    if sg and sg.Clear then sg:Clear() end
+    return moved
+  end
   function Fusion.IsMonsterFilter(f)
     return function(c,...) return c:IsMonster() and (not f or f(c,...)) end
   end

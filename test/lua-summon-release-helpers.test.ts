@@ -227,6 +227,42 @@ describe("Lua summon and release helpers", () => {
     expect(session.state.cards.filter((card) => card.location === "banished").map((card) => card.reason)).toEqual([0x40048, 0x40048]);
   });
 
+  it("lets Lua Fusion procedure helpers shuffle selected materials into the deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Fusion Shuffle Material A", kind: "monster" },
+      { code: "200", name: "Fusion Shuffle Material B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 161, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "graveyard", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local sg = Duel.GetMatchingGroup(function(c) return c:IsCode(100) or c:IsCode(200) end, 0, LOCATION_GRAVE, 0, nil)
+      Debug.Message("fusion shuffle before " .. sg:GetCount())
+      Debug.Message("fusion shuffle moved " .. Fusion.ShuffleMaterial(nil,nil,0,sg))
+      Debug.Message("fusion shuffle after " .. sg:GetCount())
+      Debug.Message("fusion shuffle operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "fusion-shuffle-material.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("fusion shuffle before 2");
+    expect(host.messages).toContain("fusion shuffle moved 2");
+    expect(host.messages).toContain("fusion shuffle after 0");
+    expect(host.messages).toContain("fusion shuffle operated 2");
+    expect(session.state.cards.filter((card) => card.location === "deck").map((card) => card.code).sort()).toEqual(["100", "200"]);
+    expect(session.state.cards.filter((card) => card.location === "deck").map((card) => card.reason)).toEqual([0x40048, 0x40048]);
+  });
+
   it("lets Lua scripts register temporary and continuous Lizard checks", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Lizard Probe", kind: "monster" }];
     const session = createDuel({ seed: 158, startingHandSize: 1, cardReader: createCardReader(cards) });
