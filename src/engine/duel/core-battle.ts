@@ -14,6 +14,7 @@ import {
   attackAllMonsterCount,
   battleDamageReason,
   extraAttackCount,
+  extraMonsterAttackCount,
   firstAttackRequiredUids,
   hasDefenseAttack,
   hasMustAttackMonsterRestriction,
@@ -58,7 +59,7 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
     if (!attacker || isAttackPrevented(state, attacker, createContext)) continue;
     if (!isFirstAttackAllowed(firstAttackers, attacker)) continue;
     if (action.targetUid === undefined && (isDirectAttackPrevented(state, attacker, createContext) || hasMustAttackMonsterRestriction(state, attacker, createContext))) continue;
-    if (action.targetUid === undefined && hasSpentAttackAllMonsterAttack(state, attacker, createContext)) continue;
+    if (action.targetUid === undefined && hasSpentMonsterOnlyExtraAttack(state, attacker, createContext)) continue;
     const target = action.targetUid === undefined ? undefined : findCard(state, action.targetUid);
     if (target && !canAttackMonsterTarget(state, attacker, target, createContext)) continue;
     actions.push(action);
@@ -152,11 +153,11 @@ function isFirstAttackAllowed(firstAttackers: Set<string>, attacker: DuelCardIns
 }
 
 function totalExtraAttackCount(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): number {
-  return extraAttackCount(state, card, createContext) + Math.max(0, attackAllMonsterCount(state, card, createContext) - 1);
+  return extraAttackCount(state, card, createContext) + extraMonsterAttackCount(state, card, createContext) + Math.max(0, attackAllMonsterCount(state, card, createContext) - 1);
 }
 
-function hasSpentAttackAllMonsterAttack(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
-  return attackAllMonsterCount(state, card, createContext) > 0 && state.attacksDeclared.includes(card.uid);
+function hasSpentMonsterOnlyExtraAttack(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  return (attackAllMonsterCount(state, card, createContext) > 0 || extraMonsterAttackCount(state, card, createContext) > 0) && state.attacksDeclared.includes(card.uid);
 }
 
 export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): boolean {

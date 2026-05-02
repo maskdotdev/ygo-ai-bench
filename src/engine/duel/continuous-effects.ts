@@ -329,7 +329,20 @@ export function mustAttackRequiredUids(state: DuelState, player: PlayerId, creat
 export function extraAttackCount(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): number {
   let count = 0;
   for (const effect of state.effects) {
-    if (effect.event !== "continuous" || (effect.code !== 194 && effect.code !== 346)) continue;
+    if (effect.event !== "continuous" || effect.code !== 194) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) count += Math.max(1, effect.value ?? 1);
+  }
+  return count;
+}
+
+export function extraMonsterAttackCount(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): number {
+  let count = 0;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 346) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectAffectsCard(effect, source, card)) continue;
