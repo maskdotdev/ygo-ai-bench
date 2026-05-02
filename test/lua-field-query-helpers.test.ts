@@ -3040,6 +3040,10 @@ describe("Lua field and query helpers", () => {
       Debug.Message("group subtract card " .. subtracted_card:GetCount() .. " " .. tostring(subtracted_card:Equal(Group.FromCards(c300, c200))) .. "/" .. tostring(added_cards:IsContains(c100)))
       local subtracted_group = added_cards - Group.FromCards(c100, c300)
       Debug.Message("group subtract group " .. subtracted_group:GetCount() .. " " .. tostring(subtracted_group:Equal(Group.FromCards(c200))))
+      local intersected_card = added_cards & c200
+      Debug.Message("group intersect card " .. intersected_card:GetCount() .. " " .. tostring(intersected_card:Equal(Group.FromCards(c200))))
+      local intersected_group = added_cards & Group.FromCards(c100, c300)
+      Debug.Message("group intersect group " .. intersected_group:GetCount() .. " " .. tostring(intersected_group:Equal(Group.FromCards(c300, c100))))
       Debug.Message("includes group " .. tostring(g:Includes(Group.FromCards(c100, c200))) .. "/" .. tostring(Group.FromCards(c100):Includes(g)) .. "/" .. tostring(g:Includes(c300)))
       local without_high = g:Clone()
       without_high:Sub(high)
@@ -3163,6 +3167,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("card add group 3 true");
     expect(host.messages).toContain("group subtract card 2 true/true");
     expect(host.messages).toContain("group subtract group 1 true");
+    expect(host.messages).toContain("group intersect card 1 true");
+    expect(host.messages).toContain("group intersect group 2 true");
     expect(host.messages).toContain("includes group true/false/true");
     expect(host.messages).toContain("sub high 1 true");
     expect(host.messages).toContain("clear group 0");
