@@ -11,7 +11,6 @@ import { cardCodes } from "#lua/card-code-utils.js";
 import { canBeMaterial, canMoveCardToDeckOrExtraAsCost, isMonsterLike } from "#lua/card-eligibility-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
-import { cardFieldNames } from "#lua/card-field-names.js";
 import { installCardLinkApi } from "#lua/card-link-api.js";
 import { installCardPreviousStateApi } from "#lua/card-previous-state-api.js";
 import { installCardReasonApi } from "#lua/card-reason-api.js";
@@ -20,13 +19,13 @@ import { installCardRushApi } from "#lua/card-rush-api.js";
 import { cardLink, cardRank, cardTypeFlags, installCardStatApi } from "#lua/card-stat-api.js";
 import { installCardSummonApi } from "#lua/card-summon-api.js";
 import { installCardSummonPredicateApi } from "#lua/card-summon-predicate-api.js";
+import { installCardTableApi, pushCardTable } from "#lua/card-table-api.js";
 import { linkedGroupUidsForCard, linkedZoneMask } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { canLuaLinkSummonCard, readLinkMaterialArguments } from "#lua/link-summonable.js";
 import { canLuaSynchroSummonCard } from "#lua/synchro-summonable.js";
 import { canLuaXyzSummonCard } from "#lua/xyz-summonable.js";
 import {
-  copyGlobalFunctionToField,
   locationsFromMask,
   positionFromMask,
   readCardUid,
@@ -40,6 +39,7 @@ import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-type
 const { lua, to_luastring } = fengari;
 
 export type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
+export { pushCardTable } from "#lua/card-table-api.js";
 
 export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   L: unknown,
@@ -58,8 +58,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));
-  lua.lua_pushcfunction(L, pushCardAdd);
-  lua.lua_setfield(L, -2, to_luastring("__add"));
+  installCardTableApi(L);
   installCardCodeApi(L, session);
   installCardStatApi(L, session);
   installCardBattleApi(L, session);
@@ -69,42 +68,6 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   installStateHelpers(L, session, hostState);
   installCardFlagApi(L, session);
   lua.lua_setglobal(L, to_luastring("Card"));
-}
-
-export function pushCardTable(L: unknown, uid: string): void {
-  lua.lua_newtable(L);
-  lua.lua_pushliteral(L, uid);
-  lua.lua_setfield(L, -2, to_luastring("__duel_uid"));
-  for (const fieldName of cardFieldNames) copyGlobalFunctionToField(L, "Card", fieldName);
-  lua.lua_newtable(L);
-  lua.lua_pushcfunction(L, pushCardEquals);
-  lua.lua_setfield(L, -2, to_luastring("__eq"));
-  copyGlobalFunctionToField(L, "Card", "__add");
-  lua.lua_setmetatable(L, -2);
-}
-
-function pushCardAdd(L: unknown): number {
-  lua.lua_getglobal(L, to_luastring("Group"));
-  lua.lua_getfield(L, -1, to_luastring("__add"));
-  lua.lua_pushvalue(L, 1);
-  lua.lua_pushvalue(L, 2);
-  const status = lua.lua_pcall(L, 2, 1, 0);
-  if (status !== lua.LUA_OK) {
-    lua.lua_pop(L, 1);
-    lua.lua_newtable(L);
-  }
-  lua.lua_remove(L, -2);
-  return 1;
-}
-
-function pushCardEquals(L: unknown): number {
-  lua.lua_getfield(L, 1, to_luastring("__duel_uid"));
-  lua.lua_getfield(L, 2, to_luastring("__duel_uid"));
-  const left = lua.lua_isstring(L, -2) ? lua.lua_tojsstring(L, -2) : undefined;
-  const right = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) : undefined;
-  lua.lua_pop(L, 2);
-  lua.lua_pushboolean(L, left !== undefined && left === right);
-  return 1;
 }
 
 function installEffectBackedStatHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
