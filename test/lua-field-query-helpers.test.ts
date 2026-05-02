@@ -1375,8 +1375,9 @@ describe("Lua field and query helpers", () => {
       Debug.Message("attack update " .. c:UpdateAttack(300, RESETS_STANDARD_PHASE_END) .. "/" .. c:GetAttack() .. "/" .. c:GetBaseAttack() .. "/" .. tostring(c:IsAttack(2800)) .. "/" .. tostring(c:IsTextAttack(2800)))
       Debug.Message("defense update " .. c:UpdateDefense(-400, RESETS_STANDARD_PHASE_END) .. "/" .. c:GetDefense() .. "/" .. c:GetBaseDefense() .. "/" .. tostring(c:IsDefense(1700)) .. "/" .. tostring(c:IsTextDefense(1700)))
       Debug.Message("stat predicates " .. tostring(c:IsAttack(2500)) .. "/" .. tostring(c:IsBaseAttack(2500)) .. "/" .. tostring(c:IsDefense(2100)) .. "/" .. tostring(c:IsBaseDefense(2100)) .. "/" .. tostring(c:IsLevel(7)) .. "/" .. tostring(c:IsLevelBetween(8,6)) .. "/" .. tostring(c:IsLevelBetween(1,6)))
+      Debug.Message("stat varargs " .. tostring(c:IsAttack(2500,2800)) .. "/" .. tostring(c:IsAttack(2500,2600)) .. "/" .. tostring(c:IsBaseAttack(2400,2500)) .. "/" .. tostring(c:IsDefense(2100,1700)) .. "/" .. tostring(c:IsBaseDefense(1700,2100)) .. "/" .. tostring(c:IsTextDefense(2100,1700)) .. "/" .. tostring(c:IsLevel(6,7)))
       Debug.Message("stat comparisons " .. tostring(c:IsAttackAbove(2400)) .. "/" .. tostring(c:IsAttackBelow(2600)) .. "/" .. tostring(c:IsDefenseAbove(2200)) .. "/" .. tostring(c:IsDefenseBelow(2200)) .. "/" .. tostring(c:IsLevelAbove(6)) .. "/" .. tostring(c:IsLevelBelow(6)))
-      Debug.Message("original stat comparisons " .. tostring(c:IsOriginalAttack(2500)) .. "/" .. tostring(c:IsOriginalAttackAbove(2400)) .. "/" .. tostring(c:IsOriginalAttackBelow(2600)) .. "/" .. tostring(c:IsOriginalDefense(2100)) .. "/" .. tostring(c:IsOriginalDefenseAbove(2200)) .. "/" .. tostring(c:IsOriginalDefenseBelow(2200)) .. "/" .. tostring(c:IsOriginalLevelAbove(6)) .. "/" .. tostring(c:IsOriginalLevelBelow(6)))
+      Debug.Message("original stat comparisons " .. tostring(c:IsOriginalAttack(2500,2400)) .. "/" .. tostring(c:IsOriginalAttackAbove(2400)) .. "/" .. tostring(c:IsOriginalAttackBelow(2600)) .. "/" .. tostring(c:IsOriginalDefense(2100,1700)) .. "/" .. tostring(c:IsOriginalDefenseAbove(2200)) .. "/" .. tostring(c:IsOriginalDefenseBelow(2200)) .. "/" .. tostring(c:IsOriginalLevel(6,7)) .. "/" .. tostring(c:IsOriginalLevelAbove(6)) .. "/" .. tostring(c:IsOriginalLevelBelow(6)))
       Debug.Message("code checks " .. tostring(c:IsCode(900)) .. "/" .. tostring(c:IsOriginalCode(900)) .. "/" .. tostring(c:IsOriginalCode(100)))
       Debug.Message("not code checks " .. tostring(c:IsNotCode(900)) .. "/" .. tostring(c:IsNotCode(901)))
       Debug.Message("code rule checks " .. c:GetOriginalCodeRule() .. "/" .. tostring(c:IsOriginalCodeRule(900)) .. "/" .. tostring(c:IsOriginalCodeRule(100)))
@@ -1415,11 +1416,13 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
       Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(synchro:IsSynchroMonster()) .. "/" .. tostring(c:IsSynchroMonster()) .. "/" .. tostring(xyz:IsXyzMonster()) .. "/" .. tostring(c:IsXyzMonster()) .. "/" .. tostring(pendulum:IsPendulumMonster()) .. "/" .. tostring(c:IsPendulumMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()) .. "/" .. tostring(c:IsEffectMonster()) .. "/" .. tostring(normal:IsEffectMonster()) .. "/" .. tostring(c:IsForbidden()))
       Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:HasRank()) .. "/" .. tostring(normal:HasRank()) .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)) .. "/" .. zero_rank:GetRank() .. "/" .. tostring(zero_rank:HasRank()))
+      Debug.Message("rank varargs " .. tostring(xyz:IsRank(3,4)) .. "/" .. tostring(xyz:IsRank(2,3)) .. "/" .. tostring(xyz:IsOriginalRank(3,4)))
       Debug.Message("spirit predicate " .. tostring(spirit:IsSpirit()) .. "/" .. tostring(c:IsSpirit()))
       Debug.Message("plus minus predicate " .. tostring(plus:IsPlusOrMinus()) .. "/" .. tostring(minus:IsPlusOrMinus()) .. "/" .. tostring(plus_minus:IsPlusOrMinus()) .. "/" .. tostring(c:IsPlusOrMinus()))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
       Debug.Message("rank update " .. xyz:UpdateRank(-10, RESETS_STANDARD_PHASE_END) .. "/" .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:IsRank(1)) .. "/" .. tostring(xyz:IsRankBelow(2)))
       Debug.Message("link " .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. link:GetLinkMarker() .. "/" .. tostring(link:IsLink(2)) .. "/" .. tostring(link:IsOriginalLink(2)) .. "/" .. tostring(link:IsLinkMonster()) .. "/" .. tostring(c:IsLinkMonster()) .. "/" .. tostring(link:IsLineMonster()) .. "/" .. tostring(c:IsLineMonster()))
+      Debug.Message("link varargs " .. tostring(link:IsLink(1,2)) .. "/" .. tostring(link:IsLink(3,4)) .. "/" .. tostring(link:IsOriginalLink(1,2)))
       Debug.Message("link comparisons " .. tostring(link:IsLinkAbove(2)) .. "/" .. tostring(link:IsLinkBelow(1)) .. "/" .. tostring(link:IsOriginalLinkAbove(3)) .. "/" .. tostring(link:IsOriginalLinkBelow(2)))
       Debug.Message("link update " .. link:UpdateLink(3, RESETS_STANDARD_PHASE_END) .. "/" .. link:GetLink() .. "/" .. link:GetOriginalLink() .. "/" .. tostring(link:IsLink(5)) .. "/" .. tostring(link:IsLinkAbove(5)))
       local fixed_ritual=Effect.CreateEffect(c)
@@ -1507,8 +1510,9 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("defense update -400/1700/2100/true/true");
     expect(host.messages).toContain("unknown text stats -2/-2/true/true");
     expect(host.messages).toContain("stat predicates false/true/false/true/true/true/false");
+    expect(host.messages).toContain("stat varargs true/false/true/true/true/true/true");
     expect(host.messages).toContain("stat comparisons true/false/false/true/true/false");
-    expect(host.messages).toContain("original stat comparisons true/true/true/true/false/true/true/false");
+    expect(host.messages).toContain("original stat comparisons true/true/true/true/false/true/true/true/false");
     expect(host.messages).toContain("code checks true/false/true");
     expect(host.messages).toContain("not code checks false/true");
     expect(host.messages).toContain("code rule checks 100/false/true");
@@ -1525,6 +1529,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not original type false/true");
     expect(host.messages).toContain("named type predicates true/false/true/false/true/false/true/false/true/false/true/false/false");
     expect(host.messages).toContain("rank 4/4/true/false/true/true/0/true");
+    expect(host.messages).toContain("rank varargs true/false/true");
     expect(host.messages).toContain("spirit predicate true/false");
     expect(host.messages).toContain("plus minus predicate true/true/false/false");
     expect(host.messages).toContain("has level true/false/false/false/true");
@@ -1532,6 +1537,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("rank comparisons true/false/true/true");
     expect(host.messages).toContain("rank update -3/1/4/true/true");
     expect(host.messages).toContain("link 2/2/5/true/true/true/false/true/false");
+    expect(host.messages).toContain("link varargs true/false/true");
     expect(host.messages).toContain("link comparisons true/false/false/true");
     expect(host.messages).toContain("link update 3/5/2/true/true");
     expect(host.messages).toContain("ritual fixed level 5");
