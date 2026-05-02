@@ -40,14 +40,14 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("UpdateDefense"));
   pushBooleanGetter(L, "HasDefense", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x4000000) === 0));
   pushBooleanGetter(L, "HasNonZeroDefense", session, (card) => Boolean(card && currentDefense(card) !== 0));
-  pushAnyNumberMatcher(L, "IsDefense", session, (card, requested) => requested.includes(currentDefense(card)));
-  pushAnyNumberMatcher(L, "IsBaseDefense", session, (card, requested) => requested.includes(card.data.defense ?? 0));
-  pushAnyNumberMatcher(L, "IsOriginalDefense", session, (card, requested) => requested.includes(card.data.defense ?? 0));
-  pushAnyNumberMatcher(L, "IsTextDefense", session, (card, requested) => requested.includes(currentDefense(card)));
-  pushNumberMatcher(L, "IsDefenseAbove", session, (card, requested) => currentDefense(card) >= requested);
-  pushNumberMatcher(L, "IsDefenseBelow", session, (card, requested) => currentDefense(card) <= requested);
-  pushNumberMatcher(L, "IsOriginalDefenseAbove", session, (card, requested) => (card.data.defense ?? 0) >= requested);
-  pushNumberMatcher(L, "IsOriginalDefenseBelow", session, (card, requested) => (card.data.defense ?? 0) <= requested);
+  pushAnyNumberMatcher(L, "IsDefense", session, (card, requested) => hasDefense(card) && requested.includes(currentDefense(card)));
+  pushAnyNumberMatcher(L, "IsBaseDefense", session, (card, requested) => hasDefense(card) && requested.includes(card.data.defense ?? 0));
+  pushAnyNumberMatcher(L, "IsOriginalDefense", session, (card, requested) => hasDefense(card) && requested.includes(card.data.defense ?? 0));
+  pushAnyNumberMatcher(L, "IsTextDefense", session, (card, requested) => hasDefense(card) && requested.includes(currentDefense(card)));
+  pushNumberMatcher(L, "IsDefenseAbove", session, (card, requested) => hasDefense(card) && currentDefense(card) >= requested);
+  pushNumberMatcher(L, "IsDefenseBelow", session, (card, requested) => hasDefense(card) && currentDefense(card) <= requested);
+  pushNumberMatcher(L, "IsOriginalDefenseAbove", session, (card, requested) => hasDefense(card) && (card.data.defense ?? 0) >= requested);
+  pushNumberMatcher(L, "IsOriginalDefenseBelow", session, (card, requested) => hasDefense(card) && (card.data.defense ?? 0) <= requested);
   pushNumberGetter(L, "GetLevel", session, (card) => currentLevel(card, session.state));
   pushNumberGetter(L, "Level", session, (card) => currentLevel(card, session.state));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLevel(state, session));
@@ -63,8 +63,8 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsScale", session, (card, requested) => cardScale(card) === requested);
   pushBooleanGetter(L, "IsOddScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 !== 0);
   pushBooleanGetter(L, "IsEvenScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 === 0);
-  pushBooleanGetter(L, "HasLevel", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && cardRank(card) === 0 && cardLink(card) === 0));
-  pushAnyNumberMatcher(L, "IsLevel", session, (card, requested) => requested.includes(currentLevel(card, session.state)));
+  pushBooleanGetter(L, "HasLevel", session, (card) => hasLevel(card));
+  pushAnyNumberMatcher(L, "IsLevel", session, (card, requested) => hasLevel(card) && requested.includes(currentLevel(card, session.state)));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const firstLevel = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
@@ -72,26 +72,26 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
     const lower = firstLevel === undefined || secondLevel === undefined ? undefined : Math.min(firstLevel, secondLevel);
     const upper = firstLevel === undefined || secondLevel === undefined ? undefined : Math.max(firstLevel, secondLevel);
     const level = currentLevel(card, session.state);
-    lua.lua_pushboolean(state, Boolean(card && lower !== undefined && upper !== undefined && level >= lower && level <= upper));
+    lua.lua_pushboolean(state, Boolean(card && hasLevel(card) && lower !== undefined && upper !== undefined && level >= lower && level <= upper));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsLevelBetween"));
-  pushNumberMatcher(L, "IsLevelAbove", session, (card, requested) => currentLevel(card, session.state) >= requested);
-  pushNumberMatcher(L, "IsLevelBelow", session, (card, requested) => currentLevel(card, session.state) <= requested);
-  pushAnyNumberMatcher(L, "IsOriginalLevel", session, (card, requested) => requested.includes(card.data.level ?? 0));
-  pushNumberMatcher(L, "IsOriginalLevelAbove", session, (card, requested) => (card.data.level ?? 0) >= requested);
-  pushNumberMatcher(L, "IsOriginalLevelBelow", session, (card, requested) => (card.data.level ?? 0) <= requested);
+  pushNumberMatcher(L, "IsLevelAbove", session, (card, requested) => hasLevel(card) && currentLevel(card, session.state) >= requested);
+  pushNumberMatcher(L, "IsLevelBelow", session, (card, requested) => hasLevel(card) && currentLevel(card, session.state) <= requested);
+  pushAnyNumberMatcher(L, "IsOriginalLevel", session, (card, requested) => hasLevel(card) && requested.includes(card.data.level ?? 0));
+  pushNumberMatcher(L, "IsOriginalLevelAbove", session, (card, requested) => hasLevel(card) && (card.data.level ?? 0) >= requested);
+  pushNumberMatcher(L, "IsOriginalLevelBelow", session, (card, requested) => hasLevel(card) && (card.data.level ?? 0) <= requested);
   pushNumberGetter(L, "GetRank", session, (card) => currentRank(card, session.state));
   pushNumberGetter(L, "GetOriginalRank", session, (card) => cardRank(card));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateRank(state, session));
   lua.lua_setfield(L, -2, to_luastring("UpdateRank"));
-  pushBooleanGetter(L, "HasRank", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x800000) !== 0));
-  pushAnyNumberMatcher(L, "IsRank", session, (card, requested) => requested.includes(currentRank(card, session.state)));
-  pushNumberMatcher(L, "IsRankAbove", session, (card, requested) => currentRank(card, session.state) >= requested);
-  pushNumberMatcher(L, "IsRankBelow", session, (card, requested) => currentRank(card, session.state) <= requested);
-  pushAnyNumberMatcher(L, "IsOriginalRank", session, (card, requested) => requested.includes(cardRank(card)));
-  pushNumberMatcher(L, "IsOriginalRankAbove", session, (card, requested) => cardRank(card) >= requested);
-  pushNumberMatcher(L, "IsOriginalRankBelow", session, (card, requested) => cardRank(card) <= requested);
+  pushBooleanGetter(L, "HasRank", session, (card) => hasRank(card));
+  pushAnyNumberMatcher(L, "IsRank", session, (card, requested) => hasRank(card) && requested.includes(currentRank(card, session.state)));
+  pushNumberMatcher(L, "IsRankAbove", session, (card, requested) => hasRank(card) && currentRank(card, session.state) >= requested);
+  pushNumberMatcher(L, "IsRankBelow", session, (card, requested) => hasRank(card) && currentRank(card, session.state) <= requested);
+  pushAnyNumberMatcher(L, "IsOriginalRank", session, (card, requested) => hasRank(card) && requested.includes(cardRank(card)));
+  pushNumberMatcher(L, "IsOriginalRankAbove", session, (card, requested) => hasRank(card) && cardRank(card) >= requested);
+  pushNumberMatcher(L, "IsOriginalRankBelow", session, (card, requested) => hasRank(card) && cardRank(card) <= requested);
   pushNumberGetter(L, "GetLink", session, (card) => currentLink(card));
   pushNumberGetter(L, "GetOriginalLink", session, (card) => cardLink(card));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLink(state, session));
@@ -195,6 +195,18 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function hasDefense(card: DuelCardInstance | undefined): boolean {
+  return Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x4000000) === 0);
+}
+
+function hasLevel(card: DuelCardInstance | undefined): boolean {
+  return Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && cardRank(card) === 0 && cardLink(card) === 0);
+}
+
+function hasRank(card: DuelCardInstance | undefined): boolean {
+  return Boolean(card && (cardTypeFlags(card) & 0x800000) !== 0);
 }
 
 function firstDifferentBit(currentMask: number, allMask: number, maxBit: number): number {
