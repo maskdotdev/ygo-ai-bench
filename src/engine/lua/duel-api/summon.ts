@@ -25,6 +25,7 @@ import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/trigge
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
+import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -372,11 +373,6 @@ function readFirstCardOrGroupUid(L: unknown, index: number): string | undefined 
   return readCardUid(L, index) ?? readGroupUids(L, index)[0];
 }
 
-function readCardOrGroupUids(L: unknown, index: number): string[] {
-  const cardUid = readCardUid(L, index);
-  return cardUid ? [cardUid] : readGroupUids(L, index);
-}
-
 function readCardCollectionUids(L: unknown, index: number): string[] {
   const directUids = readCardOrGroupUids(L, index);
   if (directUids.length > 0 || !lua.lua_istable(L, index)) return directUids;
@@ -389,13 +385,6 @@ function readCardCollectionUids(L: unknown, index: number): string[] {
     lua.lua_pop(L, 1);
   }
   return uids;
-}
-
-function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
-  if (!lua.lua_isnumber(L, index)) return undefined;
-  const value = lua.lua_tointeger(L, index);
-  if (value !== 0 && value !== 1) return undefined;
-  return value;
 }
 
 function ritualMaterialCandidates(state: DuelState, player: PlayerId, target: DuelCardInstance | undefined): DuelCardInstance[] {
