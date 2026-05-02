@@ -131,4 +131,40 @@ describe("duel tribute summons", () => {
     expect(result.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(4);
     expect(() => tributeSummonDuelCard(session.state, 0, tributeMonster!.uid, action.tributeUids)).toThrow("not in hand");
   });
+
+  it("normal summons high-level monsters while no-tribute effects apply", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["700", "100"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const tributeMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "700");
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(tributeMonster).toBeTruthy();
+    expect(source).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "normalSummon" && action.uid === tributeMonster!.uid)).toBe(false);
+    registerEffect(session, {
+      id: "no-tribute-summon",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 160001029,
+      property: 0x800,
+      targetRange: [1, 0],
+      range: ["monsterZone"],
+      operation() {},
+    });
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === tributeMonster!.uid);
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === tributeMonster!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === source!.uid)?.location).toBe("monsterZone");
+    expect(result.state.log.some((entry) => entry.action === "normalSummon" && entry.card === "Two Tribute Monster")).toBe(true);
+  });
 });

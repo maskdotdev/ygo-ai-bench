@@ -11,12 +11,13 @@ export interface DuelMaterialMoveResult {
 export type DuelMaterialMover = (uid: string, controller: PlayerId, reason: number) => DuelMaterialMoveResult;
 export type DuelOverlayMaterialMover = (uid: string, controller: PlayerId, reason: number) => DuelCardInstance;
 export type DuelMaterialPredicate = (uid: string) => boolean;
+export type DuelNormalSummonPredicate = (card: DuelCardInstance) => boolean;
 type ExtraDeckSummonType = "fusion" | "synchro" | "Xyz" | "Link";
 
-export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector): void {
+export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector, canSummonWithoutTribute: DuelNormalSummonPredicate = () => false): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
-  if (tributeCountForNormalSummon(card) > 0) throw new Error(`${card.name} requires a Tribute Summon`);
+  if (tributeCountForNormalSummon(card) > 0 && !canSummonWithoutTribute(card)) throw new Error(`${card.name} requires a Tribute Summon`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
   requireZoneSpace(state, player, "monsterZone");
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
@@ -264,11 +265,11 @@ function collectSentToGraveyard(result: DuelMaterialMoveResult, collectEvent: Du
   if (!result.collectedSentToGraveyard && result.card.location === "graveyard") collectEvent("sentToGraveyard", result.card);
 }
 
-export function normalSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[]): DuelAction[] {
+export function normalSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], canSummonWithoutTribute: DuelNormalSummonPredicate = () => false): DuelAction[] {
   if (!state.players[player].normalSummonAvailable || !hasZoneSpace(state, player, "monsterZone")) return [];
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
-    if (tributeCountForNormalSummon(card) === 0) actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
+    if (tributeCountForNormalSummon(card) === 0 || canSummonWithoutTribute(card)) actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
     actions.push({ type: "setMonster", player, uid: card.uid, label: `Set ${card.name}` });
   }
   return actions;

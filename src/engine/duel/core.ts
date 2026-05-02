@@ -17,6 +17,7 @@ import {
   resequence,
 } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
+import { isNoTributeSummonAllowed } from "#duel/no-tribute.js";
 import {
   flipSummonActions,
   flipSummonDuelCard as flipSummonDuelCardWithEvents,
@@ -174,7 +175,7 @@ const coreMovementHandlers: CoreMovementHandlers = {
 const responseHandlers: DuelResponseHandlers = {
   getLegalActions,
   normalSummon(state, player, uid) {
-    normalSummon(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
+    normalSummon(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), () => isNoTributeSummonAllowed(state, player));
   },
   tributeSummon: tributeSummonDuelCard,
   fusionSummon: fusionSummonDuelCard,
@@ -330,7 +331,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   }
   const hand = getCards(state, player, "hand");
   if (state.phase === "main1" || state.phase === "main2") {
-    actions.push(...normalSummonActions(state, player, hand));
+    actions.push(...normalSummonActions(state, player, hand, () => isNoTributeSummonAllowed(state, player)));
     actions.push(...tributeSummonActions(state, player, hand, createReleasePredicate(state, duelReason.release | duelReason.summon)));
     actions.push(...fusionSummonActions(state, player, createMaterialUsePredicate(state, "fusion")));
     actions.push(...synchroSummonActions(state, player, createMaterialUsePredicate(state, "synchro")));
