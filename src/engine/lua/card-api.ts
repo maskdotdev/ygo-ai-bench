@@ -7,8 +7,7 @@ import { installCardCodeApi } from "#lua/card-code-api.js";
 import { installCardColumnApi } from "#lua/card-column-api.js";
 import { installCardControlApi } from "#lua/card-control-api.js";
 import { installCardCounterApi } from "#lua/card-counter-api.js";
-import { isMonsterLike } from "#lua/card-eligibility-api.js";
-import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
+import { createLuaMaterialCheckContext, installCardEffectQueryApi, matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { installCardEquipApi } from "#lua/card-equip-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { installCardLinkApi } from "#lua/card-link-api.js";
@@ -20,7 +19,7 @@ import { installCardPreviousStateApi } from "#lua/card-previous-state-api.js";
 import { installCardReasonApi } from "#lua/card-reason-api.js";
 import { installCardRelationApi } from "#lua/card-relation-api.js";
 import { installCardRushApi } from "#lua/card-rush-api.js";
-import { cardTypeFlags, installCardStatApi } from "#lua/card-stat-api.js";
+import { installCardStatApi } from "#lua/card-stat-api.js";
 import { installCardStateApi } from "#lua/card-state-api.js";
 import { installCardStatusApi } from "#lua/card-status-api.js";
 import { installCardSummonApi } from "#lua/card-summon-api.js";
@@ -107,21 +106,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   });
   lua.lua_setfield(L, -2, to_luastring("CancelToGrave"));
   installCardEffectQueryApi(L, session, hostState);
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsHasEffect(state, session, hostState));
-  lua.lua_setfield(L, -2, to_luastring("IsHasEffect"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsHasEffect(state, session, hostState));
-  lua.lua_setfield(L, -2, to_luastring("GetCardEffect"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const effect = card ? [...hostState.effects.values()].find((candidate) => candidate.sourceUid === card.uid && ((candidate.typeFlags ?? 0) & 0x10) !== 0) : undefined;
-    if (!effect) lua.lua_pushnil(state);
-    else hostState.pushEffectTable(state, effect.id);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetActivateEffect"));
-  pushBooleanGetter(L, "IsNegatable", session, (card) => Boolean(card && isNegatableCard(session.state, card)));
-  pushBooleanGetter(L, "IsNegatableMonster", session, (card) => Boolean(card && isMonsterLike(card) && isNegatableCard(session.state, card)));
-  pushBooleanGetter(L, "IsNegatableSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x6) !== 0 && isNegatableCard(session.state, card)));
   installCardSummonPredicateApi(L, session);
   installCardMaterialApi(L, session);
 }
@@ -134,19 +118,6 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
-}
-
-function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
-  const card = readCard(L, session);
-  const code = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
-  if (!card || code === undefined) return 0;
-  const effects = matchingLuaEffects(session.state, card, code, hostState);
-  if (effects.length === 0) {
-    lua.lua_pushnil(L);
-    return 1;
-  }
-  for (const effect of effects) hostState.pushEffectTable(L, effect.id);
-  return effects.length;
 }
 
 function pushIsRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
