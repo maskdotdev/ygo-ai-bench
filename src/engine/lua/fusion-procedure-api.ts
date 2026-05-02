@@ -20,6 +20,17 @@ export const fusionProcedureSource = `
   function Fusion.AddProcFun2(c,f1,f2,insf)
     return Fusion.AddProcMix(c,false,insf,f1,f2)
   end
+  function Fusion.AddProcFunRep2(c,f,minc,maxc,insf)
+    return Fusion.AddProcMixRep(c,false,insf,f,minc,maxc)
+  end
+  function Fusion.AddProcFunFun(c,f1,f2,cc,insf)
+    local funs={}
+    for i=1,cc do funs[i]=f2 end
+    return Fusion.AddProcMix(c,false,insf,f1,table.unpack(funs))
+  end
+  function Fusion.AddProcFunFunRep(c,f1,f2,minc,maxc,insf)
+    return Fusion.AddProcMixRep(c,false,insf,f2,minc,maxc,f1)
+  end
   function Fusion.AddProcCode2(c,code1,code2,sub,insf)
     return Fusion.AddProcMix(c,sub,insf,code1,code2)
   end
@@ -41,6 +52,12 @@ export const fusionProcedureSource = `
     local funs={}
     for i=1,cc do funs[i]=f end
     return Fusion.AddProcMix(c,sub,insf,code1,table.unpack(funs))
+  end
+  function Fusion.AddProcCodeFunRep(c,code1,f,minc,maxc,sub,insf)
+    return Fusion.AddProcMixRep(c,sub,insf,f,minc,maxc,code1)
+  end
+  function Fusion.AddProcCode2FunRep(c,code1,code2,f,minc,maxc,sub,insf)
+    return Fusion.AddProcMixRep(c,sub,insf,f,minc,maxc,code1,code2)
   end
   function Fusion.AddContactProc(c,...)
     local mt=c:GetMetatable(false)

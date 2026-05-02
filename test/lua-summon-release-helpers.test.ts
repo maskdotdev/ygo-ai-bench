@@ -333,6 +333,21 @@ describe("Lua summon and release helpers", () => {
       Fusion.AddProcCodeFun(target,555,Card.IsMonster,2,true,false)
       local codefun = target:GetMetatable(false).fusion_materials
       Debug.Message("fusion code fun " .. tostring(codefun[1]) .. "/" .. tostring(codefun[2]) .. "/" .. codefun[3] .. "/" .. tostring(type(codefun[4])) .. "/" .. tostring(type(codefun[5])))
+      Fusion.AddProcFunRep2(target,Card.IsMonster,2,5,true)
+      local funrep2 = target:GetMetatable(false).fusion_materials
+      Debug.Message("fusion fun rep2 " .. tostring(funrep2[1]) .. "/" .. tostring(funrep2[2]) .. "/" .. tostring(type(funrep2[3])) .. "/" .. funrep2[4] .. "/" .. funrep2[5])
+      Fusion.AddProcFunFun(target,Card.IsMonster,Card.IsAbleToGrave,2,false)
+      local funfun = target:GetMetatable(false).fusion_materials
+      Debug.Message("fusion fun fun " .. tostring(funfun[1]) .. "/" .. tostring(funfun[2]) .. "/" .. tostring(type(funfun[3])) .. "/" .. tostring(type(funfun[4])) .. "/" .. tostring(type(funfun[5])))
+      Fusion.AddProcFunFunRep(target,Card.IsMonster,Card.IsAbleToGrave,2,4,true)
+      local funfunrep = target:GetMetatable(false).fusion_materials
+      Debug.Message("fusion fun funrep " .. tostring(funfunrep[1]) .. "/" .. tostring(funfunrep[2]) .. "/" .. tostring(type(funfunrep[3])) .. "/" .. funfunrep[4] .. "/" .. funfunrep[5] .. "/" .. tostring(type(funfunrep[6])))
+      Fusion.AddProcCodeFunRep(target,666,Card.IsMonster,1,3,false,true)
+      local codefunrep = target:GetMetatable(false).fusion_materials
+      Debug.Message("fusion code funrep " .. tostring(codefunrep[1]) .. "/" .. tostring(codefunrep[2]) .. "/" .. tostring(type(codefunrep[3])) .. "/" .. codefunrep[4] .. "/" .. codefunrep[5] .. "/" .. codefunrep[6])
+      Fusion.AddProcCode2FunRep(target,777,888,Card.IsMonster,2,6,true,false)
+      local code2funrep = target:GetMetatable(false).fusion_materials
+      Debug.Message("fusion code2 funrep " .. tostring(code2funrep[1]) .. "/" .. tostring(code2funrep[2]) .. "/" .. tostring(type(code2funrep[3])) .. "/" .. code2funrep[4] .. "/" .. code2funrep[5] .. "/" .. code2funrep[6] .. "/" .. code2funrep[7])
       `,
       "fusion-code-procedure-helpers.lua",
     );
@@ -342,6 +357,11 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("fusion code rep false/true/333/333/333");
     expect(host.messages).toContain("fusion code rep2 true/true/444/2/4");
     expect(host.messages).toContain("fusion code fun true/false/555/function/function");
+    expect(host.messages).toContain("fusion fun rep2 false/true/function/2/5");
+    expect(host.messages).toContain("fusion fun fun false/false/function/function/function");
+    expect(host.messages).toContain("fusion fun funrep false/true/function/2/4/function");
+    expect(host.messages).toContain("fusion code funrep false/true/function/1/3/666");
+    expect(host.messages).toContain("fusion code2 funrep true/false/function/2/6/777/888");
   });
 
   it("lets Lua scripts register temporary and continuous Lizard checks", () => {
