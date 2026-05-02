@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import { installAuxCostApi } from "#lua/aux-cost-api.js";
 import { installAuxUtilityApi } from "#lua/aux-utility-api.js";
 import { installEquipProcedureApi } from "#lua/equip-procedure-api.js";
 import { installLabrynthApi } from "#lua/labrynth-api.js";
@@ -73,6 +74,7 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_pushcfunction(L, (state: unknown) => pushNecroValleyPredicate(state, readLuaError));
   lua.lua_setfield(L, -2, to_luastring("nvfilter"));
   lua.lua_setglobal(L, to_luastring("aux"));
+  installAuxCostApi(L, readLuaError);
   installAuxUtilityApi(L, readLuaError);
   installEquipProcedureApi(L, readLuaError);
   installLabrynthApi(L);
