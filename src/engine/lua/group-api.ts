@@ -4,6 +4,7 @@ import { pushCardTable } from "#lua/card-api.js";
 import { linkedZoneMaskForUids } from "#lua/duel-api/location.js";
 import { installGroupCompatibilityApi } from "#lua/group-compatibility-api.js";
 import { groupFieldNames } from "#lua/group-field-names.js";
+import { sameUidSet, selectGroupUids, uniqueUids } from "#lua/group-uid-utils.js";
 import type { DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -478,10 +479,6 @@ export function pushGroupTable(L: unknown, uids: string[]): void {
   lua.lua_setmetatable(L, -2);
 }
 
-function uniqueUids(uids: string[]): string[] {
-  return [...new Set(uids)];
-}
-
 function groupCardMatchesFilter(L: unknown, uid: string, filterRef: number, args: LuaFilterArgs): boolean {
   const value = groupCardFilterValue(L, uid, filterRef, args);
   return value === undefined ? false : value !== 0;
@@ -596,13 +593,6 @@ function bitCount(value: number): number {
     count += 1;
   }
   return count;
-}
-
-function selectGroupUids(uids: string[], min: number, max: number): string[] {
-  const boundedMin = Math.max(0, min);
-  if (uids.length < boundedMin) return [];
-  const limit = max > 0 ? Math.max(boundedMin, max) : uids.length;
-  return uids.slice(0, limit);
 }
 
 function pushExtremeGroup(L: unknown, direction: "max" | "min"): number {
@@ -722,10 +712,4 @@ function readCardUidsFromStack(state: unknown): string[] {
     if (uid) uids.push(uid);
   }
   return uniqueUids(uids);
-}
-
-function sameUidSet(a: string[], b: string[]): boolean {
-  const uniqueA = uniqueUids(a);
-  const uniqueB = uniqueUids(b);
-  return uniqueA.length === uniqueB.length && uniqueA.every((uid) => uniqueB.includes(uid));
 }
