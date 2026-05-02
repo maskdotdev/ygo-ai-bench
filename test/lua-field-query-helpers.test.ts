@@ -1340,6 +1340,7 @@ describe("Lua field and query helpers", () => {
       { code: "203", name: "Fixture Field Spell", kind: "spell", typeFlags: 0x80002 },
       { code: "204", name: "Fixture Quick-Play Spell", kind: "spell", typeFlags: 0x10002 },
       { code: "300", name: "Rank Fixture", kind: "monster", typeFlags: 0x800001, attack: 1800, defense: 1200, level: 4 },
+      { code: "301", name: "Zero Rank Fixture", kind: "monster", typeFlags: 0x800001, attack: 1000, defense: 1000, level: 0 },
       { code: "400", name: "Link Fixture", kind: "monster", typeFlags: 0x4000001, attack: 1500, level: 2, linkMarkers: 0x5, setcodes: [0x564] },
       { code: "500", name: "Infinity Alias", kind: "monster", alias: "1378" },
       { code: "600", name: "Multi Attribute", kind: "monster", attribute: 0x30 },
@@ -1355,9 +1356,9 @@ describe("Lua field and query helpers", () => {
       { code: "907", name: "Plus Minus Fixture", kind: "monster", typeFlags: 0x60000001, level: 4 },
       { code: "908", name: "Zero Level Fixture", kind: "monster", typeFlags: 0x1, level: 0 },
     ];
-    const session = createDuel({ seed: 14, startingHandSize: 19, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 14, startingHandSize: 20, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "201", "202", "203", "204", "300", "400", "500", "600", "700", "800", "901", "903", "904", "905", "906", "907", "908"], extra: ["801", "902"] },
+      0: { main: ["100", "200", "201", "202", "203", "204", "300", "301", "400", "500", "600", "700", "800", "901", "903", "904", "905", "906", "907", "908"], extra: ["801", "902"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -1385,6 +1386,7 @@ describe("Lua field and query helpers", () => {
       local infinity = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("infinity checks " .. tostring(infinity:IsInfinity()) .. "/" .. tostring(c:IsInfinity()))
       local xyz = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local zero_rank = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local link = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local ritual = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 700), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local normal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -1412,7 +1414,7 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not type " .. tostring(c:IsNotType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotType(TYPE_SPELL)))
       Debug.Message("not original type " .. tostring(c:IsNotOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsNotOriginalType(TYPE_SPELL)))
       Debug.Message("named type predicates " .. tostring(ritual:IsRitualMonster()) .. "/" .. tostring(c:IsRitualMonster()) .. "/" .. tostring(synchro:IsSynchroMonster()) .. "/" .. tostring(c:IsSynchroMonster()) .. "/" .. tostring(xyz:IsXyzMonster()) .. "/" .. tostring(c:IsXyzMonster()) .. "/" .. tostring(pendulum:IsPendulumMonster()) .. "/" .. tostring(c:IsPendulumMonster()) .. "/" .. tostring(normal:IsNonEffectMonster()) .. "/" .. tostring(c:IsNonEffectMonster()) .. "/" .. tostring(c:IsEffectMonster()) .. "/" .. tostring(normal:IsEffectMonster()) .. "/" .. tostring(c:IsForbidden()))
-      Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:HasRank()) .. "/" .. tostring(normal:HasRank()) .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)))
+      Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:HasRank()) .. "/" .. tostring(normal:HasRank()) .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)) .. "/" .. zero_rank:GetRank() .. "/" .. tostring(zero_rank:HasRank()))
       Debug.Message("spirit predicate " .. tostring(spirit:IsSpirit()) .. "/" .. tostring(c:IsSpirit()))
       Debug.Message("plus minus predicate " .. tostring(plus:IsPlusOrMinus()) .. "/" .. tostring(minus:IsPlusOrMinus()) .. "/" .. tostring(plus_minus:IsPlusOrMinus()) .. "/" .. tostring(c:IsPlusOrMinus()))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
@@ -1522,7 +1524,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("not type false/true");
     expect(host.messages).toContain("not original type false/true");
     expect(host.messages).toContain("named type predicates true/false/true/false/true/false/true/false/true/false/true/false/false");
-    expect(host.messages).toContain("rank 4/4/true/false/true/true");
+    expect(host.messages).toContain("rank 4/4/true/false/true/true/0/true");
     expect(host.messages).toContain("spirit predicate true/false");
     expect(host.messages).toContain("plus minus predicate true/true/false/false");
     expect(host.messages).toContain("has level true/false/false/false/true");

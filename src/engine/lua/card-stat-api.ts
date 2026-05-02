@@ -85,7 +85,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetOriginalRank", session, (card) => cardRank(card));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateRank(state, session));
   lua.lua_setfield(L, -2, to_luastring("UpdateRank"));
-  pushBooleanGetter(L, "HasRank", session, (card) => currentRank(card, session.state) > 0);
+  pushBooleanGetter(L, "HasRank", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x800000) !== 0));
   pushNumberMatcher(L, "IsRank", session, (card, requested) => currentRank(card, session.state) === requested);
   pushNumberMatcher(L, "IsRankAbove", session, (card, requested) => currentRank(card, session.state) >= requested);
   pushNumberMatcher(L, "IsRankBelow", session, (card, requested) => currentRank(card, session.state) <= requested);
