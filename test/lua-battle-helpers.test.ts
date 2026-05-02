@@ -1407,6 +1407,51 @@ describe("Lua battle helpers", () => {
     expect(host.messages).toContain("battle destroyed false/true");
   });
 
+  it("lets Lua cards inspect their current battle target", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Battle Target Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Battle Target Defender", kind: "monster", attack: 1000 },
+      { code: "300", name: "Idle Monster", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 133, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const idle = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(idle).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, idle!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+    session.state.phase = "battle";
+    session.state.currentAttack = { attackerUid: attacker!.uid, targetUid: target!.uid };
+    session.state.pendingBattle = { attackerUid: attacker!.uid, targetUid: target!.uid };
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local attacker=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local idle=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("card battle target attacker " .. attacker:GetBattleTarget():GetCode())
+      Debug.Message("card battle target defender " .. target:GetBattleTarget():GetCode())
+      Debug.Message("card battle target idle nil " .. tostring(idle:GetBattleTarget()==nil))
+      `,
+      "card-battle-target.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("card battle target attacker 200");
+    expect(host.messages).toContain("card battle target defender 100");
+    expect(host.messages).toContain("card battle target idle nil true");
+  });
+
   it("lets Lua scripts negate the active attack", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Attacker", kind: "monster", attack: 1800 },

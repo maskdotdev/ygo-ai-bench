@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { duelReason } from "#duel/reasons.js";
 import { positionFromMask, readCardUid } from "#lua/api-utils.js";
+import { pushCardTable } from "#lua/card-api.js";
 import type { CardPosition, DuelCardInstance, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -15,6 +16,8 @@ export function installCardBattleApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsBattlePosition"));
   pushBooleanGetter(L, "IsBattleDestroyed", session, (card) => Boolean(card && isBattleDestroyed(card)));
+  lua.lua_pushcfunction(L, (state: unknown) => pushBattleTarget(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetBattleTarget"));
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
@@ -36,6 +39,15 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1);
   return uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+}
+
+function pushBattleTarget(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const attack = session.state.currentAttack ?? session.state.pendingBattle;
+  const targetUid = attack && card?.uid === attack.attackerUid ? attack.targetUid : attack && card?.uid === attack.targetUid ? attack.attackerUid : undefined;
+  if (!targetUid) lua.lua_pushnil(L);
+  else pushCardTable(L, targetUid);
+  return 1;
 }
 
 function isBattleDestroyed(card: DuelCardInstance): boolean {
