@@ -63,7 +63,7 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   lua.lua_setfield(L, -2, to_luastring("IsPreviousCode"));
   pushNumberMatcher(L, "IsPreviousTypeOnField", session, (card, requested) => Boolean(card.previousLocation && (cardTypeFlags(card) & requested) !== 0));
   pushNumberMatcher(L, "IsPreviousAttackOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.attack ?? 0) === requested));
-  pushNumberMatcher(L, "IsPreviousDefenseOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.defense ?? 0) === requested));
+  pushNumberMatcher(L, "IsPreviousDefenseOnField", session, (card, requested) => Boolean(card.previousLocation && hasDefense(card) && (card.data.defense ?? 0) === requested));
   pushNumberMatcher(L, "IsPreviousLevelOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.level ?? 0) === requested));
   pushNumberMatcher(L, "IsPreviousRankOnField", session, (card, requested) => Boolean(card.previousLocation && cardRank(card) === requested));
   pushNumberMatcher(L, "IsPreviousLinkOnField", session, (card, requested) => Boolean(card.previousLocation && cardLink(card) === requested));
@@ -109,6 +109,10 @@ function readRequestedCodes(L: unknown, startIndex: number): string[] {
     if (lua.lua_isnumber(L, index)) codes.push(String(lua.lua_tointeger(L, index)));
   }
   return codes;
+}
+
+function hasDefense(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x4000000) === 0;
 }
 
 function locationsFromMask(mask: number): DuelCardInstance["location"][] {

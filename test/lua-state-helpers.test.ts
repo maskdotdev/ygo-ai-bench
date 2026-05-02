@@ -2032,10 +2032,11 @@ describe("Lua state helpers", () => {
       { code: "100", name: "State Probe", kind: "monster", typeFlags: 0x21, attack: 1700, defense: 1300, level: 4, race: 0x2, attribute: 0x20, setcodes: [0x123] },
       { code: "200", name: "Column Spell", kind: "spell", typeFlags: 0x2 },
       { code: "900", name: "Hidden Extra", kind: "extra" },
+      { code: "901", name: "Previous Link", kind: "extra", typeFlags: 0x4000001, attack: 1500, level: 2 },
     ];
     const session = createDuel({ seed: 20, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200"], extra: ["900"] },
+      0: { main: ["100", "200"], extra: ["900", "901"] },
       1: { main: ["100"] },
     });
     startDuel(session);
@@ -2047,6 +2048,10 @@ describe("Lua state helpers", () => {
     expect(columnSpell).toBeDefined();
     const movedColumnSpell = moveDuelCard(session.state, columnSpell!.uid, "spellTrapZone", 0);
     movedColumnSpell.sequence = 0;
+    const link = session.state.cards.find((card) => card.code === "901" && card.controller === 0);
+    expect(link).toBeDefined();
+    const movedLink = moveDuelCard(session.state, link!.uid, "monsterZone", 0);
+    movedLink.sequence = 1;
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -2073,6 +2078,10 @@ describe("Lua state helpers", () => {
       Debug.Message("previous identity " .. g:GetPreviousCode() .. "/" .. tostring(g:IsPreviousCode(100)) .. "/" .. tostring(g:IsPreviousCode(900)) .. "/" .. tostring(g:IsPreviousCode(900,100)) .. "/" .. tostring(g:IsPreviousCodeOnField(100)) .. "/" .. tostring(g:IsPreviousCodeOnField(900,100)))
       Debug.Message("previous type " .. g:GetPreviousTypeOnField() .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_EFFECT)) .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_SPELL)))
       Debug.Message("previous stats " .. g:GetPreviousAttackOnField() .. "/" .. tostring(g:IsPreviousAttackOnField(1700)) .. "/" .. g:GetPreviousDefenseOnField() .. "/" .. tostring(g:IsPreviousDefenseOnField(1300)))
+      local link = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      Duel.SendtoGrave(link, REASON_EFFECT)
+      local grave_link = Duel.GetFieldCard(0, LOCATION_GRAVE, 1)
+      Debug.Message("previous link defense " .. grave_link:GetPreviousDefenseOnField() .. "/" .. tostring(grave_link:IsPreviousDefenseOnField(0)))
       Debug.Message("previous level " .. g:GetPreviousLevelOnField() .. "/" .. tostring(g:IsPreviousLevelOnField(4)) .. "/" .. tostring(g:IsPreviousLevelOnField(7)))
       Debug.Message("previous extra stats " .. g:GetPreviousRankOnField() .. "/" .. tostring(g:IsPreviousRankOnField(4)) .. "/" .. g:GetPreviousLinkOnField() .. "/" .. tostring(g:IsPreviousLinkOnField(2)))
       Debug.Message("previous traits " .. g:GetPreviousRaceOnField() .. "/" .. tostring(g:IsPreviousRaceOnField(RACE_SPELLCASTER)) .. "/" .. g:GetPreviousAttributeOnField() .. "/" .. tostring(g:IsPreviousAttributeOnField(ATTRIBUTE_DARK)))
@@ -2101,6 +2110,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("previous identity 100/true/false/true/true/true");
     expect(host.messages).toContain("previous type 33/true/false");
     expect(host.messages).toContain("previous stats 1700/true/1300/true");
+    expect(host.messages).toContain("previous link defense 0/false");
     expect(host.messages).toContain("previous level 4/true/false");
     expect(host.messages).toContain("previous extra stats 0/false/0/false");
     expect(host.messages).toContain("previous traits 2/true/32/true");
