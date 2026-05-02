@@ -58,20 +58,8 @@ export function tributeSetDuelCard(
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
-  const tributeRange = tributeRangeForNormalSummon(card);
-  if (tributeRange.max <= 0) throw new Error(`${card.name} does not require tributes`);
-  const uniqueTributes = [...new Set(tributeUids)];
-  if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
-  const tributeUnits = uniqueTributes.reduce((sum, tributeUid) => sum + tributeUnitCount(state, requireControlledCard(state, player, tributeUid, "monsterZone")), 0);
-  if (tributeUnits < tributeRange.min || tributeUnits > tributeRange.max) throw new Error(`${card.name} requires ${formatTributeRange(tributeRange)} tribute(s)`);
-  for (const tributeUid of uniqueTributes) {
-    const tribute = requireControlledCard(state, player, tributeUid, "monsterZone");
-    if (!canReleaseMaterial(tribute.uid)) throw new Error(`${tribute.name} cannot be released`);
-  }
-  for (const tributeUid of uniqueTributes) {
-    const result = moveMaterial(tributeUid, player, duelReason.release | duelReason.summon);
-    pushDuelLog(state, "release", player, result.card.name, `Tributed to Set ${card.name}`);
-  }
+  const { uniqueTributes, tributeUnits } = validateNormalTributes(state, player, card, tributeUids, canReleaseMaterial);
+  releaseNormalTributes(state, player, card, uniqueTributes, moveMaterial, `Tributed to Set ${card.name}`);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
   card.position = "faceDownDefense";
   card.faceUp = false;
@@ -96,22 +84,8 @@ export function tributeSummonDuelCard(
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
-  const tributeRange = tributeRangeForNormalSummon(card);
-  if (tributeRange.max <= 0) throw new Error(`${card.name} does not require tributes`);
-  const uniqueTributes = [...new Set(tributeUids)];
-  if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
-  const tributeUnits = uniqueTributes.reduce((sum, tributeUid) => sum + tributeUnitCount(state, requireControlledCard(state, player, tributeUid, "monsterZone")), 0);
-  if (tributeUnits < tributeRange.min || tributeUnits > tributeRange.max) throw new Error(`${card.name} requires ${formatTributeRange(tributeRange)} tribute(s)`);
-  for (const tributeUid of uniqueTributes) {
-    const tribute = requireControlledCard(state, player, tributeUid, "monsterZone");
-    if (!canReleaseMaterial(tribute.uid)) throw new Error(`${tribute.name} cannot be released`);
-  }
-  for (const tributeUid of uniqueTributes) {
-    const result = moveMaterial(tributeUid, player, duelReason.release | duelReason.summon);
-    const tribute = result.card;
-    pushDuelLog(state, "release", player, tribute.name, `Tributed for ${card.name}`);
-    collectSentToGraveyard(result, collectEvent);
-  }
+  const { uniqueTributes, tributeUnits } = validateNormalTributes(state, player, card, tributeUids, canReleaseMaterial);
+  releaseNormalTributes(state, player, card, uniqueTributes, moveMaterial, `Tributed for ${card.name}`, collectEvent);
 
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
   card.position = "faceUpAttack";
@@ -124,6 +98,42 @@ export function tributeSummonDuelCard(
   recordNormalSummonActivity(state, player, card);
   pushDuelLog(state, "tributeSummon", player, card.name, `Tribute Summoned with ${tributeUnits} tribute(s)`);
   collectEvent("normalSummoned", card);
+}
+
+function validateNormalTributes(
+  state: DuelState,
+  player: PlayerId,
+  card: DuelCardInstance,
+  tributeUids: string[],
+  canReleaseMaterial: DuelMaterialPredicate,
+): { uniqueTributes: string[]; tributeUnits: number } {
+  const tributeRange = tributeRangeForNormalSummon(card);
+  if (tributeRange.max <= 0) throw new Error(`${card.name} does not require tributes`);
+  const uniqueTributes = [...new Set(tributeUids)];
+  if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
+  const tributeUnits = uniqueTributes.reduce((sum, tributeUid) => sum + tributeUnitCount(state, requireControlledCard(state, player, tributeUid, "monsterZone")), 0);
+  if (tributeUnits < tributeRange.min || tributeUnits > tributeRange.max) throw new Error(`${card.name} requires ${formatTributeRange(tributeRange)} tribute(s)`);
+  for (const tributeUid of uniqueTributes) {
+    const tribute = requireControlledCard(state, player, tributeUid, "monsterZone");
+    if (!canReleaseMaterial(tribute.uid)) throw new Error(`${tribute.name} cannot be released`);
+  }
+  return { uniqueTributes, tributeUnits };
+}
+
+function releaseNormalTributes(
+  state: DuelState,
+  player: PlayerId,
+  card: DuelCardInstance,
+  uniqueTributes: string[],
+  moveMaterial: DuelMaterialMover,
+  detail: string,
+  collectEvent?: DuelEventCollector,
+): void {
+  for (const tributeUid of uniqueTributes) {
+    const result = moveMaterial(tributeUid, player, duelReason.release | duelReason.summon);
+    pushDuelLog(state, "release", player, result.card.name, detail);
+    if (collectEvent) collectSentToGraveyard(result, collectEvent);
+  }
 }
 
 export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector): DuelCardInstance {
