@@ -1778,6 +1778,18 @@ describe("Lua field and query helpers", () => {
     expect(tributeHost.messages).toContain("tribute predicate count ignored true/true");
     session.state.players[0].normalSummonAvailable = true;
 
+    const procHost = createLuaScriptHost(session);
+    const procResult = procHost.loadScript(
+      `
+      local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      aux.AddNormalSummonProcedure(tribute,true,false,1,1,SUMMON_TYPE_TRIBUTE,1234)
+      Debug.Message("tribute proc predicates " .. tostring(tribute:IsSummonableCard()) .. "/" .. tostring(tribute:CanSummonOrSet()))
+      `,
+      "card-tribute-procedure-predicates.lua",
+    );
+    expect(procResult.ok, procResult.error).toBe(true);
+    expect(procHost.messages).toContain("tribute proc predicates true/true");
+
     for (const code of ["800", "810", "820"]) {
       const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
       moveDuelCard(session.state, card!.uid, "monsterZone", 0);
