@@ -375,6 +375,7 @@ export const cardFieldNames = [
   "WasMaximumModeSide",
   "IsLocation",
   "IsDestination",
+  "GetDestination",
   "GetLeaveFieldDest",
   "IsLeaveFieldDest",
   "GetPreviousLocation",

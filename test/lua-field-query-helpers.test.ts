@@ -1002,14 +1002,18 @@ describe("Lua field and query helpers", () => {
       `
       local leaving=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("destination " .. leaving:GetDestination() .. "/" .. tostring(leaving:IsDestination(LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsDestination(LOCATION_HAND)))
       Debug.Message("leave field dest " .. leaving:GetLeaveFieldDest() .. "/" .. tostring(leaving:IsLeaveFieldDest(LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsLeaveFieldDest(LOCATION_HAND)))
+      Debug.Message("hand destination " .. hand:GetDestination())
       Debug.Message("hand leave field dest " .. hand:GetLeaveFieldDest() .. "/" .. tostring(hand:IsLeaveFieldDest(LOCATION_HAND)))
       `,
       "leave-field-destination.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("destination 16/true/false");
     expect(host.messages).toContain("leave field dest 16/true/false");
+    expect(host.messages).toContain("hand destination 0");
     expect(host.messages).toContain("hand leave field dest 0/false");
   });
 
