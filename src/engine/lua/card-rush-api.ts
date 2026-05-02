@@ -13,6 +13,15 @@ export function installCardRushApi<EffectRecord extends LuaCardApiEffectRecord>(
   session: DuelSession,
   hostState: LuaCardApiState<EffectRecord>,
 ): void {
+  pushBooleanGetter(L, "IsMaximumMode", session, () => false);
+  pushBooleanGetter(L, "IsMaximumModeCenter", session, () => false);
+  pushBooleanGetter(L, "IsMaximumModeLeft", session, () => false);
+  pushBooleanGetter(L, "IsMaximumModeRight", session, () => false);
+  pushBooleanGetter(L, "IsMaximumModeSide", session, () => false);
+  pushBooleanGetter(L, "IsNotMaximumModeSide", session, () => true);
+  pushBooleanGetter(L, "WasMaximumMode", session, () => false);
+  pushBooleanGetter(L, "WasMaximumModeCenter", session, () => false);
+  pushBooleanGetter(L, "WasMaximumModeSide", session, () => false);
   lua.lua_pushcfunction(L, (state: unknown) => pushCanChangeRaceRush(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("CanChangeIntoTypeRush"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanChangeAttributeRush(state, session, hostState));
@@ -50,6 +59,14 @@ function canChangeRushTrait<EffectRecord extends LuaCardApiEffectRecord>(
   if ((originalValue & requested) !== 0) return false;
   if (changeEffects.length === 0) return true;
   return !changeEffects.some((effect) => !isFieldOrEquipEffect(effect) && (effect.reset?.count ?? 0) >= turnValue);
+}
+
+function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => boolean): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, getter(readCard(state, session)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
 function isFieldOrEquipEffect(effect: LuaCardApiEffectRecord): boolean {

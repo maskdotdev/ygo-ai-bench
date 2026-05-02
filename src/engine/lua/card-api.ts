@@ -81,15 +81,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   installCardArchetypeApi(L, session, hostState);
   pushBooleanGetter(L, "IsDisabled", session, (card) => Boolean(card && isCardDisabled(session.state, card, createLuaMaterialCheckContext(session.state))));
   installCardAdjacentApi(L, session, hostState);
-  pushBooleanGetter(L, "IsMaximumMode", session, () => false);
-  pushBooleanGetter(L, "IsMaximumModeCenter", session, () => false);
-  pushBooleanGetter(L, "IsMaximumModeLeft", session, () => false);
-  pushBooleanGetter(L, "IsMaximumModeRight", session, () => false);
-  pushBooleanGetter(L, "IsMaximumModeSide", session, () => false);
-  pushBooleanGetter(L, "IsNotMaximumModeSide", session, () => true);
-  pushBooleanGetter(L, "WasMaximumMode", session, () => false);
-  pushBooleanGetter(L, "WasMaximumModeCenter", session, () => false);
-  pushBooleanGetter(L, "WasMaximumModeSide", session, () => false);
   installCardPreviousStateApi(L, session);
   installCardColumnApi(L, session);
   installCardControlApi(L, session);
