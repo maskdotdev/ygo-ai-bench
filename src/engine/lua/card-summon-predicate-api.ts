@@ -1,0 +1,80 @@
+import fengari from "fengari";
+import { canSpecialSummonDuelCard } from "#duel/core.js";
+import { normalSummonActions } from "#duel/summon.js";
+import { positionFromMask, readTableStringField } from "#lua/api-utils.js";
+import { canSpecialSummonFromLua } from "#lua/card-eligibility-api.js";
+import type { DuelAction, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
+
+const { lua, to_luastring } = fengari;
+
+export function installCardSummonPredicateApi(L: unknown, session: DuelSession): void {
+  pushSummonPredicate(L, "IsSummonable", session, "normalSummon");
+  pushSummonPredicate(L, "IsSummonableCard", session, "normalSummon");
+  pushSummonPredicate(L, "CanSummonOrSet", session, "summonOrSet");
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    lua.lua_pushboolean(state, Boolean(card && canSpecialSummonDuelCard(session.state, card.uid, card.controller)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSpecialSummonable"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanBeSpecialSummoned(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsCanBeSpecialSummoned"));
+  pushSummonPredicate(L, "IsMSetable", session, "setMonster");
+}
+
+function pushCanBeSpecialSummoned(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const summonType = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
+  const player = readSpecialSummonTargetPlayer(L, card);
+  const positionMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : 0x1;
+  const zoneMask = lua.lua_isnumber(L, 9) ? lua.lua_tointeger(L, 9) : undefined;
+  lua.lua_pushboolean(L, Boolean(positionFromMask(positionMask) && card && player !== undefined && canSpecialSummonFromLua(session, card, player, summonType, zoneMask)));
+  return 1;
+}
+
+function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession, kind: "normalSummon" | "setMonster" | "summonOrSet"): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const ignoreCount = lua.lua_toboolean(state, 2);
+    const actions = card ? normalSummonActionsForCard(session, card, ignoreCount) : [];
+    lua.lua_pushboolean(
+      state,
+      kind === "summonOrSet"
+        ? actions.some((action) => actionHasUid(action, card?.uid))
+        : actions.some((action) => action.type === kind && actionHasUid(action, card?.uid)),
+    );
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function normalSummonActionsForCard(session: DuelSession, card: DuelCardInstance, ignoreCount: boolean): DuelAction[] {
+  if (!ignoreCount) return normalSummonActions(session.state, card.controller, [card]);
+  const previous = session.state.players[card.controller].normalSummonAvailable;
+  session.state.players[card.controller].normalSummonAvailable = true;
+  try {
+    return normalSummonActions(session.state, card.controller, [card]);
+  } finally {
+    session.state.players[card.controller].normalSummonAvailable = previous;
+  }
+}
+
+function actionHasUid(action: DuelAction, uid: string | undefined): boolean {
+  return uid !== undefined && "uid" in action && action.uid === uid;
+}
+
+function readSpecialSummonTargetPlayer(L: unknown, card: DuelCardInstance | undefined): PlayerId | undefined {
+  if (lua.lua_isnumber(L, 8)) return normalizePlayer(lua.lua_tointeger(L, 8));
+  if (lua.lua_isnumber(L, 4)) return normalizePlayer(lua.lua_tointeger(L, 4));
+  return card?.controller;
+}
+
+function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {
+  const uid = readTableStringField(L, 1, "__duel_uid");
+  if (!uid) return undefined;
+  return session.state.cards.find((card) => card.uid === uid);
+}
+
+function normalizePlayer(value: number): PlayerId {
+  return value === 1 ? 1 : 0;
+}
