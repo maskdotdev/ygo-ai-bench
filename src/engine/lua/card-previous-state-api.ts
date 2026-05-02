@@ -9,14 +9,15 @@ const { lua, to_luastring } = fengari;
 export function installCardPreviousStateApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushboolean(state, Boolean(card && (locationMaskFromLocation(card.location) & locationMask) !== 0));
+    const requested = readRequestedNumbers(state, 2);
+    const locationMask = locationMaskFromLocation(card?.location);
+    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => (locationMask & value) !== 0)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDestination"));
   pushNumberGetter(L, "GetDestination", session, (card) => leaveFieldDestinationMask(card));
   pushNumberGetter(L, "GetLeaveFieldDest", session, (card) => leaveFieldDestinationMask(card));
-  pushNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => (leaveFieldDestinationMask(card) & requested) !== 0);
+  pushAnyNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => requested.some((value) => (leaveFieldDestinationMask(card) & value) !== 0));
   pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
   pushNumberGetter(L, "GetPreviousSequence", session, (card) => card?.previousSequence ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -46,15 +47,16 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   pushBooleanGetter(L, "WasFacedown", session, (card) => Boolean(card?.previousLocation && !card.previousFaceUp));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushboolean(state, Boolean(card?.previousLocation && locationsFromMask(locationMask).includes(card.previousLocation)));
+    const requested = readRequestedNumbers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requested.some((value) => locationsFromMask(value).includes(card.previousLocation!))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPreviousLocation"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const requestedPosition = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushboolean(state, Boolean(card?.previousPosition && (positionMaskFromPosition(card.previousPosition) & requestedPosition) !== 0));
+    const requested = readRequestedNumbers(state, 2);
+    const previousPosition = positionMaskFromPosition(card?.previousPosition);
+    lua.lua_pushboolean(state, Boolean(card?.previousPosition && requested.some((value) => (previousPosition & value) !== 0)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPreviousPosition"));
@@ -103,6 +105,16 @@ function pushNumberMatcher(L: unknown, fieldName: string, session: DuelSession, 
     const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     lua.lua_pushboolean(state, Boolean(card && matcher(card, requested)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function pushAnyNumberMatcher(L: unknown, fieldName: string, session: DuelSession, matcher: (card: DuelCardInstance, requested: number[]) => boolean): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.length > 0 && matcher(card, requested)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
