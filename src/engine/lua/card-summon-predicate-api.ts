@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { canSpecialSummonDuelCard } from "#duel/core.js";
-import { normalSummonActions } from "#duel/summon.js";
+import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { positionFromMask, readTableStringField } from "#lua/api-utils.js";
 import { canSpecialSummonFromLua } from "#lua/card-eligibility-api.js";
 import type { DuelAction, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
@@ -36,27 +36,37 @@ function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const ignoreCount = lua.lua_toboolean(state, 2);
-    const actions = card ? normalSummonActionsForCard(session, card, ignoreCount) : [];
+    const minTributes = lua.lua_isnumber(state, 4) ? Math.max(0, lua.lua_tointeger(state, 4)) : 0;
+    const actions = card ? summonActionsForCard(session, card, ignoreCount, minTributes) : [];
     lua.lua_pushboolean(
       state,
       kind === "summonOrSet"
         ? actions.some((action) => actionHasUid(action, card?.uid))
-        : actions.some((action) => action.type === kind && actionHasUid(action, card?.uid)),
+        : actions.some((action) => actionMatchesKind(action, kind) && actionHasUid(action, card?.uid)),
     );
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
-function normalSummonActionsForCard(session: DuelSession, card: DuelCardInstance, ignoreCount: boolean): DuelAction[] {
-  if (!ignoreCount) return normalSummonActions(session.state, card.controller, [card]);
+function summonActionsForCard(session: DuelSession, card: DuelCardInstance, ignoreCount: boolean, minTributes: number): DuelAction[] {
+  const readActions = (): DuelAction[] => [
+    ...normalSummonActions(session.state, card.controller, [card]),
+    ...(minTributes > 0 ? tributeSummonActions(session.state, card.controller, [card]) : []),
+  ];
+  if (!ignoreCount) return readActions();
   const previous = session.state.players[card.controller].normalSummonAvailable;
   session.state.players[card.controller].normalSummonAvailable = true;
   try {
-    return normalSummonActions(session.state, card.controller, [card]);
+    return readActions();
   } finally {
     session.state.players[card.controller].normalSummonAvailable = previous;
   }
+}
+
+function actionMatchesKind(action: DuelAction, kind: "normalSummon" | "setMonster" | "summonOrSet"): boolean {
+  if (kind === "normalSummon") return action.type === "normalSummon" || action.type === "tributeSummon";
+  return action.type === kind;
 }
 
 function actionHasUid(action: DuelAction, uid: string | undefined): boolean {

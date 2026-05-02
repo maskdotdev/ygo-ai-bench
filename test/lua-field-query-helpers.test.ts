@@ -1760,7 +1760,25 @@ describe("Lua field and query helpers", () => {
     expect(countHost.messages).toContain("count ignored predicates false/true/true");
     session.state.players[0].normalSummonAvailable = true;
 
-    for (const code of ["600", "700", "800", "810", "820"]) {
+    for (const code of ["600", "700"]) {
+      const tributeMaterial = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      expect(tributeMaterial).toBeDefined();
+      moveDuelCard(session.state, tributeMaterial!.uid, "monsterZone", 0);
+    }
+    session.state.players[0].normalSummonAvailable = false;
+    const tributeHost = createLuaScriptHost(session);
+    const tributeResult = tributeHost.loadScript(
+      `
+      local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("tribute predicate count ignored " .. tostring(tribute:IsSummonable(true,nil,1)) .. "/" .. tostring(tribute:CanSummonOrSet(true,nil,1)))
+      `,
+      "card-tribute-predicate-count-block.lua",
+    );
+    expect(tributeResult.ok, tributeResult.error).toBe(true);
+    expect(tributeHost.messages).toContain("tribute predicate count ignored true/true");
+    session.state.players[0].normalSummonAvailable = true;
+
+    for (const code of ["800", "810", "820"]) {
       const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
       moveDuelCard(session.state, card!.uid, "monsterZone", 0);
     }
