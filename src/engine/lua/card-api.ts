@@ -2,12 +2,12 @@ import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
 import { canChangeDuelCardPosition, canDuelCardAttack, canMoveDuelCardToLocation, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
 import { isCardDisabled, type MaterialUseKind } from "#duel/continuous-effects.js";
-import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
 import { duelReason } from "#duel/reasons.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
 import { installCardColumnApi } from "#lua/card-column-api.js";
 import { cardCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
+import { installCardCounterApi } from "#lua/card-counter-api.js";
 import { canBeMaterial, canMoveCardToDeckOrExtraAsCost, isMonsterLike } from "#lua/card-eligibility-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { installCardEquipApi } from "#lua/card-equip-api.js";
@@ -121,19 +121,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckRemoveOverlayCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("CheckRemoveOverlayCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushGetCounter(state, session));
-  lua.lua_setfield(L, -2, to_luastring("GetCounter"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushAddCounter(state, session));
-  lua.lua_setfield(L, -2, to_luastring("AddCounter"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushRemoveCounter(state, session));
-  lua.lua_setfield(L, -2, to_luastring("RemoveCounter"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsCanAddCounter(state, session));
-  lua.lua_setfield(L, -2, to_luastring("IsCanAddCounter"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsCanRemoveCounter(state, session));
-  lua.lua_setfield(L, -2, to_luastring("IsCanRemoveCounter"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushHasCounter(state, session));
-  lua.lua_setfield(L, -2, to_luastring("HasCounter"));
-  pushBooleanGetter(L, "HasCounters", session, (card) => Boolean(card && totalCounters(card) > 0));
+  installCardCounterApi(L, session);
   pushBooleanGetter(L, "IsFaceup", session, (card) => Boolean(card?.faceUp));
   pushBooleanGetter(L, "IsFacedown", session, (card) => Boolean(card && !card.faceUp));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -523,64 +511,6 @@ function synchroLevelFromEffect<EffectRecord extends LuaCardApiEffectRecord>(L: 
   return value;
 }
 
-function pushGetCounter(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const counterType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  lua.lua_pushinteger(L, getDuelCardCounter(card, counterType));
-  return 1;
-}
-
-function pushHasCounter(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  if (!card) {
-    lua.lua_pushboolean(L, false);
-    return 1;
-  }
-  if (!lua.lua_isnumber(L, 2)) {
-    lua.lua_pushboolean(L, totalCounters(card) > 0);
-    return 1;
-  }
-  lua.lua_pushboolean(L, getDuelCardCounter(card, lua.lua_tointeger(L, 2)) > 0);
-  return 1;
-}
-
-function pushAddCounter(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const counterType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  const count = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
-  lua.lua_pushboolean(L, addDuelCardCounter(card, counterType, count));
-  return 1;
-}
-
-function pushRemoveCounter(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const hasPlayerArgument = lua.lua_gettop(L) >= 4;
-  const counterTypeIndex = hasPlayerArgument ? 3 : 2;
-  const countIndex = hasPlayerArgument ? 4 : 3;
-  const counterType = lua.lua_isnumber(L, counterTypeIndex) ? lua.lua_tointeger(L, counterTypeIndex) : 0;
-  const count = lua.lua_isnumber(L, countIndex) ? lua.lua_tointeger(L, countIndex) : 1;
-  lua.lua_pushboolean(L, removeDuelCardCounter(card, counterType, count));
-  return 1;
-}
-
-function pushIsCanAddCounter(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const count = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
-  lua.lua_pushboolean(L, canAddDuelCardCounter(card, count));
-  return 1;
-}
-
-function pushIsCanRemoveCounter(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const hasPlayerArgument = lua.lua_gettop(L) >= 4;
-  const counterTypeIndex = hasPlayerArgument ? 3 : 2;
-  const countIndex = hasPlayerArgument ? 4 : 3;
-  const counterType = lua.lua_isnumber(L, counterTypeIndex) ? lua.lua_tointeger(L, counterTypeIndex) : 0;
-  const count = lua.lua_isnumber(L, countIndex) ? lua.lua_tointeger(L, countIndex) : 1;
-  lua.lua_pushboolean(L, getDuelCardCounter(card, counterType) >= Math.max(0, count));
-  return 1;
-}
-
 function pushIsSynchroSummonable(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
   const suppliedUids = [...readCardOrGroupUids(L, 2), ...readCardOrGroupUids(L, 3)];
@@ -620,10 +550,6 @@ function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer
   if (card.controller === targetPlayer) return false;
   if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
   return hasZoneSpace(state, targetPlayer, card.location);
-}
-
-function totalCounters(card: DuelCardInstance): number {
-  return Object.values(card.counters ?? {}).reduce((total, count) => total + Math.max(0, count), 0);
 }
 
 function isPendulumCard(card: DuelCardInstance): boolean {
