@@ -3014,6 +3014,8 @@ describe("Lua field and query helpers", () => {
       local c100 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local c200 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local c300 = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e = Effect.CreateEffect(c100)
+      Debug.Message("wrapped types " .. type(c100) .. "/" .. type(all) .. "/" .. type(e) .. "/" .. type(function() end) .. "/" .. type(1) .. "/" .. type(nil))
       local excluded_group = Group.FromCards(c200)
       local without_c200 = all:Filter(function(tc,minatk) return tc:GetAttack() >= minatk end, excluded_group, 1000)
       local g = Group.CreateGroup()
@@ -3157,6 +3159,7 @@ describe("Lua field and query helpers", () => {
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("added unique 1 true");
+    expect(host.messages).toContain("wrapped types Card/Group/Effect/function/number/nil");
     expect(host.messages).toContain("contains alias true/false");
     expect(host.messages).toContain("merged 3 true");
     expect(host.messages).toContain("from cards 2 true");

@@ -6,6 +6,9 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
   const source = `
     Cost=Cost or {}
     Auxiliary=Auxiliary or aux
+    function aux.IsGroupObject(value)
+      return type(value)=="Group" or (type(value)=="table" and value.GetCount)
+    end
     function aux.NULL()
     end
     function Auxiliary.addLizardCheck(c)
@@ -241,7 +244,7 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       if not str then str=574 end
       local params={...}
       local b1,b2=true,true
-      if type(card)=="table" and card.GetCount then
+      if aux.IsGroupObject(card) then
         for ctg in aux.Next(card) do
           if not ctg:IsAbleToHand() then b1=false end
           if not check(ctg,table.unpack(params)) then b2=false end
@@ -753,7 +756,7 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
       end
     end
     function aux.DelayedOperation(card_or_group,phase,flag,e,tp,oper,cond,reset,reset_count,hint,effect_desc)
-      local group=(type(card_or_group)=="table" and card_or_group.GetCount) and card_or_group or Group.FromCards(card_or_group)
+      local group=aux.IsGroupObject(card_or_group) and card_or_group or Group.FromCards(card_or_group)
       if group:GetCount()==0 then return nil end
       reset=reset or (RESET_PHASE|phase)
       reset_count=reset_count or 1
@@ -879,7 +882,7 @@ export function installAuxUtilityApi(L: unknown, readLuaError: (state: unknown) 
     end
     function aux.RemoveUntil(card_or_group,pos,reason,phase,flag,e,tp,oper,cond,reset,reset_count,hint,effect_desc)
       local g
-      if type(card_or_group)=="table" and card_or_group.GetCount then
+      if aux.IsGroupObject(card_or_group) then
         g=card_or_group
       else
         g=Group.FromCards(card_or_group)

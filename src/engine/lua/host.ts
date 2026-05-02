@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { installAuxApi, installConstants, installDebugApi } from "#lua/basic-api.js";
+import { installAuxApi, installConstants, installDebugApi, installTypeCompatibilityApi } from "#lua/basic-api.js";
 import { installCardApi, pushCardTable } from "#lua/card-api.js";
 import { installCardProcedureApi } from "#lua/card-procedure-api.js";
 import { installDuelApi } from "#lua/duel-api/index.js";
@@ -57,6 +57,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   };
   lualib.luaL_openlibs(L);
   installTracebackHandler(L);
+  installTypeCompatibilityApi(L);
   installConstants(L);
   installDebugApi(L, hostState.messages);
   installAuxApi(L, readLuaError, session);
