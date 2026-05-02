@@ -88,6 +88,7 @@ export interface DuelCardInstance {
   customStatusMask?: number;
   effectRelationIds?: number[];
   turnId?: number;
+  turnCounter?: number;
   summonType?: DuelSummonType;
   summonTypeCode?: number;
   summonPlayer?: PlayerId;

@@ -326,6 +326,9 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
   pushNumberMatcher(L, "IsReasonPlayer", session, (card, requested) => (card.reasonPlayer ?? card.controller) === normalizePlayer(requested));
   pushNumberGetter(L, "GetTurnID", session, (card) => card?.turnId ?? 0);
+  pushNumberGetter(L, "GetTurnCounter", session, (card) => card?.turnCounter ?? 0);
+  lua.lua_pushcfunction(L, (state: unknown) => pushSetTurnCounter(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SetTurnCounter"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const player = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : undefined;
@@ -472,6 +475,12 @@ function pushSetStatus(L: unknown, session: DuelSession): number {
   if (!card || mask === 0) return 0;
   const current = card.customStatusMask ?? 0;
   card.customStatusMask = lua.lua_isnoneornil(L, 3) || lua.lua_toboolean(L, 3) ? current | mask : current & ~mask;
+  return 0;
+}
+
+function pushSetTurnCounter(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  if (card) card.turnCounter = lua.lua_isnumber(L, 2) ? Math.max(0, lua.lua_tointeger(L, 2)) : 0;
   return 0;
 }
 

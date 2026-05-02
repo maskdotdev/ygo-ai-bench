@@ -418,6 +418,8 @@ export const cardFieldNames = [
   "GetReasonPlayer",
   "IsReasonPlayer",
   "GetTurnID",
+  "GetTurnCounter",
+  "SetTurnCounter",
   "IsControler",
   "IsAbleToChangeControler",
   "IsControlerCanBeChanged",

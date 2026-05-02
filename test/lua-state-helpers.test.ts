@@ -77,6 +77,38 @@ describe("Lua state helpers", () => {
     expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.cards.find((candidate) => candidate.uid === card!.uid)?.customStatusMask).toBe(0x20);
   });
 
+  it("lets Lua scripts store card turn counters", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Turn Counter Probe", kind: "spell" }];
+    const session = createDuel({ seed: 167, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const card = session.state.cards.find((candidate) => candidate.code === "100");
+    expect(card).toBeDefined();
+    moveDuelCard(session.state, card!.uid, "spellTrapZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("turn counter before " .. c:GetTurnCounter())
+      c:SetTurnCounter(2)
+      Debug.Message("turn counter set " .. c:GetTurnCounter())
+      c:SetTurnCounter(-3)
+      Debug.Message("turn counter clamped " .. c:GetTurnCounter())
+      `,
+      "turn-counter.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["turn counter before 0", "turn counter set 2", "turn counter clamped 0"]);
+    expect(card!.turnCounter).toBe(0);
+    expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.cards.find((candidate) => candidate.uid === card!.uid)?.turnCounter).toBe(0);
+  });
+
   it("lets Lua scripts apply drawless startup adjustments", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Drawless One", kind: "monster" },
