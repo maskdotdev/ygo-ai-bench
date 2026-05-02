@@ -19,13 +19,16 @@ import { installDuelTokenApi } from "#lua/duel-api/token.js";
 import { installDuelTurnApi } from "#lua/duel-api/turn.js";
 import type { LuaDuelOperationInfo } from "#lua/duel-api/operation.js";
 import type { DuelEffectContext, DuelSession } from "#duel/types.js";
+import type { LuaEffectRecord } from "#lua/host-types.js";
 
 const { lua, to_luastring } = fengari;
 
 export interface LuaDuelApiHostState extends LuaDuelScriptApiHostState {
   messages: string[];
   activeTargetUids: string[] | undefined;
+  activeLuaEffectId: number | undefined;
   activeContext: DuelEffectContext | undefined;
+  effects: Map<number, LuaEffectRecord>;
   operationInfos: LuaDuelOperationInfo[];
   possibleOperationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];

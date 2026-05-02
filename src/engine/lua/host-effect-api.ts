@@ -58,10 +58,10 @@ export function installGetIdCompatibilityApi(L: unknown, hostState: LuaHostState
   lua.lua_setglobal(L, to_luastring("GetID"));
 }
 
-export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState): void {
+export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostState, reuseTableRef = true): void {
   const { effects, session } = hostState;
   const existing = effects.get(id);
-  if (existing?.tableRef !== undefined) {
+  if (reuseTableRef && existing?.tableRef !== undefined) {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, existing.tableRef);
     return;
   }
@@ -451,8 +451,10 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.code === undefined ? {} : { code: luaEffect.code }),
     ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
+    ...(triggerEvent === "customEvent" && luaEffect.code !== undefined ? { triggerCode: luaEffect.code } : {}),
     ...(event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEvent) ? { triggerSourceOnly: true } : {}),
     ...(event === "trigger" ? { optional: luaEffectTriggerIsOptional(luaEffect.typeFlags) } : {}),
+    ...(event === "trigger" ? { triggerTiming: luaEffectTriggerTiming(luaEffect) } : {}),
     range,
     oncePerTurn: (luaEffect.countLimit ?? 0) > 0,
     ...(luaEffect.countLimit === undefined ? {} : { countLimit: luaEffect.countLimit }),
@@ -466,6 +468,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.valueRef === undefined ? {} : { battleDamageValue: (ctx, player) => callLuaEffectBattleDamageValue(L, hostState, luaEffect, ctx, player, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valueCardPredicate: (ctx, targetCard) => callLuaEffectValueCardPredicate(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valuePredicate: (ctx, reasonPlayer) => callLuaEffectValuePredicate(L, hostState, luaEffect, card, ctx, reasonPlayer, readLuaError) }),
+    ...(luaEffect.targetRef === undefined ? {} : { targetCardPredicate: (ctx, targetCard) => callLuaEffectCardTargetPredicate(L, hostState, luaEffect, ctx, targetCard) }),
     canActivate: (ctx) =>
       (luaEffect.code !== 1027 || hostState.session.state.chain.length > 0) &&
       callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, "condition", ctx) &&
@@ -477,7 +480,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
         ctx.log("Lua effect resolved without an operation");
         return;
       }
-      withLuaCallbackContext(hostState, ctx, () => {
+      withLuaCallbackContext(hostState, ctx, luaEffect.id, () => {
         lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.operationRef);
         const legacyArgs = secondParameterName(L, -1) === "c";
         const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
@@ -491,13 +494,21 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
 
 function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
   if (code === 34) return "summonProcedure";
+  if (code === 1027 && ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0)) return "trigger";
   if (code === 1027) return "quick";
   if (
     code === 2 ||
+    code === 3 ||
+    code === 6 ||
     code === 8 ||
     code === 10 ||
+    code === 12 ||
+    code === 13 ||
     code === 22 ||
+    code === 26 ||
+    code === 27 ||
     code === 40 ||
+    code === 39 ||
     code === 41 ||
     code === 42 ||
     code === 43 ||
@@ -509,6 +520,8 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
     code === 50 ||
     code === 51 ||
     code === 52 ||
+    code === 57 ||
+    code === 58 ||
     code === 59 ||
     code === 60 ||
     code === 61 ||
@@ -526,7 +539,11 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
     code === 238 ||
     code === 239 ||
     code === 241 ||
-    code === 248
+    code === 248 ||
+    code === 333 ||
+    code === 400 ||
+    code === 401 ||
+    code === 402
   )
     return "continuous";
   if ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) return "trigger";
@@ -554,6 +571,10 @@ function luaEffectTriggerIsOptional(typeFlags: number): boolean {
   return (typeFlags & 0x200) === 0;
 }
 
+function luaEffectTriggerTiming(luaEffect: LuaEffectRecord): "if" | "when" {
+  return (luaEffect.property ?? 0) & 0x10000 ? "if" : "when";
+}
+
 function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, kind: LuaEffectCallbackKind, legacyArgs: boolean, ctx?: DuelEffectContext): number {
   const chainLink = luaEffect.code === 1027 ? hostState.session.state.chain[hostState.session.state.chain.length - 1] : undefined;
   pushLuaEffectTable(L, luaEffect.id, hostState);
@@ -563,11 +584,11 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
   }
   lua.lua_pushinteger(L, ctx?.player ?? card.controller);
   pushGroupTable(L, ctx?.eventCard ? [ctx.eventCard.uid] : []);
-  lua.lua_pushinteger(L, chainLink?.player ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
-  lua.lua_pushinteger(L, chainLink ? hostState.session.state.chain.length : 0);
-  pushRelatedEffectTable(L, hostState);
-  lua.lua_pushinteger(L, ctx?.eventCard?.reason ?? 0);
-  lua.lua_pushinteger(L, chainLink?.player ?? ctx?.eventCard?.reasonPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
+  lua.lua_pushinteger(L, chainLink?.eventPlayer ?? chainLink?.player ?? ctx?.eventPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
+  lua.lua_pushinteger(L, chainLink?.eventValue ?? ctx?.eventValue ?? (chainLink ? hostState.session.state.chain.length : 0));
+  pushRelatedEffectTable(L, hostState, firstFiniteNumber(chainLink?.relatedEffectId, ctx?.chainLink?.relatedEffectId, ctx?.relatedEffectId, relatedEffectIdFromEventHistory(hostState, ctx)));
+  lua.lua_pushinteger(L, chainLink?.eventReason ?? ctx?.eventReason ?? ctx?.eventCard?.reason ?? 0);
+  lua.lua_pushinteger(L, chainLink?.eventReasonPlayer ?? chainLink?.player ?? ctx?.eventReasonPlayer ?? ctx?.eventCard?.reasonPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
   if (kind === "cost" || kind === "target") {
     lua.lua_pushinteger(L, ctx?.checkOnly ? 0 : 1);
     return 9;
@@ -591,11 +612,39 @@ function secondParameterName(L: unknown, functionIndex: number): string | undefi
   return name;
 }
 
-function pushRelatedEffectTable(L: unknown, hostState: LuaHostState): void {
+function pushRelatedEffectTable(L: unknown, hostState: LuaHostState, relatedEffectId?: number): void {
+  if (relatedEffectId !== undefined) {
+    pushLuaEffectTable(L, relatedEffectId, hostState);
+    return;
+  }
   const link = hostState.session.state.chain[hostState.session.state.chain.length - 1];
   const id = Number(link?.effectId.match(/^lua-(\d+)/)?.[1]);
   if (Number.isFinite(id)) pushLuaEffectTable(L, id, hostState);
   else lua.lua_pushnil(L);
+}
+
+function firstFiniteNumber(...values: Array<number | undefined>): number | undefined {
+  return values.find((value): value is number => value !== undefined && Number.isFinite(value));
+}
+
+function relatedEffectIdFromEventHistory(hostState: LuaHostState, ctx?: DuelEffectContext): number | undefined {
+  if (!ctx?.eventName) return latestRelatedEffectId(hostState);
+  for (let index = hostState.session.state.eventHistory.length - 1; index >= 0; index -= 1) {
+    const event = hostState.session.state.eventHistory[index];
+    if (!event || event.eventName !== ctx.eventName) continue;
+    if (ctx.eventCode !== undefined && event.eventCode !== ctx.eventCode) continue;
+    if (ctx.eventCard?.uid !== undefined && event.eventCardUid !== ctx.eventCard.uid) continue;
+    return event.relatedEffectId;
+  }
+  return latestRelatedEffectId(hostState);
+}
+
+function latestRelatedEffectId(hostState: LuaHostState): number | undefined {
+  for (let index = hostState.session.state.eventHistory.length - 1; index >= 0; index -= 1) {
+    const relatedEffectId = hostState.session.state.eventHistory[index]?.relatedEffectId;
+    if (relatedEffectId !== undefined) return relatedEffectId;
+  }
+  return undefined;
 }
 
 type LuaEffectCallbackKind = "condition" | "cost" | "target" | "operation" | "value";
@@ -607,7 +656,7 @@ export function changeLuaChainOperation(L: unknown, hostState: LuaHostState, cha
   const source = link ? hostState.session.state.cards.find((card) => card.uid === link.sourceUid) : undefined;
   if (!link || !luaEffect || !source) return false;
   link.operationOverride = (ctx) => {
-    withLuaCallbackContext(hostState, ctx, () => {
+    withLuaCallbackContext(hostState, ctx, luaEffect.id, () => {
       lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, operationRef);
       const legacyArgs = secondParameterName(L, -1) === "c";
       const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, source, "operation", legacyArgs, ctx);
@@ -626,7 +675,7 @@ function chainLinkByLuaIndex(session: DuelSession, requestedIndex: number): Duel
 
 function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean, kind: LuaEffectCallbackKind, ctx?: DuelEffectContext): boolean {
   if (ref === undefined) return fallback;
-  return withLuaCallbackContext(hostState, ctx, () => {
+  return withLuaCallbackContext(hostState, ctx, luaEffect.id, () => {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
     const legacyArgs = secondParameterName(L, -1) === "c";
     if (legacyArgs && ctx?.checkOnly && (kind === "cost" || kind === "target")) {
@@ -642,15 +691,38 @@ function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: Lu
   });
 }
 
-function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectContext | undefined, callback: () => T): T {
+function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, ctx: DuelEffectContext, card: DuelCardInstance): boolean {
+  if (luaEffect.targetRef === undefined) return true;
+  return withLuaCallbackContext(hostState, ctx, luaEffect.id, () => {
+    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.targetRef);
+    pushLuaEffectTable(L, luaEffect.id, hostState);
+    pushCardTable(L, card.uid);
+    const status = lua.lua_pcall(L, 2, 1, 0);
+    if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+    const result = lua.lua_toboolean(L, -1);
+    lua.lua_pop(L, 1);
+    return Boolean(result);
+  });
+}
+
+function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectContext | undefined, luaEffectId: number | undefined, callback: () => T): T {
   const previousTargets = hostState.activeTargetUids;
+  const previousLuaEffectId = hostState.activeLuaEffectId;
   const previousContext = hostState.activeContext;
+  const previousTriggerStart = hostState.activeOperationTriggerStart;
+  const previousOperationMoved = hostState.activeOperationMoved;
   hostState.activeTargetUids = ctx?.targetUids;
+  hostState.activeLuaEffectId = luaEffectId;
   hostState.activeContext = ctx;
+  hostState.activeOperationTriggerStart = ctx ? hostState.session.state.pendingTriggers.length : previousTriggerStart;
+  hostState.activeOperationMoved = false;
   try {
     return callback();
   } finally {
     hostState.activeTargetUids = previousTargets;
+    hostState.activeLuaEffectId = previousLuaEffectId;
     hostState.activeContext = previousContext;
+    hostState.activeOperationTriggerStart = previousTriggerStart;
+    hostState.activeOperationMoved = previousOperationMoved;
   }
 }

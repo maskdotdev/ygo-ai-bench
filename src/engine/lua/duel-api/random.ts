@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
+import { raiseDuelEvent } from "#duel/core.js";
 import { createRng } from "#engine/rng.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
 
@@ -41,6 +42,7 @@ function pushTossDice(L: unknown, session: DuelSession): number {
   }
   session.state.lastDiceResults = results;
   pushDuelLog(session.state, "tossDice", player === 1 ? 1 : 0, undefined, results.join(","));
+  raiseDuelEvent(session.state, "diceTossed");
   for (const result of results) lua.lua_pushinteger(L, result);
   return results.length;
 }
@@ -68,6 +70,7 @@ function pushTossCoin(L: unknown, session: DuelSession): number {
   for (let index = 0; index < count; index += 1) results.push(tossCoin(session));
   session.state.lastCoinResults = results;
   pushDuelLog(session.state, "tossCoin", player === 1 ? 1 : 0, undefined, results.join(","));
+  raiseDuelEvent(session.state, "coinTossed");
   for (const result of results) lua.lua_pushinteger(L, result);
   return results.length;
 }
@@ -91,7 +94,9 @@ function pushCallCoin(L: unknown, session: DuelSession): number {
   const player = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer;
   const call = announceCoin();
   const result = tossCoin(session);
+  session.state.lastCoinResults = [result];
   pushDuelLog(session.state, "callCoin", player === 1 ? 1 : 0, undefined, `${call}/${result}`);
+  raiseDuelEvent(session.state, "coinTossed");
   lua.lua_pushboolean(L, call === result);
   return 1;
 }

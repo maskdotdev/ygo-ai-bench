@@ -1,17 +1,18 @@
 import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
-import { raiseDuelEvent } from "#duel/core.js";
+import { collectDuelTriggerEffects, raiseDuelEvent, raiseDuelEventWithCode } from "#duel/core.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
-import type { DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEventName, DuelEventRecord, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
 export interface LuaDuelOperationApiHostState {
   operationInfos: LuaDuelOperationInfo[];
   possibleOperationInfos: LuaDuelOperationInfo[];
+  pushEffectTable: (state: unknown, id: number) => void;
 }
 
 export interface LuaDuelOperationInfo {
@@ -40,7 +41,7 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("RaiseEvent"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRaiseSingleEvent(state, session));
   lua.lua_setfield(L, -2, to_luastring("RaiseSingleEvent"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushCheckEvent(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckEvent(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("CheckEvent"));
   lua.lua_pushcfunction(L, () => pushBreakEffect(session));
   lua.lua_setfield(L, -2, to_luastring("BreakEffect"));
@@ -54,6 +55,7 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
 
 function pushBreakEffect(session: DuelSession): number {
   pushDuelLog(session.state, "breakEffect", session.state.turnPlayer, undefined, "Effect operation break");
+  raiseDuelEvent(session.state, "breakEffect");
   return 0;
 }
 
@@ -78,26 +80,90 @@ function pushReadjust(session: DuelSession): number {
 
 function pushRaiseEvent(L: unknown, session: DuelSession): number {
   const eventName = triggerEventFromCode(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined);
+  const eventCode = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  const payload = readRaiseEventPayload(L);
   if (!eventName) return 0;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (card) raiseDuelEvent(session.state, eventName, card);
+    if (card) raiseOperationEvent(session, eventName, card, eventCode, payload);
   }
   return 0;
 }
 
 function pushRaiseSingleEvent(L: unknown, session: DuelSession): number {
   const uid = readCardUid(L, 1);
-  const eventName = triggerEventFromCode(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined);
+  const eventCode = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  const eventName = triggerEventFromCode(eventCode);
+  const payload = readRaiseEventPayload(L);
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-  if (card && eventName) raiseDuelEvent(session.state, eventName, card);
+  if (card && eventName) raiseOperationEvent(session, eventName, card, eventCode, payload);
   return 0;
 }
 
-function pushCheckEvent(L: unknown, session: DuelSession): number {
-  const eventName = triggerEventFromCode(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : undefined);
-  lua.lua_pushboolean(L, Boolean(eventName && session.state.eventHistory.some((event) => event.eventName === eventName)));
-  return 1;
+function pushCheckEvent(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState): number {
+  const eventCode = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : undefined;
+  const eventName = triggerEventFromCode(eventCode);
+  const event = eventName ? matchingEventRecord(session, eventName, eventCode) : undefined;
+  lua.lua_pushboolean(L, Boolean(event));
+  if (!event || !lua.lua_toboolean(L, 2)) return 1;
+  pushEventRecordPayload(L, session, hostState, event);
+  return 7;
+}
+
+function matchingEventRecord(session: DuelSession, eventName: DuelEventName, eventCode: number | undefined): DuelEventRecord | undefined {
+  for (let index = session.state.eventHistory.length - 1; index >= 0; index -= 1) {
+    const event = session.state.eventHistory[index];
+    if (!event || event.eventName !== eventName) continue;
+    if (eventCode !== undefined && event.eventCode !== eventCode) continue;
+    return event;
+  }
+  return undefined;
+}
+
+function pushEventRecordPayload(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState, event: DuelEventRecord): void {
+  const eventCard = event.eventCardUid === undefined ? undefined : session.state.cards.find((card) => card.uid === event.eventCardUid);
+  pushGroupTable(L, eventCard ? [eventCard.uid] : []);
+  lua.lua_pushinteger(L, event.eventPlayer ?? eventCard?.controller ?? session.state.turnPlayer);
+  lua.lua_pushinteger(L, event.eventValue ?? 0);
+  if (event.relatedEffectId !== undefined && Number.isFinite(event.relatedEffectId)) hostState.pushEffectTable(L, event.relatedEffectId);
+  else lua.lua_pushnil(L);
+  lua.lua_pushinteger(L, event.eventReason ?? eventCard?.reason ?? 0);
+  lua.lua_pushinteger(L, event.eventReasonPlayer ?? eventCard?.reasonPlayer ?? eventCard?.controller ?? session.state.turnPlayer);
+}
+
+interface LuaRaiseEventPayload {
+  relatedEffectId?: number;
+  eventReason?: number;
+  eventReasonPlayer?: PlayerId;
+  eventPlayer?: PlayerId;
+  eventValue?: number;
+}
+
+function readRaiseEventPayload(L: unknown): LuaRaiseEventPayload {
+  const relatedEffectId = readOptionalEffectId(L, 3);
+  const eventReasonPlayer = readOptionalPlayer(L, 5);
+  const eventPlayer = readOptionalPlayer(L, 6);
+  return {
+    ...(relatedEffectId === undefined ? {} : { relatedEffectId }),
+    ...(lua.lua_isnumber(L, 4) ? { eventReason: lua.lua_tointeger(L, 4) } : {}),
+    ...(eventReasonPlayer === undefined ? {} : { eventReasonPlayer }),
+    ...(eventPlayer === undefined ? {} : { eventPlayer }),
+    ...(lua.lua_isnumber(L, 7) ? { eventValue: lua.lua_tointeger(L, 7) } : {}),
+  };
+}
+
+function readOptionalEffectId(L: unknown, index: number): number | undefined {
+  if (!lua.lua_istable(L, index)) return undefined;
+  lua.lua_getfield(L, index, to_luastring("__effect_id"));
+  const id = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
+  lua.lua_pop(L, 1);
+  return id === undefined || !Number.isFinite(id) ? undefined : id;
+}
+
+function raiseOperationEvent(session: DuelSession, eventName: DuelEventName, card: DuelCardInstance, eventCode: number | undefined, payload: LuaRaiseEventPayload): void {
+  if (eventName === "customEvent" && eventCode !== undefined) raiseDuelEventWithCode(session.state, eventName, eventCode, card, payload);
+  else if (Object.keys(payload).length > 0) collectDuelTriggerEffects(session.state, eventName, card, payload);
+  else raiseDuelEvent(session.state, eventName, card);
 }
 
 function pushSetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {

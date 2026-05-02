@@ -1,10 +1,20 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard } from "#duel/core.js";
 import { findCard, hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
-import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import {
+  isCounterPlacementPrevented,
+  isMonsterSetPrevented,
+  isNormalSummonPrevented,
+  isSpellTrapSetPrevented,
+  matchingPlayerEffects,
+  type ContinuousEffectContextFactory,
+} from "#duel/continuous-effects.js";
 import { canAddDuelCardCounter, canRemoveDuelCounters, getDuelCardCounter, removeDuelCounters } from "#duel/counters.js";
+import { recordDuelEvent } from "#duel/event-history.js";
 import { getDuelFlagEffectCount } from "#duel/flags.js";
+import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
+import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
@@ -104,7 +114,7 @@ function pushCanSetSpellTrap(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const uid = readCardUid(L, 2);
   const card = uid ? findCard(session.state, uid) : undefined;
-  lua.lua_pushboolean(L, hasZoneSpace(session.state, player, "spellTrapZone") && (!card || canSetAsSpellTrap(card)));
+  lua.lua_pushboolean(L, hasZoneSpace(session.state, player, "spellTrapZone") && (!card || (canSetAsSpellTrap(card) && !isSpellTrapSetPrevented(session.state, player, card, createPlayerCheckContext(session)))));
   return 1;
 }
 
@@ -179,7 +189,7 @@ function pushIsCanAddCounter(L: unknown, session: DuelSession): number {
     uids.length > 0
       ? uids.map((uid) => findCard(session.state, uid)).filter((card): card is DuelCardInstance => card !== undefined)
       : session.state.cards.filter((card) => card.controller === player && (card.location === "monsterZone" || card.location === "spellTrapZone"));
-  lua.lua_pushboolean(L, cards.some((card) => canAddDuelCardCounter(card, count)));
+  lua.lua_pushboolean(L, cards.some((card) => canAddDuelCardCounter(card, count) && !isCounterPlacementPrevented(session.state, card, createPlayerCheckContext(session))));
   return 1;
 }
 
@@ -187,6 +197,12 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelP
   const query = readCounterQuery(L, session);
   const removed = removeDuelCounters(session.state, query.player, query.selfLocations, query.opponentLocations, query.counterType, query.count);
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...removed);
+  for (const uid of removed) {
+    const card = findCard(session.state, uid);
+    if (!card) continue;
+    recordDuelEvent(session.state, "counterRemoved", card);
+    collectTriggerEffectsRule(session.state, "counterRemoved", () => true, card);
+  }
   lua.lua_pushinteger(L, removed.length > 0 ? query.count : 0);
   return 1;
 }
@@ -219,7 +235,11 @@ function canNormalSet(session: DuelSession, player: PlayerId, uid: string | unde
   const readAvailable = (): boolean => {
     const hand = card ? [card] : session.state.cards.filter((candidate) => candidate.controller === player && candidate.location === "hand" && isMonsterLike(candidate.kind));
     const actions = [...normalSummonActions(session.state, player, hand), ...tributeSummonActions(session.state, player, hand)];
-    return card ? actions.some((action) => actionHasUid(action, card.uid) && (action.type === "setMonster" || action.type === "tributeSummon")) : actions.some((action) => action.type === "setMonster" || action.type === "tributeSummon");
+    const available = actions.filter((action) => {
+      const target = "uid" in action ? findCard(session.state, action.uid) : undefined;
+      return Boolean(target && (action.type === "setMonster" || action.type === "tributeSummon") && !isMonsterSetPrevented(session.state, player, target, createPlayerCheckContext(session)));
+    });
+    return card ? available.some((action) => actionHasUid(action, card.uid)) : available.length > 0;
   };
   if (!ignoreCount) return readAvailable();
   const previous = session.state.players[player].normalSummonAvailable;
@@ -235,8 +255,12 @@ function normalSummonAvailability(session: DuelSession, player: PlayerId, card: 
   const readAvailable = (): boolean => {
     const hand = card ? [card] : session.state.cards.filter((candidate) => candidate.controller === player && candidate.location === "hand" && isMonsterLike(candidate.kind));
     const actions = [...normalSummonActions(session.state, player, hand), ...tributeSummonActions(session.state, player, hand)];
-    if (card && isNoTributePlayerAffected(session, player)) return availableMonsterZoneCount(session, player, []) > 0;
-    return card ? actions.some((action) => actionHasUid(action, card.uid) && (action.type === "normalSummon" || action.type === "tributeSummon")) : actions.some((action) => action.type === "normalSummon" || action.type === "tributeSummon");
+    if (card && isNoTributePlayerAffected(session, player)) return availableMonsterZoneCount(session, player, []) > 0 && !isNormalSummonPrevented(session.state, player, card, createPlayerCheckContext(session));
+    const available = actions.filter((action) => {
+      const target = "uid" in action ? findCard(session.state, action.uid) : undefined;
+      return Boolean(target && (action.type === "normalSummon" || action.type === "tributeSummon") && !isNormalSummonPrevented(session.state, player, target, createPlayerCheckContext(session)));
+    });
+    return card ? available.some((action) => actionHasUid(action, card.uid)) : available.length > 0;
   };
   const readWithTributeOverride = (): boolean => (card ? withLuaMinTributeOverride(card, minTributes, readAvailable) : readAvailable());
   if (!ignoreCount) return readWithTributeOverride();
@@ -360,7 +384,8 @@ function createPlayerCheckContext(session: DuelSession): ContinuousEffectContext
 function pushPlayerMoveMatcher(L: unknown, fieldName: string, session: DuelSession, location: DuelLocation): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readCardOrGroupUids(state, 2);
-    lua.lua_pushboolean(state, uids.length === 0 || uids.every((uid) => canMoveDuelCardToLocation(session.state, uid, location)));
+    const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
+    lua.lua_pushboolean(state, uids.length === 0 || uids.every((uid) => canMoveDuelCardToLocation(session.state, uid, location, reason)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));

@@ -1,7 +1,11 @@
 import fengari from "fengari";
+import { moveDuelCard } from "#duel/card-state.js";
+import { isCounterPlacementPrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
+import { recordDuelEvent } from "#duel/event-history.js";
+import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { readTableStringField } from "#lua/api-utils.js";
-import type { DuelCardInstance, DuelSession } from "#duel/types.js";
+import type { DuelCardInstance, DuelEventName, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -46,7 +50,9 @@ function pushAddCounter(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
   const counterType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const count = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
-  lua.lua_pushboolean(L, addDuelCardCounter(card, counterType, count));
+  const added = canPlaceCounter(session, card, count) && addDuelCardCounter(card, counterType, count);
+  if (added && card) collectCounterEvent(session, "counterAdded", card);
+  lua.lua_pushboolean(L, added);
   return 1;
 }
 
@@ -57,14 +63,16 @@ function pushRemoveCounter(L: unknown, session: DuelSession): number {
   const countIndex = hasPlayerArgument ? 4 : 3;
   const counterType = lua.lua_isnumber(L, counterTypeIndex) ? lua.lua_tointeger(L, counterTypeIndex) : 0;
   const count = lua.lua_isnumber(L, countIndex) ? lua.lua_tointeger(L, countIndex) : 1;
-  lua.lua_pushboolean(L, removeDuelCardCounter(card, counterType, count));
+  const removed = removeDuelCardCounter(card, counterType, count);
+  if (removed && card) collectCounterEvent(session, "counterRemoved", card);
+  lua.lua_pushboolean(L, removed);
   return 1;
 }
 
 function pushIsCanAddCounter(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
   const count = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
-  lua.lua_pushboolean(L, canAddDuelCardCounter(card, count));
+  lua.lua_pushboolean(L, canPlaceCounter(session, card, count));
   return 1;
 }
 
@@ -94,4 +102,36 @@ function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefine
 
 function totalCounters(card: DuelCardInstance): number {
   return Object.values(card.counters ?? {}).reduce((total, value) => total + value, 0);
+}
+
+function collectCounterEvent(session: DuelSession, eventName: DuelEventName, card: DuelCardInstance): void {
+  recordDuelEvent(session.state, eventName, card);
+  collectTriggerEffectsRule(session.state, eventName, () => true, card);
+}
+
+function canPlaceCounter(session: DuelSession, card: DuelCardInstance | undefined, count: number): boolean {
+  return Boolean(card && canAddDuelCardCounter(card, count) && !isCounterPlacementPrevented(session.state, card, createCounterCheckContext(session)));
+}
+
+function createCounterCheckContext(session: DuelSession): ContinuousEffectContextFactory {
+  return (effect, source) => ({
+    duel: session.state,
+    source,
+    player: effect.controller,
+    checkOnly: true,
+    targetUids: [],
+    log() {},
+    moveCard(uid, to, controller) {
+      return moveDuelCard(session.state, uid, to, controller);
+    },
+    negateChainLink() {
+      return false;
+    },
+    setTargets() {},
+    getTargets() {
+      return [];
+    },
+    setTargetPlayer() {},
+    setTargetParam() {},
+  });
 }

@@ -1,5 +1,11 @@
 import fengari from "fengari";
-import { drawDuelCards, sendDuelCardToGraveyard } from "#duel/core.js";
+import {
+  canDuelPlayerDiscardDeck,
+  canDuelPlayerDiscardHand,
+  canDuelPlayerDraw,
+  drawDuelCards,
+  sendDuelCardToGraveyard,
+} from "#duel/core.js";
 import { getCards, moveDuelCard } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { pushCardTable } from "#lua/card-api.js";
@@ -21,7 +27,7 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    lua.lua_pushboolean(state, topDeckUids(session, player, count).length >= count);
+    lua.lua_pushboolean(state, canDuelPlayerDraw(session.state, player, count));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDraw"));
@@ -38,21 +44,21 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    lua.lua_pushboolean(state, topDeckUids(session, player, count).length >= count);
+    lua.lua_pushboolean(state, canDuelPlayerDiscardDeck(session.state, player, count));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDiscardDeck"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    lua.lua_pushboolean(state, topDeckUids(session, player, count).length >= count);
+    lua.lua_pushboolean(state, canDuelPlayerDiscardDeck(session.state, player, count));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDiscardDeckAsCost"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    lua.lua_pushboolean(state, matchingCardUids(session, player, 0x02).length >= count);
+    lua.lua_pushboolean(state, canDuelPlayerDiscardHand(session.state, player, count));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDiscardHand"));
@@ -204,6 +210,7 @@ function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDue
 }
 
 function discardDeckCards(session: DuelSession, player: PlayerId, count: number, reason: number): string[] {
+  if (!canDuelPlayerDiscardDeck(session.state, player, 0)) return [];
   const discarded: string[] = [];
   for (const uid of topDeckUids(session, player, count)) {
     try {
@@ -222,6 +229,10 @@ function discardHandCards(session: DuelSession, L: unknown): string[] {
   const min = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
   const max = Math.max(min, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min);
   const reason = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : duelReason.effect;
+  if (!canDuelPlayerDiscardHand(session.state, player, 0)) {
+    releaseOptionalFunctionRef(L, filterRef);
+    return [];
+  }
   const selected = matchingCardUidsWithFilter(L, session, filterRef, player, 0x02, 0, undefined, readFilterArgs(L, 6)).slice(0, max);
   releaseOptionalFunctionRef(L, filterRef);
   if (selected.length < min) return [];

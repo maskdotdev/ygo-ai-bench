@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { addDuelChainLimit, negateDuelChainLink } from "#duel/core.js";
+import { addDuelChainLimit, canNegateDuelChainLink, negateDuelChainLink } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
@@ -132,12 +132,17 @@ function pushChainEvent(L: unknown, session: DuelSession, hostState: LuaDuelChai
   }
   const eventCard = link.eventCardUid === undefined ? undefined : session.state.cards.find((card) => card.uid === link.eventCardUid);
   pushGroupTable(L, eventCard ? [eventCard.uid] : []);
-  lua.lua_pushinteger(L, eventCard?.controller ?? link.player);
-  lua.lua_pushinteger(L, 0);
-  lua.lua_pushnil(L);
-  lua.lua_pushinteger(L, eventCard?.reason ?? 0);
-  lua.lua_pushinteger(L, eventCard?.reasonPlayer ?? eventCard?.controller ?? link.player);
+  lua.lua_pushinteger(L, link.eventPlayer ?? eventCard?.controller ?? link.player);
+  lua.lua_pushinteger(L, link.eventValue ?? 0);
+  pushRelatedEffectById(L, hostState, link.relatedEffectId);
+  lua.lua_pushinteger(L, link.eventReason ?? eventCard?.reason ?? 0);
+  lua.lua_pushinteger(L, link.eventReasonPlayer ?? eventCard?.reasonPlayer ?? eventCard?.controller ?? link.player);
   return 6;
+}
+
+function pushRelatedEffectById(L: unknown, hostState: LuaDuelChainApiHostState, relatedEffectId: number | undefined): void {
+  if (relatedEffectId !== undefined && Number.isFinite(relatedEffectId)) hostState.pushEffectTable(L, relatedEffectId);
+  else lua.lua_pushnil(L);
 }
 
 function pushChainMaterial(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
@@ -150,12 +155,19 @@ function pushChainMaterial(L: unknown, session: DuelSession, hostState: LuaDuelC
 function pushSetChainLimit(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState, untilChainEnd: boolean): number {
   const filterRef = readOptionalFunctionRef(L, 1);
   if (filterRef === undefined) return 0;
+  const registryKey = luaChainLimitRegistryKey(hostState.activeContext, untilChainEnd, filterRef);
   addDuelChainLimit(session.state, {
+    ...(registryKey === undefined ? {} : { registryKey }),
     untilChainEnd,
     allows: (effect, player, chainPlayer) => callChainLimit(L, hostState, filterRef, effect, player, chainPlayer),
     release: () => releaseOptionalFunctionRef(L, filterRef),
   });
   return 0;
+}
+
+function luaChainLimitRegistryKey(ctx: DuelEffectContext | undefined, untilChainEnd: boolean, filterRef: number): string | undefined {
+  if (!ctx?.source.code) return undefined;
+  return `lua-chain-limit:${ctx.source.code}:${ctx.player}:${untilChainEnd ? "chain" : "link"}:${filterRef}`;
 }
 
 function callChainLimit(
@@ -185,7 +197,7 @@ function pushEffectByDuelId(L: unknown, hostState: LuaDuelChainApiHostState, eff
 
 function pushIsChainNegatable(L: unknown, session: DuelSession): number {
   const target = chainLinkByLuaArg(L, session);
-  lua.lua_pushboolean(L, Boolean(target && !target.negated));
+  lua.lua_pushboolean(L, Boolean(target && canNegateDuelChainLink(session.state, target.id)));
   return 1;
 }
 

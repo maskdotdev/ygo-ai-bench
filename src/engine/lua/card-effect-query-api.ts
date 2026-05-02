@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { isCardDisabled } from "#duel/continuous-effects.js";
+import { isCardDisabled, isDisablePrevented } from "#duel/continuous-effects.js";
 import { canMoveDuelCardToLocation, moveDuelCard } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { readTableNumberField, readTableStringField } from "#lua/api-utils.js";
@@ -100,17 +100,24 @@ function pushIsCanBeEffectTarget<EffectRecord extends LuaCardApiEffectRecord>(L:
   const card = readCard(L, session);
   const effectId = lua.lua_istable(L, 2) ? readTableNumberField(L, 2, "__effect_id") : undefined;
   const targetEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
-  if (!card) {
-    lua.lua_pushboolean(L, false);
-    return 1;
-  }
-  if (targetEffect && ((targetEffect.property ?? 0) & 0x80) === 0 && matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, targetEffect, hostState))) {
-    lua.lua_pushboolean(L, false);
-    return 1;
-  }
-  const cannotTarget = matchingLuaEffects(session.state, card, 71, hostState).some((effect) => cannotTargetEffectApplies(L, session, effect, card, targetEffect, hostState));
-  lua.lua_pushboolean(L, !cannotTarget);
+  lua.lua_pushboolean(L, canLuaCardBeEffectTarget(L, session, hostState, card, targetEffect));
   return 1;
+}
+
+export function canLuaCardBeEffectTarget<EffectRecord extends LuaCardApiEffectRecord>(
+  L: unknown,
+  session: DuelSession,
+  hostState: LuaCardApiState<EffectRecord>,
+  card: DuelCardInstance | undefined,
+  targetEffect: EffectRecord | undefined,
+): boolean {
+  if (!card) return false;
+  const immune =
+    targetEffect &&
+    ((targetEffect.property ?? 0) & 0x80) === 0 &&
+    matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, targetEffect, hostState));
+  if (immune) return false;
+  return !matchingLuaEffects(session.state, card, 71, hostState).some((effect) => cannotTargetEffectApplies(L, session, effect, card, targetEffect, hostState));
 }
 
 function pushIsCanBeDisabledByEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
@@ -118,7 +125,7 @@ function pushIsCanBeDisabledByEffect<EffectRecord extends LuaCardApiEffectRecord
   const effectId = lua.lua_istable(L, 2) ? readTableNumberField(L, 2, "__effect_id") : undefined;
   const targetEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
   const immune = card && targetEffect && ((targetEffect.property ?? 0) & 0x80) === 0 && matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, targetEffect, hostState));
-  lua.lua_pushboolean(L, Boolean(card && isNegatableCard(session.state, card) && !immune));
+  lua.lua_pushboolean(L, Boolean(card && isNegatableCard(session.state, card) && !immune && !isDisablePrevented(session.state, card, createLuaMaterialCheckContext(session.state))));
   return 1;
 }
 

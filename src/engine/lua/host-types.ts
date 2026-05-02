@@ -13,6 +13,7 @@ export interface LuaScriptHost {
   loadCardScript(cardCode: string | number, source: LuaScriptSource): LuaScriptLoadResult;
   registerInitialEffects(): number;
   registerInitialEffectsDetailed(): LuaInitialEffectRegistrationResult[];
+  runStartupEffects(): number;
   getGlobalString(name: string): string | undefined;
   getGlobalNumber(name: string): number | undefined;
 }
@@ -67,7 +68,10 @@ export interface LuaHostState {
   usedEffectCounts: Map<string, number>;
   messages: string[];
   activeTargetUids: string[] | undefined;
+  activeLuaEffectId: number | undefined;
   activeContext: DuelEffectContext | undefined;
+  activeOperationTriggerStart: number | undefined;
+  activeOperationMoved: boolean;
   operationInfos: LuaDuelOperationInfo[];
   possibleOperationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];

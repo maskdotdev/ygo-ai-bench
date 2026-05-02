@@ -1,7 +1,10 @@
 import fengari from "fengari";
 import { recordNormalSummonActivity, recordSpecialSummonActivity } from "#duel/activity.js";
 import {
+  isMonsterSetPrevented,
   isMaterialUsePrevented,
+  isSpellTrapSetPrevented,
+  isSummonNegationPrevented,
   type ContinuousEffectContextFactory,
   type MaterialUseKind,
 } from "#duel/continuous-effects.js";
@@ -19,8 +22,10 @@ import {
   xyzSummonDuelCard,
 } from "#duel/core.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
+import { recordDuelEvent } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSetDuelCard, tributeSummonActions } from "#duel/summon.js";
+import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
@@ -151,6 +156,7 @@ function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaD
 }
 
 function setLuaMonsterWithTributes(session: DuelSession, target: DuelCardInstance, tributeUids: string[]): { ok: boolean } {
+  if (isMonsterSetPrevented(session.state, target.controller, target, createMaterialCheckContext(session.state))) return { ok: false };
   const reason = duelReason.release | duelReason.summon;
   try {
     tributeSetDuelCard(
@@ -170,10 +176,15 @@ function setLuaMonsterWithTributes(session: DuelSession, target: DuelCardInstanc
 
 function setLuaSpellTrap(session: DuelSession, target: DuelCardInstance): { ok: boolean } {
   if (!canLuaSetSpellTrap(session, target)) return { ok: false };
-  moveDuelCard(session.state, target.uid, "spellTrapZone", target.controller, duelReason.rule, session.state.turnPlayer);
-  target.position = "faceDown";
-  target.faceUp = false;
-  pushDuelLog(session.state, "set", target.controller, target.name, `Set from ${target.previousLocation}`);
+  if (target.location === "hand") {
+    setCoreSpellTrap(session.state, target.controller, target.uid, (eventName, eventCard) => collectTriggerEffectsRule(session.state, eventName, () => true, eventCard));
+  } else {
+    moveDuelCard(session.state, target.uid, "spellTrapZone", target.controller, duelReason.rule, session.state.turnPlayer);
+    target.position = "faceDown";
+    target.faceUp = false;
+    pushDuelLog(session.state, "set", target.controller, target.name, `Set from ${target.previousLocation}`);
+    collectTriggerEffectsRule(session.state, "spellTrapSet", () => true, target);
+  }
   return { ok: true };
 }
 
@@ -181,7 +192,8 @@ function canLuaSetSpellTrap(session: DuelSession, target: DuelCardInstance): boo
   return (
     (target.kind === "spell" || target.kind === "trap") &&
     (target.location === "hand" || target.location === "deck" || target.location === "graveyard") &&
-    hasZoneSpace(session.state, target.controller, "spellTrapZone")
+    hasZoneSpace(session.state, target.controller, "spellTrapZone") &&
+    !isSpellTrapSetPrevented(session.state, target.controller, target, createMaterialCheckContext(session.state))
   );
 }
 
@@ -355,10 +367,14 @@ function pushNegateSummon(L: unknown, session: DuelSession, hostState: LuaDuelSu
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || card.location !== "monsterZone" || card.summonType === undefined) continue;
+    if (isSummonNegationPrevented(session.state, card, card.summonType, createMaterialCheckContext(session.state))) continue;
     try {
+      const eventName = summonNegatedEventName(card);
       moveDuelCard(session.state, card.uid, "graveyard", card.controller, duelReason.disSummon, session.state.turnPlayer);
       delete card.summonType;
       delete card.summonPlayer;
+      recordDuelEvent(session.state, eventName, card);
+      collectTriggerEffectsRule(session.state, eventName, () => true, card);
       negated.push(uid);
     } catch {
       // EDOPro-style helpers report successful negations only.
@@ -367,6 +383,12 @@ function pushNegateSummon(L: unknown, session: DuelSession, hostState: LuaDuelSu
   setOperatedUids(hostState, negated);
   lua.lua_pushinteger(L, negated.length);
   return 1;
+}
+
+function summonNegatedEventName(card: DuelCardInstance): "normalSummonNegated" | "flipSummonNegated" | "specialSummonNegated" {
+  if (card.summonType === "normal" || card.summonType === "tribute") return "normalSummonNegated";
+  if (card.summonType === "flip") return "flipSummonNegated";
+  return "specialSummonNegated";
 }
 
 function readFirstCardOrGroupUid(L: unknown, index: number): string | undefined {

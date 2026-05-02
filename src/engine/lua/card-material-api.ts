@@ -19,7 +19,7 @@ export function installCardMaterialApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsXyzSummonable"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsLinkSummonable(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsLinkSummonable"));
-  pushBooleanGetter(L, "IsCanTurnSet", session, (card) => Boolean(card && canTurnSet(card)));
+  pushBooleanGetter(L, "IsCanTurnSet", session, (card) => Boolean(card && canTurnSet(session.state, card)));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
@@ -96,10 +96,11 @@ function canLuaSetSpellTrap(card: DuelCardInstance): boolean {
   return (card.kind === "spell" || card.kind === "trap") && (card.location === "hand" || card.location === "deck" || card.location === "graveyard");
 }
 
-function canTurnSet(card: DuelCardInstance): boolean {
+function canTurnSet(state: DuelState, card: DuelCardInstance): boolean {
   if (card.location !== "monsterZone" || !card.faceUp) return false;
   if (card.kind !== "monster" && card.kind !== "extra") return false;
-  return (cardTypeFlags(card) & 0x4000000) === 0;
+  if ((cardTypeFlags(card) & 0x4000000) !== 0) return false;
+  return canChangeDuelCardPosition(state, card.uid, "faceDownDefense");
 }
 
 function canChangePosition(state: DuelState, card: DuelCardInstance, requested: CardPosition | undefined): boolean {

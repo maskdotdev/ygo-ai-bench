@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { canSpecialSummonDuelCard } from "#duel/core.js";
+import { isMonsterSetPrevented, isNormalSummonPrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { positionFromMask, readTableStringField } from "#lua/api-utils.js";
 import { canSpecialSummonFromLua } from "#lua/card-eligibility-api.js";
@@ -56,7 +57,7 @@ function summonActionsForCard(session: DuelSession, card: DuelCardInstance, igno
   const readActions = (): DuelAction[] => [
     ...(canUseNoTributeSummon(session, card) ? [{ type: "normalSummon" as const, player: card.controller, uid: card.uid, label: `Normal Summon ${card.name}` }] : normalSummonActions(session.state, card.controller, [card])),
     ...tributeSummonActions(session.state, card.controller, [card]),
-  ];
+  ].filter((action) => summonPredicateActionAllowed(session, card, action));
   const readWithTributeOverride = (): DuelAction[] => withLuaMinTributeOverride(card, minTributes, readActions);
   if (!ignoreCount) return readWithTributeOverride();
   const previous = session.state.players[card.controller].normalSummonAvailable;
@@ -69,7 +70,42 @@ function summonActionsForCard(session: DuelSession, card: DuelCardInstance, igno
 }
 
 function canUseNoTributeSummon(session: DuelSession, card: DuelCardInstance): boolean {
-  return session.state.players[card.controller].normalSummonAvailable && availableMonsterZoneCount(session, card.controller, []) > 0 && isNoTributePlayerAffected(session, card.controller);
+  return session.state.players[card.controller].normalSummonAvailable && availableMonsterZoneCount(session, card.controller, []) > 0 && isNoTributePlayerAffected(session, card.controller) && !isNormalSummonPrevented(session.state, card.controller, card, createPredicateContext(session));
+}
+
+function summonPredicateActionAllowed(session: DuelSession, card: DuelCardInstance, action: DuelAction): boolean {
+  if (!actionHasUid(action, card.uid)) return true;
+  if (action.type === "normalSummon" || action.type === "tributeSummon") return !isNormalSummonPrevented(session.state, card.controller, card, createPredicateContext(session));
+  if (action.type === "setMonster") return !isMonsterSetPrevented(session.state, card.controller, card, createPredicateContext(session));
+  return true;
+}
+
+function createPredicateContext(session: DuelSession): ContinuousEffectContextFactory {
+  return (effect, source, card) => ({
+    duel: session.state,
+    source,
+    player: effect.controller,
+    ...(card === undefined ? {} : { eventCard: card }),
+    checkOnly: true,
+    targetUids: [],
+    log() {},
+    moveCard(uid, to, controller) {
+      const moved = session.state.cards.find((candidate) => candidate.uid === uid);
+      if (!moved) throw new Error(`Card ${uid} not found`);
+      moved.location = to;
+      if (controller !== undefined) moved.controller = controller;
+      return moved;
+    },
+    negateChainLink() {
+      return false;
+    },
+    setTargets() {},
+    getTargets() {
+      return [];
+    },
+    setTargetPlayer() {},
+    setTargetParam() {},
+  });
 }
 
 function actionMatchesKind(action: DuelAction, kind: "normalSummon" | "setMonster"): boolean {

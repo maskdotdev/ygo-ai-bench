@@ -1,7 +1,8 @@
 import fengari from "fengari";
 import { moveDuelCard } from "#duel/card-state.js";
-import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import { isEffectTargetSelectionPrevented, matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { cardFieldId, pushCardTable } from "#lua/card-api.js";
+import { canLuaCardBeEffectTarget, createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
 import { cardTypeFlags, readCardDataByCode } from "#lua/duel-api/query-card-data.js";
 import { changeTargetCard, effectiveTargetUids } from "#lua/duel-api/query-target-state.js";
@@ -11,6 +12,7 @@ import { findSubGroupSelection, findSumGreaterSelection, findSumSelection } from
 import { uniqueUids } from "#lua/group-uid-utils.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
+import type { LuaEffectRecord } from "#lua/host-types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -18,10 +20,13 @@ type LuaFilterArgs = { start: number; count: number };
 
 export interface LuaDuelQueryApiHostState {
   activeTargetUids: string[] | undefined;
+  activeLuaEffectId: number | undefined;
   activeContext: DuelEffectContext | undefined;
+  effects: Map<number, LuaEffectRecord>;
   operatedUids: string[];
   selectedUids: string[];
   fusionMaterialUids: string[];
+  pushEffectTable: (state: unknown, id: number) => void;
 }
 
 export function installDuelQueryApi(L: unknown, session: DuelSession, hostState: LuaDuelQueryApiHostState): void {
@@ -63,7 +68,7 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("GetCardSetcodeFromCode"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsExistingMatchingCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsExistingMatchingCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsExistingMatchingCard(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsExistingMatchingCard(state, session, selectTargetOptions(hostState)));
   lua.lua_setfield(L, -2, to_luastring("IsExistingTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushTargetCount(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetTargetCount"));
@@ -88,7 +93,7 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("SelectSubGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectMatchingCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session, hostState.activeTargetUids));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session, selectTargetOptions(hostState)));
   lua.lua_setfield(L, -2, to_luastring("SelectTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFirstTarget(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetFirstTarget"));
@@ -292,10 +297,10 @@ function pushCardSetcodesFromCode(L: unknown, session: DuelSession): number {
   return setcodes.length;
 }
 
-function pushIsExistingMatchingCard(L: unknown, session: DuelSession): number {
+function pushIsExistingMatchingCard(L: unknown, session: DuelSession, options?: { hostState: LuaDuelQueryApiHostState }): number {
   const query = readMatchingQuery(L, session, 1, 2, 3, 4, 6, 7);
   const minimum = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 1;
-  const count = matchingCardUidsWithFilter(L, session, query).length;
+  const count = effectTargetableMatches(L, session, query, options?.hostState).length;
   releaseOptionalFunctionRef(L, query.filterRef);
   lua.lua_pushboolean(L, count >= minimum);
   return 1;
@@ -342,15 +347,33 @@ function pushEnvironment(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function pushSelectedMatchingGroup(L: unknown, session: DuelSession, targetUids?: string[]): number {
+function pushSelectedMatchingGroup(L: unknown, session: DuelSession, options?: { hostState: LuaDuelQueryApiHostState; targetUids?: string[] }): number {
   const query = readMatchingQuery(L, session, 2, 3, 4, 5, 8, 9);
   const min = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : 1;
   const max = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : min;
-  const selected = selectMatchingUids(matchingCardUidsWithFilter(L, session, query), min, max);
+  const matches = effectTargetableMatches(L, session, query, options?.hostState);
+  const selected = selectMatchingUids(matches, min, max);
   releaseOptionalFunctionRef(L, query.filterRef);
-  if (targetUids) targetUids.splice(0, targetUids.length, ...selected);
+  if (options?.targetUids) options.targetUids.splice(0, options.targetUids.length, ...selected);
   pushGroupTable(L, selected);
   return 1;
+}
+
+function selectTargetOptions(hostState: LuaDuelQueryApiHostState): { hostState: LuaDuelQueryApiHostState; targetUids?: string[] } {
+  return hostState.activeTargetUids ? { hostState, targetUids: hostState.activeTargetUids } : { hostState };
+}
+
+function effectTargetableMatches(L: unknown, session: DuelSession, query: MatchingQuery, hostState?: LuaDuelQueryApiHostState): string[] {
+  const filtered = matchingCardUidsWithFilter(L, session, query);
+  const targetEffect = hostState?.activeLuaEffectId === undefined ? undefined : hostState.effects.get(hostState.activeLuaEffectId);
+  if (!hostState || !targetEffect) return filtered;
+  return filtered.filter((uid) => {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    return (
+      canLuaCardBeEffectTarget(L, session, hostState, card, targetEffect) &&
+      Boolean(card && !isEffectTargetSelectionPrevented(session.state, query.player, card, createLuaMaterialCheckContext(session.state)))
+    );
+  });
 }
 
 function pushCheckWithSumEqual(L: unknown, session: DuelSession): number {
