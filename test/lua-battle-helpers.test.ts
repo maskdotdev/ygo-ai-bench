@@ -1309,6 +1309,8 @@ describe("Lua battle helpers", () => {
       local atk_t = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
       local def_a = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local def_t = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      atk_a:UpdateAttack(200, RESETS_STANDARD_PHASE_END)
+      def_t:UpdateDefense(100, RESETS_STANDARD_PHASE_END)
       Debug.Message("calc attack " .. Duel.CalculateDamage(atk_a, atk_t))
       Debug.Message("calc attack damage " .. Duel.GetBattleDamage(1) .. "/" .. Duel.GetLP(1))
       Debug.Message("calc defense " .. Duel.CalculateDamage(def_a, def_t))
@@ -1320,14 +1322,14 @@ describe("Lua battle helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("calc attack 800");
-    expect(host.messages).toContain("calc attack damage 800/7200");
-    expect(host.messages).toContain("calc defense 500");
-    expect(host.messages).toContain("calc defense damage 500/7500");
+    expect(host.messages).toContain("calc attack 1000");
+    expect(host.messages).toContain("calc attack damage 1000/7000");
+    expect(host.messages).toContain("calc defense 600");
+    expect(host.messages).toContain("calc defense damage 600/7400");
     expect(host.messages).toContain("calc override 300");
-    expect(host.messages).toContain("calc override damage 300/7200");
-    expect(session.state.players[0].lifePoints).toBe(7200);
-    expect(session.state.players[1].lifePoints).toBe(7200);
+    expect(host.messages).toContain("calc override damage 300/7100");
+    expect(session.state.players[0].lifePoints).toBe(7100);
+    expect(session.state.players[1].lifePoints).toBe(7000);
   });
 
   it("lets Lua scripts force an attack between monsters", () => {

@@ -220,11 +220,11 @@ function calculateBattleDamage(
 }
 
 function battleAttack(card: DuelCardInstance): number {
-  return Math.max(0, card.data.attack ?? 0);
+  return Math.max(0, (card.data.attack ?? 0) + (card.attackModifier ?? 0));
 }
 
 function battleDefense(card: DuelCardInstance): number {
-  return Math.max(0, card.data.defense ?? 0);
+  return Math.max(0, (card.data.defense ?? 0) + (card.defenseModifier ?? 0));
 }
 
 function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
