@@ -1,0 +1,471 @@
+import { describe, expect, it } from "vitest";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createCardReader } from "#engine/data-loaders.js";
+import type { DuelCardData } from "#duel/types.js";
+import { createLuaScriptHost } from "#lua/host.js";
+
+describe("Lua deck and field helpers", () => {
+  it("lets Lua scripts inspect, confirm, and move deck-top groups", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Deck A", kind: "monster" },
+      { code: "200", name: "Deck B", kind: "monster" },
+      { code: "300", name: "Deck C", kind: "monster" },
+      { code: "400", name: "Deck D", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 11, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const expectedDeck = session.state.cards
+      .filter((card) => card.controller === 0 && card.location === "deck")
+      .sort((a, b) => a.sequence - b.sequence)
+      .map((card) => card.code);
+    const expectedTop = expectedDeck.slice(0, 2);
+    const expectedBottom = expectedDeck.slice(-2);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.DisableShuffleCheck()
+      local top = Duel.GetDecktopGroup(0, 2)
+      local bottom = Duel.GetDeckbottomGroup(0, 2)
+      Debug.Message("top count " .. top:GetCount())
+      Debug.Message("bottom count " .. bottom:GetCount())
+      local first = top:GetNext()
+      local second = top:GetNext()
+      local first_bottom = bottom:GetNext()
+      local second_bottom = bottom:GetNext()
+      Debug.Message("first top " .. first:GetCode())
+      Debug.Message("second top " .. second:GetCode())
+      Debug.Message("first bottom " .. first_bottom:GetCode())
+      Debug.Message("second bottom " .. second_bottom:GetCode())
+      Duel.SortDecktop(0, 0, 2)
+      Debug.Message("sort top operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Duel.SortDeckbottom(0, 0, 2)
+      Debug.Message("sort bottom operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Duel.ConfirmCards(1, top)
+      Duel.ConfirmDecktop(0, 3)
+      Debug.Message("sent top " .. Duel.SendtoHand(top, 0, REASON_EFFECT))
+      Duel.ShuffleDeck(0)
+      `,
+      "deck-top.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("top count 2");
+    expect(host.messages).toContain("bottom count 2");
+    expect(host.messages).toContain(`first top ${expectedTop[0]}`);
+    expect(host.messages).toContain(`second top ${expectedTop[1]}`);
+    expect(host.messages).toContain(`first bottom ${expectedBottom[0]}`);
+    expect(host.messages).toContain(`second bottom ${expectedBottom[1]}`);
+    expect(host.messages).toContain(`sort top operated 2/${expectedTop[0]}`);
+    expect(host.messages).toContain(`sort bottom operated 2/${expectedDeck[expectedDeck.length - 2]}`);
+    expect(host.messages).toContain(`confirmed 1: ${expectedTop.join(",")}`);
+    expect(host.messages).toContain(`confirmed decktop 0: ${expectedDeck.slice(0, 3).join(",")}`);
+    expect(host.messages).toContain("sent top 2");
+    expect(session.state.shuffleCheckDisabled).toBe(true);
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && expectedTop.includes(card.code))).toHaveLength(2);
+  });
+
+  it("lets Lua scripts shuffle a player's hand", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Hand A", kind: "monster" },
+      { code: "200", name: "Hand B", kind: "monster" },
+      { code: "300", name: "Hand C", kind: "monster" },
+      { code: "400", name: "Hand D", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 12, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const before = handCodes(session, 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.ShuffleHand(0)
+      Debug.Message("hand shuffled")
+      `,
+      "shuffle-hand.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("hand shuffled");
+    const after = handCodes(session, 0);
+    expect([...after].sort()).toEqual([...before].sort());
+    expect(after).not.toEqual(before);
+  });
+
+  it("lets Lua scripts goat-confirm hand and deck cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Goat Hand A", kind: "monster" },
+      { code: "200", name: "Goat Hand B", kind: "monster" },
+      { code: "300", name: "Goat Deck A", kind: "monster" },
+      { code: "400", name: "Goat Deck B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 13, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const beforeHand = handCodes(session, 0);
+    const beforeDeck = deckCodes(session, 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.GoatConfirm(0, LOCATION_HAND + LOCATION_DECK)
+      Debug.Message("goat confirm done")
+      `,
+      "goat-confirm.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain(`confirmed 0: ${beforeDeck.join(",")}`);
+    expect(host.messages).toContain(`confirmed 1: ${beforeHand.join(",")}`);
+    expect(host.messages).toContain("goat confirm done");
+    expect([...handCodes(session, 0)].sort()).toEqual([...beforeHand].sort());
+    expect([...deckCodes(session, 0)].sort()).toEqual([...beforeDeck].sort());
+  });
+
+  it("lets Lua scripts shuffle a player's extra deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "900", name: "Extra A", kind: "extra" },
+      { code: "910", name: "Extra B", kind: "extra" },
+      { code: "920", name: "Extra C", kind: "extra" },
+      { code: "930", name: "Extra D", kind: "extra" },
+      { code: "940", name: "Extra E", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 93, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: [], extra: ["900", "910", "920", "930", "940"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const before = extraCodes(session, 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.ShuffleExtra(0)
+      Debug.Message("extra shuffled")
+      `,
+      "shuffle-extra.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("extra shuffled");
+    const after = extraCodes(session, 0);
+    expect([...after].sort()).toEqual([...before].sort());
+    expect(after).not.toEqual(before);
+  });
+
+  it("lets Lua scripts confirm and read the extra deck top group", () => {
+    const cards: DuelCardData[] = [
+      { code: "900", name: "Extra Top A", kind: "extra" },
+      { code: "910", name: "Extra Top B", kind: "extra" },
+      { code: "920", name: "Extra Top C", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 94, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: [], extra: ["900", "910", "920"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const expectedTop = extraCodes(session, 0).slice(0, 2);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.ConfirmExtratop(0,2)
+      local g=Duel.GetExtraTopGroup(0,2)
+      Debug.Message("extra top group " .. g:GetCount() .. "/" .. g:GetFirst():GetCode())
+      `,
+      "confirm-extra-top.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain(`confirmed extratop 0: ${expectedTop.join(",")}`);
+    expect(host.messages).toContain(`extra top group 2/${expectedTop[0]}`);
+  });
+
+  it("lets Lua scripts create and summon tokens", () => {
+    const cards: DuelCardData[] = [{ code: "123456", name: "Generated Token", kind: "monster", attack: 500, defense: 500 }];
+    const session = createDuel({ seed: 13, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: [] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local token = Duel.CreateToken(0, 123456)
+      Debug.Message("token code " .. token:GetCode())
+      Debug.Message("token attack " .. token:GetAttack())
+      Debug.Message("token hand " .. tostring(token:IsLocation(LOCATION_HAND)) .. "/" .. tostring(token:IsDestination(LOCATION_HAND)) .. "/" .. tostring(token:IsDestination(LOCATION_MZONE)))
+      Debug.Message("token summon " .. Duel.SpecialSummon(token, 0, 0, 0, false, false, POS_FACEUP_ATTACK))
+      Debug.Message("token mzone destination " .. tostring(token:IsDestination(LOCATION_MZONE)))
+      Debug.Message("token faceup " .. tostring(token:IsFaceup()))
+      `,
+      "create-token.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("token code 123456");
+    expect(host.messages).toContain("token attack 500");
+    expect(host.messages).toContain("token hand true/true/false");
+    expect(host.messages).toContain("token summon 1");
+    expect(host.messages).toContain("token mzone destination true");
+    expect(host.messages).toContain("token faceup true");
+    expect(session.state.cards.find((card) => card.code === "123456")).toMatchObject({ location: "monsterZone", controller: 0, summonType: "special" });
+  });
+
+  it("lets Lua scripts query leave-field destinations", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Leaving Monster", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Hand Card", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 181, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const leaving = session.state.cards.find((card) => card.code === "100")!;
+    moveDuelCard(session.state, leaving.uid, "monsterZone", 0);
+    moveDuelCard(session.state, leaving.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local leaving=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("destination " .. leaving:GetDestination() .. "/" .. tostring(leaving:IsDestination(LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsDestination(LOCATION_HAND,LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsDestination({LOCATION_HAND,LOCATION_GRAVE})) .. "/" .. tostring(leaving:IsDestination(LOCATION_HAND)))
+      Debug.Message("leave field dest " .. leaving:GetLeaveFieldDest() .. "/" .. tostring(leaving:IsLeaveFieldDest(LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsLeaveFieldDest(LOCATION_HAND,LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsLeaveFieldDest({LOCATION_HAND,LOCATION_GRAVE})) .. "/" .. tostring(leaving:IsLeaveFieldDest(LOCATION_HAND)))
+      Debug.Message("hand destination " .. hand:GetDestination())
+      Debug.Message("hand leave field dest " .. hand:GetLeaveFieldDest() .. "/" .. tostring(hand:IsLeaveFieldDest(LOCATION_HAND)))
+      `,
+      "leave-field-destination.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("destination 16/true/true/true/false");
+    expect(host.messages).toContain("leave field dest 16/true/true/true/false");
+    expect(host.messages).toContain("hand destination 0");
+    expect(host.messages).toContain("hand leave field dest 0/false");
+  });
+
+  it("lets Lua scripts draw and search deck cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Draw A", kind: "monster" },
+      { code: "200", name: "Draw B", kind: "monster" },
+      { code: "300", name: "Search Target", kind: "monster" },
+      { code: "400", name: "Draw C", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 12, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const deckOrder = session.state.cards.filter((card) => card.controller === 0 && card.location === "deck").sort((a, b) => a.sequence - b.sequence);
+    const drawnCodes = deckOrder.slice(0, 2).map((card) => card.code);
+    const searchCode = deckOrder.slice(2).find((card) => card.code === "300")?.code ?? deckOrder[2]!.code;
+    const discardedCode = deckOrder.slice(2).find((card) => card.code !== searchCode)!.code;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("can draw two " .. tostring(Duel.IsPlayerCanDraw(0, 2)))
+      Debug.Message("can draw five " .. tostring(Duel.IsPlayerCanDraw(0, 5)))
+      Debug.Message("drawn " .. Duel.Draw(0, 2, REASON_EFFECT))
+      Debug.Message("draw operated " .. Duel.GetOperatedGroup():GetCount())
+      local searched = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${searchCode}), 0, LOCATION_DECK, 0, 1, 1, nil)
+      local searched_card = searched:GetFirst()
+      Debug.Message("can grave searched " .. tostring(Duel.IsPlayerCanSendtoGrave(0, searched_card)))
+      Debug.Message("can hand searched " .. tostring(Duel.IsPlayerCanSendtoHand(0, searched_card)))
+      Debug.Message("can deck searched " .. tostring(Duel.IsPlayerCanSendtoDeck(0, searched_card)))
+      Debug.Message("can remove searched " .. tostring(Duel.IsPlayerCanRemove(0, searched_card)))
+      Debug.Message("can extra searched " .. tostring(Duel.IsPlayerCanSendtoExtra(0, searched_card)))
+      Debug.Message("can special summon " .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0)))
+      Debug.Message("searched " .. Duel.SendtoHand(searched, 0, REASON_EFFECT))
+      Debug.Message("search operated " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("can discard one " .. tostring(Duel.IsPlayerCanDiscardDeck(0, 1)))
+      Debug.Message("can discard two " .. tostring(Duel.IsPlayerCanDiscardDeck(0, 2)))
+      Debug.Message("can discard cost one " .. tostring(Duel.IsPlayerCanDiscardDeckAsCost(0, 1)))
+      Debug.Message("can discard cost two " .. tostring(Duel.IsPlayerCanDiscardDeckAsCost(0, 2)))
+      Debug.Message("discarded " .. Duel.DiscardDeck(0, 2, REASON_EFFECT))
+      Debug.Message("discard operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("can hand discard three " .. tostring(Duel.IsPlayerCanDiscardHand(0, 3)))
+      Debug.Message("can hand discard four " .. tostring(Duel.IsPlayerCanDiscardHand(0, 4)))
+      Debug.Message("hand discarded " .. Duel.DiscardHand(0, aux.FilterBoolFunction(Card.IsCode, ${drawnCodes[0]}), 1, 1, REASON_EFFECT))
+      Debug.Message("hand discard operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "draw-search.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("can draw two true");
+    expect(host.messages).toContain("can draw five false");
+    expect(host.messages).toContain("drawn 2");
+    expect(host.messages).toContain("draw operated 2");
+    expect(host.messages).toContain("can grave searched true");
+    expect(host.messages).toContain("can hand searched true");
+    expect(host.messages).toContain("can deck searched false");
+    expect(host.messages).toContain("can remove searched true");
+    expect(host.messages).toContain("can extra searched false");
+    expect(host.messages).toContain("can special summon true");
+    expect(host.messages).toContain("searched 1");
+    expect(host.messages).toContain(`search operated ${searchCode}`);
+    expect(host.messages).toContain("can discard one true");
+    expect(host.messages).toContain("can discard two false");
+    expect(host.messages).toContain("can discard cost one true");
+    expect(host.messages).toContain("can discard cost two false");
+    expect(host.messages).toContain("discarded 1");
+    expect(host.messages).toContain(`discard operated 1/${discardedCode}`);
+    expect(host.messages).toContain("can hand discard three true");
+    expect(host.messages).toContain("can hand discard four false");
+    expect(host.messages).toContain("hand discarded 1");
+    expect(host.messages).toContain(`hand discard operated 1/${drawnCodes[0]}`);
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && drawnCodes.includes(card.code))).toHaveLength(1);
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === drawnCodes[0])?.location).toBe("graveyard");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === searchCode)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === discardedCode)?.location).toBe("graveyard");
+  });
+
+  it("lets Lua scripts query turn draw counts", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Draw Count Card", kind: "monster" }];
+    const session = createDuel({ seed: 71, startingHandSize: 0, drawPerTurn: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("draw count self " .. Duel.GetDrawCount(0))
+      Debug.Message("draw count opponent " .. Duel.GetDrawCount(1))
+      Debug.Message("draw count default " .. Duel.GetDrawCount())
+      `,
+      "draw-count.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("draw count self 2");
+    expect(host.messages).toContain("draw count opponent 2");
+    expect(host.messages).toContain("draw count default 2");
+  });
+
+  it("lets Lua scripts query active field spell environments", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Field Environment", kind: "spell", typeFlags: 0x80002 },
+      { code: "200", name: "Normal Spell", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 73, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const field = session.state.cards.find((card) => card.code === "100");
+    const spell = session.state.cards.find((card) => card.code === "200");
+    expect(field).toBeDefined();
+    expect(spell).toBeDefined();
+    moveDuelCard(session.state, field!.uid, "spellTrapZone", 0);
+    moveDuelCard(session.state, spell!.uid, "spellTrapZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("environment field " .. tostring(Duel.IsEnvironment(100)))
+      Debug.Message("environment player " .. tostring(Duel.IsEnvironment(100, 0)))
+      Debug.Message("environment fzone " .. tostring(Duel.IsEnvironment(100, PLAYER_ALL, LOCATION_FZONE)))
+      Debug.Message("environment normal spell " .. tostring(Duel.IsEnvironment(200)))
+      Debug.Message("environment missing " .. tostring(Duel.IsEnvironment(300)))
+      Debug.Message("environment code " .. Duel.GetEnvironment(0, LOCATION_FZONE))
+      `,
+      "field-environment.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("environment field true");
+    expect(host.messages).toContain("environment player true");
+    expect(host.messages).toContain("environment fzone true");
+    expect(host.messages).toContain("environment normal spell false");
+    expect(host.messages).toContain("environment missing false");
+    expect(host.messages).toContain("environment code 100");
+  });
+
+  it("lets Lua scripts activate and replace field spells", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Old Field", kind: "spell", typeFlags: 0x80002 },
+      { code: "200", name: "New Field", kind: "spell", typeFlags: 0x80002 },
+      { code: "300", name: "Normal Spell", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 74, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const oldField = session.state.cards.find((card) => card.code === "100");
+    expect(oldField).toBeDefined();
+    moveDuelCard(session.state, oldField!.uid, "spellTrapZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local field=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local normal=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("activate normal field " .. tostring(Duel.ActivateFieldSpell(normal,nil,0)))
+      Debug.Message("activate field spell " .. tostring(Duel.ActivateFieldSpell(field,nil,0)))
+      Debug.Message("activate operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("activate environment " .. tostring(Duel.IsEnvironment(200, 0, LOCATION_FZONE)))
+      `,
+      "activate-field-spell.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("activate normal field false");
+    expect(host.messages).toContain("activate field spell true");
+    expect(host.messages).toContain("activate operated 1/200");
+    expect(host.messages).toContain("activate environment true");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "spellTrapZone", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "hand" });
+  });
+
+});
+
+function handCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
+  return session.state.cards
+    .filter((card) => card.controller === player && card.location === "hand")
+    .sort((a, b) => a.sequence - b.sequence)
+    .map((card) => card.code);
+}
+
+function deckCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
+  return session.state.cards
+    .filter((card) => card.controller === player && card.location === "deck")
+    .sort((a, b) => a.sequence - b.sequence)
+    .map((card) => card.code);
+}
+
+function extraCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
+  return session.state.cards
+    .filter((card) => card.controller === player && card.location === "extraDeck")
+    .sort((a, b) => a.sequence - b.sequence)
+    .map((card) => card.code);
+}
