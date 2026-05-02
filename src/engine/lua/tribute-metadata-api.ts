@@ -22,6 +22,24 @@ export function applyLuaNormalTributeMetadata(L: unknown, card: DuelCardInstance
   if (min === max && min !== undefined) card.data.normalTributes = min;
 }
 
+export function withLuaMinTributeOverride<T>(card: DuelCardInstance, minTributes: number | undefined, readValue: () => T): T {
+  if (minTributes === undefined) return readValue();
+  const previousExact = card.data.normalTributes;
+  const previousMin = card.data.normalTributeMin;
+  const previousMax = card.data.normalTributeMax;
+  const maxTributes = Math.max(minTributes, previousExact ?? previousMax ?? baseNormalTributeCount(card));
+  try {
+    delete card.data.normalTributes;
+    card.data.normalTributeMin = minTributes;
+    card.data.normalTributeMax = maxTributes;
+    return readValue();
+  } finally {
+    restoreOptionalNumber(card.data, "normalTributes", previousExact);
+    restoreOptionalNumber(card.data, "normalTributeMin", previousMin);
+    restoreOptionalNumber(card.data, "normalTributeMax", previousMax);
+  }
+}
+
 function readTributeRequirementField(L: unknown, card: DuelCardInstance | undefined, fieldName: string): number | undefined {
   if (!card) return undefined;
   lua.lua_getglobal(L, to_luastring(`c${card.code}`));
@@ -33,6 +51,11 @@ function readTributeRequirementField(L: unknown, card: DuelCardInstance | undefi
   const value = lua.lua_isnumber(L, -1) ? Math.max(0, lua.lua_tointeger(L, -1)) : undefined;
   lua.lua_pop(L, 2);
   return value;
+}
+
+function restoreOptionalNumber(target: DuelCardInstance["data"], field: "normalTributes" | "normalTributeMin" | "normalTributeMax", value: number | undefined): void {
+  if (value === undefined) delete target[field];
+  else target[field] = value;
 }
 
 function baseNormalTributeCount(card: DuelCardInstance): number {

@@ -5,7 +5,7 @@ import { positionFromMask, readTableStringField } from "#lua/api-utils.js";
 import { canSpecialSummonFromLua } from "#lua/card-eligibility-api.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
-import { readMinTributeRequirement } from "#lua/tribute-metadata-api.js";
+import { readMinTributeRequirement, withLuaMinTributeOverride } from "#lua/tribute-metadata-api.js";
 import type { DuelAction, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -57,7 +57,7 @@ function summonActionsForCard(session: DuelSession, card: DuelCardInstance, igno
     ...(canUseNoTributeSummon(session, card) ? [{ type: "normalSummon" as const, player: card.controller, uid: card.uid, label: `Normal Summon ${card.name}` }] : normalSummonActions(session.state, card.controller, [card])),
     ...tributeSummonActions(session.state, card.controller, [card]),
   ];
-  const readWithTributeOverride = (): DuelAction[] => withMinTributeOverride(card, minTributes, readActions);
+  const readWithTributeOverride = (): DuelAction[] => withLuaMinTributeOverride(card, minTributes, readActions);
   if (!ignoreCount) return readWithTributeOverride();
   const previous = session.state.players[card.controller].normalSummonAvailable;
   session.state.players[card.controller].normalSummonAvailable = true;
@@ -66,36 +66,6 @@ function summonActionsForCard(session: DuelSession, card: DuelCardInstance, igno
   } finally {
     session.state.players[card.controller].normalSummonAvailable = previous;
   }
-}
-
-function withMinTributeOverride(card: DuelCardInstance, minTributes: number | undefined, readActions: () => DuelAction[]): DuelAction[] {
-  if (minTributes === undefined) return readActions();
-  const previousExact = card.data.normalTributes;
-  const previousMin = card.data.normalTributeMin;
-  const previousMax = card.data.normalTributeMax;
-  const maxTributes = Math.max(minTributes, previousExact ?? previousMax ?? baseNormalTributeCount(card));
-  try {
-    delete card.data.normalTributes;
-    card.data.normalTributeMin = minTributes;
-    card.data.normalTributeMax = maxTributes;
-    return readActions();
-  } finally {
-    restoreOptionalNumber(card.data, "normalTributes", previousExact);
-    restoreOptionalNumber(card.data, "normalTributeMin", previousMin);
-    restoreOptionalNumber(card.data, "normalTributeMax", previousMax);
-  }
-}
-
-function restoreOptionalNumber(target: DuelCardInstance["data"], field: "normalTributes" | "normalTributeMin" | "normalTributeMax", value: number | undefined): void {
-  if (value === undefined) delete target[field];
-  else target[field] = value;
-}
-
-function baseNormalTributeCount(card: DuelCardInstance): number {
-  const level = card.data.level ?? 4;
-  if (level >= 7) return 2;
-  if (level >= 5) return 1;
-  return 0;
 }
 
 function canUseNoTributeSummon(session: DuelSession, card: DuelCardInstance): boolean {
