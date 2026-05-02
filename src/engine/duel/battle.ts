@@ -67,6 +67,7 @@ export function negateDuelAttack(state: DuelState): boolean {
   const attack = state.currentAttack;
   if (!attack) return false;
   const attacker = findCard(state, attack.attackerUid);
+  if (attacker && !state.attackCanceledUids.includes(attacker.uid)) state.attackCanceledUids.push(attacker.uid);
   delete state.currentAttack;
   delete state.pendingBattle;
   state.attackPasses = [];

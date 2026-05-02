@@ -1575,9 +1575,11 @@ describe("Lua battle helpers", () => {
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
       `
+      local attacker = Duel.GetAttacker()
       Debug.Message("before attacker " .. Duel.GetAttacker():GetCode())
       Debug.Message("before target " .. Duel.GetAttackTarget():GetCode())
       Debug.Message("negate active " .. tostring(Duel.NegateAttack()))
+      Debug.Message("attack canceled status " .. tostring(attacker:IsStatus(STATUS_ATTACK_CANCELED)))
       Debug.Message("after attacker nil " .. tostring(Duel.GetAttacker() == nil))
       Debug.Message("negate empty " .. tostring(Duel.NegateAttack()))
       `,
@@ -1588,9 +1590,12 @@ describe("Lua battle helpers", () => {
     expect(host.messages).toContain("before attacker 100");
     expect(host.messages).toContain("before target 200");
     expect(host.messages).toContain("negate active true");
+    expect(host.messages).toContain("attack canceled status true");
     expect(host.messages).toContain("after attacker nil true");
     expect(host.messages).toContain("negate empty false");
     expect(session.state.currentAttack).toBeUndefined();
+    expect(session.state.attackCanceledUids).toEqual([attacker!.uid]);
+    expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.attackCanceledUids).toEqual([attacker!.uid]);
     expect(session.state.log.some((entry) => entry.action === "attack" && entry.detail === "Negated attack")).toBe(true);
   });
 

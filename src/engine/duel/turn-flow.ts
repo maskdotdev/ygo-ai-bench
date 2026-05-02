@@ -43,6 +43,7 @@ export function changeDuelPhase(state: DuelState, player: PlayerId, phase: DuelP
   pruneDuelFlagEffectsAfterPhase(state, phase);
   if (phase === "battle") {
     state.attacksDeclared = [];
+    state.attackCanceledUids = [];
     state.attackedTargetUids = [];
     state.battlePairs = [];
   }
@@ -65,6 +66,7 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   pruneDuelFlagEffectsAfterPhase(state, "draw");
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
+  state.attackCanceledUids = [];
   state.attackedTargetUids = [];
   state.battlePairs = [];
   clearBattleState(state);
