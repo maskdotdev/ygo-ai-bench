@@ -144,6 +144,24 @@ export function battleDamageReason(state: DuelState, player: PlayerId, battleCar
   return duelReason.battle;
 }
 
+export function battleDestroyRedirectLocation(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): DuelLocation | undefined {
+  const card = findCard(state, uid);
+  if (!card) return undefined;
+  const battlingUids = new Set([state.currentAttack?.attackerUid, state.currentAttack?.targetUid].filter((id): id is string => Boolean(id)));
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 204) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const sourceDestroyedOpponent = battlingUids.has(source.uid) && battlingUids.has(card.uid) && source.uid !== card.uid;
+    if (!sourceDestroyedOpponent && !continuousEffectAffectsCard(effect, source, card)) continue;
+    const redirectLocation = locationFromRedirectValue(effect.value);
+    if (!redirectLocation) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return redirectLocation;
+  }
+  return undefined;
+}
+
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 85) continue;

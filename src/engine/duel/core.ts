@@ -74,6 +74,7 @@ import {
   isMoveToLocationPrevented,
   isReleasePrevented,
   isSpecialSummonPrevented,
+  battleDestroyRedirectLocation,
   leaveFieldRedirectLocation,
   moveDestinationRedirectLocation,
   shouldRedirectBanishMove,
@@ -427,6 +428,18 @@ export function destroyDuelCard(state: DuelState, uid: string, controller?: Play
   if (indestructible) return indestructible;
   const replacement = applyDestroyReplacement(state, uid, controller, reason, replacementHandlers);
   if (replacement) return replacement;
+  const createContext = createContinuousEffectContext(state);
+  const battleRedirectLocation = (reason & duelReason.battle) !== 0 ? battleDestroyRedirectLocation(state, uid, createContext) : undefined;
+  if (battleRedirectLocation && battleRedirectLocation !== "graveyard") {
+    const moveReason = reason | duelReason.redirect;
+    requireDuelMoveAllowed(state, uid, battleRedirectLocation, moveReason);
+    const card = moveDuelCard(state, uid, battleRedirectLocation, controller, moveReason, reasonPlayer);
+    pushDuelLog(state, "destroy", card.controller, card.name, `Destroyed and moved to ${battleRedirectLocation}`);
+    collectLeaveFieldTriggers(state, card);
+    collectTriggerEffects(state, "destroyed", card);
+    if (battleRedirectLocation === "banished") collectTriggerEffects(state, "banished", card);
+    return card;
+  }
   requireDuelMoveAllowed(state, uid, "graveyard", reason);
   const card = moveDuelCard(state, uid, "graveyard", controller, reason, reasonPlayer);
   pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
