@@ -8,6 +8,7 @@ import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { readMinTributeRequirement } from "#lua/tribute-metadata-api.js";
 import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -247,19 +248,6 @@ function canSummonWithMetadataTributes(session: DuelSession, player: PlayerId, c
 
 function releasableTributeCount(session: DuelSession, player: PlayerId, targetUid: string): number {
   return session.state.cards.filter((card) => card.uid !== targetUid && card.controller === player && card.location === "monsterZone" && isMonsterLike(card.kind) && canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.summon)).length;
-}
-
-function readMinTributeRequirement(L: unknown, card: DuelCardInstance | undefined): number {
-  if (!card) return 0;
-  lua.lua_getglobal(L, to_luastring(`c${card.code}`));
-  if (!lua.lua_istable(L, -1)) {
-    lua.lua_pop(L, 1);
-    return 0;
-  }
-  lua.lua_getfield(L, -1, to_luastring("min_tribute_req"));
-  const minTributes = lua.lua_isnumber(L, -1) ? Math.max(0, lua.lua_tointeger(L, -1)) : 0;
-  lua.lua_pop(L, 2);
-  return minTributes;
 }
 
 function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: PlayerId, positionMask: number, uid: string | undefined): boolean {
