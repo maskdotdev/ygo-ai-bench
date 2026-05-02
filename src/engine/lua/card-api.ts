@@ -28,11 +28,10 @@ import { installCardSummonPredicateApi } from "#lua/card-summon-predicate-api.js
 import { installCardTableApi, pushCardTable } from "#lua/card-table-api.js";
 import { installCardTypePredicateApi } from "#lua/card-type-predicate-api.js";
 import {
-  readCardUid,
   readTableNumberField,
   readTableStringField,
 } from "#lua/api-utils.js";
-import type { DuelCardInstance, DuelEffectDefinition, DuelSession, DuelState } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectDefinition, DuelSession } from "#duel/types.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
 const { lua, to_luastring } = fengari;
@@ -87,13 +86,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   installCardSummonApi(L, session);
   installCardMoveAbilityApi(L, session);
   installCardRelationApi(L, session, hostState);
-  pushBooleanGetter(L, "IsRelateToBattle", session, (_, uid) => Boolean(uid && isRelatedToBattle(session.state, uid)));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    if (card) card.cancelToGrave = lua.lua_isnoneornil(state, 2) ? true : lua.lua_toboolean(state, 2);
-    return 0;
-  });
-  lua.lua_setfield(L, -2, to_luastring("CancelToGrave"));
   installCardEffectQueryApi(L, session, hostState);
   installCardSummonPredicateApi(L, session);
   installCardMaterialApi(L, session);
@@ -101,20 +93,10 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
 
 function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined, uid: string | undefined) => boolean): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const uid = readCardUid(state, 1);
+    const uid = readTableStringField(state, 1, "__duel_uid");
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
     lua.lua_pushboolean(state, getter(card, uid));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
-}
-
-function readCard(L: unknown, session: DuelSession | undefined): DuelCardInstance | undefined {
-  const uid = readCardUid(L, 1);
-  return uid && session ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-}
-
-function isRelatedToBattle(state: DuelState, uid: string): boolean {
-  const battle = state.currentAttack ?? state.pendingBattle;
-  return battle?.attackerUid === uid || battle?.targetUid === uid;
 }

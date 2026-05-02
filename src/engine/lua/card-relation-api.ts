@@ -44,6 +44,10 @@ export function installCardRelationApi<EffectRecord extends LuaCardApiEffectReco
   lua.lua_setfield(L, -2, to_luastring("IsRelateToChain"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsRelateToCard"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToBattle(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsRelateToBattle"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCancelToGrave(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CancelToGrave"));
 }
 
 function pushCreateEffectRelation(L: unknown, session: DuelSession): number {
@@ -180,6 +184,18 @@ function pushIsRelateToCard(L: unknown, session: DuelSession): number {
   return 1;
 }
 
+function pushIsRelateToBattle(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  lua.lua_pushboolean(L, Boolean(card && isRelatedToBattle(session, card.uid)));
+  return 1;
+}
+
+function pushCancelToGrave(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  if (card) card.cancelToGrave = lua.lua_isnoneornil(L, 2) ? true : lua.lua_toboolean(L, 2);
+  return 0;
+}
+
 function chainLinkByLuaIndex<EffectRecord extends LuaCardApiEffectRecord>(
   session: DuelSession,
   requestedIndex: number,
@@ -217,4 +233,9 @@ function setCardTarget(card: DuelCardInstance | undefined, target: DuelCardInsta
 function ownerTargetUids(session: DuelSession, card: DuelCardInstance | undefined): string[] {
   if (!card) return [];
   return session.state.cards.filter((candidate) => candidate.cardTargetUids?.includes(card.uid)).map((candidate) => candidate.uid);
+}
+
+function isRelatedToBattle(session: DuelSession, uid: string): boolean {
+  const battle = session.state.currentAttack ?? session.state.pendingBattle;
+  return battle?.attackerUid === uid || battle?.targetUid === uid;
 }
