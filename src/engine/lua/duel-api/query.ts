@@ -5,6 +5,7 @@ import { cardFieldId, pushCardTable } from "#lua/card-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
 import { cardTypeFlags, readCardDataByCode } from "#lua/duel-api/query-card-data.js";
 import { pushGroupTable } from "#lua/group-api.js";
+import { uniqueUids } from "#lua/group-uid-utils.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -584,10 +585,6 @@ function readFilterArgs(L: unknown, start: number): LuaFilterArgs {
 function readCardOrGroupUids(L: unknown, index: number): string[] {
   const cardUid = readCardUid(L, index);
   return cardUid ? [cardUid] : readGroupUids(L, index);
-}
-
-function uniqueUids(uids: string[]): string[] {
-  return [...new Set(uids)];
 }
 
 function fieldGroupUids(session: DuelSession, player: PlayerId, selfMask: number, opponentMask: number): string[] {
