@@ -16,6 +16,7 @@ import {
 } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
 import { installDuelOverlayApi, removeOverlayReference } from "#lua/duel-api/overlay.js";
 import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
 import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -470,18 +471,6 @@ function moveCardsToDeckTop(L: unknown, session: DuelSession, hostState: LuaDuel
     }
   }
   return moved;
-}
-
-function moveDeckCardToTop(state: DuelState, card: DuelCardInstance): void {
-  const cards = getCards(state, card.controller, "deck").filter((candidate) => candidate.uid !== card.uid);
-  cards.unshift(card);
-  for (const [sequence, candidate] of cards.entries()) candidate.sequence = sequence;
-}
-
-function moveDeckCardToBottom(state: DuelState, card: DuelCardInstance): void {
-  const cards = getCards(state, card.controller, "deck").filter((candidate) => candidate.uid !== card.uid);
-  cards.push(card);
-  for (const [sequence, candidate] of cards.entries()) candidate.sequence = sequence;
 }
 
 function pushSwapSequence(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
