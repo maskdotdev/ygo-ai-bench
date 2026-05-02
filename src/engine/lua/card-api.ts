@@ -1,12 +1,13 @@
 import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
-import { canDuelCardAttack, canMoveDuelCardToLocation, moveDuelCard, registerEffect } from "#duel/core.js";
+import { canDuelCardAttack, canMoveDuelCardToLocation, registerEffect } from "#duel/core.js";
 import { isCardDisabled } from "#duel/continuous-effects.js";
 import { duelReason } from "#duel/reasons.js";
+import { installCardAdjacentApi } from "#lua/card-adjacent-api.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
 import { installCardColumnApi } from "#lua/card-column-api.js";
-import { cardCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
+import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import { installCardCounterApi } from "#lua/card-counter-api.js";
 import { canMoveCardToDeckOrExtraAsCost, isMonsterLike } from "#lua/card-eligibility-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
@@ -121,11 +122,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("IsRikkaReleasable"));
   pushBooleanGetter(L, "IsForbidden", session, () => false);
   pushBooleanGetter(L, "IsDisabled", session, (card) => Boolean(card && isCardDisabled(session.state, card, createLuaMaterialCheckContext(session.state))));
-  pushBooleanGetter(L, "CheckAdjacent", session, (card) => Boolean(card && hasAdjacentMonsterZone(session.state, card)));
-  lua.lua_pushcfunction(L, (state: unknown) => pushSelectAdjacent(state, session));
-  lua.lua_setfield(L, -2, to_luastring("SelectAdjacent"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushMoveAdjacent(state, session, hostState));
-  lua.lua_setfield(L, -2, to_luastring("MoveAdjacent"));
+  installCardAdjacentApi(L, session, hostState);
   pushBooleanGetter(L, "IsMaximumMode", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeCenter", session, () => false);
   pushBooleanGetter(L, "IsMaximumModeLeft", session, () => false);
@@ -334,38 +331,6 @@ function isRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(state: D
   return card.controller === otherPlayer(player) && matchingLuaEffects(state, card, 76869711, hostState).length > 0;
 }
 
-function pushSelectAdjacent(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const sequence = firstOpenAdjacentMonsterSequence(session.state, card);
-  if (sequence === undefined) {
-    lua.lua_pushnil(L);
-    return 1;
-  }
-  lua.lua_pushinteger(L, sequence);
-  return 1;
-}
-
-function pushMoveAdjacent<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
-  const card = readCard(L, session);
-  const sequence = firstOpenAdjacentMonsterSequence(session.state, card);
-  if (!card || sequence === undefined) return 0;
-  card.sequence = sequence;
-  hostState.operatedUids?.splice(0, hostState.operatedUids.length, card.uid);
-  return 0;
-}
-
-function firstOpenAdjacentMonsterSequence(state: DuelState, card: DuelCardInstance | undefined): number | undefined {
-  if (!card || card.location !== "monsterZone" || card.sequence < 0 || card.sequence > 4) return undefined;
-  for (const sequence of [card.sequence - 1, card.sequence + 1]) {
-    if (sequence >= 0 && sequence <= 4 && isMonsterSequenceOpen(state, card.controller, sequence)) return sequence;
-  }
-  return undefined;
-}
-
-function isMonsterSequenceOpen(state: DuelState, player: PlayerId, sequence: number): boolean {
-  return !state.cards.some((card) => card.controller === player && card.location === "monsterZone" && card.sequence === sequence);
-}
-
 function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
   const phaseOrder = ["draw", "standby", "main1", "battle", "main2", "end"] satisfies DuelPhase[];
   for (const phase of phaseOrder.slice(phaseOrder.indexOf(state.phase) + 1)) {
@@ -394,16 +359,6 @@ function otherPlayer(player: PlayerId): PlayerId {
 function isRelatedToBattle(state: DuelState, uid: string): boolean {
   const battle = state.currentAttack ?? state.pendingBattle;
   return battle?.attackerUid === uid || battle?.targetUid === uid;
-}
-
-function hasAdjacentMonsterZone(state: DuelState, card: DuelCardInstance): boolean {
-  if (card.location !== "monsterZone" || card.sequence > 4) return false;
-  return [card.sequence - 1, card.sequence + 1].some(
-    (sequence) =>
-      sequence >= 0 &&
-      sequence <= 4 &&
-      !state.cards.some((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && candidate.sequence === sequence),
-  );
 }
 
 function pushCanChainAttack(L: unknown, session: DuelSession): number {
