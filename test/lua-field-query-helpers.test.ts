@@ -2227,6 +2227,31 @@ describe("Lua field and query helpers", () => {
     expect(tableHost.messages).toContain("tribute table result 1");
     expect(tableSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "tribute" });
 
+    const doubleSession = createDuel({ seed: 96, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(doubleSession, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(doubleSession);
+    const doubleMaterial = doubleSession.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    moveDuelCard(doubleSession.state, doubleMaterial!.uid, "monsterZone", 0);
+    const doubleHost = createLuaScriptHost(doubleSession);
+    const doubleResult = doubleHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      tribute:GetFirst():RegisterFlagEffect(FLAG_HAS_DOUBLE_TRIBUTE,RESET_EVENT,0,1)
+      Debug.Message("tribute double summon result " .. Duel.Summon(target, true, tribute))
+      Debug.Message("tribute double operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "basic-double-tribute-summon.lua",
+    );
+    expect(doubleResult.ok, doubleResult.error).toBe(true);
+    expect(doubleHost.messages).toContain("tribute double summon result 1");
+    expect(doubleHost.messages).toContain("tribute double operated 1/100");
+    expect(doubleSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "tribute" });
+    expect(doubleSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
+
     const failureSession = createDuel({ seed: 95, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(failureSession, {
       0: { main: ["100", "400"] },
