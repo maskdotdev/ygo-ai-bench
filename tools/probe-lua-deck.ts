@@ -38,6 +38,8 @@ const scriptResults = deckCodes.map((code) => {
 });
 
 const initialEffectResults = host.registerInitialEffectsDetailed();
+const canRunStartup = scriptResults.every((result) => result.load.ok) && initialEffectResults.every((result) => result.ok);
+const startupResult = canRunStartup ? runStartupProbe(host) : { count: 0 };
 
 const actions = getLegalActions(session, 0);
 
@@ -47,6 +49,7 @@ printReport({
   metadataSource: databaseCards.length ? "cards.cdb" : "placeholder",
   scriptResults,
   initialEffectResults,
+  startupResult,
   registeredEffectCount: session.state.effects.length,
   actions,
 });
@@ -106,6 +109,7 @@ function printReport(report: {
   metadataSource: string;
   scriptResults: Array<{ code: string; name: string; foundAt: string | undefined; source: string | undefined; isStub: boolean; expectedMissing: boolean; load: { ok: boolean; error?: string } }>;
   initialEffectResults: LuaInitialEffectRegistrationResult[];
+  startupResult: { count: number; error?: string };
   registeredEffectCount: number;
   actions: DuelAction[];
 }): void {
@@ -118,6 +122,7 @@ function printReport(report: {
   const missing = report.scriptResults.filter((result) => !result.foundAt && !result.expectedMissing);
   const loadErrors = report.scriptResults.filter((result) => !result.load.ok);
   const initialFailures = report.initialEffectResults.filter((result) => !result.ok);
+  const startupErrors = report.startupResult.error ? [report.startupResult.error] : [];
   const registeredInitialEffects = report.initialEffectResults.filter((result) => result.ok && !result.skipped).length;
 
   console.log(`Lua deck probe: ${path.basename(report.ydkPath)}`);
@@ -146,12 +151,22 @@ function printReport(report: {
   console.log(`Registered initial_effect calls: ${registeredInitialEffects}`);
   console.log(`Initial effect failures: ${initialFailures.length}`);
   for (const result of initialFailures) console.log(`  ERROR c${result.code}.lua (${result.uid}): ${result.error ?? "unknown error"}`);
+  console.log(`Startup effects executed: ${report.startupResult.count}`);
+  if (report.startupResult.error) console.log(`Startup effect failure: ${report.startupResult.error}`);
   console.log(`Registered Lua effects: ${report.registeredEffectCount}`);
-  console.log(`First failing API/helper: ${firstFailingApi([...initialFailures.map((result) => result.error), ...loadErrors.map((result) => result.load.error)]) ?? "none detected"}`);
-  printFailureGroups([...initialFailures.map((result) => result.error), ...loadErrors.map((result) => result.load.error)]);
+  console.log(`First failing API/helper: ${firstFailingApi([...initialFailures.map((result) => result.error), ...loadErrors.map((result) => result.load.error), ...startupErrors]) ?? "none detected"}`);
+  printFailureGroups([...initialFailures.map((result) => result.error), ...loadErrors.map((result) => result.load.error), ...startupErrors]);
   console.log("");
   console.log(`Opening hand legal actions: ${report.actions.length}`);
   for (const action of report.actions) console.log(`  ${action.type}: ${action.label}`);
+}
+
+function runStartupProbe(host: ReturnType<typeof createLuaScriptHost>): { count: number; error?: string } {
+  try {
+    return { count: host.runStartupEffects() };
+  } catch (error) {
+    return { count: 0, error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 function scriptStatusLabel(result: { source: string | undefined; isStub: boolean }): string {

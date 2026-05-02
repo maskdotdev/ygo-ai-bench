@@ -1,9 +1,12 @@
 import {
+  addDuelChainLimit,
   applyResponse,
+  collectDuelTriggerEffects,
   createDuel,
   getLegalActions,
   loadDecks,
   moveDuelCard,
+  negateDuelAttack,
   queryPublicState,
   registerEffect,
   restoreDuel,
@@ -11,9 +14,11 @@ import {
   startDuel,
   type CreateDuelOptions,
 } from "#duel/core.js";
+import type { DuelChainLimitRestoreRegistry, DuelEffectRestoreRegistry } from "#duel/snapshot.js";
 import type {
   DuelAction,
   DuelCardReader,
+  DuelEffectDefinition,
   DuelLocation,
   DuelResponse,
   DuelSession,
@@ -49,14 +54,17 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
   startDuel(session);
 
   const failures: ParityFailure[] = [];
+  const effectRegistry: DuelEffectRestoreRegistry = {};
+  const chainLimitRegistry: DuelChainLimitRestoreRegistry = {};
   applyFixtureSetup(session, fixture.setup?.moveCards ?? [], failures, fixture.name);
-  applyFixtureEffects(session, fixture.setup?.effects ?? [], failures, fixture.name);
+  applyFixturePrompt(session, fixture.setup?.prompt);
+  applyFixtureEffects(session, fixture.setup?.effects ?? [], failures, fixture.name, effectRegistry, chainLimitRegistry);
   if (failures.length) return { ok: false, failures };
   assertWindow(session, fixture.before, fixture.name, "before fixture", failures);
   for (const step of fixture.responses) {
     const stepResponse = step.response;
     assertWindow(session, scriptedStepBefore(step), fixture.name, `before ${describeStep(stepResponse)}`, failures);
-    if (scriptedStepSnapshotRestore(step)) assertSnapshotRestore(session, fixture.name, `before ${describeStep(stepResponse)}`, failures, options.cardReader);
+    if (scriptedStepSnapshotRestoreBefore(step)) assertSnapshotRestore(session, fixture.name, `before ${describeStep(stepResponse)}`, failures, options.cardReader, effectRegistry, chainLimitRegistry);
     if (failures.length) break;
     const legal = getLegalActions(session, stepResponse.player);
     const response = resolveScriptedStep(stepResponse, legal, queryPublicState(session).cards);
@@ -70,36 +78,10 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
       break;
     }
     assertWindow(session, scriptedStepAfter(step), fixture.name, `after ${describeStep(stepResponse)}`, failures);
+    if (scriptedStepSnapshotRestoreAfter(step)) assertSnapshotRestore(session, fixture.name, `after ${describeStep(stepResponse)}`, failures, options.cardReader, effectRegistry, chainLimitRegistry);
   }
 
-  const state = queryPublicState(session);
-  if (fixture.expected.phase && state.phase !== fixture.expected.phase) {
-    failures.push({ fixture: fixture.name, message: `Expected phase ${fixture.expected.phase}, got ${state.phase}` });
-  }
-  if (fixture.expected.turn && state.turn !== fixture.expected.turn) {
-    failures.push({ fixture: fixture.name, message: `Expected turn ${fixture.expected.turn}, got ${state.turn}` });
-  }
-  for (const [player, expectedLifePoints] of Object.entries(fixture.expected.lifePoints ?? {}) as [string, number][]) {
-    const actualLifePoints = state.players[Number(player) as PlayerId]?.lifePoints;
-    if (actualLifePoints !== expectedLifePoints) failures.push({ fixture: fixture.name, message: `Expected player ${player} LP ${expectedLifePoints}, got ${actualLifePoints}` });
-  }
-  if (fixture.expected.pendingBattle !== undefined && Boolean(session.state.pendingBattle) !== fixture.expected.pendingBattle) {
-    failures.push({ fixture: fixture.name, message: `Expected pendingBattle ${fixture.expected.pendingBattle}, got ${Boolean(session.state.pendingBattle)}` });
-  }
-  if (fixture.expected.currentAttack !== undefined && Boolean(session.state.currentAttack) !== fixture.expected.currentAttack) {
-    failures.push({ fixture: fixture.name, message: `Expected currentAttack ${fixture.expected.currentAttack}, got ${Boolean(session.state.currentAttack)}` });
-  }
-  for (const [location, expectedCodes] of Object.entries(fixture.expected.locations ?? {}) as [DuelLocation, string[]][]) {
-    const actualCodes = state.cards.filter((card) => card.location === location).map((card) => card.code);
-    for (const code of expectedCodes) {
-      if (!actualCodes.includes(code)) failures.push({ fixture: fixture.name, message: `Expected ${code} in ${location}` });
-    }
-  }
-  for (const expectedLog of fixture.expected.logIncludes ?? []) {
-    if (!state.log.some((entry) => entry.detail.includes(expectedLog) || entry.action.includes(expectedLog))) {
-      failures.push({ fixture: fixture.name, message: `Expected log containing ${expectedLog}` });
-    }
-  }
+  assertWindow(session, fixture.expected, fixture.name, "final expected", failures);
 
   return { ok: failures.length === 0, failures };
 }
@@ -115,34 +97,228 @@ export function makeScriptedStep(
   return { response, ...assertions };
 }
 
-function assertSnapshotRestore(session: DuelSession, fixture: string, context: string, failures: ParityFailure[], cardReader?: DuelCardReader): void {
+function assertSnapshotRestore(
+  session: DuelSession,
+  fixture: string,
+  context: string,
+  failures: ParityFailure[],
+  cardReader?: DuelCardReader,
+  effectRegistry: DuelEffectRestoreRegistry = {},
+  chainLimitRegistry: DuelChainLimitRestoreRegistry = {},
+): void {
   const before = JSON.stringify(queryPublicState(session));
-  const restored = restoreDuel(serializeDuel(session), cardReader ?? session.cardReader);
+  const snapshot = serializeDuel(session);
+  const restored = restoreDuel(snapshot, cardReader ?? session.cardReader, effectRegistry, chainLimitRegistry);
   const after = JSON.stringify(queryPublicState(restored));
   if (after !== before) failures.push({ fixture, message: `${context}: snapshot/restore changed public state` });
+  if (restored.state.actionWindowId !== session.state.actionWindowId) {
+    failures.push({ fixture, message: `${context}: snapshot/restore changed actionWindowId from ${session.state.actionWindowId} to ${restored.state.actionWindowId}` });
+  }
+  assertSnapshotJsonEqual("pendingBattle", session.state.pendingBattle, restored.state.pendingBattle, fixture, context, failures);
+  assertSnapshotJsonEqual("currentAttack", session.state.currentAttack, restored.state.currentAttack, fixture, context, failures);
+  assertSnapshotJsonEqual("eventHistory", session.state.eventHistory, restored.state.eventHistory, fixture, context, failures);
+  assertSnapshotJsonEqual("chainLimits", chainLimitMetadata(session.state.chainLimits), chainLimitMetadata(restored.state.chainLimits), fixture, context, failures);
+  assertSnapshotJsonEqual("chainPasses", session.state.chainPasses, restored.state.chainPasses, fixture, context, failures);
+  assertSnapshotJsonEqual("attackPasses", session.state.attackPasses, restored.state.attackPasses, fixture, context, failures);
+  assertSnapshotJsonEqual("damagePasses", session.state.damagePasses, restored.state.damagePasses, fixture, context, failures);
+  assertSnapshotJsonEqual("battleDamage", session.state.battleDamage, restored.state.battleDamage, fixture, context, failures);
+  assertSnapshotJsonEqual("usedCountKeys", session.state.usedCountKeys, restored.state.usedCountKeys, fixture, context, failures);
+  assertSnapshotJsonEqual("flagEffects", session.state.flagEffects, restored.state.flagEffects, fixture, context, failures);
+  assertSnapshotJsonEqual("activityCounts", session.state.activityCounts, restored.state.activityCounts, fixture, context, failures);
+  assertSnapshotJsonEqual("activityHistory", session.state.activityHistory, restored.state.activityHistory, fixture, context, failures);
+  assertSnapshotJsonEqual("randomCounter", session.state.randomCounter, restored.state.randomCounter, fixture, context, failures);
+  assertSnapshotJsonEqual("lastDiceResults", session.state.lastDiceResults, restored.state.lastDiceResults, fixture, context, failures);
+  assertSnapshotJsonEqual("lastCoinResults", session.state.lastCoinResults, restored.state.lastCoinResults, fixture, context, failures);
+  assertSnapshotJsonEqual("skippedPhases", session.state.skippedPhases, restored.state.skippedPhases, fixture, context, failures);
+  assertSnapshotJsonEqual("phaseActivity", session.state.phaseActivity, restored.state.phaseActivity, fixture, context, failures);
+  assertSnapshotJsonEqual("globalFlags", session.state.globalFlags, restored.state.globalFlags, fixture, context, failures);
+  assertSnapshotJsonEqual("duelTypeFlags", session.state.duelTypeFlags, restored.state.duelTypeFlags, fixture, context, failures);
+  assertSnapshotJsonEqual("unofficialProcEnabled", session.state.unofficialProcEnabled, restored.state.unofficialProcEnabled, fixture, context, failures);
+  assertSnapshotJsonEqual("shuffleCheckDisabled", session.state.shuffleCheckDisabled, restored.state.shuffleCheckDisabled, fixture, context, failures);
+  assertSnapshotJsonEqual("options", session.state.options, restored.state.options, fixture, context, failures);
+  assertSnapshotJsonEqual("cards", session.state.cards, restored.state.cards, fixture, context, failures);
+  assertSnapshotJsonEqual("effects", snapshotEffects(snapshot.state.effects), snapshotEffects(serializeDuel(restored).state.effects), fixture, context, failures);
+  if (restored.state.attackCostPaid !== session.state.attackCostPaid) {
+    failures.push({ fixture, message: `${context}: snapshot/restore changed attackCostPaid from ${session.state.attackCostPaid} to ${restored.state.attackCostPaid}` });
+  }
+  assertSnapshotJsonEqual("attacksDeclared", session.state.attacksDeclared, restored.state.attacksDeclared, fixture, context, failures);
+  assertSnapshotJsonEqual("attackCanceledUids", session.state.attackCanceledUids, restored.state.attackCanceledUids, fixture, context, failures);
+  assertSnapshotJsonEqual("attackedTargetUids", session.state.attackedTargetUids, restored.state.attackedTargetUids, fixture, context, failures);
+  assertSnapshotJsonEqual("battlePairs", session.state.battlePairs, restored.state.battlePairs, fixture, context, failures);
+  assertSnapshotJsonEqual("positionsChanged", session.state.positionsChanged, restored.state.positionsChanged, fixture, context, failures);
+  for (const player of [0, 1] as const) {
+    const beforeActions = JSON.stringify(getLegalActions(session, player));
+    const afterActions = JSON.stringify(getLegalActions(restored, player));
+    if (afterActions !== beforeActions) failures.push({ fixture, message: `${context}: snapshot/restore changed player ${player} legal actions` });
+  }
+}
+
+function assertSnapshotJsonEqual(name: string, before: unknown, after: unknown, fixture: string, context: string, failures: ParityFailure[]): void {
+  if (JSON.stringify(after) !== JSON.stringify(before)) failures.push({ fixture, message: `${context}: snapshot/restore changed ${name}` });
+}
+
+function snapshotEffects(effects: DuelSession["state"]["effects"]): unknown[] {
+  return effects.map(({ canActivate: _canActivate, cost: _cost, target: _target, operation: _operation, battleDamageValue: _battleDamageValue, valueCardPredicate: _valueCardPredicate, valuePredicate: _valuePredicate, ...effect }) => effect);
+}
+
+function chainLimitMetadata(chainLimits: DuelSession["state"]["chainLimits"]): Array<Pick<DuelSession["state"]["chainLimits"][number], "registryKey" | "untilChainEnd" | "expiresAtChainLength">> {
+  return chainLimits.map((limit) => ({
+    ...(limit.registryKey === undefined ? {} : { registryKey: limit.registryKey }),
+    untilChainEnd: limit.untilChainEnd,
+    ...(limit.expiresAtChainLength === undefined ? {} : { expiresAtChainLength: limit.expiresAtChainLength }),
+  }));
 }
 
 function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectation | undefined, fixture: string, context: string, failures: ParityFailure[]): void {
   if (!expected) return;
   const state = queryPublicState(session);
-  const source = expected.source ? ` (${expected.source})` : "";
-  const fail = (message: string) => failures.push({ fixture, message: `${context}${source}: ${message}` });
+  const label = expectationLabel(expected);
+  const fail = (message: string) => failures.push({ fixture, message: `${context}${label}: ${message}` });
+  if (expected.status !== undefined && state.status !== expected.status) fail(`Expected status ${expected.status}, got ${state.status}`);
+  assertOptionalValueForWindow("winner", state.winner, expected.winner, fail);
+  assertOptionalValueForWindow("winReason", state.winReason, expected.winReason, fail);
   if (expected.windowId !== undefined && session.state.actionWindowId !== expected.windowId) fail(`Expected windowId ${expected.windowId}, got ${session.state.actionWindowId}`);
   if (expected.waitingFor !== undefined && state.waitingFor !== expected.waitingFor) fail(`Expected waitingFor ${expected.waitingFor}, got ${state.waitingFor}`);
+  if (expected.turn !== undefined && state.turn !== expected.turn) fail(`Expected turn ${expected.turn}, got ${state.turn}`);
+  if (expected.turnPlayer !== undefined && state.turnPlayer !== expected.turnPlayer) fail(`Expected turnPlayer ${expected.turnPlayer}, got ${state.turnPlayer}`);
   if (expected.phase !== undefined && state.phase !== expected.phase) fail(`Expected phase ${expected.phase}, got ${state.phase}`);
+  if (expected.randomCounter !== undefined && session.state.randomCounter !== expected.randomCounter) fail(`Expected randomCounter ${expected.randomCounter}, got ${session.state.randomCounter}`);
+  assertNumberListForWindow("lastDiceResults", session.state.lastDiceResults, expected.lastDiceResults, fail);
+  assertNumberListForWindow("lastCoinResults", session.state.lastCoinResults, expected.lastCoinResults, fail);
+  for (const [player, expectedLifePoints] of Object.entries(expected.lifePoints ?? {}) as [string, number][]) {
+    const actualLifePoints = state.players[Number(player) as PlayerId]?.lifePoints;
+    if (actualLifePoints !== expectedLifePoints) fail(`Expected player ${player} LP ${expectedLifePoints}, got ${actualLifePoints}`);
+  }
+  assertActivityCountsForWindow(state.activityCounts, expected.activityCounts, fail);
+  assertPartialList("activityHistory", session.state.activityHistory, expected.activityHistory, fail);
+  assertPartialList("skippedPhases", session.state.skippedPhases, expected.skippedPhases, fail);
+  if (expected.phaseActivity !== undefined && session.state.phaseActivity !== expected.phaseActivity) fail(`Expected phaseActivity ${expected.phaseActivity}, got ${session.state.phaseActivity}`);
+  assertPlayerNumberMapForWindow("battleDamage", session.state.battleDamage, expected.battleDamage, fail);
+  if (expected.attackCostPaid !== undefined && session.state.attackCostPaid !== expected.attackCostPaid) fail(`Expected attackCostPaid ${expected.attackCostPaid}, got ${session.state.attackCostPaid}`);
+  if (expected.options !== undefined && !matchesPartial(session.state.options, expected.options)) fail(`Expected options ${JSON.stringify(expected.options)}, got ${JSON.stringify(session.state.options)}`);
+  if (expected.duelTypeFlags !== undefined && session.state.duelTypeFlags !== expected.duelTypeFlags) fail(`Expected duelTypeFlags ${expected.duelTypeFlags}, got ${session.state.duelTypeFlags}`);
+  if (expected.globalFlags !== undefined && session.state.globalFlags !== expected.globalFlags) fail(`Expected globalFlags ${expected.globalFlags}, got ${session.state.globalFlags}`);
+  if (expected.unofficialProcEnabled !== undefined && session.state.unofficialProcEnabled !== expected.unofficialProcEnabled) fail(`Expected unofficialProcEnabled ${expected.unofficialProcEnabled}, got ${session.state.unofficialProcEnabled}`);
+  if (expected.shuffleCheckDisabled !== undefined && session.state.shuffleCheckDisabled !== expected.shuffleCheckDisabled) fail(`Expected shuffleCheckDisabled ${expected.shuffleCheckDisabled}, got ${session.state.shuffleCheckDisabled}`);
+  assertStringListForWindow("usedCountKeys", session.state.usedCountKeys, expected.usedCountKeys, fail);
   if (expected.battleStep !== undefined && state.battleStep !== expected.battleStep) fail(`Expected battleStep ${expected.battleStep}, got ${state.battleStep}`);
-  if (expected.battleWindow !== undefined && !matchesPartial(state.battleWindow, expected.battleWindow)) fail(`Expected battleWindow ${JSON.stringify(expected.battleWindow)}, got ${JSON.stringify(state.battleWindow)}`);
+  if (expected.battleWindow !== undefined && !matchesOptionalPartial(state.battleWindow, expected.battleWindow)) fail(`Expected battleWindow ${JSON.stringify(expected.battleWindow)}, got ${JSON.stringify(state.battleWindow)}`);
   if (expected.pendingBattle !== undefined && Boolean(session.state.pendingBattle) !== expected.pendingBattle) fail(`Expected pendingBattle ${expected.pendingBattle}, got ${Boolean(session.state.pendingBattle)}`);
   if (expected.currentAttack !== undefined && Boolean(session.state.currentAttack) !== expected.currentAttack) fail(`Expected currentAttack ${expected.currentAttack}, got ${Boolean(session.state.currentAttack)}`);
-  if (expected.prompt !== undefined && !matchesPartial(state.prompt, expected.prompt)) fail(`Expected prompt ${JSON.stringify(expected.prompt)}, got ${JSON.stringify(state.prompt)}`);
+  if (expected.prompt !== undefined && !matchesOptionalPartial(state.prompt, expected.prompt)) fail(`Expected prompt ${JSON.stringify(expected.prompt)}, got ${JSON.stringify(state.prompt)}`);
+  assertPartialList("chainLimits", chainLimitMetadata(session.state.chainLimits), expected.chainLimits, fail);
+  assertPlayerListForWindow("chainPasses", session.state.chainPasses, expected.chainPasses, fail);
+  assertPlayerListForWindow("attackPasses", state.attackPasses, expected.attackPasses, fail);
+  assertPlayerListForWindow("damagePasses", state.damagePasses, expected.damagePasses, fail);
   assertPartialList("chain", state.chain, expected.chain, fail);
   assertPartialList("pendingTriggers", state.pendingTriggers, expected.pendingTriggers, fail);
+  assertPartialList("eventHistory", session.state.eventHistory, expected.eventHistory, fail);
   for (const expectedLog of expected.logIncludes ?? []) {
     if (!state.log.some((entry) => entry.detail.includes(expectedLog) || entry.action.includes(expectedLog))) fail(`Expected log containing ${expectedLog}`);
   }
   const cards = state.cards;
   if (expected.legalActions?.length) assertLegalActions("Expected legal action", session, expected.legalActions, cards, fail, false);
   if (expected.absentLegalActions?.length) assertLegalActions("Expected no legal action", session, expected.absentLegalActions, cards, fail, true);
+  assertLocationExpectations(cards, expected.locations, expected.locationCounts, fail);
+  assertCardExpectations(cards, expected.cards, fail);
+  assertStringListForWindow("positionsChanged", state.positionsChanged, expected.positionsChanged, fail);
+  assertStringListForWindow("attacksDeclared", state.attacksDeclared, expected.attacksDeclared, fail);
+  assertStringListForWindow("attackCanceledUids", state.attackCanceledUids, expected.attackCanceledUids, fail);
+  assertStringListForWindow("attackedTargetUids", state.attackedTargetUids, expected.attackedTargetUids, fail);
+  assertBattlePairsForWindow(state.battlePairs, expected.battlePairs, fail);
+  assertPartialList("log", state.log, expected.log, fail);
+}
+
+function expectationLabel(expected: ScriptedDuelWindowExpectation): string {
+  const source = expected.source ? ` (${expected.source})` : "";
+  const note = expected.note ? ` [${expected.note}]` : "";
+  return `${source}${note}`;
+}
+
+function assertStringListForWindow(name: string, actual: string[], expected: string[] | undefined, fail: (message: string) => void): void {
+  if (expected === undefined) return;
+  if (actual.length !== expected.length || actual.some((value, index) => value !== expected[index])) {
+    fail(`Expected ${name} ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
+}
+
+function assertPlayerListForWindow(name: string, actual: PlayerId[], expected: PlayerId[] | undefined, fail: (message: string) => void): void {
+  if (expected === undefined) return;
+  if (actual.length !== expected.length || actual.some((value, index) => value !== expected[index])) {
+    fail(`Expected ${name} ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
+}
+
+function assertNumberListForWindow(name: string, actual: number[], expected: number[] | undefined, fail: (message: string) => void): void {
+  if (expected === undefined) return;
+  if (actual.length !== expected.length || actual.some((value, index) => value !== expected[index])) {
+    fail(`Expected ${name} ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
+}
+
+function assertPlayerNumberMapForWindow(name: string, actual: Record<PlayerId, number>, expected: Partial<Record<PlayerId, number>> | undefined, fail: (message: string) => void): void {
+  for (const [player, expectedValue] of Object.entries(expected ?? {}) as [string, number][]) {
+    const actualValue = actual[Number(player) as PlayerId] ?? 0;
+    if (actualValue !== expectedValue) fail(`Expected ${name}[${player}] ${expectedValue}, got ${actualValue}`);
+  }
+}
+
+function assertOptionalValueForWindow<T>(name: string, actual: T | undefined, expected: T | null | undefined, fail: (message: string) => void): void {
+  if (expected === undefined) return;
+  if (expected === null) {
+    if (actual !== undefined) fail(`Expected no ${name}, got ${String(actual)}`);
+    return;
+  }
+  if (actual !== expected) fail(`Expected ${name} ${String(expected)}, got ${String(actual)}`);
+}
+
+function assertActivityCountsForWindow(actual: Record<PlayerId, unknown>, expected: Partial<Record<PlayerId, Record<string, number>>> | undefined, fail: (message: string) => void): void {
+  for (const [player, expectedCounts] of Object.entries(expected ?? {}) as [string, Record<string, number>][]) {
+    const actualCounts = actual[Number(player) as PlayerId] as Record<string, number> | undefined;
+    for (const [activity, expectedCount] of Object.entries(expectedCounts)) {
+      const actualCount = actualCounts?.[activity] ?? 0;
+      if (actualCount !== expectedCount) fail(`Expected player ${player} activity ${activity} ${expectedCount}, got ${actualCount}`);
+    }
+  }
+}
+
+function assertBattlePairsForWindow(actual: { attackerUid: string; targetUid: string }[], expected: { attackerUid: string; targetUid: string }[] | undefined, fail: (message: string) => void): void {
+  if (expected === undefined) return;
+  if (actual.length !== expected.length || actual.some((pair, index) => pair.attackerUid !== expected[index]?.attackerUid || pair.targetUid !== expected[index]?.targetUid)) {
+    fail(`Expected battlePairs ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
+}
+
+function assertLocationExpectations(
+  cards: { code: string; location: DuelLocation }[],
+  locations: Partial<Record<DuelLocation, string[]>> | undefined,
+  locationCounts: Partial<Record<DuelLocation, Record<string, number>>> | undefined,
+  fail: (message: string) => void,
+): void {
+  for (const [location, expectedCodes] of Object.entries(locations ?? {}) as [DuelLocation, string[]][]) {
+    const actualCodes = cards.filter((card) => card.location === location).map((card) => card.code);
+    for (const code of expectedCodes) {
+      if (!actualCodes.includes(code)) fail(`Expected ${code} in ${location}`);
+    }
+  }
+  for (const [location, expectedCounts] of Object.entries(locationCounts ?? {}) as [DuelLocation, Record<string, number>][]) {
+    const actualCounts = countCodes(cards.filter((card) => card.location === location).map((card) => card.code));
+    for (const [code, expectedCount] of Object.entries(expectedCounts)) {
+      const actualCount = actualCounts.get(code) ?? 0;
+      if (actualCount !== expectedCount) fail(`Expected ${expectedCount} ${code} in ${location}, got ${actualCount}`);
+    }
+  }
+}
+
+function assertCardExpectations(cards: { uid: string }[], expectedCards: (Partial<{ uid: string }> & { uid: string })[] | undefined, fail: (message: string) => void): void {
+  for (const expectedCard of expectedCards ?? []) {
+    const actualCard = cards.find((card) => card.uid === expectedCard.uid);
+    if (!actualCard) {
+      fail(`Expected card ${expectedCard.uid}`);
+      continue;
+    }
+    if (!matchesPartial(actualCard, expectedCard)) fail(`Expected card ${expectedCard.uid} ${JSON.stringify(expectedCard)}, got ${JSON.stringify(actualCard)}`);
+  }
 }
 
 function assertLegalActions(
@@ -172,6 +348,8 @@ function resolveScriptedStep(step: ScriptedStepResponse, legal: DuelAction[], ca
 
 function actionMatchesSelector(action: DuelAction, selector: ScriptedResponseSelector, cards: { uid: string; code: string; location: DuelLocation }[]): boolean {
   if (action.type !== selector.type || action.player !== selector.player) return false;
+  if (selector.windowId !== undefined && action.windowId !== selector.windowId) return false;
+  if (selector.windowKind !== undefined && action.windowKind !== selector.windowKind) return false;
   if (selector.uid && "uid" in action && action.uid !== selector.uid) return false;
   if (selector.tributeUids) {
     if (action.type !== "tributeSummon" || !sameStringSet(action.tributeUids, selector.tributeUids)) return false;
@@ -196,6 +374,10 @@ function actionMatchesSelector(action: DuelAction, selector: ScriptedResponseSel
     if (selector.targetUid) {
       if ((action.type !== "declareAttack" && action.type !== "replayAttack") || action.targetUid !== selector.targetUid) return false;
   }
+  if (selector.directAttack !== undefined) {
+    if (action.type !== "declareAttack" && action.type !== "replayAttack") return false;
+    if ((action.targetUid === undefined) !== selector.directAttack) return false;
+  }
   if (selector.promptId) {
     if (!("promptId" in action) || action.promptId !== selector.promptId) return false;
   }
@@ -210,6 +392,9 @@ function actionMatchesSelector(action: DuelAction, selector: ScriptedResponseSel
   }
   if (selector.triggerId) {
     if (!("triggerId" in action) || action.triggerId !== selector.triggerId) return false;
+  }
+  if (selector.triggerBucket) {
+    if (!("triggerBucket" in action) || action.triggerBucket !== selector.triggerBucket) return false;
   }
   if (selector.labelIncludes && !action.label.includes(selector.labelIncludes)) return false;
   if (selector.code || selector.location) {
@@ -235,8 +420,17 @@ function scriptedStepAfter(step: ScriptedDuelStep): ScriptedDuelWindowExpectatio
   return step.after;
 }
 
-function scriptedStepSnapshotRestore(step: ScriptedDuelStep): boolean {
-  return step.snapshotRestore === true;
+function scriptedStepSnapshotRestoreBefore(step: ScriptedDuelStep): boolean {
+  return step.snapshotRestore === true || step.snapshotRestore === "before" || step.snapshotRestore === "both";
+}
+
+function scriptedStepSnapshotRestoreAfter(step: ScriptedDuelStep): boolean {
+  return step.snapshotRestore === "after" || step.snapshotRestore === "both";
+}
+
+function matchesOptionalPartial<T extends object>(actual: T | undefined, expected: Partial<T> | null): boolean {
+  if (expected === null) return actual === undefined;
+  return matchesPartial(actual, expected);
 }
 
 function assertPartialList<T extends object>(name: string, actual: T[], expected: Partial<T>[] | undefined, fail: (message: string) => void): void {
@@ -255,7 +449,14 @@ function matchesPartial<T extends object>(actual: T | undefined, expected: Parti
   return Object.entries(expected).every(([key, value]) => (actual as Record<string, unknown>)[key] === value);
 }
 
-function applyFixtureEffects(session: DuelSession, effects: ScriptedFixtureEffect[], failures: ParityFailure[], fixture: string): void {
+function applyFixtureEffects(
+  session: DuelSession,
+  effects: ScriptedFixtureEffect[],
+  failures: ParityFailure[],
+  fixture: string,
+  effectRegistry: DuelEffectRestoreRegistry,
+  chainLimitRegistry: DuelChainLimitRestoreRegistry,
+): void {
   for (const effect of effects) {
     const cards = queryPublicState(session).cards.filter((card) => {
       if (card.controller !== effect.player || card.code !== effect.code) return false;
@@ -266,19 +467,83 @@ function applyFixtureEffects(session: DuelSession, effects: ScriptedFixtureEffec
       failures.push({ fixture, message: `Setup could not find effect source ${effect.code} for player ${effect.player}` });
       return;
     }
-    registerEffect(session, {
-      id: effect.id,
-      sourceUid: source.uid,
-      controller: effect.player,
-      event: effect.event,
-      range: effect.range,
-      ...(effect.oncePerTurn === undefined ? {} : { oncePerTurn: effect.oncePerTurn }),
-      ...(effect.property === undefined ? {} : { property: effect.property }),
-      operation(ctx) {
-        if (effect.logMessage) ctx.log(effect.logMessage);
-      },
-    });
+    const registryKey = `fixture:${fixture}:${effect.id}:${source.uid}`;
+    const chainLimitRegistryKey = `fixture-chain-limit:${fixture}:${effect.id}:${source.uid}`;
+    effectRegistry[registryKey] = (serialized) => createFixtureEffectDefinition(effect, serialized.sourceUid, registryKey, effect.chainLimitOnTarget ? chainLimitRegistryKey : undefined);
+    if (effect.chainLimitOnTarget) {
+      chainLimitRegistry[chainLimitRegistryKey] = (serialized) => createFixtureChainLimit(effect, chainLimitRegistryKey, serialized.expiresAtChainLength);
+    }
+    registerEffect(session, createFixtureEffectDefinition(effect, source.uid, registryKey, effect.chainLimitOnTarget ? chainLimitRegistryKey : undefined));
   }
+}
+
+function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid: string, registryKey: string, chainLimitRegistryKey?: string): DuelEffectDefinition {
+  return {
+    id: effect.id,
+    sourceUid,
+    registryKey,
+    controller: effect.player,
+    event: effect.event,
+    range: effect.range,
+    ...(effect.effectCode === undefined ? {} : { code: effect.effectCode }),
+    ...(effect.value === undefined ? {} : { value: effect.value }),
+    ...(effect.valueCardCode === undefined ? {} : { valueCardPredicate: (_ctx, card) => card.code === effect.valueCardCode }),
+    ...(effect.targetRange === undefined ? {} : { targetRange: effect.targetRange }),
+    ...(effect.triggerEvent === undefined ? {} : { triggerEvent: effect.triggerEvent }),
+    ...(effect.triggerCode === undefined ? {} : { triggerCode: effect.triggerCode }),
+    ...(effect.triggerTiming === undefined ? {} : { triggerTiming: effect.triggerTiming }),
+    ...(effect.optional === undefined ? {} : { optional: effect.optional }),
+    ...(effect.oncePerTurn === undefined ? {} : { oncePerTurn: effect.oncePerTurn }),
+    ...(effect.property === undefined ? {} : { property: effect.property }),
+    ...(effect.chainLimitOnTarget === undefined
+      ? {}
+      : {
+          target(ctx) {
+            if (!ctx.checkOnly) addDuelChainLimit(ctx.duel, createFixtureChainLimit(effect, chainLimitRegistryKey ?? "", undefined));
+            return true;
+          },
+        }),
+    operation(ctx) {
+      for (const move of effect.moveCardsOnResolve ?? []) {
+        const candidates = ctx.duel.cards
+          .filter((card) => {
+            if (card.controller !== move.player || card.code !== move.code) return false;
+            return move.from === undefined || card.location === move.from;
+          })
+          .sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence);
+        const card = candidates[move.occurrence ?? 0];
+        if (!card) {
+          throw new Error(`Fixture effect could not move ${move.code} for player ${move.player}`);
+        }
+        const moved = ctx.moveCard(card.uid, move.to, move.controller);
+        if (move.position) moved.position = move.position;
+        if (move.collectEvent) {
+          collectDuelTriggerEffects(ctx.duel, move.collectEvent, moved, {
+            ...(move.eventCode === undefined ? {} : { eventCode: move.eventCode }),
+            ...(move.eventIsLast === undefined ? {} : { eventIsLast: move.eventIsLast }),
+            ...(move.eventPlayer === undefined ? {} : { eventPlayer: move.eventPlayer }),
+            ...(move.eventValue === undefined ? {} : { eventValue: move.eventValue }),
+            ...(move.eventReason === undefined ? {} : { eventReason: move.eventReason }),
+            ...(move.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: move.eventReasonPlayer }),
+            ...(move.relatedEffectId === undefined ? {} : { relatedEffectId: move.relatedEffectId }),
+          });
+        }
+      }
+      if (effect.negateAttackOnResolve) ctx.log(`Negated attack ${negateDuelAttack(ctx.duel)}`);
+      if (effect.logMessage) ctx.log(effect.logMessage);
+    },
+  };
+}
+
+function createFixtureChainLimit(effect: ScriptedFixtureEffect, registryKey: string, expiresAtChainLength: number | undefined): DuelSession["state"]["chainLimits"][number] {
+  return {
+    registryKey,
+    untilChainEnd: Boolean(effect.chainLimitOnTarget?.untilChainEnd),
+    ...(expiresAtChainLength === undefined ? {} : { expiresAtChainLength }),
+    allows(_effect, player) {
+      return effect.chainLimitOnTarget?.allowPlayer === undefined || player === effect.chainLimitOnTarget.allowPlayer;
+    },
+  };
 }
 
 function applyFixtureSetup(session: DuelSession, moves: ScriptedFixtureMove[], failures: ParityFailure[], fixture: string): void {
@@ -295,6 +560,12 @@ function applyFixtureSetup(session: DuelSession, moves: ScriptedFixtureMove[], f
     const moved = moveDuelCard(session.state, card.uid, move.to, move.controller);
     if (move.position) moved.position = move.position;
   }
+}
+
+function applyFixturePrompt(session: DuelSession, prompt: DuelSession["state"]["prompt"] | undefined): void {
+  if (!prompt) return;
+  session.state.prompt = prompt.type === "selectOption" ? { ...prompt, options: [...prompt.options] } : { ...prompt };
+  session.state.waitingFor = prompt.player;
 }
 
 function sameAction(action: DuelAction, response: DuelAction): boolean {
@@ -325,6 +596,7 @@ function describeStep(step: ScriptedStepResponse): string {
   const detail = [
     `type=${step.type}`,
     `player=${step.player}`,
+    "windowId" in step && step.windowId !== undefined ? `windowId=${step.windowId}` : undefined,
     "code" in step && step.code ? `code=${step.code}` : undefined,
     "uid" in step && step.uid ? `uid=${step.uid}` : undefined,
     "tributeUids" in step && step.tributeUids ? `tributeUids=${step.tributeUids.join(",")}` : undefined,
@@ -345,4 +617,10 @@ function describeStep(step: ScriptedStepResponse): string {
 
 function sameStringSet(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((value) => b.includes(value));
+}
+
+function countCodes(codes: string[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const code of codes) counts.set(code, (counts.get(code) ?? 0) + 1);
+  return counts;
 }
