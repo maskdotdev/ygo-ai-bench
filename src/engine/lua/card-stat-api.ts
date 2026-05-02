@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { readCardUid } from "#lua/api-utils.js";
+import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession, DuelState } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -179,10 +180,7 @@ function pushNumberMatcher(L: unknown, fieldName: string, session: DuelSession, 
 function pushAnyNumberMatcher(L: unknown, fieldName: string, session: DuelSession, matcher: (card: DuelCardInstance, requested: number[]) => boolean): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const requested: number[] = [];
-    for (let index = 2; index <= lua.lua_gettop(state); index += 1) {
-      if (lua.lua_isnumber(state, index)) requested.push(lua.lua_tointeger(state, index));
-    }
+    const requested = readRequestedNumbers(state, 2);
     lua.lua_pushboolean(state, Boolean(card && requested.length > 0 && matcher(card, requested)));
     return 1;
   });
