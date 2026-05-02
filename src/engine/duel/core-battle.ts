@@ -40,6 +40,7 @@ export interface CoreBattleHandlers {
   damagePlayer(state: DuelState, player: PlayerId, amount: number, reason?: number): number;
   destroyCard(state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
   getAttackValue(state: DuelState, card: DuelCardInstance): number;
+  getDefenseValue(state: DuelState, card: DuelCardInstance): number;
   hasPiercingDamage(state: DuelState, card: DuelCardInstance): boolean;
 }
 
@@ -119,6 +120,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),
     getAttackValue: (card) => handlers.getAttackValue(state, card),
+    getDefenseValue: (card) => handlers.getDefenseValue(state, card),
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
   }, attacker ? totalExtraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)));
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
@@ -165,7 +167,11 @@ export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInst
 }
 
 export function getCoreBattleAttackValue(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): number {
-  return hasDefenseAttack(state, card, handlers.createContinuousContext(state)) ? Math.max(0, card.data.defense ?? 0) : Math.max(0, card.data.attack ?? 0);
+  return hasDefenseAttack(state, card, handlers.createContinuousContext(state)) ? getCoreBattleDefenseValue(card) : Math.max(0, (card.data.attack ?? 0) + (card.attackModifier ?? 0));
+}
+
+export function getCoreBattleDefenseValue(card: DuelCardInstance): number {
+  return Math.max(0, (card.data.defense ?? 0) + (card.defenseModifier ?? 0));
 }
 
 export function getCoreAdditionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[] | undefined, handlers: CoreBattleHandlers): PlayerId[] {

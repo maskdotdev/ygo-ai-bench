@@ -58,6 +58,7 @@ import {
   getCoreAdditionalBattleDamagePlayers,
   getCoreBattleAttackValue,
   getCoreBattleDamageReason,
+  getCoreBattleDefenseValue,
   hasCoreMustAttackAction,
   hasCorePiercingBattleDamage,
   negateCoreDuelAttack,
@@ -145,6 +146,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
   getAttackValue: (state, card) => getCoreBattleAttackValue(state, card, coreBattleHandlers),
+  getDefenseValue: (_state, card) => getCoreBattleDefenseValue(card),
   hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
 };
 
@@ -158,6 +160,7 @@ const coreBattleHandlers: CoreBattleHandlers = {
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
   getAttackValue: (state, card) => getCoreBattleAttackValue(state, card, coreBattleHandlers),
+  getDefenseValue: (_state, card) => getCoreBattleDefenseValue(card),
   hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
 };
 

@@ -141,6 +141,83 @@ describe("Lua battle helpers", () => {
     expect(session.state.players[1].lifePoints).toBe(6000);
   });
 
+  it("uses Lua stat updates during battle resolution", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Updated Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Updated Target", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 131, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const updated = host.loadScript(
+      `
+      local attacker=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("attack update battle " .. attacker:UpdateAttack(700, RESETS_STANDARD_PHASE_END) .. "/" .. attacker:GetAttack())
+      `,
+      "battle-stat-update.lua",
+    );
+    expect(updated.ok, updated.error).toBe(true);
+    expect(host.messages).toContain("attack update battle 700/2500");
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    expect(session.state.battleDamage[1]).toBe(1500);
+    expect(session.state.players[1].lifePoints).toBe(6500);
+  });
+
+  it("uses Lua defense updates during defense-position battle resolution", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Small Attacker", kind: "monster", attack: 1200 },
+      { code: "200", name: "Updated Defender", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const session = createDuel({ seed: 132, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpDefense";
+
+    const host = createLuaScriptHost(session);
+    const updated = host.loadScript(
+      `
+      local defender=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("defense update battle " .. defender:UpdateDefense(500, RESETS_STANDARD_PHASE_END) .. "/" .. defender:GetDefense())
+      `,
+      "battle-defense-update.lua",
+    );
+    expect(updated.ok, updated.error).toBe(true);
+    expect(host.messages).toContain("defense update battle 500/1500");
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    expect(session.state.battleDamage[0]).toBe(300);
+    expect(session.state.players[0].lifePoints).toBe(7700);
+    expect(session.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("monsterZone");
+  });
+
   it("applies Lua attack-all monster effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Sweeper", kind: "monster", attack: 1800 },

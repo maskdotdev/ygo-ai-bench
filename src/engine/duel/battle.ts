@@ -8,6 +8,7 @@ export interface DuelBattleCallbacks {
   damagePlayer(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   destroyCard(uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
   getAttackValue?(card: DuelCardInstance): number;
+  getDefenseValue?(card: DuelCardInstance): number;
   hasPiercingDamage?(card: DuelCardInstance): boolean;
 }
 
@@ -200,7 +201,7 @@ function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: Due
   attacker.battlePosition = attacker.position;
   target.battlePosition = target.position;
   const attackerAttack = getBattleAttack(attacker, callbacks);
-  const targetStat = target.position === "faceUpAttack" ? getBattleAttack(target, callbacks) : getBattleDefense(target);
+  const targetStat = target.position === "faceUpAttack" ? getBattleAttack(target, callbacks) : getBattleDefense(target, callbacks);
   if (target.position === "faceUpAttack") {
     resolveAttackPositionBattle(state, attacker, attackerAttack, target, targetStat, callbacks);
     return;
@@ -242,8 +243,8 @@ function getBattleAttack(card: DuelCardInstance, callbacks?: DuelBattleCallbacks
   return Math.max(0, callbacks?.getAttackValue?.(card) ?? card.data.attack ?? 0);
 }
 
-function getBattleDefense(card: DuelCardInstance): number {
-  return Math.max(0, card.data.defense ?? 0);
+function getBattleDefense(card: DuelCardInstance, callbacks?: DuelBattleCallbacks): number {
+  return Math.max(0, callbacks?.getDefenseValue?.(card) ?? card.data.defense ?? 0);
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {
