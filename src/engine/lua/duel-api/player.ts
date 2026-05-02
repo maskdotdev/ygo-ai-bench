@@ -76,7 +76,7 @@ function pushCanNormalSummon(L: unknown, session: DuelSession): number {
   const uid = readCardUid(L, 2);
   const ignoreCount = lua.lua_toboolean(L, 3);
   const card = uid ? findCard(session.state, uid) : undefined;
-  lua.lua_pushboolean(L, canNormalSummon(session, player, card, ignoreCount, readMinTributeRequirement(L, card)));
+  lua.lua_pushboolean(L, canNormalSummon(session, player, card, ignoreCount, readMinTributeRequirement(L, card) ?? 0));
   return 1;
 }
 

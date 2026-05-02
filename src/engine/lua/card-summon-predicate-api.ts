@@ -37,7 +37,7 @@ function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const ignoreCount = lua.lua_toboolean(state, 2);
-    const minTributes = lua.lua_isnumber(state, 4) ? Math.max(0, lua.lua_tointeger(state, 4)) : readMinTributeRequirement(state, card);
+    const minTributes = lua.lua_isnumber(state, 4) ? Math.max(0, lua.lua_tointeger(state, 4)) : readMinTributeRequirement(state, card) ?? 0;
     const actions = card ? summonActionsForCard(session, card, ignoreCount, minTributes) : [];
     lua.lua_pushboolean(
       state,

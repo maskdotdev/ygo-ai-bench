@@ -351,6 +351,10 @@ describe("Lua summon and release helpers", () => {
       Debug.Message("tribute open one " .. tostring(Duel.CheckTribute(one, 1, 1, nil)))
       aux.AddNormalSummonProcedure(two,true,false,1,1,SUMMON_TYPE_TRIBUTE,1234)
       Debug.Message("tribute proc count " .. Duel.GetTributeCount(two) .. "/" .. tostring(Duel.CheckTribute(two)))
+      aux.AddNormalSummonProcedure(two,true,false,0,1,SUMMON_TYPE_TRIBUTE,1235)
+      local reduced_min,reduced_max=two:GetTributeRequirement()
+      local reduced_selected=Duel.SelectTribute(0,two)
+      Debug.Message("tribute reduced proc " .. Duel.GetTributeCount(two) .. "/" .. reduced_min .. "/" .. reduced_max .. "/" .. tostring(Duel.CheckTribute(two)) .. "/" .. reduced_selected:GetCount())
       `,
       "check-tribute-open-zone.lua",
     );
@@ -404,6 +408,7 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("tribute open zero true");
     expect(host.messages).toContain("tribute open one true");
     expect(host.messages).toContain("tribute proc count 1/true");
+    expect(host.messages).toContain("tribute reduced proc 0/0/1/true/0");
     expect(host.messages).toContain("tribute full zero false");
     expect(host.messages).toContain("tribute full one true");
     expect(host.messages).toContain("tribute full two true");

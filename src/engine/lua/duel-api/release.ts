@@ -375,13 +375,13 @@ function normalSummonTributeCount(card: DuelCardInstance): number {
 function normalSummonTributeMinimum(L: unknown, card: DuelCardInstance | undefined): number {
   if (!card) return 0;
   const metadata = readMinTributeRequirement(L, card);
-  return metadata > 0 ? metadata : normalSummonTributeCount(card);
+  return metadata ?? normalSummonTributeCount(card);
 }
 
 function normalSummonTributeMaximum(L: unknown, card: DuelCardInstance | undefined): number {
   if (!card) return 0;
   const metadata = readMaxTributeRequirement(L, card);
-  return metadata > 0 ? metadata : normalSummonTributeCount(card);
+  return metadata ?? normalSummonTributeCount(card);
 }
 
 function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
