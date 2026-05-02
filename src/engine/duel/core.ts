@@ -260,6 +260,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     attackCostPaid: 0,
     attacksDeclared: [],
     attackedTargetUids: [],
+    battlePairs: [],
     attackPasses: [],
     damagePasses: [],
     positionsChanged: [],

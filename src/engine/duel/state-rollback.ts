@@ -1,4 +1,4 @@
-import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelState, PendingTrigger, PlayerId } from "#duel/types.js";
+import type { ChainLink, DuelBattlePair, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelState, PendingTrigger, PlayerId } from "#duel/types.js";
 
 export interface DuelStateRollback {
   status: DuelState["status"];
@@ -30,6 +30,7 @@ export interface DuelStateRollback {
   attackCostPaid: number;
   attacksDeclared: string[];
   attackedTargetUids: string[];
+  battlePairs: DuelBattlePair[];
   attackPasses: PlayerId[];
   damagePasses: PlayerId[];
   battleStep: DuelState["battleStep"] | undefined;
@@ -77,6 +78,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     attackCostPaid: state.attackCostPaid,
     attacksDeclared: [...state.attacksDeclared],
     attackedTargetUids: [...state.attackedTargetUids],
+    battlePairs: state.battlePairs.map((pair) => ({ ...pair })),
     attackPasses: [...state.attackPasses],
     damagePasses: [...state.damagePasses],
     battleStep: state.battleStep,
@@ -123,6 +125,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.attackCostPaid = rollback.attackCostPaid;
   state.attacksDeclared = rollback.attacksDeclared;
   state.attackedTargetUids = rollback.attackedTargetUids;
+  state.battlePairs = rollback.battlePairs;
   state.attackPasses = rollback.attackPasses;
   state.damagePasses = rollback.damagePasses;
   if (rollback.battleStep) state.battleStep = rollback.battleStep;

@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { duelReason } from "#duel/reasons.js";
 import { positionFromMask, readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
+import { pushGroupTable } from "#lua/group-api.js";
 import type { CardPosition, DuelCardInstance, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -18,6 +19,10 @@ export function installCardBattleApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsBattleDestroyed", session, (card) => Boolean(card && isBattleDestroyed(card)));
   lua.lua_pushcfunction(L, (state: unknown) => pushBattleTarget(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetBattleTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushBattledGroup(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetBattledGroup"));
+  pushNumberGetter(L, "GetBattledGroupCount", session, (card) => battledOpponentUids(session, card).length);
+  pushNumberGetter(L, "GetAttackedCount", session, (card) => (card ? session.state.battlePairs.filter((pair) => pair.attackerUid === card.uid).length : 0));
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
@@ -48,6 +53,21 @@ function pushBattleTarget(L: unknown, session: DuelSession): number {
   if (!targetUid) lua.lua_pushnil(L);
   else pushCardTable(L, targetUid);
   return 1;
+}
+
+function pushBattledGroup(L: unknown, session: DuelSession): number {
+  pushGroupTable(L, battledOpponentUids(session, readCard(L, session)));
+  return 1;
+}
+
+function battledOpponentUids(session: DuelSession, card: DuelCardInstance | undefined): string[] {
+  if (!card) return [];
+  const opponents = session.state.battlePairs.flatMap((pair) => {
+    if (pair.attackerUid === card.uid) return [pair.targetUid];
+    if (pair.targetUid === card.uid) return [pair.attackerUid];
+    return [];
+  });
+  return [...new Set(opponents)].filter((uid) => session.state.cards.some((candidate) => candidate.uid === uid));
 }
 
 function isBattleDestroyed(card: DuelCardInstance): boolean {

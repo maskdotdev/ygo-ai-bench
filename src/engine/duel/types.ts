@@ -257,6 +257,11 @@ export type DuelPromptState =
 
 export type BattleStep = "attack" | "damage" | "damageCalculation";
 
+export interface DuelBattlePair {
+  attackerUid: string;
+  targetUid: string;
+}
+
 export interface DuelState {
   id: string;
   seed: string;
@@ -292,6 +297,7 @@ export interface DuelState {
   attackCostPaid: number;
   attacksDeclared: string[];
   attackedTargetUids: string[];
+  battlePairs: DuelBattlePair[];
   attackPasses: PlayerId[];
   damagePasses: PlayerId[];
   battleStep?: BattleStep;
@@ -378,6 +384,7 @@ export interface PublicDuelState {
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   attacksDeclared: string[];
   attackedTargetUids: string[];
+  battlePairs: DuelBattlePair[];
   attackPasses: PlayerId[];
   damagePasses: PlayerId[];
   battleStep?: BattleStep;

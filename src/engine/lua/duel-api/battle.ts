@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { changeDuelBattleDamage, damageDuelPlayer, getDuelAttackCostPaid, getDuelBattleDamage, negateDuelAttack, setDuelAttackCostPaid } from "#duel/core.js";
-import { recordAttackedTarget } from "#duel/battle.js";
+import { recordBattledPair } from "#duel/battle.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -128,7 +128,7 @@ function changeAttackTarget(session: DuelSession, targetUid: string | undefined)
   if (!attacker || !target || target.location !== "monsterZone" || target.controller === attacker.controller || target.uid === attacker.uid) return false;
   attack.targetUid = target.uid;
   pending.targetUid = target.uid;
-  recordAttackedTarget(session.state, target.uid);
+  recordBattledPair(session.state, attacker.uid, target.uid);
   return true;
 }
 
@@ -168,7 +168,7 @@ function chainAttack(session: DuelSession, targetUid: string | undefined): boole
   if (!target) return false;
   session.state.currentAttack = { attackerUid: attacker.uid, targetUid: target.uid };
   session.state.pendingBattle = { ...session.state.currentAttack };
-  recordAttackedTarget(session.state, target.uid);
+  recordBattledPair(session.state, attacker.uid, target.uid);
   session.state.battleStep = "attack";
   session.state.waitingFor = target.controller;
   return true;
@@ -182,7 +182,7 @@ function forceAttack(session: DuelSession, attackerUid: string | undefined, targ
   if (attacker.controller === target.controller || attacker.uid === target.uid) return false;
   session.state.currentAttack = { attackerUid: attacker.uid, targetUid: target.uid };
   session.state.pendingBattle = { ...session.state.currentAttack };
-  recordAttackedTarget(session.state, target.uid);
+  recordBattledPair(session.state, attacker.uid, target.uid);
   session.state.battleStep = "attack";
   session.state.attackPasses = [];
   session.state.damagePasses = [];

@@ -44,6 +44,7 @@ export function changeDuelPhase(state: DuelState, player: PlayerId, phase: DuelP
   if (phase === "battle") {
     state.attacksDeclared = [];
     state.attackedTargetUids = [];
+    state.battlePairs = [];
   }
   else clearBattleState(state);
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
@@ -65,6 +66,7 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
   state.attackedTargetUids = [];
+  state.battlePairs = [];
   clearBattleState(state);
   state.positionsChanged = [];
   for (const activityPlayer of [0, 1] satisfies PlayerId[]) resetDuelActivityCounts(state, activityPlayer);

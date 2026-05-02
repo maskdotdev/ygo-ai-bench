@@ -1488,6 +1488,10 @@ describe("Lua battle helpers", () => {
       Debug.Message("attacked group has target " .. tostring(g:IsContains(Duel.GetAttackTarget())))
       local idle=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
       Debug.Message("attacked group has idle " .. tostring(g:IsContains(idle)))
+      local attacker=Duel.GetAttacker()
+      local target=Duel.GetAttackTarget()
+      Debug.Message("attacker battled " .. attacker:GetBattledGroupCount() .. "/" .. attacker:GetAttackedCount() .. "/" .. tostring(attacker:GetBattledGroup():IsContains(target)))
+      Debug.Message("target battled " .. target:GetBattledGroupCount() .. "/" .. target:GetAttackedCount() .. "/" .. tostring(target:GetBattledGroup():IsContains(attacker)))
       `,
       "attacked-group.lua",
     );
@@ -1496,9 +1500,12 @@ describe("Lua battle helpers", () => {
     expect(host.messages).toContain("attacked group count 1");
     expect(host.messages).toContain("attacked group has target true");
     expect(host.messages).toContain("attacked group has idle false");
+    expect(host.messages).toContain("attacker battled 1/1/true");
+    expect(host.messages).toContain("target battled 1/0/true");
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(restored.state.attackedTargetUids).toEqual([target!.uid]);
+    expect(restored.state.battlePairs).toEqual([{ attackerUid: attacker!.uid, targetUid: target!.uid }]);
   });
 
   it("lets Lua scripts negate the active attack", () => {

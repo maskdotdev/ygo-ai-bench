@@ -51,7 +51,7 @@ export function declareDuelAttack(
   recordAttackActivity(state, player, attacker);
   state.currentAttack = { attackerUid: attacker.uid, ...(target === undefined ? {} : { targetUid: target.uid }) };
   state.pendingBattle = { ...state.currentAttack };
-  if (target) recordAttackedTarget(state, target.uid);
+  if (target) recordBattledPair(state, attacker.uid, target.uid);
   state.battleStep = "attack";
   if (!target) {
     pushDuelLog(state, "attack", player, attacker.name, "Direct attack");
@@ -188,6 +188,11 @@ function positionLabel(position: CardPosition): string {
 
 export function recordAttackedTarget(state: DuelState, targetUid: string): void {
   if (!state.attackedTargetUids.includes(targetUid)) state.attackedTargetUids.push(targetUid);
+}
+
+export function recordBattledPair(state: DuelState, attackerUid: string, targetUid: string): void {
+  recordAttackedTarget(state, targetUid);
+  if (!state.battlePairs.some((pair) => pair.attackerUid === attackerUid && pair.targetUid === targetUid)) state.battlePairs.push({ attackerUid, targetUid });
 }
 
 function canAttackWithCard(state: DuelState, card: DuelCardInstance, extraAttacks: number): boolean {
