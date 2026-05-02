@@ -1882,6 +1882,39 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("player tribute proc ready true");
   });
 
+  it("checks Lua player summon legality with raised tribute metadata and double tribute units", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Player Raised Tribute Target", kind: "monster", level: 5 },
+      { code: "200", name: "Player Double Tribute Material", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 162, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local material = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Duel.MoveToField(material,0,0,LOCATION_MZONE,POS_FACEUP_ATTACK,true)
+      Debug.Message("player raised natural " .. tostring(Duel.IsPlayerCanSummon(0,target)))
+      aux.AddNormalSummonProcedure(target,true,false,2,2,SUMMON_TYPE_TRIBUTE,1234)
+      Debug.Message("player raised one unit " .. tostring(Duel.IsPlayerCanSummon(0,target)))
+      material:RegisterFlagEffect(FLAG_HAS_DOUBLE_TRIBUTE,RESET_EVENT,0,1)
+      Debug.Message("player raised double unit " .. tostring(Duel.IsPlayerCanSummon(0,target)))
+      `,
+      "player-raised-double-tribute-legality.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("player raised natural true");
+    expect(host.messages).toContain("player raised one unit false");
+    expect(host.messages).toContain("player raised double unit true");
+  });
+
   it("checks Lua player monster set legality with tribute materials", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Player Tribute Set Target", kind: "monster", level: 5 },
