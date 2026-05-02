@@ -2,7 +2,8 @@ import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
 import { canMoveDuelCardToLocation, detachDuelOverlayMaterials, moveDuelCard } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
-import { locationsFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { locationsFromMask, readCardUid } from "#lua/api-utils.js";
+import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import type { LuaDuelMoveApiHostState } from "#lua/duel-api/move.js";
 
@@ -122,18 +123,6 @@ function countOverlayMaterials(holders: DuelCardInstance[]): number {
 function overlayLocationsFromMask(mask: number): DuelLocation[] {
   if (mask === 1) return ["monsterZone"];
   return locationsFromMask(mask);
-}
-
-function readCardOrGroupUids(L: unknown, index: number): string[] {
-  const cardUid = readCardUid(L, index);
-  return cardUid ? [cardUid] : readGroupUids(L, index);
-}
-
-function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
-  if (!lua.lua_isnumber(L, index)) return undefined;
-  const value = lua.lua_tointeger(L, index);
-  if (value !== 0 && value !== 1) return undefined;
-  return value;
 }
 
 function otherPlayer(player: PlayerId): PlayerId {
