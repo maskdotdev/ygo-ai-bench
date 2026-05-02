@@ -3,7 +3,8 @@ import { pushDuelLog } from "#duel/card-state.js";
 import { raiseDuelEvent } from "#duel/core.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { pushGroupTable } from "#lua/group-api.js";
-import { readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { readCardUid } from "#lua/api-utils.js";
+import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -154,16 +155,4 @@ function findOperationInfo(operationInfos: LuaDuelOperationInfo[], chainIndex: n
     if (candidate.chainIndex === chainIndex && candidate.category === category) return candidate;
   }
   return undefined;
-}
-
-function readCardOrGroupUids(L: unknown, index: number): string[] {
-  const cardUid = readCardUid(L, index);
-  return cardUid ? [cardUid] : readGroupUids(L, index);
-}
-
-function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
-  if (!lua.lua_isnumber(L, index)) return undefined;
-  const value = lua.lua_tointeger(L, index);
-  if (value !== 0 && value !== 1) return undefined;
-  return value;
 }
