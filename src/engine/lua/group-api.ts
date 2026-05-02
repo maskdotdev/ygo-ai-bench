@@ -112,6 +112,24 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   });
   lua.lua_setfield(L, -2, to_luastring("RemoveCard"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
+    const excluded = readCardOrGroupUids(state, 3);
+    if (filterRef === undefined) {
+      lua.lua_pushvalue(state, 1);
+      return 1;
+    }
+    const args = readFilterArgs(state, 4);
+    setGroupUids(
+      state,
+      1,
+      readGroupUids(state, 1).filter((uid) => excluded.includes(uid) || !groupCardMatchesFilter(state, uid, filterRef, args)),
+    );
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_pushvalue(state, 1);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("Remove"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 2);
     lua.lua_pushboolean(state, Boolean(uid && readGroupUids(state, 1).includes(uid)));
     return 1;
@@ -730,6 +748,7 @@ const groupFieldNames = [
   "Sub",
   "Clear",
   "RemoveCard",
+  "Remove",
   "IsContains",
   "Contains",
   "Equal",

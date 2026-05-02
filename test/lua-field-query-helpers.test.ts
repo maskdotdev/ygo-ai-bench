@@ -3060,6 +3060,8 @@ describe("Lua field and query helpers", () => {
       Debug.Message("group subtract card " .. subtracted_card:GetCount() .. " " .. tostring(subtracted_card:Equal(Group.FromCards(c300, c200))) .. "/" .. tostring(added_cards:IsContains(c100)))
       local subtracted_group = added_cards - Group.FromCards(c100, c300)
       Debug.Message("group subtract group " .. subtracted_group:GetCount() .. " " .. tostring(subtracted_group:Equal(Group.FromCards(c200))))
+      local removed_filter = added_cards:Clone():Remove(function(tc,minatk) return tc:GetAttack() >= minatk end, c300, 1500)
+      Debug.Message("group remove filter " .. removed_filter:GetCount() .. " " .. tostring(removed_filter:IsContains(c100)) .. "/" .. tostring(removed_filter:IsContains(c200)) .. "/" .. tostring(removed_filter:IsContains(c300)))
       local intersected_card = added_cards & c200
       Debug.Message("group intersect card " .. intersected_card:GetCount() .. " " .. tostring(intersected_card:Equal(Group.FromCards(c200))))
       local intersected_group = added_cards & Group.FromCards(c100, c300)
