@@ -2079,7 +2079,7 @@ describe("Lua state helpers", () => {
       Debug.Message("previous state " .. g:GetPreviousLocation() .. "/" .. g:GetPreviousControler() .. "/" .. g:GetPreviousSequence() .. "/" .. g:GetPreviousPosition())
       Debug.Message("previous checks " .. tostring(g:IsPreviousLocation(LOCATION_MZONE)) .. "/" .. tostring(g:IsPreviousLocation(LOCATION_GRAVE,LOCATION_MZONE)) .. "/" .. tostring(g:IsPreviousLocation({LOCATION_GRAVE,LOCATION_MZONE})) .. "/" .. tostring(g:IsPreviousLocation(LOCATION_GRAVE)) .. "/" .. tostring(g:IsPreviousControler(0)) .. "/" .. tostring(g:IsPreviousControler(1,0)) .. "/" .. tostring(g:IsPreviousControler({1,0})) .. "/" .. tostring(g:IsPreviousControler(1)) .. "/" .. tostring(g:IsPreviousSequence(0)) .. "/" .. tostring(g:IsPreviousSequence(1)) .. "/" .. tostring(g:IsPreviousSequence(1,0)) .. "/" .. tostring(g:IsPreviousSequence({1,0})) .. "/" .. tostring(g:IsPreviousSequence({1,2})) .. "/" .. tostring(g:IsPreviousPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(g:IsPreviousPosition(POS_FACEUP_DEFENSE,POS_FACEUP_ATTACK)) .. "/" .. tostring(g:IsPreviousPosition({POS_FACEUP_DEFENSE,POS_FACEUP_ATTACK})) .. "/" .. tostring(g:IsPreviousPosition(POS_FACEUP)) .. "/" .. tostring(g:IsPreviousPosition(POS_FACEUP_DEFENSE)) .. "/" .. tostring(g:IsPreviousSetCard(0x123)) .. "/" .. tostring(g:IsPreviousSetCard({0x456,0x123})) .. "/" .. tostring(g:IsPreviousSetCard({0x456,0x789})))
       Debug.Message("previous identity " .. g:GetPreviousCode() .. "/" .. tostring(g:IsPreviousCode(100)) .. "/" .. tostring(g:IsPreviousCode(900)) .. "/" .. tostring(g:IsPreviousCode(900,100)) .. "/" .. tostring(g:IsPreviousCode({900,100})) .. "/" .. tostring(g:IsPreviousCodeOnField(100)) .. "/" .. tostring(g:IsPreviousCodeOnField(900,100)) .. "/" .. tostring(g:IsPreviousCodeOnField({900,100})))
-      Debug.Message("previous type " .. g:GetPreviousTypeOnField() .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_EFFECT)) .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_SPELL)))
+      Debug.Message("previous type " .. g:GetPreviousTypeOnField() .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_EFFECT)) .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_SPELL,TYPE_EFFECT)) .. "/" .. tostring(g:IsPreviousTypeOnField({TYPE_SPELL,TYPE_EFFECT})) .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_SPELL)))
       Debug.Message("previous stats " .. g:GetPreviousAttackOnField() .. "/" .. tostring(g:IsPreviousAttackOnField(1700)) .. "/" .. g:GetPreviousDefenseOnField() .. "/" .. tostring(g:IsPreviousDefenseOnField(1300)))
       local link = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
       Duel.SendtoGrave(link, REASON_EFFECT)
@@ -2087,7 +2087,7 @@ describe("Lua state helpers", () => {
       Debug.Message("previous link defense " .. grave_link:GetPreviousDefenseOnField() .. "/" .. tostring(grave_link:IsPreviousDefenseOnField(0)) .. "/" .. tostring(grave_link:IsPreviousLevelOnField(2)) .. "/" .. tostring(grave_link:IsPreviousPosition(POS_FACEUP)) .. "/" .. tostring(grave_link:IsPreviousPosition(POS_FACEUP_ATTACK)))
       Debug.Message("previous level " .. g:GetPreviousLevelOnField() .. "/" .. tostring(g:IsPreviousLevelOnField(4)) .. "/" .. tostring(g:IsPreviousLevelOnField(7)))
       Debug.Message("previous extra stats " .. g:GetPreviousRankOnField() .. "/" .. tostring(g:IsPreviousRankOnField(4)) .. "/" .. tostring(g:IsPreviousRankOnField(0)) .. "/" .. g:GetPreviousLinkOnField() .. "/" .. tostring(g:IsPreviousLinkOnField(2)))
-      Debug.Message("previous traits " .. g:GetPreviousRaceOnField() .. "/" .. tostring(g:IsPreviousRaceOnField(RACE_SPELLCASTER)) .. "/" .. g:GetPreviousAttributeOnField() .. "/" .. tostring(g:IsPreviousAttributeOnField(ATTRIBUTE_DARK)))
+      Debug.Message("previous traits " .. g:GetPreviousRaceOnField() .. "/" .. tostring(g:IsPreviousRaceOnField(RACE_SPELLCASTER)) .. "/" .. tostring(g:IsPreviousRaceOnField(RACE_DRAGON,RACE_SPELLCASTER)) .. "/" .. tostring(g:IsPreviousRaceOnField({RACE_DRAGON,RACE_SPELLCASTER})) .. "/" .. tostring(g:IsPreviousRaceOnField(RACE_DRAGON)) .. "/" .. g:GetPreviousAttributeOnField() .. "/" .. tostring(g:IsPreviousAttributeOnField(ATTRIBUTE_DARK)) .. "/" .. tostring(g:IsPreviousAttributeOnField(ATTRIBUTE_LIGHT,ATTRIBUTE_DARK)) .. "/" .. tostring(g:IsPreviousAttributeOnField({ATTRIBUTE_LIGHT,ATTRIBUTE_DARK})) .. "/" .. tostring(g:IsPreviousAttributeOnField(ATTRIBUTE_LIGHT)))
       Debug.Message("previous visibility " .. tostring(g:WasFaceup()) .. "/" .. tostring(g:WasFacedown()))
       Debug.Message("reason checks " .. tostring(g:IsReason(REASON_EFFECT)) .. "/" .. tostring(g:IsReason(REASON_BATTLE,REASON_EFFECT)) .. "/" .. tostring(g:IsReason({REASON_BATTLE,REASON_EFFECT})) .. "/" .. tostring(g:IsReason(REASON_BATTLE)))
       Debug.Message("reason player " .. g:GetReasonPlayer() .. "/" .. tostring(g:IsReasonPlayer(0)) .. "/" .. tostring(g:IsReasonPlayer(1,0)) .. "/" .. tostring(g:IsReasonPlayer({1,0})) .. "/" .. tostring(g:IsReasonPlayer(1)))
@@ -2113,12 +2113,12 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous checks true/true/true/false/true/true/true/false/true/false/true/true/false/true/true/true/true/false/true/true/false");
     expect(host.messages).toContain("previous identity 100/true/false/true/true/true/true/true");
-    expect(host.messages).toContain("previous type 33/true/false");
+    expect(host.messages).toContain("previous type 33/true/true/true/false");
     expect(host.messages).toContain("previous stats 1700/true/1300/true");
     expect(host.messages).toContain("previous link defense 0/false/false/true/false");
     expect(host.messages).toContain("previous level 4/true/false");
     expect(host.messages).toContain("previous extra stats 0/false/false/0/false");
-    expect(host.messages).toContain("previous traits 2/true/32/true");
+    expect(host.messages).toContain("previous traits 2/true/true/true/false/32/true/true/true/false");
     expect(host.messages).toContain("previous visibility true/false");
     expect(host.messages).toContain("reason checks true/true/true/false");
     expect(host.messages).toContain("reason player 0/true/true/true/false");
