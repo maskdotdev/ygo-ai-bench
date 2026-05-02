@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { installAuxApi, installConstants, installDebugApi, installTypeCompatibilityApi } from "#lua/basic-api.js";
+import { installAuxApi, installConstants, installDebugApi } from "#lua/basic-api.js";
 import { installCardApi, pushCardTable } from "#lua/card-api.js";
 import { installCardProcedureApi } from "#lua/card-procedure-api.js";
 import { installDuelApi } from "#lua/duel-api/index.js";
@@ -10,6 +10,7 @@ import { scriptFilenameForCard } from "#engine/data-loaders.js";
 import { registerEffect } from "#duel/core.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
+import { installTypeCompatibilityApi } from "#lua/type-compatibility-api.js";
 import { applyLuaNormalTributeMetadata } from "#lua/tribute-metadata-api.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaHostState, LuaInitialEffectRegistrationResult, LuaScriptHost, LuaScriptLoadResult, LuaScriptSource } from "#lua/host-types.js";
