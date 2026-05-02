@@ -19,7 +19,7 @@ import {
 } from "#duel/core.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
-import { normalSummonActions } from "#duel/summon.js";
+import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
@@ -113,7 +113,7 @@ function selectSummonOrSetAction(
   target: DuelCardInstance,
   tributeUids: string[],
 ): LuaSummonOrSetAction | undefined {
-  const actions = normalSummonActions(state, player, [target]);
+  const actions = [...normalSummonActions(state, player, [target]), ...tributeSummonActions(state, player, [target])];
   const summon = actions.find((candidate): candidate is LuaSummonOrSetAction => candidate.type === "normalSummon" && candidate.uid === target.uid);
   if (summon) return summon;
   if (tributeUids.length > 0 && actions.some((candidate) => candidate.type === "tributeSummon" && candidate.uid === target.uid)) {

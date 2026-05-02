@@ -1973,6 +1973,32 @@ describe("Lua field and query helpers", () => {
     expect(setHost.messages).toContain("summon or set set 1");
     expect(setHost.messages).toContain("summon or set set operated 1/200");
     expect(setSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
+
+    const tributeSession = createDuel({ seed: 154, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(tributeSession, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(tributeSession);
+    const material = tributeSession.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(material).toBeDefined();
+    moveDuelCard(tributeSession.state, material!.uid, "monsterZone", 0);
+
+    const tributeHost = createLuaScriptHost(tributeSession);
+    const tributeResult = tributeHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("summon or set tribute " .. Duel.SummonOrSet(0, target, true, tribute))
+      Debug.Message("summon or set tribute operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "summon-or-set-tribute.lua",
+    );
+    expect(tributeResult.ok, tributeResult.error).toBe(true);
+    expect(tributeHost.messages).toContain("summon or set tribute 1");
+    expect(tributeHost.messages).toContain("summon or set tribute operated 1/200");
+    expect(tributeSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "monsterZone", position: "faceUpAttack", summonType: "tribute" });
+    expect(tributeSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "graveyard" });
   });
 
   it("lets Lua scripts set spells and traps", () => {
