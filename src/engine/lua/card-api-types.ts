@@ -1,4 +1,4 @@
-import type { PlayerId } from "#duel/types.js";
+import type { DuelEffectContext, PlayerId } from "#duel/types.js";
 
 export interface LuaCardApiEffectRecord {
   id: number;
@@ -20,5 +20,6 @@ export interface LuaCardApiEffectRecord {
 export interface LuaCardApiState<EffectRecord extends LuaCardApiEffectRecord> {
   effects: Map<number, EffectRecord>;
   operatedUids?: string[];
+  activeContext?: DuelEffectContext | undefined;
   pushEffectTable: (state: unknown, id: number) => void;
 }

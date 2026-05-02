@@ -18,6 +18,8 @@ export function installCardRelationApi<EffectRecord extends LuaCardApiEffectReco
   lua.lua_setfield(L, -2, to_luastring("GetMarkedEffects"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToEffect(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsRelateToEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToChain(state, session, hostState));
+  lua.lua_setfield(L, -2, to_luastring("IsRelateToChain"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToCard(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsRelateToCard"));
 }
@@ -65,11 +67,37 @@ function pushIsRelateToEffect(L: unknown, session: DuelSession): number {
   return 1;
 }
 
+function pushIsRelateToChain<EffectRecord extends LuaCardApiEffectRecord>(
+  L: unknown,
+  session: DuelSession,
+  hostState: LuaCardApiState<EffectRecord>,
+): number {
+  const card = readCard(L, session, 1);
+  const requestedIndex = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const link = chainLinkByLuaIndex(session, requestedIndex, hostState);
+  lua.lua_pushboolean(L, Boolean(card && link && card.uid === link.sourceUid && isCardRelatedToChainLink(card, link)));
+  return 1;
+}
+
 function pushIsRelateToCard(L: unknown, session: DuelSession): number {
   const source = readCard(L, session, 1);
   const target = readCard(L, session, 2);
   lua.lua_pushboolean(L, Boolean(source && target && isOnField(source) && isOnField(target)));
   return 1;
+}
+
+function chainLinkByLuaIndex<EffectRecord extends LuaCardApiEffectRecord>(
+  session: DuelSession,
+  requestedIndex: number,
+  hostState: LuaCardApiState<EffectRecord>,
+): DuelSession["state"]["chain"][number] | undefined {
+  if (requestedIndex <= 0) return hostState.activeContext?.chainLink ?? session.state.chain[session.state.chain.length - 1];
+  return session.state.chain[requestedIndex - 1];
+}
+
+function isCardRelatedToChainLink(card: DuelCardInstance, link: DuelSession["state"]["chain"][number]): boolean {
+  if (!isOnFieldLocation(link.activationLocation)) return true;
+  return card.location === link.activationLocation && card.sequence === link.activationSequence;
 }
 
 function readCard(L: unknown, session: DuelSession, index = 1): DuelCardInstance | undefined {
@@ -79,4 +107,8 @@ function readCard(L: unknown, session: DuelSession, index = 1): DuelCardInstance
 
 function isOnField(card: DuelCardInstance): boolean {
   return card.location === "monsterZone" || card.location === "spellTrapZone";
+}
+
+function isOnFieldLocation(location: DuelCardInstance["location"] | undefined): boolean {
+  return location === "monsterZone" || location === "spellTrapZone";
 }

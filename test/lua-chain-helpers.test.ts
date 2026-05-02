@@ -123,6 +123,50 @@ describe("Lua chain helpers", () => {
     expect(session.state.log.findIndex((entry) => entry.action === "activate")).toBeLessThan(session.state.log.findIndex((entry) => entry.action === "breakEffect"));
   });
 
+  it("lets Lua scripts check whether a field source relates to its resolving chain link", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Chain Relation Source", kind: "monster" }];
+    const session = createDuel({ seed: 206, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "100")!;
+    source.location = "monsterZone";
+    source.sequence = 0;
+    source.position = "faceUpAttack";
+    source.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_MZONE)
+        e:SetOperation(function(e,tp)
+          local c=e:GetHandler()
+          Debug.Message("chain relation before " .. tostring(c:IsRelateToChain(0)))
+          Duel.SendtoGrave(c, REASON_EFFECT)
+          Debug.Message("chain relation after " .. tostring(c:IsRelateToChain(0)))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "chain-relation.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(host.messages).toContain("chain relation before true");
+    expect(host.messages).toContain("chain relation after false");
+  });
+
   it("lets Lua quick effects inspect pending chain info", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Chain Source", kind: "monster", alias: "101", level: 4, attack: 1800, defense: 1200, race: 0x2, attribute: 0x20 },

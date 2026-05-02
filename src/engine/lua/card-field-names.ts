@@ -461,6 +461,7 @@ export const cardFieldNames = [
   "IsDestructable",
   "IsDiscardable",
   "IsRelateToEffect",
+  "IsRelateToChain",
   "CreateEffectRelation",
   "ReleaseEffectRelation",
   "IsRelateToCard",
