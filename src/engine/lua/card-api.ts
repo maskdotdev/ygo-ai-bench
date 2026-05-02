@@ -1,5 +1,4 @@
 import fengari from "fengari";
-import { registerEffect } from "#duel/core.js";
 import { installCardAdjacentApi } from "#lua/card-adjacent-api.js";
 import { installCardArchetypeApi } from "#lua/card-archetype-api.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
@@ -7,6 +6,7 @@ import { installCardCodeApi } from "#lua/card-code-api.js";
 import { installCardColumnApi } from "#lua/card-column-api.js";
 import { installCardControlApi } from "#lua/card-control-api.js";
 import { installCardCounterApi } from "#lua/card-counter-api.js";
+import { installCardEffectRegistrationApi } from "#lua/card-effect-registration-api.js";
 import { installCardEffectQueryApi } from "#lua/card-effect-query-api.js";
 import { installCardEquipApi } from "#lua/card-equip-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
@@ -26,10 +26,6 @@ import { installCardSummonApi } from "#lua/card-summon-api.js";
 import { installCardSummonPredicateApi } from "#lua/card-summon-predicate-api.js";
 import { installCardTableApi, pushCardTable } from "#lua/card-table-api.js";
 import { installCardTypePredicateApi } from "#lua/card-type-predicate-api.js";
-import {
-  readTableNumberField,
-  readTableStringField,
-} from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectDefinition, DuelSession } from "#duel/types.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
@@ -46,16 +42,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   toDuelEffect: (card: DuelCardInstance, luaEffect: EffectRecord, state: unknown) => DuelEffectDefinition,
 ): void {
   lua.lua_newtable(L);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const cardUid = readTableStringField(state, 1, "__duel_uid");
-    const effectId = readTableNumberField(state, 2, "__effect_id");
-    const card = cardUid ? session.state.cards.find((candidate) => candidate.uid === cardUid) : undefined;
-    const luaEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
-    if (!card || !luaEffect) return 0;
-    registerEffect(session, toDuelEffect(card, luaEffect, state));
-    return 0;
-  });
-  lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));
+  installCardEffectRegistrationApi(L, session, hostState, toDuelEffect);
   installCardTableApi(L);
   installCardCodeApi(L, session);
   installCardStatApi(L, session);
