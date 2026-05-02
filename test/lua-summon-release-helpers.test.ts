@@ -349,6 +349,10 @@ describe("Lua summon and release helpers", () => {
       Debug.Message("tribute counts " .. Duel.GetTributeCount(one) .. "/" .. Duel.GetTributeCount(two) .. "/" .. Duel.GetTributeCount(nil))
       Debug.Message("tribute open zero " .. tostring(Duel.CheckTribute(one, 0, 0, nil)))
       Debug.Message("tribute open one " .. tostring(Duel.CheckTribute(one, 1, 1, nil)))
+      local double = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      double:GetFirst():RegisterFlagEffect(FLAG_HAS_DOUBLE_TRIBUTE,RESET_EVENT,0,1)
+      Debug.Message("tribute double " .. tostring(Duel.CheckTribute(two, 2, 2, double)) .. "/" .. Duel.SelectTribute(0, two, 2, 2, double):GetCount())
+      double:GetFirst():ResetFlagEffect(FLAG_HAS_DOUBLE_TRIBUTE)
       aux.AddNormalSummonProcedure(two,true,false,1,1,SUMMON_TYPE_TRIBUTE,1234)
       Debug.Message("tribute proc count " .. Duel.GetTributeCount(two) .. "/" .. tostring(Duel.CheckTribute(two)))
       aux.AddNormalSummonProcedure(two,true,false,0,1,SUMMON_TYPE_TRIBUTE,1235)
@@ -407,6 +411,7 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("tribute counts 1/2/0");
     expect(host.messages).toContain("tribute open zero true");
     expect(host.messages).toContain("tribute open one true");
+    expect(host.messages).toContain("tribute double true/1");
     expect(host.messages).toContain("tribute proc count 1/true");
     expect(host.messages).toContain("tribute reduced proc 0/0/1/true/0");
     expect(host.messages).toContain("tribute full zero false");

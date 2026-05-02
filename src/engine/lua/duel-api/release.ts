@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation } from "#duel/core.js";
+import { tributeUnitCount } from "#duel/double-tribute.js";
 import { duelReason } from "#duel/reasons.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { pushCardTable } from "#lua/card-api.js";
@@ -85,7 +86,7 @@ function pushCheckTribute(L: unknown, session: DuelSession): number {
   const zoneMask = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : undefined;
   const candidates = tributeCandidateUids(session, player, target?.uid, materialSet);
   const selected = tributeZoneSelection(session, player, candidates, minimum, maximum, zoneMask);
-  lua.lua_pushboolean(L, Boolean(target && selected && selected.length >= minimum));
+  lua.lua_pushboolean(L, Boolean(target && selected && tributeUnitTotal(session, selected) >= minimum));
   return 1;
 }
 
@@ -117,7 +118,7 @@ function pushSelectTribute(L: unknown, session: DuelSession): number {
   const zoneMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : undefined;
   const candidates = tributeCandidateUids(session, player, target?.uid, materialSet);
   const selected = tributeZoneSelection(session, player, candidates, minimum, maximum, zoneMask);
-  pushGroupTable(L, selected && selected.length >= minimum ? selected : []);
+  pushGroupTable(L, selected && tributeUnitTotal(session, selected) >= minimum ? selected : []);
   return 1;
 }
 
@@ -318,12 +319,34 @@ function materialRestrictionSet(L: unknown, index: number, materials: string[]):
 }
 
 function tributeZoneSelection(session: DuelSession, player: PlayerId, candidates: string[], minimum: number, maximum: number, zoneMask: number | undefined): string[] | undefined {
-  const limit = maximum > 0 ? maximum : minimum;
-  for (let count = minimum; count <= Math.min(limit, candidates.length); count += 1) {
-    const selected = candidates.slice(0, count);
+  for (const selected of tributeSelections(session, candidates, minimum, maximum)) {
     if (hasAvailableTributeSummonZone(session, player, selected, zoneMask)) return selected;
   }
   return undefined;
+}
+
+function tributeSelections(session: DuelSession, candidates: string[], minimum: number, maximum: number): string[][] {
+  if (minimum === 0) return [[]];
+  const results: string[][] = [];
+  const limit = maximum > 0 ? maximum : minimum;
+  for (let index = 0; index < candidates.length; index += 1) {
+    const uid = candidates[index];
+    if (!uid) continue;
+    const units = tributeUnitTotal(session, [uid]);
+    if (units > limit) continue;
+    if (units >= minimum) results.push([uid]);
+    for (const tail of tributeSelections(session, candidates.slice(index + 1), Math.max(0, minimum - units), limit - units)) {
+      results.push([uid, ...tail]);
+    }
+  }
+  return results;
+}
+
+function tributeUnitTotal(session: DuelSession, uids: string[]): number {
+  return uids.reduce((sum, uid) => {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    return sum + (card ? tributeUnitCount(session.state, card) : 0);
+  }, 0);
 }
 
 function hasAvailableTributeSummonZone(session: DuelSession, player: PlayerId, selectedUids: string[], zoneMask: number | undefined): boolean {
