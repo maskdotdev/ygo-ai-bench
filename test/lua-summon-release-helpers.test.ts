@@ -425,7 +425,7 @@ describe("Lua summon and release helpers", () => {
     const session = createDuel({ seed: 40, startingHandSize: 6, cardReader: createCardReader(cards) });
     loadDecks(session, {
       0: { main: ["100", "200", "300", "400", "500", "600"] },
-      1: { main: [] },
+      1: { main: ["600"] },
     });
     startDuel(session);
     for (const code of ["300", "400", "500", "600"]) {
@@ -433,6 +433,9 @@ describe("Lua summon and release helpers", () => {
       expect(card).toBeTruthy();
       moveDuelCard(session.state, card!.uid, "monsterZone", 0);
     }
+    const opponentMaterial = session.state.cards.find((candidate) => candidate.controller === 1 && candidate.location === "hand" && candidate.code === "600");
+    expect(opponentMaterial).toBeTruthy();
+    moveDuelCard(session.state, opponentMaterial!.uid, "monsterZone", 1);
 
     const host = createLuaScriptHost(session);
     const setup = host.loadScript(
@@ -467,6 +470,9 @@ describe("Lua summon and release helpers", () => {
       Debug.Message("selected tribute zone " .. selected_zone:GetCount() .. "/" .. selected_zone:GetFirst():GetCode())
       local selected_zone_blocked = Duel.SelectTribute(0, one, 1, 1, limited, 0, 0x4)
       Debug.Message("selected tribute zone blocked " .. selected_zone_blocked:GetCount())
+      local opponent = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 1, LOCATION_MZONE, 0, 1, 1, nil)
+      local selected_opponent = Duel.SelectTribute(0, one, 1, 1, opponent, 1)
+      Debug.Message("selected tribute opponent " .. selected_opponent:GetCount() .. "/" .. selected_opponent:GetFirst():GetControler())
       `,
       "select-tribute.lua",
     );
@@ -477,6 +483,7 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("selected tribute locked 0");
     expect(host.messages).toContain("selected tribute zone 1/300");
     expect(host.messages).toContain("selected tribute zone blocked 0");
+    expect(host.messages).toContain("selected tribute opponent 1/1");
   });
 
   it("lets Lua scripts check and select release summon materials with zone pressure", () => {

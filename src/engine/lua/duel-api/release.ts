@@ -106,7 +106,7 @@ function pushTributeGroup(L: unknown, session: DuelSession): number {
 }
 
 function pushSelectTribute(L: unknown, session: DuelSession): number {
-  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const player = readOptionalPlayer(L, 6) ?? normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const targetUid = readCardUid(L, 2);
   const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
   const minimum = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : target ? normalSummonTributeCount(target) : 0);
