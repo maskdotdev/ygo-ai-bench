@@ -191,6 +191,42 @@ describe("Lua summon and release helpers", () => {
     expect(host.messages).toContain("unofficial procedures true/86/1131/true/191/344");
   });
 
+  it("lets Lua Fusion procedure helpers banish selected materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Fusion Banish Material A", kind: "monster" },
+      { code: "200", name: "Fusion Banish Material B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 160, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local sg = Duel.GetMatchingGroup(function(c) return c:IsCode(100) or c:IsCode(200) end, 0, LOCATION_MZONE, 0, nil)
+      Debug.Message("fusion banish before " .. sg:GetCount())
+      Debug.Message("fusion banish moved " .. Fusion.BanishMaterial(nil,nil,0,sg))
+      Debug.Message("fusion banish after " .. sg:GetCount())
+      Debug.Message("fusion banish operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "fusion-banish-material.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("fusion banish before 2");
+    expect(host.messages).toContain("fusion banish moved 2");
+    expect(host.messages).toContain("fusion banish after 0");
+    expect(host.messages).toContain("fusion banish operated 2");
+    expect(session.state.cards.filter((card) => card.location === "banished").map((card) => card.code).sort()).toEqual(["100", "200"]);
+    expect(session.state.cards.filter((card) => card.location === "banished").map((card) => card.reason)).toEqual([0x40048, 0x40048]);
+  });
+
   it("lets Lua scripts register temporary and continuous Lizard checks", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Lizard Probe", kind: "monster" }];
     const session = createDuel({ seed: 158, startingHandSize: 1, cardReader: createCardReader(cards) });

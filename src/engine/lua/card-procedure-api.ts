@@ -64,7 +64,11 @@ export function installCardProcedureApi(L: unknown, readLuaError: (state: unknow
       return function(e,tp,eg,ep,ev,re,r,rp) return true end
     end
     function Fusion.OnFieldMat(f) return f end
-    function Fusion.BanishMaterial(...) return true end
+    function Fusion.BanishMaterial(e,tc,tp,sg)
+      local moved=Duel.Remove(sg,POS_FACEUP,REASON_EFFECT+REASON_MATERIAL+REASON_FUSION)
+      if sg and sg.Clear then sg:Clear() end
+      return moved
+    end
     function Fusion.IsMonsterFilter(f)
       return function(c,...) return c:IsMonster() and (not f or f(c,...)) end
     end
