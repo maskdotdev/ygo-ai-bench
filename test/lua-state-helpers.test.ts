@@ -2052,6 +2052,7 @@ describe("Lua state helpers", () => {
     expect(link).toBeDefined();
     const movedLink = moveDuelCard(session.state, link!.uid, "monsterZone", 0);
     movedLink.sequence = 1;
+    movedLink.position = "faceUpDefense";
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -2061,7 +2062,8 @@ describe("Lua state helpers", () => {
       Debug.Message("card state " .. c:GetOwner() .. "/" .. tostring(c:IsOwner(0)) .. "/" .. c:GetControler() .. "/" .. c:GetLocation() .. "/" .. c:GetSequence() .. "/" .. c:GetPosition())
       Debug.Message("original meta " .. c:GetOriginalCode() .. "/" .. c:GetOriginalType() .. "/" .. c:GetOriginalLevel() .. "/" .. c:GetOriginalRace() .. "/" .. c:GetOriginalAttribute())
       Debug.Message("base stats " .. c:GetBaseAttack() .. "/" .. c:GetBaseDefense())
-      Debug.Message("position checks " .. tostring(c:IsPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(c:IsControler(0)))
+      local defensive_link = Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      Debug.Message("position checks " .. tostring(c:IsPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(c:IsPosition(POS_FACEUP)) .. "/" .. tostring(defensive_link:IsPosition(POS_FACEUP)) .. "/" .. tostring(defensive_link:IsPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(c:IsControler(0)))
       local hidden = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
       Debug.Message("public checks " .. tostring(c:IsPublic()) .. "/" .. tostring(hidden:IsPublic()))
       Debug.Message("relation checks " .. tostring(c:IsOnField()) .. "/" .. tostring(c:IsMonster()) .. "/" .. tostring(c:IsSpell()) .. "/" .. tostring(c:IsTrap()) .. "/" .. tostring(c:IsCanBeEffectTarget(nil)))
@@ -2074,14 +2076,14 @@ describe("Lua state helpers", () => {
       Duel.SendtoGrave(c, REASON_EFFECT)
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
       Debug.Message("previous state " .. g:GetPreviousLocation() .. "/" .. g:GetPreviousControler() .. "/" .. g:GetPreviousSequence() .. "/" .. g:GetPreviousPosition())
-      Debug.Message("previous checks " .. tostring(g:IsPreviousLocation(LOCATION_MZONE)) .. "/" .. tostring(g:IsPreviousControler(0)) .. "/" .. tostring(g:IsPreviousSequence(0)) .. "/" .. tostring(g:IsPreviousSequence(1)) .. "/" .. tostring(g:IsPreviousPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(g:IsPreviousSetCard(0x123)) .. "/" .. tostring(g:IsPreviousSetCard({0x456,0x123})) .. "/" .. tostring(g:IsPreviousSetCard({0x456,0x789})))
+      Debug.Message("previous checks " .. tostring(g:IsPreviousLocation(LOCATION_MZONE)) .. "/" .. tostring(g:IsPreviousControler(0)) .. "/" .. tostring(g:IsPreviousSequence(0)) .. "/" .. tostring(g:IsPreviousSequence(1)) .. "/" .. tostring(g:IsPreviousPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(g:IsPreviousPosition(POS_FACEUP)) .. "/" .. tostring(g:IsPreviousSetCard(0x123)) .. "/" .. tostring(g:IsPreviousSetCard({0x456,0x123})) .. "/" .. tostring(g:IsPreviousSetCard({0x456,0x789})))
       Debug.Message("previous identity " .. g:GetPreviousCode() .. "/" .. tostring(g:IsPreviousCode(100)) .. "/" .. tostring(g:IsPreviousCode(900)) .. "/" .. tostring(g:IsPreviousCode(900,100)) .. "/" .. tostring(g:IsPreviousCode({900,100})) .. "/" .. tostring(g:IsPreviousCodeOnField(100)) .. "/" .. tostring(g:IsPreviousCodeOnField(900,100)) .. "/" .. tostring(g:IsPreviousCodeOnField({900,100})))
       Debug.Message("previous type " .. g:GetPreviousTypeOnField() .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_EFFECT)) .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_SPELL)))
       Debug.Message("previous stats " .. g:GetPreviousAttackOnField() .. "/" .. tostring(g:IsPreviousAttackOnField(1700)) .. "/" .. g:GetPreviousDefenseOnField() .. "/" .. tostring(g:IsPreviousDefenseOnField(1300)))
       local link = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
       Duel.SendtoGrave(link, REASON_EFFECT)
       local grave_link = Duel.GetFieldCard(0, LOCATION_GRAVE, 1)
-      Debug.Message("previous link defense " .. grave_link:GetPreviousDefenseOnField() .. "/" .. tostring(grave_link:IsPreviousDefenseOnField(0)) .. "/" .. tostring(grave_link:IsPreviousLevelOnField(2)))
+      Debug.Message("previous link defense " .. grave_link:GetPreviousDefenseOnField() .. "/" .. tostring(grave_link:IsPreviousDefenseOnField(0)) .. "/" .. tostring(grave_link:IsPreviousLevelOnField(2)) .. "/" .. tostring(grave_link:IsPreviousPosition(POS_FACEUP)) .. "/" .. tostring(grave_link:IsPreviousPosition(POS_FACEUP_ATTACK)))
       Debug.Message("previous level " .. g:GetPreviousLevelOnField() .. "/" .. tostring(g:IsPreviousLevelOnField(4)) .. "/" .. tostring(g:IsPreviousLevelOnField(7)))
       Debug.Message("previous extra stats " .. g:GetPreviousRankOnField() .. "/" .. tostring(g:IsPreviousRankOnField(4)) .. "/" .. tostring(g:IsPreviousRankOnField(0)) .. "/" .. g:GetPreviousLinkOnField() .. "/" .. tostring(g:IsPreviousLinkOnField(2)))
       Debug.Message("previous traits " .. g:GetPreviousRaceOnField() .. "/" .. tostring(g:IsPreviousRaceOnField(RACE_SPELLCASTER)) .. "/" .. g:GetPreviousAttributeOnField() .. "/" .. tostring(g:IsPreviousAttributeOnField(ATTRIBUTE_DARK)))
@@ -2096,7 +2098,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("card state 0/true/0/4/0/1");
     expect(host.messages).toContain("original meta 100/33/4/2/32");
     expect(host.messages).toContain("base stats 1700/1300");
-    expect(host.messages).toContain("position checks true/true");
+    expect(host.messages).toContain("position checks true/true/true/false/true");
     expect(host.messages).toContain("public checks true/false");
     expect(host.messages).toContain("relation checks true/true/false/false/true");
     expect(host.messages).toContain("material checks true/true/true/true/true");
@@ -2106,11 +2108,11 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("column zones 1/256/3/65536");
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
-    expect(host.messages).toContain("previous checks true/true/true/false/true/true/true/false");
+    expect(host.messages).toContain("previous checks true/true/true/false/true/true/true/true/false");
     expect(host.messages).toContain("previous identity 100/true/false/true/true/true/true/true");
     expect(host.messages).toContain("previous type 33/true/false");
     expect(host.messages).toContain("previous stats 1700/true/1300/true");
-    expect(host.messages).toContain("previous link defense 0/false/false");
+    expect(host.messages).toContain("previous link defense 0/false/false/true/false");
     expect(host.messages).toContain("previous level 4/true/false");
     expect(host.messages).toContain("previous extra stats 0/false/false/0/false");
     expect(host.messages).toContain("previous traits 2/true/32/true");
