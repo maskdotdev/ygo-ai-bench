@@ -190,11 +190,11 @@ function actionMatchesSelector(action: DuelAction, selector: ScriptedResponseSel
   if (selector.phase) {
     if (action.type !== "changePhase" || action.phase !== selector.phase) return false;
   }
-  if (selector.attackerUid) {
-    if (action.type !== "declareAttack" || action.attackerUid !== selector.attackerUid) return false;
-  }
-  if (selector.targetUid) {
-    if (action.type !== "declareAttack" || action.targetUid !== selector.targetUid) return false;
+    if (selector.attackerUid) {
+      if ((action.type !== "declareAttack" && action.type !== "replayAttack" && action.type !== "cancelAttack") || action.attackerUid !== selector.attackerUid) return false;
+    }
+    if (selector.targetUid) {
+      if ((action.type !== "declareAttack" && action.type !== "replayAttack") || action.targetUid !== selector.targetUid) return false;
   }
   if (selector.promptId) {
     if (!("promptId" in action) || action.promptId !== selector.promptId) return false;
@@ -314,6 +314,9 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "changePosition" && response.type === "changePosition" && action.position !== response.position) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.targetUid !== response.targetUid) return false;
+  if (action.type === "replayAttack" && response.type === "replayAttack" && action.attackerUid !== response.attackerUid) return false;
+  if (action.type === "replayAttack" && response.type === "replayAttack" && action.targetUid !== response.targetUid) return false;
+  if (action.type === "cancelAttack" && response.type === "cancelAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "changePhase" && response.type === "changePhase" && action.phase !== response.phase) return false;
   return true;
 }

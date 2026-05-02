@@ -368,6 +368,8 @@ export type DuelAction = (
   | { type: "passChain"; player: PlayerId; label: string }
   | { type: "passAttack"; player: PlayerId; label: string }
   | { type: "passDamage"; player: PlayerId; label: string }
+  | { type: "replayAttack"; player: PlayerId; attackerUid: string; targetUid?: string; label: string }
+  | { type: "cancelAttack"; player: PlayerId; attackerUid: string; label: string }
   | { type: "selectOption"; player: PlayerId; promptId: string; option: number; label: string }
   | { type: "selectYesNo"; player: PlayerId; promptId: string; yes: boolean; label: string }
   | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }

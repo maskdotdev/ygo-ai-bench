@@ -27,6 +27,8 @@ export interface DuelResponseHandlers {
   passChain(state: DuelState, player: PlayerId): void;
   passAttack(state: DuelState, player: PlayerId): void;
   passDamage(state: DuelState, player: PlayerId): void;
+  replayAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void;
+  cancelAttack(state: DuelState, player: PlayerId, attackerUid: string): void;
   resolvePrompt(state: DuelState, response: Extract<DuelResponse, { type: "selectOption" | "selectYesNo" }>): void;
   activateTrigger(session: DuelSession, player: PlayerId, triggerId: string): void;
   declineTrigger(session: DuelSession, player: PlayerId, triggerId: string): void;
@@ -68,6 +70,8 @@ function dispatchDuelResponse(session: DuelSession, response: DuelResponse, hand
   else if (response.type === "passChain") handlers.passChain(session.state, response.player);
   else if (response.type === "passAttack") handlers.passAttack(session.state, response.player);
   else if (response.type === "passDamage") handlers.passDamage(session.state, response.player);
+  else if (response.type === "replayAttack") handlers.replayAttack(session.state, response.player, response.attackerUid, response.targetUid);
+  else if (response.type === "cancelAttack") handlers.cancelAttack(session.state, response.player, response.attackerUid);
   else if (response.type === "selectOption" || response.type === "selectYesNo") handlers.resolvePrompt(session.state, response);
   else if (response.type === "activateTrigger") handlers.activateTrigger(session, response.player, response.triggerId);
   else if (response.type === "declineTrigger") handlers.declineTrigger(session, response.player, response.triggerId);

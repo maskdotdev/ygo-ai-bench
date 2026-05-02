@@ -19,6 +19,9 @@ export function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (a.type === "changePosition" && b.type === "changePosition" && a.position !== b.position) return false;
   if (a.type === "declareAttack" && b.type === "declareAttack" && a.attackerUid !== b.attackerUid) return false;
   if (a.type === "declareAttack" && b.type === "declareAttack" && a.targetUid !== b.targetUid) return false;
+  if (a.type === "replayAttack" && b.type === "replayAttack" && a.attackerUid !== b.attackerUid) return false;
+  if (a.type === "replayAttack" && b.type === "replayAttack" && a.targetUid !== b.targetUid) return false;
+  if (a.type === "cancelAttack" && b.type === "cancelAttack" && a.attackerUid !== b.attackerUid) return false;
   if (a.type === "changePhase" && b.type === "changePhase" && a.phase !== b.phase) return false;
   return true;
 }

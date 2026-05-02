@@ -42,7 +42,13 @@ import {
   type DuelActivationHandlers,
 } from "#duel/effect-activation.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
-import { getDuelAttackCostPaid as getDuelAttackCostPaidRule, positionChangeActions, setDuelAttackCostPaid as setDuelAttackCostPaidRule } from "#duel/battle.js";
+import {
+  cancelReplayAttack,
+  getDuelAttackCostPaid as getDuelAttackCostPaidRule,
+  positionChangeActions,
+  replayDuelAttack,
+  setDuelAttackCostPaid as setDuelAttackCostPaidRule,
+} from "#duel/battle.js";
 import {
   appendBattleActions,
   canCoreChangeDuelCardPosition,
@@ -190,6 +196,8 @@ const responseHandlers: DuelResponseHandlers = {
   passChain,
   passAttack: (state, player) => passAttackResponseWindow(state, player, battleContinuationHandlers),
   passDamage: (state, player) => passDamageResponseWindow(state, player, battleContinuationHandlers),
+  replayAttack: replayDuelAttack,
+  cancelAttack: cancelReplayAttack,
   resolvePrompt: resolveDuelPrompt,
   activateTrigger(session, player, triggerId) {
     activateDuelPendingTrigger(session, player, triggerId, activationHandlers);

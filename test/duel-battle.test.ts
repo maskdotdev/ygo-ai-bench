@@ -507,7 +507,7 @@ describe("duel battle", () => {
     expect(session.state.log.some((entry) => entry.detail === "Damage calculation override resolved")).toBe(true);
   });
 
-  it("skips battle resolution when the attack target leaves before damage", () => {
+  it("opens a replay decision when the attack target leaves before damage", () => {
     const session = createDuel({ seed: 33, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
       0: { main: ["100", "300"] },
@@ -549,7 +549,21 @@ describe("duel battle", () => {
     const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "remove-target-before-damage");
     expect(quick).toBeTruthy();
     expect(applyResponse(session, quick!).ok).toBe(true);
-    passAttackResponses(session);
+    passUntilReplayDecision(session);
+
+    expect(session.state.pendingBattle).toBeDefined();
+    expect(session.state.currentAttack).toBeDefined();
+    expect(session.state.battleWindow).toMatchObject({
+      kind: "replayDecision",
+      step: "attack",
+      attackerUid: attacker!.uid,
+      responsePlayer: 0,
+    });
+    const replayActions = getDuelLegalActions(session, 0);
+    expect(replayActions.some((action) => action.type === "replayAttack" && action.attackerUid === attacker!.uid && action.targetUid === undefined)).toBe(true);
+    const cancel = replayActions.find((action) => action.type === "cancelAttack" && action.attackerUid === attacker!.uid);
+    expect(cancel).toBeTruthy();
+    expect(applyResponse(session, cancel!).ok).toBe(true);
 
     expect(session.state.pendingBattle).toBeUndefined();
     expect(session.state.currentAttack).toBeUndefined();
@@ -557,6 +571,52 @@ describe("duel battle", () => {
     expect(session.state.cards.find((card) => card.uid === attacker!.uid)?.location).toBe("monsterZone");
     expect(session.state.players[1].lifePoints).toBe(8000);
     expect(session.state.log.some((entry) => entry.detail === "Attack target left before damage")).toBe(true);
+    expect(session.state.log.some((entry) => entry.detail === "Replay decision pending")).toBe(true);
+    expect(session.state.log.some((entry) => entry.detail === "Canceled replay attack")).toBe(true);
+  });
+
+  it("replays directly after the attack target leaves and no monsters remain", () => {
+    const session = createDuel({ seed: 53, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(target).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+    registerEffect(session, {
+      id: "remove-target-before-direct-replay",
+      sourceUid: quickSource!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      operation(ctx) {
+        ctx.moveCard(target!.uid, "graveyard", 1);
+      },
+    });
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === target!.uid)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "remove-target-before-direct-replay")!).ok).toBe(true);
+    passUntilReplayDecision(session);
+
+    const replay = getDuelLegalActions(session, 0).find((action) => action.type === "replayAttack" && action.attackerUid === attacker!.uid && action.targetUid === undefined);
+    expect(replay).toBeTruthy();
+    expect(applyResponse(session, replay!).ok).toBe(true);
+    passAttackResponses(session);
+
+    expect(session.state.pendingBattle).toBeUndefined();
+    expect(session.state.players[1].lifePoints).toBe(6200);
+    expect(session.state.log.some((entry) => entry.detail === "Replayed direct attack")).toBe(true);
   });
 
   it("skips battle resolution when the attacker leaves before damage", () => {
@@ -825,6 +885,15 @@ describe("duel battle", () => {
 
 function passAttackResponses(session: ReturnType<typeof createDuel>): void {
   while (session.state.pendingBattle) {
+    const player = session.state.waitingFor ?? session.state.turnPlayer;
+    const pass = getDuelLegalActions(session, player).find((action) => action.type === (session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack"));
+    expect(pass).toBeTruthy();
+    expect(applyResponse(session, pass!).ok).toBe(true);
+  }
+}
+
+function passUntilReplayDecision(session: ReturnType<typeof createDuel>): void {
+  while (session.state.pendingBattle && session.state.battleWindow?.kind !== "replayDecision") {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
     const pass = getDuelLegalActions(session, player).find((action) => action.type === (session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack"));
     expect(pass).toBeTruthy();
