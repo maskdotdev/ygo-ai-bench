@@ -517,10 +517,12 @@ describe("Lua chain helpers", () => {
           Debug.Message("target metadata chain player " .. Duel.GetChainPlayer(0))
           local p,d=Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)
           Debug.Message("target metadata " .. p .. "/" .. d)
+          Debug.Message("target metadata direct " .. Duel.GetTargetPlayer() .. "/" .. Duel.GetTargetParam())
           Duel.ChangeTargetPlayer(0,tp)
           Duel.ChangeTargetParam(0,900)
           local p2,d2=Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)
           Debug.Message("target metadata changed " .. p2 .. "/" .. d2)
+          Debug.Message("target metadata direct changed " .. Duel.GetTargetPlayer() .. "/" .. Duel.GetTargetParam())
         end)
         c:RegisterEffect(e)
       end
@@ -536,7 +538,9 @@ describe("Lua chain helpers", () => {
     expect(host.messages).toContain("target metadata solving true");
     expect(host.messages).toContain("target metadata chain player 0");
     expect(host.messages).toContain("target metadata 1/700");
+    expect(host.messages).toContain("target metadata direct 1/700");
     expect(host.messages).toContain("target metadata changed 0/900");
+    expect(host.messages).toContain("target metadata direct changed 0/900");
   });
 
   it("lets Lua quick effects negate pending chain links", () => {
