@@ -90,6 +90,7 @@ import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
 import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
+import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/player-life.js";
 import { getPromptResponseActions, resolveDuelPrompt, stampDuelActions } from "#duel/prompt-response.js";
 import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
@@ -116,6 +117,7 @@ import type {
 } from "#duel/types.js";
 
 export { moveDuelCard } from "#duel/card-state.js";
+export { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/player-life.js";
 export { queryPublicState, serializeDuel, restoreDuel } from "#duel/snapshot.js";
 export { changeDuelBattleDamage, getDuelBattleDamage } from "#duel/core-battle-damage.js";
 
@@ -344,21 +346,6 @@ export function detachDuelOverlayMaterials(state: DuelState, uid: string, count:
   return detachCoreDuelOverlayMaterials(state, uid, count, controller, reason, coreMovementHandlers);
 }
 
-export function damageDuelPlayer(state: DuelState, player: PlayerId, amount: number, reason = 0): number {
-  const value = Math.max(0, Math.floor(amount));
-  state.players[player].lifePoints = Math.max(0, state.players[player].lifePoints - value);
-  pushDuelLog(state, (reason & duelReason.effect) !== 0 && (reason & duelReason.battle) === 0 ? "effectDamage" : "damage", player, undefined, String(value));
-  if (state.players[player].lifePoints <= 0) state.status = "ended";
-  return value;
-}
-
-export function recoverDuelPlayer(state: DuelState, player: PlayerId, amount: number): number {
-  const value = Math.max(0, Math.floor(amount));
-  state.players[player].lifePoints += value;
-  pushDuelLog(state, "recover", player, undefined, String(value));
-  return value;
-}
-
 export function raiseDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
   collectTriggerEffects(state, eventName, eventCard);
 }
@@ -369,12 +356,6 @@ export function setDuelAttackCostPaid(state: DuelState, status: number): number 
 
 export function getDuelAttackCostPaid(state: DuelState): number {
   return getDuelAttackCostPaidRule(state);
-}
-
-export function setDuelPlayerLifePoints(state: DuelState, player: PlayerId, lifePoints: number): void {
-  state.players[player].lifePoints = Math.max(0, Math.floor(lifePoints));
-  pushDuelLog(state, "setLifePoints", player, undefined, String(state.players[player].lifePoints));
-  if (state.players[player].lifePoints <= 0) state.status = "ended";
 }
 
 export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
