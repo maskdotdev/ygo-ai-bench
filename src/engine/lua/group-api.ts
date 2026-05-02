@@ -25,6 +25,11 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   });
   lua.lua_setfield(L, -2, to_luastring("FromCards"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    pushGroupTable(state, uniqueUids([...readCardOrGroupUids(state, 1), ...readCardOrGroupUids(state, 2)]));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("__add"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     const uids = readGroupUids(state, 1);
     if (!uids[0]) {
       lua.lua_pushnil(state);
@@ -400,6 +405,7 @@ export function pushGroupTable(L: unknown, uids: string[]): void {
   lua.lua_newtable(L);
   copyGlobalFunctionToField(L, "Group", "__len");
   copyGlobalFunctionToField(L, "Group", "__tostring");
+  copyGlobalFunctionToField(L, "Group", "__add");
   lua.lua_setmetatable(L, -2);
 }
 
