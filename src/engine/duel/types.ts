@@ -90,6 +90,7 @@ export interface DuelCardInstance {
   cancelToGrave?: boolean;
   customStatusMask?: number;
   effectRelationIds?: number[];
+  cardTargetUids?: string[];
   turnId?: number;
   turnCounter?: number;
   summonType?: DuelSummonType;

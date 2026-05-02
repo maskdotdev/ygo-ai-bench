@@ -60,6 +60,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
       ...card,
       overlayUids: [...card.overlayUids],
       ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
+      ...(card.cardTargetUids ? { cardTargetUids: [...card.cardTargetUids] } : {}),
       ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
     })),
     effects: state.effects.map((effect) => ({ ...effect, range: [...effect.range], ...(effect.reset ? { reset: { ...effect.reset } } : {}) })),

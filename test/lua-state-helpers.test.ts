@@ -1651,6 +1651,37 @@ describe("Lua state helpers", () => {
     expect(session.state.cards.find((card) => card.code === "100")?.effectRelationIds).toEqual([]);
   });
 
+  it("stores Lua card target relation state on card instances", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Card Target Source", kind: "monster" },
+      { code: "200", name: "Card Target A", kind: "monster" },
+      { code: "300", name: "Card Target B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 231, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local first=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,200),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local second=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,300),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      Debug.Message("card target before " .. tostring(source:IsHasCardTarget(first)))
+      Debug.Message("card target set " .. tostring(source:SetCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
+      Debug.Message("card relation create " .. tostring(source:CreateRelation(second,RESET_EVENT+RESETS_STANDARD)) .. "/" .. tostring(source:IsHasCardTarget(second)))
+      `,
+      "card-target-relation.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["card target before false", "card target set true/true/false", "card relation create true/true"]);
+    expect(session.state.cards.find((card) => card.code === "100")?.cardTargetUids).toHaveLength(2);
+  });
+
   it("checks Rush trait change availability from current and original traits", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Rush Trait Source", kind: "monster", race: 0x2, attribute: 0x10 }];
     const session = createDuel({ seed: 31, startingHandSize: 1, cardReader: createCardReader(cards) });

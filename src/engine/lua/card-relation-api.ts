@@ -14,6 +14,12 @@ export function installCardRelationApi<EffectRecord extends LuaCardApiEffectReco
   lua.lua_setfield(L, -2, to_luastring("CreateEffectRelation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushReleaseEffectRelation(state, session));
   lua.lua_setfield(L, -2, to_luastring("ReleaseEffectRelation"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSetCardTarget(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SetCardTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsHasCardTarget(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsHasCardTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCreateRelation(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CreateRelation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetMarkedEffects(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetMarkedEffects"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToEffect(state, session));
@@ -39,6 +45,27 @@ function pushReleaseEffectRelation(L: unknown, session: DuelSession): number {
   const effectId = readTableNumberField(L, 2, "__effect_id");
   if (card && effectId !== undefined) card.effectRelationIds = (card.effectRelationIds ?? []).filter((id) => id !== effectId);
   return 0;
+}
+
+function pushSetCardTarget(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session, 1);
+  const target = readCard(L, session, 2);
+  lua.lua_pushboolean(L, setCardTarget(card, target));
+  return 1;
+}
+
+function pushIsHasCardTarget(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session, 1);
+  const target = readCard(L, session, 2);
+  lua.lua_pushboolean(L, Boolean(card && target && card.cardTargetUids?.includes(target.uid)));
+  return 1;
+}
+
+function pushCreateRelation(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session, 1);
+  const target = readCard(L, session, 2);
+  lua.lua_pushboolean(L, setCardTarget(card, target));
+  return 1;
 }
 
 function pushGetMarkedEffects<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
@@ -111,4 +138,11 @@ function isOnField(card: DuelCardInstance): boolean {
 
 function isOnFieldLocation(location: DuelCardInstance["location"] | undefined): boolean {
   return location === "monsterZone" || location === "spellTrapZone";
+}
+
+function setCardTarget(card: DuelCardInstance | undefined, target: DuelCardInstance | undefined): boolean {
+  if (!card || !target) return false;
+  card.cardTargetUids = card.cardTargetUids ?? [];
+  if (!card.cardTargetUids.includes(target.uid)) card.cardTargetUids.push(target.uid);
+  return true;
 }

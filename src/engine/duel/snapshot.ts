@@ -176,6 +176,7 @@ function copyCard(card: DuelCardInstance): DuelCardInstance {
     overlayUids: [...card.overlayUids],
     ...(card.counters ? { counters: { ...card.counters } } : {}),
     ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
+    ...(card.cardTargetUids ? { cardTargetUids: [...card.cardTargetUids] } : {}),
     ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
   };
 }
