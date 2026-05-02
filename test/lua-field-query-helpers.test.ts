@@ -2252,6 +2252,34 @@ describe("Lua field and query helpers", () => {
     expect(doubleSession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "tribute" });
     expect(doubleSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
 
+    const overpaySession = createDuel({ seed: 97, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(overpaySession, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(overpaySession);
+    for (const code of ["200", "300"]) {
+      const tribute = overpaySession.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === code);
+      moveDuelCard(overpaySession.state, tribute!.uid, "monsterZone", 0);
+    }
+    const overpayHost = createLuaScriptHost(overpaySession);
+    const overpayResult = overpayHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local tribute = Duel.SelectMatchingCard(0, function(c) return c:IsCode(200) or c:IsCode(300) end, 0, LOCATION_MZONE, 0, 2, 2, nil)
+      tribute:Filter(Card.IsCode,nil,200):GetFirst():RegisterFlagEffect(FLAG_HAS_DOUBLE_TRIBUTE,RESET_EVENT,0,1)
+      Debug.Message("tribute double overpay result " .. Duel.Summon(target, true, tribute))
+      Debug.Message("tribute double overpay operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "basic-double-tribute-overpay.lua",
+    );
+    expect(overpayResult.ok, overpayResult.error).toBe(true);
+    expect(overpayHost.messages).toContain("tribute double overpay result 0");
+    expect(overpayHost.messages).toContain("tribute double overpay operated 0");
+    expect(overpaySession.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "hand" });
+    expect(overpaySession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "monsterZone" });
+    expect(overpaySession.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "monsterZone" });
+
     const failureSession = createDuel({ seed: 95, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(failureSession, {
       0: { main: ["100", "400"] },
