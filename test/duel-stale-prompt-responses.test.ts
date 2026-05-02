@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -46,5 +46,56 @@ describe("duel stale prompt responses", () => {
     expect(session.state.prompt).toBeUndefined();
     expect(session.state.waitingFor).toBe(1);
     expect(session.state.log.filter((entry) => entry.action === "selectYesNo" && entry.detail === "Selected no")).toHaveLength(1);
+  });
+
+  it("rejects stale prompt responses captured before snapshot restore", () => {
+    const session = createDuel({ seed: 109, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+    session.state.prompt = { id: "restore-stale-option-prompt", type: "selectOption", player: 1, options: [2, 4], returnTo: 0 };
+    session.state.waitingFor = 1;
+
+    const staleOption = getDuelLegalActions(session, 1).find((action) => action.type === "selectOption" && action.option === 4);
+    expect(staleOption).toBeDefined();
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    const restoredOption = getDuelLegalActions(restored, 1).find((action) => action.type === "selectOption" && action.option === 2);
+    expect(restoredOption).toBeDefined();
+    expect(applyResponse(restored, restoredOption!).ok).toBe(true);
+    const replay = applyResponse(restored, staleOption!);
+
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    expect(restored.state.prompt).toBeUndefined();
+    expect(restored.state.log.filter((entry) => entry.action === "selectOption" && entry.detail === "Selected option 2")).toHaveLength(1);
+    expect(restored.state.log.some((entry) => entry.action === "selectOption" && entry.detail === "Selected option 4")).toBe(false);
+  });
+
+  it("rejects stale yes-no responses captured before snapshot restore", () => {
+    const session = createDuel({ seed: 110, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+    session.state.prompt = { id: "restore-stale-yes-no-prompt", type: "selectYesNo", player: 0, description: 789, returnTo: 1 };
+    session.state.waitingFor = 0;
+
+    const staleNo = getDuelLegalActions(session, 0).find((action) => action.type === "selectYesNo" && !action.yes);
+    expect(staleNo).toBeDefined();
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    const restoredYes = getDuelLegalActions(restored, 0).find((action) => action.type === "selectYesNo" && action.yes);
+    expect(restoredYes).toBeDefined();
+    expect(applyResponse(restored, restoredYes!).ok).toBe(true);
+    const replay = applyResponse(restored, staleNo!);
+
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    expect(restored.state.prompt).toBeUndefined();
+    expect(restored.state.waitingFor).toBe(1);
+    expect(restored.state.log.filter((entry) => entry.action === "selectYesNo" && entry.detail === "Selected yes")).toHaveLength(1);
+    expect(restored.state.log.some((entry) => entry.action === "selectYesNo" && entry.detail === "Selected no")).toBe(false);
   });
 });
