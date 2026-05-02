@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { getDuelFlagEffectLabel } from "#duel/flags.js";
 import { readTableStringField } from "#lua/api-utils.js";
+import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelPhase, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -24,7 +25,13 @@ export function installCardSummonApi(L: unknown, session: DuelSession): void {
   pushBooleanGetter(L, "IsTributeSummoned", session, (card) => Boolean(card && card.summonType === "tribute"));
   pushBooleanGetter(L, "IsFlipSummoned", session, (card) => Boolean(card && card.summonType === "flip"));
   pushBooleanGetter(L, "IsSpecialSummoned", session, (card) => Boolean(card && card.summonType !== undefined && card.summonType !== "normal" && card.summonType !== "tribute" && card.summonType !== "flip"));
-  pushNumberMatcher(L, "IsSummonType", session, (card, requested) => isSummonTypeMatch(summonTypeMask(card), requested));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => isSummonTypeMatch(summonTypeMask(card), value))));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSummonType"));
   pushSummonTypePredicate(L, "IsGeminiSummoned", session, 0x12000000);
   pushSummonTypePredicate(L, "IsRitualSummoned", session, 0x45000000);
   pushSummonTypePredicate(L, "IsFusionSummoned", session, 0x43000000);

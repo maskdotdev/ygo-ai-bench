@@ -1907,7 +1907,7 @@ describe("Lua state helpers", () => {
     const fusionResult = host.loadScript(
       `
       local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
-      Debug.Message("fusion type " .. tostring(c:IsSummonType(SUMMON_TYPE_FUSION)) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_SPECIAL)))
+      Debug.Message("fusion type " .. tostring(c:IsSummonType(SUMMON_TYPE_FUSION)) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_SPECIAL)) .. "/" .. tostring(c:IsSummonType({SUMMON_TYPE_RITUAL,SUMMON_TYPE_SPECIAL})) .. "/" .. tostring(c:IsSummonType({SUMMON_TYPE_RITUAL,SUMMON_TYPE_SYNCHRO})))
       Debug.Message("fusion phase/materials " .. c:GetSummonPhase() .. "/" .. tostring(c:IsSummonPhase(PHASE_MAIN1)) .. "/" .. tostring(c:IsSummonPhaseMain()) .. "/" .. tostring(c:IsSummonPhaseBattle()) .. "/" .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
       Debug.Message("fusion location " .. tostring(c:IsSummonLocation(LOCATION_EXTRA)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_HAND)))
       Debug.Message("fusion player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
@@ -1922,7 +1922,7 @@ describe("Lua state helpers", () => {
     );
 
     expect(fusionResult.ok).toBe(true);
-    expect(host.messages).toContain("fusion type false/true");
+    expect(host.messages).toContain("fusion type false/true/true/false");
     expect(host.messages).toContain("fusion phase/materials 4/true/true/false/2/2");
     expect(host.messages).toContain("fusion location true/false");
     expect(host.messages).toContain("fusion player/type 0/true/true");
