@@ -2,12 +2,13 @@ import fengari from "fengari";
 import { registerEffect } from "#duel/core.js";
 import { isCardDisabled } from "#duel/continuous-effects.js";
 import { installCardAdjacentApi } from "#lua/card-adjacent-api.js";
+import { installCardArchetypeApi } from "#lua/card-archetype-api.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
 import { installCardColumnApi } from "#lua/card-column-api.js";
 import { installCardControlApi } from "#lua/card-control-api.js";
 import { installCardCounterApi } from "#lua/card-counter-api.js";
-import { createLuaMaterialCheckContext, installCardEffectQueryApi, matchingLuaEffects } from "#lua/card-effect-query-api.js";
+import { createLuaMaterialCheckContext, installCardEffectQueryApi } from "#lua/card-effect-query-api.js";
 import { installCardEquipApi } from "#lua/card-equip-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { installCardLinkApi } from "#lua/card-link-api.js";
@@ -31,7 +32,7 @@ import {
   readTableNumberField,
   readTableStringField,
 } from "#lua/api-utils.js";
-import type { DuelCardInstance, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectDefinition, DuelSession, DuelState } from "#duel/types.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
 const { lua, to_luastring } = fengari;
@@ -77,10 +78,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   installCardRushApi(L, session, hostState);
   installCardTypePredicateApi(L, session);
   installCardLinkedApi(L, session);
-  pushBooleanGetter(L, "IsDrone", session, (card) => Boolean(card?.data.setcodes?.includes(0x581)));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsRikkaReleasable(state, session, hostState));
-  lua.lua_setfield(L, -2, to_luastring("IsRikkaReleasable"));
-  pushBooleanGetter(L, "IsForbidden", session, () => false);
+  installCardArchetypeApi(L, session, hostState);
   pushBooleanGetter(L, "IsDisabled", session, (card) => Boolean(card && isCardDisabled(session.state, card, createLuaMaterialCheckContext(session.state))));
   installCardAdjacentApi(L, session, hostState);
   pushBooleanGetter(L, "IsMaximumMode", session, () => false);
@@ -120,29 +118,9 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
-function pushIsRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
-  const card = readCard(L, session);
-  const player = normalizePlayer(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : session.state.turnPlayer);
-  lua.lua_pushboolean(L, Boolean(card && isRikkaReleasable(session.state, card, player, hostState)));
-  return 1;
-}
-
-function isRikkaReleasable<EffectRecord extends LuaCardApiEffectRecord>(state: DuelState, card: DuelCardInstance, player: PlayerId, hostState: LuaCardApiState<EffectRecord>): boolean {
-  if (((card.data.race ?? 0) & 0x400) !== 0) return true;
-  return card.controller === otherPlayer(player) && matchingLuaEffects(state, card, 76869711, hostState).length > 0;
-}
-
 function readCard(L: unknown, session: DuelSession | undefined): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1);
   return uid && session ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-}
-
-function normalizePlayer(value: number): PlayerId {
-  return value === 1 ? 1 : 0;
-}
-
-function otherPlayer(player: PlayerId): PlayerId {
-  return player === 0 ? 1 : 0;
 }
 
 function isRelatedToBattle(state: DuelState, uid: string): boolean {
