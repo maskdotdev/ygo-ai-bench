@@ -263,6 +263,47 @@ describe("Lua summon and release helpers", () => {
     expect(session.state.cards.filter((card) => card.location === "deck").map((card) => card.reason)).toEqual([0x40048, 0x40048]);
   });
 
+  it("lets Lua Fusion procedure filters compose location and material checks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Field Fusion Filter", kind: "monster" },
+      { code: "200", name: "Hand Fusion Filter", kind: "monster" },
+      { code: "300", name: "Spell Fusion Filter", kind: "spell" },
+    ];
+    const session = createDuel({ seed: 162, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const fieldMaterial = session.state.cards.find((card) => card.code === "100");
+    expect(fieldMaterial).toBeTruthy();
+    moveDuelCard(session.state, fieldMaterial!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local field = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local hand = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local onfield = Fusion.OnFieldMat(Card.IsMonster, Card.IsAbleToGrave)
+      local inhand = Fusion.InHandMat(Card.IsMonster, Card.IsAbleToGrave)
+      local monster = Fusion.IsMonsterFilter(Card.IsAbleToGrave, function(c) return c:IsCode(100) or c:IsCode(200) end)
+      local e = Effect.CreateEffect(field)
+      Debug.Message("fusion filters field " .. tostring(onfield(field)) .. "/" .. tostring(onfield(hand)) .. "/" .. tostring(monster(field)))
+      Debug.Message("fusion filters hand " .. tostring(inhand(hand)) .. "/" .. tostring(inhand(field)) .. "/" .. tostring(monster(hand)))
+      Debug.Message("fusion filters spell " .. tostring(inhand(spell)) .. "/" .. tostring(monster(spell)))
+      Debug.Message("fusion forced handler " .. Fusion.ForcedHandler(e):GetCode())
+      `,
+      "fusion-filter-helpers.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("fusion filters field true/false/true");
+    expect(host.messages).toContain("fusion filters hand true/false/true");
+    expect(host.messages).toContain("fusion filters spell false/false");
+    expect(host.messages).toContain("fusion forced handler 100");
+  });
+
   it("lets Lua scripts register temporary and continuous Lizard checks", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Lizard Probe", kind: "monster" }];
     const session = createDuel({ seed: 158, startingHandSize: 1, cardReader: createCardReader(cards) });
