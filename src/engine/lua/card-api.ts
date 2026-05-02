@@ -1,18 +1,19 @@
 import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
-import { canChangeDuelCardPosition, canDuelCardAttack, canMoveDuelCardToLocation, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
-import { isCardDisabled, type MaterialUseKind } from "#duel/continuous-effects.js";
+import { canDuelCardAttack, canMoveDuelCardToLocation, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
+import { isCardDisabled } from "#duel/continuous-effects.js";
 import { duelReason } from "#duel/reasons.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
 import { installCardColumnApi } from "#lua/card-column-api.js";
 import { cardCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
 import { installCardCounterApi } from "#lua/card-counter-api.js";
-import { canBeMaterial, canMoveCardToDeckOrExtraAsCost, isMonsterLike } from "#lua/card-eligibility-api.js";
+import { canMoveCardToDeckOrExtraAsCost, isMonsterLike } from "#lua/card-eligibility-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { installCardEquipApi } from "#lua/card-equip-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { installCardLinkApi } from "#lua/card-link-api.js";
+import { installCardMaterialApi } from "#lua/card-material-api.js";
 import { installCardPreviousStateApi } from "#lua/card-previous-state-api.js";
 import { installCardReasonApi } from "#lua/card-reason-api.js";
 import { installCardRelationApi } from "#lua/card-relation-api.js";
@@ -24,14 +25,9 @@ import { installCardSummonPredicateApi } from "#lua/card-summon-predicate-api.js
 import { installCardTableApi, pushCardTable } from "#lua/card-table-api.js";
 import { linkedGroupUidsForCard, linkedZoneMask } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
-import { canLuaLinkSummonCard, readLinkMaterialArguments } from "#lua/link-summonable.js";
-import { canLuaSynchroSummonCard } from "#lua/synchro-summonable.js";
-import { canLuaXyzSummonCard } from "#lua/xyz-summonable.js";
 import {
   locationsFromMask,
-  positionFromMask,
   readCardUid,
-  readGroupUids,
   readTableNumberField,
   readTableStringField,
 } from "#lua/api-utils.js";
@@ -277,45 +273,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsNegatableMonster", session, (card) => Boolean(card && isMonsterLike(card) && isNegatableCard(session.state, card)));
   pushBooleanGetter(L, "IsNegatableSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x6) !== 0 && isNegatableCard(session.state, card)));
   installCardSummonPredicateApi(L, session);
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsSynchroSummonable(state, session));
-  lua.lua_setfield(L, -2, to_luastring("IsSynchroSummonable"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsXyzSummonable(state, session));
-  lua.lua_setfield(L, -2, to_luastring("IsXyzSummonable"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsLinkSummonable(state, session));
-  lua.lua_setfield(L, -2, to_luastring("IsLinkSummonable"));
-  pushBooleanGetter(L, "IsCanTurnSet", session, (card) => Boolean(card && canTurnSet(card)));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && canChangePosition(session.state, card, requested)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsCanChangePosition"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? positionFromMask(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && canChangePosition(session.state, card, requested)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsCanChangePositionRush"));
-  pushBooleanGetter(L, "IsSSetable", session, (card) => Boolean(card && canLuaSetSpellTrap(card) && hasZoneSpace(session.state, card.controller, "spellTrapZone")));
-  pushMaterialPredicate(L, "IsCanBeFusionMaterial", session, "fusion");
-  pushMaterialPredicate(L, "IsCanBeSynchroMaterial", session, "synchro");
-  pushMaterialPredicate(L, "IsCanBeXyzMaterial", session, "xyz");
-  pushMaterialPredicate(L, "IsCanBeLinkMaterial", session, "link");
-  pushMaterialPredicate(L, "IsCanBeRitualMaterial", session, "ritual");
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    if (card) card.summonMaterialUids = readCardOrGroupUids(state, 2);
-    return 0;
-  });
-  lua.lua_setfield(L, -2, to_luastring("SetMaterial"));
-  lua.lua_pushcfunction(L, () => 0);
-  lua.lua_setfield(L, -2, to_luastring("CompleteProcedure"));
-}
-
-function canLuaSetSpellTrap(card: DuelCardInstance): boolean {
-  return (card.kind === "spell" || card.kind === "trap") && (card.location === "hand" || card.location === "deck" || card.location === "graveyard");
+  installCardMaterialApi(L, session);
 }
 
 export function cardFieldId(card: DuelCardInstance | undefined): number {
@@ -367,17 +325,6 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
     lua.lua_pushboolean(state, getter(card, uid));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring(fieldName));
-}
-
-function pushMaterialPredicate(L: unknown, fieldName: string, session: DuelSession, kind: MaterialUseKind): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const targetUid = readCardUid(state, 2);
-    const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
-    lua.lua_pushboolean(state, canBeMaterial(session.state, card, kind, target));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
@@ -435,27 +382,6 @@ function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   return effects.length;
 }
 
-function pushIsSynchroSummonable(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const suppliedUids = [...readCardOrGroupUids(L, 2), ...readCardOrGroupUids(L, 3)];
-  lua.lua_pushboolean(L, Boolean(card && canLuaSynchroSummonCard(session, card, suppliedUids)));
-  return 1;
-}
-
-function pushIsXyzSummonable(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const suppliedUids = [...readCardOrGroupUids(L, 2), ...readCardOrGroupUids(L, 3)];
-  lua.lua_pushboolean(L, Boolean(card && canLuaXyzSummonCard(session, card, suppliedUids)));
-  return 1;
-}
-
-function pushIsLinkSummonable(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const { requiredUids, materialGroupUids, min, max } = readLinkMaterialArguments(L);
-  lua.lua_pushboolean(L, Boolean(card && canLuaLinkSummonCard(session, card, requiredUids, materialGroupUids, min, max)));
-  return 1;
-}
-
 function detachOverlayRange(session: DuelSession, card: DuelCardInstance, min: number, max: number, player: PlayerId, reason: number): DuelCardInstance[] {
   const count = Math.min(Math.max(min, 0), Math.max(max, 0), card.overlayUids.length);
   if (count < min) return [];
@@ -478,11 +404,6 @@ function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer
 
 function isPendulumCard(card: DuelCardInstance): boolean {
   return (cardTypeFlags(card) & 0x1000000) !== 0;
-}
-
-function readCardOrGroupUids(L: unknown, index: number): string[] {
-  const cardUid = readCardUid(L, index);
-  return cardUid ? [cardUid] : readGroupUids(L, index);
 }
 
 function isLinkedMonsterZoneCard(state: DuelState, card: DuelCardInstance): boolean {
@@ -603,12 +524,6 @@ function isRelatedToBattle(state: DuelState, uid: string): boolean {
   return battle?.attackerUid === uid || battle?.targetUid === uid;
 }
 
-function canTurnSet(card: DuelCardInstance): boolean {
-  if (card.location !== "monsterZone" || !card.faceUp) return false;
-  if (card.kind !== "monster" && card.kind !== "extra") return false;
-  return (cardTypeFlags(card) & 0x4000000) === 0;
-}
-
 function hasAdjacentMonsterZone(state: DuelState, card: DuelCardInstance): boolean {
   if (card.location !== "monsterZone" || card.sequence > 4) return false;
   return [card.sequence - 1, card.sequence + 1].some(
@@ -625,13 +540,6 @@ function pushCanChainAttack(L: unknown, session: DuelSession): number {
   const attackCount = card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0;
   lua.lua_pushboolean(L, Boolean(card && attackCount > 0 && canDuelCardAttack(session.state, card.uid, requestedAllowance)));
   return 1;
-}
-
-function canChangePosition(state: DuelState, card: DuelCardInstance, requested: CardPosition | undefined): boolean {
-  if (requested) return canChangeDuelCardPosition(state, card.uid, requested);
-  if (card.position === "faceUpAttack") return canChangeDuelCardPosition(state, card.uid, "faceUpDefense");
-  if (card.position === "faceUpDefense" || card.position === "faceDownDefense") return canChangeDuelCardPosition(state, card.uid, "faceUpAttack");
-  return false;
 }
 
 function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
