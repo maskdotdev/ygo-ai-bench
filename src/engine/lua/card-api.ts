@@ -1,6 +1,5 @@
 import fengari from "fengari";
 import { registerEffect } from "#duel/core.js";
-import { isCardDisabled } from "#duel/continuous-effects.js";
 import { installCardAdjacentApi } from "#lua/card-adjacent-api.js";
 import { installCardArchetypeApi } from "#lua/card-archetype-api.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
@@ -8,7 +7,7 @@ import { installCardCodeApi } from "#lua/card-code-api.js";
 import { installCardColumnApi } from "#lua/card-column-api.js";
 import { installCardControlApi } from "#lua/card-control-api.js";
 import { installCardCounterApi } from "#lua/card-counter-api.js";
-import { createLuaMaterialCheckContext, installCardEffectQueryApi } from "#lua/card-effect-query-api.js";
+import { installCardEffectQueryApi } from "#lua/card-effect-query-api.js";
 import { installCardEquipApi } from "#lua/card-equip-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { installCardLinkApi } from "#lua/card-link-api.js";
@@ -78,7 +77,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   installCardTypePredicateApi(L, session);
   installCardLinkedApi(L, session);
   installCardArchetypeApi(L, session, hostState);
-  pushBooleanGetter(L, "IsDisabled", session, (card) => Boolean(card && isCardDisabled(session.state, card, createLuaMaterialCheckContext(session.state))));
   installCardAdjacentApi(L, session, hostState);
   installCardPreviousStateApi(L, session);
   installCardColumnApi(L, session);
@@ -89,14 +87,4 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   installCardEffectQueryApi(L, session, hostState);
   installCardSummonPredicateApi(L, session);
   installCardMaterialApi(L, session);
-}
-
-function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined, uid: string | undefined) => boolean): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const uid = readTableStringField(state, 1, "__duel_uid");
-    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-    lua.lua_pushboolean(state, getter(card, uid));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring(fieldName));
 }

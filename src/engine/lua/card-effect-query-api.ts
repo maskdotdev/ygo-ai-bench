@@ -25,6 +25,7 @@ export function installCardEffectQueryApi<EffectRecord extends LuaCardApiEffectR
   lua.lua_setfield(L, -2, to_luastring("IsDestructable"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsCanBeDisabledByEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsCanBeDisabledByEffect"));
+  pushBooleanGetter(L, "IsDisabled", session, (card) => Boolean(card && isCardDisabled(session.state, card, createLuaMaterialCheckContext(session.state))));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsHasEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsHasEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsHasEffect(state, session, hostState));
