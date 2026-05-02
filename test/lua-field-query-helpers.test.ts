@@ -1741,9 +1741,9 @@ describe("Lua field and query helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("summonable predicates true/false/false");
     expect(host.messages).toContain("hand cost predicates false/false/true");
-    expect(host.messages).toContain("summon or set predicates true/false/true/true");
+    expect(host.messages).toContain("summon or set predicates true/false/false/true");
     expect(host.messages).toContain("special summonable predicates true/false/false");
-    expect(host.messages).toContain("setable predicates true/false/true/false/true/true");
+    expect(host.messages).toContain("setable predicates true/false/false/false/true/true");
 
     session.state.players[0].normalSummonAvailable = false;
     const countHost = createLuaScriptHost(session);
@@ -1757,7 +1757,7 @@ describe("Lua field and query helpers", () => {
     );
     expect(countResult.ok, countResult.error).toBe(true);
     expect(countHost.messages).toContain("count blocked predicates false/false");
-    expect(countHost.messages).toContain("count ignored predicates false/true/true");
+    expect(countHost.messages).toContain("count ignored predicates false/false/false");
     session.state.players[0].normalSummonAvailable = true;
 
     for (const code of ["600", "700"]) {
@@ -1803,7 +1803,7 @@ describe("Lua field and query helpers", () => {
       "card-summon-predicate-mzone-block.lua",
     );
     expect(zoneResult.ok, zoneResult.error).toBe(true);
-    expect(zoneHost.messages).toContain("mzone filled predicates true/false/false");
+    expect(zoneHost.messages).toContain("mzone filled predicates true/true/false");
 
     for (const code of ["830", "840", "850", "860", "870"]) {
       const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
@@ -2028,6 +2028,7 @@ describe("Lua field and query helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Summon Or Set Normal", kind: "monster", level: 4 },
       { code: "200", name: "Summon Or Set Tribute", kind: "monster", level: 5 },
+      { code: "300", name: "Summon Or Set Plain Set", kind: "monster", level: 4 },
     ];
     const summonSession = createDuel({ seed: 152, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(summonSession, {
@@ -2052,7 +2053,7 @@ describe("Lua field and query helpers", () => {
 
     const setSession = createDuel({ seed: 153, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(setSession, {
-      0: { main: ["200"] },
+      0: { main: ["300"] },
       1: { main: [] },
     });
     startDuel(setSession);
@@ -2060,7 +2061,7 @@ describe("Lua field and query helpers", () => {
     const setHost = createLuaScriptHost(setSession);
     const setResult = setHost.loadScript(
       `
-      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("summon or set set " .. Duel.SummonOrSet(0, target, true, nil))
       Debug.Message("summon or set set operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       `,
@@ -2068,8 +2069,8 @@ describe("Lua field and query helpers", () => {
     );
     expect(setResult.ok, setResult.error).toBe(true);
     expect(setHost.messages).toContain("summon or set set 1");
-    expect(setHost.messages).toContain("summon or set set operated 1/200");
-    expect(setSession.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
+    expect(setHost.messages).toContain("summon or set set operated 1/300");
+    expect(setSession.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "monsterZone", position: "faceUpAttack", faceUp: true });
 
     const tributeSession = createDuel({ seed: 154, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(tributeSession, {

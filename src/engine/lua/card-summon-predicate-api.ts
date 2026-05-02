@@ -102,8 +102,9 @@ function canUseNoTributeSummon(session: DuelSession, card: DuelCardInstance): bo
   return session.state.players[card.controller].normalSummonAvailable && availableMonsterZoneCount(session, card.controller, []) > 0 && isNoTributePlayerAffected(session, card.controller);
 }
 
-function actionMatchesKind(action: DuelAction, kind: "normalSummon" | "setMonster" | "summonOrSet"): boolean {
+function actionMatchesKind(action: DuelAction, kind: "normalSummon" | "setMonster"): boolean {
   if (kind === "normalSummon") return action.type === "normalSummon" || action.type === "tributeSummon";
+  if (kind === "setMonster") return action.type === "setMonster" || action.type === "tributeSummon";
   return action.type === kind;
 }
 

@@ -36,6 +36,7 @@ export function normalSummon(state: DuelState, player: PlayerId, uid: string, co
 export function setMonster(state: DuelState, player: PlayerId, uid: string): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
+  if (tributeRangeForNormalSummon(card).min > 0) throw new Error(`${card.name} requires tributes to Set`);
   if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
   requireZoneSpace(state, player, "monsterZone");
   moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
@@ -307,8 +308,9 @@ export function normalSummonActions(state: DuelState, player: PlayerId, hand: Du
   if (!state.players[player].normalSummonAvailable || !hasZoneSpace(state, player, "monsterZone")) return [];
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
-    if (tributeRangeForNormalSummon(card).min === 0 || canSummonWithoutTribute(card)) actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
-    actions.push({ type: "setMonster", player, uid: card.uid, label: `Set ${card.name}` });
+    const tributeRange = tributeRangeForNormalSummon(card);
+    if (tributeRange.min === 0 || canSummonWithoutTribute(card)) actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
+    if (tributeRange.min === 0) actions.push({ type: "setMonster", player, uid: card.uid, label: `Set ${card.name}` });
   }
   return actions;
 }
