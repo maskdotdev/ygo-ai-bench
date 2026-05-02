@@ -7,6 +7,7 @@ import {
 } from "#duel/continuous-effects.js";
 import {
   applyResponse,
+  canMoveDuelCardToLocation,
   canSpecialSummonDuelCard,
   fusionSummonDuelCard,
   linkSummonDuelCard,
@@ -149,8 +150,16 @@ function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaD
 }
 
 function setLuaMonsterWithTributes(session: DuelSession, target: DuelCardInstance, tributeUids: string[]): { ok: boolean } {
+  const reason = duelReason.release | duelReason.summon;
   try {
-    tributeSetDuelCard(session.state, target.controller, target.uid, tributeUids);
+    tributeSetDuelCard(
+      session.state,
+      target.controller,
+      target.uid,
+      tributeUids,
+      (uid, controller, moveReason) => ({ card: sendDuelCardToGraveyard(session.state, uid, controller, moveReason) }),
+      (uid) => canMoveDuelCardToLocation(session.state, uid, "graveyard", reason),
+    );
     return { ok: true };
   } catch {
     return { ok: false };

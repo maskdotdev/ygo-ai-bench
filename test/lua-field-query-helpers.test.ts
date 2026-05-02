@@ -2072,6 +2072,36 @@ describe("Lua field and query helpers", () => {
     expect(tributeSetSession.state.cards.find((card) => card.code === "950")).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false, summonType: "tribute" });
     expect(tributeSetSession.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "graveyard" });
 
+    const lockedTributeSetSession = createDuel({ seed: 92, startingHandSize: 2, cardReader: createCardReader([...cards, { code: "950", name: "Locked Tribute Set Source", kind: "monster", level: 5 }]) });
+    loadDecks(lockedTributeSetSession, {
+      0: { main: ["950", "500"] },
+      1: { main: [] },
+    });
+    startDuel(lockedTributeSetSession);
+    const lockedTributeMaterial = lockedTributeSetSession.state.cards.find((card) => card.code === "500");
+    expect(lockedTributeMaterial).toBeTruthy();
+    moveDuelCard(lockedTributeSetSession.state, lockedTributeMaterial!.uid, "monsterZone", 0);
+    const lockedTributeSetHost = createLuaScriptHost(lockedTributeSetSession);
+    const lockedTributeSetResult = lockedTributeSetHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 950), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      local e=Effect.CreateEffect(tribute:GetFirst())
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_UNRELEASABLE_SUM)
+      e:SetRange(LOCATION_MZONE)
+      tribute:GetFirst():RegisterEffect(e)
+      Debug.Message("locked tribute mset result " .. Duel.MSet(target, true, tribute))
+      Debug.Message("locked tribute mset operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "locked-tribute-monster-set.lua",
+    );
+    expect(lockedTributeSetResult.ok, lockedTributeSetResult.error).toBe(true);
+    expect(lockedTributeSetHost.messages).toContain("locked tribute mset result 0");
+    expect(lockedTributeSetHost.messages).toContain("locked tribute mset operated 0");
+    expect(lockedTributeSetSession.state.cards.find((card) => card.code === "950")).toMatchObject({ location: "hand" });
+    expect(lockedTributeSetSession.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "monsterZone" });
+
     const fullSession = createDuel({ seed: 90, startingHandSize: 6, cardReader: createCardReader(cards) });
     loadDecks(fullSession, {
       0: { main: ["400", "500", "600", "700", "800", "900"] },
