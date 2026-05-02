@@ -291,6 +291,7 @@ export interface DuelState {
   battleDamage: Record<PlayerId, number>;
   attackCostPaid: number;
   attacksDeclared: string[];
+  attackedTargetUids: string[];
   attackPasses: PlayerId[];
   damagePasses: PlayerId[];
   battleStep?: BattleStep;
@@ -376,6 +377,7 @@ export interface PublicDuelState {
   pendingTriggers: PendingTrigger[];
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   attacksDeclared: string[];
+  attackedTargetUids: string[];
   attackPasses: PlayerId[];
   damagePasses: PlayerId[];
   battleStep?: BattleStep;

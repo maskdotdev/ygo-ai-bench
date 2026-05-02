@@ -41,7 +41,10 @@ export function changeDuelPhase(state: DuelState, player: PlayerId, phase: DuelP
   handlers.executePhaseEffects?.(phase);
   pruneResetEffectsAfterPhase(state, phase);
   pruneDuelFlagEffectsAfterPhase(state, phase);
-  if (phase === "battle") state.attacksDeclared = [];
+  if (phase === "battle") {
+    state.attacksDeclared = [];
+    state.attackedTargetUids = [];
+  }
   else clearBattleState(state);
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
   handlers.collectEvent("phaseChanged");
@@ -61,6 +64,7 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   pruneDuelFlagEffectsAfterPhase(state, "draw");
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
+  state.attackedTargetUids = [];
   clearBattleState(state);
   state.positionsChanged = [];
   for (const activityPlayer of [0, 1] satisfies PlayerId[]) resetDuelActivityCounts(state, activityPlayer);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -1452,6 +1452,53 @@ describe("Lua battle helpers", () => {
     expect(host.messages).toContain("card battle target attacker 200");
     expect(host.messages).toContain("card battle target defender 100");
     expect(host.messages).toContain("card battle target idle nil true");
+  });
+
+  it("tracks attacked monsters for Lua battle history queries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "History Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "History Target", kind: "monster", attack: 1000 },
+      { code: "300", name: "History Idle", kind: "monster", attack: 1000 },
+    ];
+    const session = createDuel({ seed: 134, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200", "300"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    const idle = session.state.cards.find((card) => card.controller === 1 && card.code === "300");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    expect(idle).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, idle!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local g=Duel.GetAttackedGroup()
+      Debug.Message("attacked group count " .. g:GetCount())
+      Debug.Message("attacked group has target " .. tostring(g:IsContains(Duel.GetAttackTarget())))
+      local idle=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("attacked group has idle " .. tostring(g:IsContains(idle)))
+      `,
+      "attacked-group.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("attacked group count 1");
+    expect(host.messages).toContain("attacked group has target true");
+    expect(host.messages).toContain("attacked group has idle false");
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.attackedTargetUids).toEqual([target!.uid]);
   });
 
   it("lets Lua scripts negate the active attack", () => {
