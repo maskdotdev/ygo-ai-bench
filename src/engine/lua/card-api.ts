@@ -13,20 +13,19 @@ import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCa
 import { installCardEquipApi } from "#lua/card-equip-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { installCardLinkApi } from "#lua/card-link-api.js";
+import { installCardLinkedApi } from "#lua/card-linked-api.js";
 import { installCardMaterialApi } from "#lua/card-material-api.js";
 import { installCardOverlayApi } from "#lua/card-overlay-api.js";
 import { installCardPreviousStateApi } from "#lua/card-previous-state-api.js";
 import { installCardReasonApi } from "#lua/card-reason-api.js";
 import { installCardRelationApi } from "#lua/card-relation-api.js";
 import { installCardRushApi } from "#lua/card-rush-api.js";
-import { cardLink, cardTypeFlags, installCardStatApi } from "#lua/card-stat-api.js";
+import { cardTypeFlags, installCardStatApi } from "#lua/card-stat-api.js";
 import { installCardStatusApi } from "#lua/card-status-api.js";
 import { installCardSummonApi } from "#lua/card-summon-api.js";
 import { installCardSummonPredicateApi } from "#lua/card-summon-predicate-api.js";
 import { installCardTableApi, pushCardTable } from "#lua/card-table-api.js";
 import { installCardTypePredicateApi } from "#lua/card-type-predicate-api.js";
-import { linkedGroupUidsForCard, linkedZoneMask } from "#lua/duel-api/location.js";
-import { pushGroupTable } from "#lua/group-api.js";
 import {
   locationsFromMask,
   readCardUid,
@@ -116,15 +115,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "CanGetPiercingRush", session, (card) => Boolean(card && canGetPiercingRush(session.state, card, hostState)));
   installCardRushApi(L, session, hostState);
   installCardTypePredicateApi(L, session);
-  pushBooleanGetter(L, "IsLinked", session, (card) => Boolean(card && isLinkedMonsterZoneCard(session.state, card)));
-  pushNumberGetter(L, "GetLinkedZone", session, (card) => (card ? linkedZoneMask(card) : 0));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    pushGroupTable(state, card ? linkedGroupUidsForCard(session, card) : []);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetLinkedGroup"));
-  pushNumberGetter(L, "GetLinkedGroupCount", session, (card) => (card ? linkedGroupUidsForCard(session, card).length : 0));
+  installCardLinkedApi(L, session);
   pushBooleanGetter(L, "IsDrone", session, (card) => Boolean(card?.data.setcodes?.includes(0x581)));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsRikkaReleasable(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsRikkaReleasable"));
@@ -320,14 +311,6 @@ function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer
   return hasZoneSpace(state, targetPlayer, card.location);
 }
 
-function isLinkedMonsterZoneCard(state: DuelState, card: DuelCardInstance): boolean {
-  if (card.location !== "monsterZone" || !card.faceUp) return false;
-  return monsterZoneCards(state).some((candidate) => {
-    if (candidate.uid === card.uid || !candidate.faceUp) return false;
-    return linkPointsTo(candidate, card) || linkPointsTo(card, candidate);
-  });
-}
-
 function canEnterBattlePhase(state: DuelState): boolean {
   return nextAvailablePhase(state, state.turnPlayer) === "battle";
 }
@@ -389,23 +372,6 @@ function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | und
     if (!state.skippedPhases.some((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0)) return phase;
   }
   return undefined;
-}
-
-function monsterZoneCards(state: DuelState): DuelCardInstance[] {
-  return state.cards.filter((card) => card.location === "monsterZone");
-}
-
-function linkPointsTo(source: DuelCardInstance, target: DuelCardInstance): boolean {
-  if (source.controller !== target.controller || cardLink(source) <= 0) return false;
-  return linkedSequences(source.sequence, source.data.linkMarkers ?? 0).includes(target.sequence);
-}
-
-function linkedSequences(sequence: number, markers: number): number[] {
-  const sequences: number[] = [];
-  if ((markers & 0x8) !== 0) sequences.push(sequence - 1);
-  if ((markers & 0x20) !== 0) sequences.push(sequence + 1);
-  if ((markers & 0x1) !== 0 || (markers & 0x2) !== 0 || (markers & 0x4) !== 0) sequences.push(sequence);
-  return sequences.filter((target) => target >= 0 && target <= 6);
 }
 
 function readCard(L: unknown, session: DuelSession | undefined): DuelCardInstance | undefined {
