@@ -3,6 +3,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { cardFieldId, pushCardTable } from "#lua/card-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
+import { cardTypeFlags, readCardDataByCode } from "#lua/duel-api/query-card-data.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
@@ -294,20 +295,6 @@ function pushIsExistingMatchingCard(L: unknown, session: DuelSession): number {
   releaseOptionalFunctionRef(L, query.filterRef);
   lua.lua_pushboolean(L, count >= minimum);
   return 1;
-}
-
-function readCardDataByCode(L: unknown, session: DuelSession, index: number) {
-  if (!lua.lua_isnumber(L, index) && !lua.lua_isstring(L, index)) return undefined;
-  const code = String(lua.lua_isnumber(L, index) ? lua.lua_tointeger(L, index) : lua.lua_tojsstring(L, index));
-  return session.cardReader(code);
-}
-
-function cardTypeFlags(data: ReturnType<DuelSession["cardReader"]>): number {
-  if (!data) return 0;
-  if (data.typeFlags !== undefined) return data.typeFlags;
-  if (data.kind === "spell") return 0x2;
-  if (data.kind === "trap") return 0x4;
-  return 0x1;
 }
 
 function pushTargetCount(L: unknown, session: DuelSession): number {
