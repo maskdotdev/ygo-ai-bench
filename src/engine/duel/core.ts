@@ -90,6 +90,7 @@ import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
 import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
+import { phaseMask } from "#duel/phase-mask.js";
 import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/player-life.js";
 import { getPromptResponseActions, resolveDuelPrompt, stampDuelActions } from "#duel/prompt-response.js";
 import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
@@ -532,15 +533,6 @@ function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void
     effect.operation(ctx);
     markEffectUsed(state, effect);
   }
-}
-
-function phaseMask(phase: DuelPhase): number {
-  if (phase === "draw") return 0x1;
-  if (phase === "standby") return 0x2;
-  if (phase === "main1") return 0x4;
-  if (phase === "battle") return 0x80;
-  if (phase === "main2") return 0x100;
-  return 0x200;
 }
 
 function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction[] {
