@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
-import { canDuelCardAttack, canMoveDuelCardToLocation, detachDuelOverlayMaterials, moveDuelCard, registerEffect } from "#duel/core.js";
+import { canDuelCardAttack, canMoveDuelCardToLocation, moveDuelCard, registerEffect } from "#duel/core.js";
 import { isCardDisabled } from "#duel/continuous-effects.js";
 import { duelReason } from "#duel/reasons.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
@@ -14,6 +14,7 @@ import { installCardEquipApi } from "#lua/card-equip-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
 import { installCardLinkApi } from "#lua/card-link-api.js";
 import { installCardMaterialApi } from "#lua/card-material-api.js";
+import { installCardOverlayApi } from "#lua/card-overlay-api.js";
 import { installCardPreviousStateApi } from "#lua/card-previous-state-api.js";
 import { installCardReasonApi } from "#lua/card-reason-api.js";
 import { installCardRelationApi } from "#lua/card-relation-api.js";
@@ -90,18 +91,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberMatcher(L, "IsFieldID", session, (card, requested) => cardFieldId(card) === requested);
   pushNumberMatcher(L, "IsRealFieldID", session, (card, requested) => cardFieldId(card) === requested);
   pushNumberGetter(L, "GetPosition", session, (card) => positionMaskFromPosition(card?.position));
-  pushNumberGetter(L, "GetOverlayCount", session, (card) => card?.overlayUids.length ?? 0);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    pushGroupTable(state, card?.overlayUids ?? []);
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("GetOverlayGroup"));
+  installCardOverlayApi(L, session, hostState);
   installCardEquipApi(L, session, hostState);
-  lua.lua_pushcfunction(L, (state: unknown) => pushRemoveOverlayCard(state, session, hostState));
-  lua.lua_setfield(L, -2, to_luastring("RemoveOverlayCard"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushCheckRemoveOverlayCard(state, session));
-  lua.lua_setfield(L, -2, to_luastring("CheckRemoveOverlayCard"));
   installCardCounterApi(L, session);
   pushBooleanGetter(L, "IsFaceup", session, (card) => Boolean(card?.faceUp));
   pushBooleanGetter(L, "IsFacedown", session, (card) => Boolean(card && !card.faceUp));
@@ -310,25 +301,6 @@ function pushZonePredicate(L: unknown, fieldName: string, session: DuelSession, 
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
-function pushRemoveOverlayCard<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
-  const card = readCard(L, session);
-  const player = lua.lua_isnumber(L, 2) ? normalizePlayer(lua.lua_tointeger(L, 2)) : card?.controller ?? 0;
-  const min = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
-  const max = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min;
-  const reason = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : duelReason.cost;
-  const detached = card ? detachOverlayRange(session, card, min, max, player, reason) : [];
-  setOperatedUids(hostState, detached.map((material) => material.uid));
-  lua.lua_pushinteger(L, detached.length);
-  return 1;
-}
-
-function pushCheckRemoveOverlayCard(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const count = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
-  lua.lua_pushboolean(L, Boolean(card && card.overlayUids.length >= count));
-  return 1;
-}
-
 function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
   const card = readCard(L, session);
   const code = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
@@ -340,20 +312,6 @@ function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   }
   for (const effect of effects) hostState.pushEffectTable(L, effect.id);
   return effects.length;
-}
-
-function detachOverlayRange(session: DuelSession, card: DuelCardInstance, min: number, max: number, player: PlayerId, reason: number): DuelCardInstance[] {
-  const count = Math.min(Math.max(min, 0), Math.max(max, 0), card.overlayUids.length);
-  if (count < min) return [];
-  try {
-    return detachDuelOverlayMaterials(session.state, card.uid, count, player, reason);
-  } catch {
-    return [];
-  }
-}
-
-function setOperatedUids<EffectRecord extends LuaCardApiEffectRecord>(hostState: LuaCardApiState<EffectRecord>, uids: string[]): void {
-  hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...uids);
 }
 
 function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer: PlayerId): boolean {
