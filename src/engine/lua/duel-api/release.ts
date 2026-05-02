@@ -5,6 +5,7 @@ import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import { readMaxTributeRequirement, readMinTributeRequirement } from "#lua/tribute-metadata-api.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -77,8 +78,8 @@ function pushCheckTribute(L: unknown, session: DuelSession): number {
   const targetUid = readCardUid(L, 1);
   const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
   const player = readOptionalPlayer(L, 5) ?? target?.controller ?? session.state.turnPlayer;
-  const minimum = Math.max(0, lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : target ? normalSummonTributeCount(target) : 0);
-  const maximum = Math.max(minimum, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : minimum);
+  const minimum = Math.max(0, lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : normalSummonTributeMinimum(L, target));
+  const maximum = Math.max(minimum, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : normalSummonTributeMaximum(L, target));
   const materials = readCardOrGroupUids(L, 4);
   const materialSet = materialRestrictionSet(L, 4, materials);
   const zoneMask = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : undefined;
@@ -91,7 +92,7 @@ function pushCheckTribute(L: unknown, session: DuelSession): number {
 function pushTributeCount(L: unknown, session: DuelSession): number {
   const targetUid = readCardUid(L, 1);
   const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
-  lua.lua_pushinteger(L, target ? normalSummonTributeCount(target) : 0);
+  lua.lua_pushinteger(L, normalSummonTributeMinimum(L, target));
   return 1;
 }
 
@@ -109,8 +110,8 @@ function pushSelectTribute(L: unknown, session: DuelSession): number {
   const player = readOptionalPlayer(L, 6) ?? normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const targetUid = readCardUid(L, 2);
   const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
-  const minimum = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : target ? normalSummonTributeCount(target) : 0);
-  const maximum = Math.max(minimum, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : minimum);
+  const minimum = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : normalSummonTributeMinimum(L, target));
+  const maximum = Math.max(minimum, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : normalSummonTributeMaximum(L, target));
   const materials = readCardOrGroupUids(L, 5);
   const materialSet = materialRestrictionSet(L, 5, materials);
   const zoneMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : undefined;
@@ -369,6 +370,18 @@ function normalSummonTributeCount(card: DuelCardInstance): number {
   if (level >= 7) return 2;
   if (level >= 5) return 1;
   return 0;
+}
+
+function normalSummonTributeMinimum(L: unknown, card: DuelCardInstance | undefined): number {
+  if (!card) return 0;
+  const metadata = readMinTributeRequirement(L, card);
+  return metadata > 0 ? metadata : normalSummonTributeCount(card);
+}
+
+function normalSummonTributeMaximum(L: unknown, card: DuelCardInstance | undefined): number {
+  if (!card) return 0;
+  const metadata = readMaxTributeRequirement(L, card);
+  return metadata > 0 ? metadata : normalSummonTributeCount(card);
 }
 
 function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {
