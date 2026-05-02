@@ -1,0 +1,439 @@
+import { describe, expect, it } from "vitest";
+import fs from "node:fs";
+import {
+  applyResponse,
+  createDuel,
+  detachDuelOverlayMaterials,
+  destroyDuelCard,
+  getLegalActions as getDuelLegalActions,
+  loadDecks,
+  specialSummonDuelCard,
+  startDuel,
+  xyzSummonDuelCard,
+} from "#duel/core.js";
+import { getCards, moveDuelCard } from "#duel/card-state.js";
+import { createCardReader } from "#engine/data-loaders.js";
+import type { DuelCardData } from "#duel/types.js";
+import { createLuaScriptHost } from "#lua/host.js";
+
+describe("Lua control and return movement helpers", () => {
+  it("lets Lua scripts hide Spell/Trap cards as face-down monster-zone decoys", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Decoy Spell A", kind: "spell", typeFlags: 0x2 },
+      { code: "200", name: "Decoy Trap B", kind: "trap", typeFlags: 0x4 },
+    ];
+    const session = createDuel({ seed: 41, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local g=Duel.GetMatchingGroup(aux.TRUE,0,LOCATION_HAND,0,nil)
+      local hidden=Group.CreateGroup()
+      for tc in aux.Next(g) do
+        if Duel.MoveToField(tc,0,0,LOCATION_MZONE,POS_FACEDOWN_DEFENSE,true)>0 then
+          hidden:AddCard(tc)
+        end
+      end
+      Duel.ShuffleSetCard(hidden)
+      local first=Duel.GetFieldCard(0,LOCATION_MZONE,0)
+      local second=Duel.GetFieldCard(0,LOCATION_MZONE,1)
+      Debug.Message("hidden decoys " .. Duel.GetOperatedGroup():GetCount() .. "/" .. first:GetLocation() .. "/" .. tostring(first:IsFacedown()) .. "/" .. tostring(first:IsSpellTrapCard()))
+      Debug.Message("hidden second " .. second:GetLocation() .. "/" .. tostring(second:IsFacedown()) .. "/" .. tostring(second:IsSpellTrapCard()))
+      `,
+      "spell-trap-monster-decoys.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("hidden decoys 2/4/true/true");
+    expect(host.messages).toContain("hidden second 4/true/true");
+    expect(session.state.cards.filter((card) => card.location === "monsterZone" && !card.faceUp).map((card) => card.code).sort()).toEqual(["100", "200"]);
+  });
+
+  it("lets Lua scripts move cards to hand, deck, and extra deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Recoverable Monster", kind: "monster" },
+      { code: "300", name: "Illegal Extra Return", kind: "monster" },
+      { code: "301", name: "Pendulum Extra Return", kind: "monster", typeFlags: 0x1000001 },
+      { code: "900", name: "Extra Return", kind: "extra" },
+      { code: "901", name: "Extra Alias Return", kind: "extra" },
+      { code: "902", name: "Generic Extra Return", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 9, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "301"], extra: ["900", "901", "902"] },
+      1: { main: ["100", "300"] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && (candidate.code === "100" || candidate.code === "300" || candidate.code === "301" || candidate.code === "900" || candidate.code === "901" || candidate.code === "902"))) {
+      moveDuelCard(session.state, card.uid, "graveyard", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local recover = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("to hand " .. Duel.SendtoHand(recover, 0, REASON_EFFECT))
+      Debug.Message("operated hand " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      local hand = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("to deck " .. Duel.SendtoDeck(hand, 0, 0, REASON_EFFECT))
+      Debug.Message("operated deck " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("to extra " .. Duel.SendtoExtraP(extra, 0, REASON_EFFECT))
+      Debug.Message("operated extra " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("extra faceup " .. tostring(Duel.GetOperatedGroup():GetFirst():IsFaceup()))
+      local extra_alias = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("to extra alias " .. Duel.SendtoExtra(extra_alias, 0, REASON_EFFECT))
+      Debug.Message("operated extra alias " .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      local generic_extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 902), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("generic to extra " .. Duel.Sendto(generic_extra, LOCATION_EXTRA, REASON_EFFECT, POS_FACEDOWN_DEFENSE))
+      Debug.Message("operated generic extra " .. Duel.GetOperatedGroup():GetFirst():GetCode() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetLocation() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetPosition())
+      local pendulum = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("pendulum able extra " .. tostring(pendulum:GetFirst():IsAbleToExtra()))
+      Debug.Message("to pendulum extra " .. Duel.SendtoExtraP(pendulum, 0, REASON_EFFECT))
+      Debug.Message("pendulum extra faceup " .. tostring(Duel.GetOperatedGroup():GetFirst():IsFaceup()))
+      local illegal = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("illegal extra " .. Duel.SendtoExtraP(illegal, 0, REASON_EFFECT))
+      Debug.Message("operated illegal " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "movement-helpers.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("to hand 1");
+    expect(host.messages).toContain("operated hand 100");
+    expect(host.messages).toContain("to deck 1");
+    expect(host.messages).toContain("operated deck 100");
+    expect(host.messages).toContain("to extra 1");
+    expect(host.messages).toContain("operated extra 900");
+    expect(host.messages).toContain("extra faceup false");
+    expect(host.messages).toContain("to extra alias 1");
+    expect(host.messages).toContain("operated extra alias 901");
+    expect(host.messages).toContain("generic to extra 1");
+    expect(host.messages).toContain("operated generic extra 902/64/8");
+    expect(host.messages).toContain("pendulum able extra true");
+    expect(host.messages).toContain("to pendulum extra 1");
+    expect(host.messages).toContain("pendulum extra faceup true");
+    expect(host.messages).toContain("illegal extra 0");
+    expect(host.messages).toContain("operated illegal 0");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "100")?.location).toBe("deck");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "900")?.location).toBe("extraDeck");
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "902")).toMatchObject({ location: "extraDeck", faceUp: false, position: "faceDownDefense" });
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "301")).toMatchObject({ location: "extraDeck", faceUp: true });
+    expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("graveyard");
+  });
+
+  it("queues Lua to-hand triggers after cards move to hand", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "To Hand Starter", kind: "monster" },
+      { code: "200", name: "To Hand Target", kind: "monster" },
+      { code: "300", name: "To Hand Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 176, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "graveyard", 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 1, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local move=Effect.CreateEffect(starter)
+      move:SetType(EFFECT_TYPE_IGNITION)
+      move:SetRange(LOCATION_HAND)
+      move:SetOperation(function(e,tp)
+        Debug.Message("to hand event count " .. Duel.SendtoHand(target, 1, REASON_EFFECT))
+      end)
+      starter:RegisterEffect(move)
+
+      local e=Effect.CreateEffect(watcher)
+      e:SetType(EFFECT_TYPE_TRIGGER_O)
+      e:SetCode(EVENT_TO_HAND)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp,eg)
+        Debug.Message("to hand trigger resolved " .. eg:GetFirst():GetCode())
+      end)
+      watcher:RegisterEffect(e)
+      `,
+      "to-hand-trigger.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(host.messages).toContain("to hand event count 1");
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand", controller: 1 });
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHand"]);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("to hand trigger resolved 200");
+  });
+
+  it("queues Lua to-deck triggers after cards move to deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "To Deck Starter", kind: "monster" },
+      { code: "200", name: "To Deck Target", kind: "monster" },
+      { code: "300", name: "To Deck Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 177, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local move=Effect.CreateEffect(starter)
+      move:SetType(EFFECT_TYPE_IGNITION)
+      move:SetRange(LOCATION_HAND)
+      move:SetOperation(function(e,tp)
+        Debug.Message("to deck event count " .. Duel.SendtoDeck(target, nil, SEQ_DECKTOP, REASON_EFFECT))
+      end)
+      starter:RegisterEffect(move)
+
+      local e=Effect.CreateEffect(watcher)
+      e:SetType(EFFECT_TYPE_TRIGGER_O)
+      e:SetCode(EVENT_TO_DECK)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp,eg)
+        Debug.Message("to deck trigger resolved " .. eg:GetFirst():GetCode())
+      end)
+      watcher:RegisterEffect(e)
+      `,
+      "to-deck-trigger.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(host.messages).toContain("to deck event count 1");
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "deck", controller: 0 });
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToDeck"]);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("to deck trigger resolved 200");
+  });
+
+  it("lets Lua scripts move cards to hand or fallback elsewhere", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "To Hand First", kind: "monster" },
+      { code: "200", name: "Fallback Only", kind: "monster" },
+      { code: "300", name: "No Legal Move", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 161, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.owner === 0)) {
+      moveDuelCard(session.state, card.uid, "graveyard", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local first = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local fallback = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local blocked = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local cannot_hand=Effect.CreateEffect(fallback)
+      cannot_hand:SetType(EFFECT_TYPE_SINGLE)
+      cannot_hand:SetCode(EFFECT_CANNOT_TO_HAND)
+      fallback:RegisterEffect(cannot_hand)
+      local blocked_cannot_hand=Effect.CreateEffect(blocked)
+      blocked_cannot_hand:SetType(EFFECT_TYPE_SINGLE)
+      blocked_cannot_hand:SetCode(EFFECT_CANNOT_TO_HAND)
+      blocked:RegisterEffect(blocked_cannot_hand)
+      Debug.Message("thoe hand " .. aux.ToHandOrElse(first,0) .. "/" .. first:GetLocation())
+      Debug.Message("thoe fallback " .. aux.ToHandOrElse(fallback,0,function(c) return c:IsAbleToDeck() end,function(c) return Duel.SendtoDeck(c,0,0,REASON_EFFECT) end,574) .. "/" .. fallback:GetLocation())
+      Debug.Message("thoe none " .. aux.ToHandOrElse(blocked,0,function(c) return false end,function(c) return Duel.SendtoDeck(c,0,0,REASON_EFFECT) end,574) .. "/" .. blocked:GetLocation())
+      `,
+      "to-hand-or-else.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("thoe hand 1/2");
+    expect(host.messages).toContain("thoe fallback 1/1");
+    expect(host.messages).toContain("thoe none 0/16");
+  });
+
+  it("lets Lua scripts take control of field cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Self A", kind: "monster" },
+      { code: "200", name: "Self B", kind: "monster" },
+      { code: "300", name: "Self C", kind: "monster" },
+      { code: "600", name: "Taken A", kind: "monster" },
+      { code: "700", name: "Taken B", kind: "monster" },
+      { code: "800", name: "Blocked", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 41, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: ["600", "700", "800"] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", card.controller);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local taken = Duel.SelectMatchingCard(0, function(c) return c:IsCode(600) or c:IsCode(700) end, 0, 0, LOCATION_MZONE, 1, 2, nil)
+      Debug.Message("take group " .. Duel.GetControl(taken, 0, 0, 0, LOCATION_MZONE))
+      Debug.Message("take operated " .. Duel.GetOperatedGroup():GetCount())
+      local first = Duel.GetOperatedGroup():GetFirst()
+      Debug.Message("take first controller " .. first:GetControler())
+      local blocked = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, 0, LOCATION_MZONE, 1, 1, nil)
+      Debug.Message("take blocked " .. Duel.GetControl(blocked, 0, 0, 0, LOCATION_MZONE))
+      Debug.Message("take blocked operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("self mzone count " .. Duel.GetFieldGroupCount(0, LOCATION_MZONE, 0))
+      Debug.Message("opponent mzone count " .. Duel.GetFieldGroupCount(1, LOCATION_MZONE, 0))
+      Debug.Message("self usable mzone " .. Duel.GetUsableMZoneCount(0))
+      Debug.Message("self usable excluding taken " .. Duel.GetUsableMZoneCount(0, taken))
+      Debug.Message("opponent usable mzone " .. Duel.GetUsableMZoneCount(1))
+      `,
+      "get-control.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("take group 2");
+    expect(host.messages).toContain("take operated 2");
+    expect(host.messages).toContain("take first controller 0");
+    expect(host.messages).toContain("take blocked 0");
+    expect(host.messages).toContain("take blocked operated 0");
+    expect(host.messages).toContain("self mzone count 5");
+    expect(host.messages).toContain("opponent mzone count 1");
+    expect(host.messages).toContain("self usable mzone 0");
+    expect(host.messages).toContain("self usable excluding taken 2");
+    expect(host.messages).toContain("opponent usable mzone 4");
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
+    expect(session.state.cards.find((card) => card.code === "800")).toMatchObject({ controller: 1, location: "monsterZone", sequence: 0 });
+  });
+
+  it("queues Lua control-change triggers after Duel.GetControl succeeds", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Control Watcher", kind: "monster" },
+      { code: "600", name: "Control Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 65, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["600"] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "600");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local watcher = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, 0, LOCATION_MZONE, 1, 1, nil)
+      local e=Effect.CreateEffect(watcher)
+      e:SetType(EFFECT_TYPE_TRIGGER_O)
+      e:SetCode(EVENT_CONTROL_CHANGED)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp) Debug.Message("control trigger resolved " .. Duel.GetOperatedGroup():GetFirst():GetControler()) end)
+      watcher:RegisterEffect(e)
+      Debug.Message("control trigger take " .. Duel.GetControl(target, 0, 0, 0, LOCATION_MZONE))
+      `,
+      "control-trigger.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("control trigger take 1");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["controlChanged"]);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("control trigger resolved 0");
+  });
+
+  it("lets Lua scripts swap control of field cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Swap Self", kind: "monster" },
+      { code: "101", name: "Swap Self Filler A", kind: "monster" },
+      { code: "102", name: "Swap Self Filler B", kind: "monster" },
+      { code: "103", name: "Swap Self Filler C", kind: "monster" },
+      { code: "104", name: "Swap Self Filler D", kind: "monster" },
+      { code: "500", name: "Self Spell A", kind: "spell" },
+      { code: "501", name: "Self Spell B", kind: "spell" },
+      { code: "502", name: "Self Spell C", kind: "spell" },
+      { code: "503", name: "Self Spell D", kind: "spell" },
+      { code: "504", name: "Self Spell E", kind: "spell" },
+      { code: "600", name: "Swap Opponent", kind: "monster" },
+      { code: "601", name: "Swap Opponent Filler A", kind: "monster" },
+      { code: "602", name: "Swap Opponent Filler B", kind: "monster" },
+      { code: "603", name: "Swap Opponent Filler C", kind: "monster" },
+      { code: "604", name: "Swap Opponent Filler D", kind: "monster" },
+      { code: "900", name: "Opponent Spell", kind: "spell" },
+    ];
+    const session = createDuel({ seed: 63, startingHandSize: 10, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "101", "102", "103", "104", "500", "501", "502", "503", "504"] },
+      1: { main: ["600", "601", "602", "603", "604", "900"] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.kind === "monster")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.kind === "spell")) {
+      moveDuelCard(session.state, card.uid, "spellTrapZone", 0);
+    }
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 1 && candidate.location === "hand" && candidate.kind === "monster")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 1);
+    }
+    const opponentSpell = session.state.cards.find((card) => card.controller === 1 && card.code === "900");
+    moveDuelCard(session.state, opponentSpell!.uid, "spellTrapZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local self_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local opponent_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("swap monsters " .. tostring(Duel.SwapControl(self_monster, opponent_monster)))
+      Debug.Message("swap operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("swap controllers " .. self_monster:GetControler() .. "/" .. opponent_monster:GetControler())
+      local opponent_spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, 0, LOCATION_SZONE, 1, 1, nil):GetFirst()
+      Debug.Message("swap blocked " .. tostring(Duel.SwapControl(opponent_monster, opponent_spell)))
+      Debug.Message("swap blocked operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "swap-control.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("swap monsters true");
+    expect(host.messages).toContain("swap operated 2");
+    expect(host.messages).toContain("swap controllers 1/0");
+    expect(host.messages).toContain("swap blocked false");
+    expect(host.messages).toContain("swap blocked operated 0");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ controller: 1, location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.code === "600")).toMatchObject({ controller: 0, location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.code === "900")).toMatchObject({ controller: 1, location: "spellTrapZone" });
+  });
+
+});
