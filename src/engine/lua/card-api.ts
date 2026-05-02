@@ -7,6 +7,7 @@ import { registerDuelFlagEffect } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
+import { installCardColumnApi } from "#lua/card-column-api.js";
 import { cardCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
 import { canBeMaterial, canMoveCardToDeckOrExtraAsCost, isMonsterLike } from "#lua/card-eligibility-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
@@ -253,18 +254,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   });
   lua.lua_setfield(L, -2, to_luastring("IsLocation"));
   installCardPreviousStateApi(L, session);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const targetUid = readCardUid(state, 2);
-    const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && target && isFieldCard(card) && isFieldCard(target) && card.controller === target.controller && card.sequence === target.sequence));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsColumn"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushGetColumnGroup(state, session));
-  lua.lua_setfield(L, -2, to_luastring("GetColumnGroup"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushGetColumnZone(state, session));
-  lua.lua_setfield(L, -2, to_luastring("GetColumnZone"));
+  installCardColumnApi(L, session);
   pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
@@ -549,38 +539,6 @@ function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   return effects.length;
 }
 
-function pushGetColumnZone(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const locationMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  const left = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0);
-  const right = Math.max(0, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0);
-  const player = normalizePlayer(lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : card?.controller ?? session.state.turnPlayer);
-  lua.lua_pushinteger(L, card && isFieldCard(card) ? columnZoneMask(card, locationMask, left, right, player) : 0);
-  return 1;
-}
-
-function pushGetColumnGroup(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  const left = Math.max(0, lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0);
-  const right = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0);
-  const uids =
-    card && isFieldCard(card)
-      ? session.state.cards.filter((candidate) => isFieldCard(candidate) && candidate.uid !== card.uid && candidate.sequence >= card.sequence - left && candidate.sequence <= card.sequence + right).map((candidate) => candidate.uid)
-      : [];
-  pushGroupTable(L, uids);
-  return 1;
-}
-
-function columnZoneMask(card: DuelCardInstance, locationMask: number, left: number, right: number, player: PlayerId): number {
-  let mask = 0;
-  for (let sequence = card.sequence - left; sequence <= card.sequence + right; sequence += 1) {
-    if (sequence < 0 || sequence > 4) continue;
-    if ((locationMask & 0x04) !== 0) mask |= 1 << (card.controller === player ? sequence : 16 + sequence);
-    if ((locationMask & 0x08) !== 0) mask |= 1 << (card.controller === player ? 8 + sequence : 24 + sequence);
-  }
-  return mask;
-}
-
 function pushRitualLevel<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
   const card = readCard(L, session);
   if (!card) {
@@ -843,10 +801,6 @@ function readRequestedCodes(L: unknown, startIndex: number): string[] {
     if (lua.lua_isnumber(L, index)) codes.push(String(lua.lua_tointeger(L, index)));
   }
   return codes;
-}
-
-function isFieldCard(card: DuelCardInstance): boolean {
-  return card.location === "monsterZone" || card.location === "spellTrapZone";
 }
 
 function normalizePlayer(value: number): PlayerId {
