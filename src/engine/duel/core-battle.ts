@@ -20,6 +20,7 @@ import {
   isBattleTargetPrevented,
   isDirectAttackPrevented,
   mustAttackMonsterTargetAllowed,
+  onlyBeAttackedTargetUids,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
@@ -39,11 +40,12 @@ export interface CoreBattleHandlers {
 export function appendBattleActions(actions: DuelAction[], state: DuelState, player: PlayerId, handlers: CoreBattleHandlers): void {
   if (state.phase !== "battle") return;
   const createContext = handlers.createContinuousContext(state);
+  const onlyTargets = onlyBeAttackedTargetUids(state, player, createContext);
   for (const action of attackActions(
     state,
     player,
     (card) => extraAttackCount(state, card, createContext),
-    (card) => canSelectBattleTarget(state, player, card, createContext),
+    (card) => canSelectBattleTarget(state, player, card, createContext) && isOnlyAttackTargetAllowed(onlyTargets, card),
   )) {
     if (action.type !== "declareAttack") continue;
     const attacker = findCard(state, action.attackerUid);
@@ -64,18 +66,20 @@ export function canCoreDuelCardAttack(state: DuelState, uid: string, handlers: C
 export function getCoreDuelAttackTargets(state: DuelState, attackerUid: string, handlers: CoreBattleHandlers): DuelCardInstance[] {
   const card = findCard(state, attackerUid);
   const createContext = handlers.createContinuousContext(state);
+  const onlyTargets = onlyBeAttackedTargetUids(state, card?.controller ?? state.turnPlayer, createContext);
   if (!card || isAttackPrevented(state, card, createContext)) return [];
   return getDuelAttackTargetsRule(
     state,
     attackerUid,
     extraAttackCount(state, card, createContext),
-    (target) => canSelectBattleTarget(state, card.controller, target, createContext) && canAttackMonsterTarget(state, card, target, createContext),
+    (target) => canSelectBattleTarget(state, card.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, card, target, createContext),
   );
 }
 
 export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid: string | undefined, handlers: CoreBattleHandlers): void {
   const attacker = findCard(state, attackerUid);
   const createContext = handlers.createContinuousContext(state);
+  const onlyTargets = onlyBeAttackedTargetUids(state, player, createContext);
   if (attacker && isAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack`);
   if (attacker && targetUid === undefined && isDirectAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack directly`);
   if (attacker && targetUid === undefined && hasMustAttackMonsterRestriction(state, attacker, createContext)) throw new Error(`${attacker.name} must attack a monster`);
@@ -97,7 +101,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
-  }, attacker ? extraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && canAttackMonsterTarget(state, attacker, target, createContext)));
+  }, attacker ? extraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)));
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
 }
 
@@ -119,6 +123,10 @@ function canSelectBattleTarget(state: DuelState, player: PlayerId, card: DuelCar
 
 function canAttackMonsterTarget(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   return mustAttackMonsterTargetAllowed(state, attacker, target, createContext);
+}
+
+function isOnlyAttackTargetAllowed(onlyTargets: Set<string>, target: DuelCardInstance): boolean {
+  return onlyTargets.size === 0 || onlyTargets.has(target.uid);
 }
 
 export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): boolean {
