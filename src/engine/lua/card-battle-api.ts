@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { duelReason } from "#duel/reasons.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
+import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import type { CardPosition, DuelCardInstance, DuelSession } from "#duel/types.js";
 
@@ -11,8 +12,9 @@ export function installCardBattleApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetBattlePosition", session, (card) => positionMaskFromPosition(card?.battlePosition ?? card?.position));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const requestedPosition = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushboolean(state, Boolean(card && (positionMaskFromPosition(card.battlePosition ?? card.position) & requestedPosition) !== 0));
+    const requested = readRequestedNumbers(state, 2);
+    const battlePosition = positionMaskFromPosition(card?.battlePosition ?? card?.position);
+    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => (battlePosition & value) !== 0)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsBattlePosition"));

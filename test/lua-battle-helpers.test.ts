@@ -1399,14 +1399,14 @@ describe("Lua battle helpers", () => {
       `
       local attacker = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_GRAVE, 1, 1, nil):GetFirst()
-      Debug.Message("battle position " .. attacker:GetBattlePosition() .. "/" .. target:GetBattlePosition() .. "/" .. tostring(target:IsBattlePosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(target:IsBattlePosition(POS_FACEUP)) .. "/" .. tostring(target:IsBattlePosition(POS_FACEUP_DEFENSE)))
+      Debug.Message("battle position " .. attacker:GetBattlePosition() .. "/" .. target:GetBattlePosition() .. "/" .. tostring(target:IsBattlePosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(target:IsBattlePosition(POS_FACEUP_DEFENSE,POS_FACEUP_ATTACK)) .. "/" .. tostring(target:IsBattlePosition({POS_FACEUP_DEFENSE,POS_FACEUP_ATTACK})) .. "/" .. tostring(target:IsBattlePosition(POS_FACEUP)) .. "/" .. tostring(target:IsBattlePosition(POS_FACEUP_DEFENSE)))
       Debug.Message("battle destroyed " .. tostring(attacker:IsBattleDestroyed()) .. "/" .. tostring(target:IsBattleDestroyed()))
       `,
       "battle-position-destroyed.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("battle position 1/1/true/true/false");
+    expect(host.messages).toContain("battle position 1/1/true/true/true/true/false");
     expect(host.messages).toContain("battle destroyed false/true");
   });
 
