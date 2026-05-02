@@ -13,6 +13,7 @@ import {
   additionalBattleDamagePlayers,
   battleDamageReason,
   extraAttackCount,
+  firstAttackRequiredUids,
   hasMustAttackMonsterRestriction,
   hasPiercingBattleDamage,
   isAttackPrevented,
@@ -41,6 +42,7 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
   if (state.phase !== "battle") return;
   const createContext = handlers.createContinuousContext(state);
   const onlyTargets = onlyBeAttackedTargetUids(state, player, createContext);
+  const firstAttackers = firstAttackRequiredUids(state, player, createContext);
   for (const action of attackActions(
     state,
     player,
@@ -50,6 +52,7 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
     if (action.type !== "declareAttack") continue;
     const attacker = findCard(state, action.attackerUid);
     if (!attacker || isAttackPrevented(state, attacker, createContext)) continue;
+    if (!isFirstAttackAllowed(firstAttackers, attacker)) continue;
     if (action.targetUid === undefined && (isDirectAttackPrevented(state, attacker, createContext) || hasMustAttackMonsterRestriction(state, attacker, createContext))) continue;
     const target = action.targetUid === undefined ? undefined : findCard(state, action.targetUid);
     if (target && !canAttackMonsterTarget(state, attacker, target, createContext)) continue;
@@ -60,7 +63,8 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
 export function canCoreDuelCardAttack(state: DuelState, uid: string, handlers: CoreBattleHandlers): boolean {
   const card = findCard(state, uid);
   const createContext = handlers.createContinuousContext(state);
-  return Boolean(card && !isAttackPrevented(state, card, createContext) && canDuelCardAttackRule(state, uid, extraAttackCount(state, card, createContext)));
+  const firstAttackers = firstAttackRequiredUids(state, card?.controller ?? state.turnPlayer, createContext);
+  return Boolean(card && isFirstAttackAllowed(firstAttackers, card) && !isAttackPrevented(state, card, createContext) && canDuelCardAttackRule(state, uid, extraAttackCount(state, card, createContext)));
 }
 
 export function getCoreDuelAttackTargets(state: DuelState, attackerUid: string, handlers: CoreBattleHandlers): DuelCardInstance[] {
@@ -81,6 +85,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
   const createContext = handlers.createContinuousContext(state);
   const onlyTargets = onlyBeAttackedTargetUids(state, player, createContext);
   if (attacker && isAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack`);
+  if (attacker && !isFirstAttackAllowed(firstAttackRequiredUids(state, player, createContext), attacker)) throw new Error(`${attacker.name} cannot attack before the first attacker`);
   if (attacker && targetUid === undefined && isDirectAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack directly`);
   if (attacker && targetUid === undefined && hasMustAttackMonsterRestriction(state, attacker, createContext)) throw new Error(`${attacker.name} must attack a monster`);
   state.battleDamage = { 0: 0, 1: 0 };
@@ -127,6 +132,10 @@ function canAttackMonsterTarget(state: DuelState, attacker: DuelCardInstance, ta
 
 function isOnlyAttackTargetAllowed(onlyTargets: Set<string>, target: DuelCardInstance): boolean {
   return onlyTargets.size === 0 || onlyTargets.has(target.uid);
+}
+
+function isFirstAttackAllowed(firstAttackers: Set<string>, attacker: DuelCardInstance): boolean {
+  return firstAttackers.size === 0 || firstAttackers.has(attacker.uid);
 }
 
 export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): boolean {

@@ -274,6 +274,22 @@ export function onlyBeAttackedTargetUids(state: DuelState, player: PlayerId, cre
   return targetUids;
 }
 
+export function firstAttackRequiredUids(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory): Set<string> {
+  const attackerUids = new Set<string>();
+  for (const card of state.cards) {
+    if (card.location !== "monsterZone" || card.controller !== player || state.attacksDeclared.includes(card.uid)) continue;
+    for (const effect of state.effects) {
+      if (effect.event !== "continuous" || effect.code !== 192) continue;
+      const source = findCard(state, effect.sourceUid);
+      if (!source || !effect.range.includes(source.location)) continue;
+      if (!continuousEffectAffectsCard(effect, source, card)) continue;
+      const ctx = createContext(effect, source, card);
+      if (!effect.canActivate || effect.canActivate(ctx)) attackerUids.add(card.uid);
+    }
+  }
+  return attackerUids;
+}
+
 export function extraAttackCount(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): number {
   let count = 0;
   for (const effect of state.effects) {

@@ -830,6 +830,51 @@ describe("Lua battle helpers", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.targetUid === openTarget!.uid)).toBe(false);
   });
 
+  it("applies Lua first-attack restrictions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "First Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Later Attacker", kind: "monster", attack: 1600 },
+    ];
+    const session = createDuel({ seed: 125, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const firstAttacker = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const laterAttacker = session.state.cards.find((card) => card.controller === 0 && card.code === "200");
+    expect(firstAttacker).toBeDefined();
+    expect(laterAttacker).toBeDefined();
+    moveDuelCard(session.state, firstAttacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, laterAttacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_FIRST_ATTACK)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+      `,
+      "first-attack.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === firstAttacker!.uid)).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === laterAttacker!.uid)).toBe(false);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === firstAttacker!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === laterAttacker!.uid)).toBe(true);
+  });
+
   it("passes the battle opponent to Lua indestructible battle value callbacks", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Indestructible Check Attacker", kind: "monster", attack: 1800 },
