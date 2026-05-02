@@ -123,12 +123,11 @@ function pushGetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]
     return 1;
   }
   lua.lua_pushboolean(L, true);
-  lua.lua_pushinteger(L, info.category);
   pushGroupTable(L, info.targetUids);
   lua.lua_pushinteger(L, info.count);
   lua.lua_pushinteger(L, info.player);
   lua.lua_pushinteger(L, info.parameter);
-  return 6;
+  return 5;
 }
 
 function pushGetOperationCount(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {

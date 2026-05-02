@@ -1447,8 +1447,8 @@ describe("Lua movement helpers", () => {
       Debug.Message("neos conditions " .. tostring(e1:GetCondition()(e1,0,Group.CreateGroup(),0,0,nil,0,0)) .. "/" .. tostring(e2:GetCondition()(e2,0,Group.CreateGroup(),0,0,nil,0,0)))
       Debug.Message("neos target " .. tostring(e1:GetTarget()(e1,0,Group.CreateGroup(),0,0,nil,0,0,0)))
       e1:GetTarget()(e1,0,Group.CreateGroup(),0,0,nil,0,0,1)
-      local ok,cat,g,count,p,param=Duel.GetOperationInfo(0,CATEGORY_TODECK)
-      Debug.Message("neos op info " .. tostring(ok) .. "/" .. cat .. "/" .. g:GetCount() .. "/" .. count)
+      local ok,g,count,p,param=Duel.GetOperationInfo(0,CATEGORY_TODECK)
+      Debug.Message("neos op info " .. tostring(ok) .. "/" .. g:GetCount() .. "/" .. count)
       e1:GetOperation()(e1,0,Group.CreateGroup(),0,0,nil,0,0)
       Debug.Message("neos locations " .. c:GetLocation() .. "/" .. Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,14088859),0,LOCATION_REMOVED,0,nil):GetCode())
       `,
@@ -1461,7 +1461,7 @@ describe("Lua movement helpers", () => {
     expect(host.messages).toContain("neos conditions true/nil");
     expect(host.messages).toContain("neos target true");
     expect(host.messages).toContain("neos extra info 1");
-    expect(host.messages).toContain("neos op info true/16/1/1");
+    expect(host.messages).toContain("neos op info true/1/1");
     expect(host.messages).toContain("neos locations 4/14088859");
     expect(session.state.cards.find((card) => card.code === "14088859")).toMatchObject({ location: "banished" });
   });
