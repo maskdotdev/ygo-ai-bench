@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { readCardUid } from "#lua/api-utils.js";
-import { cardCodes, isSetcodeMatch, readRequestedNumbers } from "#lua/card-code-utils.js";
+import { cardCodes, isSetcodeMatch, readRequestedCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
 import { cardLink, cardRank, cardTypeFlags } from "#lua/card-stat-api.js";
 import type { CardPosition, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -107,14 +107,6 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1);
   return uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-}
-
-function readRequestedCodes(L: unknown, startIndex: number): string[] {
-  const codes: string[] = [];
-  for (let index = startIndex; index <= lua.lua_gettop(L); index += 1) {
-    if (lua.lua_isnumber(L, index)) codes.push(String(lua.lua_tointeger(L, index)));
-  }
-  return codes;
 }
 
 function hasDefense(card: DuelCardInstance): boolean {

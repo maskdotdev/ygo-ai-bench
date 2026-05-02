@@ -2075,7 +2075,7 @@ describe("Lua state helpers", () => {
       local g = Duel.GetFieldCard(0, LOCATION_GRAVE, 0)
       Debug.Message("previous state " .. g:GetPreviousLocation() .. "/" .. g:GetPreviousControler() .. "/" .. g:GetPreviousSequence() .. "/" .. g:GetPreviousPosition())
       Debug.Message("previous checks " .. tostring(g:IsPreviousLocation(LOCATION_MZONE)) .. "/" .. tostring(g:IsPreviousControler(0)) .. "/" .. tostring(g:IsPreviousSequence(0)) .. "/" .. tostring(g:IsPreviousSequence(1)) .. "/" .. tostring(g:IsPreviousPosition(POS_FACEUP_ATTACK)) .. "/" .. tostring(g:IsPreviousSetCard(0x123)) .. "/" .. tostring(g:IsPreviousSetCard({0x456,0x123})) .. "/" .. tostring(g:IsPreviousSetCard({0x456,0x789})))
-      Debug.Message("previous identity " .. g:GetPreviousCode() .. "/" .. tostring(g:IsPreviousCode(100)) .. "/" .. tostring(g:IsPreviousCode(900)) .. "/" .. tostring(g:IsPreviousCode(900,100)) .. "/" .. tostring(g:IsPreviousCodeOnField(100)) .. "/" .. tostring(g:IsPreviousCodeOnField(900,100)))
+      Debug.Message("previous identity " .. g:GetPreviousCode() .. "/" .. tostring(g:IsPreviousCode(100)) .. "/" .. tostring(g:IsPreviousCode(900)) .. "/" .. tostring(g:IsPreviousCode(900,100)) .. "/" .. tostring(g:IsPreviousCode({900,100})) .. "/" .. tostring(g:IsPreviousCodeOnField(100)) .. "/" .. tostring(g:IsPreviousCodeOnField(900,100)) .. "/" .. tostring(g:IsPreviousCodeOnField({900,100})))
       Debug.Message("previous type " .. g:GetPreviousTypeOnField() .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_EFFECT)) .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_SPELL)))
       Debug.Message("previous stats " .. g:GetPreviousAttackOnField() .. "/" .. tostring(g:IsPreviousAttackOnField(1700)) .. "/" .. g:GetPreviousDefenseOnField() .. "/" .. tostring(g:IsPreviousDefenseOnField(1300)))
       local link = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
@@ -2107,7 +2107,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous checks true/true/true/false/true/true/true/false");
-    expect(host.messages).toContain("previous identity 100/true/false/true/true/true");
+    expect(host.messages).toContain("previous identity 100/true/false/true/true/true/true/true");
     expect(host.messages).toContain("previous type 33/true/false");
     expect(host.messages).toContain("previous stats 1700/true/1300/true");
     expect(host.messages).toContain("previous link defense 0/false/false");
