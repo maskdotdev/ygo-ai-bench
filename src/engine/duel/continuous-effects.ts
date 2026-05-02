@@ -488,8 +488,8 @@ export function mustAttackMonsterTargetAllowed(
     if (effect.event !== "continuous" || effect.code !== 344) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, attacker)) continue;
     const ctx = createContext(effect, source, target);
+    if (!continuousEffectAppliesToCard(effect, source, attacker, ctx)) continue;
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     hasRestriction = true;
     if (!effect.valueCardPredicate || effect.valueCardPredicate(ctx, target)) return true;
@@ -502,8 +502,8 @@ export function hasMustAttackMonsterRestriction(state: DuelState, attacker: Duel
     if (effect.event !== "continuous" || effect.code !== 344) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, attacker)) continue;
     const ctx = createContext(effect, source, attacker);
+    if (!continuousEffectAppliesToCard(effect, source, attacker, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
@@ -514,8 +514,8 @@ export function hasOnlyAttackMonsterRestriction(state: DuelState, attacker: Duel
     if (effect.event !== "continuous" || effect.code !== 343) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, attacker)) continue;
     const ctx = createContext(effect, source, attacker);
+    if (!continuousEffectAppliesToCard(effect, source, attacker, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
@@ -529,8 +529,8 @@ export function onlyBeAttackedTargetUids(state: DuelState, player: PlayerId, cre
       if (effect.event !== "continuous" || effect.code !== 196) continue;
       const source = findCard(state, effect.sourceUid);
       if (!source || !effect.range.includes(source.location)) continue;
-      if (!continuousEffectAffectsCard(effect, source, card)) continue;
       const ctx = createContext(effect, source, card);
+      if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
       if (!effect.canActivate || effect.canActivate(ctx)) targetUids.add(card.uid);
     }
   }
@@ -545,8 +545,8 @@ export function firstAttackRequiredUids(state: DuelState, player: PlayerId, crea
       if (effect.event !== "continuous" || effect.code !== 192) continue;
       const source = findCard(state, effect.sourceUid);
       if (!source || !effect.range.includes(source.location)) continue;
-      if (!continuousEffectAffectsCard(effect, source, card)) continue;
       const ctx = createContext(effect, source, card);
+      if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
       if (!effect.canActivate || effect.canActivate(ctx)) attackerUids.add(card.uid);
     }
   }
@@ -561,8 +561,8 @@ export function mustAttackRequiredUids(state: DuelState, player: PlayerId, creat
       if (effect.event !== "continuous" || effect.code !== 191) continue;
       const source = findCard(state, effect.sourceUid);
       if (!source || !effect.range.includes(source.location)) continue;
-      if (!continuousEffectAffectsCard(effect, source, card)) continue;
       const ctx = createContext(effect, source, card);
+      if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
       if (!effect.canActivate || effect.canActivate(ctx)) attackerUids.add(card.uid);
     }
   }
