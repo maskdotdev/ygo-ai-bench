@@ -4,6 +4,8 @@ import { findCard, hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { canAddDuelCardCounter, canRemoveDuelCounters, getDuelCardCounter, removeDuelCounters } from "#duel/counters.js";
 import { getDuelFlagEffectCount } from "#duel/flags.js";
+import { duelReason } from "#duel/reasons.js";
+import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
@@ -72,7 +74,8 @@ function pushCanNormalSummon(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const uid = readCardUid(L, 2);
   const ignoreCount = lua.lua_toboolean(L, 3);
-  lua.lua_pushboolean(L, canNormalSummon(session, player, uid, ignoreCount));
+  const card = uid ? findCard(session.state, uid) : undefined;
+  lua.lua_pushboolean(L, canNormalSummon(session, player, card, ignoreCount, readMinTributeRequirement(L, card)));
   return 1;
 }
 
@@ -196,12 +199,10 @@ function pushGetCounter(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function canNormalSummon(session: DuelSession, player: PlayerId, uid: string | undefined, ignoreCount: boolean): boolean {
+function canNormalSummon(session: DuelSession, player: PlayerId, card: DuelCardInstance | undefined, ignoreCount: boolean, minTributes: number): boolean {
   if (!isMainPhaseForPlayer(session, player)) return false;
-  if (!ignoreCount && !session.state.players[player].normalSummonAvailable) return false;
-  const card = uid ? findCard(session.state, uid) : undefined;
   if (card && (card.controller !== player || card.location !== "hand" || !isMonsterLike(card.kind))) return false;
-  return availableMonsterZoneCount(session, player, []) > 0;
+  return normalSummonAvailability(session, player, card, ignoreCount, minTributes);
 }
 
 function canAdditionalSummon(session: DuelSession, player: PlayerId): boolean {
@@ -216,6 +217,49 @@ function canNormalSet(session: DuelSession, player: PlayerId, uid: string | unde
   const card = uid ? findCard(session.state, uid) : undefined;
   if (card && (card.controller !== player || card.location !== "hand" || !isMonsterLike(card.kind))) return false;
   return availableMonsterZoneCount(session, player, []) > 0;
+}
+
+function normalSummonAvailability(session: DuelSession, player: PlayerId, card: DuelCardInstance | undefined, ignoreCount: boolean, minTributes: number): boolean {
+  const readAvailable = (): boolean => {
+    const hand = card ? [card] : session.state.cards.filter((candidate) => candidate.controller === player && candidate.location === "hand" && isMonsterLike(candidate.kind));
+    const actions = [...normalSummonActions(session.state, player, hand), ...tributeSummonActions(session.state, player, hand)];
+    if (card && minTributes > 0 && canSummonWithMetadataTributes(session, player, card, minTributes)) return true;
+    return card ? actions.some((action) => actionHasUid(action, card.uid) && (action.type === "normalSummon" || action.type === "tributeSummon")) : actions.some((action) => action.type === "normalSummon" || action.type === "tributeSummon");
+  };
+  if (!ignoreCount) return readAvailable();
+  const previous = session.state.players[player].normalSummonAvailable;
+  session.state.players[player].normalSummonAvailable = true;
+  try {
+    return readAvailable();
+  } finally {
+    session.state.players[player].normalSummonAvailable = previous;
+  }
+}
+
+function actionHasUid(action: { type: string }, uid: string): action is { type: string; uid: string } {
+  return "uid" in action && action.uid === uid;
+}
+
+function canSummonWithMetadataTributes(session: DuelSession, player: PlayerId, card: DuelCardInstance, minTributes: number): boolean {
+  if (availableMonsterZoneCount(session, player, []) <= 0 && releasableTributeCount(session, player, card.uid) <= 0) return false;
+  return releasableTributeCount(session, player, card.uid) >= minTributes;
+}
+
+function releasableTributeCount(session: DuelSession, player: PlayerId, targetUid: string): number {
+  return session.state.cards.filter((card) => card.uid !== targetUid && card.controller === player && card.location === "monsterZone" && isMonsterLike(card.kind) && canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.summon)).length;
+}
+
+function readMinTributeRequirement(L: unknown, card: DuelCardInstance | undefined): number {
+  if (!card) return 0;
+  lua.lua_getglobal(L, to_luastring(`c${card.code}`));
+  if (!lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, 1);
+    return 0;
+  }
+  lua.lua_getfield(L, -1, to_luastring("min_tribute_req"));
+  const minTributes = lua.lua_isnumber(L, -1) ? Math.max(0, lua.lua_tointeger(L, -1)) : 0;
+  lua.lua_pop(L, 2);
+  return minTributes;
 }
 
 function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: PlayerId, positionMask: number, uid: string | undefined): boolean {
