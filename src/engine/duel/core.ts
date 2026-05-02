@@ -85,6 +85,7 @@ import {
   type CoreMovementHandlers,
 } from "#duel/core-movement.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
+import { recordDuelEvent } from "#duel/event-history.js";
 import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
@@ -518,11 +519,6 @@ function createReplacementEffectHandlers(state: DuelState): ReplacementEffectHan
 function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
   recordDuelEvent(state, eventName, eventCard);
   collectTriggerEffectsRule(state, eventName, (duel, effect, source, triggerEventName, triggerEventCard) => canChooseEffect(duel, effect, source, effect.controller, triggerEventName, triggerEventCard), eventCard);
-}
-
-function recordDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
-  state.eventHistory.push({ eventName, ...(eventCard ? { eventCardUid: eventCard.uid } : {}) });
-  state.eventHistory = state.eventHistory.slice(-32);
 }
 
 function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void {
