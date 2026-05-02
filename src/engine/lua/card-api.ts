@@ -102,20 +102,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "WasMaximumModeSide", session, () => false);
   installCardPreviousStateApi(L, session);
   installCardColumnApi(L, session);
-  pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => ((card.reason ?? 0) & value) !== 0)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsReason"));
-  pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
-  pushPlayerMatcher(L, "IsReasonPlayer", session, (card, requested) => requested.includes(card.reasonPlayer ?? card.controller));
-  pushNumberGetter(L, "GetTurnID", session, (card) => card?.turnId ?? 0);
-  pushNumberGetter(L, "GetTurnCounter", session, (card) => card?.turnCounter ?? 0);
-  lua.lua_pushcfunction(L, (state: unknown) => pushSetTurnCounter(state, session));
-  lua.lua_setfield(L, -2, to_luastring("SetTurnCounter"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedPlayers(state, 2);
@@ -180,12 +166,6 @@ function pushPlayerMatcher(L: unknown, fieldName: string, session: DuelSession, 
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
-}
-
-function pushSetTurnCounter(L: unknown, session: DuelSession): number {
-  const card = readCard(L, session);
-  if (card) card.turnCounter = lua.lua_isnumber(L, 2) ? Math.max(0, lua.lua_tointeger(L, 2)) : 0;
-  return 0;
 }
 
 function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined, uid: string | undefined) => boolean): void {
