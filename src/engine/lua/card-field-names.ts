@@ -268,6 +268,7 @@ export const cardFieldNames = [
   "IsTrapCard",
   "IsTrapMonster",
   "IsStatus",
+  "SetStatus",
   "GetBattlePosition",
   "IsBattlePosition",
   "IsBattleDestroyed",

@@ -45,6 +45,38 @@ describe("Lua state helpers", () => {
     expect(defaultHost.messages).toContain("default hand draw counts 5/1");
   });
 
+  it("lets Lua scripts set and clear custom card status bits", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Status Probe", kind: "monster" }];
+    const session = createDuel({ seed: 166, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const card = session.state.cards.find((candidate) => candidate.code === "100");
+    expect(card).toBeDefined();
+    moveDuelCard(session.state, card!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("custom status before " .. tostring(c:IsStatus(STATUS_NO_LEVEL)) .. "/" .. tostring(c:IsStatus(STATUS_DESTROY_CONFIRMED)))
+      c:SetStatus(STATUS_NO_LEVEL+STATUS_DESTROY_CONFIRMED,true)
+      Debug.Message("custom status set " .. tostring(c:IsStatus(STATUS_NO_LEVEL)) .. "/" .. tostring(c:IsStatus(STATUS_DESTROY_CONFIRMED)))
+      c:SetStatus(STATUS_DESTROY_CONFIRMED,false)
+      Debug.Message("custom status cleared " .. tostring(c:IsStatus(STATUS_NO_LEVEL)) .. "/" .. tostring(c:IsStatus(STATUS_DESTROY_CONFIRMED)))
+      `,
+      "custom-status.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["custom status before true/false", "custom status set true/true", "custom status cleared true/false"]);
+    expect(card!.customStatusMask).toBe(0x20);
+    expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.cards.find((candidate) => candidate.uid === card!.uid)?.customStatusMask).toBe(0x20);
+  });
+
   it("lets Lua scripts apply drawless startup adjustments", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Drawless One", kind: "monster" },

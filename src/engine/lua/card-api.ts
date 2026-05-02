@@ -95,6 +95,8 @@ function installEffectBackedStatHelpers<EffectRecord extends LuaCardApiEffectRec
   lua.lua_pushcfunction(L, (state: unknown) => pushSynchroLevel(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetSynchroLevel"));
   pushNumberMatcher(L, "IsStatus", session, (card, requested) => (cardStatusMask(session.state, card) & requested) !== 0);
+  lua.lua_pushcfunction(L, (state: unknown) => pushSetStatus(state, session));
+  lua.lua_setfield(L, -2, to_luastring("SetStatus"));
 }
 
 function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
@@ -462,6 +464,15 @@ function pushNumberMatcher(L: unknown, fieldName: string, session: DuelSession, 
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function pushSetStatus(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const mask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  if (!card || mask === 0) return 0;
+  const current = card.customStatusMask ?? 0;
+  card.customStatusMask = lua.lua_isnoneornil(L, 3) || lua.lua_toboolean(L, 3) ? current | mask : current & ~mask;
+  return 0;
 }
 
 function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined, uid: string | undefined) => boolean): void {
@@ -857,7 +868,7 @@ function otherPlayer(player: PlayerId): PlayerId {
 }
 
 function cardStatusMask(state: DuelState, card: DuelCardInstance): number {
-  let mask = 0;
+  let mask = card.customStatusMask ?? 0;
   if (isCardDisabled(state, card, createLuaMaterialCheckContext(state))) mask |= 0x1;
   if (card.faceUp && (card.location === "monsterZone" || card.location === "spellTrapZone")) mask |= 0x400;
   if ((card.data.level ?? 0) <= 0 && cardRank(card) === 0 && cardLink(card) === 0 && isMonsterLike(card)) mask |= 0x20;
