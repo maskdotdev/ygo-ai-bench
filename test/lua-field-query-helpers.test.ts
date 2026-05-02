@@ -1975,6 +1975,31 @@ describe("Lua field and query helpers", () => {
     const setMonster = setSession.state.cards.find((card) => card.code === "300");
     expect(setMonster).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
 
+    const tributeSetSession = createDuel({ seed: 91, startingHandSize: 2, cardReader: createCardReader([...cards, { code: "950", name: "Tribute Set Source", kind: "monster", level: 5 }]) });
+    loadDecks(tributeSetSession, {
+      0: { main: ["950", "500"] },
+      1: { main: [] },
+    });
+    startDuel(tributeSetSession);
+    const tributeMaterial = tributeSetSession.state.cards.find((card) => card.code === "500");
+    expect(tributeMaterial).toBeTruthy();
+    moveDuelCard(tributeSetSession.state, tributeMaterial!.uid, "monsterZone", 0);
+    const tributeSetHost = createLuaScriptHost(tributeSetSession);
+    const tributeSetResult = tributeSetHost.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 950), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("tribute mset result " .. Duel.MSet(target, true, tribute))
+      Debug.Message("tribute mset operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "tribute-monster-set.lua",
+    );
+    expect(tributeSetResult.ok, tributeSetResult.error).toBe(true);
+    expect(tributeSetHost.messages).toContain("tribute mset result 1");
+    expect(tributeSetHost.messages).toContain("tribute mset operated 1/950");
+    expect(tributeSetSession.state.cards.find((card) => card.code === "950")).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false, summonType: "tribute" });
+    expect(tributeSetSession.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "graveyard" });
+
     const fullSession = createDuel({ seed: 90, startingHandSize: 6, cardReader: createCardReader(cards) });
     loadDecks(fullSession, {
       0: { main: ["400", "500", "600", "700", "800", "900"] },

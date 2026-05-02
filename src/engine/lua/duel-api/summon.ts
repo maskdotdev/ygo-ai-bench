@@ -19,7 +19,7 @@ import {
 } from "#duel/core.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
-import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
+import { normalSummonActions, tributeSetDuelCard, tributeSummonActions } from "#duel/summon.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
@@ -134,16 +134,27 @@ function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaD
     lua.lua_pushinteger(L, 0);
     return 1;
   }
-  const tributeUids = type === "normalSummon" ? readCardCollectionUids(L, 3) : [];
+  const tributeUids = type === "normalSummon" || type === "setMonster" ? readCardCollectionUids(L, 3) : [];
   const result =
     type === "setSpellTrap"
       ? setLuaSpellTrap(session, target)
+      : type === "setMonster" && tributeUids.length > 0
+      ? setLuaMonsterWithTributes(session, target, tributeUids)
       : type === "normalSummon" && tributeUids.length > 0
       ? applyResponse(session, { type: "tributeSummon", player: target.controller, uid: target.uid, tributeUids, label: `Tribute Summon ${target.name}` })
       : applyResponse(session, { type, player: target.controller, uid: target.uid, label: basicSummonLabel(type, target.name) });
   setOperatedUids(hostState, result.ok ? [target.uid] : []);
   lua.lua_pushinteger(L, result.ok ? 1 : 0);
   return 1;
+}
+
+function setLuaMonsterWithTributes(session: DuelSession, target: DuelCardInstance, tributeUids: string[]): { ok: boolean } {
+  try {
+    tributeSetDuelCard(session.state, target.controller, target.uid, tributeUids);
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
 }
 
 function setLuaSpellTrap(session: DuelSession, target: DuelCardInstance): { ok: boolean } {

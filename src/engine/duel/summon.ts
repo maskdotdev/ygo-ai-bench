@@ -46,6 +46,43 @@ export function setMonster(state: DuelState, player: PlayerId, uid: string): voi
   pushDuelLog(state, "setMonster", player, card.name, "Set from hand");
 }
 
+export function tributeSetDuelCard(
+  state: DuelState,
+  player: PlayerId,
+  uid: string,
+  tributeUids: string[],
+  moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
+  canReleaseMaterial: DuelMaterialPredicate = () => true,
+): void {
+  const card = requireControlledCard(state, player, uid, "hand");
+  if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
+  if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
+  const tributeRange = tributeRangeForNormalSummon(card);
+  if (tributeRange.max <= 0) throw new Error(`${card.name} does not require tributes`);
+  const uniqueTributes = [...new Set(tributeUids)];
+  if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
+  const tributeUnits = uniqueTributes.reduce((sum, tributeUid) => sum + tributeUnitCount(state, requireControlledCard(state, player, tributeUid, "monsterZone")), 0);
+  if (tributeUnits < tributeRange.min || tributeUnits > tributeRange.max) throw new Error(`${card.name} requires ${formatTributeRange(tributeRange)} tribute(s)`);
+  for (const tributeUid of uniqueTributes) {
+    const tribute = requireControlledCard(state, player, tributeUid, "monsterZone");
+    if (!canReleaseMaterial(tribute.uid)) throw new Error(`${tribute.name} cannot be released`);
+  }
+  for (const tributeUid of uniqueTributes) {
+    const result = moveMaterial(tributeUid, player, duelReason.release | duelReason.summon);
+    pushDuelLog(state, "release", player, result.card.name, `Tributed to Set ${card.name}`);
+  }
+  moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
+  card.position = "faceDownDefense";
+  card.faceUp = false;
+  card.summonType = "tribute";
+  card.summonPlayer = player;
+  card.summonPhase = state.phase;
+  card.summonMaterialUids = uniqueTributes;
+  state.players[player].normalSummonAvailable = false;
+  recordNormalSetActivity(state, player);
+  pushDuelLog(state, "setMonster", player, card.name, `Tribute Set with ${tributeUnits} tribute(s)`);
+}
+
 export function tributeSummonDuelCard(
   state: DuelState,
   player: PlayerId,
