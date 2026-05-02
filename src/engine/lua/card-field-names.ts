@@ -299,6 +299,7 @@ export const cardFieldNames = [
   "GetMarkedEffects",
   "CheckUnionTarget",
   "SetCardTarget",
+  "CancelCardTarget",
   "IsHasCardTarget",
   "CreateRelation",
   "EquipByEffectAndLimitRegister",

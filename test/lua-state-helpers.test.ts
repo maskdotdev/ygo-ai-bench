@@ -1673,13 +1673,15 @@ describe("Lua state helpers", () => {
       Debug.Message("card target before " .. tostring(source:IsHasCardTarget(first)))
       Debug.Message("card target set " .. tostring(source:SetCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
       Debug.Message("card relation create " .. tostring(source:CreateRelation(second,RESET_EVENT+RESETS_STANDARD)) .. "/" .. tostring(source:IsHasCardTarget(second)))
+      source:CancelCardTarget(first)
+      Debug.Message("card target cancel " .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
       `,
       "card-target-relation.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["card target before false", "card target set true/true/false", "card relation create true/true"]);
-    expect(session.state.cards.find((card) => card.code === "100")?.cardTargetUids).toHaveLength(2);
+    expect(host.messages).toEqual(["card target before false", "card target set true/true/false", "card relation create true/true", "card target cancel false/true"]);
+    expect(session.state.cards.find((card) => card.code === "100")?.cardTargetUids).toHaveLength(1);
   });
 
   it("checks Rush trait change availability from current and original traits", () => {
