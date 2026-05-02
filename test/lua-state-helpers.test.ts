@@ -1857,7 +1857,7 @@ describe("Lua state helpers", () => {
       Debug.Message("normal location " .. tostring(c:IsSummonLocation(LOCATION_HAND)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_EXTRA,LOCATION_HAND)) .. "/" .. tostring(c:IsSummonLocation({LOCATION_EXTRA,LOCATION_HAND})) .. "/" .. tostring(c:IsSummonLocation(LOCATION_EXTRA)))
       Debug.Message("normal player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
       Debug.Message("normal special " .. tostring(c:IsSpecialSummoned()))
-      Debug.Message("normal status " .. tostring(c:IsStatus(STATUS_SUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_SPSUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_PROC_COMPLETE)) .. "/" .. tostring(c:IsStatus(STATUS_EFFECT_ENABLED)) .. "/" .. tostring(c:IsStatus(STATUS_NO_LEVEL)))
+      Debug.Message("normal status " .. tostring(c:IsStatus(STATUS_SUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_SPSUMMON_TURN,STATUS_SUMMON_TURN)) .. "/" .. tostring(c:IsStatus({STATUS_SPSUMMON_TURN,STATUS_SUMMON_TURN})) .. "/" .. tostring(c:IsStatus(STATUS_SPSUMMON_TURN)) .. "/" .. tostring(c:IsStatus(STATUS_PROC_COMPLETE)) .. "/" .. tostring(c:IsStatus(STATUS_EFFECT_ENABLED)) .. "/" .. tostring(c:IsStatus(STATUS_NO_LEVEL)))
       Debug.Message("normal activity " .. Duel.GetActivityCount(0, ACTIVITY_SUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_NORMALSUMMON) .. "/" .. Duel.GetActivityCount(0, ACTIVITY_SPSUMMON))
       `,
       "summon-type-normal.lua",
@@ -1870,7 +1870,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("normal location true/true/true/false");
     expect(host.messages).toContain("normal player/type 0/true/false");
     expect(host.messages).toContain("normal special false");
-    expect(host.messages).toContain("normal status true/false/true/true/true");
+    expect(host.messages).toContain("normal status true/true/true/false/true/true/true");
     expect(host.messages).toContain("normal activity 1/1/0");
 
     const fusion = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon");
@@ -2089,6 +2089,7 @@ describe("Lua state helpers", () => {
       Debug.Message("previous extra stats " .. g:GetPreviousRankOnField() .. "/" .. tostring(g:IsPreviousRankOnField(4)) .. "/" .. tostring(g:IsPreviousRankOnField(0)) .. "/" .. g:GetPreviousLinkOnField() .. "/" .. tostring(g:IsPreviousLinkOnField(2)))
       Debug.Message("previous traits " .. g:GetPreviousRaceOnField() .. "/" .. tostring(g:IsPreviousRaceOnField(RACE_SPELLCASTER)) .. "/" .. g:GetPreviousAttributeOnField() .. "/" .. tostring(g:IsPreviousAttributeOnField(ATTRIBUTE_DARK)))
       Debug.Message("previous visibility " .. tostring(g:WasFaceup()) .. "/" .. tostring(g:WasFacedown()))
+      Debug.Message("reason checks " .. tostring(g:IsReason(REASON_EFFECT)) .. "/" .. tostring(g:IsReason(REASON_BATTLE,REASON_EFFECT)) .. "/" .. tostring(g:IsReason({REASON_BATTLE,REASON_EFFECT})) .. "/" .. tostring(g:IsReason(REASON_BATTLE)))
       Debug.Message("reason player " .. g:GetReasonPlayer() .. "/" .. tostring(g:IsReasonPlayer(0)) .. "/" .. tostring(g:IsReasonPlayer(1,0)) .. "/" .. tostring(g:IsReasonPlayer({1,0})) .. "/" .. tostring(g:IsReasonPlayer(1)))
       Debug.Message("grave relation " .. tostring(g:IsOnField()) .. "/" .. tostring(g:IsMonster()))
       `,
@@ -2119,6 +2120,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("previous extra stats 0/false/false/0/false");
     expect(host.messages).toContain("previous traits 2/true/32/true");
     expect(host.messages).toContain("previous visibility true/false");
+    expect(host.messages).toContain("reason checks true/true/true/false");
     expect(host.messages).toContain("reason player 0/true/true/true/false");
     expect(host.messages).toContain("grave relation false/true");
   });

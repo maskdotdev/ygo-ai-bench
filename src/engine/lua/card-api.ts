@@ -75,7 +75,14 @@ function installEffectBackedStatHelpers<EffectRecord extends LuaCardApiEffectRec
   lua.lua_setfield(L, -2, to_luastring("GetRitualLevel"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSynchroLevel(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetSynchroLevel"));
-  pushNumberMatcher(L, "IsStatus", session, (card, requested) => (cardStatusMask(session.state, card) & requested) !== 0);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2);
+    const status = card ? cardStatusMask(session.state, card) : 0;
+    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => (status & value) !== 0)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsStatus"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSetStatus(state, session));
   lua.lua_setfield(L, -2, to_luastring("SetStatus"));
 }
@@ -257,7 +264,13 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_pushcfunction(L, (state: unknown) => pushGetColumnZone(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetColumnZone"));
   pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
-  pushNumberMatcher(L, "IsReason", session, (card, requested) => ((card.reason ?? 0) & requested) !== 0);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => ((card.reason ?? 0) & value) !== 0)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsReason"));
   pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
   pushPlayerMatcher(L, "IsReasonPlayer", session, (card, requested) => requested.includes(card.reasonPlayer ?? card.controller));
   pushNumberGetter(L, "GetTurnID", session, (card) => card?.turnId ?? 0);
