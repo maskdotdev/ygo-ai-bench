@@ -23,11 +23,15 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
       const damagePlayer = handlers.battleDamagePlayer(state, damagedPlayer, battleCards);
       if (damagePlayer !== damagedPlayer) handlers.changeBattleDamage(state, damagedPlayer, 0, battleCards);
       handlers.changeBattleDamage(state, damagePlayer, adjustedAmount, battleCards);
+      if (state.battleDamage[damagePlayer] > 0) handlers.collectEvent(state, "beforeBattleDamage");
       const applied = handlers.damagePlayer(state, damagePlayer, state.battleDamage[damagePlayer], handlers.battleDamageReason(state, damagePlayer, battleCards));
+      if (applied > 0) handlers.collectEvent(state, "battleDamageDealt");
       for (const additionalPlayer of handlers.additionalBattleDamagePlayers(state, damagePlayer, battleCards)) {
         if (additionalPlayer === damagePlayer) continue;
         handlers.changeBattleDamage(state, additionalPlayer, applied, battleCards);
-        handlers.damagePlayer(state, additionalPlayer, state.battleDamage[additionalPlayer], handlers.battleDamageReason(state, additionalPlayer, battleCards));
+        if (state.battleDamage[additionalPlayer] > 0) handlers.collectEvent(state, "beforeBattleDamage");
+        const additionalApplied = handlers.damagePlayer(state, additionalPlayer, state.battleDamage[additionalPlayer], handlers.battleDamageReason(state, additionalPlayer, battleCards));
+        if (additionalApplied > 0) handlers.collectEvent(state, "battleDamageDealt");
       }
       return applied;
     },

@@ -7,28 +7,36 @@ import {
   declareDuelAttack as declareDuelAttackRule,
   getDuelAttackTargets as getDuelAttackTargetsRule,
   negateDuelAttack as negateDuelAttackRule,
+  positionChangeActions as positionChangeActionsRule,
 } from "#duel/battle.js";
 import { openAttackResponseWindow } from "#duel/attack-response-window.js";
 import {
   additionalBattleDamagePlayers,
   attackAllMonsterCount,
   battleDamageReason,
+  canDirectAttackThroughTargets,
   extraAttackCount,
   extraMonsterAttackCount,
   firstAttackRequiredUids,
   hasDefenseAttack,
   hasMustAttackMonsterRestriction,
+  hasOnlyAttackMonsterRestriction,
   hasPiercingBattleDamage,
   isAttackPrevented,
   isBattleTargetSelectionPrevented,
   isBattleTargetPrevented,
   isDirectAttackPrevented,
+  isEffectPositionChangePrevented,
+  isPositionChangePrevented,
+  isTurnSetPrevented,
   mustAttackMonsterTargetAllowed,
   mustAttackRequiredUids,
   onlyBeAttackedTargetUids,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
+
+export type PositionChangeSource = "effect" | "manual";
 
 export interface CoreBattleHandlers {
   additionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId[];
@@ -54,12 +62,13 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
     player,
     (card) => totalExtraAttackCount(state, card, createContext),
     (card) => canSelectBattleTarget(state, player, card, createContext) && isOnlyAttackTargetAllowed(onlyTargets, card),
+    (card) => canDirectAttackThroughTargets(state, card, createContext),
   )) {
     if (action.type !== "declareAttack") continue;
     const attacker = findCard(state, action.attackerUid);
     if (!attacker || isAttackPrevented(state, attacker, createContext)) continue;
     if (!isFirstAttackAllowed(firstAttackers, attacker)) continue;
-    if (action.targetUid === undefined && (isDirectAttackPrevented(state, attacker, createContext) || hasMustAttackMonsterRestriction(state, attacker, createContext))) continue;
+    if (action.targetUid === undefined && (isDirectAttackPrevented(state, attacker, createContext) || hasMustAttackMonsterRestriction(state, attacker, createContext) || hasOnlyAttackMonsterRestriction(state, attacker, createContext))) continue;
     if (action.targetUid === undefined && hasSpentMonsterOnlyExtraAttack(state, attacker, createContext)) continue;
     const target = action.targetUid === undefined ? undefined : findCard(state, action.targetUid);
     if (target && !canAttackMonsterTarget(state, attacker, target, createContext)) continue;
@@ -107,6 +116,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
   if (attacker && !isFirstAttackAllowed(firstAttackRequiredUids(state, player, createContext), attacker)) throw new Error(`${attacker.name} cannot attack before the first attacker`);
   if (attacker && targetUid === undefined && isDirectAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack directly`);
   if (attacker && targetUid === undefined && hasMustAttackMonsterRestriction(state, attacker, createContext)) throw new Error(`${attacker.name} must attack a monster`);
+  if (attacker && targetUid === undefined && hasOnlyAttackMonsterRestriction(state, attacker, createContext)) throw new Error(`${attacker.name} can only attack monsters`);
   state.battleDamage = { 0: 0, 1: 0 };
   const pendingTriggerCount = state.pendingTriggers.length;
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
@@ -127,7 +137,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
     getAttackValue: (card) => handlers.getAttackValue(state, card),
     getDefenseValue: (card) => handlers.getDefenseValue(state, card),
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
-  }, attacker ? totalExtraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)));
+  }, attacker ? totalExtraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)), attacker ? canDirectAttackThroughTargets(state, attacker, createContext) : false);
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
 }
 
@@ -135,12 +145,29 @@ export function negateCoreDuelAttack(state: DuelState): boolean {
   return negateDuelAttackRule(state);
 }
 
-export function canCoreChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition): boolean {
-  return canChangeDuelCardPositionRule(state, uid, position);
+export function canCoreChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition, handlers: CoreBattleHandlers, source: PositionChangeSource = "effect"): boolean {
+  const card = findCard(state, uid);
+  const createContext = handlers.createContinuousContext(state);
+  return Boolean(
+    card
+      && canChangeDuelCardPositionRule(state, uid, position)
+      && !isPositionChangePrevented(state, card, createContext)
+      && (source !== "effect" || !isEffectPositionChangePrevented(state, card, createContext))
+      && (position !== "faceDownDefense" || !isTurnSetPrevented(state, card, createContext)),
+  );
 }
 
-export function changeCoreDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, handlers: CoreBattleHandlers): DuelCardInstance {
+export function changeCoreDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, handlers: CoreBattleHandlers, source: PositionChangeSource = "effect"): DuelCardInstance {
+  if (!canCoreChangeDuelCardPosition(state, uid, position, handlers, source)) {
+    const card = findCard(state, uid);
+    throw new Error(`${card?.name ?? uid} cannot change position`);
+  }
   return changeDuelCardPositionRule(state, player, uid, position, (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard));
+}
+
+export function corePositionChangeActions(state: DuelState, player: PlayerId, handlers: CoreBattleHandlers): DuelAction[] {
+  const createContext = handlers.createContinuousContext(state);
+  return positionChangeActionsRule(state, player, (card) => !isPositionChangePrevented(state, card, createContext));
 }
 
 function canSelectBattleTarget(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {

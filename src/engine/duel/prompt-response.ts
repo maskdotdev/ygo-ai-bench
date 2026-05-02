@@ -1,5 +1,5 @@
 import { pushDuelLog } from "#duel/card-state.js";
-import type { DuelAction, DuelPromptState, DuelResponse, DuelState, PlayerId } from "#duel/types.js";
+import type { DuelAction, DuelActionWindowKind, DuelPromptState, DuelResponse, DuelState, PlayerId } from "#duel/types.js";
 
 export function getPromptResponseActions(prompt: DuelPromptState, player: PlayerId): DuelAction[] {
   if (prompt.player !== player) return [];
@@ -26,6 +26,6 @@ export function resolveDuelPrompt(state: DuelState, response: Extract<DuelRespon
   delete state.prompt;
 }
 
-export function stampDuelActions(actions: DuelAction[], windowId: number): DuelAction[] {
-  return actions.map((action) => ({ ...action, windowId }));
+export function stampDuelActions(actions: DuelAction[], windowId: number, windowKind: DuelActionWindowKind): DuelAction[] {
+  return actions.map((action) => ({ ...action, windowId, windowKind }));
 }

@@ -1,5 +1,5 @@
 import { findCard, getCards, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
-import { recordAttackActivity } from "#duel/activity.js";
+import { duelActivity, recordAttackActivity } from "#duel/activity.js";
 import { clearBattleWindowState, currentBattleWindowKind, markBattleWindowAttackNegated, openBattleWindowState } from "#duel/battle-window-state.js";
 import { duelReason } from "#duel/reasons.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
@@ -34,6 +34,7 @@ export function declareDuelAttack(
   callbacks: DuelBattleCallbacks,
   extraAttacks = 0,
   canAttackTarget: DuelAttackTargetPredicate = () => true,
+  canDirectAttackThroughTargets = false,
 ): void {
   const attacker = requireControlledCard(state, player, attackerUid, "monsterZone");
   if (state.phase !== "battle") throw new Error("Attacks can only be declared during the battle phase");
@@ -42,7 +43,11 @@ export function declareDuelAttack(
   const targets = getAttackTargets(state, player, canAttackTarget);
   const target = targetUid === undefined ? undefined : findCard(state, targetUid);
   if (targets.length > 0) {
-    if (!target || !targets.some((candidate) => candidate.uid === target.uid)) throw new Error("Attack target is not legal");
+    if (targetUid === undefined && canDirectAttackThroughTargets) {
+      // Direct-attack effects permit a direct declaration even while attack targets exist.
+    } else if (!target || !targets.some((candidate) => candidate.uid === target.uid)) {
+      throw new Error("Attack target is not legal");
+    }
   } else if (targetUid !== undefined) {
     throw new Error("Direct attacks cannot have a target");
   }
@@ -62,6 +67,7 @@ export function declareDuelAttack(
 
   pushDuelLog(state, "attack", player, attacker.name, `Attacked ${target.name}`);
   callbacks.collectEvent("attackDeclared", attacker);
+  callbacks.collectEvent("battleTargeted", target);
 }
 
 export function negateDuelAttack(state: DuelState): boolean {
@@ -170,6 +176,7 @@ export function canChangeDuelCardPosition(state: DuelState, uid: string, positio
   if (card.position === position) return false;
   if (state.positionsChanged.includes(card.uid)) return false;
   if (state.attacksDeclared.includes(card.uid)) return false;
+  if (wasSummonedOrSetThisTurn(state, card)) return false;
   return true;
 }
 
@@ -193,11 +200,15 @@ export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: 
   return card;
 }
 
-export function positionChangeActions(state: DuelState, player: PlayerId): DuelAction[] {
+export function positionChangeActions(
+  state: DuelState,
+  player: PlayerId,
+  canChangePosition: (card: DuelCardInstance, position: CardPosition) => boolean = () => true,
+): DuelAction[] {
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "monsterZone")) {
     for (const position of nextManualPositions(card)) {
-      if (canChangeDuelCardPosition(state, card.uid, position)) {
+      if (canChangeDuelCardPosition(state, card.uid, position) && canChangePosition(card, position)) {
         actions.push({ type: "changePosition", player, uid: card.uid, position, label: `${card.name}: Change to ${positionLabel(position)}` });
       }
     }
@@ -210,6 +221,7 @@ export function attackActions(
   player: PlayerId,
   extraAttacksForCard: (card: DuelCardInstance) => number = () => 0,
   canAttackTarget: DuelAttackTargetPredicate = () => true,
+  canDirectAttackThroughTargets: (card: DuelCardInstance) => boolean = () => false,
 ): DuelAction[] {
   const actions: DuelAction[] = [];
   const attackers = getCards(state, player, "monsterZone").filter((card) => canAttackWithCard(state, card, extraAttacksForCard(card)));
@@ -222,6 +234,9 @@ export function attackActions(
     for (const target of targets) {
       actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, targetUid: target.uid, label: `${attacker.name}: Attack ${target.name}` });
     }
+    if (canDirectAttackThroughTargets(attacker)) {
+      actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, label: `${attacker.name}: Direct attack` });
+    }
   }
   return actions;
 }
@@ -231,6 +246,15 @@ function nextManualPositions(card: DuelCardInstance): CardPosition[] {
   if (card.position === "faceUpDefense") return ["faceUpAttack"];
   if (card.position === "faceDownDefense") return ["faceUpAttack"];
   return [];
+}
+
+function wasSummonedOrSetThisTurn(state: DuelState, card: DuelCardInstance): boolean {
+  return state.activityHistory.some(
+    (record) =>
+      record.player === card.controller &&
+      record.cardUid === card.uid &&
+      (record.activity === duelActivity.summon || record.activity === duelActivity.normalSummon),
+  );
 }
 
 function positionLabel(position: CardPosition): string {

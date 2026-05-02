@@ -1,8 +1,9 @@
 import { moveDuelCard, pushDuelLog, requireControlledCard, requireZoneSpace } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import type { DuelState, PlayerId } from "#duel/types.js";
+import type { DuelEventCollector } from "#duel/summon.js";
 
-export function setSpellTrap(state: DuelState, player: PlayerId, uid: string): void {
+export function setSpellTrap(state: DuelState, player: PlayerId, uid: string, collectEvent?: DuelEventCollector): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "spell" && card.kind !== "trap") throw new Error(`${card.name} is not a spell/trap`);
   requireZoneSpace(state, player, "spellTrapZone");
@@ -10,4 +11,5 @@ export function setSpellTrap(state: DuelState, player: PlayerId, uid: string): v
   card.position = "faceDown";
   card.faceUp = false;
   pushDuelLog(state, "set", player, card.name, "Set from hand");
+  collectEvent?.("spellTrapSet", card);
 }

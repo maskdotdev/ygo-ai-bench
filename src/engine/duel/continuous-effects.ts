@@ -6,6 +6,7 @@ import type {
   DuelEffectDefinition,
   DuelLocation,
   DuelState,
+  DuelSummonType,
   PlayerId,
 } from "#duel/types.js";
 
@@ -23,12 +24,215 @@ export interface ContinuousEffectMatch {
 
 export type MaterialUseKind = "fusion" | "synchro" | "xyz" | "link" | "ritual";
 
+export function isEffectActivationPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 6) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card) && !continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isChainLinkNegationPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || (effect.code !== 12 && effect.code !== 13)) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card) && !effect.targetCardPredicate) continue;
+    const ctx = createContext(effect, source, card);
+    if (effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isCounterPlacementPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 58) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isDisablePrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 3) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isControlChangePrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 5) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card) && !effect.targetCardPredicate) continue;
+    const ctx = createContext(effect, source, card);
+    if (effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
 export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card?: DuelCardInstance): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 22) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isSummonNegationPrevented(state: DuelState, card: DuelCardInstance, summonType: DuelSummonType, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || !isSummonNegationCode(effect.code, summonType)) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isDrawPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 25) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createContext(effect, source);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isHandDiscardPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory): boolean {
+  return isPlayerActionPrevented(state, player, 55, createContext);
+}
+
+export function isDeckDiscardPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory): boolean {
+  return isPlayerActionPrevented(state, player, 56, createContext);
+}
+
+export function isLifePointLossDefeatPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory): boolean {
+  return isPlayerActionPrevented(state, player, 401, createContext);
+}
+
+export function isDeckLossDefeatPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory): boolean {
+  return isPlayerActionPrevented(state, player, 400, createContext);
+}
+
+export function isEffectDefeatPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory): boolean {
+  return isPlayerActionPrevented(state, player, 402, createContext);
+}
+
+export function isFlipSummonPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 21) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isNormalSummonPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  return isSummonOrSetPrevented(state, player, card, 20, createContext);
+}
+
+export function isMonsterSetPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  return isSummonOrSetPrevented(state, player, card, 23, createContext);
+}
+
+export function isSpellTrapSetPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  return isSummonOrSetPrevented(state, player, card, 24, createContext);
+}
+
+export function isPhaseEntryPrevented(state: DuelState, player: PlayerId, phase: "battle" | "main2" | "end", createContext: ContinuousEffectContextFactory): boolean {
+  const codes = phase === "battle" ? [183, 185] : phase === "main2" ? [184, 186] : [189, 187];
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || !codes.includes(effect.code ?? -1)) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createContext(effect, source);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isPositionChangePrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 14) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isTurnSetPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 69) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function isEffectPositionChangePrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 87) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+function isPlayerActionPrevented(state: DuelState, player: PlayerId, code: number, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== code) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createContext(effect, source);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+function isSummonOrSetPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, code: number, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== code) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card) && !continuousEffectTargetsPlayer(effect, source, player)) continue;
     const ctx = createContext(effect, source, card);
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
@@ -183,8 +387,8 @@ export function isAttackPrevented(state: DuelState, card: DuelCardInstance, crea
     if (effect.event !== "continuous" || (effect.code !== 85 && effect.code !== 86)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
@@ -214,8 +418,8 @@ export function isBattleTargetPrevented(state: DuelState, card: DuelCardInstance
     if (effect.event !== "continuous" || effect.code !== 70) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
@@ -235,13 +439,39 @@ export function isBattleTargetSelectionPrevented(state: DuelState, player: Playe
   return false;
 }
 
+export function isEffectTargetSelectionPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 333) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createContext(effect, source, card);
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    if (effect.valueCardPredicate && !effect.valueCardPredicate(ctx, card)) continue;
+    return true;
+  }
+  return false;
+}
+
 export function isDirectAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 73) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function canDirectAttackThroughTargets(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 74) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
@@ -270,6 +500,18 @@ export function mustAttackMonsterTargetAllowed(
 export function hasMustAttackMonsterRestriction(state: DuelState, attacker: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 344) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectAffectsCard(effect, source, attacker)) continue;
+    const ctx = createContext(effect, source, attacker);
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
+}
+
+export function hasOnlyAttackMonsterRestriction(state: DuelState, attacker: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 343) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectAffectsCard(effect, source, attacker)) continue;
@@ -333,8 +575,8 @@ export function extraAttackCount(state: DuelState, card: DuelCardInstance, creat
     if (effect.event !== "continuous" || effect.code !== 194) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) count += Math.max(1, effect.value ?? 1);
   }
   return count;
@@ -346,8 +588,8 @@ export function extraMonsterAttackCount(state: DuelState, card: DuelCardInstance
     if (effect.event !== "continuous" || effect.code !== 346) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) count += Math.max(1, effect.value ?? 1);
   }
   return count;
@@ -359,14 +601,15 @@ export function attackAllMonsterCount(state: DuelState, card: DuelCardInstance, 
     if (effect.event !== "continuous" || effect.code !== 193) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) count = Math.max(count, opponentMonsterCount(state, card.controller) + attackCount(state, card.uid));
   }
   return count;
 }
 
 export function isCardDisabled(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  if (isDisablePrevented(state, card, createContext)) return false;
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 2) continue;
     const source = findCard(state, effect.sourceUid);
@@ -484,8 +727,8 @@ export function isMoveToLocationPrevented(state: DuelState, uid: string, to: Due
     if (effect.event !== "continuous" || !isCannotMoveCodeForLocation(effect.code, to, reason)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
@@ -498,8 +741,8 @@ export function isMaterialUsePrevented(state: DuelState, uid: string, kind: Mate
     if (effect.event !== "continuous" || !isCannotMaterialCodeForKind(effect.code, kind)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
@@ -512,8 +755,8 @@ export function isReleasePrevented(state: DuelState, uid: string, reason: number
     if (effect.event !== "continuous" || !isUnreleasableCodeForReason(effect.code, reason)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
     const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
@@ -551,6 +794,11 @@ function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelC
   return (effect.targetRange !== undefined || ((effect.property ?? 0) & 0x800) !== 0) && continuousEffectTargetsPlayer(effect, source, card.controller);
 }
 
+function continuousEffectAppliesToCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance, ctx: DuelEffectContext): boolean {
+  if (!continuousEffectAffectsCard(effect, source, card) && !effect.targetCardPredicate) return false;
+  return !effect.targetCardPredicate || effect.targetCardPredicate(ctx, card);
+}
+
 function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
   if (effect.targetRange === undefined && ((effect.property ?? 0) & 0x800) === 0) return source.controller === player;
   const [selfTarget = 0, opponentTarget = 0] = effect.targetRange ?? [1, 0];
@@ -567,11 +815,19 @@ function isIndestructibleCodeForReason(code: number | undefined, reason: number)
 }
 
 function isCannotMoveCodeForLocation(code: number | undefined, location: DuelLocation, reason: number): boolean {
+  if (code === 57) return (reason & duelReason.cost) !== 0;
   if (code === 59) return location === "graveyard" && (reason & 0x80) !== 0;
   if (code === 65) return location === "hand";
   if (code === 66) return location === "deck" || location === "extraDeck";
   if (code === 67) return location === "banished";
   if (code === 68) return location === "graveyard";
+  return false;
+}
+
+function isSummonNegationCode(code: number | undefined, summonType: DuelSummonType): boolean {
+  if (code === 26) return summonType === "normal" || summonType === "tribute";
+  if (code === 27) return summonType !== "normal" && summonType !== "tribute" && summonType !== "flip";
+  if (code === 39) return summonType === "flip";
   return false;
 }
 

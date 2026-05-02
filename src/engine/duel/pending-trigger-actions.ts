@@ -16,8 +16,8 @@ export function getPendingTriggerActions(state: DuelState, player: PlayerId): Du
 
     const source = findCard(state, trigger.sourceUid);
     if (!source) continue;
-    if (!effect || canUseEffectCount(state, effect)) actions.push({ type: "activateTrigger", player, triggerId: trigger.id, uid: source.uid, effectId: trigger.effectId, label: `${source.name}: ${trigger.effectId}` });
-    if (effect?.optional !== false) actions.push({ type: "declineTrigger", player, triggerId: trigger.id, uid: source.uid, effectId: trigger.effectId, label: `Decline ${source.name}: ${trigger.effectId}` });
+    if (!effect || canUseEffectCount(state, effect)) actions.push({ type: "activateTrigger", player, triggerId: trigger.id, triggerBucket: trigger.triggerBucket, uid: source.uid, effectId: trigger.effectId, label: `${source.name}: ${trigger.effectId}` });
+    if (effect?.optional !== false) actions.push({ type: "declineTrigger", player, triggerId: trigger.id, triggerBucket: trigger.triggerBucket, uid: source.uid, effectId: trigger.effectId, label: `Decline ${source.name}: ${trigger.effectId}` });
   }
 
   return actions;

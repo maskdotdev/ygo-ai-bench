@@ -50,9 +50,9 @@ export function recordNormalSummonActivity(state: DuelState, player: PlayerId, c
   recordActivity(state, player, duelActivity.summon, card);
 }
 
-export function recordNormalSetActivity(state: DuelState, player: PlayerId): void {
+export function recordNormalSetActivity(state: DuelState, player: PlayerId, card?: DuelCardInstance): void {
   state.activityCounts[player].normalSummon += 1;
-  markDuelPhaseActivity(state);
+  recordActivity(state, player, duelActivity.normalSummon, card);
 }
 
 export function recordSpecialSummonActivity(state: DuelState, player: PlayerId, card?: DuelCardInstance): void {

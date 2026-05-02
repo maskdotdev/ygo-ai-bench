@@ -6,9 +6,11 @@ import type {
   DuelCardReader,
   DuelEffectDefinition,
   DuelEffectContext,
+  ChainLimit,
   DuelPromptState,
   DuelSession,
   DuelState,
+  PlayerId,
   PublicDuelCard,
   PublicDuelState,
   SerializedDuel,
@@ -16,6 +18,8 @@ import type {
 
 export type DuelEffectRestoreFactory = (effect: DuelEffectDefinition) => DuelEffectDefinition;
 export type DuelEffectRestoreRegistry = Record<string, DuelEffectRestoreFactory>;
+export type DuelChainLimitRestoreFactory = (limit: ChainLimit) => ChainLimit;
+export type DuelChainLimitRestoreRegistry = Record<string, DuelChainLimitRestoreFactory>;
 
 export function queryPublicState(session: DuelSession): PublicDuelState {
   const state = session.state;
@@ -62,7 +66,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       cards: session.state.cards.map(copyCard),
       effects: session.state.effects.flatMap(serializeEffect),
       chain: session.state.chain.map(copyChainLink),
-      chainLimits: [],
+      chainLimits: session.state.chainLimits.flatMap(serializeChainLimit),
       chainPasses: [...session.state.chainPasses],
       pendingTriggers: session.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       eventHistory: session.state.eventHistory.map((event) => ({ ...event })),
@@ -90,7 +94,12 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
   };
 }
 
-export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader = fallbackCardReader, effectRegistry: DuelEffectRestoreRegistry = {}): DuelSession {
+export function restoreDuel(
+  snapshot: SerializedDuel,
+  cardReader: DuelCardReader = fallbackCardReader,
+  effectRegistry: DuelEffectRestoreRegistry = {},
+  chainLimitRegistry: DuelChainLimitRestoreRegistry = {},
+): DuelSession {
   if (snapshot.version !== 1) throw new Error(`Unsupported duel snapshot version ${snapshot.version}`);
   return {
     cardReader,
@@ -105,7 +114,7 @@ export function restoreDuel(snapshot: SerializedDuel, cardReader: DuelCardReader
       lastDiceResults: [...(snapshot.state.lastDiceResults ?? [])],
       lastCoinResults: [...(snapshot.state.lastCoinResults ?? [])],
       chain: snapshot.state.chain.map(copyChainLink),
-      chainLimits: [],
+      chainLimits: snapshot.state.chainLimits.flatMap((limit) => restoreChainLimit(limit, chainLimitRegistry)),
       chainPasses: [...snapshot.state.chainPasses],
       pendingTriggers: snapshot.state.pendingTriggers.map((trigger) => ({ ...trigger })),
       eventHistory: snapshot.state.eventHistory.map((event) => ({ ...event })),
@@ -163,11 +172,31 @@ function restoreEffect(effect: DuelEffectDefinition, effectRegistry: DuelEffectR
   return [copySerializedEffect(effect)];
 }
 
+function serializeChainLimit(limit: ChainLimit): ChainLimit[] {
+  if (limit.registryKey === undefined) return [];
+  return [copySerializedChainLimit(limit)];
+}
+
+function copySerializedChainLimit(limit: ChainLimit): ChainLimit {
+  const { allows: _allows, release: _release, ...metadata } = limit;
+  return { ...metadata, allows: denyChainLimit };
+}
+
+function restoreChainLimit(limit: ChainLimit, chainLimitRegistry: DuelChainLimitRestoreRegistry): ChainLimit[] {
+  if (limit.registryKey === undefined) return [];
+  const factory = chainLimitRegistry[limit.registryKey];
+  return factory ? [factory(copySerializedChainLimit(limit))] : [];
+}
+
 function isStaticContinuousEffect(effect: DuelEffectDefinition): boolean {
   return effect.event === "continuous" && effect.canActivate === undefined && effect.cost === undefined && effect.target === undefined;
 }
 
 function noopEffectOperation(_ctx: DuelEffectContext): void {}
+
+function denyChainLimit(_effect: DuelEffectDefinition, _player: PlayerId, _chainPlayer: PlayerId): boolean {
+  return false;
+}
 
 function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][number] {
   return { ...link, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };

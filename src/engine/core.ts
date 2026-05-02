@@ -101,7 +101,7 @@ export function publicState(session: EngineSession): PublicGameState {
 
 function instantiate(ids: string[], cards: Registry, prefix: string): CardInstance[] {
   return ids.map((id, index) => {
-    const def = cards.get(String(id)) ?? { id: String(id), name: `Unsupported card ${id}`, type: "monster" as const, tags: ["unsupported"] };
+    const def = cards.get(String(id)) ?? { id: String(id), name: `Unknown card ${id}`, type: "monster" as const, tags: ["parity-backlog"] };
     return {
       uid: `${prefix}-${id}-${index}`,
       id: def.id,

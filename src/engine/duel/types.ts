@@ -8,19 +8,83 @@ export type DuelLocation = "deck" | "hand" | "monsterZone" | "spellTrapZone" | "
 export type DuelCardKind = "monster" | "spell" | "trap" | "extra";
 export type DuelSummonType = "normal" | "tribute" | "flip" | "special" | "fusion" | "synchro" | "xyz" | "link" | "ritual";
 export type DuelEventName =
+  | "normalSummoning"
+  | "normalSummonNegated"
   | "normalSummoned"
+  | "flipSummoning"
+  | "flipSummonNegated"
+  | "specialSummoning"
+  | "specialSummonNegated"
   | "specialSummoned"
+  | "monsterSet"
+  | "spellTrapSet"
   | "activated"
+  | "moved"
+  | "destroying"
   | "destroyed"
+  | "becameTarget"
   | "sentToGraveyard"
+  | "sentToHand"
+  | "sentToDeck"
+  | "released"
+  | "discarded"
   | "leftField"
   | "banished"
   | "phaseChanged"
+  | "phaseDraw"
+  | "phaseStandby"
+  | "phaseMain1"
+  | "phaseBattle"
+  | "phaseMain2"
+  | "phaseEnd"
+  | "phaseStartDraw"
+  | "phaseStartStandby"
+  | "phaseStartMain1"
+  | "phaseStartBattle"
+  | "phaseStartMain2"
+  | "phaseStartEnd"
+  | "turnEnded"
   | "turnStarted"
+  | "startup"
   | "adjust"
+  | "chainSolved"
+  | "chainSolving"
+  | "chainActivating"
+  | "chaining"
+  | "chainNegated"
+  | "chainDisabled"
+  | "chainEnded"
+  | "breakEffect"
+  | "damageDealt"
+  | "recoveredLifePoints"
+  | "lifePointCostPaid"
+  | "detachedMaterial"
+  | "returnedToGraveyard"
+  | "levelChanged"
+  | "counterAdded"
+  | "counterRemoved"
+  | "customEvent"
+  | "cardsDrawn"
+  | "preDraw"
+  | "controlChanged"
+  | "equipped"
+  | "coinTossed"
+  | "diceTossed"
+  | "coinTossNegated"
+  | "diceTossNegated"
+  | "preUsedAsMaterial"
+  | "usedAsMaterial"
   | "attackDeclared"
+  | "battleTargeted"
+  | "battleStarted"
+  | "battleConfirmed"
   | "attackDisabled"
   | "battleDestroyed"
+  | "beforeDamageCalculation"
+  | "afterDamageCalculation"
+  | "beforeBattleDamage"
+  | "battleDamageDealt"
+  | "damageStepEnded"
   | "positionChanged"
   | "flipSummoned";
 
@@ -123,6 +187,7 @@ export interface DuelPlayerState {
   id: PlayerId;
   lifePoints: number;
   normalSummonAvailable: boolean;
+  initialMainDeckSize?: number;
 }
 
 export interface DuelActivityCounts {
@@ -163,7 +228,9 @@ export interface DuelEffectDefinition {
   code?: number;
   value?: number;
   triggerEvent?: DuelEventName;
+  triggerCode?: number;
   triggerSourceOnly?: boolean;
+  triggerTiming?: "if" | "when";
   optional?: boolean;
   range: DuelLocation[];
   oncePerTurn?: boolean;
@@ -180,6 +247,7 @@ export interface DuelEffectDefinition {
   hintTiming?: [number, number?];
   battleDamageValue?: (ctx: DuelEffectContext, player: PlayerId) => number | undefined;
   valueCardPredicate?: (ctx: DuelEffectContext, card: DuelCardInstance) => boolean;
+  targetCardPredicate?: (ctx: DuelEffectContext, card: DuelCardInstance) => boolean;
   valuePredicate?: (ctx: DuelEffectContext, reasonPlayer?: PlayerId) => boolean;
   canActivate?: (ctx: DuelEffectContext) => boolean;
   cost?: (ctx: DuelEffectContext) => boolean;
@@ -188,6 +256,7 @@ export interface DuelEffectDefinition {
 }
 
 export interface ChainLimit {
+  registryKey?: string;
   expiresAtChainLength?: number;
   untilChainEnd: boolean;
   allows(effect: DuelEffectDefinition, player: PlayerId, chainPlayer: PlayerId): boolean;
@@ -202,6 +271,12 @@ export interface DuelEffectContext {
   activationSequence?: number;
   eventCard?: DuelCardInstance;
   eventName?: DuelEventName;
+  eventCode?: number;
+  eventPlayer?: PlayerId;
+  eventValue?: number;
+  eventReason?: number;
+  eventReasonPlayer?: PlayerId;
+  relatedEffectId?: number;
   checkOnly?: boolean;
   targetUids: string[];
   targetPlayer?: PlayerId;
@@ -224,6 +299,12 @@ export interface ChainLink {
   activationLocation?: DuelLocation;
   activationSequence?: number;
   eventName?: DuelEventName;
+  eventCode?: number;
+  eventPlayer?: PlayerId;
+  eventValue?: number;
+  eventReason?: number;
+  eventReasonPlayer?: PlayerId;
+  relatedEffectId?: number;
   eventCardUid?: string;
   targetUids?: string[];
   targetPlayer?: PlayerId;
@@ -234,17 +315,32 @@ export interface ChainLink {
   operationOverride?: (ctx: DuelEffectContext) => void;
 }
 
+export type TriggerBucket = "turnMandatory" | "opponentMandatory" | "turnOptional" | "opponentOptional";
+
 export interface PendingTrigger {
   id: string;
   player: PlayerId;
   sourceUid: string;
   effectId: string;
   eventName: DuelEventName;
+  triggerBucket: TriggerBucket;
+  eventCode?: number;
+  eventPlayer?: PlayerId;
+  eventValue?: number;
+  eventReason?: number;
+  eventReasonPlayer?: PlayerId;
+  relatedEffectId?: number;
   eventCardUid?: string;
 }
 
 export interface DuelEventRecord {
   eventName: DuelEventName;
+  eventCode?: number;
+  eventPlayer?: PlayerId;
+  eventValue?: number;
+  eventReason?: number;
+  eventReasonPlayer?: PlayerId;
+  relatedEffectId?: number;
   eventCardUid?: string;
 }
 
@@ -374,16 +470,18 @@ export type DuelAction = (
   | { type: "cancelAttack"; player: PlayerId; attackerUid: string; label: string }
   | { type: "selectOption"; player: PlayerId; promptId: string; option: number; label: string }
   | { type: "selectYesNo"; player: PlayerId; promptId: string; yes: boolean; label: string }
-  | { type: "activateTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
-  | { type: "declineTrigger"; player: PlayerId; triggerId: string; uid: string; effectId: string; label: string }
+  | { type: "activateTrigger"; player: PlayerId; triggerId: string; triggerBucket: TriggerBucket; uid: string; effectId: string; label: string }
+  | { type: "declineTrigger"; player: PlayerId; triggerId: string; triggerBucket: TriggerBucket; uid: string; effectId: string; label: string }
   | { type: "flipSummon"; player: PlayerId; uid: string; label: string }
   | { type: "changePosition"; player: PlayerId; uid: string; position: CardPosition; label: string }
   | { type: "declareAttack"; player: PlayerId; attackerUid: string; targetUid?: string; label: string }
   | { type: "changePhase"; player: PlayerId; phase: DuelPhase; label: string }
   | { type: "endTurn"; player: PlayerId; label: string }
-) & { windowId?: number };
+) & { windowId?: number; windowKind?: DuelActionWindowKind };
 
 export type DuelResponse = DuelAction;
+
+export type DuelActionWindowKind = "prompt" | "chainResponse" | "triggerBucket" | "battle" | "open";
 
 export interface PublicDuelCard {
   uid: string;
@@ -442,6 +540,8 @@ export interface SerializedDuel {
 export interface ScriptedResponseSelector {
   type: DuelResponse["type"];
   player: PlayerId;
+  windowId?: number;
+  windowKind?: DuelActionWindowKind;
   code?: string;
   uid?: string;
   tributeUids?: string[];
@@ -450,11 +550,13 @@ export interface ScriptedResponseSelector {
   phase?: DuelPhase;
   attackerUid?: string;
   targetUid?: string;
+  directAttack?: boolean;
   promptId?: string;
   option?: number;
   yes?: boolean;
   effectId?: string;
   triggerId?: string;
+  triggerBucket?: TriggerBucket;
   location?: DuelLocation;
   labelIncludes?: string;
   occurrence?: number;
@@ -465,19 +567,55 @@ export interface ScriptedLegalActionExpectation extends ScriptedResponseSelector
 }
 
 export interface ScriptedDuelWindowExpectation {
-  source?: "edopro" | "local-scope";
+  source?: "edopro" | "parity-backlog";
+  note?: string;
+  status?: DuelStatus;
+  winner?: DuelWinner | null;
+  winReason?: number | null;
   windowId?: number;
   waitingFor?: PlayerId;
+  turn?: number;
+  turnPlayer?: PlayerId;
   phase?: DuelPhase;
+  randomCounter?: number;
+  lastDiceResults?: number[];
+  lastCoinResults?: number[];
+  lifePoints?: Partial<Record<PlayerId, number>>;
+  activityCounts?: Partial<Record<PlayerId, Partial<DuelActivityCounts>>>;
+  activityHistory?: Array<Partial<DuelActivityRecord>>;
+  skippedPhases?: SkippedDuelPhase[];
+  phaseActivity?: boolean;
+  battleDamage?: Partial<Record<PlayerId, number>>;
+  attackCostPaid?: number;
+  options?: Partial<DuelState["options"]>;
+  duelTypeFlags?: number;
+  globalFlags?: number;
+  unofficialProcEnabled?: boolean;
+  shuffleCheckDisabled?: boolean;
+  usedCountKeys?: string[];
   battleStep?: BattleStep;
-  battleWindow?: Partial<BattleWindowState>;
+  battleWindow?: Partial<BattleWindowState> | null;
   pendingBattle?: boolean;
   currentAttack?: boolean;
-  chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCardUid">>>;
-  pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCardUid">>>;
-  prompt?: Partial<DuelPromptState>;
+  chainLimits?: Array<Partial<Pick<ChainLimit, "registryKey" | "untilChainEnd" | "expiresAtChainLength">>>;
+  chainPasses?: PlayerId[];
+  attackPasses?: PlayerId[];
+  damagePasses?: PlayerId[];
+  chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventCardUid">>>;
+  pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "triggerBucket" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventCardUid">>>;
+  eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventCardUid">>>;
+  prompt?: Partial<DuelPromptState> | null;
   legalActions?: ScriptedLegalActionExpectation[];
   absentLegalActions?: ScriptedLegalActionExpectation[];
+  locations?: Partial<Record<DuelLocation, string[]>>;
+  locationCounts?: Partial<Record<DuelLocation, Record<string, number>>>;
+  cards?: Array<Partial<PublicDuelCard> & Pick<PublicDuelCard, "uid">>;
+  positionsChanged?: string[];
+  attacksDeclared?: string[];
+  attackCanceledUids?: string[];
+  attackedTargetUids?: string[];
+  battlePairs?: DuelBattlePair[];
+  log?: Array<Partial<DuelLogEntry>>;
   logIncludes?: string[];
 }
 
@@ -485,7 +623,7 @@ export interface ScriptedDuelStepWithAssertions {
   response: DuelResponse | ScriptedResponseSelector;
   before?: ScriptedDuelWindowExpectation;
   after?: ScriptedDuelWindowExpectation;
-  snapshotRestore?: boolean;
+  snapshotRestore?: boolean | "before" | "after" | "both";
 }
 
 export type ScriptedDuelStep = ScriptedDuelStepWithAssertions;
@@ -498,6 +636,14 @@ export interface ScriptedFixtureMove {
   controller?: PlayerId;
   position?: CardPosition;
   occurrence?: number;
+  collectEvent?: DuelEventName;
+  eventCode?: number;
+  eventIsLast?: boolean;
+  eventPlayer?: PlayerId;
+  eventValue?: number;
+  eventReason?: number;
+  eventReasonPlayer?: PlayerId;
+  relatedEffectId?: number;
 }
 
 export interface ScriptedFixtureEffect {
@@ -506,10 +652,24 @@ export interface ScriptedFixtureEffect {
   code: string;
   location?: DuelLocation;
   event: DuelEffectDefinition["event"];
+  effectCode?: number;
+  value?: number;
+  valueCardCode?: string;
+  targetRange?: DuelEffectDefinition["targetRange"];
+  triggerEvent?: DuelEventName;
+  triggerCode?: number;
+  triggerTiming?: DuelEffectDefinition["triggerTiming"];
+  optional?: boolean;
   range: DuelLocation[];
   oncePerTurn?: boolean;
   property?: number;
   logMessage?: string;
+  negateAttackOnResolve?: boolean;
+  chainLimitOnTarget?: {
+    untilChainEnd: boolean;
+    allowPlayer?: PlayerId;
+  };
+  moveCardsOnResolve?: ScriptedFixtureMove[];
   occurrence?: number;
 }
 
@@ -520,16 +680,9 @@ export interface ScriptedDuelFixture {
   setup?: {
     moveCards?: ScriptedFixtureMove[];
     effects?: ScriptedFixtureEffect[];
+    prompt?: DuelPromptState;
   };
   before?: ScriptedDuelWindowExpectation;
   responses: ScriptedDuelStep[];
-  expected: {
-    phase?: DuelPhase;
-    turn?: number;
-    lifePoints?: Partial<Record<PlayerId, number>>;
-    pendingBattle?: boolean;
-    currentAttack?: boolean;
-    locations?: Partial<Record<DuelLocation, string[]>>;
-    logIncludes?: string[];
-  };
+  expected: ScriptedDuelWindowExpectation;
 }

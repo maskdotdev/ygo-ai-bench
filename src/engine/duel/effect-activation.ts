@@ -9,6 +9,7 @@ import type {
   DuelLocation,
   DuelSession,
   DuelState,
+  ChainLink,
   PendingTrigger,
   PlayerId,
 } from "#duel/types.js";
@@ -26,6 +27,13 @@ export interface DuelActivationHandlers {
     activationSequence?: number,
     targetPlayer?: PlayerId,
     targetParam?: number,
+    chainLink?: ChainLink,
+    eventCode?: number,
+    eventPlayer?: PlayerId,
+    eventValue?: number,
+    eventReason?: number,
+    eventReasonPlayer?: PlayerId,
+    relatedEffectId?: number,
   ): DuelEffectContext;
   pushChainLink(
     state: DuelState,
@@ -37,6 +45,12 @@ export interface DuelActivationHandlers {
     targetUids?: string[],
     targetPlayer?: PlayerId,
     targetParam?: number,
+    eventCode?: number,
+    eventPlayer?: PlayerId,
+    eventValue?: number,
+    eventReason?: number,
+    eventReasonPlayer?: PlayerId,
+    relatedEffectId?: number,
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
@@ -106,10 +120,45 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
     const eventCard = trigger.eventCardUid === undefined ? undefined : findCard(session.state, trigger.eventCardUid);
     if (!source || (trigger.eventCardUid !== undefined && !eventCard)) throw new Error(`Trigger ${triggerId} lost its source or event card`);
     const targetUids: string[] = [];
-    const ctx = handlers.createEffectContext(session.state, source, trigger.player, trigger.eventName, eventCard, targetUids);
+    const ctx = handlers.createEffectContext(
+      session.state,
+      source,
+      trigger.player,
+      trigger.eventName,
+      eventCard,
+      targetUids,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      trigger.eventCode,
+      trigger.eventPlayer,
+      trigger.eventValue,
+      trigger.eventReason,
+      trigger.eventReasonPlayer,
+      trigger.relatedEffectId,
+    );
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
     if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
-    handlers.pushChainLink(session.state, trigger.player, source.uid, effect.id, trigger.eventName, eventCard, targetUids, ctx.targetPlayer, ctx.targetParam);
+    handlers.pushChainLink(
+      session.state,
+      trigger.player,
+      source.uid,
+      effect.id,
+      trigger.eventName,
+      eventCard,
+      targetUids,
+      ctx.targetPlayer,
+      ctx.targetParam,
+      trigger.eventCode,
+      trigger.eventPlayer,
+      trigger.eventValue,
+      trigger.eventReason,
+      trigger.eventReasonPlayer,
+      trigger.relatedEffectId,
+    );
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
     markEffectUsed(session.state, effect);
     pruneSpentMandatoryPendingTriggers(session.state);

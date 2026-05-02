@@ -24,6 +24,8 @@ export function passAttackResponseWindow(state: DuelState, player: PlayerId, han
   }
   state.attackPasses = [];
   openDamageResponseWindow(state, player);
+  collectBattleTimingEvent(state, handlers, "battleStarted");
+  collectBattleTimingEvent(state, handlers, "battleConfirmed");
 }
 
 export function passDamageResponseWindow(state: DuelState, player: PlayerId, handlers: BattleContinuationHandlers): void {
@@ -68,6 +70,7 @@ function advanceDamageWindow(state: DuelState, lastDamageResponder: PlayerId, ha
   const kind = currentBattleWindowKind(state);
   if (kind === "startDamageStep") {
     openDamageResponseWindow(state, lastDamageResponder, "beforeDamageCalculation");
+    collectBattleTimingEvent(state, handlers, "beforeDamageCalculation");
     return;
   }
   if (kind === "beforeDamageCalculation") {
@@ -76,10 +79,12 @@ function advanceDamageWindow(state: DuelState, lastDamageResponder: PlayerId, ha
   }
   if (kind === "duringDamageCalculation") {
     openDamageResponseWindow(state, lastDamageResponder, "afterDamageCalculation");
+    collectBattleTimingEvent(state, handlers, "afterDamageCalculation");
     return;
   }
   if (kind === "afterDamageCalculation") {
     openDamageResponseWindow(state, lastDamageResponder, "endDamageStep");
+    collectBattleTimingEvent(state, handlers, "damageStepEnded");
     return;
   }
   resolvePendingBattle(state, handlers);
@@ -93,4 +98,15 @@ function currentDamageWindowKind(state: DuelState): DamageBattleWindowKind {
 
 function otherPlayer(player: PlayerId): PlayerId {
   return player === 0 ? 1 : 0;
+}
+
+function collectBattleTimingEvent(
+  state: DuelState,
+  handlers: BattleContinuationHandlers,
+  eventName: "battleStarted" | "battleConfirmed" | "beforeDamageCalculation" | "afterDamageCalculation" | "damageStepEnded",
+): void {
+  const pendingCount = state.pendingTriggers.length;
+  const responsePlayer = state.battleWindow?.responsePlayer;
+  handlers.collectEvent(state, eventName);
+  if (pendingCount === 0 && state.pendingTriggers.length === 0 && responsePlayer !== undefined) state.waitingFor = responsePlayer;
 }

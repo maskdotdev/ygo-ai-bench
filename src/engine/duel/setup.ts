@@ -67,6 +67,7 @@ export function loadDecks(session: DuelSession, decks: Record<PlayerId, DuelPlay
   session.state.cards = [];
   for (const player of [0, 1] satisfies PlayerId[]) {
     const deck = decks[player];
+    session.state.players[player].initialMainDeckSize = deck.main.length;
     instantiateDeck(session, player, "deck", deck.main);
     instantiateDeck(session, player, "extraDeck", deck.extra ?? []);
     resequence(session.state, player, "deck");
