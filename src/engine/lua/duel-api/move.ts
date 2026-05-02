@@ -17,6 +17,7 @@ import {
 import { duelReason } from "#duel/reasons.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
+import { applyLuaMovePosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { installDuelOverlayApi, removeOverlayReference } from "#lua/duel-api/overlay.js";
 import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
 import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -94,7 +95,7 @@ function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: 
     try {
       const result = moveDuelCardWithRedirects(session.state, uid, location, card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
       assignReasonCard(result, hostState);
-      if (requestedPosition) applySummonPosition(result, requestedPosition);
+      if (requestedPosition) applyLuaMovePosition(result, requestedPosition);
       if (didMove(result, before)) moved.push(uid);
     } catch {
       // Generic movement reports successful card moves only.
@@ -148,7 +149,7 @@ function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiH
     try {
       const result = banishDuelCard(session.state, uid, card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
       assignReasonCard(result, hostState);
-      if (requestedPosition) applySummonPosition(result, requestedPosition);
+      if (requestedPosition) applyLuaMovePosition(result, requestedPosition);
       if (didMove(result, before)) moved.push(uid);
     } catch {
       // EDOPro-style removal reports successful card moves only.
@@ -173,7 +174,7 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
     if (!hasOpenMonsterZone(session, player, zoneMask)) continue;
     try {
       const summoned = specialSummonDuelCard(session.state, uid, player);
-      if (requestedPosition) applySummonPosition(summoned, requestedPosition);
+      if (requestedPosition) applyLuaMovePosition(summoned, requestedPosition);
       applyMonsterZoneMask(session, summoned, player, zoneMask);
       moved.push(uid);
     } catch {
@@ -313,7 +314,7 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
   const before = movementSnapshot(card);
   try {
     const moved = moveDuelCardWithRedirects(session.state, uid, destination, targetPlayer, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
-    if (requestedPosition) applySummonPosition(moved, requestedPosition);
+    if (requestedPosition) applyLuaMovePosition(moved, requestedPosition);
     setOperatedUids(hostState, didMove(moved, before) ? [uid] : []);
     lua.lua_pushinteger(L, didMove(moved, before) ? 1 : 0);
     return 1;
@@ -378,7 +379,7 @@ function pushReturnToField(L: unknown, session: DuelSession, hostState: LuaDuelM
   }
   try {
     const moved = moveDuelCardWithRedirects(session.state, uid, destination, controller, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
-    applySummonPosition(moved, requestedPosition ?? card.previousPosition ?? moved.position);
+    applyLuaMovePosition(moved, requestedPosition ?? card.previousPosition ?? moved.position);
     setOperatedUids(hostState, [uid]);
     lua.lua_pushboolean(L, true);
     return 1;
@@ -608,7 +609,7 @@ function specialSummonExplicitExtraDeckCard(
   if (card.location !== "extraDeck" || summonType === 0 || !hasOpenMonsterZone(session, player, zoneMask) || !canPlayerSpecialSummon(session.state, player, card)) return false;
   try {
     moveDuelCard(session.state, card.uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon, hostState.activeContext?.player ?? player);
-    applySummonPosition(card, requestedPosition ?? "faceUpAttack");
+    applyLuaMovePosition(card, requestedPosition ?? "faceUpAttack");
     applyMonsterZoneMask(session, card, player, zoneMask);
     card.summonType = "special";
     card.summonPlayer = player;
@@ -626,18 +627,6 @@ function assignReasonCard(card: DuelCardInstance, hostState: LuaDuelMoveApiHostS
   if (hostState.activeContext?.source) card.reasonCardUid = hostState.activeContext.source.uid;
   const effectId = Number(hostState.activeContext?.chainLink?.effectId.match(/^lua-(\d+)/)?.[1]);
   if (Number.isFinite(effectId)) card.reasonEffectId = effectId;
-}
-
-function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, position: CardPosition): void {
-  card.position = position;
-  card.faceUp = position !== "faceDownDefense";
-}
-
-function faceupAttackOrFacedownDefensePosition(card: DuelCardInstance): CardPosition | undefined {
-  if (card.position === "faceUpAttack") return "faceDownDefense";
-  if (card.position === "faceDownDefense") return "faceUpAttack";
-  if (card.position === "faceUpDefense") return "faceUpAttack";
-  return undefined;
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {
@@ -671,14 +660,6 @@ function readSingleDestination(L: unknown, index: number): DuelLocation | undefi
   if ((mask & 0x02) !== 0) return "hand";
   if ((mask & 0x01) !== 0) return "deck";
   return undefined;
-}
-
-function movementSnapshot(card: DuelCardInstance): Pick<DuelCardInstance, "controller" | "location" | "sequence"> {
-  return { controller: card.controller, location: card.location, sequence: card.sequence };
-}
-
-function didMove(card: DuelCardInstance, before: Pick<DuelCardInstance, "controller" | "location" | "sequence">): boolean {
-  return card.controller !== before.controller || card.location !== before.location || card.sequence !== before.sequence;
 }
 
 function activeFieldSpell(state: DuelState, player: PlayerId, exceptUid?: string): DuelCardInstance | undefined {
