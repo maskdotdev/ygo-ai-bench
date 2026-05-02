@@ -5,6 +5,7 @@ import { linkedZoneMaskForUids } from "#lua/duel-api/location.js";
 import { binaryFlags, bitCount } from "#lua/group-bit-utils.js";
 import { installGroupCompatibilityApi } from "#lua/group-compatibility-api.js";
 import { groupFieldNames } from "#lua/group-field-names.js";
+import { findSubGroupSelection, findSumGreaterSelection, findSumSelection, selectedWeightedEntries } from "#lua/group-selection-utils.js";
 import { sameUidSet, selectGroupUids, uniqueUids } from "#lua/group-uid-utils.js";
 import type { DuelSession } from "#duel/types.js";
 
@@ -603,7 +604,7 @@ function selectUidsWithSum(L: unknown, uids: string[], filterRef: number | undef
   const entries = uids
     .map((uid) => ({ uid, value: groupCardFilterValue(L, uid, filterRef, args) }))
     .filter((entry): entry is { uid: string; value: number } => entry.value !== undefined);
-  const selected = selectedEntries(entries, selectedUids);
+  const selected = selectedWeightedEntries(entries, selectedUids);
   return findSumSelection(entries.filter((entry) => !selected.some((candidate) => candidate.uid === entry.uid)), sum, boundedMin, boundedMax, 0, selected.map((entry) => entry.uid), selected.reduce((total, entry) => total + entry.value, 0));
 }
 
@@ -614,42 +615,8 @@ function selectUidsWithSumGreater(L: unknown, uids: string[], filterRef: number 
   const entries = uids
     .map((uid) => ({ uid, value: groupCardFilterValue(L, uid, filterRef, args) }))
     .filter((entry): entry is { uid: string; value: number } => entry.value !== undefined);
-  const selected = selectedEntries(entries, selectedUids);
+  const selected = selectedWeightedEntries(entries, selectedUids);
   return findSumGreaterSelection(entries.filter((entry) => !selected.some((candidate) => candidate.uid === entry.uid)), sum, boundedMin, boundedMax, 0, selected.map((entry) => entry.uid), selected.reduce((total, entry) => total + entry.value, 0));
-}
-
-function selectedEntries(entries: { uid: string; value: number }[], selectedUids: string[]): { uid: string; value: number }[] {
-  return uniqueUids(selectedUids)
-    .map((uid) => entries.find((entry) => entry.uid === uid))
-    .filter((entry): entry is { uid: string; value: number } => entry !== undefined);
-}
-
-function findSumSelection(entries: { uid: string; value: number }[], target: number, min: number, max: number, index: number, selected: string[], current: number): string[] | undefined {
-  if (current === target && selected.length >= min && selected.length <= max) return [...selected];
-  if (index >= entries.length || selected.length >= max) return undefined;
-  for (let nextIndex = index; nextIndex < entries.length; nextIndex += 1) {
-    const entry = entries[nextIndex];
-    if (!entry) continue;
-    selected.push(entry.uid);
-    const found = findSumSelection(entries, target, min, max, nextIndex + 1, selected, current + entry.value);
-    if (found) return found;
-    selected.pop();
-  }
-  return undefined;
-}
-
-function findSumGreaterSelection(entries: { uid: string; value: number }[], target: number, min: number, max: number, index: number, selected: string[], current: number): string[] | undefined {
-  if (current >= target && selected.length >= min && selected.length <= max) return [...selected];
-  if (index >= entries.length || selected.length >= max) return undefined;
-  for (let nextIndex = index; nextIndex < entries.length; nextIndex += 1) {
-    const entry = entries[nextIndex];
-    if (!entry) continue;
-    selected.push(entry.uid);
-    const found = findSumGreaterSelection(entries, target, min, max, nextIndex + 1, selected, current + entry.value);
-    if (found) return found;
-    selected.pop();
-  }
-  return undefined;
 }
 
 function selectSubGroup(L: unknown, uids: string[], filterRef: number | undefined, min: number, max: number, args: LuaFilterArgs, selectedUids: string[] = []): string[] | undefined {
@@ -657,21 +624,14 @@ function selectSubGroup(L: unknown, uids: string[], filterRef: number | undefine
   const boundedMin = Math.max(0, min);
   const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
   const selected = uniqueUids(selectedUids).filter((uid) => uids.includes(uid));
-  return findSubGroupSelection(L, uids.filter((uid) => !selected.includes(uid)), filterRef, boundedMin, boundedMax, args, 0, selected);
-}
-
-function findSubGroupSelection(L: unknown, uids: string[], filterRef: number, min: number, max: number, args: LuaFilterArgs, index: number, selected: string[]): string[] | undefined {
-  if (selected.length >= min && selected.length <= max && groupPredicateMatches(L, selected, filterRef, args)) return [...selected];
-  if (index >= uids.length || selected.length >= max) return undefined;
-  for (let nextIndex = index; nextIndex < uids.length; nextIndex += 1) {
-    const uid = uids[nextIndex];
-    if (!uid) continue;
-    selected.push(uid);
-    const found = findSubGroupSelection(L, uids, filterRef, min, max, args, nextIndex + 1, selected);
-    if (found) return found;
-    selected.pop();
-  }
-  return undefined;
+  return findSubGroupSelection(
+    uids.filter((uid) => !selected.includes(uid)),
+    boundedMin,
+    boundedMax,
+    (candidate) => groupPredicateMatches(L, candidate, filterRef, args),
+    0,
+    selected,
+  );
 }
 
 function groupPredicateMatches(L: unknown, uids: string[], filterRef: number, args: LuaFilterArgs): boolean {

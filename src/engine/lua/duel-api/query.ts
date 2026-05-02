@@ -6,6 +6,7 @@ import { installDuelLocationApi } from "#lua/duel-api/location.js";
 import { cardTypeFlags, readCardDataByCode } from "#lua/duel-api/query-card-data.js";
 import { changeTargetCard, effectiveTargetUids } from "#lua/duel-api/query-target-state.js";
 import { pushGroupTable } from "#lua/group-api.js";
+import { findSubGroupSelection, findSumGreaterSelection, findSumSelection } from "#lua/group-selection-utils.js";
 import { uniqueUids } from "#lua/group-uid-utils.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
@@ -503,53 +504,11 @@ function selectUidsWithSumGreater(L: unknown, uids: string[], filterRef: number 
   return findSumGreaterSelection(entries, sum, boundedMin, boundedMax, 0, [], 0);
 }
 
-function findSumSelection(entries: { uid: string; value: number }[], target: number, min: number, max: number, index: number, selected: string[], current: number): string[] | undefined {
-  if (current === target && selected.length >= min && selected.length <= max) return [...selected];
-  if (index >= entries.length || selected.length >= max) return undefined;
-  for (let nextIndex = index; nextIndex < entries.length; nextIndex += 1) {
-    const entry = entries[nextIndex];
-    if (!entry) continue;
-    selected.push(entry.uid);
-    const found = findSumSelection(entries, target, min, max, nextIndex + 1, selected, current + entry.value);
-    if (found) return found;
-    selected.pop();
-  }
-  return undefined;
-}
-
-function findSumGreaterSelection(entries: { uid: string; value: number }[], target: number, min: number, max: number, index: number, selected: string[], current: number): string[] | undefined {
-  if (current >= target && selected.length >= min && selected.length <= max) return [...selected];
-  if (index >= entries.length || selected.length >= max) return undefined;
-  for (let nextIndex = index; nextIndex < entries.length; nextIndex += 1) {
-    const entry = entries[nextIndex];
-    if (!entry) continue;
-    selected.push(entry.uid);
-    const found = findSumGreaterSelection(entries, target, min, max, nextIndex + 1, selected, current + entry.value);
-    if (found) return found;
-    selected.pop();
-  }
-  return undefined;
-}
-
 function selectSubGroup(L: unknown, uids: string[], filterRef: number | undefined, min: number, max: number, args: LuaFilterArgs): string[] | undefined {
   if (filterRef === undefined) return undefined;
   const boundedMin = Math.max(0, min);
   const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
-  return findSubGroupSelection(L, uids, filterRef, boundedMin, boundedMax, args, 0, []);
-}
-
-function findSubGroupSelection(L: unknown, uids: string[], filterRef: number, min: number, max: number, args: LuaFilterArgs, index: number, selected: string[]): string[] | undefined {
-  if (selected.length >= min && selected.length <= max && groupPredicateMatches(L, selected, filterRef, args)) return [...selected];
-  if (index >= uids.length || selected.length >= max) return undefined;
-  for (let nextIndex = index; nextIndex < uids.length; nextIndex += 1) {
-    const uid = uids[nextIndex];
-    if (!uid) continue;
-    selected.push(uid);
-    const found = findSubGroupSelection(L, uids, filterRef, min, max, args, nextIndex + 1, selected);
-    if (found) return found;
-    selected.pop();
-  }
-  return undefined;
+  return findSubGroupSelection(uids, boundedMin, boundedMax, (selected) => groupPredicateMatches(L, selected, filterRef, args), 0, []);
 }
 
 function groupPredicateMatches(L: unknown, uids: string[], filterRef: number, args: LuaFilterArgs): boolean {
