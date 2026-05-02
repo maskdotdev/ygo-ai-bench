@@ -284,6 +284,27 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   lua.lua_setfield(L, -2, to_luastring("GetClassCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const filterRef = readOptionalFunctionRef(state, 2);
+    const classes = new Set<number>();
+    if (filterRef !== undefined) {
+      const args = readFilterArgs(state, 3);
+      for (const uid of readGroupUids(state, 1)) {
+        const value = groupCardFilterValue(state, uid, filterRef, args);
+        if (value !== undefined) classes.add(value);
+      }
+    }
+    releaseOptionalFunctionRef(state, filterRef);
+    lua.lua_newtable(state);
+    let index = 1;
+    for (const value of classes) {
+      lua.lua_pushinteger(state, value);
+      lua.lua_rawseti(state, -2, index);
+      index += 1;
+    }
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetClass"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const filterRef = readOptionalFunctionRef(state, 2);
     const common = filterRef === undefined ? 0 : commonBinaryProperty(state, readGroupUids(state, 1), filterRef, readFilterArgs(state, 3));
     releaseOptionalFunctionRef(state, filterRef);
     lua.lua_pushboolean(state, common !== 0);
@@ -767,6 +788,7 @@ const groupFieldNames = [
   "IsExists",
   "Match",
   "GetClassCount",
+  "GetClass",
   "CheckSameProperty",
   "CheckDifferentProperty",
   "CheckDifferentPropertyBinary",

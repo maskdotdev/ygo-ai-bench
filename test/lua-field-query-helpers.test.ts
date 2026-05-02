@@ -3114,6 +3114,8 @@ describe("Lua field and query helpers", () => {
       Debug.Message("match miss " .. all:Clone():Match(function(tc,minatk) return tc:GetAttack() >= minatk end, nil, 1500):GetCount())
       Debug.Message("match excluded " .. all:Clone():Match(function(tc,minatk) return tc:GetAttack() >= minatk end, excluded_group, 1000):GetCount())
       Debug.Message("class count " .. all:GetClassCount(function(tc) return tc:GetAttack() >= 2000 and 1 or 0 end))
+      local attack_classes = all:GetClass(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetCode()/100 or 0 end, 1500)
+      Debug.Message("class values " .. #attack_classes .. "/" .. table.concat(attack_classes,","))
       Debug.Message("bin class count " .. all:GetBinClassCount(function(tc,minatk) return tc:GetAttack() >= minatk and tc:GetCode()/100 or 0 end, 1500))
       Debug.Message("attack sum " .. all:GetSum(Card.GetAttack))
       Debug.Message("level sum " .. all:GetSum(Card.Level))
@@ -3223,6 +3225,7 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("match miss 2");
     expect(host.messages).toContain("match excluded 2");
     expect(host.messages).toContain("class count 2");
+    expect(host.messages).toContain("class values 3/2,3,0");
     expect(host.messages).toContain("bin class count 2");
     expect(host.messages).toContain("attack sum 6000");
     expect(host.messages).toContain("level sum 6");
