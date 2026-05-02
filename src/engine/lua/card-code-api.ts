@@ -22,15 +22,15 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("GetMetatable"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested && cardCodes(card).includes(requested)));
+    const requested = readRequestedCodes(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.some((code) => cardCodes(card).includes(code))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? String(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested && !cardCodes(card).includes(requested)));
+    const requested = readRequestedCodes(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.length > 0 && requested.every((code) => !cardCodes(card).includes(code))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsNotCode"));
@@ -89,16 +89,16 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsSetCard"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && cardSetcodes(card).some((setcode) => isSetcodeMatch(requested, setcode))));
+    const requested = readRequestedSetcodes(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.some((wanted) => cardSetcodes(card).some((setcode) => isSetcodeMatch(wanted, setcode)))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsOriginalSetCard"));
   pushNumberGetter(L, "GetSetCard", session, (card) => card?.data.setcodes?.[0] ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && requested !== undefined && !card.data.setcodes?.includes(requested)));
+    const requested = readRequestedSetcodes(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.length > 0 && requested.every((wanted) => !cardSetcodes(card).some((setcode) => isSetcodeMatch(wanted, setcode)))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsNotSetCard"));
