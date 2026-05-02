@@ -17,6 +17,7 @@ import {
 import { duelReason } from "#duel/reasons.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
+import { activeFieldSpell, isDuelType, isFieldSpell } from "#lua/duel-api/field-spell-state.js";
 import { applyLuaMovePosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { installDuelOverlayApi, removeOverlayReference } from "#lua/duel-api/overlay.js";
 import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
@@ -660,18 +661,6 @@ function readSingleDestination(L: unknown, index: number): DuelLocation | undefi
   if ((mask & 0x02) !== 0) return "hand";
   if ((mask & 0x01) !== 0) return "deck";
   return undefined;
-}
-
-function activeFieldSpell(state: DuelState, player: PlayerId, exceptUid?: string): DuelCardInstance | undefined {
-  return getCards(state, player, "spellTrapZone").find((card) => card.uid !== exceptUid && isFieldSpell(card));
-}
-
-function isFieldSpell(card: DuelCardInstance): boolean {
-  return card.kind === "spell" && ((card.data.typeFlags ?? 0) & 0x80000) !== 0;
-}
-
-function isDuelType(state: DuelState, mask: number): boolean {
-  return (BigInt(Math.trunc(state.duelTypeFlags)) & BigInt(mask)) === BigInt(mask);
 }
 
 function otherPlayer(player: PlayerId): PlayerId {
