@@ -1159,6 +1159,7 @@ describe("Lua effect metadata helpers", () => {
       local reset,reset_count=e1:GetReset()
       Debug.Message("card no tribute " .. e1:GetCode() .. "/" .. e1:GetDescription() .. "/" .. self_range .. "/" .. opp_range .. "/" .. reset_count .. "/" .. tostring(e1:IsHasProperty(EFFECT_FLAG_CLIENT_HINT)))
       Debug.Message("no tribute summon after " .. tostring(Duel.IsPlayerCanSummon(0,target)) .. "/" .. tostring(target:IsSummonable()))
+      Debug.Message("no tribute summon result " .. Duel.Summon(target, true, nil) .. "/" .. target:GetLocation() .. "/" .. c:GetLocation())
       local e2=Duel.AddNoTributeCheck(c,0,160001029,2,0,1)
       local player_effect=Duel.IsPlayerAffectedByEffect(1,FLAG_NO_TRIBUTE)
       local self2,opp2=e2:GetTargetRange()
@@ -1171,6 +1172,7 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("no tribute summon before false/false");
     expect(host.messages.some((message) => message.startsWith("card no tribute 160001029/") && message.endsWith("/1/0/1/true"))).toBe(true);
     expect(host.messages).toContain("no tribute summon after true/true");
+    expect(host.messages).toContain("no tribute summon result 1/4/4");
     expect(host.messages).toContain("duel no tribute true/0/1");
   });
 

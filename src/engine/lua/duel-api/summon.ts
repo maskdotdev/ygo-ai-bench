@@ -21,6 +21,7 @@ import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
+import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -100,7 +101,7 @@ function pushSummonOrSetResult(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   }
   const tributeUids = readCardCollectionUids(L, 4);
-  const action = selectSummonOrSetAction(session.state, player, target, tributeUids);
+  const action = selectSummonOrSetAction(session, player, target, tributeUids);
   const result = action ? applyResponse(session, action) : { ok: false };
   setOperatedUids(hostState, result.ok ? [target.uid] : []);
   lua.lua_pushinteger(L, result.ok ? 1 : 0);
@@ -108,12 +109,15 @@ function pushSummonOrSetResult(L: unknown, session: DuelSession, hostState: LuaD
 }
 
 function selectSummonOrSetAction(
-  state: DuelState,
+  session: DuelSession,
   player: PlayerId,
   target: DuelCardInstance,
   tributeUids: string[],
 ): LuaSummonOrSetAction | undefined {
-  const actions = [...normalSummonActions(state, player, [target]), ...tributeSummonActions(state, player, [target])];
+  const actions = [
+    ...normalSummonActions(session.state, player, [target], () => isNoTributePlayerAffected(session, player)),
+    ...tributeSummonActions(session.state, player, [target]),
+  ];
   const summon = actions.find((candidate): candidate is LuaSummonOrSetAction => candidate.type === "normalSummon" && candidate.uid === target.uid);
   if (summon) return summon;
   if (tributeUids.length > 0 && actions.some((candidate) => candidate.type === "tributeSummon" && candidate.uid === target.uid)) {
