@@ -10,6 +10,29 @@ export function installAuxCostApi(L: unknown, readLuaError: (state: unknown) => 
       if chk==0 then return c and c:IsAbleToRemoveAsCost() end
       Duel.Remove(c,POS_FACEUP,REASON_COST)
     end
+    function Cost.SelfReveal(e,tp,eg,ep,ev,re,r,rp,chk)
+      local c=e:GetHandler()
+      if chk==0 then return c and not c:IsPublic() end
+      Duel.ConfirmCards(1-tp,c)
+      if c:IsLocation(LOCATION_HAND) then Duel.ShuffleHand(tp) end
+      if c:IsLocation(LOCATION_DECK) then Duel.ShuffleDeck(tp) end
+      if c:IsLocation(LOCATION_EXTRA) then Duel.ShuffleExtra(tp) end
+    end
+    function Cost.SelfToHand(e,tp,eg,ep,ev,re,r,rp,chk)
+      local c=e:GetHandler()
+      if chk==0 then return c and c:IsAbleToHandAsCost() end
+      Duel.SendtoHand(c,nil,REASON_COST)
+    end
+    function Cost.SelfToDeck(e,tp,eg,ep,ev,re,r,rp,chk)
+      local c=e:GetHandler()
+      if chk==0 then return c and c:IsAbleToDeckAsCost() end
+      Duel.SendtoDeck(c,nil,SEQ_DECKSHUFFLE or 2,REASON_COST)
+    end
+    function Cost.SelfToExtra(e,tp,eg,ep,ev,re,r,rp,chk)
+      local c=e:GetHandler()
+      if chk==0 then return c and c:IsAbleToExtra() end
+      Duel.SendtoExtra(c,nil,REASON_COST)
+    end
     function Cost.PayLP(lp_value,pay_until)
       if not pay_until then
         if lp_value>=1 then

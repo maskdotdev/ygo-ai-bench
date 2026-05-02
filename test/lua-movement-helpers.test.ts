@@ -1064,6 +1064,65 @@ describe("Lua movement helpers", () => {
     expect(host.messages).toContain("self banish moved true/100");
   });
 
+  it("lets Lua scripts use self movement and reveal cost aliases", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Reveal Cost", kind: "monster" },
+      { code: "200", name: "Hand Cost", kind: "monster" },
+      { code: "300", name: "Deck Cost", kind: "monster" },
+      { code: "900", name: "Extra Cost", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 84, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"], extra: ["900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const handCost = session.state.cards.find((card) => card.code === "200");
+    const extraCost = session.state.cards.find((card) => card.code === "900");
+    expect(handCost).toBeDefined();
+    expect(extraCost).toBeDefined();
+    moveDuelCard(session.state, handCost!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, extraCost!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local reveal=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local deck=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local extra=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local reveal_effect=Effect.CreateEffect(reveal)
+      local hand_effect=Effect.CreateEffect(hand)
+      local deck_effect=Effect.CreateEffect(deck)
+      local extra_effect=Effect.CreateEffect(extra)
+      Debug.Message("self reveal check " .. tostring(Cost.SelfReveal(reveal_effect,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+      Cost.SelfReveal(reveal_effect,0,Group.CreateGroup(),0,0,nil,0,0,1)
+      Debug.Message("self reveal stayed " .. tostring(reveal:IsLocation(LOCATION_HAND)))
+      Debug.Message("self hand check " .. tostring(Cost.SelfToHand(hand_effect,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+      Cost.SelfToHand(hand_effect,0,Group.CreateGroup(),0,0,nil,0,0,1)
+      Debug.Message("self hand moved " .. tostring(hand:IsLocation(LOCATION_HAND)) .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("self deck check " .. tostring(Cost.SelfToDeck(deck_effect,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+      Cost.SelfToDeck(deck_effect,0,Group.CreateGroup(),0,0,nil,0,0,1)
+      Debug.Message("self deck moved " .. tostring(deck:IsLocation(LOCATION_DECK)) .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("self extra check " .. tostring(Cost.SelfToExtra(extra_effect,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+      Cost.SelfToExtra(extra_effect,0,Group.CreateGroup(),0,0,nil,0,0,1)
+      Debug.Message("self extra moved " .. tostring(extra:IsLocation(LOCATION_EXTRA)) .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      `,
+      "self-cost-aliases.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("self reveal check true");
+    expect(host.messages).toContain("confirmed 1: 100");
+    expect(host.messages).toContain("self reveal stayed true");
+    expect(host.messages).toContain("self hand check true");
+    expect(host.messages).toContain("self hand moved true/200");
+    expect(host.messages).toContain("self deck check true");
+    expect(host.messages).toContain("self deck moved true/300");
+    expect(host.messages).toContain("self extra check true");
+    expect(host.messages).toContain("self extra moved true/900");
+  });
+
   it("lets Lua scripts move cards to the deck top", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Top A", kind: "monster" },
