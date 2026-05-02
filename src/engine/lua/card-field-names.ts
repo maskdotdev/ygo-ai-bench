@@ -167,6 +167,7 @@ export const cardFieldNames = [
   "GetControler",
   "GetSummonPlayer",
   "GetSummonLocation",
+  "AssumeProperty",
   "GetType",
   "GetOriginalType",
   "GetMainCardType",

@@ -7,7 +7,7 @@ import type { DuelCardInstance, DuelSession } from "#duel/types.js";
 const { lua, to_luastring } = fengari;
 
 export function installCardCodeApi(L: unknown, session: DuelSession): void {
-  pushNumberGetter(L, "GetCode", session, (card) => (card ? Number(card.code) : 0));
+  pushNumberGetter(L, "GetCode", session, (card) => currentCode(card));
   pushNumberGetter(L, "GetOriginalCode", session, (card) => (card ? Number(card.code) : 0));
   pushNumberGetter(L, "GetOriginalCodeRule", session, (card) => (card ? Number(card.code) : 0));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -117,6 +117,10 @@ function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, g
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function currentCode(card: DuelCardInstance | undefined): number {
+  return card ? card.assumedProperties?.[1] ?? Number(card.code) : 0;
 }
 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {

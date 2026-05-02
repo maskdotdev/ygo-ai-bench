@@ -1455,6 +1455,20 @@ describe("Lua field and query helpers", () => {
       Debug.Message("not race " .. tostring(c:IsNotRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotRace(RACE_DRAGON)))
       Debug.Message("not original race " .. tostring(c:IsNotOriginalRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsNotOriginalRace(RACE_DRAGON)))
       Debug.Message("attribute " .. c:GetAttribute() .. " " .. tostring(c:IsAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsOriginalAttribute(ATTRIBUTE_DARK)))
+      c:AssumeProperty(ASSUME_CODE, 999)
+      c:AssumeProperty(ASSUME_TYPE, TYPE_MONSTER|TYPE_TUNER)
+      c:AssumeProperty(ASSUME_LEVEL, 3)
+      c:AssumeProperty(ASSUME_RANK, 2)
+      c:AssumeProperty(ASSUME_ATTRIBUTE, ATTRIBUTE_LIGHT)
+      c:AssumeProperty(ASSUME_RACE, RACE_DRAGON)
+      c:AssumeProperty(ASSUME_ATTACK, 1200)
+      c:AssumeProperty(ASSUME_DEFENSE, 800)
+      link:AssumeProperty(ASSUME_LINK, 4)
+      link:AssumeProperty(ASSUME_LINKMARKER, LINK_MARKER_LEFT|LINK_MARKER_RIGHT)
+      Debug.Message("assumed metadata " .. c:GetCode() .. "/" .. c:GetType() .. "/" .. c:GetLevel() .. "/" .. c:GetRank() .. "/" .. c:GetAttribute() .. "/" .. c:GetRace() .. "/" .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. link:GetLink() .. "/" .. link:GetLinkMarker())
+      Debug.Message("assumed predicates " .. tostring(c:IsCode(999)) .. "/" .. tostring(c:IsOriginalCode(100)) .. "/" .. tostring(c:IsType(TYPE_TUNER)) .. "/" .. tostring(c:IsOriginalType(TYPE_EFFECT)) .. "/" .. tostring(c:IsRace(RACE_DRAGON)) .. "/" .. tostring(c:IsOriginalRace(RACE_SPELLCASTER)) .. "/" .. tostring(c:IsAttribute(ATTRIBUTE_LIGHT)) .. "/" .. tostring(c:IsOriginalAttribute(ATTRIBUTE_DARK)))
+      Duel.AssumeReset()
+      Debug.Message("assumed reset " .. c:GetCode() .. "/" .. c:GetType() .. "/" .. c:GetLevel() .. "/" .. c:GetRank() .. "/" .. c:GetAttribute() .. "/" .. c:GetRace() .. "/" .. c:GetAttack() .. "/" .. c:GetDefense() .. "/" .. link:GetLink() .. "/" .. link:GetLinkMarker())
       local multi = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("attribute except " .. tostring(c:IsAttributeExcept(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsAttributeExcept(ATTRIBUTE_LIGHT)) .. "/" .. tostring(multi:IsAttributeExcept(ATTRIBUTE_DARK)) .. "/" .. tostring(multi:IsAttributeExcept(ATTRIBUTE_DARK|ATTRIBUTE_LIGHT)))
       Debug.Message("different attribute " .. tostring(c:IsDifferentAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(c:IsDifferentAttribute(ATTRIBUTE_LIGHT)) .. "/" .. tostring(multi:IsDifferentAttribute(ATTRIBUTE_DARK)) .. "/" .. tostring(multi:IsDifferentAttribute(ATTRIBUTE_DARK|ATTRIBUTE_LIGHT)))
@@ -1527,6 +1541,9 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("race 2 true/true");
     expect(host.messages).toContain("not race false/true");
     expect(host.messages).toContain("attribute 32 true/true");
+    expect(host.messages).toContain("assumed metadata 999/4097/3/2/16/8192/1200/800/4/40");
+    expect(host.messages).toContain("assumed predicates true/true/true/true/true/true/true/true");
+    expect(host.messages).toContain("assumed reset 100/33/1/0/32/2/2800/1700/5/5");
     expect(host.messages).toContain("attribute except false/true/true/false");
     expect(host.messages).toContain("different attribute false/true/true/false");
     expect(host.messages).toContain("attribute strings 1014,1015");

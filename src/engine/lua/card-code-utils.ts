@@ -4,6 +4,8 @@ import type { DuelCardInstance, DuelSession } from "#duel/types.js";
 const { lua } = fengari;
 
 export function cardCodes(card: DuelCardInstance): string[] {
+  const assumedCode = card.assumedProperties?.[1];
+  if (assumedCode !== undefined) return [String(assumedCode)];
   return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
 

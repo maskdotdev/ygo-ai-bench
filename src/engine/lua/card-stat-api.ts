@@ -5,8 +5,10 @@ import type { DuelCardInstance, DuelSession, DuelState } from "#duel/types.js";
 const { lua, to_luastring } = fengari;
 
 export function installCardStatApi(L: unknown, session: DuelSession): void {
+  lua.lua_pushcfunction(L, (state: unknown) => pushAssumeProperty(state, session));
+  lua.lua_setfield(L, -2, to_luastring("AssumeProperty"));
   pushNumberGetter(L, "GetType", session, (card) => cardTypeFlags(card));
-  pushNumberGetter(L, "GetOriginalType", session, (card) => cardTypeFlags(card));
+  pushNumberGetter(L, "GetOriginalType", session, (card) => printedCardTypeFlags(card));
   pushNumberGetter(L, "GetMainCardType", session, (card) => cardMainTypeFlags(card));
   pushNumberMatcher(L, "IsType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
   pushNumberMatcher(L, "IsExactType", session, (card, requested) => cardTypeFlags(card) === requested);
@@ -15,8 +17,8 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
     return plusMinusType !== 0 && plusMinusType !== 0x60000000;
   });
   pushNumberMatcher(L, "IsNotType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);
-  pushNumberMatcher(L, "IsOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) !== 0);
-  pushNumberMatcher(L, "IsNotOriginalType", session, (card, requested) => (cardTypeFlags(card) & requested) === 0);
+  pushNumberMatcher(L, "IsOriginalType", session, (card, requested) => (printedCardTypeFlags(card) & requested) !== 0);
+  pushNumberMatcher(L, "IsNotOriginalType", session, (card, requested) => (printedCardTypeFlags(card) & requested) === 0);
   pushNumberGetter(L, "GetAttack", session, (card) => currentAttack(card));
   pushNumberGetter(L, "GetBaseAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberGetter(L, "GetTextAttack", session, (card) => currentAttack(card));
@@ -101,21 +103,21 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsOriginalLinkAbove", session, (card, requested) => cardLink(card) >= requested);
   pushNumberMatcher(L, "IsOriginalLinkBelow", session, (card, requested) => cardLink(card) <= requested);
   pushBooleanGetter(L, "IsLinkMonster", session, (card) => currentLink(card) > 0);
-  pushNumberGetter(L, "GetLinkMarker", session, (card) => card?.data.linkMarkers ?? 0);
-  pushNumberGetter(L, "GetRace", session, (card) => card?.data.race ?? 0);
+  pushNumberGetter(L, "GetLinkMarker", session, (card) => card?.assumedProperties?.[10] ?? card?.data.linkMarkers ?? 0);
+  pushNumberGetter(L, "GetRace", session, (card) => currentRace(card));
   pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
-  pushNumberMatcher(L, "IsRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
-  pushNumberMatcher(L, "IsRaceExcept", session, (card, requested) => (((card.data.race ?? 0) & requested) !== (card.data.race ?? 0)));
-  pushNumberMatcher(L, "IsNotRace", session, (card, requested) => ((card.data.race ?? 0) & requested) === 0);
+  pushNumberMatcher(L, "IsRace", session, (card, requested) => (currentRace(card) & requested) !== 0);
+  pushNumberMatcher(L, "IsRaceExcept", session, (card, requested) => (currentRace(card) & requested) !== currentRace(card));
+  pushNumberMatcher(L, "IsNotRace", session, (card, requested) => (currentRace(card) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalRace", session, (card, requested) => ((card.data.race ?? 0) & requested) !== 0);
   pushNumberMatcher(L, "IsNotOriginalRace", session, (card, requested) => ((card.data.race ?? 0) & requested) === 0);
   pushNumberGetter(L, "AnnounceAnotherRace", session, (card) => firstDifferentBit(card?.data.race ?? 0, 0x3ffffff, 0x2000000));
-  pushNumberGetter(L, "GetAttribute", session, (card) => card?.data.attribute ?? 0);
+  pushNumberGetter(L, "GetAttribute", session, (card) => currentAttribute(card));
   pushNumberGetter(L, "GetOriginalAttribute", session, (card) => card?.data.attribute ?? 0);
-  pushNumberMatcher(L, "IsAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
-  pushNumberMatcher(L, "IsAttributeExcept", session, (card, requested) => ((card.data.attribute ?? 0) & ~requested) !== 0);
-  pushNumberMatcher(L, "IsDifferentAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & ~requested) !== 0);
-  pushNumberMatcher(L, "IsNotAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
+  pushNumberMatcher(L, "IsAttribute", session, (card, requested) => (currentAttribute(card) & requested) !== 0);
+  pushNumberMatcher(L, "IsAttributeExcept", session, (card, requested) => (currentAttribute(card) & ~requested) !== 0);
+  pushNumberMatcher(L, "IsDifferentAttribute", session, (card, requested) => (currentAttribute(card) & ~requested) !== 0);
+  pushNumberMatcher(L, "IsNotAttribute", session, (card, requested) => (currentAttribute(card) & requested) === 0);
   pushNumberMatcher(L, "IsOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) !== 0);
   pushNumberMatcher(L, "IsNotOriginalAttribute", session, (card, requested) => ((card.data.attribute ?? 0) & requested) === 0);
   pushNumberGetter(L, "AnnounceAnotherAttribute", session, (card) => firstDifferentBit(card?.data.attribute ?? 0, 0x7f, 0x40));
@@ -125,6 +127,12 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
 }
 
 export function cardTypeFlags(card: DuelCardInstance | undefined): number {
+  if (!card) return 0;
+  if (card.assumedProperties?.[2] !== undefined) return card.assumedProperties[2];
+  return printedCardTypeFlags(card);
+}
+
+function printedCardTypeFlags(card: DuelCardInstance | undefined): number {
   if (!card) return 0;
   if (card.data.typeFlags !== undefined) return card.data.typeFlags;
   if (card.kind === "spell") return 0x2;
@@ -137,11 +145,11 @@ export function cardMainTypeFlags(card: DuelCardInstance | undefined): number {
 }
 
 export function cardRank(card: DuelCardInstance | undefined): number {
-  return card && (cardTypeFlags(card) & 0x800000) !== 0 ? card.data.level ?? 0 : 0;
+  return card && (printedCardTypeFlags(card) & 0x800000) !== 0 ? card.data.level ?? 0 : 0;
 }
 
 export function cardLink(card: DuelCardInstance | undefined): number {
-  return card && (cardTypeFlags(card) & 0x4000000) !== 0 ? card.data.level ?? 0 : 0;
+  return card && (printedCardTypeFlags(card) & 0x4000000) !== 0 ? card.data.level ?? 0 : 0;
 }
 
 export function cardScale(card: DuelCardInstance | undefined): number {
@@ -194,6 +202,17 @@ function isSingleBit(value: number): boolean {
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1);
   return uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+}
+
+function pushAssumeProperty(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const property = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  const value = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : undefined;
+  if (card && property !== undefined && value !== undefined) {
+    card.assumedProperties = card.assumedProperties ?? {};
+    card.assumedProperties[property] = value;
+  }
+  return 0;
 }
 
 function pushUpdateAttack(L: unknown, session: DuelSession): number {
@@ -279,18 +298,22 @@ function pushUpdateScale(L: unknown, session: DuelSession): number {
 }
 
 function currentAttack(card: DuelCardInstance | undefined): number {
+  if (card?.assumedProperties?.[7] !== undefined) return card.assumedProperties[7];
   return (card?.data.attack ?? 0) + (card?.attackModifier ?? 0);
 }
 
 function currentDefense(card: DuelCardInstance | undefined): number {
+  if (card?.assumedProperties?.[8] !== undefined) return card.assumedProperties[8];
   return (card?.data.defense ?? 0) + (card?.defenseModifier ?? 0);
 }
 
 function currentLevel(card: DuelCardInstance | undefined, state?: DuelState): number {
+  if (card?.assumedProperties?.[3] !== undefined) return card.assumedProperties[3];
   return (card?.data.level ?? 0) + (card?.levelModifier ?? 0) + statUpdateEffectValue(card, state, 130);
 }
 
 function currentRank(card: DuelCardInstance | undefined, state?: DuelState): number {
+  if (card?.assumedProperties?.[4] !== undefined) return card.assumedProperties[4];
   return cardRank(card) + (card?.rankModifier ?? 0) + statUpdateEffectValue(card, state, 132);
 }
 
@@ -302,7 +325,16 @@ function statUpdateEffectValue(card: DuelCardInstance | undefined, state: DuelSt
 }
 
 function currentLink(card: DuelCardInstance | undefined): number {
+  if (card?.assumedProperties?.[9] !== undefined) return card.assumedProperties[9];
   return cardLink(card) + (card?.linkModifier ?? 0);
+}
+
+function currentRace(card: DuelCardInstance | undefined): number {
+  return card?.assumedProperties?.[6] ?? card?.data.race ?? 0;
+}
+
+function currentAttribute(card: DuelCardInstance | undefined): number {
+  return card?.assumedProperties?.[5] ?? card?.data.attribute ?? 0;
 }
 
 function currentLeftScale(card: DuelCardInstance | undefined): number {

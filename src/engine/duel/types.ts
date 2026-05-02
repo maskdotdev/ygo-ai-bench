@@ -100,6 +100,7 @@ export interface DuelCardInstance {
   rankModifier?: number;
   linkModifier?: number;
   scaleModifier?: number;
+  assumedProperties?: Record<number, number>;
   uniqueOnField?: {
     self: boolean;
     opponent: boolean;

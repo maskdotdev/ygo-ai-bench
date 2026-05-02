@@ -47,7 +47,7 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("AdjustInstantly"));
   lua.lua_pushcfunction(L, () => pushReadjust(session));
   lua.lua_setfield(L, -2, to_luastring("Readjust"));
-  lua.lua_pushcfunction(L, pushAssumeReset);
+  lua.lua_pushcfunction(L, () => pushAssumeReset(session));
   lua.lua_setfield(L, -2, to_luastring("AssumeReset"));
 }
 
@@ -56,7 +56,8 @@ function pushBreakEffect(session: DuelSession): number {
   return 0;
 }
 
-function pushAssumeReset(): number {
+function pushAssumeReset(session: DuelSession): number {
+  for (const card of session.state.cards) delete card.assumedProperties;
   return 0;
 }
 
