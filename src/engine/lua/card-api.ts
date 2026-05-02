@@ -324,13 +324,9 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "IsNegatable", session, (card) => Boolean(card && isNegatableCard(session.state, card)));
   pushBooleanGetter(L, "IsNegatableMonster", session, (card) => Boolean(card && isMonsterLike(card) && isNegatableCard(session.state, card)));
   pushBooleanGetter(L, "IsNegatableSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x6) !== 0 && isNegatableCard(session.state, card)));
-  const canNormalSummonCard = (card: DuelCardInstance | undefined): boolean =>
-    Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "normalSummon" && action.uid === card.uid));
-  const canSetMonsterCard = (card: DuelCardInstance | undefined): boolean =>
-    Boolean(card && normalSummonActions(session.state, card.controller, [card]).some((action) => action.type === "setMonster" && action.uid === card.uid));
-  pushBooleanGetter(L, "IsSummonable", session, canNormalSummonCard);
-  pushBooleanGetter(L, "IsSummonableCard", session, canNormalSummonCard);
-  pushBooleanGetter(L, "CanSummonOrSet", session, (card) => canNormalSummonCard(card) || canSetMonsterCard(card));
+  pushSummonPredicate(L, "IsSummonable", session, "normalSummon");
+  pushSummonPredicate(L, "IsSummonableCard", session, "normalSummon");
+  pushSummonPredicate(L, "CanSummonOrSet", session, "summonOrSet");
   pushBooleanGetter(L, "IsSpecialSummonable", session, (card) => Boolean(card && canSpecialSummonDuelCard(session.state, card.uid, card.controller)));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsSynchroSummonable(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsSynchroSummonable"));
@@ -347,7 +343,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCanBeSpecialSummoned"));
-  pushBooleanGetter(L, "IsMSetable", session, canSetMonsterCard);
+  pushSummonPredicate(L, "IsMSetable", session, "setMonster");
   pushBooleanGetter(L, "IsCanTurnSet", session, (card) => Boolean(card && canTurnSet(card)));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
@@ -438,6 +434,37 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession, kind: "normalSummon" | "setMonster" | "summonOrSet"): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const ignoreCount = lua.lua_toboolean(state, 2);
+    const actions = card ? normalSummonActionsForCard(session, card, ignoreCount) : [];
+    lua.lua_pushboolean(
+      state,
+      kind === "summonOrSet"
+        ? actions.some((action) => actionHasUid(action, card?.uid))
+        : actions.some((action) => action.type === kind && actionHasUid(action, card?.uid)),
+    );
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function normalSummonActionsForCard(session: DuelSession, card: DuelCardInstance, ignoreCount: boolean) {
+  if (!ignoreCount) return normalSummonActions(session.state, card.controller, [card]);
+  const previous = session.state.players[card.controller].normalSummonAvailable;
+  session.state.players[card.controller].normalSummonAvailable = true;
+  try {
+    return normalSummonActions(session.state, card.controller, [card]);
+  } finally {
+    session.state.players[card.controller].normalSummonAvailable = previous;
+  }
+}
+
+function actionHasUid(action: ReturnType<typeof normalSummonActions>[number], uid: string | undefined): boolean {
+  return uid !== undefined && "uid" in action && action.uid === uid;
 }
 
 function pushMaterialPredicate(L: unknown, fieldName: string, session: DuelSession, kind: MaterialUseKind): void {

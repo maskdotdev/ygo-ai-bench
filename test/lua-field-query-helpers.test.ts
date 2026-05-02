@@ -1751,11 +1751,13 @@ describe("Lua field and query helpers", () => {
       `
       local tribute = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("count blocked predicates " .. tostring(tribute:IsSummonableCard()) .. "/" .. tostring(tribute:IsMSetable()))
+      Debug.Message("count ignored predicates " .. tostring(tribute:IsSummonableCard(true)) .. "/" .. tostring(tribute:IsMSetable(true)) .. "/" .. tostring(tribute:CanSummonOrSet(true)))
       `,
       "card-summon-predicate-count-block.lua",
     );
     expect(countResult.ok, countResult.error).toBe(true);
     expect(countHost.messages).toContain("count blocked predicates false/false");
+    expect(countHost.messages).toContain("count ignored predicates false/true/true");
     session.state.players[0].normalSummonAvailable = true;
 
     for (const code of ["600", "700", "800", "810", "820"]) {
