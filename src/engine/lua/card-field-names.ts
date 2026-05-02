@@ -309,6 +309,7 @@ export const cardFieldNames = [
   "AddCounter",
   "RemoveCounter",
   "IsCanAddCounter",
+  "IsCanRemoveCounter",
   "HasCounter",
   "HasCounters",
   "IsPosition",

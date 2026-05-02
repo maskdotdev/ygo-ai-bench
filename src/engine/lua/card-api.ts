@@ -136,6 +136,8 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   lua.lua_setfield(L, -2, to_luastring("RemoveCounter"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsCanAddCounter(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsCanAddCounter"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsCanRemoveCounter(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsCanRemoveCounter"));
   pushBooleanGetter(L, "HasCounter", session, (card) => Boolean(card && totalCounters(card) > 0));
   pushBooleanGetter(L, "HasCounters", session, (card) => Boolean(card && totalCounters(card) > 0));
   pushBooleanGetter(L, "IsFaceup", session, (card) => Boolean(card?.faceUp));
@@ -609,6 +611,17 @@ function pushIsCanAddCounter(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
   const count = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
   lua.lua_pushboolean(L, canAddDuelCardCounter(card, count));
+  return 1;
+}
+
+function pushIsCanRemoveCounter(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const hasPlayerArgument = lua.lua_gettop(L) >= 4;
+  const counterTypeIndex = hasPlayerArgument ? 3 : 2;
+  const countIndex = hasPlayerArgument ? 4 : 3;
+  const counterType = lua.lua_isnumber(L, counterTypeIndex) ? lua.lua_tointeger(L, counterTypeIndex) : 0;
+  const count = lua.lua_isnumber(L, countIndex) ? lua.lua_tointeger(L, countIndex) : 1;
+  lua.lua_pushboolean(L, getDuelCardCounter(card, counterType) >= Math.max(0, count));
   return 1;
 }
 

@@ -33,6 +33,19 @@ export function installAuxCostApi(L: unknown, readLuaError: (state: unknown) => 
       if chk==0 then return c and c:IsAbleToExtra() end
       Duel.SendtoExtra(c,nil,REASON_COST)
     end
+    function Cost.RemoveCounterFromSelf(counter_type,count)
+      return function(e,tp,eg,ep,ev,re,r,rp,chk)
+        local c=e:GetHandler()
+        if chk==0 then return c and c:IsCanRemoveCounter(tp,counter_type,count,REASON_COST) end
+        c:RemoveCounter(tp,counter_type,count,REASON_COST)
+      end
+    end
+    function Cost.RemoveCounterFromField(counter_type,count)
+      return function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return Duel.IsCanRemoveCounter(tp,1,0,counter_type,count,REASON_COST) end
+        Duel.RemoveCounter(tp,1,0,counter_type,count,REASON_COST)
+      end
+    end
     function Cost.PayLP(lp_value,pay_until)
       if not pay_until then
         if lp_value>=1 then

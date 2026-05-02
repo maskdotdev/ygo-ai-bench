@@ -2311,6 +2311,54 @@ describe("Lua state helpers", () => {
     expect(restored.state.cards.find((card) => card.uid === self!.uid)?.counters).toBeUndefined();
   });
 
+  it("lets Lua scripts use counter removal cost aliases", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Self Counter Cost", kind: "monster" },
+      { code: "200", name: "Field Counter Cost", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 78, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const self = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const opponent = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(self).toBeDefined();
+    expect(opponent).toBeDefined();
+    moveDuelCard(session.state, self!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, opponent!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local self=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local opp=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      self:AddCounter(77,3)
+      opp:AddCounter(77,1)
+      local e=Effect.CreateEffect(self)
+      local self_cost=Cost.RemoveCounterFromSelf(77,1)
+      local field_cost=Cost.RemoveCounterFromField(77,2)
+      Debug.Message("self counter check " .. tostring(self_cost(e,0,Group.CreateGroup(),0,0,nil,0,0,0)) .. "/" .. tostring(self:IsCanRemoveCounter(0,77,2,REASON_COST)))
+      self_cost(e,0,Group.CreateGroup(),0,0,nil,0,0,1)
+      Debug.Message("self counter after " .. self:GetCounter(77) .. "/" .. opp:GetCounter(77))
+      Debug.Message("field counter check " .. tostring(field_cost(e,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+      field_cost(e,0,Group.CreateGroup(),0,0,nil,0,0,1)
+      Debug.Message("field counter after " .. self:GetCounter(77) .. "/" .. opp:GetCounter(77) .. "/" .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("field counter blocked " .. tostring(field_cost(e,0,Group.CreateGroup(),0,0,nil,0,0,0)))
+      `,
+      "counter-cost-aliases.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("self counter check true/true");
+    expect(host.messages).toContain("self counter after 2/1");
+    expect(host.messages).toContain("field counter check true");
+    expect(host.messages).toContain("field counter after 0/1/1");
+    expect(host.messages).toContain("field counter blocked false");
+  });
+
   it("lets Lua scripts check whether cards can change battle position", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Face-up Monster", kind: "monster" },
