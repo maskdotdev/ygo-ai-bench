@@ -2280,7 +2280,7 @@ describe("Lua state helpers", () => {
       local self = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local opp = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
       local deck = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_DECK, 0, 1, 1, nil):GetFirst()
-      Debug.Message("add self " .. tostring(self:AddCounter(99, 2)) .. "/" .. self:GetCounter(99) .. "/" .. tostring(self:HasCounter()) .. "/" .. tostring(self:HasCounters()))
+      Debug.Message("add self " .. tostring(self:AddCounter(99, 2)) .. "/" .. self:GetCounter(99) .. "/" .. tostring(self:HasCounter()) .. "/" .. tostring(self:HasCounter(99)) .. "/" .. tostring(self:HasCounter(77)) .. "/" .. tostring(self:HasCounters()))
       Debug.Message("add opp " .. tostring(opp:AddCounter(99, 1)) .. "/" .. opp:GetCounter(99))
       Debug.Message("can add deck " .. tostring(deck:IsCanAddCounter(99, 1)) .. "/" .. tostring(deck:AddCounter(99, 1)))
       Debug.Message("duel can add " .. tostring(Duel.IsCanAddCounter(0, 99, 1, self)) .. "/" .. tostring(Duel.IsCanAddCounter(0, 99, 1, deck)) .. "/" .. tostring(Duel.IsCanAddCounter(0, 99, 1)))
@@ -2296,7 +2296,7 @@ describe("Lua state helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("add self true/2/true/true");
+    expect(host.messages).toContain("add self true/2/true/true/false/true");
     expect(host.messages).toContain("add opp true/1");
     expect(host.messages).toContain("can add deck false/false");
     expect(host.messages).toContain("duel can add true/false/true");
