@@ -21,6 +21,7 @@ import {
   isBattleTargetPrevented,
   isDirectAttackPrevented,
   mustAttackMonsterTargetAllowed,
+  mustAttackRequiredUids,
   onlyBeAttackedTargetUids,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
@@ -65,6 +66,13 @@ export function canCoreDuelCardAttack(state: DuelState, uid: string, handlers: C
   const createContext = handlers.createContinuousContext(state);
   const firstAttackers = firstAttackRequiredUids(state, card?.controller ?? state.turnPlayer, createContext);
   return Boolean(card && isFirstAttackAllowed(firstAttackers, card) && !isAttackPrevented(state, card, createContext) && canDuelCardAttackRule(state, uid, extraAttackCount(state, card, createContext)));
+}
+
+export function hasCoreMustAttackAction(state: DuelState, player: PlayerId, actions: DuelAction[], handlers: CoreBattleHandlers): boolean {
+  if (state.phase !== "battle") return false;
+  const createContext = handlers.createContinuousContext(state);
+  const mustAttackers = mustAttackRequiredUids(state, player, createContext);
+  return actions.some((action) => action.type === "declareAttack" && mustAttackers.has(action.attackerUid));
 }
 
 export function getCoreDuelAttackTargets(state: DuelState, attackerUid: string, handlers: CoreBattleHandlers): DuelCardInstance[] {

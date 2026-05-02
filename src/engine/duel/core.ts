@@ -57,6 +57,7 @@ import {
   getCoreDuelAttackTargets,
   getCoreAdditionalBattleDamagePlayers,
   getCoreBattleDamageReason,
+  hasCoreMustAttackAction,
   hasCorePiercingBattleDamage,
   negateCoreDuelAttack,
   type CoreBattleHandlers,
@@ -346,9 +347,10 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...flipSummonActions(state, player));
   }
   appendBattleActions(actions, state, player, coreBattleHandlers);
+  const mustAttack = hasCoreMustAttackAction(state, player, actions, coreBattleHandlers);
   const nextPhase = nextAvailableDuelPhase(state, player);
-  if (nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
-  actions.push({ type: "endTurn", player, label: "End turn" });
+  if (!mustAttack && nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
+  if (!mustAttack) actions.push({ type: "endTurn", player, label: "End turn" });
   return stampActions(actions, state.actionWindowId);
 }
 
