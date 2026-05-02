@@ -1,5 +1,4 @@
 import fengari from "fengari";
-import { hasZoneSpace } from "#duel/card-state.js";
 import { canDuelCardAttack, registerEffect } from "#duel/core.js";
 import { isCardDisabled } from "#duel/continuous-effects.js";
 import { duelReason } from "#duel/reasons.js";
@@ -8,6 +7,7 @@ import { installCardBattleApi } from "#lua/card-battle-api.js";
 import { installCardCodeApi } from "#lua/card-code-api.js";
 import { installCardColumnApi } from "#lua/card-column-api.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
+import { installCardControlApi } from "#lua/card-control-api.js";
 import { installCardCounterApi } from "#lua/card-counter-api.js";
 import { isMonsterLike } from "#lua/card-eligibility-api.js";
 import { createLuaMaterialCheckContext, installCardEffectQueryApi, isNegatableCard, matchingLuaEffects } from "#lua/card-effect-query-api.js";
@@ -102,15 +102,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushBooleanGetter(L, "WasMaximumModeSide", session, () => false);
   installCardPreviousStateApi(L, session);
   installCardColumnApi(L, session);
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const requested = readRequestedPlayers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && requested.includes(card.controller)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring("IsControler"));
-  pushCanChangeControler(L, "IsAbleToChangeControler", session);
-  pushCanChangeControler(L, "IsControlerCanBeChanged", session);
+  installCardControlApi(L, session);
   installCardSummonApi(L, session);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
@@ -178,16 +170,6 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
-function pushCanChangeControler(L: unknown, fieldName: string, session: DuelSession): void {
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    const targetPlayer = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : card ? otherPlayer(card.controller) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && targetPlayer !== undefined && canChangeControl(session.state, card, targetPlayer)));
-    return 1;
-  });
-  lua.lua_setfield(L, -2, to_luastring(fieldName));
-}
-
 function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
   const card = readCard(L, session);
   const code = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
@@ -199,12 +181,6 @@ function pushIsHasEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   }
   for (const effect of effects) hostState.pushEffectTable(L, effect.id);
   return effects.length;
-}
-
-function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer: PlayerId): boolean {
-  if (card.controller === targetPlayer) return false;
-  if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
-  return hasZoneSpace(state, targetPlayer, card.location);
 }
 
 function canEnterBattlePhase(state: DuelState): boolean {
