@@ -3032,6 +3032,10 @@ describe("Lua field and query helpers", () => {
       Debug.Message("group add cards " .. added_cards:GetCount() .. " " .. tostring(added_cards:Equal(Group.FromCards(c300, c200, c100))))
       local added_card_first = c300 + Group.FromCards(c100)
       Debug.Message("group add card first " .. added_card_first:GetCount() .. " " .. tostring(added_card_first:Includes(Group.FromCards(c100, c300))))
+      local added_cards_only = c100 + c200
+      Debug.Message("card add cards " .. added_cards_only:GetCount() .. " " .. tostring(added_cards_only:Equal(Group.FromCards(c200, c100))))
+      local added_card_group = c100 + Group.FromCards(c200, c300)
+      Debug.Message("card add group " .. added_card_group:GetCount() .. " " .. tostring(added_card_group:Equal(Group.FromCards(c300, c200, c100))))
       Debug.Message("includes group " .. tostring(g:Includes(Group.FromCards(c100, c200))) .. "/" .. tostring(Group.FromCards(c100):Includes(g)) .. "/" .. tostring(g:Includes(c300)))
       local without_high = g:Clone()
       without_high:Sub(high)
@@ -3151,6 +3155,8 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("create group cards 2 true");
     expect(host.messages).toContain("group add cards 3 true");
     expect(host.messages).toContain("group add card first 2 true");
+    expect(host.messages).toContain("card add cards 2 true");
+    expect(host.messages).toContain("card add group 3 true");
     expect(host.messages).toContain("includes group true/false/true");
     expect(host.messages).toContain("sub high 1 true");
     expect(host.messages).toContain("clear group 0");

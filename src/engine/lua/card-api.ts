@@ -58,6 +58,8 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));
+  lua.lua_pushcfunction(L, pushCardAdd);
+  lua.lua_setfield(L, -2, to_luastring("__add"));
   installCardCodeApi(L, session);
   installCardStatApi(L, session);
   installCardBattleApi(L, session);
@@ -77,7 +79,22 @@ export function pushCardTable(L: unknown, uid: string): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, pushCardEquals);
   lua.lua_setfield(L, -2, to_luastring("__eq"));
+  copyGlobalFunctionToField(L, "Card", "__add");
   lua.lua_setmetatable(L, -2);
+}
+
+function pushCardAdd(L: unknown): number {
+  lua.lua_getglobal(L, to_luastring("Group"));
+  lua.lua_getfield(L, -1, to_luastring("__add"));
+  lua.lua_pushvalue(L, 1);
+  lua.lua_pushvalue(L, 2);
+  const status = lua.lua_pcall(L, 2, 1, 0);
+  if (status !== lua.LUA_OK) {
+    lua.lua_pop(L, 1);
+    lua.lua_newtable(L);
+  }
+  lua.lua_remove(L, -2);
+  return 1;
 }
 
 function pushCardEquals(L: unknown): number {
