@@ -82,7 +82,7 @@ function installEffectBackedStatHelpers<EffectRecord extends LuaCardApiEffectRec
 
 function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
   pushNumberGetter(L, "GetOwner", session, (card) => card?.owner ?? 0);
-  pushNumberMatcher(L, "IsOwner", session, (card, requested) => card.owner === normalizePlayer(requested));
+  pushPlayerMatcher(L, "IsOwner", session, (card, requested) => requested.includes(card.owner));
   pushNumberGetter(L, "GetControler", session, (card) => card?.controller ?? 0);
   pushNumberGetter(L, "GetSummonPlayer", session, (card) => card?.summonPlayer ?? card?.controller ?? 0);
   pushNumberGetter(L, "GetSummonLocation", session, (card) => (card?.summonType ? locationMaskFromLocation(card.previousLocation) : 0));
@@ -259,15 +259,15 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
   pushNumberMatcher(L, "IsReason", session, (card, requested) => ((card.reason ?? 0) & requested) !== 0);
   pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
-  pushNumberMatcher(L, "IsReasonPlayer", session, (card, requested) => (card.reasonPlayer ?? card.controller) === normalizePlayer(requested));
+  pushPlayerMatcher(L, "IsReasonPlayer", session, (card, requested) => requested.includes(card.reasonPlayer ?? card.controller));
   pushNumberGetter(L, "GetTurnID", session, (card) => card?.turnId ?? 0);
   pushNumberGetter(L, "GetTurnCounter", session, (card) => card?.turnCounter ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => pushSetTurnCounter(state, session));
   lua.lua_setfield(L, -2, to_luastring("SetTurnCounter"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    const player = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && player !== undefined && card.controller === player));
+    const requested = readRequestedPlayers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.includes(card.controller)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsControler"));
@@ -275,7 +275,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   pushCanChangeControler(L, "IsControlerCanBeChanged", session);
   installCardSummonApi(L, session);
   pushNumberMatcher(L, "IsSummonLocation", session, (card, requested) => Boolean(card.summonType && (locationMaskFromLocation(card.previousLocation) & requested) !== 0));
-  pushNumberMatcher(L, "IsSummonPlayer", session, (card, requested) => card.summonPlayer !== undefined && card.summonPlayer === normalizePlayer(requested));
+  pushPlayerMatcher(L, "IsSummonPlayer", session, (card, requested) => card.summonPlayer !== undefined && requested.includes(card.summonPlayer));
   pushBooleanGetter(L, "IsAbleToGrave", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "graveyard")));
   pushBooleanGetter(L, "IsAbleToGraveAsCost", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.cost)));
   pushBooleanGetter(L, "IsAbleToHand", session, (_, uid) => Boolean(uid && canMoveDuelCardToLocation(session.state, uid, "hand")));
@@ -382,6 +382,16 @@ function pushNumberMatcher(L: unknown, fieldName: string, session: DuelSession, 
     const card = readCard(state, session);
     const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
     lua.lua_pushboolean(state, Boolean(card && requested !== undefined && matcher(card, requested)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function pushPlayerMatcher(L: unknown, fieldName: string, session: DuelSession, matcher: (card: DuelCardInstance, requested: PlayerId[]) => boolean): void {
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedPlayers(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && requested.length > 0 && matcher(card, requested)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
@@ -807,6 +817,10 @@ function isFieldCard(card: DuelCardInstance): boolean {
 
 function normalizePlayer(value: number): PlayerId {
   return value === 1 ? 1 : 0;
+}
+
+function readRequestedPlayers(L: unknown, startIndex: number): PlayerId[] {
+  return readRequestedNumbers(L, startIndex).map(normalizePlayer);
 }
 
 function otherPlayer(player: PlayerId): PlayerId {

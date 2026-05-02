@@ -59,7 +59,13 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   });
   lua.lua_setfield(L, -2, to_luastring("IsPreviousPosition"));
   pushNumberGetter(L, "GetPreviousControler", session, (card) => card?.previousController ?? 0);
-  pushNumberMatcher(L, "IsPreviousControler", session, (card, requested) => card.previousController === normalizePlayer(requested));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const requested = readRequestedNumbers(state, 2).map(normalizePlayer);
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && card.previousController !== undefined && requested.includes(card.previousController)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsPreviousControler"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requestedCodes = readRequestedCodes(state, 2);
