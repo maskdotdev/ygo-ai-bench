@@ -8,6 +8,7 @@ export function locationMaskFromLocation(location: DuelLocation | undefined): nu
   if (location === "graveyard") return 0x10;
   if (location === "banished") return 0x20;
   if (location === "extraDeck") return 0x40;
+  if (location === "overlay") return 0x80;
   return 0;
 }
 
