@@ -518,9 +518,10 @@ describe("Lua special summon procedures", () => {
     expect(blockedSource).toBeTruthy();
     expect(material).toBeTruthy();
 
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
+    const sourceScript = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
       c100={}
       function c100.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -535,6 +536,10 @@ describe("Lua special summon procedures", () => {
         end)
         c:RegisterEffect(e)
       end
+      `;
+        }
+        if (name === "c200.lua") {
+          return `
       c200={}
       function c200.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -546,11 +551,17 @@ describe("Lua special summon procedures", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "release-cost-special-summon-procedure.lua",
-    );
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const sourceLoad = host.loadCardScript(100, sourceScript);
+    const blockedLoad = host.loadCardScript(200, sourceScript);
 
-    expect(result.ok, result.error).toBe(true);
+    expect(sourceLoad.ok, sourceLoad.error).toBe(true);
+    expect(blockedLoad.ok, blockedLoad.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const actions = getDuelLegalActions(session, 0);
     const action = actions.find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
@@ -559,6 +570,22 @@ describe("Lua special summon procedures", () => {
     expect(blocked).toBeUndefined();
     expect(host.messages).not.toContain("procedure release cost 1/1");
     expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c200.lua"]);
+    expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const restoredAction = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    expect(restoredAction).toBeDefined();
+    expect(restored.host.messages).not.toContain("procedure release cost 1/1");
+    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    expect(restored.host.messages).toContain("procedure release cost 1/1");
+    expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(restored.session.state.cards.find((card) => card.uid === blockedSource!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
+
     expect(applyResponse(session, action!).ok).toBe(true);
 
     expect(host.messages).toContain("procedure release cost 1/1");
