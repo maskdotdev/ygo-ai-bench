@@ -50,8 +50,11 @@ describe("Lua summon-attempt events", () => {
 
     const summoned = session.state.cards.find((card) => card.code === "100");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["normalSummoning"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: summoned!.uid });
-    expect(session.state.eventHistory.map((event) => event.eventName).slice(-2)).toEqual(["normalSummoning", "normalSummoned"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: summoned!.uid, eventCode: 1103 });
+    expect(session.state.eventHistory.slice(-2)).toEqual([
+      expect.objectContaining({ eventName: "normalSummoning", eventCode: 1103 }),
+      expect.objectContaining({ eventName: "normalSummoned", eventCode: 1100 }),
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
@@ -106,8 +109,11 @@ describe("Lua summon-attempt events", () => {
     specialSummonDuelCard(session.state, sourceCard!.uid, 0);
 
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["specialSummoning"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: sourceCard!.uid });
-    expect(session.state.eventHistory.map((event) => event.eventName).slice(-2)).toEqual(["specialSummoning", "specialSummoned"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: sourceCard!.uid, eventCode: 1105 });
+    expect(session.state.eventHistory.slice(-2)).toEqual([
+      expect.objectContaining({ eventName: "specialSummoning", eventCode: 1105 }),
+      expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102 }),
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
@@ -167,8 +173,11 @@ describe("Lua summon-attempt events", () => {
     expect(applyResponse(session, action!).ok).toBe(true);
 
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummoning"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid });
-    expect(session.state.eventHistory.map((event) => event.eventName).slice(-2)).toEqual(["flipSummoning", "flipSummoned"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid, eventCode: 1104 });
+    expect(session.state.eventHistory.slice(-2)).toEqual([
+      expect.objectContaining({ eventName: "flipSummoning", eventCode: 1104 }),
+      expect.objectContaining({ eventName: "flipSummoned", eventCode: 1101 }),
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);

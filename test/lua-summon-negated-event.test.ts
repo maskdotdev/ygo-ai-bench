@@ -83,6 +83,10 @@ describe("Lua summon-negated events", () => {
     expect(summon).toBeDefined();
     expect(applyResponse(session, summon!).ok).toBe(true);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["normalSummoning", "normalSummoned"]);
+    expect(session.state.pendingTriggers).toEqual([
+      expect.objectContaining({ eventName: "normalSummoning", eventCode: 1103, eventCardUid: summoned!.uid }),
+      expect.objectContaining({ eventName: "normalSummoned", eventCode: 1100, eventCardUid: summoned!.uid }),
+    ]);
 
     const attemptNegator = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("200"));
     expect(attemptNegator).toBeDefined();
@@ -92,6 +96,7 @@ describe("Lua summon-negated events", () => {
     expect(host.messages).toContain("attempt negate 1");
     expect(session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "graveyard" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["normalSummonNegated"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "normalSummonNegated", eventCode: 1114, eventCardUid: summoned!.uid });
     expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("normalSummoned");
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("300"))).toBe(false);
 
