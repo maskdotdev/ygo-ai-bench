@@ -43,8 +43,8 @@ describe("Lua chain-solved events", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_CHAIN_SOLVED)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp)
-          Debug.Message("chain solved resolved " .. tp)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("chain solved resolved " .. tp .. "/" .. ep .. "/" .. ev .. "/" .. rp)
         end)
         c:RegisterEffect(e)
       end
@@ -65,8 +65,8 @@ describe("Lua chain-solved events", () => {
     expect(applyResponse(session, action!).ok).toBe(true);
     expect(host.messages).toContain("chain starter resolved");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainSolved"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1022 });
-    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "chainSolved", eventCode: 1022 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1022, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "chainSolved", eventCode: 1022, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
@@ -76,6 +76,6 @@ describe("Lua chain-solved events", () => {
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
-    expect(restored.host.messages).toContain("chain solved resolved 0");
+    expect(restored.host.messages).toContain("chain solved resolved 0/0/1/0");
   });
 });

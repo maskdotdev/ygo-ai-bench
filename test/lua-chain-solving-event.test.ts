@@ -46,8 +46,8 @@ describe("Lua chain-solving events", () => {
         e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
           return eg and eg:IsExists(function(tc) return tc:IsCode(100) end,1,nil)
         end)
-        e:SetOperation(function(e,tp)
-          Debug.Message("chain solving resolved " .. tp)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("chain solving resolved " .. tp .. "/" .. ep .. "/" .. ev .. "/" .. rp)
         end)
         c:RegisterEffect(e)
       end
@@ -69,8 +69,8 @@ describe("Lua chain-solving events", () => {
 
     expect(host.messages).toContain("starter resolved");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainSolving"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1020 });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainSolving", eventCode: 1020 })]));
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1020, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainSolving", eventCode: 1020, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 })]));
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "chainSolved"]);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
@@ -80,6 +80,6 @@ describe("Lua chain-solving events", () => {
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
-    expect(restored.host.messages).toContain("chain solving resolved 0");
+    expect(restored.host.messages).toContain("chain solving resolved 0/0/1/0");
   });
 });

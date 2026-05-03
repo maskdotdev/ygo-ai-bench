@@ -62,8 +62,8 @@ describe("Lua chain-negated events", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_CHAIN_NEGATED)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp)
-          Debug.Message("chain negated resolved " .. tp)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("chain negated resolved " .. tp .. "/" .. ep .. "/" .. ev .. "/" .. rp)
         end)
         c:RegisterEffect(e)
       end
@@ -97,8 +97,8 @@ describe("Lua chain-negated events", () => {
     expect(host.messages).toContain("negate result true");
     expect(host.messages).not.toContain("negated source resolved");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainNegated"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1024 });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainNegated", eventCode: 1024 })]));
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1024, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainNegated", eventCode: 1024, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
@@ -115,6 +115,6 @@ describe("Lua chain-negated events", () => {
       expect(pass).toBeDefined();
       expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
     }
-    expect(restored.host.messages).toContain("chain negated resolved 0");
+    expect(restored.host.messages).toContain("chain negated resolved 0/0/1/0");
   });
 });

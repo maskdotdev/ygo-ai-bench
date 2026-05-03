@@ -835,15 +835,17 @@ function resolveChain(state: DuelState): void {
       if (!link) continue;
       if (link.negated) {
         pushDuelLog(state, "chainNegated", link.player, undefined, link.effectId);
-        collectTriggerEffects(state, "chainNegated");
-        collectTriggerEffects(state, "chainDisabled");
+        const payload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
+        collectDuelTriggerEffects(state, "chainNegated", undefined, payload);
+        collectDuelTriggerEffects(state, "chainDisabled", undefined, payload);
         continue;
       }
       const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
       const source = findCard(state, link.sourceUid);
       if (!effect || !source) continue;
       const eventCard = link.eventCardUid === undefined ? undefined : findCard(state, link.eventCardUid);
-      collectTriggerEffects(state, "chainSolving", source);
+      const chainPayload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
+      collectDuelTriggerEffects(state, "chainSolving", source, chainPayload);
       const ctx = createEffectContext(
         state,
         source,
@@ -865,7 +867,7 @@ function resolveChain(state: DuelState): void {
         link.relatedEffectId,
       );
       (link.operationOverride ?? effect.operation)(ctx);
-      collectTriggerEffects(state, "chainSolved");
+      collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload);
     }
   } catch (error) {
     restoreDuelState(state, rollback);
