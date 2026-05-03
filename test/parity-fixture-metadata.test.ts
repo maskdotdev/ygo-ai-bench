@@ -38,6 +38,10 @@ describe("parity fixture metadata", () => {
     expect(missingAbsentLegalActionGroupCoverage()).toEqual([]);
   });
 
+  it("requires legal-action expectations to pin aggregate action counts", () => {
+    expect(missingLegalActionCountCoverage()).toEqual([]);
+  });
+
   it("requires parity fixtures to exercise snapshot restore coverage", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
@@ -62,6 +66,7 @@ describe("parity fixture metadata", () => {
     expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 7), '  note: "temporary local behavior",', ...lines.slice(7)])).toEqual(["fixture.ts:7"]);
     expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 6), "  source: 'parity-backlog',", '  note: "temporary local behavior",', ...lines.slice(8)])).toEqual(["fixture.ts:7"]);
     expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
+    expect(missingLegalActionCountsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
   });
 });
@@ -95,6 +100,10 @@ function missingLegalActionGroupCoverage(): string[] {
 
 function missingAbsentLegalActionGroupCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingLegalActionGroupsInLines(file, readFixtureLines(file), "absentLegalActions:", "absentLegalActionGroups:"));
+}
+
+function missingLegalActionCountCoverage(): string[] {
+  return ["parity-battle-result-fixture.test.ts"].flatMap((file) => missingLegalActionCountsInLines(file, readFixtureLines(file)));
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
@@ -156,6 +165,17 @@ function missingLegalActionGroupsInLines(file: string, lines: string[], rawSearc
     if (rawCount > groupCount) missingGroups.push(`${file}:${index + 1}`);
   });
   return missingGroups;
+}
+
+function missingLegalActionCountsInLines(file: string, lines: string[]): string[] {
+  const missingCounts: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    if (block.includes("legalActions:") && !block.includes("legalActionCounts:")) missingCounts.push(`${file}:${index + 1}`);
+    if (block.includes("legalActionGroups:") && !block.includes("legalActionGroupCounts:")) missingCounts.push(`${file}:${index + 1}`);
+  });
+  return [...new Set(missingCounts)];
 }
 
 function parityFixtureWithoutSnapshotRestoreInLines(file: string, lines: string[]): string[] {
