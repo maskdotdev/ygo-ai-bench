@@ -52,7 +52,7 @@ describe("EDOPro parity equal defense-position battle result fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro applies no damage and destroys neither monster when ATK equals a defense-position target's DEF",
