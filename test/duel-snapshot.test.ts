@@ -116,6 +116,36 @@ describe("duel snapshot persistence", () => {
     expect(result.state.cards.find((card) => card.uid === source!.uid)?.location).toBe("graveyard");
   });
 
+  it("restores registry-backed chain limits across snapshots", () => {
+    const session = createDuel({ seed: 125, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.chainLimits.push({
+      registryKey: "snapshot-chain-limit",
+      untilChainEnd: true,
+      allows: () => false,
+    });
+
+    const withoutRegistry = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(withoutRegistry.state.chainLimits).toEqual([]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {}, {
+      "snapshot-chain-limit": (limit) => ({
+        ...limit,
+        allows: (effect) => effect.id === "allowed-after-restore",
+      }),
+    });
+
+    expect(restored.state.chainLimits).toHaveLength(1);
+    const restoredLimit = restored.state.chainLimits[0]!;
+    expect(restoredLimit).toMatchObject({ registryKey: "snapshot-chain-limit", untilChainEnd: true });
+    expect(restoredLimit.allows({ id: "blocked-after-restore", sourceUid: "missing", controller: 0, event: "quick", range: ["hand"], operation() {} }, 0, 0)).toBe(false);
+    expect(restoredLimit.allows({ id: "allowed-after-restore", sourceUid: "missing", controller: 0, event: "quick", range: ["hand"], operation() {} }, 0, 0)).toBe(true);
+  });
+
   it("preserves pending trigger timing metadata across snapshots", () => {
     const session = createDuel({ seed: 123, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
