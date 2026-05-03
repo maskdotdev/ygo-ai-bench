@@ -104,33 +104,47 @@ describe("extra deck summon restore", () => {
     expect(result.state.cards.find((card) => card.uid === link!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
   });
+});
+
+function assertRestoredFullZoneExtraDeckSummon(type: "synchroSummon" | "xyzSummon" | "linkSummon", code: string, materialLocation: "graveyard" | "overlay"): void {
+  const session = createDuel({ seed: 1, startingHandSize: 7, cardReader: createCardReader(cards) });
+  loadDecks(session, {
+    0: { main: ["100", "300", "500", "500", "500", "500", "500"], extra: [code] },
+    1: { main: ["400", "400", "400", "400", "400", "400", "400"] },
+  });
+  startDuel(session);
+
+  const allMonsters = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "monster");
+  expect(allMonsters).toHaveLength(7);
+  for (const monster of allMonsters.slice(0, 5)) moveDuelCard(session.state, monster.uid, "monsterZone", 0);
+
+  const target = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === code);
+  const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "monsterZone" && (card.code === "100" || card.code === "300"));
+  expect(target).toBeTruthy();
+  expect(materials).toHaveLength(2);
+
+  const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+  expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+  const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === type && candidate.uid === target!.uid);
+  expect(action).toMatchObject({ type, materialUids: materials.map((card) => card.uid) });
+  if (!action || action.type !== type) throw new Error(`Expected restored full-zone ${type} action`);
+
+  const result = applyResponse(restored, action);
+  expect(result.ok).toBe(true);
+  expect(result.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+  expect(materials.every((material) => result.state.cards.find((card) => card.uid === material.uid)?.location === materialLocation)).toBe(true);
+}
+
+describe("full-zone extra deck summon restore", () => {
+  it("restores full-zone Synchro Summon actions that free space with selected materials", () => {
+    assertRestoredFullZoneExtraDeckSummon("synchroSummon", "910", "graveyard");
+  });
+
+  it("restores full-zone Xyz Summon actions that free space with selected materials", () => {
+    assertRestoredFullZoneExtraDeckSummon("xyzSummon", "920", "overlay");
+  });
 
   it("restores full-zone Link Summon actions that free space with selected materials", () => {
-    const session = createDuel({ seed: 1, startingHandSize: 7, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100", "300", "500", "500", "500", "500", "500"], extra: ["930"] },
-      1: { main: ["400", "400", "400", "400", "400", "400", "400"] },
-    });
-    startDuel(session);
-
-    const allMonsters = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "monster");
-    expect(allMonsters).toHaveLength(7);
-    for (const monster of allMonsters.slice(0, 5)) moveDuelCard(session.state, monster.uid, "monsterZone", 0);
-
-    const link = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "930");
-    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "monsterZone" && (card.code === "100" || card.code === "300"));
-    expect(link).toBeTruthy();
-    expect(materials).toHaveLength(2);
-
-    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
-    expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
-    const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid);
-    expect(action).toMatchObject({ type: "linkSummon", materialUids: materials.map((card) => card.uid) });
-    if (!action || action.type !== "linkSummon") throw new Error("Expected restored full-zone Link Summon action");
-
-    const result = applyResponse(restored, action);
-    expect(result.ok).toBe(true);
-    expect(result.state.cards.find((card) => card.uid === link!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
-    expect(materials.every((material) => result.state.cards.find((card) => card.uid === material.uid)?.location === "graveyard")).toBe(true);
+    assertRestoredFullZoneExtraDeckSummon("linkSummon", "930", "graveyard");
   });
 });
