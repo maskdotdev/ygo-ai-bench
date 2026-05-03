@@ -610,6 +610,7 @@ export interface ScriptedLegalActionGroupExpectation {
   label?: string;
   windowId?: number;
   windowKind?: DuelActionWindowKind;
+  triggerBucket?: Partial<PendingTriggerBucketState>;
   count?: number;
   actions?: ScriptedLegalActionExpectation[];
 }
@@ -651,6 +652,7 @@ interface ScriptedDuelWindowExpectationFields {
   damagePasses?: PlayerId[];
   chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid">>>;
   pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "triggerBucket" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid">>>;
+  pendingTriggerBuckets?: Array<Partial<PendingTriggerBucketState>>;
   eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid">>>;
   prompt?: Partial<DuelPromptState> | null;
   legalActionCounts?: Partial<Record<PlayerId, number>>;

@@ -23,6 +23,7 @@ import type {
   DuelCardReader,
   DuelEffectDefinition,
   DuelLocation,
+  PendingTriggerBucketState,
   DuelResponse,
   DuelSession,
   PlayerId,
@@ -125,6 +126,7 @@ function assertSnapshotRestore(
   assertSnapshotJsonEqual("currentAttack", session.state.currentAttack, restored.state.currentAttack, fixture, context, failures);
   assertSnapshotJsonEqual("prompt", session.state.prompt, restored.state.prompt, fixture, context, failures);
   assertSnapshotJsonEqual("pendingTriggers", session.state.pendingTriggers, restored.state.pendingTriggers, fixture, context, failures);
+  assertSnapshotJsonEqual("pendingTriggerBuckets", queryPublicState(session).pendingTriggerBuckets, queryPublicState(restored).pendingTriggerBuckets, fixture, context, failures);
   assertSnapshotJsonEqual("eventHistory", session.state.eventHistory, restored.state.eventHistory, fixture, context, failures);
   assertSnapshotJsonEqual("chainLimits", chainLimitMetadata(session.state.chainLimits), chainLimitMetadata(restored.state.chainLimits), fixture, context, failures);
   assertSnapshotJsonEqual("chainPasses", session.state.chainPasses, restored.state.chainPasses, fixture, context, failures);
@@ -241,6 +243,7 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   assertPlayerListForWindow("damagePasses", state.damagePasses, expected.damagePasses, fail);
   assertPartialList("chain", state.chain, expected.chain, fail);
   assertPartialList("pendingTriggers", state.pendingTriggers, expected.pendingTriggers, fail);
+  assertPendingTriggerBucketExpectations(queryPublicState(session).pendingTriggerBuckets, expected.pendingTriggerBuckets, fail);
   assertPartialList("eventHistory", session.state.eventHistory, expected.eventHistory, fail);
   assertLegalActionCounts(session, expected.legalActionCounts, fail);
   assertLegalActionGroupCounts(session, expected.legalActionGroupCounts, fail);
@@ -424,11 +427,35 @@ function legalActionGroupMatches(
   if (expectation.label !== undefined && group.label !== expectation.label) return false;
   if (expectation.windowId !== undefined && group.windowId !== expectation.windowId) return false;
   if (expectation.windowKind !== undefined && group.windowKind !== expectation.windowKind) return false;
+  if (expectation.triggerBucket !== undefined && !matchesPendingTriggerBucket(group.triggerBucket, expectation.triggerBucket)) return false;
   for (const actionExpectation of expectation.actions ?? []) {
     const matches = group.actions.filter((action) => duelActionMatchesSelector(action, actionExpectation, cards));
     const expectedCount = actionExpectation.count;
     if (expectedCount === undefined ? matches.length === 0 : matches.length !== expectedCount) return false;
   }
+  return true;
+}
+
+function assertPendingTriggerBucketExpectations(
+  actual: PendingTriggerBucketState[],
+  expected: Array<Partial<PendingTriggerBucketState>> | undefined,
+  fail: (message: string) => void,
+): void {
+  if (expected === undefined) return;
+  if (actual.length !== expected.length) {
+    fail(`Expected pendingTriggerBuckets length ${expected.length}, got ${actual.length}`);
+    return;
+  }
+  expected.forEach((partial, index) => {
+    if (!matchesPendingTriggerBucket(actual[index], partial)) fail(`Expected pendingTriggerBuckets[${index}] ${JSON.stringify(partial)}, got ${JSON.stringify(actual[index])}`);
+  });
+}
+
+function matchesPendingTriggerBucket(actual: PendingTriggerBucketState | undefined, expected: Partial<PendingTriggerBucketState>): boolean {
+  if (actual === undefined) return false;
+  if (expected.triggerBucket !== undefined && actual.triggerBucket !== expected.triggerBucket) return false;
+  if (expected.player !== undefined && actual.player !== expected.player) return false;
+  if (expected.triggerIds !== undefined && (actual.triggerIds.length !== expected.triggerIds.length || actual.triggerIds.some((id, index) => id !== expected.triggerIds?.[index]))) return false;
   return true;
 }
 
