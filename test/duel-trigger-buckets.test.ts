@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
@@ -286,6 +286,14 @@ describe("duel trigger buckets", () => {
       "first-restored-turn-optional",
       "second-restored-turn-optional",
     ]);
+    expect(getGroupedDuelLegalActions(restored, 0).map((group) => ({
+      label: group.label,
+      windowKind: group.windowKind,
+      effectIds: group.actions.map((action) => "effectId" in action ? action.effectId : undefined),
+    }))).toEqual([
+      { label: "Trigger Activations", windowKind: "triggerBucket", effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"] },
+      { label: "Trigger Declines", windowKind: "triggerBucket", effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"] },
+    ]);
     expect(getDuelLegalActions(restored, 1)).toHaveLength(0);
 
     const activateFirst = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "first-restored-turn-optional");
@@ -313,6 +321,14 @@ describe("duel trigger buckets", () => {
     expect(getDuelLegalActions(restoredOpponentBucket, 0)).toHaveLength(0);
     expect(getDuelLegalActions(restoredOpponentBucket, 1).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["opponent-restored-later-optional"]);
     expect(getDuelLegalActions(restoredOpponentBucket, 1).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["opponent-restored-later-optional"]);
+    expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => ({
+      label: group.label,
+      windowKind: group.windowKind,
+      effectIds: group.actions.map((action) => "effectId" in action ? action.effectId : undefined),
+    }))).toEqual([
+      { label: "Trigger Activations", windowKind: "triggerBucket", effectIds: ["opponent-restored-later-optional"] },
+      { label: "Trigger Declines", windowKind: "triggerBucket", effectIds: ["opponent-restored-later-optional"] },
+    ]);
   });
 
   it("restores mandatory bucket handoff without adding decline actions", () => {
@@ -376,5 +392,56 @@ describe("duel trigger buckets", () => {
     expect(getDuelLegalActions(restored, 0)).toHaveLength(0);
     expect(getDuelLegalActions(restored, 1).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["opponent-restored-mandatory"]);
     expect(getDuelLegalActions(restored, 1).some((action) => action.type === "declineTrigger")).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 1).map((group) => ({
+      label: group.label,
+      windowKind: group.windowKind,
+      effectIds: group.actions.map((action) => "effectId" in action ? action.effectId : undefined),
+    }))).toEqual([
+      { label: "Trigger Activations", windowKind: "triggerBucket", effectIds: ["opponent-restored-mandatory"] },
+    ]);
+  });
+
+  it("prunes restored pending triggers when their callback effect is unavailable", () => {
+    const { session, summoned, turnFirst, turnSecond } = setupTriggerBucketFixture();
+    const withOperation = (effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition => ({
+      ...effect,
+      operation(ctx) {
+        ctx.log(`${effect.id} resolved`);
+      },
+    });
+
+    registerEffect(session, withOperation({
+      id: "missing-restored-trigger",
+      registryKey: "missing-restored-trigger",
+      sourceUid: turnFirst.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+    }));
+    registerEffect(session, withOperation({
+      id: "available-restored-trigger",
+      registryKey: "available-restored-trigger",
+      sourceUid: turnSecond.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+    }));
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["missing-restored-trigger", "available-restored-trigger"]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "available-restored-trigger": withOperation,
+    });
+
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["available-restored-trigger"]);
+    expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["available-restored-trigger"]);
+    expect(restored.state.waitingFor).toBe(0);
+    expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["available-restored-trigger"]);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateTrigger" && action.effectId === "missing-restored-trigger")).toBe(false);
   });
 });

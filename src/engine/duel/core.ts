@@ -110,11 +110,16 @@ import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
 import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
+import { groupDuelLegalActions } from "#duel/legal-action-groups.js";
+export { groupDuelLegalActions } from "#duel/legal-action-groups.js";
+export type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
+export { describeDuelActionSelector, duelActionMatchesSelector, selectDuelActionBySelector } from "#duel/action-selectors.js";
 import { phaseMask } from "#duel/phase-mask.js";
 import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/player-life.js";
 import { getPromptResponseActions, resolveDuelPrompt, stampDuelActions } from "#duel/prompt-response.js";
 import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
+import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from "#duel/scripted-runner.js";
 import { setSpellTrap } from "#duel/spell-trap.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, nextAvailableDuelPhase } from "#duel/turn-flow.js";
@@ -135,6 +140,8 @@ import type {
   DuelState,
   DuelStatus,
   PlayerId,
+  ScriptedDuelRunResult,
+  ScriptedResponseSelector,
 } from "#duel/types.js";
 
 export { moveDuelCard } from "#duel/card-state.js";
@@ -263,6 +270,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     return stampDuelActions(actions, state.actionWindowId, "prompt");
   }
   if (state.chain.length) {
+    if (!chainLinksResolvable(state)) return stampDuelActions(actions, state.actionWindowId, "chainResponse");
     actions.push(...getChainResponseActions(state, player));
     return stampDuelActions(actions, state.actionWindowId, "chainResponse");
   }
@@ -325,8 +333,16 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   return stampDuelActions(actions, state.actionWindowId, "open");
 }
 
+export function getGroupedDuelLegalActions(session: DuelSession, player: PlayerId): ReturnType<typeof groupDuelLegalActions> {
+  return groupDuelLegalActions(getLegalActions(session, player));
+}
+
 export function applyResponse(session: DuelSession, response: DuelResponse): ApplyDuelResponseResult {
   return applyDuelResponse(session, response, responseHandlers);
+}
+
+export function runScriptedDuelResponses(session: DuelSession, steps: ScriptedResponseSelector[]): ScriptedDuelRunResult {
+  return runScriptedDuelResponsesWithHandlers(session, steps, { getLegalActions, applyResponse });
 }
 
 export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
@@ -664,6 +680,13 @@ function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction
   const actions = quickEffectActions(state, player);
   actions.push({ type: "passChain", player, label: "Pass" });
   return actions;
+}
+
+function chainLinksResolvable(state: DuelState): boolean {
+  return state.chain.every((link) => {
+    const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
+    return Boolean(effect && findCard(state, link.sourceUid));
+  });
 }
 
 function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {

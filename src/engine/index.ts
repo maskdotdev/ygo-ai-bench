@@ -13,6 +13,12 @@ export {
   startDuel,
   registerEffect,
   getLegalActions as getDuelLegalActions,
+  getGroupedDuelLegalActions,
+  describeDuelActionSelector,
+  duelActionMatchesSelector,
+  runScriptedDuelResponses,
+  selectDuelActionBySelector,
+  groupDuelLegalActions,
   applyResponse,
   queryPublicState,
   serializeDuel,
@@ -42,4 +48,5 @@ export {
   changeDuelCardPosition,
   negateDuelChainLink,
   type CreateDuelOptions,
+  type DuelLegalActionGroup,
 } from "#duel/core.js";

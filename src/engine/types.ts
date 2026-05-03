@@ -63,9 +63,16 @@ export type PlaytestAction =
   | { type: "setSpellTrap"; uid: string; label: string }
   | { type: "end"; label: string };
 
+export interface PlaytestLegalActionGroup {
+  key: string;
+  label: string;
+  actions: PlaytestAction[];
+}
+
 export interface ApplyResult {
   ok: boolean;
   error?: string;
   state: PublicGameState;
   legalActions: PlaytestAction[];
+  legalActionGroups: PlaytestLegalActionGroup[];
 }

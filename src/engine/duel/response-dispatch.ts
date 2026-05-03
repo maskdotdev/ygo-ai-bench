@@ -1,6 +1,7 @@
 import { sameAction } from "#duel/response-match.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { queryPublicState } from "#duel/snapshot.js";
+import { groupDuelLegalActions } from "#duel/legal-action-groups.js";
 import type {
   ApplyDuelResponseResult,
   DuelAction,
@@ -83,10 +84,12 @@ function dispatchDuelResponse(session: DuelSession, response: DuelResponse, hand
 }
 
 function result(session: DuelSession, handlers: DuelResponseHandlers, ok: boolean, error?: string): ApplyDuelResponseResult {
+  const legalActions = handlers.getLegalActions(session, session.state.waitingFor ?? session.state.turnPlayer);
   return {
     ok,
     ...(error === undefined ? {} : { error }),
     state: queryPublicState(session),
-    legalActions: handlers.getLegalActions(session, session.state.waitingFor ?? session.state.turnPlayer),
+    legalActions,
+    legalActionGroups: groupDuelLegalActions(legalActions),
   };
 }

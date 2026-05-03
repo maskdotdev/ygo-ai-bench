@@ -530,6 +530,17 @@ export interface ApplyDuelResponseResult {
   error?: string;
   state: PublicDuelState;
   legalActions: DuelAction[];
+  legalActionGroups: import("#duel/legal-action-groups.js").DuelLegalActionGroup[];
+}
+
+export interface ScriptedDuelRunResult extends ApplyDuelResponseResult {
+  failedStep?: number;
+  failure?: string;
+  divergencePlayer?: PlayerId;
+  divergenceWindowId?: number;
+  divergenceWindowKind?: DuelActionWindowKind;
+  divergenceGroupKey?: string;
+  divergenceGroupLabel?: string;
 }
 
 export interface SerializedDuel {
@@ -564,6 +575,16 @@ export interface ScriptedResponseSelector {
 
 export interface ScriptedLegalActionExpectation extends ScriptedResponseSelector {
   count?: number;
+}
+
+export interface ScriptedLegalActionGroupExpectation {
+  player: PlayerId;
+  key?: string;
+  label?: string;
+  windowId?: number;
+  windowKind?: DuelActionWindowKind;
+  count?: number;
+  actions?: ScriptedLegalActionExpectation[];
 }
 
 export interface ScriptedDuelWindowExpectation {
@@ -606,7 +627,9 @@ export interface ScriptedDuelWindowExpectation {
   eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventCardUid">>>;
   prompt?: Partial<DuelPromptState> | null;
   legalActions?: ScriptedLegalActionExpectation[];
+  legalActionGroups?: ScriptedLegalActionGroupExpectation[];
   absentLegalActions?: ScriptedLegalActionExpectation[];
+  absentLegalActionGroups?: ScriptedLegalActionGroupExpectation[];
   locations?: Partial<Record<DuelLocation, string[]>>;
   locationCounts?: Partial<Record<DuelLocation, Record<string, number>>>;
   cards?: Array<Partial<PublicDuelCard> & Pick<PublicDuelCard, "uid">>;

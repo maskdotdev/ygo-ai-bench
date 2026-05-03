@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   queryPublicState,
@@ -673,6 +674,66 @@ describe("duel chains", () => {
     expect(session.state.chain).toHaveLength(0);
     expect(session.state.log.filter((entry) => entry.detail === "Stale self quick resolved")).toHaveLength(0);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "stale-self-quick")).toBe(true);
+  });
+
+  it("hides chain responses after restore when a pending chain effect is unavailable", () => {
+    const session = createDuel({ seed: 99, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(source).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    registerEffect(session, {
+      id: "missing-restored-chain-source",
+      registryKey: "missing-restored-chain-source",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Missing restored chain source resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "available-restored-chain-quick",
+      registryKey: "available-restored-chain-quick",
+      sourceUid: quickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Available restored chain quick resolved");
+      },
+    });
+
+    const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "missing-restored-chain-source");
+    expect(sourceAction).toBeTruthy();
+    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(1);
+    expect(session.state.chain.map((link) => link.effectId)).toEqual(["missing-restored-chain-source"]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "available-restored-chain-quick": (effect) => ({
+        ...effect,
+        operation(ctx) {
+          ctx.log("Available restored chain quick resolved");
+        },
+      }),
+    });
+
+    expect(restored.state.chain.map((link) => link.effectId)).toEqual(["missing-restored-chain-source"]);
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["available-restored-chain-quick"]);
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
+    const forgedPass = applyResponse(restored, { type: "passChain", player: 1, label: "Pass" });
+    expect(forgedPass.ok).toBe(false);
+    expect(forgedPass.error).toContain("Response is not currently legal");
+    expect(forgedPass.legalActionGroups).toEqual([]);
+    expect(restored.state.chain.map((link) => link.effectId)).toEqual(["missing-restored-chain-source"]);
   });
 
   it("rejects stale quick responses captured before snapshot restore", () => {
