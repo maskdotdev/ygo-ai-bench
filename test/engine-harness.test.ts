@@ -124,6 +124,39 @@ describe("EDOPro compatibility harness scaffolding", () => {
     ]);
   });
 
+  it("reports legal action count fixture expectation failures", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture({
+      name: "legal action count expectation fixture",
+      options: { seed: 8, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      before: {
+        source: "edopro",
+        legalActionCounts: { 0: 1 },
+        legalActionGroupCounts: { 0: 1 },
+      },
+      responses: [],
+      expected: { source: "edopro" },
+    }, {
+      cardReader: createCardReader(cards),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "legal action count expectation fixture",
+        message: "before fixture (edopro): Expected player 0 legal action count 1, got 4",
+      },
+      {
+        fixture: "legal action count expectation fixture",
+        message: "before fixture (edopro): Expected player 0 legal action group count 1, got 2",
+      },
+    ]);
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

@@ -639,6 +639,8 @@ interface ScriptedDuelWindowExpectationFields {
   pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "triggerBucket" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventCardUid">>>;
   eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventCardUid">>>;
   prompt?: Partial<DuelPromptState> | null;
+  legalActionCounts?: Partial<Record<PlayerId, number>>;
+  legalActionGroupCounts?: Partial<Record<PlayerId, number>>;
   legalActions?: ScriptedLegalActionExpectation[];
   legalActionGroups?: ScriptedLegalActionGroupExpectation[];
   absentLegalActions?: ScriptedLegalActionExpectation[];

@@ -49,6 +49,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
           windowKind: "open",
           waitingFor: 0,
           phase: "main1",
+          legalActionCounts: { 0: 6, 1: 0 },
+          legalActionGroupCounts: { 0: 2, 1: 0 },
           legalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", count: 1 }],
         },
         responses: [
@@ -60,6 +62,8 @@ describe("EDOPro compatibility harness scaffolding", () => {
               windowKind: "open",
               waitingFor: 0,
               phase: "main1",
+              legalActionCounts: { 0: 2 },
+              legalActionGroupCounts: { 0: 1 },
               absentLegalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand" }],
               legalActions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
               logIncludes: ["Normal Summoned"],

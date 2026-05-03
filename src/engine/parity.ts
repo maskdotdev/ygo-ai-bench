@@ -242,6 +242,8 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   assertPartialList("chain", state.chain, expected.chain, fail);
   assertPartialList("pendingTriggers", state.pendingTriggers, expected.pendingTriggers, fail);
   assertPartialList("eventHistory", session.state.eventHistory, expected.eventHistory, fail);
+  assertLegalActionCounts(session, expected.legalActionCounts, fail);
+  assertLegalActionGroupCounts(session, expected.legalActionGroupCounts, fail);
   for (const expectedLog of expected.logIncludes ?? []) {
     if (!state.log.some((entry) => entry.detail.includes(expectedLog) || entry.action.includes(expectedLog))) fail(`Expected log containing ${expectedLog}`);
   }
@@ -320,6 +322,20 @@ function assertActivityCountsForWindow(actual: Record<PlayerId, unknown>, expect
       const actualCount = actualCounts?.[activity] ?? 0;
       if (actualCount !== expectedCount) fail(`Expected player ${player} activity ${activity} ${expectedCount}, got ${actualCount}`);
     }
+  }
+}
+
+function assertLegalActionCounts(session: DuelSession, expected: Partial<Record<PlayerId, number>> | undefined, fail: (message: string) => void): void {
+  for (const [player, expectedCount] of Object.entries(expected ?? {}) as [string, number][]) {
+    const actualCount = getLegalActions(session, Number(player) as PlayerId).length;
+    if (actualCount !== expectedCount) fail(`Expected player ${player} legal action count ${expectedCount}, got ${actualCount}`);
+  }
+}
+
+function assertLegalActionGroupCounts(session: DuelSession, expected: Partial<Record<PlayerId, number>> | undefined, fail: (message: string) => void): void {
+  for (const [player, expectedCount] of Object.entries(expected ?? {}) as [string, number][]) {
+    const actualCount = getGroupedDuelLegalActions(session, Number(player) as PlayerId).length;
+    if (actualCount !== expectedCount) fail(`Expected player ${player} legal action group count ${expectedCount}, got ${actualCount}`);
   }
 }
 
