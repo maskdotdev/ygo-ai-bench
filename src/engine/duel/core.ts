@@ -550,8 +550,9 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
 }
 
 export function negateDuelAttack(state: DuelState): boolean {
+  const attacker = state.currentAttack?.attackerUid === undefined ? undefined : findCard(state, state.currentAttack.attackerUid);
   const disabled = negateCoreDuelAttack(state);
-  if (disabled) collectTriggerEffects(state, "attackDisabled");
+  if (disabled) collectDuelTriggerEffects(state, "attackDisabled", attacker, attacker === undefined ? {} : { eventPlayer: attacker.controller });
   return disabled;
 }
 

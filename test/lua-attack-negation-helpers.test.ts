@@ -119,8 +119,8 @@ describe("Lua attack negation helpers", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_ATTACK_DISABLED)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp)
-          Debug.Message("attack disabled trigger")
+        e:SetOperation(function(e,tp,eg,ep)
+          Debug.Message("attack disabled trigger " .. eg:GetFirst():GetCode() .. "/" .. ep)
         end)
         c:RegisterEffect(e)
       end
@@ -133,12 +133,12 @@ describe("Lua attack negation helpers", () => {
     const result = host.loadScript(`Debug.Message("negate disabled " .. tostring(Duel.NegateAttack()))`, "negate-disabled.lua");
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("negate disabled true");
-    expect(session.state.eventHistory.some((event) => event.eventName === "attackDisabled")).toBe(true);
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0 })]));
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
-    expect(host.messages).toContain("attack disabled trigger");
+    expect(host.messages).toContain("attack disabled trigger 100/0");
   });
 
   it("applies restored Lua attack-window quick effects through restore responses", () => {
