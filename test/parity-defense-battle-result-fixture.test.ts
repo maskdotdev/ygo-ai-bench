@@ -64,7 +64,7 @@ describe("EDOPro parity defense-position battle result fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps both monsters on field until the final end damage step response pass resolves the battle",
@@ -80,7 +80,7 @@ describe("EDOPro parity defense-position battle result fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro destroys a lower-DEF battle target without LP damage when the attacker has no piercing damage",
