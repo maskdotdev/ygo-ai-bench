@@ -4,15 +4,15 @@ import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 import { absentAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
-describe("EDOPro parity battle attack declaration lock fixtures", () => {
-  it("removes all attack actions for monsters with cannot-attack effects", () => {
+describe("EDOPro parity battle attack announce lock fixtures", () => {
+  it("removes attack actions for monsters with cannot-attack-announce effects", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Attack Locked Attacker", kind: "monster", attack: 1800, defense: 1200 },
-      { code: "200", name: "Attack Target", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "100", name: "Announce Locked Attacker", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Announce Lock Target", kind: "monster", attack: 1000, defense: 1000 },
     ];
     const fixture: ScriptedDuelFixture = {
-      name: "cannot attack legal action fixture",
-      options: { seed: 96, startingHandSize: 1 },
+      name: "cannot attack announce legal action fixture",
+      options: { seed: 77, startingHandSize: 1 },
       decks: {
         0: { main: ["100"] },
         1: { main: ["200"] },
@@ -24,12 +24,12 @@ describe("EDOPro parity battle attack declaration lock fixtures", () => {
         ],
         effects: [
           {
-            id: "fixture-cannot-attack",
+            id: "fixture-cannot-attack-announce",
             player: 0,
             code: "100",
             location: "monsterZone",
             event: "continuous",
-            effectCode: 85,
+            effectCode: 86,
             range: ["monsterZone"],
           },
         ],
@@ -39,7 +39,7 @@ describe("EDOPro parity battle attack declaration lock fixtures", () => {
           snapshotRestore: "after",
           after: {
             source: "edopro",
-            note: "EDOPro suppresses every attack declaration for monsters affected by CANNOT_ATTACK",
+            note: "EDOPro suppresses attack declarations for monsters affected by CANNOT_ATTACK_ANNOUNCE",
             phase: "battle",
             waitingFor: 0,
             pendingBattle: false,
@@ -63,7 +63,7 @@ describe("EDOPro parity battle attack declaration lock fixtures", () => {
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state keeps the monster's attack unused because all attacks are illegal",
+        note: "EDOPro final fixture state keeps the monster's attack unused because attack announcement is illegal",
         phase: "battle",
         waitingFor: 0,
         pendingBattle: false,
