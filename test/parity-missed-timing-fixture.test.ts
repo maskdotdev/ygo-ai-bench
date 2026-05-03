@@ -51,8 +51,11 @@ describe("EDOPro parity missed timing fixtures", () => {
             source: "edopro",
             note: "EDOPro keeps optional when triggers available when their triggering event is the last event",
             windowId: 1,
+            windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-optional-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-2" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-when", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-when", count: 1 },
@@ -171,11 +174,14 @@ describe("EDOPro parity missed timing fixtures", () => {
             source: "edopro",
             note: "EDOPro keeps mandatory when and optional if triggers while optional when misses timing after a non-last event",
             windowId: 1,
+            windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
               { player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
               { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
             ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-when", count: 1 }],
             legalActionGroups: [
               {
@@ -209,8 +215,11 @@ describe("EDOPro parity missed timing fixtures", () => {
             source: "edopro",
             note: "EDOPro presents the remaining optional if trigger only after the mandatory when trigger is placed on chain",
             windowId: 2,
+            windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-if", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-if", count: 1 },
