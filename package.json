@@ -15,10 +15,14 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "build": "vite build && vite build --config vite.bridge.config.ts",
+    "check:loc": "node tools/check-file-loc.mjs",
+    "check": "bun run check:loc && bun run typecheck && bun run test && bun run build",
     "dev": "vite --host 127.0.0.1",
     "setup:upstream": "node tools/setup-upstream.mjs",
     "probe:lua-deck": "node --experimental-transform-types tools/probe-lua-deck.ts",
-    "scan:lua-api": "node tools/scan-lua-api-usage.mjs"
+    "scan:lua-api": "node tools/scan-lua-api-usage.mjs",
+    "scan:lua-constants": "node tools/scan-lua-constants.mjs",
+    "scan:lua-parity": "node tools/scan-lua-parity.mjs --fail-on-missing"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.4",
