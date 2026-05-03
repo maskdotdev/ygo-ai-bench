@@ -89,6 +89,21 @@ describe("duel action windows", () => {
     expect(session.state.prompt).toBeDefined();
   });
 
+  it("rejects responses with malformed window metadata", () => {
+    const session = setupOneCardDuel(118);
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon");
+    expect(summon).toBeDefined();
+    expect(summon?.windowId).toBe(0);
+    expect(summon?.windowKind).toBe("open");
+
+    const result = applyResponse(session, { ...summon!, windowId: "0" } as never);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Response is not currently legal");
+    expect(session.state.actionWindowId).toBe(0);
+    expect(session.state.cards.find((card) => card.uid === summon!.uid)?.location).toBe("hand");
+  });
+
   it("restores actionWindowId after failed response rollback", () => {
     const session = createDuel({ seed: 111, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
