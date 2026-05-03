@@ -2,6 +2,7 @@ import type { DuelAction, DuelResponse } from "#duel/types.js";
 
 export function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (a.type !== b.type || a.player !== b.player) return false;
+  if (hasPartialWindowStamp(b)) return false;
   if (hasWindowId(a) && hasWindowId(b) && a.windowId !== b.windowId) return false;
   if (hasWindowKind(a) && hasWindowKind(b) && a.windowKind !== b.windowKind) return false;
   if ("uid" in a && "uid" in b && a.uid !== b.uid) return false;
@@ -33,6 +34,10 @@ function hasWindowId(value: DuelAction | DuelResponse): value is (DuelAction | D
 
 function hasWindowKind(value: DuelAction | DuelResponse): value is (DuelAction | DuelResponse) & { windowKind: string } {
   return "windowKind" in value && typeof value.windowKind === "string";
+}
+
+function hasPartialWindowStamp(value: DuelResponse): boolean {
+  return hasWindowId(value) !== hasWindowKind(value);
 }
 
 function sameStringSet(a: string[], b: string[]): boolean {
