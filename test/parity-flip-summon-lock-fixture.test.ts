@@ -23,7 +23,10 @@ describe("EDOPro parity flip summon lock fixtures", () => {
             source: "edopro",
             note: "EDOPro exposes Flip Summon actions for eligible face-down monsters that are not under CANNOT_FLIP_SUMMON",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
             legalActions: [{ type: "flipSummon", player: 0, code: "100", location: "monsterZone", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -90,7 +93,10 @@ describe("EDOPro parity flip summon lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits Flip Summon actions for monsters affected by CANNOT_FLIP_SUMMON",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
