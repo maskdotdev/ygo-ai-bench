@@ -49,7 +49,7 @@ describe("EDOPro parity stronger battle target destruction fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro destroys only the weaker attack-position attacker and applies reflected battle damage to its controller",
