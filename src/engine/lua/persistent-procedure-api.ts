@@ -4,7 +4,7 @@ const { lua, lauxlib, to_luastring } = fengari;
 
 export function installPersistentProcedureApi(L: unknown, readLuaError: (state: unknown) => string): void {
   const source = `
-    local player_all_value = PLAYER_ALL or 2
+    local player_all_value = PLAYER_ALL or 3
     local persistent_card_targets = persistent_card_targets or {}
     local function card_key(c)
       if not c then return nil end

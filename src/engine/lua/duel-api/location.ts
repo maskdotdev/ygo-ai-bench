@@ -9,25 +9,29 @@ export function installDuelLocationApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushinteger(state, availableLocationCount(session, player, locationMask));
+    const zoneMask = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0;
+    lua.lua_pushinteger(state, availableLocationCount(session, player, locationMask, zoneMask));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetLocationCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    lua.lua_pushinteger(state, availableMonsterZoneCount(session, player, readAnyCardOrGroupUids(state, 3, 5)));
+    const zoneMask = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0;
+    lua.lua_pushinteger(state, availableMonsterZoneCountInMask(session, player, readAnyCardOrGroupUids(state, 3, 4), zoneMask));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetLocationCountFromEx"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    lua.lua_pushinteger(state, availableMonsterZoneCount(session, player, readCardOrGroupUids(state, 2)));
+    const zoneMask = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0;
+    lua.lua_pushinteger(state, availableMonsterZoneCountInMask(session, player, readCardOrGroupUids(state, 2), zoneMask));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetMZoneCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    lua.lua_pushinteger(state, availableMonsterZoneCount(session, player, readCardOrGroupUids(state, 2)));
+    const zoneMask = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0;
+    lua.lua_pushinteger(state, availableMonsterZoneCountInMask(session, player, readCardOrGroupUids(state, 2), zoneMask));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetUsableMZoneCount"));
@@ -81,12 +85,36 @@ export function availableMonsterZoneCount(session: DuelSession, player: PlayerId
   return Math.max(0, 5 - occupied);
 }
 
-function availableLocationCount(session: DuelSession, player: PlayerId, locationMask: number): number {
+function availableLocationCount(session: DuelSession, player: PlayerId, locationMask: number, zoneMask: number): number {
   const locations = locationsFromMask(locationMask);
-  if (locations.includes("monsterZone")) return availableMonsterZoneCount(session, player, []);
+  if (locations.includes("monsterZone")) return availableMonsterZoneCountInMask(session, player, [], zoneMask);
   if ((locationMask & 0x200) !== 0) return availablePendulumZoneCount(session, player);
-  if (locations.includes("spellTrapZone")) return Math.max(0, 5 - matchingCardUids(session, player, 0x08).length);
+  if (locations.includes("spellTrapZone")) return availableSpellTrapZoneCountInMask(session, player, zoneMask);
   return 99;
+}
+
+function availableMonsterZoneCountInMask(session: DuelSession, player: PlayerId, excludedUids: string[], zoneMask: number): number {
+  if (zoneMask === 0) return availableMonsterZoneCount(session, player, excludedUids);
+  const occupied = new Set(
+    session.state.cards
+      .filter((card) => card.controller === player && card.location === "monsterZone" && !excludedUids.includes(card.uid))
+      .map((card) => card.sequence),
+  );
+  let count = 0;
+  for (let sequence = 0; sequence < 5; sequence += 1) {
+    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) count += 1;
+  }
+  return count;
+}
+
+function availableSpellTrapZoneCountInMask(session: DuelSession, player: PlayerId, zoneMask: number): number {
+  if (zoneMask === 0) return Math.max(0, 5 - matchingCardUids(session, player, 0x08).length);
+  const occupied = new Set(session.state.cards.filter((card) => card.controller === player && card.location === "spellTrapZone").map((card) => card.sequence));
+  let count = 0;
+  for (let sequence = 0; sequence < 5; sequence += 1) {
+    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) count += 1;
+  }
+  return count;
 }
 
 function isLocationSequenceOpen(session: DuelSession, player: PlayerId, locationMask: number, sequence: number): boolean {

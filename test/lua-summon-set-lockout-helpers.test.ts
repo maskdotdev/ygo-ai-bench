@@ -47,6 +47,56 @@ describe("Lua summon and set lockout helpers", () => {
     ]);
   });
 
+  it("applies targeted field cannot-summon effects only to selected cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cannot Summon Source", kind: "monster", level: 4 },
+      { code: "200", name: "Summon Locked", kind: "monster", level: 4 },
+      { code: "300", name: "Summon Open", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 216, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_CANNOT_SUMMON)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,c) return c:IsCode(200) end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "targeted-cannot-summon-register.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const result = host.loadScript(
+      `
+      local locked=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local open=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("targeted player summon " .. tostring(Duel.IsPlayerCanSummon(0, locked)) .. "/" .. tostring(Duel.IsPlayerCanSummon(0, open)))
+      Debug.Message("targeted card summonable " .. tostring(locked:IsSummonable()) .. "/" .. tostring(open:IsSummonable()))
+      Debug.Message("targeted mset open " .. tostring(Duel.IsPlayerCanMSet(0, locked)) .. "/" .. tostring(Duel.IsPlayerCanMSet(0, open)))
+      `,
+      "targeted-cannot-summon-check.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "targeted player summon false/true",
+      "targeted card summonable false/true",
+      "targeted mset open true/true",
+    ]);
+  });
+
   it("applies cannot-monster-set effects to Lua set predicates without blocking summons", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Cannot Set Target", kind: "monster", level: 4 }];
     const session = createDuel({ seed: 214, startingHandSize: 1, cardReader: createCardReader(cards) });

@@ -82,7 +82,7 @@ function normalizePlayer(value: number): PlayerId {
 }
 
 function normalizeWinner(value: number): DuelWinner {
-  if (value === -1) return "draw";
+  if (value === 2) return "draw";
   return normalizePlayer(value);
 }
 

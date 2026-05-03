@@ -23,6 +23,7 @@ describe("Lua chain helpers", () => {
       `
       c100={}
       function c100.initial_effect(c)
+        Debug.Message("chain constants " .. CHAININFO_TRIGGERING_EFFECT .. "/" .. CHAININFO_TRIGGERING_CONTROLER .. "/" .. CHAININFO_TARGET_CARDS .. "/" .. CHAININFO_CHAIN_ID .. "/" .. CHAININFO_TRIGGERING_SETCODES)
         local e=Effect.CreateEffect(c)
         e:SetType(EFFECT_TYPE_IGNITION)
         e:SetRange(LOCATION_HAND)
@@ -83,6 +84,7 @@ describe("Lua chain helpers", () => {
     applyResponse(session, quickAction!);
     applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
     applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    expect(host.messages).toContain("chain constants 1/3/8/13/30");
     expect(host.messages).toContain("chain solving window false");
     expect(host.messages).toContain("chain info 0/2/100/1/100");
     expect(host.messages).toContain("chain count player 1/0");

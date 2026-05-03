@@ -94,32 +94,37 @@ function pushChainPlayer(L: unknown, session: DuelSession, hostState: LuaDuelCha
 
 function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState, link: DuelState["chain"][number], info: number): void {
   const source = session.state.cards.find((card) => card.uid === link.sourceUid);
-  if (info === 0x1) {
+  if (info === 1) {
     const id = Number(link.effectId.match(/^lua-(\d+)/)?.[1]);
     if (Number.isFinite(id)) hostState.pushEffectTable(L, id);
     else lua.lua_pushnil(L);
   }
-  else if (info === 0x2 || info === 0x4) lua.lua_pushinteger(L, link.player);
-  else if (info === 0x8) lua.lua_pushinteger(L, locationMaskFromLocation(source?.location));
-  else if (info === 0x10 && source) pushCardTable(L, source.uid);
-  else if (info === 0x20) lua.lua_pushinteger(L, link.activationSequence ?? source?.sequence ?? 0);
-  else if (info === 0x40) pushGroupTable(L, link.targetUids ?? []);
-  else if (info === 0x80 && link.targetPlayer !== undefined) lua.lua_pushinteger(L, link.targetPlayer);
-  else if (info === 0x100 && link.targetParam !== undefined) lua.lua_pushinteger(L, link.targetParam);
-  else if (info === 0x200) lua.lua_pushinteger(L, chainNumericId(link));
-  else if (info === 0x400) lua.lua_pushinteger(L, link.disableReason ?? 0);
-  else if (info === 0x800) lua.lua_pushinteger(L, link.disablePlayer ?? 0);
-  else if (info === 0x1000) lua.lua_pushinteger(L, chainEffectTypeFlags(link, hostState));
-  else if (info === 0x2000) lua.lua_pushinteger(L, cardTypeFlags(source));
-  else if (info === 0x4000) lua.lua_pushinteger(L, positionMaskFromPosition(source?.position));
-  else if (info === 0x8000) lua.lua_pushinteger(L, source ? Number(source.code) : 0);
-  else if (info === 0x10000) lua.lua_pushinteger(L, source?.data.alias ? Number(source.data.alias) : 0);
-  else if (info === 0x40000) lua.lua_pushinteger(L, source?.data.level ?? 0);
-  else if (info === 0x80000) lua.lua_pushinteger(L, cardRank(source));
-  else if (info === 0x100000) lua.lua_pushinteger(L, source?.data.attribute ?? 0);
-  else if (info === 0x200000) lua.lua_pushinteger(L, source?.data.race ?? 0);
-  else if (info === 0x400000) lua.lua_pushinteger(L, source?.data.attack ?? 0);
-  else if (info === 0x800000) lua.lua_pushinteger(L, source?.data.defense ?? 0);
+  else if (info === 2 || info === 3) lua.lua_pushinteger(L, link.player);
+  else if (info === 4 || info === 5) lua.lua_pushinteger(L, locationMaskFromLocation(source?.location));
+  else if (info === 6 || info === 7) lua.lua_pushinteger(L, link.activationSequence ?? source?.sequence ?? 0);
+  else if (info === 8) pushGroupTable(L, link.targetUids ?? []);
+  else if (info === 9 && link.targetPlayer !== undefined) lua.lua_pushinteger(L, link.targetPlayer);
+  else if (info === 10 && link.targetParam !== undefined) lua.lua_pushinteger(L, link.targetParam);
+  else if (info === 11) lua.lua_pushinteger(L, link.disableReason ?? 0);
+  else if (info === 12) lua.lua_pushinteger(L, link.disablePlayer ?? 0);
+  else if (info === 13) lua.lua_pushinteger(L, chainNumericId(link));
+  else if (info === 14) lua.lua_pushinteger(L, chainEffectTypeFlags(link, hostState));
+  else if (info === 15 || info === 19) lua.lua_pushinteger(L, cardTypeFlags(source));
+  else if (info === 16) lua.lua_pushinteger(L, positionMaskFromPosition(source?.position));
+  else if (info === 17) lua.lua_pushinteger(L, source ? Number(source.code) : 0);
+  else if (info === 18) lua.lua_pushinteger(L, source?.data.alias ? Number(source.data.alias) : 0);
+  else if (info === 20) lua.lua_pushinteger(L, source?.data.level ?? 0);
+  else if (info === 21) lua.lua_pushinteger(L, cardRank(source));
+  else if (info === 22) lua.lua_pushinteger(L, source?.data.attribute ?? 0);
+  else if (info === 23) lua.lua_pushinteger(L, source?.data.race ?? 0);
+  else if (info === 24) lua.lua_pushinteger(L, source?.data.attack ?? 0);
+  else if (info === 25) lua.lua_pushinteger(L, source?.data.defense ?? 0);
+  else if (info === 26) lua.lua_pushinteger(L, 0);
+  else if (info === 27) lua.lua_pushinteger(L, source?.summonType ? locationMaskFromLocation(source.previousLocation) : 0);
+  else if (info === 28) lua.lua_pushinteger(L, summonTypeMask(source));
+  else if (info === 29) lua.lua_pushboolean(L, Boolean(source?.summonType));
+  else if (info === 30) pushGroupTable(L, []);
+  else if (info === 31 && source) pushCardTable(L, source.uid);
   else lua.lua_pushnil(L);
 }
 
@@ -325,6 +330,21 @@ function chainNumericId(link: DuelState["chain"][number]): number {
 
 function cardRank(card: DuelCardInstance | undefined): number {
   return card && (cardTypeFlags(card) & 0x800000) !== 0 ? card.data.level ?? 0 : 0;
+}
+
+function summonTypeMask(card: DuelCardInstance | undefined): number {
+  if (card?.summonTypeCode !== undefined) return card.summonTypeCode;
+  if (!card?.summonType) return 0;
+  if (card.summonType === "normal") return 0x10000000;
+  if (card.summonType === "tribute") return 0x11000000;
+  if (card.summonType === "flip") return 0x20000000;
+  if (card.summonType === "special") return 0x40000000;
+  if (card.summonType === "fusion") return 0x43000000;
+  if (card.summonType === "ritual") return 0x45000000;
+  if (card.summonType === "synchro") return 0x46000000;
+  if (card.summonType === "xyz") return 0x49000000;
+  if (card.summonType === "link") return 0x4c000000;
+  return 0;
 }
 
 function cardTypeFlags(card: DuelCardInstance | undefined): number {

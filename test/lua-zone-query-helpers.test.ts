@@ -6,6 +6,46 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua zone query helpers", () => {
+  it("exposes EDOPro location reason constants used by zone-count overloads", () => {
+    const session = createDuel({ seed: 157, startingHandSize: 0 });
+    loadDecks(session, {
+      0: { main: [] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("location reason constants " .. LOCATION_REASON_TOFIELD .. "/" .. LOCATION_REASON_CONTROL .. "/" .. LOCATION_REASON_COUNT .. "/" .. LOCATION_REASON_RETURN)
+      `,
+      "location-reason-constants.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("location reason constants 1/2/4/8");
+  });
+
+  it("exposes EDOPro symbolic location constants used by real scripts", () => {
+    const session = createDuel({ seed: 158, startingHandSize: 0 });
+    loadDecks(session, {
+      0: { main: [] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("symbolic locations " .. LOCATION_PUBLIC .. "/" .. LOCATION_ALL .. "/" .. LOCATION_STZONE .. "/" .. LOCATION_MMZONE .. "/" .. LOCATION_EMZONE .. "/" .. LOCATION_DECKBOT .. "/" .. LOCATION_DECKSHF)
+      `,
+      "symbolic-location-constants.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("symbolic locations 60/1023/1024/2048/4096/65537/131073");
+  });
+
   it("lets Lua scripts check linked monster-zone cards", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Right Link", kind: "extra", typeFlags: 0x4000001, level: 2, linkMarkers: 0x20 },
@@ -197,6 +237,74 @@ describe("Lua zone query helpers", () => {
     expect(summoned?.position).toBe("faceUpDefense");
   });
 
+  it("lets Lua scripts count only a requested monster zone mask", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Left Filler", kind: "monster" },
+      { code: "200", name: "Right Filler", kind: "monster" },
+      { code: "300", name: "Left Spell", kind: "spell" },
+      { code: "400", name: "Right Spell", kind: "spell" },
+    ];
+    const session = createDuel({ seed: 156, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const left = session.state.cards.find((card) => card.code === "100");
+    const right = session.state.cards.find((card) => card.code === "200");
+    const leftSpell = session.state.cards.find((card) => card.code === "300");
+    const rightSpell = session.state.cards.find((card) => card.code === "400");
+    expect(left).toBeDefined();
+    expect(right).toBeDefined();
+    expect(leftSpell).toBeDefined();
+    expect(rightSpell).toBeDefined();
+    moveDuelCard(session.state, left!.uid, "monsterZone", 0);
+    left!.sequence = 0;
+    moveDuelCard(session.state, leftSpell!.uid, "spellTrapZone", 0);
+    leftSpell!.sequence = 0;
+
+    const host = createLuaScriptHost(session);
+    const open = host.loadScript(
+      `
+      local leftmost_zone = 1 << 0
+      local rightmost_zone = 1 << 4
+      Debug.Message("masked mzone open " .. Duel.GetLocationCount(0, LOCATION_MZONE, 0, nil, leftmost_zone) .. "/" .. Duel.GetLocationCount(0, LOCATION_MZONE, 0, nil, rightmost_zone))
+      Debug.Message("masked ex mzone open " .. Duel.GetLocationCountFromEx(0, 0, nil, nil, leftmost_zone) .. "/" .. Duel.GetLocationCountFromEx(0, 0, nil, nil, rightmost_zone))
+      Debug.Message("masked direct mzone open " .. Duel.GetMZoneCount(0, nil, 0, nil, leftmost_zone) .. "/" .. Duel.GetMZoneCount(0, nil, 0, nil, rightmost_zone))
+      Debug.Message("masked szone open " .. Duel.GetLocationCount(0, LOCATION_SZONE, 0, nil, leftmost_zone) .. "/" .. Duel.GetLocationCount(0, LOCATION_SZONE, 0, nil, rightmost_zone))
+      `,
+      "masked-mzone-open.lua",
+    );
+
+    expect(open.ok, open.error).toBe(true);
+    expect(host.messages).toContain("masked mzone open 0/1");
+    expect(host.messages).toContain("masked ex mzone open 0/1");
+    expect(host.messages).toContain("masked direct mzone open 0/1");
+    expect(host.messages).toContain("masked szone open 0/1");
+
+    moveDuelCard(session.state, right!.uid, "monsterZone", 0);
+    right!.sequence = 4;
+    moveDuelCard(session.state, rightSpell!.uid, "spellTrapZone", 0);
+    rightSpell!.sequence = 4;
+    const closed = host.loadScript(
+      `
+      local rightmost_zone = 1 << 4
+      Debug.Message("masked mzone closed " .. Duel.GetLocationCount(0, LOCATION_MZONE, 0, nil, rightmost_zone))
+      Debug.Message("masked ex mzone closed " .. Duel.GetLocationCountFromEx(0, 0, nil, nil, rightmost_zone))
+      Debug.Message("masked direct mzone closed " .. Duel.GetMZoneCount(0, nil, 0, nil, rightmost_zone))
+      Debug.Message("masked szone closed " .. Duel.GetLocationCount(0, LOCATION_SZONE, 0, nil, rightmost_zone))
+      `,
+      "masked-mzone-closed.lua",
+    );
+
+    expect(closed.ok, closed.error).toBe(true);
+    expect(host.messages).toContain("masked mzone closed 0");
+    expect(host.messages).toContain("masked ex mzone closed 0");
+    expect(host.messages).toContain("masked direct mzone closed 0");
+    expect(host.messages).toContain("masked szone closed 0");
+  });
+
   it("lets Lua scripts check adjacent open monster zones", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Center Monster", kind: "monster" },
@@ -252,10 +360,11 @@ describe("Lua zone query helpers", () => {
       { code: "100", name: "Main Zone Monster", kind: "monster" },
       { code: "200", name: "Extra Zone Monster", kind: "monster" },
       { code: "300", name: "Opponent Main Zone Monster", kind: "monster" },
+      { code: "400", name: "Spell Zone Card", kind: "spell" },
     ];
-    const session = createDuel({ seed: 155, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 155, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200"] },
+      0: { main: ["100", "200", "400"] },
       1: { main: ["300"] },
     });
     startDuel(session);
@@ -263,15 +372,19 @@ describe("Lua zone query helpers", () => {
     const main = session.state.cards.find((card) => card.code === "100");
     const extra = session.state.cards.find((card) => card.code === "200");
     const opponent = session.state.cards.find((card) => card.code === "300");
+    const spell = session.state.cards.find((card) => card.code === "400");
     expect(main).toBeDefined();
     expect(extra).toBeDefined();
     expect(opponent).toBeDefined();
+    expect(spell).toBeDefined();
     moveDuelCard(session.state, main!.uid, "monsterZone", 0);
     main!.sequence = 2;
     moveDuelCard(session.state, extra!.uid, "monsterZone", 0);
     extra!.sequence = 5;
     moveDuelCard(session.state, opponent!.uid, "monsterZone", 1);
     opponent!.sequence = 4;
+    moveDuelCard(session.state, spell!.uid, "spellTrapZone", 0);
+    spell!.sequence = 1;
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -279,9 +392,12 @@ describe("Lua zone query helpers", () => {
       local main = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local opponent = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_STZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("main mzone " .. tostring(main:IsInMainMZone()) .. "/" .. tostring(main:IsInExtraMZone()) .. "/" .. tostring(main:IsInMainMZone(0)) .. "/" .. tostring(main:IsInMainMZone(1)))
       Debug.Message("extra mzone " .. tostring(extra:IsInMainMZone()) .. "/" .. tostring(extra:IsInExtraMZone()) .. "/" .. tostring(extra:IsInExtraMZone(0)) .. "/" .. tostring(extra:IsInExtraMZone(1)))
       Debug.Message("opponent main mzone " .. tostring(Card.IsInMainMZone(opponent,1)) .. "/" .. tostring(Card.IsInMainMZone(opponent,0)))
+      Debug.Message("symbolic current zones " .. tostring(main:IsLocation(LOCATION_MMZONE)) .. "/" .. tostring(main:IsLocation(LOCATION_EMZONE)) .. "/" .. tostring(extra:IsLocation(LOCATION_MMZONE)) .. "/" .. tostring(extra:IsLocation(LOCATION_EMZONE)) .. "/" .. tostring(spell:IsLocation(LOCATION_STZONE)) .. "/" .. tostring(spell:IsLocation(LOCATION_PUBLIC)))
+      Debug.Message("symbolic group counts " .. Duel.GetMatchingGroupCount(nil,0,LOCATION_MMZONE,0,nil) .. "/" .. Duel.GetMatchingGroupCount(nil,0,LOCATION_EMZONE,0,nil) .. "/" .. Duel.GetMatchingGroupCount(nil,0,LOCATION_STZONE,0,nil) .. "/" .. Duel.GetFieldGroupCount(0,LOCATION_ALL,0))
       `,
       "main-extra-mzone.lua",
     );
@@ -290,6 +406,8 @@ describe("Lua zone query helpers", () => {
     expect(host.messages).toContain("main mzone true/false/true/false");
     expect(host.messages).toContain("extra mzone false/true/true/false");
     expect(host.messages).toContain("opponent main mzone true/false");
+    expect(host.messages).toContain("symbolic current zones true/false/false/true/true/true");
+    expect(host.messages).toContain("symbolic group counts 1/1/1/3");
   });
 
   it("lets Lua scripts check pendulum zone availability", () => {

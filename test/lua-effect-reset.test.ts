@@ -7,7 +7,7 @@ import { setupLuaChainFixture } from "./lua-chain-fixtures.js";
 
 describe("Lua effect reset", () => {
   it("lets Lua scripts clear summon assumptions without clearing reset metadata", () => {
-    const { session } = setupLuaChainFixture({
+    const { session, host } = setupLuaChainFixture({
       seed: 124,
       startingHandSize: 1,
       cards: [
@@ -23,6 +23,7 @@ describe("Lua effect reset", () => {
       script: `
       c23100={}
       function c23100.initial_effect(c)
+        Debug.Message("redirect reset constant " .. RESETS_REDIRECT)
         Duel.AssumeReset()
         local e=Effect.CreateEffect(c)
         e:SetType(EFFECT_TYPE_IGNITION)
@@ -35,6 +36,7 @@ describe("Lua effect reset", () => {
 
     expect(session.state.effects).toHaveLength(1);
     expect(session.state.effects[0]).toMatchObject({ reset: { flags: 0x80000000 } });
+    expect(host.messages).toContain("redirect reset constant 209321984");
   });
 
   it("removes Lua RESET_TOGRAVE effects when their source goes to the Graveyard", () => {

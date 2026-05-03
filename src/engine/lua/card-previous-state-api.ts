@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { readCardUid } from "#lua/api-utils.js";
+import { locationMatchesMask, readCardUid } from "#lua/api-utils.js";
 import { cardCodes, isSetcodeMatch, readRequestedCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
 import { cardLink, cardRank, cardTypeFlags } from "#lua/card-stat-api.js";
 import type { CardPosition, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
@@ -48,7 +48,7 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requested.some((value) => locationsFromMask(value).includes(card.previousLocation!))));
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requested.some((value) => locationMatchesMask(card.previousLocation, card.previousSequence, value))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPreviousLocation"));
@@ -145,18 +145,6 @@ function hasRank(card: DuelCardInstance): boolean {
   return (cardTypeFlags(card) & 0x800000) !== 0;
 }
 
-function locationsFromMask(mask: number): DuelCardInstance["location"][] {
-  const locations: DuelCardInstance["location"][] = [];
-  if ((mask & 0x01) !== 0) locations.push("deck");
-  if ((mask & 0x02) !== 0) locations.push("hand");
-  if ((mask & 0x04) !== 0) locations.push("monsterZone");
-  if ((mask & 0x08) !== 0) locations.push("spellTrapZone");
-  if ((mask & 0x10) !== 0) locations.push("graveyard");
-  if ((mask & 0x20) !== 0) locations.push("banished");
-  if ((mask & 0x40) !== 0) locations.push("extraDeck");
-  return locations;
-}
-
 function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
   if (location === "deck") return 0x01;
   if (location === "hand") return 0x02;
@@ -165,6 +153,7 @@ function locationMaskFromLocation(location: DuelCardInstance["location"] | undef
   if (location === "graveyard") return 0x10;
   if (location === "banished") return 0x20;
   if (location === "extraDeck") return 0x40;
+  if (location === "overlay") return 0x80;
   return 0;
 }
 

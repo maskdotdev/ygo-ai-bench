@@ -76,9 +76,33 @@ export function locationsFromMask(mask: number): DuelLocation[] {
   if ((mask & 0x10) !== 0) locations.push("graveyard");
   if ((mask & 0x20) !== 0) locations.push("banished");
   if ((mask & 0x40) !== 0) locations.push("extraDeck");
+  if ((mask & 0x80) !== 0) locations.push("overlay");
   if ((mask & 0x100) !== 0) locations.push("spellTrapZone");
   if ((mask & 0x200) !== 0) locations.push("spellTrapZone");
+  if ((mask & 0x400) !== 0) locations.push("spellTrapZone");
+  if ((mask & 0x800) !== 0) locations.push("monsterZone");
+  if ((mask & 0x1000) !== 0) locations.push("monsterZone");
   return locations;
+}
+
+export function locationMatchesMask(location: DuelLocation | undefined, sequence: number | undefined, mask: number): boolean {
+  if (!location) return false;
+  if ((mask & locationMaskFromLocation(location)) !== 0) return true;
+  if ((mask & 0x400) !== 0 && location === "spellTrapZone") return true;
+  if ((mask & 0x800) !== 0 && location === "monsterZone" && sequence !== undefined && sequence >= 0 && sequence <= 4) return true;
+  return (mask & 0x1000) !== 0 && location === "monsterZone" && sequence !== undefined && sequence >= 5 && sequence <= 6;
+}
+
+function locationMaskFromLocation(location: DuelLocation): number {
+  if (location === "deck") return 0x01;
+  if (location === "hand") return 0x02;
+  if (location === "monsterZone") return 0x04;
+  if (location === "spellTrapZone") return 0x08;
+  if (location === "graveyard") return 0x10;
+  if (location === "banished") return 0x20;
+  if (location === "extraDeck") return 0x40;
+  if (location === "overlay") return 0x80;
+  return 0;
 }
 
 export function positionFromMask(mask: number): CardPosition | undefined {

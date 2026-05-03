@@ -57,6 +57,26 @@ describe("Lua LP helpers", () => {
     expect(session.state.log).toContainEqual(expect.objectContaining({ action: "win", detail: "84" }));
   });
 
+  it("exposes EDOPro player constants to Lua scripts", () => {
+    const session = createDuel({ seed: 950, startingHandSize: 0 });
+    loadDecks(session, {
+      0: { main: [] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("player constants " .. PLAYER_NONE .. "/" .. PLAYER_ALL)
+      `,
+      "player-constants.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("player constants 2/3");
+  });
+
   it("queues Lua damage triggers after Duel.Damage applies damage", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Burn Starter", kind: "monster" },

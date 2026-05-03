@@ -303,10 +303,11 @@ describe("Lua summon predicate helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Player Tribute Target", kind: "monster", level: 7 },
       { code: "200", name: "Player Tribute Material", kind: "monster", level: 4 },
+      { code: "300", name: "Player Normal Target", kind: "monster", level: 4 },
     ];
-    const session = createDuel({ seed: 160, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 160, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200"] },
+      0: { main: ["100", "200", "300"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -315,20 +316,27 @@ describe("Lua summon predicate helpers", () => {
     const result = host.loadScript(
       `
       local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local normal_target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("player normal typed " .. tostring(Duel.IsPlayerCanSummon(0,SUMMON_TYPE_NORMAL,normal_target)) .. "/" .. tostring(Duel.IsPlayerCanSummon(0,SUMMON_TYPE_TRIBUTE,normal_target)))
       Debug.Message("player tribute missing " .. tostring(Duel.IsPlayerCanSummon(0,target)))
+      Debug.Message("player tribute overload missing " .. tostring(Duel.IsPlayerCanSummon(0,SUMMON_TYPE_TRIBUTE,target)))
       local material = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Duel.MoveToField(material,0,0,LOCATION_MZONE,POS_FACEUP_ATTACK,true)
       Debug.Message("player tribute natural missing " .. tostring(Duel.IsPlayerCanSummon(0,target)))
       aux.AddNormalSummonProcedure(target,true,false,1,1,SUMMON_TYPE_TRIBUTE,1234)
       Debug.Message("player tribute proc ready " .. tostring(Duel.IsPlayerCanSummon(0,target)))
+      Debug.Message("player tribute overload ready " .. tostring(Duel.IsPlayerCanSummon(0,SUMMON_TYPE_TRIBUTE,target)))
       `,
       "player-tribute-summon-legality.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("player normal typed true/false");
     expect(host.messages).toContain("player tribute missing false");
+    expect(host.messages).toContain("player tribute overload missing false");
     expect(host.messages).toContain("player tribute natural missing false");
     expect(host.messages).toContain("player tribute proc ready true");
+    expect(host.messages).toContain("player tribute overload ready true");
   });
 
   it("checks Lua player summon legality with raised tribute metadata and double tribute units", () => {

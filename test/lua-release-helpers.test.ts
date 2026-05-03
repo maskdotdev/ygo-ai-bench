@@ -382,6 +382,7 @@ describe("Lua release helpers", () => {
       local synchro = aux.GetMustBeMaterialGroup(0, Group.CreateGroup(), 0, sc, nil, REASON_SYNCHRO)
       local fusion = aux.GetMustBeMaterialGroup(0, Group.CreateGroup(), 0, sc, nil, REASON_FUSION)
       local ritual = aux.GetMustBeMaterialGroup(0, Group.CreateGroup(), 0, sc, nil, REASON_RITUAL)
+      Debug.Message("must material constant " .. EFFECT_MUST_BE_MATERIAL)
       Debug.Message("must material synchro " .. synchro:GetCount() .. "/" .. tostring(synchro:GetFirst():IsCode(100)))
       Debug.Message("must material fusion " .. fusion:GetCount() .. "/" .. tostring(fusion:GetFirst():IsCode(300)))
       Debug.Message("must material ritual " .. ritual:GetCount())
@@ -390,6 +391,7 @@ describe("Lua release helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("must material constant 312");
     expect(host.messages).toContain("must material synchro 1/true");
     expect(host.messages).toContain("must material fusion 1/true");
     expect(host.messages).toContain("must material ritual 0");

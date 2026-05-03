@@ -24,6 +24,8 @@ import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation
 const { lua, to_luastring } = fengari;
 const blueEyesSpiritRestrictionCode = 69832741;
 const cardAdvanceCode = 52112003;
+const luaSummonTypeNormal = 0x10000000;
+const luaSummonTypeTribute = 0x11000000;
 
 export interface LuaDuelPlayerApiHostState {
   pushEffectTable: (state: unknown, id: number) => void;
@@ -83,10 +85,12 @@ function pushTagSwap(): number {
 
 function pushCanNormalSummon(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
-  const uid = readCardUid(L, 2);
-  const ignoreCount = lua.lua_toboolean(L, 3);
+  const summonType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  const cardArgIndex = lua.lua_isnumber(L, 2) ? 3 : 2;
+  const uid = readCardUid(L, cardArgIndex);
+  const ignoreCount = lua.lua_toboolean(L, cardArgIndex + 1);
   const card = uid ? findCard(session.state, uid) : undefined;
-  lua.lua_pushboolean(L, canNormalSummon(session, player, card, ignoreCount, readMinTributeRequirement(L, card)));
+  lua.lua_pushboolean(L, canNormalSummon(session, player, card, ignoreCount, readMinTributeRequirement(L, card), summonType));
   return 1;
 }
 
@@ -216,10 +220,10 @@ function pushGetCounter(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function canNormalSummon(session: DuelSession, player: PlayerId, card: DuelCardInstance | undefined, ignoreCount: boolean, minTributes: number | undefined): boolean {
+function canNormalSummon(session: DuelSession, player: PlayerId, card: DuelCardInstance | undefined, ignoreCount: boolean, minTributes: number | undefined, summonType: number | undefined): boolean {
   if (!isMainPhaseForPlayer(session, player)) return false;
   if (card && (card.controller !== player || card.location !== "hand" || !isMonsterLike(card.kind))) return false;
-  return normalSummonAvailability(session, player, card, ignoreCount, minTributes);
+  return normalSummonAvailability(session, player, card, ignoreCount, minTributes, summonType);
 }
 
 function canAdditionalSummon(session: DuelSession, player: PlayerId): boolean {
@@ -251,14 +255,16 @@ function canNormalSet(session: DuelSession, player: PlayerId, uid: string | unde
   }
 }
 
-function normalSummonAvailability(session: DuelSession, player: PlayerId, card: DuelCardInstance | undefined, ignoreCount: boolean, minTributes: number | undefined): boolean {
+function normalSummonAvailability(session: DuelSession, player: PlayerId, card: DuelCardInstance | undefined, ignoreCount: boolean, minTributes: number | undefined, summonType: number | undefined): boolean {
   const readAvailable = (): boolean => {
     const hand = card ? [card] : session.state.cards.filter((candidate) => candidate.controller === player && candidate.location === "hand" && isMonsterLike(candidate.kind));
     const actions = [...normalSummonActions(session.state, player, hand), ...tributeSummonActions(session.state, player, hand)];
-    if (card && isNoTributePlayerAffected(session, player)) return availableMonsterZoneCount(session, player, []) > 0 && !isNormalSummonPrevented(session.state, player, card, createPlayerCheckContext(session));
+    if (card && isNoTributePlayerAffected(session, player)) {
+      return normalSummonActionMatchesType("normalSummon", summonType) && availableMonsterZoneCount(session, player, []) > 0 && !isNormalSummonPrevented(session.state, player, card, createPlayerCheckContext(session));
+    }
     const available = actions.filter((action) => {
       const target = "uid" in action ? findCard(session.state, action.uid) : undefined;
-      return Boolean(target && (action.type === "normalSummon" || action.type === "tributeSummon") && !isNormalSummonPrevented(session.state, player, target, createPlayerCheckContext(session)));
+      return Boolean(target && normalSummonActionMatchesType(action.type, summonType) && !isNormalSummonPrevented(session.state, player, target, createPlayerCheckContext(session)));
     });
     return card ? available.some((action) => actionHasUid(action, card.uid)) : available.length > 0;
   };
@@ -271,6 +277,12 @@ function normalSummonAvailability(session: DuelSession, player: PlayerId, card: 
   } finally {
     session.state.players[player].normalSummonAvailable = previous;
   }
+}
+
+function normalSummonActionMatchesType(actionType: string, summonType: number | undefined): boolean {
+  if (summonType === luaSummonTypeTribute) return actionType === "tributeSummon";
+  if (summonType === luaSummonTypeNormal) return actionType === "normalSummon";
+  return actionType === "normalSummon" || actionType === "tributeSummon";
 }
 
 function actionHasUid(action: { type: string }, uid: string): action is { type: string; uid: string } {
@@ -289,6 +301,7 @@ function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: 
 
 function canSpecialSummonCount(session: DuelSession, player: PlayerId, count: number): boolean {
   if (!canPlayerSpecialSummon(session.state, player)) return false;
+  if (availableMonsterZoneCount(session, player, []) < count) return false;
   return count < 2 || matchingPlayerEffects(session.state, player, blueEyesSpiritRestrictionCode, createPlayerCheckContext(session)).length === 0;
 }
 

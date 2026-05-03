@@ -620,6 +620,7 @@ function shuffleCards(session: DuelSession, cards: DuelCardInstance[]): DuelCard
 
 function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0): string[] {
   const reason = readMoveReason(L, 2, extraReason);
+  const reasonPlayer = readOptionalPlayer(L, 4) ?? hostState.activeContext?.player ?? session.state.turnPlayer;
   const moved: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
   for (const uid of readCardOrGroupUids(L, 1)) {
@@ -627,7 +628,7 @@ function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMov
     if (!card) continue;
     const before = movementSnapshot(card);
     try {
-      const result = mover(session.state, uid, card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      const result = mover(session.state, uid, card.controller, reason, reasonPlayer);
       assignReasonCard(result, hostState);
       if (didMove(result, before)) moved.push(uid);
     } catch {
@@ -640,6 +641,8 @@ function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMov
 
 function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: LuaDuelMoveApiHostState, location: DuelLocation, reasonIndex: number): string[] {
   const reason = readMoveReason(L, reasonIndex, 0);
+  const deckSequence = location === "deck" && lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : undefined;
+  const reasonPlayer = readOptionalPlayer(L, reasonIndex + 1) ?? hostState.activeContext?.player ?? session.state.turnPlayer;
   const moved: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
   for (const uid of readCardOrGroupUids(L, 1)) {
@@ -647,15 +650,38 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
     if (!card || !canMoveDuelCardToLocation(session.state, uid, location, reason)) continue;
     const before = movementSnapshot(card);
     try {
-      const result = moveDuelCardWithRedirects(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      const result = moveDuelCardWithRedirects(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason, reasonPlayer);
       assignReasonCard(result, hostState);
-      if (didMove(result, before)) moved.push(uid);
+      if (didMove(result, before)) {
+        applyDeckSequence(session, result, deckSequence);
+        moved.push(uid);
+      }
     } catch {
       // Redirected destination restrictions fail like other EDOPro-style move helpers.
     }
   }
+  if (location === "deck" && deckSequence === 2 && moved.length > 0) shuffleMovedDecks(session, moved);
   finishLuaOperationMoveStep(hostState, moved.length > 0);
   return moved;
+}
+
+function applyDeckSequence(session: DuelSession, card: DuelCardInstance, deckSequence: number | undefined): void {
+  if (card.location !== "deck") return;
+  if (deckSequence === 0) moveDeckCardToTop(session.state, card);
+  else if (deckSequence === 1) moveDeckCardToBottom(session.state, card);
+}
+
+function shuffleMovedDecks(session: DuelSession, movedUids: string[]): void {
+  const keys = new Set<string>();
+  for (const uid of movedUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (card?.location === "deck") keys.add(`${card.controller}:deck`);
+  }
+  for (const key of keys) {
+    const player = key.startsWith("1:") ? 1 : 0;
+    const shuffled = shuffleCards(session, getCards(session.state, player, "deck"));
+    for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
+  }
 }
 
 function beginLuaOperationMoveStep(session: DuelSession, hostState: LuaDuelMoveApiHostState): void {

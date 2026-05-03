@@ -4,7 +4,7 @@ const { lua, lauxlib, to_luastring } = fengari;
 
 export function installEquipProcedureApi(L: unknown, readLuaError: (state: unknown) => string): void {
   const source = `
-    local player_all_value = PLAYER_ALL or 2
+    local player_all_value = PLAYER_ALL or 3
     function aux.EquipLimit(f)
       return function(e,c)
         return not f or f(c,e,e:GetHandlerPlayer())

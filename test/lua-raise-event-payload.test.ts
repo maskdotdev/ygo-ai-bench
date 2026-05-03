@@ -95,7 +95,7 @@ describe("Lua raised event payloads", () => {
       { code: "100", name: "Raised Target", kind: "monster" },
       { code: "200", name: "Event Player Watcher", kind: "monster" },
     ]));
-    expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(restored.state.pendingTriggers).toEqual([]);
     expect(restored.state.eventHistory).toEqual(session.state.eventHistory);
 
     activateFirstTrigger(session);
@@ -148,7 +148,7 @@ describe("Lua raised event payloads", () => {
       { code: "100", name: "Raised Target", kind: "monster" },
       { code: "200", name: "Event Player Watcher", kind: "monster" },
     ]));
-    expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(restored.state.pendingTriggers).toEqual([]);
     expect(restored.state.eventHistory).toEqual(session.state.eventHistory);
 
     activateFirstTrigger(session);

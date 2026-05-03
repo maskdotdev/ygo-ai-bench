@@ -48,4 +48,64 @@ describe("Lua activation lockout helpers", () => {
     expect(applyResponse(session, lockedAction).ok).toBe(false);
     expect(host.messages).toEqual([]);
   });
+
+  it("applies targeted field cannot-activate effects only to selected cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Activation Lock Source", kind: "monster", level: 4 },
+      { code: "200", name: "Activation Locked", kind: "monster", level: 4 },
+      { code: "300", name: "Activation Open", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 223, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_CANNOT_ACTIVATE)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,c) return c:IsCode(200) end)
+        c:RegisterEffect(e)
+      end
+
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp) Debug.Message("locked resolved") end)
+        c:RegisterEffect(e)
+      end
+
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp) Debug.Message("open resolved") end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "targeted-cannot-activate.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const locked = session.state.cards.find((card) => card.code === "200");
+    const open = session.state.cards.find((card) => card.code === "300");
+    expect(locked).toBeDefined();
+    expect(open).toBeDefined();
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.uid === locked!.uid)).toBe(false);
+    const openAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === open!.uid);
+    expect(openAction).toBeDefined();
+    expect(applyResponse(session, openAction!).ok).toBe(true);
+    expect(host.messages).toEqual(["open resolved"]);
+  });
 });
