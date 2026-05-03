@@ -170,6 +170,8 @@ Scripted duel fixtures should label expectation blocks with `source` when they a
 after: {
   source: 'parity-backlog',
   note: 'EDOPro keeps optional if triggers available after mandatory when triggers enter the chain',
+  legalActionCounts: { 0: 1, 1: 0 },
+  legalActionGroupCounts: { 0: 1, 1: 0 },
   legalActions: [{ type: 'activateTrigger', player: 0, effectId: 'fixture-optional-if', count: 1 }],
   legalActionGroups: [
     {
@@ -190,7 +192,7 @@ after: {
 }
 ```
 
-Use `source: 'edopro'` only for expectations backed by observed EDOPro behavior. Use `source: 'parity-backlog'` for known gaps, and include a `note` that points to the missing EDOPro behavior so the gap stays attached to implementation work. For UI-facing timing behavior, assert both raw `legalActions` and grouped `legalActionGroups`; use `absentLegalActions` and `absentLegalActionGroups` when an illegal response must not be exposed.
+Use `source: 'edopro'` only for expectations backed by observed EDOPro behavior. Use `source: 'parity-backlog'` for known gaps, and include a `note` that points to the missing EDOPro behavior so the gap stays attached to implementation work. For UI-facing timing behavior, assert raw `legalActions`, aggregate `legalActionCounts`, grouped `legalActionGroups`, and aggregate `legalActionGroupCounts`; use `absentLegalActions` and `absentLegalActionGroups` when an illegal response must not be exposed.
 
 ## Included decks
 
