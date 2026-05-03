@@ -62,6 +62,10 @@ describe("parity fixture metadata", () => {
     expect(missingTimingLegalActionGroupWindowIds()).toEqual([]);
   });
 
+  it("requires timing-window expectation blocks to pin window ids", () => {
+    expect(missingTimingExpectationWindowIds()).toEqual([]);
+  });
+
   it("requires parity fixtures to exercise snapshot restore coverage", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
@@ -139,6 +143,14 @@ describe("parity fixture metadata", () => {
         ...lines.slice(4),
       ]),
     ).toEqual(["fixture.ts:6"]);
+    expect(
+      missingTimingExpectationWindowIdsInLines("fixture.ts", [
+        ...lines.slice(0, 3),
+        '  windowKind: "battle",',
+        '  legalActions: [{ type: "passAttack", player: 0, windowId: 2, windowKind: "battle" }],',
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:2"]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "  it('one', () => {})", "});"])).toEqual([]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "});"])).toEqual(["fixture.ts: expected 1 scenario, found 0"]);
@@ -201,6 +213,10 @@ function missingTimingLegalActionWindowIds(): string[] {
 
 function missingTimingLegalActionGroupWindowIds(): string[] {
   return parityFixtureFiles().flatMap((file) => missingTimingLegalActionGroupWindowIdsInLines(file, readFixtureLines(file)));
+}
+
+function missingTimingExpectationWindowIds(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingTimingExpectationWindowIdsInLines(file, readFixtureLines(file)));
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
@@ -287,6 +303,18 @@ function missingLegalActionCountsInLines(file: string, lines: string[]): string[
     if (block.includes("legalActionGroups:") && !block.includes("legalActionGroupCounts:")) missingCounts.push(`${file}:${index + 1}`);
   });
   return [...new Set(missingCounts)];
+}
+
+function missingTimingExpectationWindowIdsInLines(file: string, lines: string[]): string[] {
+  const missingWindowIds: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    if (!blockHasWindowKind(block, ["battle", "chainResponse", "triggerBucket"])) return;
+    const header = block.split(/\n\s*(legalActions|absentLegalActions|legalActionGroups|absentLegalActionGroups):/)[0] ?? block;
+    if (!/\bwindowId:/.test(header)) missingWindowIds.push(`${file}:${index + 1}`);
+  });
+  return missingWindowIds;
 }
 
 function missingOpenLegalActionWindowIdsInLines(file: string, lines: string[]): string[] {
