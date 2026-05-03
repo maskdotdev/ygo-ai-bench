@@ -168,7 +168,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
             ],
             absentLegalActions: [
               { type: "activateEffect", player: 1, effectId: "fixture-opponent-blocked-quick" },
-              { type: "passAttack", player: 0, windowKind: "battle" },
+              { type: "passAttack", player: 0, windowId: 4, windowKind: "battle" },
             ],
             absentLegalActionGroups: [
               {

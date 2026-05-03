@@ -100,6 +100,16 @@ describe("parity fixture metadata", () => {
       ]),
     ).toEqual(["fixture.ts:5", "fixture.ts:6"]);
     expect(
+      missingTimingLegalActionWindowIdsInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  legalActions: [",
+        '    { type: "activateEffect", player: 0, effectId: "fixture-effect", count: 1 },',
+        '    { type: "passAttack", player: 0, windowKind: "battle", count: 1 },',
+        "  ],",
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:5"]);
+    expect(
       missingOpenLegalActionGroupWindowIdsInLines("fixture.ts", [
         ...lines.slice(0, 4),
         "  legalActionGroups: [",
@@ -274,10 +284,24 @@ function missingLegalActionWindowIdsInLines(file: string, lines: string[], windo
   const missingWindowIds: string[] = [];
   lines.forEach((line, index) => {
     if (!/(legalActions|absentLegalActions):/.test(line)) return;
-    const actionObjects = line.match(/\{[^{}]*windowKind:\s*["'][^"']+["'][^{}]*\}/g) ?? [];
+    const actionObjects = legalActionArrayText(lines, index).match(/\{[^{}]*windowKind:\s*["'][^"']+["'][^{}]*\}/g) ?? [];
     if (actionObjects.some((action) => actionHasWindowKind(action, windowKinds) && !/\bwindowId:/.test(action))) missingWindowIds.push(`${file}:${index + 1}`);
   });
   return missingWindowIds;
+}
+
+function legalActionArrayText(lines: string[], startIndex: number): string {
+  const collected: string[] = [];
+  let bracketDepth = 0;
+  let sawArray = false;
+  for (let index = startIndex; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    collected.push(line);
+    if (line.includes("[")) sawArray = true;
+    if (sawArray) bracketDepth += bracketDelta(line);
+    if (sawArray && bracketDepth <= 0) break;
+  }
+  return collected.join("\n");
 }
 
 function missingLegalActionGroupWindowIdsInLines(file: string, lines: string[], windowKinds: string[]): string[] {
@@ -348,6 +372,10 @@ function findBlockStart(lines: string[], sourceIndex: number): number {
 
 function braceDelta(line: string): number {
   return [...line].reduce((total, char) => total + (char === "{" ? 1 : char === "}" ? -1 : 0), 0);
+}
+
+function bracketDelta(line: string): number {
+  return [...line].reduce((total, char) => total + (char === "[" ? 1 : char === "]" ? -1 : 0), 0);
 }
 
 function occurrenceCount(text: string, search: string): number {
