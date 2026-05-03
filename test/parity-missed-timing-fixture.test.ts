@@ -114,6 +114,7 @@ describe("EDOPro parity missed timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-mandatory-when" }), {
+          snapshotRestore: true,
           after: {
             source: "edopro",
             note: "EDOPro presents the remaining optional if trigger only after the mandatory when trigger is placed on chain",
