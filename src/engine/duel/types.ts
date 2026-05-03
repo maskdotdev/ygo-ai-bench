@@ -344,6 +344,12 @@ export interface PendingTrigger {
   eventCardUid?: string;
 }
 
+export interface PendingTriggerBucketState {
+  triggerBucket: TriggerBucket;
+  player: PlayerId;
+  triggerIds: string[];
+}
+
 export interface DuelEventRecord {
   eventName: DuelEventName;
   eventCode?: number;
@@ -527,6 +533,7 @@ export interface PublicDuelState {
   cards: PublicDuelCard[];
   chain: PublicChainLink[];
   pendingTriggers: PendingTrigger[];
+  pendingTriggerBuckets: PendingTriggerBucketState[];
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   attacksDeclared: string[];
   attackCanceledUids: string[];
@@ -564,6 +571,7 @@ export interface SerializedDuel {
     chain: PublicChainLink[];
     chainLimits: SerializedChainLimit[];
     effects: SerializedDuelEffect[];
+    pendingTriggerBuckets?: PendingTriggerBucketState[];
   };
 }
 

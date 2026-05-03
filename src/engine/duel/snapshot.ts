@@ -1,6 +1,7 @@
 import { copyDuelActivityCounts } from "#duel/activity.js";
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
+import { pendingTriggerBuckets } from "#duel/trigger-buckets.js";
 import type {
   DuelCardData,
   DuelCardInstance,
@@ -48,6 +49,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
     cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
     chain: state.chain.map(copyPublicChainLink),
     pendingTriggers: state.pendingTriggers.map(copyPendingTrigger),
+    pendingTriggerBuckets: pendingTriggerBuckets(state.pendingTriggers),
     activityCounts: copyDuelActivityCounts(state.activityCounts),
     attacksDeclared: [...state.attacksDeclared],
     attackCanceledUids: [...state.attackCanceledUids],
@@ -77,6 +79,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       chainLimits: session.state.chainLimits.flatMap(serializeChainLimit),
       chainPasses: [...session.state.chainPasses],
       pendingTriggers: session.state.pendingTriggers.map(copyPendingTrigger),
+      pendingTriggerBuckets: pendingTriggerBuckets(session.state.pendingTriggers),
       eventHistory: session.state.eventHistory.map(copyEventRecord),
       usedCountKeys: [...session.state.usedCountKeys],
       flagEffects: session.state.flagEffects.map((flag) => ({ ...flag })),
@@ -223,6 +226,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
     assertSnapshotCardUidArray(state[field], `state.${field}`, cardUids);
   }
   assertSnapshotPendingTriggers(state.pendingTriggers, cardUids);
+  if (state.pendingTriggerBuckets !== undefined) assertSnapshotPendingTriggerBuckets(state.pendingTriggerBuckets, state.pendingTriggers);
   assertSnapshotEventHistory(state.eventHistory, cardUids);
   assertSnapshotBattlePairs(state.battlePairs, cardUids);
   assertSnapshotChain(state.chain, cardUids);
@@ -318,6 +322,22 @@ function assertSnapshotPendingTriggers(triggers: unknown, cardUids: ReadonlySet<
     if (!duelSnapshotTriggerBuckets.has(trigger.triggerBucket)) throw new Error(`Malformed duel snapshot: ${path}.triggerBucket must be a trigger bucket`);
     assertSnapshotEventPayload(trigger, path, cardUids);
     if (!cardUids.has(trigger.sourceUid as string)) throw new Error(`Malformed duel snapshot: ${path}.sourceUid must reference a card`);
+  }
+}
+
+function assertSnapshotPendingTriggerBuckets(buckets: unknown, triggers: unknown): void {
+  if (!Array.isArray(buckets)) throw new Error("Malformed duel snapshot: state.pendingTriggerBuckets must be an array");
+  if (!Array.isArray(triggers)) throw new Error("Malformed duel snapshot: state.pendingTriggers must be an array");
+  const triggerIds = new Set(triggers.filter(isRecord).map((trigger) => trigger.id).filter((id): id is string => typeof id === "string"));
+  for (const [index, bucket] of buckets.entries()) {
+    const path = `state.pendingTriggerBuckets.${index}`;
+    if (!isRecord(bucket)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+    if (!duelSnapshotTriggerBuckets.has(bucket.triggerBucket)) throw new Error(`Malformed duel snapshot: ${path}.triggerBucket must be a trigger bucket`);
+    assertSnapshotPlayerId(bucket.player, `${path}.player`);
+    if (!Array.isArray(bucket.triggerIds)) throw new Error(`Malformed duel snapshot: ${path}.triggerIds must be an array`);
+    for (const [triggerIndex, triggerId] of bucket.triggerIds.entries()) {
+      if (typeof triggerId !== "string" || !triggerIds.has(triggerId)) throw new Error(`Malformed duel snapshot: ${path}.triggerIds.${triggerIndex} must reference a pending trigger`);
+    }
   }
 }
 

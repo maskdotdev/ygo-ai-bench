@@ -131,6 +131,34 @@ describe("duel snapshot persistence", () => {
     expect(session.state.eventHistory[0]?.eventUids).toEqual([sourceUid]);
   });
 
+  it("exposes pending trigger buckets in public and serialized state", () => {
+    const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.pendingTriggers = [
+      { id: "turn-mandatory", player: 0, sourceUid, effectId: "effect-a", eventName: "customEvent", triggerBucket: "turnMandatory" },
+      { id: "turn-optional", player: 0, sourceUid, effectId: "effect-b", eventName: "customEvent", triggerBucket: "turnOptional" },
+      { id: "opponent-optional", player: 1, sourceUid, effectId: "effect-c", eventName: "customEvent", triggerBucket: "opponentOptional" },
+    ];
+
+    const publicState = queryPublicState(session);
+    const serialized = serializeDuel(session);
+    publicState.pendingTriggerBuckets[0]!.triggerIds.push("public-mutation");
+    serialized.state.pendingTriggerBuckets![1]!.triggerIds.push("serialized-mutation");
+
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([
+      { triggerBucket: "turnMandatory", player: 0, triggerIds: ["turn-mandatory"] },
+      { triggerBucket: "turnOptional", player: 0, triggerIds: ["turn-optional"] },
+      { triggerBucket: "opponentOptional", player: 1, triggerIds: ["opponent-optional"] },
+    ]);
+    expect(serializeDuel(session).state.pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
+    expect(restoreDuel(serializeDuel(session), createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false }).state.pendingTriggers).toEqual(session.state.pendingTriggers);
+  });
+
   it("copies prompt options out of public and serialized state", () => {
     const session = createDuel({ seed: 141, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

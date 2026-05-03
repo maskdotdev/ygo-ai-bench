@@ -1,18 +1,16 @@
 import { findCard } from "#duel/card-state.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
+import { activePendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { DuelAction, DuelState, PlayerId } from "#duel/types.js";
 
 export function getPendingTriggerActions(state: DuelState, player: PlayerId): DuelAction[] {
-  const firstTrigger = state.pendingTriggers[0];
-  if (!firstTrigger) return [];
-
-  const firstEffect = state.effects.find((candidate) => candidate.id === firstTrigger.effectId && candidate.sourceUid === firstTrigger.sourceUid);
-  const firstOptional = firstEffect?.optional !== false;
+  const activeBucket = activePendingTriggerBucket(state.pendingTriggers);
+  if (!activeBucket || activeBucket.player !== player) return [];
   const actions: DuelAction[] = [];
 
   for (const trigger of state.pendingTriggers.filter((candidate) => candidate.player === player)) {
     const effect = state.effects.find((candidate) => candidate.id === trigger.effectId && candidate.sourceUid === trigger.sourceUid);
-    if (trigger.player !== firstTrigger.player || (effect?.optional !== false) !== firstOptional) continue;
+    if (trigger.triggerBucket !== activeBucket.triggerBucket) continue;
 
     const source = findCard(state, trigger.sourceUid);
     if (!source || !effect) continue;
