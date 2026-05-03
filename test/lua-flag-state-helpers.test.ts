@@ -426,6 +426,58 @@ describe("Lua flag state helpers", () => {
     expect(session.state.flagEffects).toHaveLength(0);
   });
 
+  it("counts Lua flag phase resets only on matching self turns", () => {
+    const cards: DuelCardData[] = [{ code: "111", name: "Flag Self Turn Source", kind: "monster" }];
+    const session = createDuel({ seed: 148, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["111"] },
+      1: { main: ["111"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c111={}
+      function c111.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Duel.RegisterFlagEffect(0, 938, RESET_PHASE + PHASE_END + RESET_SELF_TURN, 0, 2, 72)
+          c:RegisterFlagEffect(939, RESET_PHASE + PHASE_END + RESET_SELF_TURN, 0, 2, 82)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flag-self-turn-reset-count.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    expect(session.state.turnPlayer).toBe(1);
+    expect(session.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([
+      expect.objectContaining({ code: 938, resetCount: 1, value: 72 }),
+      expect.objectContaining({ code: 939, resetCount: 1, value: 82 }),
+    ]);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    expect(session.state.turnPlayer).toBe(0);
+    expect(session.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([
+      expect.objectContaining({ code: 938, resetCount: 1, value: 72 }),
+      expect.objectContaining({ code: 939, resetCount: 1, value: 82 }),
+    ]);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    expect(session.state.turnPlayer).toBe(1);
+    expect(session.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([]);
+  });
+
   it("expires Lua flag effects at the Battle Start reset boundary", () => {
     const cards: DuelCardData[] = [{ code: "106", name: "Flag Battle Start Source", kind: "monster" }];
     const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });

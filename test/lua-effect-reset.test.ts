@@ -240,6 +240,45 @@ describe("Lua effect reset", () => {
     expect(session.state.effects).toHaveLength(0);
   });
 
+  it("counts Lua RESET_PHASE effects only on matching self turns", () => {
+    const { session } = setupLuaChainFixture({
+      seed: 1252,
+      startingHandSize: 1,
+      cards: [
+        { code: "23106", name: "Lua Reset Self Turn Source", kind: "monster" },
+        { code: "23206", name: "Lua Reset Self Turn Filler", kind: "monster" },
+      ],
+      decks: {
+        0: { main: ["23106"] },
+        1: { main: ["23206"] },
+      },
+      expectedEffects: 1,
+      scriptName: "lua-effect-reset-self-turn-count.lua",
+      script: `
+      c23106={}
+      function c23106.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetReset(RESET_PHASE + PHASE_END + RESET_SELF_TURN, 2)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    expect(session.state.turnPlayer).toBe(1);
+    expect(session.state.effects).toEqual([expect.objectContaining({ reset: { flags: 0x40000000 + 0x200 + 0x10000000, count: 1 } })]);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    expect(session.state.turnPlayer).toBe(0);
+    expect(session.state.effects).toEqual([expect.objectContaining({ reset: { flags: 0x40000000 + 0x200 + 0x10000000, count: 1 } })]);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    expect(session.state.turnPlayer).toBe(1);
+    expect(session.state.effects).toHaveLength(0);
+  });
+
   it("removes Lua RESET_PHASE effects when entering Battle Start", () => {
     const { session } = setupLuaChainFixture({
       seed: 126,
