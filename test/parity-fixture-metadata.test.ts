@@ -103,7 +103,9 @@ function missingAbsentLegalActionGroupCoverage(): string[] {
 }
 
 function missingLegalActionCountCoverage(): string[] {
-  return ["parity-battle-result-fixture.test.ts"].flatMap((file) => missingLegalActionCountsInLines(file, readFixtureLines(file)));
+  return ["parity-battle-result-fixture.test.ts", "parity-battle-window-fixture.test.ts"].flatMap((file) =>
+    missingLegalActionCountsInLines(file, readFixtureLines(file)),
+  );
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
