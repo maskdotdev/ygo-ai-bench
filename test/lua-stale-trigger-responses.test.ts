@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, getLegalActions as getDuelLegalActions } from "#duel/core.js";
+import { applyResponse, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions } from "#duel/core.js";
 import { setupLuaChainFixture } from "./lua-chain-fixtures.js";
 
 describe("Lua stale trigger responses", () => {
@@ -45,6 +45,9 @@ describe("Lua stale trigger responses", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(0);
     expect(host.messages).toEqual(["lua stale activate trigger resolved"]);
   });
@@ -91,6 +94,9 @@ describe("Lua stale trigger responses", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(0);
     expect(host.messages).toEqual([]);
   });
