@@ -76,7 +76,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
                 label: "Effects",
                 windowKind: "battle",
                 count: 1,
-                actions: [{ type: "activateEffect", player: 1, effectId: "fixture-opponent-blocked-quick", count: 1 }],
+                actions: [{ type: "activateEffect", player: 1, windowKind: "battle", effectId: "fixture-opponent-blocked-quick", count: 1 }],
               },
               {
                 player: 1,
@@ -110,8 +110,8 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
                 windowKind: "battle",
                 count: 1,
                 actions: [
-                  { type: "activateEffect", player: 0, effectId: "fixture-turn-chain-limiter", count: 1 },
-                  { type: "activateEffect", player: 0, effectId: "fixture-turn-followup-quick", count: 1 },
+                  { type: "activateEffect", player: 0, windowKind: "battle", effectId: "fixture-turn-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 0, windowKind: "battle", effectId: "fixture-turn-followup-quick", count: 1 },
                 ],
               },
               {
@@ -147,7 +147,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
                 label: "Effects",
                 windowKind: "chainResponse",
                 count: 1,
-                actions: [{ type: "activateEffect", player: 0, effectId: "fixture-turn-followup-quick", count: 1 }],
+                actions: [{ type: "activateEffect", player: 0, windowKind: "chainResponse", effectId: "fixture-turn-followup-quick", count: 1 }],
               },
               {
                 player: 0,
@@ -165,7 +165,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
               {
                 player: 1,
                 label: "Effects",
-                actions: [{ type: "activateEffect", player: 1, effectId: "fixture-opponent-blocked-quick" }],
+                actions: [{ type: "activateEffect", player: 1, windowKind: "chainResponse", effectId: "fixture-opponent-blocked-quick" }],
               },
               {
                 player: 0,
@@ -198,7 +198,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
                 label: "Effects",
                 windowKind: "battle",
                 count: 1,
-                actions: [{ type: "activateEffect", player: 1, effectId: "fixture-opponent-blocked-quick", count: 1 }],
+                actions: [{ type: "activateEffect", player: 1, windowKind: "battle", effectId: "fixture-opponent-blocked-quick", count: 1 }],
               },
               {
                 player: 1,
@@ -330,8 +330,8 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
                 windowKind: "battle",
                 count: 1,
                 actions: [
-                  { type: "activateEffect", player: 0, effectId: "fixture-until-chain-end-limiter", count: 1 },
-                  { type: "activateEffect", player: 0, effectId: "fixture-blocked-turn-quick", count: 1 },
+                  { type: "activateEffect", player: 0, windowKind: "battle", effectId: "fixture-until-chain-end-limiter", count: 1 },
+                  { type: "activateEffect", player: 0, windowKind: "battle", effectId: "fixture-blocked-turn-quick", count: 1 },
                 ],
               },
             ],
@@ -360,7 +360,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
                 label: "Effects",
                 windowKind: "chainResponse",
                 count: 1,
-                actions: [{ type: "activateEffect", player: 1, effectId: "fixture-allowed-opponent-quick", count: 1 }],
+                actions: [{ type: "activateEffect", player: 1, windowKind: "chainResponse", effectId: "fixture-allowed-opponent-quick", count: 1 }],
               },
               {
                 player: 1,
@@ -378,7 +378,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
               {
                 player: 0,
                 label: "Effects",
-                actions: [{ type: "activateEffect", player: 0, effectId: "fixture-blocked-turn-quick" }],
+                actions: [{ type: "activateEffect", player: 0, windowKind: "chainResponse", effectId: "fixture-blocked-turn-quick" }],
               },
               {
                 player: 1,
@@ -419,7 +419,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
               {
                 player: 0,
                 label: "Effects",
-                actions: [{ type: "activateEffect", player: 0, effectId: "fixture-blocked-turn-quick" }],
+                actions: [{ type: "activateEffect", player: 0, windowKind: "battle", effectId: "fixture-blocked-turn-quick" }],
               },
             ],
             logIncludes: ["Fixture allowed opponent quick resolved", "Fixture until-chain-end limiter resolved"],
