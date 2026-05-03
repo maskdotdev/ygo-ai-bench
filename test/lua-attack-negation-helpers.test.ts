@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -191,11 +191,18 @@ describe("Lua attack negation helpers", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     const negate = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
+    const staleAttackPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passAttack");
     expect(negate).toBeDefined();
+    expect(staleAttackPass).toBeDefined();
     const result = applyLuaRestoreResponse(restored, negate!);
 
     expect(result.ok).toBe(true);
     expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(["lua-1"]);
+    const replayAttackPass = applyLuaRestoreResponse(restored, staleAttackPass!);
+    expect(replayAttackPass.ok).toBe(false);
+    expect(replayAttackPass.error).toContain("Response is not currently legal");
+    expect(replayAttackPass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(replayAttackPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
