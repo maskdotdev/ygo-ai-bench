@@ -503,6 +503,17 @@ function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: st
   }
   if (card.counters !== undefined) assertSnapshotNumberRecord(card.counters, `${path}.counters`);
   if (card.assumedProperties !== undefined) assertSnapshotNumberRecord(card.assumedProperties, `${path}.assumedProperties`);
+  if (card.uniqueOnField !== undefined) assertSnapshotUniqueOnField(card.uniqueOnField, `${path}.uniqueOnField`);
+}
+
+function assertSnapshotUniqueOnField(unique: unknown, path: string): void {
+  if (!isRecord(unique)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+  for (const field of ["self", "opponent"] as const) {
+    if (typeof unique[field] !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a boolean`);
+  }
+  for (const field of ["code", "locationMask"] as const) {
+    if (typeof unique[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
+  }
 }
 
 function assertSnapshotCardData(data: unknown, path: string): void {

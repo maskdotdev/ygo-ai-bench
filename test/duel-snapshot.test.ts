@@ -314,6 +314,19 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(badSynchro, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.data.synchroMaterials.nonTuners.0 must be a string");
   });
 
+  it("rejects malformed unique card state snapshots before restore", () => {
+    const session = createDuel({ seed: 161, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badUnique = serializeDuel(session);
+    badUnique.state.cards[0] = { ...badUnique.state.cards[0]!, uniqueOnField: { self: true, opponent: "no" as unknown as boolean, code: 100, locationMask: 0x04 } };
+
+    expect(() => restoreDuel(badUnique, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.uniqueOnField.opponent must be a boolean");
+  });
+
   it("rejects malformed effect snapshots before restore", () => {
     const session = createDuel({ seed: 159, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
