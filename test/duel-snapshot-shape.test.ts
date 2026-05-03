@@ -262,18 +262,25 @@ describe("duel snapshot restore shape validation", () => {
     const badPlayer = serializeDuel(session);
     const badTriggerIds = serializeDuel(session);
     const badTriggerRef = serializeDuel(session);
-    for (const snapshot of [badBucket, badPlayer, badTriggerIds, badTriggerRef]) {
+    const badBucketOrder = serializeDuel(session);
+    const badBucketIds = serializeDuel(session);
+    for (const snapshot of [badBucket, badPlayer, badTriggerIds, badTriggerRef, badBucketOrder, badBucketIds]) {
       snapshot.state.pendingTriggers = [{ id: "trigger", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional" }];
     }
     badBucket.state.pendingTriggerBuckets = [{ triggerBucket: "optional" as "turnOptional", player: 0, triggerIds: ["trigger"] }];
     badPlayer.state.pendingTriggerBuckets = [{ triggerBucket: "turnOptional", player: 2 as 0, triggerIds: ["trigger"] }];
     badTriggerIds.state.pendingTriggerBuckets = [{ triggerBucket: "turnOptional", player: 0, triggerIds: "trigger" as unknown as string[] }];
     badTriggerRef.state.pendingTriggerBuckets = [{ triggerBucket: "turnOptional", player: 0, triggerIds: ["missing"] }];
+    badBucketOrder.state.pendingTriggerBuckets = [{ triggerBucket: "opponentOptional", player: 0, triggerIds: ["trigger"] }];
+    badBucketIds.state.pendingTriggers.push({ id: "second-trigger", player: 0, sourceUid, effectId: "second-effect", eventName: "customEvent", triggerBucket: "turnOptional" });
+    badBucketIds.state.pendingTriggerBuckets = [{ triggerBucket: "turnOptional", player: 0, triggerIds: ["second-trigger", "trigger"] }];
 
     expect(() => restoreDuel(badBucket, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggerBuckets.0.triggerBucket must be a trigger bucket");
     expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggerBuckets.0.player must be a player id");
     expect(() => restoreDuel(badTriggerIds, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggerBuckets.0.triggerIds must be an array");
     expect(() => restoreDuel(badTriggerRef, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggerBuckets.0.triggerIds.0 must reference a pending trigger");
+    expect(() => restoreDuel(badBucketOrder, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggerBuckets must match pendingTriggers");
+    expect(() => restoreDuel(badBucketIds, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggerBuckets must match pendingTriggers");
   });
 
   it("rejects malformed event history snapshots before restore", () => {

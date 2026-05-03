@@ -12,6 +12,7 @@ import type {
   DuelPromptState,
   DuelSession,
   DuelState,
+  PendingTrigger,
   PlayerId,
   PublicChainLink,
   PublicDuelCard,
@@ -340,6 +341,8 @@ function assertSnapshotPendingTriggerBuckets(buckets: unknown, triggers: unknown
       if (typeof triggerId !== "string" || !triggerIds.has(triggerId)) throw new Error(`Malformed duel snapshot: ${path}.triggerIds.${triggerIndex} must reference a pending trigger`);
     }
   }
+  const expected = pendingTriggerBuckets(triggers as PendingTrigger[]);
+  if (JSON.stringify(buckets) !== JSON.stringify(expected)) throw new Error("Malformed duel snapshot: state.pendingTriggerBuckets must match pendingTriggers");
 }
 
 function assertSnapshotEventHistory(events: unknown, cardUids: ReadonlySet<string>): void {
