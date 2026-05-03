@@ -34,8 +34,13 @@ describe("parity fixture metadata", () => {
     expect(missingAbsentLegalActionGroupCoverage()).toEqual([]);
   });
 
+  it("requires parity fixtures to exercise snapshot restore coverage", () => {
+    expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
+  });
+
   it("detects missing source, backlog note, and grouped action metadata in fixture text", () => {
     const lines = [
+      "runScriptedDuelFixture({",
       "after: {",
       "  waitingFor: 0,",
       "  legalActions: [],",
@@ -46,11 +51,12 @@ describe("parity fixture metadata", () => {
       "},",
     ];
 
-    expect(missingSourcesInLines("fixture.ts", lines)).toEqual(["fixture.ts:1"]);
-    expect(invalidSourcesInLines("fixture.ts", [...lines.slice(0, 2), '  source: "local",', ...lines.slice(2)])).toEqual(["fixture.ts:1"]);
-    expect(missingBacklogNotesInLines("fixture.ts", lines)).toEqual(["fixture.ts:6"]);
-    expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 6), '  note: "temporary local behavior",', ...lines.slice(6)])).toEqual(["fixture.ts:6"]);
-    expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:1"]);
+    expect(missingSourcesInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
+    expect(invalidSourcesInLines("fixture.ts", [...lines.slice(0, 3), '  source: "local",', ...lines.slice(3)])).toEqual(["fixture.ts:2"]);
+    expect(missingBacklogNotesInLines("fixture.ts", lines)).toEqual(["fixture.ts:7"]);
+    expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 7), '  note: "temporary local behavior",', ...lines.slice(7)])).toEqual(["fixture.ts:7"]);
+    expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
+    expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
   });
 });
 
@@ -83,6 +89,10 @@ function missingLegalActionGroupCoverage(): string[] {
 
 function missingAbsentLegalActionGroupCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingLegalActionGroupsInLines(file, readFixtureLines(file), "absentLegalActions:", "absentLegalActionGroups:"));
+}
+
+function parityFixturesWithoutSnapshotRestore(): string[] {
+  return parityFixtureFiles().flatMap((file) => parityFixtureWithoutSnapshotRestoreInLines(file, readFixtureLines(file)));
 }
 
 function missingSourcesInLines(file: string, lines: string[]): string[] {
@@ -140,6 +150,11 @@ function missingLegalActionGroupsInLines(file: string, lines: string[], rawSearc
     if (rawCount > groupCount) missingGroups.push(`${file}:${index + 1}`);
   });
   return missingGroups;
+}
+
+function parityFixtureWithoutSnapshotRestoreInLines(file: string, lines: string[]): string[] {
+  const text = lines.join("\n");
+  return text.includes("runScriptedDuelFixture") && !text.includes("snapshotRestore") ? [file] : [];
 }
 
 function parityFixtureFiles(): string[] {
