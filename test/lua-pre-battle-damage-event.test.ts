@@ -31,8 +31,8 @@ describe("Lua pre-battle-damage events", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_PRE_BATTLE_DAMAGE)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp)
-          Debug.Message("pre battle damage resolved " .. Duel.GetBattleDamage(1))
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r)
+          Debug.Message("pre battle damage resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. Duel.GetBattleDamage(1))
         end)
         c:RegisterEffect(e)
       end
@@ -48,17 +48,17 @@ describe("Lua pre-battle-damage events", () => {
 
     expect(session.state.players[1].lifePoints).toBe(6200);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["beforeBattleDamage"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1136 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1136, eventPlayer: 1, eventValue: 1800, eventReason: 0x20 });
     expect(session.state.eventHistory.slice(-2)).toEqual([
-      expect.objectContaining({ eventName: "beforeBattleDamage", eventCode: 1136 }),
-      expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143 }),
+      expect.objectContaining({ eventName: "beforeBattleDamage", eventCode: 1136, eventPlayer: 1, eventValue: 1800, eventReason: 0x20 }),
+      expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20 }),
     ]);
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
     drainChain(session);
-    expect(host.messages).toContain("pre battle damage resolved 1800");
+    expect(host.messages).toContain("pre battle damage resolved 1/1800/32/1800");
   });
 });
 

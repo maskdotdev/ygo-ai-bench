@@ -561,8 +561,8 @@ describe("Lua battle timing helpers", () => {
           e:SetType(EFFECT_TYPE_TRIGGER_O)
           e:SetCode(EVENT_BATTLE_DAMAGE)
           e:SetRange(LOCATION_HAND)
-          e:SetOperation(function(e,tp)
-            Debug.Message("restored battle damage trigger " .. Duel.GetLP(1))
+          e:SetOperation(function(e,tp,eg,ep,ev,re,r)
+            Debug.Message("restored battle damage trigger " .. ep .. "/" .. ev .. "/" .. r .. "/" .. Duel.GetLP(1))
           end)
           c:RegisterEffect(e)
         end
@@ -589,17 +589,17 @@ describe("Lua battle timing helpers", () => {
     passBattleResponses(session);
     expect(session.state.players[1].lifePoints).toBe(6200);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDamageDealt"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDamageDealt"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20 });
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
 
-    expect(restored.host.messages).toEqual(["restored battle damage trigger 6200"]);
+    expect(restored.host.messages).toEqual(["restored battle damage trigger 1/1800/32/6200"]);
     expect(restored.session.state.chain).toEqual([]);
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.players[1].lifePoints).toBe(6200);
@@ -631,7 +631,7 @@ describe("Lua battle timing helpers", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_BATTLE_DAMAGE)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp) Debug.Message("lua battle damage trigger resolved " .. Duel.GetLP(1)) end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r) Debug.Message("lua battle damage trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. Duel.GetLP(1)) end)
         c:RegisterEffect(e)
       end
       `,
@@ -646,12 +646,12 @@ describe("Lua battle timing helpers", () => {
 
     expect(session.state.players[1].lifePoints).toBe(6200);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDamageDealt"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20 });
     const damageTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(damageTrigger).toBeDefined();
     expect(applyResponse(session, damageTrigger!).ok).toBe(true);
     expect(passLuaBattleChain(session)).toBe(true);
-    expect(host.messages).toContain("lua battle damage trigger resolved 6200");
+    expect(host.messages).toContain("lua battle damage trigger resolved 1/1800/32/6200");
   });
 });
 
