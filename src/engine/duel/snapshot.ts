@@ -219,6 +219,9 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   assertSnapshotFlagEffects(state.flagEffects);
   assertSnapshotLog(state.log);
   const cardUids = assertSnapshotCards(state.cards);
+  for (const field of ["attacksDeclared", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
+    assertSnapshotCardUidArray(state[field], `state.${field}`, cardUids);
+  }
   assertSnapshotPendingTriggers(state.pendingTriggers, cardUids);
   assertSnapshotEventHistory(state.eventHistory, cardUids);
   assertSnapshotBattlePairs(state.battlePairs, cardUids);
@@ -281,6 +284,13 @@ function assertSnapshotStringArray(values: unknown, path: string): void {
   if (!Array.isArray(values)) throw new Error(`Malformed duel snapshot: ${path} must be an array`);
   for (const [index, value] of values.entries()) {
     if (typeof value !== "string") throw new Error(`Malformed duel snapshot: ${path}.${index} must be a string`);
+  }
+}
+
+function assertSnapshotCardUidArray(values: unknown, path: string, cardUids: ReadonlySet<string>): void {
+  if (!Array.isArray(values)) throw new Error(`Malformed duel snapshot: ${path} must be an array`);
+  for (const [index, value] of values.entries()) {
+    if (!cardUids.has(value as string)) throw new Error(`Malformed duel snapshot: ${path}.${index} must reference a card`);
   }
 }
 

@@ -144,6 +144,22 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badUid, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackCanceledUids.1 must be a string");
   });
 
+  it("rejects missing card references in snapshot uid collections before restore", () => {
+    const session = createDuel({ seed: 170, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badAttack = serializeDuel(session);
+    const badPosition = serializeDuel(session);
+    badAttack.state.attacksDeclared = ["missing"];
+    badPosition.state.positionsChanged = [badPosition.state.cards[0]!.uid, "missing"];
+
+    expect(() => restoreDuel(badAttack, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attacksDeclared.0 must reference a card");
+    expect(() => restoreDuel(badPosition, createCardReader(cards))).toThrow("Malformed duel snapshot: state.positionsChanged.1 must reference a card");
+  });
+
   it("rejects malformed snapshot battle pair collections before restore", () => {
     const session = createDuel({ seed: 149, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
