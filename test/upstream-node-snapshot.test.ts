@@ -316,6 +316,12 @@ describe("Node upstream snapshot restore", () => {
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(true);
     expect(restored.host.messages).toContain("restored ignition");
+    const replay = applyLuaRestoreResponse(restored, action!);
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(restored.host.messages.filter((message) => message === "restored ignition")).toHaveLength(1);
   });
 
   it("exposes prompt responses after complete Lua snapshot restore", () => {
