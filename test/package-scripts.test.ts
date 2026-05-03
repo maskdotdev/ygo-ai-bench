@@ -6,12 +6,14 @@ describe("package scripts", () => {
     const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")) as { scripts?: Record<string, string> };
 
     expect(pkg.scripts?.["scan:lua-parity"]).toContain("--fail-on-missing");
+    expect(pkg.scripts?.["check:bridge-bundle"]).toContain("tools/check-bridge-bundle.mjs");
     expect(pkg.scripts?.check?.split(" && ")).toEqual([
       "bun run check:loc",
       "bun run scan:lua-parity",
       "bun run typecheck",
       "bun run test",
       "bun run build",
+      "bun run check:bridge-bundle",
     ]);
   });
 });
