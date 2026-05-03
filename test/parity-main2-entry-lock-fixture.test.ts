@@ -3,12 +3,12 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 
-describe("EDOPro parity Main Phase 2 lock fixtures", () => {
-  it("skips Main Phase 2 legal actions for players affected by skip-main2 effects", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "Main Phase 2 Skip Source", kind: "monster", attack: 1000, defense: 1000 }];
+describe("EDOPro parity Main Phase 2 entry lock fixtures", () => {
+  it("skips Main Phase 2 legal actions for players affected by cannot-enter-main2 effects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Main Phase 2 Lock Source", kind: "monster", attack: 1000, defense: 1000 }];
     const fixture: ScriptedDuelFixture = {
-      name: "skip main2 legal action fixture",
-      options: { seed: 80, startingHandSize: 1 },
+      name: "cannot enter main2 legal action fixture",
+      options: { seed: 83, startingHandSize: 1 },
       decks: {
         0: { main: ["100"] },
         1: { main: [] },
@@ -17,12 +17,12 @@ describe("EDOPro parity Main Phase 2 lock fixtures", () => {
         moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
         effects: [
           {
-            id: "fixture-skip-m2",
+            id: "fixture-cannot-m2",
             player: 0,
             code: "100",
             location: "monsterZone",
             event: "continuous",
-            effectCode: 184,
+            effectCode: 186,
             range: ["monsterZone"],
           },
         ],
@@ -33,7 +33,7 @@ describe("EDOPro parity Main Phase 2 lock fixtures", () => {
           snapshotRestore: "before",
           before: {
             source: "edopro",
-            note: "EDOPro omits Main Phase 2 and exposes End Phase when SKIP_M2 applies to the turn player",
+            note: "EDOPro omits Main Phase 2 and exposes End Phase when CANNOT_M2 prevents entering Main Phase 2",
             phase: "battle",
             windowKind: "open",
             waitingFor: 0,
@@ -61,7 +61,7 @@ describe("EDOPro parity Main Phase 2 lock fixtures", () => {
           },
           after: {
             source: "edopro",
-            note: "EDOPro accepts End Phase as the next available phase after SKIP_M2",
+            note: "EDOPro accepts End Phase as the next available phase after Main Phase 2 is blocked",
             phase: "end",
             waitingFor: 0,
             pendingBattle: false,
@@ -71,7 +71,7 @@ describe("EDOPro parity Main Phase 2 lock fixtures", () => {
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state is End Phase after SKIP_M2 skips Main Phase 2 entry",
+        note: "EDOPro final fixture state is End Phase after CANNOT_M2 skips Main Phase 2 entry",
         phase: "end",
         waitingFor: 0,
         pendingBattle: false,
