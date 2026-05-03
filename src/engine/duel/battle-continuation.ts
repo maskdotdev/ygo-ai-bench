@@ -5,6 +5,7 @@ export interface BattleContinuationHandlers {
   additionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId[];
   battleDamagePlayer(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId;
   battleDamageReason(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): number;
+  canAttackTarget?(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance): boolean;
   collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void;
   changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   damagePlayer(state: DuelState, player: PlayerId, amount: number, reason?: number): number;
@@ -17,6 +18,7 @@ export interface BattleContinuationHandlers {
 export function resolvePendingBattle(state: DuelState, handlers: BattleContinuationHandlers): void {
   const battleDamageOverrides = state.pendingBattle?.battleDamageOverrides;
   resolvePendingDuelBattle(state, {
+    canAttackTarget: (attacker, target) => handlers.canAttackTarget?.(state, attacker, target) ?? true,
     collectEvent: (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard),
     damagePlayer: (damagedPlayer, amount, battleCards) => {
       const adjustedAmount = battleDamageOverrides?.[damagedPlayer] ?? amount;

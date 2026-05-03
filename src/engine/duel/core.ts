@@ -51,8 +51,10 @@ import {
 import {
   appendBattleActions,
   canCoreChangeDuelCardPosition,
+  canCoreAttackTarget,
   canCoreDuelCardAttack,
   changeCoreDuelCardPosition,
+  coreReplayAttackActions,
   corePositionChangeActions,
   declareCoreDuelAttack,
   getCoreDuelAttackTargets,
@@ -63,6 +65,7 @@ import {
   hasCoreMustAttackAction,
   hasCorePiercingBattleDamage,
   negateCoreDuelAttack,
+  replayCoreDuelAttack,
   type CoreBattleHandlers,
 } from "#duel/core-battle.js";
 import { battleWindowActions } from "#duel/battle-window-actions.js";
@@ -163,6 +166,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
   additionalBattleDamagePlayers: (state, player, battleCards) => getCoreAdditionalBattleDamagePlayers(state, player, battleCards, coreBattleHandlers),
   battleDamagePlayer: (state, player, battleCards) => reflectedDuelBattleDamagePlayerRule(state, player, createContinuousEffectContext(state), battleCards),
   battleDamageReason: (state, player, battleCards) => getCoreBattleDamageReason(state, player, battleCards, coreBattleHandlers),
+  canAttackTarget: (state, attacker, target) => canCoreAttackTarget(state, attacker, target, coreBattleHandlers),
   collectEvent: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
   changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
   damagePlayer: damageDuelPlayer,
@@ -227,7 +231,7 @@ const responseHandlers: DuelResponseHandlers = {
   passChain,
   passAttack: (state, player) => passAttackResponseWindow(state, player, battleContinuationHandlers),
   passDamage: (state, player) => passDamageResponseWindow(state, player, battleContinuationHandlers),
-  replayAttack: replayDuelAttack,
+  replayAttack: (state, player, attackerUid, targetUid) => replayCoreDuelAttack(state, player, attackerUid, targetUid, coreBattleHandlers),
   cancelAttack: cancelReplayAttack,
   resolvePrompt: resolveDuelPrompt,
   activateTrigger(session, player, triggerId) {
@@ -279,7 +283,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     return stampDuelActions(actions, state.actionWindowId, "triggerBucket");
   }
   if (state.pendingBattle) {
-    actions.push(...battleWindowActions(state, player, quickEffectActions));
+    actions.push(...battleWindowActions(state, player, quickEffectActions, (duelState, actionPlayer) => coreReplayAttackActions(duelState, actionPlayer, coreBattleHandlers)));
     return stampDuelActions(actions, state.actionWindowId, "battle");
   }
   const hand = getCards(state, player, "hand");

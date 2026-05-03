@@ -8,6 +8,8 @@ import {
   getDuelAttackTargets as getDuelAttackTargetsRule,
   negateDuelAttack as negateDuelAttackRule,
   positionChangeActions as positionChangeActionsRule,
+  replayAttackActions as replayAttackActionsRule,
+  replayDuelAttack as replayDuelAttackRule,
 } from "#duel/battle.js";
 import { openAttackResponseWindow } from "#duel/attack-response-window.js";
 import {
@@ -139,6 +141,36 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
   }, attacker ? totalExtraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)), attacker ? canDirectAttackThroughTargets(state, attacker, createContext) : false);
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
+}
+
+export function replayCoreDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid: string | undefined, handlers: CoreBattleHandlers): void {
+  const attacker = findCard(state, attackerUid);
+  const createContext = handlers.createContinuousContext(state);
+  const onlyTargets = onlyBeAttackedTargetUids(state, player, createContext);
+  replayDuelAttackRule(
+    state,
+    player,
+    attackerUid,
+    targetUid,
+    (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)),
+  );
+}
+
+export function coreReplayAttackActions(state: DuelState, player: PlayerId, handlers: CoreBattleHandlers): DuelAction[] {
+  const attacker = state.pendingBattle === undefined ? undefined : findCard(state, state.pendingBattle.attackerUid);
+  const createContext = handlers.createContinuousContext(state);
+  const onlyTargets = onlyBeAttackedTargetUids(state, player, createContext);
+  return replayAttackActionsRule(
+    state,
+    player,
+    (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)),
+  );
+}
+
+export function canCoreAttackTarget(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance, handlers: CoreBattleHandlers): boolean {
+  const createContext = handlers.createContinuousContext(state);
+  const onlyTargets = onlyBeAttackedTargetUids(state, attacker.controller, createContext);
+  return canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext);
 }
 
 export function negateCoreDuelAttack(state: DuelState): boolean {

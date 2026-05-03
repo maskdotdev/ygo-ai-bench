@@ -5,6 +5,7 @@ import { duelReason } from "#duel/reasons.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface DuelBattleCallbacks {
+  canAttackTarget?(attacker: DuelCardInstance, target: DuelCardInstance): boolean;
   collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance): void;
   damagePlayer(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   destroyCard(uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
@@ -104,7 +105,8 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
     openReplayDecisionWindow(state, attacker);
     return false;
   }
-  if (pending.replayTargetCount !== undefined && pending.replayTargetCount !== getAttackTargets(state, attacker.controller).length) {
+  const currentTargets = getAttackTargets(state, attacker.controller, (target) => callbacks.canAttackTarget?.(attacker, target) ?? true);
+  if (pending.replayTargetCount !== undefined && pending.replayTargetCount !== currentTargets.length) {
     openReplayDecisionWindow(state, attacker);
     return false;
   }
@@ -125,11 +127,11 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   }
 }
 
-export function replayAttackActions(state: DuelState, player: PlayerId): DuelAction[] {
+export function replayAttackActions(state: DuelState, player: PlayerId, canAttackTarget: DuelAttackTargetPredicate = () => true): DuelAction[] {
   if (currentBattleWindowKind(state) !== "replayDecision" || !state.pendingBattle) return [];
   const attacker = findCard(state, state.pendingBattle.attackerUid);
   if (!attacker || attacker.controller !== player || attacker.location !== "monsterZone") return [];
-  const targets = getAttackTargets(state, player);
+  const targets = getAttackTargets(state, player, canAttackTarget);
   return [
     { type: "cancelAttack", player, attackerUid: attacker.uid, label: `Cancel ${attacker.name}'s attack` },
     ...(targets.length === 0 ? [{ type: "replayAttack" as const, player, attackerUid: attacker.uid, label: `${attacker.name}: Attack directly` }] : []),
@@ -137,10 +139,10 @@ export function replayAttackActions(state: DuelState, player: PlayerId): DuelAct
   ];
 }
 
-export function replayDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {
+export function replayDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string, canAttackTarget: DuelAttackTargetPredicate = () => true): void {
   const attacker = requireControlledCard(state, player, attackerUid, "monsterZone");
   if (currentBattleWindowKind(state) !== "replayDecision" || state.pendingBattle?.attackerUid !== attacker.uid) throw new Error("No replay decision is pending for this attacker");
-  const targets = getAttackTargets(state, player);
+  const targets = getAttackTargets(state, player, canAttackTarget);
   const target = targetUid === undefined ? undefined : findCard(state, targetUid);
   if (targets.length > 0) {
     if (!target || !targets.some((candidate) => candidate.uid === target.uid)) throw new Error("Replay attack target is not legal");
