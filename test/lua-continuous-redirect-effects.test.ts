@@ -7,7 +7,7 @@ import {
   loadDecks,
   startDuel,
 } from "#duel/core.js";
-import { moveDuelCard } from "#duel/card-state.js";
+import { getCards, moveDuelCard } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -113,6 +113,124 @@ describe("Lua continuous redirect effects", () => {
     expect(host.messages).toContain("leave redirect checked 100");
     expect(host.messages).toContain("leave redirected 1");
     expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "banished", reason: 0x4000040 });
+  });
+
+  it("applies Lua leave-field redirects to the bottom of the Deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Bottom Redirected Monster", kind: "monster" },
+      { code: "900", name: "Deck Anchor A", kind: "monster" },
+      { code: "901", name: "Deck Anchor B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 46, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "900", "901"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const redirected = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const anchorA = session.state.cards.find((card) => card.controller === 0 && card.code === "900");
+    const anchorB = session.state.cards.find((card) => card.controller === 0 && card.code === "901");
+    expect(redirected).toBeTruthy();
+    expect(anchorA).toBeTruthy();
+    expect(anchorB).toBeTruthy();
+    moveDuelCard(session.state, anchorA!.uid, "deck", 0);
+    moveDuelCard(session.state, anchorB!.uid, "deck", 0);
+    anchorA!.sequence = 0;
+    anchorB!.sequence = 1;
+    moveDuelCard(session.state, redirected!.uid, "monsterZone", 0);
+    redirected!.faceUp = true;
+    redirected!.position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_LEAVE_FIELD_REDIRECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetValue(LOCATION_DECKBOT)
+        c:RegisterEffect(e)
+      end
+      `,
+      "leave-field-deck-bottom-redirect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const moveResult = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("deck bottom redirected " .. Duel.SendtoGrave(c, REASON_EFFECT))
+      `,
+      "leave-field-deck-bottom-redirect-move.lua",
+    );
+
+    expect(moveResult.ok, moveResult.error).toBe(true);
+    expect(host.messages).toContain("deck bottom redirected 1");
+    expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "deck", reason: 0x4000040 });
+    expect(getCards(session.state, 0, "deck").map((card) => card.code)).toEqual(["900", "901", "100"]);
+  });
+
+  it("applies Lua leave-field redirects that shuffle into the Deck", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Shuffle Redirected Monster", kind: "monster" },
+      { code: "900", name: "Deck Anchor A", kind: "monster" },
+      { code: "901", name: "Deck Anchor B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 47, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "900", "901"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const redirected = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const anchorA = session.state.cards.find((card) => card.controller === 0 && card.code === "900");
+    const anchorB = session.state.cards.find((card) => card.controller === 0 && card.code === "901");
+    expect(redirected).toBeTruthy();
+    expect(anchorA).toBeTruthy();
+    expect(anchorB).toBeTruthy();
+    moveDuelCard(session.state, anchorA!.uid, "deck", 0);
+    moveDuelCard(session.state, anchorB!.uid, "deck", 0);
+    anchorA!.sequence = 0;
+    anchorB!.sequence = 1;
+    moveDuelCard(session.state, redirected!.uid, "monsterZone", 0);
+
+    const randomCounterBefore = session.state.randomCounter;
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_LEAVE_FIELD_REDIRECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetValue(LOCATION_DECKSHF)
+        c:RegisterEffect(e)
+      end
+      `,
+      "leave-field-deck-shuffle-redirect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const moveResult = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("deck shuffle redirected " .. Duel.SendtoGrave(c, REASON_EFFECT))
+      `,
+      "leave-field-deck-shuffle-redirect-move.lua",
+    );
+
+    expect(moveResult.ok, moveResult.error).toBe(true);
+    expect(host.messages).toContain("deck shuffle redirected 1");
+    expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "deck", reason: 0x4000040 });
+    expect(getCards(session.state, 0, "deck").map((card) => card.code).sort()).toEqual(["100", "900", "901"]);
+    expect(session.state.randomCounter).toBe(randomCounterBefore + 1);
   });
 
   it("applies Lua continuous hand and deck redirect effects", () => {
@@ -304,5 +422,64 @@ describe("Lua continuous redirect effects", () => {
     expect(host.messages).toContain("field send redirected 1");
     expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone" });
     expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "banished", reason: 0x4000040 });
+  });
+
+  it("applies targeted field redirect effects only to selected cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Targeted Redirect Source", kind: "monster" },
+      { code: "200", name: "Redirected Target", kind: "monster" },
+      { code: "300", name: "Unredirected Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 46, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+      card.faceUp = true;
+      card.position = "faceUpAttack";
+    }
+    const redirected = session.state.cards.find((card) => card.code === "200");
+    const open = session.state.cards.find((card) => card.code === "300");
+    expect(redirected).toBeTruthy();
+    expect(open).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_TO_GRAVE_REDIRECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetValue(LOCATION_REMOVED)
+        e:SetTarget(function(e,c) return c:IsCode(200) end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "targeted-grave-redirect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const moveResult = host.loadScript(
+      `
+      local redirected=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      local open=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("targeted redirect selected " .. Duel.SendtoGrave(redirected, REASON_EFFECT))
+      Debug.Message("targeted redirect open " .. Duel.SendtoGrave(open, REASON_EFFECT))
+      `,
+      "targeted-grave-redirect-move.lua",
+    );
+
+    expect(moveResult.ok, moveResult.error).toBe(true);
+    expect(host.messages).toContain("targeted redirect selected 1");
+    expect(host.messages).toContain("targeted redirect open 1");
+    expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "banished", reason: 0x4000040 });
+    expect(session.state.cards.find((card) => card.uid === open!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
   });
 });

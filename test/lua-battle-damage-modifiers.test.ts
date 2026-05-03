@@ -314,6 +314,71 @@ describe("Lua battle damage modifiers", () => {
     expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
   });
 
+  it("applies targeted field piercing effects only to selected attackers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Piercing Source", kind: "monster", attack: 500 },
+      { code: "200", name: "Piercing Granted", kind: "monster", attack: 2200 },
+      { code: "300", name: "Piercing Open", kind: "monster", attack: 2200 },
+      { code: "400", name: "Defense Target", kind: "monster", defense: 1500 },
+      { code: "500", name: "Open Defense Target", kind: "monster", defense: 1500 },
+    ];
+    const session = createDuel({ seed: 145, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const granted = session.state.cards.find((card) => card.controller === 0 && card.code === "200");
+    const open = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "400");
+    const openTarget = session.state.cards.find((card) => card.controller === 1 && card.code === "500");
+    expect(source).toBeDefined();
+    expect(granted).toBeDefined();
+    expect(open).toBeDefined();
+    expect(target).toBeDefined();
+    expect(openTarget).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, granted!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, open!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpDefense";
+    moveDuelCard(session.state, openTarget!.uid, "monsterZone", 1).position = "faceUpDefense";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_PIERCE)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTarget(function(e,c) return c:IsCode(200) end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "targeted-piercing-battle-damage.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === granted!.uid && candidate.targetUid === target!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    expect(session.state.battleDamage[1]).toBe(700);
+    expect(session.state.players[1].lifePoints).toBe(7300);
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === open!.uid && candidate.targetUid === openTarget!.uid)!).ok).toBe(true);
+    passBattleResponses(session);
+
+    expect(session.state.battleDamage[1]).toBe(0);
+    expect(session.state.players[1].lifePoints).toBe(7300);
+    expect(session.state.cards.find((card) => card.uid === openTarget!.uid)).toMatchObject({ location: "graveyard" });
+  });
+
   it("applies Lua both-player battle damage effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Shared Damage Attacker", kind: "monster", attack: 1800 }];
     const session = createDuel({ seed: 116, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -533,6 +598,65 @@ describe("Lua battle damage modifiers", () => {
 
     expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "banished", reason: 0x4000021 });
     expect(session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone" });
+  });
+
+  it("applies targeted field battle destroy redirects only through selected destroyers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Selected Redirect Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Redirect Target", kind: "monster", attack: 1000 },
+      { code: "300", name: "Redirect Source", kind: "monster", attack: 500 },
+      { code: "400", name: "Open Redirect Attacker", kind: "monster", attack: 1800 },
+    ];
+    const session = createDuel({ seed: 146, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "400"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    const openAttacker = session.state.cards.find((card) => card.controller === 0 && card.code === "400");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    expect(source).toBeDefined();
+    expect(openAttacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, openAttacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_BATTLE_DESTROY_REDIRECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(LOCATION_MZONE,0)
+        e:SetTarget(function(e,c) return c:IsCode(100) end)
+        e:SetValue(LOCATION_REMOVED)
+        c:RegisterEffect(e)
+      end
+      `,
+      "targeted-field-battle-destroy-redirect.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(
+      applyResponse(
+        session,
+        getDuelLegalActions(session, 0).find(
+          (candidate) => candidate.type === "declareAttack" && candidate.attackerUid === openAttacker!.uid && candidate.targetUid === target!.uid,
+        )!,
+      ).ok,
+    ).toBe(true);
+    passBattleResponses(session);
+
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard", reason: 0x21 });
+    expect(session.state.cards.find((card) => card.uid === openAttacker!.uid)).toMatchObject({ location: "monsterZone" });
   });
 });
 

@@ -1,4 +1,4 @@
-import { findCard, moveDuelCard, pushDuelLog } from "#duel/card-state.js";
+import { findCard, getCards, moveDuelCard, pushDuelLog } from "#duel/card-state.js";
 import {
   battleDestroyRedirectLocation,
   isReleasePrevented,
@@ -7,8 +7,10 @@ import {
   shouldRedirectBanishMove,
   shouldRedirectToGraveyardMove,
   type ContinuousEffectContextFactory,
+  type RedirectDestination,
 } from "#duel/continuous-effects.js";
 import { duelReason } from "#duel/reasons.js";
+import { createRng } from "#engine/rng.js";
 import {
   applyDestroyPrevention,
   applyDestroyReplacement,
@@ -42,7 +44,7 @@ export function sendCoreDuelCardToGraveyard(
   const createContext = handlers.createContinuousContext(state);
   if (shouldRedirectToGraveyardMove(state, uid, createContext)) return banishCoreDuelCard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "graveyard", createContext);
-  if (redirectLocation && redirectLocation !== "graveyard") return moveCoreDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer, handlers);
+  if (redirectLocation && redirectLocation.location !== "graveyard") return moveCoreDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer, handlers);
   requireCoreDuelMoveAllowed(state, uid, "graveyard", reason, handlers);
   const card = moveDuelCard(state, uid, "graveyard", controller, reason, reasonPlayer);
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
@@ -71,15 +73,16 @@ export function destroyCoreDuelCard(
   handlers.collectTrigger(state, "destroying", target);
   const createContext = handlers.createContinuousContext(state);
   const battleRedirectLocation = (reason & duelReason.battle) !== 0 ? battleDestroyRedirectLocation(state, uid, createContext) : undefined;
-  if (battleRedirectLocation && battleRedirectLocation !== "graveyard") {
+  if (battleRedirectLocation && battleRedirectLocation.location !== "graveyard") {
     const moveReason = reason | duelReason.redirect;
-    requireCoreDuelMoveAllowed(state, uid, battleRedirectLocation, moveReason, handlers);
-    const card = moveDuelCard(state, uid, battleRedirectLocation, controller, moveReason, reasonPlayer);
-    pushDuelLog(state, "destroy", card.controller, card.name, `Destroyed and moved to ${battleRedirectLocation}`);
+    requireCoreDuelMoveAllowed(state, uid, battleRedirectLocation.location, moveReason, handlers);
+    const card = moveDuelCard(state, uid, battleRedirectLocation.location, controller, moveReason, reasonPlayer);
+    applyRedirectDeckSequence(state, card, battleRedirectLocation);
+    pushDuelLog(state, "destroy", card.controller, card.name, `Destroyed and moved to ${battleRedirectLocation.location}`);
     collectLeaveFieldTriggers(state, card, handlers);
     handlers.collectTrigger(state, "moved", card);
     handlers.collectTrigger(state, "destroyed", card);
-    if (battleRedirectLocation === "banished") handlers.collectTrigger(state, "banished", card);
+    if (battleRedirectLocation.location === "banished") handlers.collectTrigger(state, "banished", card);
     return card;
   }
   requireCoreDuelMoveAllowed(state, uid, "graveyard", reason, handlers);
@@ -103,7 +106,7 @@ export function banishCoreDuelCard(
   const createContext = handlers.createContinuousContext(state);
   if (shouldRedirectBanishMove(state, uid, createContext)) return sendCoreDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "banished", createContext);
-  if (redirectLocation && redirectLocation !== "banished") return moveCoreDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer, handlers);
+  if (redirectLocation && redirectLocation.location !== "banished") return moveCoreDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer, handlers);
   requireCoreDuelMoveAllowed(state, uid, "banished", reason, handlers);
   const card = moveDuelCard(state, uid, "banished", controller, reason, reasonPlayer);
   pushDuelLog(state, "banish", card.controller, card.name, "Banished");
@@ -125,10 +128,11 @@ export function moveCoreDuelCardWithRedirects(
 ): DuelCardInstance {
   const createContext = handlers.createContinuousContext(state);
   const redirectLocation = moveDestinationRedirectLocation(state, uid, to, createContext) ?? leaveFieldRedirectLocation(state, uid, to, createContext);
-  const destination = redirectLocation ?? to;
+  const destination = redirectLocation?.location ?? to;
   const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
   requireCoreDuelMoveAllowed(state, uid, destination, moveReason, handlers);
   const card = moveDuelCard(state, uid, destination, controller, moveReason, reasonPlayer);
+  applyRedirectDeckSequence(state, card, redirectLocation);
   collectLeaveFieldTriggers(state, card, handlers);
   collectReasonTriggers(state, card, moveReason, handlers);
   handlers.collectTrigger(state, "moved", card);
@@ -166,20 +170,45 @@ export function detachCoreDuelOverlayMaterials(
 function moveCoreDuelCardToRedirectedLocation(
   state: DuelState,
   uid: string,
-  location: DuelLocation,
+  redirect: RedirectDestination,
   controller: PlayerId | undefined,
   reason: number,
   reasonPlayer: PlayerId | undefined,
   handlers: CoreMovementHandlers,
 ): DuelCardInstance {
-  if (location === "graveyard") return sendCoreDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
-  if (location === "banished") return banishCoreDuelCard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
-  const card = moveDuelCard(state, uid, location, controller, reason | duelReason.redirect, reasonPlayer);
+  if (redirect.location === "graveyard") return sendCoreDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
+  if (redirect.location === "banished") return banishCoreDuelCard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
+  const card = moveDuelCard(state, uid, redirect.location, controller, reason | duelReason.redirect, reasonPlayer);
+  applyRedirectDeckSequence(state, card, redirect);
   collectLeaveFieldTriggers(state, card, handlers);
   collectReasonTriggers(state, card, reason | duelReason.redirect, handlers);
   handlers.collectTrigger(state, "moved", card);
   collectDestinationTriggers(state, card, handlers);
   return card;
+}
+
+function applyRedirectDeckSequence(state: DuelState, card: DuelCardInstance, redirect: RedirectDestination | undefined): void {
+  if (card.location !== "deck") return;
+  if (redirect?.deckSequence === 1) moveDeckCardToBottom(state, card);
+  else if (redirect?.deckSequence === 2) shuffleDeck(state, card.controller);
+}
+
+function moveDeckCardToBottom(state: DuelState, card: DuelCardInstance): void {
+  const cards = getCards(state, card.controller, "deck").filter((candidate) => candidate.uid !== card.uid);
+  cards.push(card);
+  for (const [sequence, candidate] of cards.entries()) candidate.sequence = sequence;
+}
+
+function shuffleDeck(state: DuelState, player: PlayerId): void {
+  const cards = getCards(state, player, "deck");
+  const shuffled = [...cards];
+  const rng = createRng(`${state.seed}:redirect-shuffle-deck:${player}:${state.randomCounter}`);
+  state.randomCounter += 1;
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(rng() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
+  }
+  for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
 }
 
 function requireCoreDuelMoveAllowed(state: DuelState, uid: string, to: DuelLocation, reason: number, handlers: CoreMovementHandlers): void {

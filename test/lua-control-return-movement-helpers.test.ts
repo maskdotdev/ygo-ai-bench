@@ -127,6 +127,43 @@ describe("Lua control and return movement helpers", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("graveyard");
   });
 
+  it("honors EDOPro SendtoDeck sequence arguments", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Top Return", kind: "monster" },
+      { code: "200", name: "Bottom Return", kind: "monster" },
+      { code: "900", name: "Deck Anchor A", kind: "monster" },
+      { code: "901", name: "Deck Anchor B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 178, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["900", "901", "100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const topReturn = session.state.cards.find((card) => card.code === "100");
+    const bottomReturn = session.state.cards.find((card) => card.code === "200");
+    expect(topReturn).toBeDefined();
+    expect(bottomReturn).toBeDefined();
+    moveDuelCard(session.state, topReturn!.uid, "graveyard", 0);
+    moveDuelCard(session.state, bottomReturn!.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local top = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      local bottom = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      Debug.Message("deck seq constants " .. SEQ_DECKTOP .. "/" .. SEQ_DECKBOTTOM .. "/" .. SEQ_DECKSHUFFLE)
+      Debug.Message("deck seq moved " .. Duel.SendtoDeck(top, nil, SEQ_DECKTOP, REASON_EFFECT) .. "/" .. Duel.SendtoDeck(bottom, nil, SEQ_DECKBOTTOM, REASON_EFFECT))
+      `,
+      "sendto-deck-sequence.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("deck seq constants 0/1/2");
+    expect(host.messages).toContain("deck seq moved 1/1");
+    expect(getCards(session.state, 0, "deck").map((card) => card.code)).toEqual(["100", "900", "901", "200"]);
+  });
+
   it("queues Lua to-hand triggers after cards move to hand", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "To Hand Starter", kind: "monster" },
@@ -181,6 +218,57 @@ describe("Lua control and return movement helpers", () => {
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
     expect(host.messages).toContain("to hand trigger resolved 200");
+  });
+
+  it("passes explicit Lua move reason players to triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Reason Starter", kind: "monster" },
+      { code: "200", name: "Reason Target", kind: "monster" },
+      { code: "300", name: "Reason Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 179, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local move=Effect.CreateEffect(starter)
+      move:SetType(EFFECT_TYPE_IGNITION)
+      move:SetRange(LOCATION_HAND)
+      move:SetOperation(function(e,tp)
+        Debug.Message("reason move count " .. Duel.SendtoGrave(target, REASON_EFFECT, PLAYER_NONE, 1))
+      end)
+      starter:RegisterEffect(move)
+
+      local e=Effect.CreateEffect(watcher)
+      e:SetType(EFFECT_TYPE_TRIGGER_O)
+      e:SetCode(EVENT_TO_GRAVE)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+        Debug.Message("reason trigger " .. ep .. "/" .. rp .. "/" .. eg:GetFirst():GetReasonPlayer())
+      end)
+      watcher:RegisterEffect(e)
+      `,
+      "move-reason-player.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(host.messages).toContain("reason move count 1");
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("reason trigger 0/1/1");
   });
 
   it("queues Lua to-deck triggers after cards move to deck", () => {

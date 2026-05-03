@@ -83,6 +83,51 @@ describe("Lua overlay and pendulum movement helpers", () => {
     expect(materials.every((card) => session.state.cards.find((candidate) => candidate.uid === card.uid)?.location === "graveyard")).toBe(true);
   });
 
+  it("maps LOCATION_OVERLAY for Lua current, previous, and destination location checks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Overlay Location Material", kind: "monster" },
+      { code: "920", name: "Overlay Location Xyz", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 196, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"], extra: ["920"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const material = session.state.cards.find((card) => card.code === "100");
+    const xyz = session.state.cards.find((card) => card.code === "920");
+    expect(material).toBeDefined();
+    expect(xyz).toBeDefined();
+    moveDuelCard(session.state, xyz!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, material!.uid, "overlay", 0);
+    xyz!.overlayUids.push(material!.uid);
+
+    const host = createLuaScriptHost(session);
+    const current = host.loadScript(
+      `
+      local xyz=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 920), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local mat=xyz:GetOverlayGroup():GetFirst()
+      Debug.Message("overlay current " .. LOCATION_OVERLAY .. "/" .. mat:GetLocation() .. "/" .. tostring(mat:IsLocation(LOCATION_OVERLAY)) .. "/" .. tostring(mat:IsLocation(LOCATION_ONFIELD|LOCATION_OVERLAY)))
+      `,
+      "overlay-location-current.lua",
+    );
+    expect(current.ok, current.error).toBe(true);
+    expect(host.messages).toContain("overlay current 128/128/true/true");
+
+    detachDuelOverlayMaterials(session.state, xyz!.uid, 1, 0);
+    const moved = host.loadScript(
+      `
+      local mat=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("overlay moved " .. mat:GetPreviousLocation() .. "/" .. tostring(mat:IsPreviousLocation(LOCATION_OVERLAY)) .. "/" .. tostring(mat:IsPreviousLocation(LOCATION_OVERLAY|LOCATION_SZONE)) .. "/" .. mat:GetDestination() .. "/" .. tostring(mat:IsDestination(LOCATION_GRAVE)))
+      `,
+      "overlay-location-moved.lua",
+    );
+
+    expect(moved.ok, moved.error).toBe(true);
+    expect(host.messages).toContain("overlay moved 128/true/true/0/true");
+  });
+
   it("queues Lua detach-material triggers after overlay materials are detached", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Detach Event Material", kind: "monster" },
