@@ -65,7 +65,7 @@ describe("EDOPro parity optional when timing fixtures", () => {
                 windowId: 1,
                 windowKind: "triggerBucket",
                 count: 1,
-                actions: [{ type: "activateTrigger", player: 0, windowKind: "triggerBucket", effectId: "fixture-optional-when", count: 1 }],
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-when", count: 1 }],
               },
               {
                 player: 0,
@@ -73,7 +73,7 @@ describe("EDOPro parity optional when timing fixtures", () => {
                 windowId: 1,
                 windowKind: "triggerBucket",
                 count: 1,
-                actions: [{ type: "declineTrigger", player: 0, windowKind: "triggerBucket", effectId: "fixture-optional-when", count: 1 }],
+                actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-when", count: 1 }],
               },
             ],
             logIncludes: ["Single step send resolved"],
