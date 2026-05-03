@@ -95,12 +95,19 @@ describe("Lua summon-negated events", () => {
     expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("normalSummoned");
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("300"))).toBe(false);
 
-    const negatedTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("400"));
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), scriptSource, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(restored.session.state.eventHistory.map((event) => event.eventName)).not.toContain("normalSummoned");
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("300"))).toBe(false);
+
+    const negatedTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("400"));
     expect(negatedTrigger).toBeDefined();
-    expect(applyResponse(session, negatedTrigger!).ok).toBe(true);
-    drainChain(session);
-    expect(host.messages).toContain("negated after attempt 100");
-    expect(host.messages.some((message) => message.startsWith("success should not resolve"))).toBe(false);
+    expect(applyLuaRestoreResponse(restored, negatedTrigger!).ok).toBe(true);
+    drainRestoredChain(restored);
+    expect(restored.host.messages).toContain("negated after attempt 100");
+    expect(restored.host.messages.some((message) => message.startsWith("success should not resolve"))).toBe(false);
   });
 
   it("queues summon-negated triggers when Duel.NegateSummon negates a Normal Summon", () => {
