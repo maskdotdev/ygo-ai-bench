@@ -104,10 +104,15 @@ describe("Lua effect trigger metadata helpers", () => {
 
     expect(activation.ok).toBe(true);
     expect(host.messages).toContain("lua multistep movement resolved");
-    expect(activation.state.pendingTriggers.map((trigger) => trigger.effectId)).toHaveLength(1);
+    const pendingTriggerEffects = session.state.pendingTriggers.map((trigger) => session.state.effects.find((effect) => effect.id === trigger.effectId && effect.sourceUid === trigger.sourceUid));
+    expect(pendingTriggerEffects.map((effect) => effect?.triggerTiming)).toEqual(["if"]);
+    expect(pendingTriggerEffects.map((effect) => effect?.optional)).toEqual([true]);
     const ifTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
-    expect(ifTrigger?.effectId).toContain("1014");
     expect(ifTrigger?.uid).toBe(session.state.cards.find((card) => card.controller === 0 && card.location === "graveyard" && card.code === "500")?.uid);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(1);
+    expect(applyResponse(session, ifTrigger!).ok).toBe(true);
+    expect(host.messages).toContain("lua if optional resolved");
+    expect(host.messages).not.toContain("lua when optional resolved");
   });
 
   it("keeps mandatory Lua triggers through non-terminal movement timing", () => {
