@@ -291,7 +291,7 @@ describe("duel link summons", () => {
     expect(() => linkSummonDuelCard(session.state, 0, link!.uid, materials.map((material) => material.uid))).toThrow("Link materials are not legal");
   });
 
-  it("does not expose link summon actions without field materials or with no monster zone space", () => {
+  it("does not expose link summon actions without field materials and counts selected materials as freeing zone space", () => {
     const handOnly = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(handOnly, {
       0: { main: ["100", "300"], extra: ["930"] },
@@ -320,12 +320,16 @@ describe("duel link summons", () => {
     const allMonsters = queryPublicState(full).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "monster");
     expect(allMonsters).toHaveLength(7);
     for (const monster of allMonsters.slice(0, 5)) moveDuelCard(full.state, monster.uid, "monsterZone", 0);
-    expect(getDuelLegalActions(full, 0).some((candidate) => candidate.type === "linkSummon")).toBe(false);
-
     const link = queryPublicState(full).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "930");
     const materials = queryPublicState(full).cards.filter((card) => card.controller === 0 && card.location === "monsterZone" && (card.code === "100" || card.code === "300"));
     expect(link).toBeTruthy();
     expect(materials).toHaveLength(2);
-    expect(() => linkSummonDuelCard(full.state, 0, link!.uid, materials.map((card) => card.uid))).toThrow("monsterZone is full");
+    const action = getDuelLegalActions(full, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid);
+    expect(action).toMatchObject({ type: "linkSummon", materialUids: materials.map((card) => card.uid) });
+
+    linkSummonDuelCard(full.state, 0, link!.uid, materials.map((card) => card.uid));
+
+    expect(full.state.cards.find((card) => card.uid === link!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(materials.every((material) => full.state.cards.find((card) => card.uid === material.uid)?.location === "graveyard")).toBe(true);
   });
 });

@@ -301,7 +301,7 @@ export function ritualSummonDuelCard(
     if ((material.location !== "hand" && material.location !== "monsterZone") || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as ritual material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ritual material`);
   }
-  requireZoneSpace(state, player, "monsterZone");
+  requireSummonZoneAfterMaterials(state, player, materialUids);
 
   for (const material of materials) {
     collectEvent("preUsedAsMaterial", material);
@@ -377,7 +377,6 @@ function canFlipSummonDuelCard(state: DuelState, player: PlayerId, card: DuelCar
 }
 
 export function fusionSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
-  if (!hasZoneSpace(state, player, "monsterZone")) return [];
   const materialPool = getCards(state, player, "hand")
     .filter((card) => card.kind === "monster" && canUseMaterial(card.uid))
     .concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid)));
@@ -385,13 +384,12 @@ export function fusionSummonActions(state: DuelState, player: PlayerId, canUseMa
 }
 
 export function synchroSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
-  if (!hasZoneSpace(state, player, "monsterZone")) return [];
   const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
     if (!isMonsterLike(card)) continue;
     const materialUids = findSynchroMaterialUids(materialPool, card);
-    if (!materialUids) continue;
+    if (!materialUids || !hasSummonZoneAfterMaterials(state, player, materialUids)) continue;
     const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
     actions.push({ type: "synchroSummon", player, uid: card.uid, materialUids, label: `Synchro Summon ${card.name} using ${materialNames}` });
   }
@@ -399,13 +397,12 @@ export function synchroSummonActions(state: DuelState, player: PlayerId, canUseM
 }
 
 export function xyzSummonActions(state: DuelState, player: PlayerId, canUseMaterial: (uid: string) => boolean = () => true): DuelAction[] {
-  if (!hasZoneSpace(state, player, "monsterZone")) return [];
   const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
     if (!isMonsterLike(card)) continue;
     const materialUids = findXyzMaterialUids(materialPool, card);
-    if (!materialUids) continue;
+    if (!materialUids || !hasSummonZoneAfterMaterials(state, player, materialUids)) continue;
     const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
     actions.push({ type: "xyzSummon", player, uid: card.uid, materialUids, label: `Xyz Summon ${card.name} using ${materialNames}` });
   }
@@ -413,13 +410,12 @@ export function xyzSummonActions(state: DuelState, player: PlayerId, canUseMater
 }
 
 export function linkSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
-  if (!hasZoneSpace(state, player, "monsterZone")) return [];
   const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
     if (!isMonsterLike(card)) continue;
     const materialUids = findLinkMaterialUids(materialPool, card);
-    if (!materialUids) continue;
+    if (!materialUids || !hasSummonZoneAfterMaterials(state, player, materialUids)) continue;
     const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
     actions.push({ type: "linkSummon", player, uid: card.uid, materialUids, label: `Link Summon ${card.name} using ${materialNames}` });
   }
@@ -427,14 +423,13 @@ export function linkSummonActions(state: DuelState, player: PlayerId, canUseMate
 }
 
 export function ritualSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
-  if (!hasZoneSpace(state, player, "monsterZone")) return [];
   const materialPool = hand
     .filter((card) => card.kind === "monster" && canUseMaterial(card.uid))
     .concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid)));
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster" && candidate.data.ritualMaterials?.length)) {
-    const materialUids = findMaterialUids(materialPool.filter((material) => material.uid !== card.uid), card.data.ritualMaterials ?? []);
-    if (!materialUids) continue;
+    const materialUids = findSummonMaterialUids(state, player, materialPool.filter((material) => material.uid !== card.uid), card.data.ritualMaterials ?? []);
+    if (!materialUids || !hasSummonZoneAfterMaterials(state, player, materialUids)) continue;
     const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
     actions.push({ type: "ritualSummon", player, uid: card.uid, materialUids, label: `Ritual Summon ${card.name} using ${materialNames}` });
   }
@@ -454,7 +449,7 @@ function extraDeckSummonActions(
     if (!isMonsterLike(card)) continue;
     const requiredCodes = materialCodes(card);
     if (!requiredCodes?.length) continue;
-    const materialUids = findMaterialUids(materialPool, requiredCodes);
+    const materialUids = findSummonMaterialUids(state, player, materialPool, requiredCodes);
     if (!materialUids) continue;
     const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
     actions.push({ type, player, uid: card.uid, materialUids, label: `${label} Summon ${card.name} using ${materialNames}` });
@@ -512,6 +507,30 @@ function findMaterialUids(cards: DuelCardInstance[], requiredCodes: string[]): s
   return selected;
 }
 
+function findSummonMaterialUids(state: DuelState, player: PlayerId, cards: DuelCardInstance[], requiredCodes: string[]): string[] | undefined {
+  const direct = findMaterialUids(cards, requiredCodes);
+  if (direct && hasSummonZoneAfterMaterials(state, player, direct)) return direct;
+  for (const materials of cardCombinations(cards, requiredCodes.length)) {
+    if (!materialCodesMatch(materials, requiredCodes)) continue;
+    const materialUids = findMaterialUids(materials, requiredCodes);
+    if (!materialUids) continue;
+    if (hasSummonZoneAfterMaterials(state, player, materialUids)) return materialUids;
+  }
+  return undefined;
+}
+
+function hasSummonZoneAfterMaterials(state: DuelState, player: PlayerId, materialUids: string[]): boolean {
+  if (hasZoneSpace(state, player, "monsterZone")) return true;
+  return materialUids.some((uid) => {
+    const material = findCard(state, uid);
+    return material?.controller === player && material.location === "monsterZone";
+  });
+}
+
+function requireSummonZoneAfterMaterials(state: DuelState, player: PlayerId, materialUids: string[]): void {
+  if (!hasSummonZoneAfterMaterials(state, player, materialUids)) requireZoneSpace(state, player, "monsterZone");
+}
+
 function requireExtraDeckSummonMaterials(
   state: DuelState,
   player: PlayerId,
@@ -532,7 +551,7 @@ function requireExtraDeckSummonMaterials(
     if (!allowedLocations.includes(material.location) || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
   }
-  requireZoneSpace(state, player, "monsterZone");
+  requireSummonZoneAfterMaterials(state, player, materialUids);
   return { card, materials };
 }
 
@@ -552,7 +571,7 @@ function requireSynchroSummonMaterials(state: DuelState, player: PlayerId, uid: 
     if (material.location !== "monsterZone" || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as synchro material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as synchro material`);
   }
-  requireZoneSpace(state, player, "monsterZone");
+  requireSummonZoneAfterMaterials(state, player, materialUids);
   return { card, materials };
 }
 
@@ -570,7 +589,7 @@ function requireXyzSummonMaterials(state: DuelState, player: PlayerId, uid: stri
   for (const material of materials) {
     if (material.location !== "monsterZone" || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as Xyz material`);
   }
-  requireZoneSpace(state, player, "monsterZone");
+  requireSummonZoneAfterMaterials(state, player, materialUids);
   return { card, materials };
 }
 
@@ -588,7 +607,7 @@ function requireLinkSummonMaterials(state: DuelState, player: PlayerId, uid: str
     if (material.location !== "monsterZone" || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as Link material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as Link material`);
   }
-  requireZoneSpace(state, player, "monsterZone");
+  requireSummonZoneAfterMaterials(state, player, materialUids);
   return { card, materials };
 }
 

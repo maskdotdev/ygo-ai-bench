@@ -338,4 +338,32 @@ describe("duel fusion summons", () => {
     expect(materials).toHaveLength(2);
     expect(() => fusionSummonDuelCard(full.state, 0, fusion!.uid, materials.map((card) => card.uid))).toThrow("monsterZone is full");
   });
+
+  it("counts selected field fusion materials as freeing zone space", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 7, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500", "500", "500", "500", "500"], extra: ["900"] },
+      1: { main: ["400", "400", "400", "400", "400", "400", "400"] },
+    });
+    startDuel(session);
+    const firstMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockers = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "monster" && card.code === "500");
+    expect(firstMaterial).toBeTruthy();
+    expect(blockers).toHaveLength(5);
+    moveDuelCard(session.state, firstMaterial!.uid, "monsterZone", 0);
+    for (const blocker of blockers.slice(0, 4)) moveDuelCard(session.state, blocker.uid, "monsterZone", 0);
+
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    const secondMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(fusion).toBeTruthy();
+    expect(secondMaterial).toBeTruthy();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
+    expect(action).toMatchObject({ type: "fusionSummon", materialUids: [firstMaterial!.uid, secondMaterial!.uid] });
+
+    fusionSummonDuelCard(session.state, 0, fusion!.uid, [firstMaterial!.uid, secondMaterial!.uid]);
+
+    expect(session.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("graveyard");
+    expect(session.state.cards.find((card) => card.uid === secondMaterial!.uid)?.location).toBe("graveyard");
+  });
 });

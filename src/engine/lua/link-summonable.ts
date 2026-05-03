@@ -2,12 +2,12 @@ import fengari from "fengari";
 import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { readCardUid, readGroupUids } from "#lua/api-utils.js";
-import type { DuelCardInstance, DuelSession } from "#duel/types.js";
+import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua } = fengari;
 
 export function canLuaLinkSummonCard(session: DuelSession, card: DuelCardInstance, requiredUids: string[], materialGroupUids: string[], min = 1, max = Number.POSITIVE_INFINITY): boolean {
-  if (card.location !== "extraDeck" || !isMonsterLike(card) || !hasZoneSpace(session.state, card.controller, "monsterZone")) return false;
+  if (card.location !== "extraDeck" || !isMonsterLike(card)) return false;
   const required = new Set(requiredUids);
   const allowed = new Set(materialGroupUids);
   const materialPool = session.state.cards.filter(
@@ -25,10 +25,14 @@ export function canLuaLinkSummonCard(session: DuelSession, card: DuelCardInstanc
   for (let count = minCount; count <= maxCount; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...required].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if (linkMaterialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(materials, targetRating)) return true;
+      if (linkMaterialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(materials, targetRating) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
     }
   }
   return false;
+}
+
+function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[]): boolean {
+  return hasZoneSpace(session.state, player, "monsterZone") || materials.some((material) => material.controller === player && material.location === "monsterZone");
 }
 
 export function readLinkMaterialArguments(L: unknown): { requiredUids: string[]; materialGroupUids: string[]; min?: number; max?: number } {

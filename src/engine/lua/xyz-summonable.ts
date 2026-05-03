@@ -1,9 +1,9 @@
 import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
-import type { DuelCardInstance, DuelSession } from "#duel/types.js";
+import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 export function canLuaXyzSummonCard(session: DuelSession, card: DuelCardInstance, suppliedUids: string[]): boolean {
-  if (card.location !== "extraDeck" || !isMonsterLike(card) || !hasZoneSpace(session.state, card.controller, "monsterZone")) return false;
+  if (card.location !== "extraDeck" || !isMonsterLike(card)) return false;
   const supplied = new Set(suppliedUids);
   const materialPool = session.state.cards.filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && canBeXyzMaterial(session, candidate, card));
   if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return false;
@@ -11,9 +11,13 @@ export function canLuaXyzSummonCard(session: DuelSession, card: DuelCardInstance
   if (supplied.size > count) return false;
   for (const materials of cardCombinations(materialPool, count)) {
     if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-    if (card.data.xyzMaterials?.length ? materialCodesMatch(materials, card.data.xyzMaterials) : canGenericXyzMaterialsMatch(card, materials)) return true;
+    if ((card.data.xyzMaterials?.length ? materialCodesMatch(materials, card.data.xyzMaterials) : canGenericXyzMaterialsMatch(card, materials)) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
   }
   return false;
+}
+
+function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[]): boolean {
+  return hasZoneSpace(session.state, player, "monsterZone") || materials.some((material) => material.controller === player && material.location === "monsterZone");
 }
 
 function canBeXyzMaterial(session: DuelSession, card: DuelCardInstance, target: DuelCardInstance): boolean {

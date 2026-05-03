@@ -145,6 +145,51 @@ describe("Lua summon predicate helpers", () => {
     expect(host.messages).toContain("reincarnation ritual true/false/false");
   });
 
+  it("counts selected field materials as freeing zone space for Lua extra deck summon predicates", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Full Zone Tuner", kind: "monster", typeFlags: 0x1001, level: 2 },
+      { code: "200", name: "Full Zone Non-Tuner", kind: "monster", level: 4 },
+      { code: "300", name: "Full Zone Xyz Material", kind: "monster", level: 4 },
+      { code: "400", name: "Full Zone Link Material A", kind: "monster", level: 4 },
+      { code: "500", name: "Full Zone Link Material B", kind: "monster", level: 4 },
+      { code: "910", name: "Full Zone Synchro", kind: "extra", typeFlags: 0x2001, level: 6 },
+      { code: "920", name: "Full Zone Xyz", kind: "extra", typeFlags: 0x800001, level: 4 },
+      { code: "930", name: "Full Zone Link", kind: "extra", typeFlags: 0x4000001, level: 2 },
+    ];
+    const session = createDuel({ seed: 97, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500"], extra: ["910", "920", "930"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local tuner = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local non_tuner = Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      local xyz_material = Duel.GetFieldCard(0, LOCATION_MZONE, 2)
+      local link_a = Duel.GetFieldCard(0, LOCATION_MZONE, 3)
+      local link_b = Duel.GetFieldCard(0, LOCATION_MZONE, 4)
+      local synchro = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
+      local xyz = Duel.GetFieldCard(0, LOCATION_EXTRA, 1)
+      local link = Duel.GetFieldCard(0, LOCATION_EXTRA, 2)
+      Debug.Message("full zone lua synchro " .. tostring(synchro:IsSynchroSummonable(nil, Group.FromCards(tuner, non_tuner))))
+      Debug.Message("full zone lua xyz " .. tostring(xyz:IsXyzSummonable(nil, Group.FromCards(non_tuner, xyz_material))))
+      Debug.Message("full zone lua link " .. tostring(link:IsLinkSummonable(nil, Group.FromCards(link_a, link_b), 2, 2)))
+      `,
+      "full-zone-extra-deck-summon-predicates.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("full zone lua synchro true");
+    expect(host.messages).toContain("full zone lua xyz true");
+    expect(host.messages).toContain("full zone lua link true");
+  });
+
   it("checks Lua card summon predicates", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Summonable Monster", kind: "monster", level: 4 },
