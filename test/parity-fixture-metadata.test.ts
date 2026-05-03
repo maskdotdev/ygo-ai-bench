@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const parityFixtureDir = path.resolve("test");
-const parityDocFiles = ["README.md", path.join("docs", "gameplay-parity-plan.md")];
+const parityDocFiles = ["readme.md", path.join("docs", "gameplay-parity-plan.md")];
 
 describe("parity fixture metadata", () => {
   it("scans existing parity documentation files", () => {
