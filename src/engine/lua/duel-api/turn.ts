@@ -46,7 +46,7 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   pushPhasePredicate(L, "IsStartOfBattlePhase", session, isStartOfBattlePhase);
   pushPhasePredicate(L, "IsStartStep", session, isStartOfBattlePhase);
   pushPhasePredicate(L, "IsBattleStep", session, (state) => state.phase === "battle" && isBattleAttackStep(state));
-  pushPhasePredicate(L, "IsEndOfBattlePhase", session, (state) => state.phase === "battle" && currentBattleStep(state) === undefined);
+  pushPhasePredicate(L, "IsEndOfBattlePhase", session, isEndOfBattlePhase);
   pushPhasePredicate(L, "IsEndPhase", session, (state) => state.phase === "end");
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
@@ -89,7 +89,7 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDamageCalculation"));
-  pushPhasePredicate(L, "IsEndStep", session, (state) => state.phase === "battle" && currentBattleStep(state) === undefined);
+  pushPhasePredicate(L, "IsEndStep", session, isEndOfBattlePhase);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const phases = phasesFromMask(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0);
@@ -123,6 +123,8 @@ function normalizePlayer(value: number): PlayerId {
 }
 
 function currentPhaseMask(state: DuelState): number {
+  if (state.phase === "battle" && isStartOfBattlePhase(state)) return 0x8;
+  if (state.phase === "battle" && currentBattleStep(state) === "attack") return 0x10;
   if (state.phase === "battle" && currentBattleStep(state) === "damage") return 0x20;
   if (state.phase === "battle" && currentBattleStep(state) === "damageCalculation") return 0x40;
   return phaseMask(state.phase);
@@ -130,6 +132,10 @@ function currentPhaseMask(state: DuelState): number {
 
 function isStartOfBattlePhase(state: DuelState): boolean {
   return state.phase === "battle" && currentBattleStep(state) === undefined && !state.currentAttack && !state.pendingBattle && state.attacksDeclared.length === 0;
+}
+
+function isEndOfBattlePhase(state: DuelState): boolean {
+  return state.phase === "battle" && currentBattleStep(state) === undefined && !isStartOfBattlePhase(state);
 }
 
 function phaseMask(phase: DuelPhase): number {

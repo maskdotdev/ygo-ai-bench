@@ -404,7 +404,7 @@ describe("Lua state helpers", () => {
     session.state.battleStep = "attack";
     result = host.loadScript(
       `
-      Debug.Message("phase battle step " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsStartStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()) .. "/" .. tostring(Duel.IsBattlePhase()) .. "/" .. tostring(Duel.IsBattlePhase(0)) .. "/" .. tostring(Duel.IsBattlePhase(1)))
+      Debug.Message("phase battle step " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsPhase(PHASE_BATTLE_STEP)) .. "/" .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsStartStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()) .. "/" .. tostring(Duel.IsBattlePhase()) .. "/" .. tostring(Duel.IsBattlePhase(0)) .. "/" .. tostring(Duel.IsBattlePhase(1)))
       `,
       "phase-predicate-battle-step.lua",
     );
@@ -413,7 +413,7 @@ describe("Lua state helpers", () => {
     session.state.battleStep = "damage";
     result = host.loadScript(
       `
-      Debug.Message("phase damage step " .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageStep(0)) .. "/" .. tostring(Duel.IsDamageStep(1)) .. "/" .. tostring(Duel.IsDamageCalculation()))
+      Debug.Message("phase damage step " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsPhase(PHASE_DAMAGE)) .. "/" .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageStep(0)) .. "/" .. tostring(Duel.IsDamageStep(1)) .. "/" .. tostring(Duel.IsDamageCalculation()))
       `,
       "phase-predicate-damage-step.lua",
     );
@@ -422,7 +422,7 @@ describe("Lua state helpers", () => {
     session.state.battleStep = "damageCalculation";
     result = host.loadScript(
       `
-      Debug.Message("phase damage calc " .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageCalculation()) .. "/" .. tostring(Duel.IsDamageCalculation(0)) .. "/" .. tostring(Duel.IsDamageCalculation(1)) .. "/" .. tostring(Duel.IsDamageCalculated(0)) .. "/" .. tostring(Duel.IsDamageCalculated(1)))
+      Debug.Message("phase damage calc " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsPhase(PHASE_DAMAGE_CAL)) .. "/" .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageCalculation()) .. "/" .. tostring(Duel.IsDamageCalculation(0)) .. "/" .. tostring(Duel.IsDamageCalculation(1)) .. "/" .. tostring(Duel.IsDamageCalculated(0)) .. "/" .. tostring(Duel.IsDamageCalculated(1)))
       `,
       "phase-predicate-damage-calculation.lua",
     );
@@ -431,7 +431,7 @@ describe("Lua state helpers", () => {
     delete session.state.battleStep;
     result = host.loadScript(
       `
-      Debug.Message("phase battle start " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsStartStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()))
+      Debug.Message("phase battle start " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsPhase(PHASE_BATTLE_START)) .. "/" .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsStartStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()))
       `,
       "phase-predicate-battle-start.lua",
     );
@@ -440,7 +440,7 @@ describe("Lua state helpers", () => {
     session.state.attacksDeclared.push("attacked-card");
     result = host.loadScript(
       `
-      Debug.Message("phase battle end " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsStartStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()))
+      Debug.Message("phase battle end " .. Duel.GetCurrentPhase() .. "/" .. tostring(Duel.IsPhase(PHASE_BATTLE)) .. "/" .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsStartStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()))
       `,
       "phase-predicate-battle-end.lua",
     );
@@ -458,11 +458,11 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("phase draw true/true/false/false");
     expect(host.messages).toContain("phase standby true/false");
     expect(host.messages).toContain("phase main1 true/true/false");
-    expect(host.messages).toContain("phase battle step true/false/false/false/true/true/false");
-    expect(host.messages).toContain("phase damage step true/true/false/false");
-    expect(host.messages).toContain("phase damage calc true/true/true/false/true/false");
-    expect(host.messages).toContain("phase battle start false/true/true/true");
-    expect(host.messages).toContain("phase battle end false/false/false/true");
+    expect(host.messages).toContain("phase battle step 16/true/true/false/false/false/true/true/false");
+    expect(host.messages).toContain("phase damage step 32/true/true/true/false/false");
+    expect(host.messages).toContain("phase damage calc 64/true/true/true/true/false/true/false");
+    expect(host.messages).toContain("phase battle start 8/true/false/true/true/false");
+    expect(host.messages).toContain("phase battle end 128/true/false/false/false/true");
     expect(host.messages).toContain("phase end true/true/false");
   });
 
