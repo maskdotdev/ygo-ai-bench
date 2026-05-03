@@ -25,6 +25,15 @@ describe("EDOPro parity flip summon lock fixtures", () => {
             phase: "main1",
             waitingFor: 0,
             legalActions: [{ type: "flipSummon", player: 0, code: "100", location: "monsterZone", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "flipSummon", player: 0, code: "100", location: "monsterZone", count: 1 }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -83,7 +92,24 @@ describe("EDOPro parity flip summon lock fixtures", () => {
             phase: "main1",
             waitingFor: 0,
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "flipSummon", player: 0, uid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowKind: "open",
+                actions: [{ type: "flipSummon", player: 0, uid: "p0-deck-100-0" }],
+              },
+            ],
           },
           after: {
             source: "edopro",

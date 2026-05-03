@@ -22,7 +22,24 @@ describe("EDOPro parity summon and set lock fixtures", () => {
             phase: "main1",
             waitingFor: 0,
             legalActions: [{ type: "setMonster", player: 0, code: "100", location: "hand", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "setMonster", player: 0, code: "100", location: "hand", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "normalSummon", player: 0, uid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowKind: "open",
+                actions: [{ type: "normalSummon", player: 0, uid: "p0-deck-100-0" }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -65,7 +82,24 @@ describe("EDOPro parity summon and set lock fixtures", () => {
             phase: "main1",
             waitingFor: 0,
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "tributeSummon", player: 0, uid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowKind: "open",
+                actions: [{ type: "tributeSummon", player: 0, uid: "p0-deck-100-0" }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -104,7 +138,24 @@ describe("EDOPro parity summon and set lock fixtures", () => {
             phase: "main1",
             waitingFor: 0,
             legalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "setMonster", player: 0, uid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowKind: "open",
+                actions: [{ type: "setMonster", player: 0, uid: "p0-deck-100-0" }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -147,7 +198,24 @@ describe("EDOPro parity summon and set lock fixtures", () => {
             phase: "main1",
             waitingFor: 0,
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "setSpellTrap", player: 0, uid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Set",
+                windowKind: "open",
+                actions: [{ type: "setSpellTrap", player: 0, uid: "p0-deck-100-0" }],
+              },
+            ],
           },
           after: {
             source: "edopro",

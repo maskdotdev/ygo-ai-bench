@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentAttackGroup, absentEffectGroup, effectGroup, passDamageGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle quick-effect fixtures", () => {
   it("offers damage-step quick effects and resumes the battle window after resolution", () => {
@@ -44,6 +45,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             pendingBattle: true,
             battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(1)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
@@ -59,6 +61,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
               { type: "activateEffect", player: 0, effectId: "fixture-damage-step-quick", count: 1 },
               { type: "passDamage", player: 0, windowKind: "battle", count: 1 },
             ],
+            legalActionGroups: [effectGroup(0, "fixture-damage-step-quick"), passDamageGroup(0)],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-damage-step-quick" }), {
@@ -71,6 +74,8 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             damagePasses: [],
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(1)],
+            absentLegalActionGroups: [{ player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-step-quick" }] }],
             logIncludes: ["Fixture damage-step quick resolved"],
           },
         }),
@@ -96,6 +101,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleDamage: { 1: 1800 },
             attacksDeclared: ["p0-deck-100-0"],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
             logIncludes: ["Fixture damage-step quick resolved", "Direct attack"],
           },
         }),
@@ -112,6 +118,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
         battleDamage: { 1: 1800 },
         attacksDeclared: ["p0-deck-100-0"],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
         logIncludes: ["Fixture damage-step quick resolved", "Direct attack"],
       },
     };
@@ -159,7 +166,11 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             waitingFor: 0,
             battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-calculation-quick" }],
+            absentLegalActionGroups: [
+              { player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-calculation-quick" }] },
+            ],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -170,7 +181,11 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             waitingFor: 0,
             battleWindow: { kind: "beforeDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-calculation-quick" }],
+            absentLegalActionGroups: [
+              { player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-calculation-quick" }] },
+            ],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -188,6 +203,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
               { type: "activateEffect", player: 0, effectId: "fixture-damage-calculation-quick", count: 1 },
               { type: "passDamage", player: 0, windowKind: "battle", count: 1 },
             ],
+            legalActionGroups: [effectGroup(0, "fixture-damage-calculation-quick"), passDamageGroup(0)],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-damage-calculation-quick" }), {
@@ -201,6 +217,10 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             damagePasses: [],
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(1)],
+            absentLegalActionGroups: [
+              { player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-calculation-quick" }] },
+            ],
             logIncludes: ["Fixture damage-calculation quick resolved"],
           },
         }),
@@ -222,6 +242,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleDamage: { 1: 1800 },
             attacksDeclared: ["p0-deck-100-0"],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
             logIncludes: ["Fixture damage-calculation quick resolved", "Direct attack"],
           },
         }),
@@ -238,6 +259,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
         battleDamage: { 1: 1800 },
         attacksDeclared: ["p0-deck-100-0"],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
         logIncludes: ["Fixture damage-calculation quick resolved", "Direct attack"],
       },
     };
@@ -284,7 +306,9 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             waitingFor: 0,
             battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" }],
+            absentLegalActionGroups: [{ player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" }] }],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -295,7 +319,9 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             waitingFor: 0,
             battleWindow: { kind: "beforeDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" }],
+            absentLegalActionGroups: [{ player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" }] }],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -309,7 +335,9 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleStep: "damageCalculation",
             battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" }],
+            absentLegalActionGroups: [{ player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" }] }],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -320,7 +348,9 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             waitingFor: 0,
             battleWindow: { kind: "afterDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" }],
+            absentLegalActionGroups: [{ player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" }] }],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -331,7 +361,9 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             waitingFor: 0,
             battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" }],
+            absentLegalActionGroups: [{ player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" }] }],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
@@ -350,6 +382,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
               { type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" },
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" },
             ],
+            absentLegalActionGroups: [absentEffectGroup(0, "fixture-unflagged-quick"), absentAttackGroup("p0-deck-100-0")],
           },
         }),
       ],
@@ -368,6 +401,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
           { type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" },
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" },
         ],
+        absentLegalActionGroups: [absentEffectGroup(0, "fixture-unflagged-quick"), absentAttackGroup("p0-deck-100-0")],
       },
     };
 
@@ -418,6 +452,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
               { type: "activateEffect", player: 1, effectId: "fixture-opponent-damage-step-quick", count: 1 },
               { type: "passDamage", player: 1, windowKind: "battle", count: 1 },
             ],
+            legalActionGroups: [effectGroup(1, "fixture-opponent-damage-step-quick"), passDamageGroup(1)],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-damage-step-quick" }), {
@@ -430,7 +465,11 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             damagePasses: [],
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(1)],
             absentLegalActions: [{ type: "activateEffect", player: 1, effectId: "fixture-opponent-damage-step-quick" }],
+            absentLegalActionGroups: [
+              { player: 1, label: "Effects", actions: [{ type: "activateEffect", player: 1, effectId: "fixture-opponent-damage-step-quick" }] },
+            ],
             logIncludes: ["Fixture opponent damage-step quick resolved"],
           },
         }),
@@ -456,6 +495,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleDamage: { 1: 1800 },
             attacksDeclared: ["p0-deck-100-0"],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
             logIncludes: ["Fixture opponent damage-step quick resolved", "Direct attack"],
           },
         }),
@@ -472,6 +512,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
         battleDamage: { 1: 1800 },
         attacksDeclared: ["p0-deck-100-0"],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
         logIncludes: ["Fixture opponent damage-step quick resolved", "Direct attack"],
       },
     };
@@ -529,6 +570,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
               { type: "activateEffect", player: 1, effectId: "fixture-opponent-damage-calculation-quick", count: 1 },
               { type: "passDamage", player: 1, windowKind: "battle", count: 1 },
             ],
+            legalActionGroups: [effectGroup(1, "fixture-opponent-damage-calculation-quick"), passDamageGroup(1)],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-damage-calculation-quick" }), {
@@ -542,7 +584,11 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             damagePasses: [],
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(1)],
             absentLegalActions: [{ type: "activateEffect", player: 1, effectId: "fixture-opponent-damage-calculation-quick" }],
+            absentLegalActionGroups: [
+              { player: 1, label: "Effects", actions: [{ type: "activateEffect", player: 1, effectId: "fixture-opponent-damage-calculation-quick" }] },
+            ],
             logIncludes: ["Fixture opponent damage-calculation quick resolved"],
           },
         }),
@@ -564,6 +610,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleDamage: { 1: 1800 },
             attacksDeclared: ["p0-deck-100-0"],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
             logIncludes: ["Fixture opponent damage-calculation quick resolved", "Direct attack"],
           },
         }),
@@ -580,6 +627,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
         battleDamage: { 1: 1800 },
         attacksDeclared: ["p0-deck-100-0"],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
         logIncludes: ["Fixture opponent damage-calculation quick resolved", "Direct attack"],
       },
     };
@@ -627,6 +675,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             waitingFor: 0,
             battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             legalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-step-only-quick", count: 1 }],
+            legalActionGroups: [effectGroup(0, "fixture-damage-step-only-quick")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -642,7 +691,11 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleStep: "damageCalculation",
             battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-step-only-quick" }],
+            absentLegalActionGroups: [
+              { player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-step-only-quick" }] },
+            ],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -653,6 +706,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             waitingFor: 0,
             battleWindow: { kind: "afterDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             legalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-step-only-quick", count: 1 }],
+            legalActionGroups: [effectGroup(0, "fixture-damage-step-only-quick")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -670,6 +724,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             battleDamage: { 1: 1800 },
             attacksDeclared: ["p0-deck-100-0"],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
           },
         }),
       ],
@@ -685,6 +740,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
         battleDamage: { 1: 1800 },
         attacksDeclared: ["p0-deck-100-0"],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
       },
     };
 

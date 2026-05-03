@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { passBattleGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle damage modifier fixtures", () => {
   it("applies piercing battle damage against defense-position targets", () => {
@@ -42,6 +43,8 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
             waitingFor: 1,
             pendingBattle: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -125,7 +128,17 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
-        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the attack-response window before changed battle damage is applied",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
+          },
+        }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
@@ -207,7 +220,17 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
-        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the direct-attack response window before battle damage prevention is applied",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
+          },
+        }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
@@ -284,7 +307,17 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
-        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the attack-response window before battle damage reflection is applied",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
+          },
+        }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
@@ -361,7 +394,17 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
-        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the direct-attack response window before both-player battle damage is applied",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
+          },
+        }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
@@ -438,7 +481,17 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
-        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the attack-response window before also-battle-damage reflection is applied",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
+          },
+        }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
@@ -515,7 +568,17 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
-        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the direct-attack response window before battle damage is converted to effect damage",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
+          },
+        }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
@@ -593,7 +656,17 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
-        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the attack-response window before battle-destroy redirects can apply",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
+          },
+        }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
@@ -678,7 +751,17 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
-        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the attack-response window before field-scoped battle-destroy redirects can apply",
+            waitingFor: 1,
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
+          },
+        }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),

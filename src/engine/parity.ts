@@ -3,6 +3,7 @@ import {
   applyResponse,
   collectDuelTriggerEffects,
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions,
   loadDecks,
   moveDuelCard,
@@ -14,6 +15,7 @@ import {
   startDuel,
   type CreateDuelOptions,
 } from "#duel/core.js";
+import { describeDuelActionSelector, duelActionMatchesSelector, selectDuelActionBySelector } from "#duel/action-selectors.js";
 import type { DuelChainLimitRestoreRegistry, DuelEffectRestoreRegistry } from "#duel/snapshot.js";
 import type {
   DuelAction,
@@ -28,6 +30,7 @@ import type {
   ScriptedDuelWindowExpectation,
   ScriptedFixtureEffect,
   ScriptedFixtureMove,
+  ScriptedLegalActionGroupExpectation,
   ScriptedLegalActionExpectation,
   ScriptedResponseSelector,
 } from "#duel/types.js";
@@ -150,6 +153,9 @@ function assertSnapshotRestore(
     const beforeActions = JSON.stringify(getLegalActions(session, player));
     const afterActions = JSON.stringify(getLegalActions(restored, player));
     if (afterActions !== beforeActions) failures.push({ fixture, message: `${context}: snapshot/restore changed player ${player} legal actions` });
+    const beforeGroups = JSON.stringify(getGroupedDuelLegalActions(session, player));
+    const afterGroups = JSON.stringify(getGroupedDuelLegalActions(restored, player));
+    if (afterGroups !== beforeGroups) failures.push({ fixture, message: `${context}: snapshot/restore changed player ${player} legal action groups` });
   }
 }
 
@@ -218,7 +224,9 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   }
   const cards = state.cards;
   if (expected.legalActions?.length) assertLegalActions("Expected legal action", session, expected.legalActions, cards, fail, false);
+  if (expected.legalActionGroups?.length) assertLegalActionGroups("Expected legal action group", session, expected.legalActionGroups, cards, fail, false);
   if (expected.absentLegalActions?.length) assertLegalActions("Expected no legal action", session, expected.absentLegalActions, cards, fail, true);
+  if (expected.absentLegalActionGroups?.length) assertLegalActionGroups("Expected no legal action group", session, expected.absentLegalActionGroups, cards, fail, true);
   assertLocationExpectations(cards, expected.locations, expected.locationCounts, fail);
   assertCardExpectations(cards, expected.cards, fail);
   assertStringListForWindow("positionsChanged", state.positionsChanged, expected.positionsChanged, fail);
@@ -331,7 +339,7 @@ function assertLegalActions(
 ): void {
   for (const expectation of expected) {
     const legal = getLegalActions(session, expectation.player);
-    const matches = legal.filter((action) => actionMatchesSelector(action, expectation, cards));
+    const matches = legal.filter((action) => duelActionMatchesSelector(action, expectation, cards));
     const expectedCount = expectation.count;
     if (absent ? matches.length > 0 : expectedCount === undefined ? matches.length === 0 : matches.length !== expectedCount) {
       fail(`${prefix} ${describeStep(expectation)} matched ${matches.length}${expectedCount === undefined ? "" : `, expected ${expectedCount}`}`);
@@ -339,72 +347,45 @@ function assertLegalActions(
   }
 }
 
+function assertLegalActionGroups(
+  prefix: string,
+  session: DuelSession,
+  expected: ScriptedLegalActionGroupExpectation[],
+  cards: { uid: string; code: string; location: DuelLocation }[],
+  fail: (message: string) => void,
+  absent: boolean,
+): void {
+  for (const expectation of expected) {
+    const groups = getGroupedDuelLegalActions(session, expectation.player);
+    const matches = groups.filter((group) => legalActionGroupMatches(group, expectation, cards));
+    const expectedCount = expectation.count;
+    if (absent ? matches.length > 0 : expectedCount === undefined ? matches.length === 0 : matches.length !== expectedCount) {
+      fail(`${prefix} ${describeGroupExpectation(expectation)} matched ${matches.length}${expectedCount === undefined ? "" : `, expected ${expectedCount}`}`);
+    }
+  }
+}
+
+function legalActionGroupMatches(
+  group: ReturnType<typeof getGroupedDuelLegalActions>[number],
+  expectation: ScriptedLegalActionGroupExpectation,
+  cards: { uid: string; code: string; location: DuelLocation }[],
+): boolean {
+  if (expectation.key !== undefined && group.key !== expectation.key) return false;
+  if (expectation.label !== undefined && group.label !== expectation.label) return false;
+  if (expectation.windowId !== undefined && group.windowId !== expectation.windowId) return false;
+  if (expectation.windowKind !== undefined && group.windowKind !== expectation.windowKind) return false;
+  for (const actionExpectation of expectation.actions ?? []) {
+    const matches = group.actions.filter((action) => duelActionMatchesSelector(action, actionExpectation, cards));
+    const expectedCount = actionExpectation.count;
+    if (expectedCount === undefined ? matches.length === 0 : matches.length !== expectedCount) return false;
+  }
+  return true;
+}
+
 function resolveScriptedStep(step: ScriptedStepResponse, legal: DuelAction[], cards: { uid: string; code: string; location: DuelLocation }[]): DuelAction | undefined {
   if (isConcreteResponse(step) && legal.some((action) => sameAction(action, step))) return step;
   const selector = step as ScriptedResponseSelector;
-  const matches = legal.filter((action) => actionMatchesSelector(action, selector, cards));
-  return matches[selector.occurrence ?? 0];
-}
-
-function actionMatchesSelector(action: DuelAction, selector: ScriptedResponseSelector, cards: { uid: string; code: string; location: DuelLocation }[]): boolean {
-  if (action.type !== selector.type || action.player !== selector.player) return false;
-  if (selector.windowId !== undefined && action.windowId !== selector.windowId) return false;
-  if (selector.windowKind !== undefined && action.windowKind !== selector.windowKind) return false;
-  if (selector.uid && "uid" in action && action.uid !== selector.uid) return false;
-  if (selector.tributeUids) {
-    if (action.type !== "tributeSummon" || !sameStringSet(action.tributeUids, selector.tributeUids)) return false;
-  }
-  if (selector.materialUids) {
-    if (
-      (action.type !== "fusionSummon" && action.type !== "synchroSummon" && action.type !== "xyzSummon" && action.type !== "linkSummon" && action.type !== "ritualSummon") ||
-      !sameStringSet(action.materialUids, selector.materialUids)
-    ) {
-      return false;
-    }
-  }
-  if (selector.position) {
-    if (action.type !== "changePosition" || action.position !== selector.position) return false;
-  }
-  if (selector.phase) {
-    if (action.type !== "changePhase" || action.phase !== selector.phase) return false;
-  }
-    if (selector.attackerUid) {
-      if ((action.type !== "declareAttack" && action.type !== "replayAttack" && action.type !== "cancelAttack") || action.attackerUid !== selector.attackerUid) return false;
-    }
-    if (selector.targetUid) {
-      if ((action.type !== "declareAttack" && action.type !== "replayAttack") || action.targetUid !== selector.targetUid) return false;
-  }
-  if (selector.directAttack !== undefined) {
-    if (action.type !== "declareAttack" && action.type !== "replayAttack") return false;
-    if ((action.targetUid === undefined) !== selector.directAttack) return false;
-  }
-  if (selector.promptId) {
-    if (!("promptId" in action) || action.promptId !== selector.promptId) return false;
-  }
-  if (selector.option !== undefined) {
-    if (action.type !== "selectOption" || action.option !== selector.option) return false;
-  }
-  if (selector.yes !== undefined) {
-    if (action.type !== "selectYesNo" || action.yes !== selector.yes) return false;
-  }
-  if (selector.effectId) {
-    if (!("effectId" in action) || action.effectId !== selector.effectId) return false;
-  }
-  if (selector.triggerId) {
-    if (!("triggerId" in action) || action.triggerId !== selector.triggerId) return false;
-  }
-  if (selector.triggerBucket) {
-    if (!("triggerBucket" in action) || action.triggerBucket !== selector.triggerBucket) return false;
-  }
-  if (selector.labelIncludes && !action.label.includes(selector.labelIncludes)) return false;
-  if (selector.code || selector.location) {
-    if (!("uid" in action)) return false;
-    const card = cards.find((candidate) => candidate.uid === action.uid);
-    if (!card) return false;
-    if (selector.code && card.code !== selector.code) return false;
-    if (selector.location && card.location !== selector.location) return false;
-  }
-  return true;
+  return selectDuelActionBySelector(legal, selector, cards);
 }
 
 function isConcreteResponse(step: ScriptedStepResponse): step is DuelAction {
@@ -593,6 +574,7 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
 }
 
 function describeStep(step: ScriptedStepResponse): string {
+  if (!isConcreteResponse(step)) return describeDuelActionSelector(step);
   const detail = [
     `type=${step.type}`,
     `player=${step.player}`,
@@ -611,6 +593,17 @@ function describeStep(step: ScriptedStepResponse): string {
     "effectId" in step && step.effectId ? `effectId=${step.effectId}` : undefined,
     "triggerId" in step && step.triggerId ? `triggerId=${step.triggerId}` : undefined,
     "location" in step && step.location ? `location=${step.location}` : undefined,
+  ].filter(Boolean);
+  return detail.join(" ");
+}
+
+function describeGroupExpectation(expectation: ScriptedLegalActionGroupExpectation): string {
+  const detail = [
+    `player=${expectation.player}`,
+    expectation.key ? `key=${expectation.key}` : undefined,
+    expectation.label ? `label=${expectation.label}` : undefined,
+    expectation.windowId !== undefined ? `windowId=${expectation.windowId}` : undefined,
+    expectation.windowKind ? `windowKind=${expectation.windowKind}` : undefined,
   ].filter(Boolean);
   return detail.join(" ");
 }

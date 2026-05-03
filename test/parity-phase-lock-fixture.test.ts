@@ -36,7 +36,24 @@ describe("EDOPro parity phase lock fixtures", () => {
             phase: "main1",
             waitingFor: 0,
             legalActions: [{ type: "changePhase", player: 0, phase: "main2", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePhase", player: 0, phase: "main2", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                actions: [{ type: "changePhase", player: 0, phase: "battle" }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -93,7 +110,24 @@ describe("EDOPro parity phase lock fixtures", () => {
             phase: "main1",
             waitingFor: 0,
             legalActions: [{ type: "changePhase", player: 0, phase: "main2", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePhase", player: 0, phase: "main2", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                actions: [{ type: "changePhase", player: 0, phase: "battle" }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -151,7 +185,24 @@ describe("EDOPro parity phase lock fixtures", () => {
             phase: "battle",
             waitingFor: 0,
             legalActions: [{ type: "changePhase", player: 0, phase: "end", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePhase", player: 0, phase: "end", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "changePhase", player: 0, phase: "main2", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                actions: [{ type: "changePhase", player: 0, phase: "main2" }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -209,7 +260,24 @@ describe("EDOPro parity phase lock fixtures", () => {
             phase: "battle",
             waitingFor: 0,
             legalActions: [{ type: "changePhase", player: 0, phase: "end", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePhase", player: 0, phase: "end", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "changePhase", player: 0, phase: "main2", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                actions: [{ type: "changePhase", player: 0, phase: "main2" }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -269,7 +337,24 @@ describe("EDOPro parity phase lock fixtures", () => {
             pendingBattle: false,
             battleWindow: null,
             legalActions: [{ type: "endTurn", player: 0, windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "endTurn", player: 0, count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "changePhase", player: 0, phase: "end", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                actions: [{ type: "changePhase", player: 0, phase: "end" }],
+              },
+            ],
           },
         }),
       ],
@@ -281,7 +366,24 @@ describe("EDOPro parity phase lock fixtures", () => {
         pendingBattle: false,
         battleWindow: null,
         legalActions: [{ type: "endTurn", player: 0, windowKind: "open", count: 1 }],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Turn",
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "endTurn", player: 0, count: 1 }],
+          },
+        ],
         absentLegalActions: [{ type: "changePhase", player: 0, phase: "end", windowKind: "open" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Turn",
+            windowKind: "open",
+            actions: [{ type: "changePhase", player: 0, phase: "end" }],
+          },
+        ],
       },
     };
 
@@ -323,7 +425,24 @@ describe("EDOPro parity phase lock fixtures", () => {
             pendingBattle: false,
             battleWindow: null,
             legalActions: [{ type: "endTurn", player: 0, windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "endTurn", player: 0, count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "changePhase", player: 0, phase: "end", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                actions: [{ type: "changePhase", player: 0, phase: "end" }],
+              },
+            ],
           },
         }),
       ],
@@ -335,7 +454,24 @@ describe("EDOPro parity phase lock fixtures", () => {
         pendingBattle: false,
         battleWindow: null,
         legalActions: [{ type: "endTurn", player: 0, windowKind: "open", count: 1 }],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Turn",
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "endTurn", player: 0, count: 1 }],
+          },
+        ],
         absentLegalActions: [{ type: "changePhase", player: 0, phase: "end", windowKind: "open" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Turn",
+            windowKind: "open",
+            actions: [{ type: "changePhase", player: 0, phase: "end" }],
+          },
+        ],
       },
     };
 

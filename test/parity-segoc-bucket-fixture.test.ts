@@ -40,7 +40,30 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
               { player: 1, effectId: "fixture-opponent-optional", eventName: "normalSummoned", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-100-0" },
             ],
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-turn-mandatory", triggerBucket: "turnMandatory", count: 1 }],
-            absentLegalActions: [{ type: "activateTrigger", player: 1, effectId: "fixture-opponent-mandatory" }],
+            legalActionGroups: [
+              {
+                player: 0,
+                key: "1:triggerBucket:trigger-activate",
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, effectId: "fixture-turn-mandatory", triggerBucket: "turnMandatory", count: 1 }],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 1, effectId: "fixture-opponent-mandatory" },
+              { type: "declineTrigger", player: 0, effectId: "fixture-turn-mandatory" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                actions: [{ type: "declineTrigger", player: 0, effectId: "fixture-turn-mandatory" }],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-turn-mandatory" }), {
@@ -56,6 +79,27 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
               { player: 1, effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional" },
             ],
             legalActions: [{ type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-mandatory", triggerBucket: "opponentMandatory", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 1,
+                key: "2:triggerBucket:trigger-activate",
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 1, effectId: "fixture-opponent-mandatory", triggerBucket: "opponentMandatory", count: 1 }],
+              },
+            ],
+            absentLegalActions: [{ type: "declineTrigger", player: 1, effectId: "fixture-opponent-mandatory" }],
+            absentLegalActionGroups: [
+              {
+                player: 1,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                actions: [{ type: "declineTrigger", player: 1, effectId: "fixture-opponent-mandatory" }],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-opponent-mandatory" }), {
@@ -72,7 +116,34 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-turn-optional", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-turn-optional", triggerBucket: "turnOptional", count: 1 },
             ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 3,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, effectId: "fixture-turn-optional", triggerBucket: "turnOptional", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 3,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [{ type: "declineTrigger", player: 0, effectId: "fixture-turn-optional", triggerBucket: "turnOptional", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional" }],
+            absentLegalActionGroups: [
+              {
+                player: 1,
+                label: "Trigger Activations",
+                windowId: 3,
+                windowKind: "triggerBucket",
+                actions: [{ type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional" }],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-turn-optional" }), {
@@ -86,6 +157,34 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
             legalActions: [
               { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
               { type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Trigger Activations",
+                windowId: 4,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional", count: 1 }],
+              },
+              {
+                player: 1,
+                label: "Trigger Declines",
+                windowId: 4,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [{ type: "declineTrigger", player: 1, effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional", count: 1 }],
+              },
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, effectId: "fixture-turn-optional" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 4,
+                windowKind: "triggerBucket",
+                actions: [{ type: "activateTrigger", player: 0, effectId: "fixture-turn-optional" }],
+              },
             ],
           },
         }),

@@ -67,7 +67,24 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100", "300"], graveyard: ["200"] },
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowKind: "open",
+                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+              },
+            ],
           },
         }),
       ],
@@ -83,7 +100,24 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100", "300"], graveyard: ["200"] },
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open", count: 1 }],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Attacks",
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", count: 1 }],
+          },
+        ],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Attacks",
+            windowKind: "open",
+            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+          },
+        ],
       },
     };
 
@@ -138,6 +172,15 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100"], graveyard: ["200"] },
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 }],
+              },
+            ],
           },
         }),
       ],
@@ -153,6 +196,15 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100"], graveyard: ["200"] },
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Attacks",
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 }],
+          },
+        ],
       },
     };
 
@@ -207,6 +259,14 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100"], graveyard: ["200"] },
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowKind: "open",
+                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
+              },
+            ],
           },
         }),
       ],
@@ -222,6 +282,14 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100"], graveyard: ["200"] },
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Attacks",
+            windowKind: "open",
+            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
+          },
+        ],
       },
     };
 

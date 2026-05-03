@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentOpenAttackGroup, directAttackGroup, passBattleGroup, targetedAttackGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle window fixtures", () => {
   it("opens attack response windows and advances into the damage step after both players pass", () => {
@@ -27,6 +28,7 @@ describe("EDOPro parity battle window fixtures", () => {
             phase: "battle",
             waitingFor: 0,
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
+            legalActionGroups: [directAttackGroup(0, "p0-deck-100-0")],
           },
         }),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
@@ -42,6 +44,7 @@ describe("EDOPro parity battle window fixtures", () => {
             attackPasses: [],
             attacksDeclared: ["p0-deck-100-0"],
             legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1), {
@@ -54,6 +57,7 @@ describe("EDOPro parity battle window fixtures", () => {
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             attackPasses: [1],
             legalActions: [{ type: "passAttack", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passAttack")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 0), {
@@ -76,6 +80,7 @@ describe("EDOPro parity battle window fixtures", () => {
               { eventName: "battleConfirmed", eventCode: 1133 },
             ],
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage")],
           },
         }),
       ],
@@ -89,6 +94,7 @@ describe("EDOPro parity battle window fixtures", () => {
         battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
         attacksDeclared: ["p0-deck-100-0"],
         legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+        legalActionGroups: [passBattleGroup(1, "passDamage")],
       },
     };
 
@@ -121,6 +127,7 @@ describe("EDOPro parity battle window fixtures", () => {
             waitingFor: 1,
             battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
@@ -134,6 +141,7 @@ describe("EDOPro parity battle window fixtures", () => {
             battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             damagePasses: [1],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
@@ -156,6 +164,7 @@ describe("EDOPro parity battle window fixtures", () => {
               { eventName: "beforeDamageCalculation", eventCode: 1134 },
             ],
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage")],
           },
         }),
       ],
@@ -169,6 +178,7 @@ describe("EDOPro parity battle window fixtures", () => {
         battleWindow: { kind: "beforeDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
         attacksDeclared: ["p0-deck-100-0"],
         legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+        legalActionGroups: [passBattleGroup(1, "passDamage")],
       },
     };
 
@@ -203,6 +213,7 @@ describe("EDOPro parity battle window fixtures", () => {
             waitingFor: 1,
             battleWindow: { kind: "beforeDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
@@ -216,6 +227,7 @@ describe("EDOPro parity battle window fixtures", () => {
             battleWindow: { kind: "beforeDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             damagePasses: [1],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
@@ -238,6 +250,7 @@ describe("EDOPro parity battle window fixtures", () => {
               { eventName: "beforeDamageCalculation", eventCode: 1134 },
             ],
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage")],
           },
         }),
       ],
@@ -251,6 +264,7 @@ describe("EDOPro parity battle window fixtures", () => {
         battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
         attacksDeclared: ["p0-deck-100-0"],
         legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+        legalActionGroups: [passBattleGroup(1, "passDamage")],
       },
     };
 
@@ -288,6 +302,7 @@ describe("EDOPro parity battle window fixtures", () => {
             battleStep: "damageCalculation",
             battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
@@ -301,6 +316,7 @@ describe("EDOPro parity battle window fixtures", () => {
             battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             damagePasses: [1],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
@@ -324,6 +340,7 @@ describe("EDOPro parity battle window fixtures", () => {
               { eventName: "afterDamageCalculation", eventCode: 1138 },
             ],
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage")],
           },
         }),
       ],
@@ -337,6 +354,7 @@ describe("EDOPro parity battle window fixtures", () => {
         battleWindow: { kind: "afterDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
         attacksDeclared: ["p0-deck-100-0"],
         legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+        legalActionGroups: [passBattleGroup(1, "passDamage")],
       },
     };
 
@@ -376,6 +394,7 @@ describe("EDOPro parity battle window fixtures", () => {
             battleStep: "damage",
             battleWindow: { kind: "afterDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
@@ -389,6 +408,7 @@ describe("EDOPro parity battle window fixtures", () => {
             battleWindow: { kind: "afterDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             damagePasses: [1],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
@@ -413,6 +433,7 @@ describe("EDOPro parity battle window fixtures", () => {
               { eventName: "damageStepEnded", eventCode: 1141 },
             ],
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage")],
           },
         }),
       ],
@@ -426,6 +447,7 @@ describe("EDOPro parity battle window fixtures", () => {
         battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
         attacksDeclared: ["p0-deck-100-0"],
         legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+        legalActionGroups: [passBattleGroup(1, "passDamage")],
       },
     };
 
@@ -468,6 +490,7 @@ describe("EDOPro parity battle window fixtures", () => {
             battleStep: "damage",
             battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
@@ -480,6 +503,7 @@ describe("EDOPro parity battle window fixtures", () => {
             battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             damagePasses: [1],
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
@@ -506,6 +530,7 @@ describe("EDOPro parity battle window fixtures", () => {
               { eventName: "battleDamageDealt" },
             ],
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 0 }],
+            legalActionGroups: [directAttackGroup(0, "p0-deck-100-0", 0)],
           },
         }),
       ],
@@ -519,6 +544,7 @@ describe("EDOPro parity battle window fixtures", () => {
         attacksDeclared: ["p0-deck-100-0"],
         lifePoints: { 1: 6200 },
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 0 }],
+        legalActionGroups: [directAttackGroup(0, "p0-deck-100-0", 0)],
       },
     };
 
@@ -551,6 +577,7 @@ describe("EDOPro parity battle window fixtures", () => {
             phase: "battle",
             waitingFor: 0,
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 }],
+            legalActionGroups: [targetedAttackGroup(0, "p0-deck-100-0", "p1-deck-200-0")],
           },
         }),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
@@ -566,6 +593,7 @@ describe("EDOPro parity battle window fixtures", () => {
             attackedTargetUids: ["p1-deck-200-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -589,6 +617,7 @@ describe("EDOPro parity battle window fixtures", () => {
             damagePasses: [1],
             locations: { monsterZone: ["100", "200"] },
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
@@ -628,6 +657,7 @@ describe("EDOPro parity battle window fixtures", () => {
               { eventName: "battleDamageDealt" },
             ],
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 0 }],
+            legalActionGroups: [directAttackGroup(0, "p0-deck-100-0", 0)],
           },
         }),
       ],
@@ -649,6 +679,7 @@ describe("EDOPro parity battle window fixtures", () => {
           { uid: "p1-deck-200-0", location: "graveyard", controller: 1 },
         ],
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 0 }],
+        legalActionGroups: [directAttackGroup(0, "p0-deck-100-0", 0)],
       },
     };
 
@@ -681,6 +712,7 @@ describe("EDOPro parity battle window fixtures", () => {
             phase: "battle",
             waitingFor: 0,
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 }],
+            legalActionGroups: [targetedAttackGroup(0, "p0-deck-100-0", "p1-deck-200-0")],
           },
         }),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
@@ -694,6 +726,7 @@ describe("EDOPro parity battle window fixtures", () => {
             attackedTargetUids: ["p1-deck-200-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -716,6 +749,7 @@ describe("EDOPro parity battle window fixtures", () => {
             battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 0 },
             locations: { monsterZone: ["100", "200"] },
             legalActions: [{ type: "passDamage", player: 0, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
@@ -752,6 +786,7 @@ describe("EDOPro parity battle window fixtures", () => {
               { eventName: "battleDestroyed", eventCode: 1140, eventCardUid: "p1-deck-200-0" },
             ],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0")],
           },
         }),
       ],
@@ -773,6 +808,7 @@ describe("EDOPro parity battle window fixtures", () => {
           { uid: "p1-deck-200-0", location: "graveyard", controller: 1 },
         ],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0")],
       },
     };
 
@@ -848,6 +884,7 @@ describe("EDOPro parity battle window fixtures", () => {
               { eventName: "battleDamageDealt", eventCode: 1143 },
             ],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0")],
           },
         }),
       ],
@@ -865,6 +902,7 @@ describe("EDOPro parity battle window fixtures", () => {
         battleDamage: { 0: 600, 1: 0 },
         locations: { monsterZone: ["100", "200"], graveyard: [] },
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0")],
       },
     };
 

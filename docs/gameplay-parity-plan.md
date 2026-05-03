@@ -44,7 +44,7 @@ Deliverables:
   - expected log/state deltas
 - Add snapshot/restore checks at meaningful points inside fixtures, not only at the end.
 - Store EDOPro-observed expectations as explicit JSON or TypeScript fixture data.
-- Add fixture utilities for stepping legal actions by labels, card codes, window IDs, prompt IDs, and expected chain links.
+- Add fixture utilities for stepping legal actions by labels, card codes, window IDs, prompt IDs, grouped UI action buckets, and expected chain links.
 - Keep real deck probes as smoke coverage, separate from parity fixture assertions.
 - CI must run parity fixtures without network access. Upstream scripts/data used by fixtures should be vendored, locally cached, or represented by minimal test scripts.
 
@@ -61,7 +61,7 @@ Implementation files likely touched:
 Acceptance gates:
 
 - Fixtures fail with useful messages that name the expected window/action/state difference.
-- A fixture can assert legal actions before and after an action is applied.
+- A fixture can assert raw legal actions and grouped UI-facing legal actions before and after an action is applied, including actions/groups that must be absent.
 - A fixture can snapshot/restore mid-chain, mid-trigger-bucket, and mid-battle-window.
 - Fixture expectations can distinguish "matches observed EDOPro" from "known parity backlog" through `source`, and backlog expectations can carry a `note` that points to the missing EDOPro behavior.
 
@@ -124,7 +124,7 @@ Deliverables:
 - Track missed timing for "when optional" triggers after multi-step effects.
 - Handle simultaneous events and SEGOC ordering consistently.
 - Revisit fast effect response player selection after every action and chain resolution.
-- Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today; Lua-created predicate limits are serialized and reported as missing parity backlog by restore tooling until the Lua callback state can be rebuilt without re-running costs or target selection.
+- Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today; Lua-created predicate limits must either restore safely or fail closed with explicit parity-backlog diagnostics until the Lua callback state can be rebuilt without re-running costs or target selection.
 
 Implementation files likely touched:
 

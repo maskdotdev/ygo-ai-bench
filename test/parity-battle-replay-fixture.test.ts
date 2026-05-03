@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentAttackGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle replay fixtures", () => {
   it("opens a replay decision and allows canceling when the attack target leaves", () => {
@@ -49,6 +50,15 @@ describe("EDOPro parity battle replay fixtures", () => {
             attackedTargetUids: ["p1-deck-200-1"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1" }],
             legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Pass",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "passAttack", player: 1, count: 1 }],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -62,6 +72,15 @@ describe("EDOPro parity battle replay fixtures", () => {
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1", responsePlayer: 1 },
             locations: { monsterZone: ["100"], graveyard: ["200"] },
             legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Pass",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "passAttack", player: 1, count: 1 }],
+              },
+            ],
             logIncludes: ["Fixture target left before replay"],
           },
         }),
@@ -92,6 +111,26 @@ describe("EDOPro parity battle replay fixtures", () => {
               { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 },
             ],
             absentLegalActions: [{ type: "passDamage", player: 0 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowKind: "battle",
+                count: 1,
+                actions: [
+                  { type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 },
+                  { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Pass",
+                windowKind: "battle",
+                actions: [{ type: "passDamage", player: 0 }],
+              },
+            ],
             logIncludes: ["Replay decision pending"],
           },
         }),
@@ -103,6 +142,15 @@ describe("EDOPro parity battle replay fixtures", () => {
             pendingBattle: true,
             battleWindow: { kind: "replayDecision", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             legalActions: [{ type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -114,6 +162,13 @@ describe("EDOPro parity battle replay fixtures", () => {
             lifePoints: { 0: 8000, 1: 8000 },
             locations: { monsterZone: ["100"], graveyard: ["200"] },
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
+              },
+            ],
             logIncludes: ["Canceled replay attack"],
           },
         }),
@@ -136,6 +191,13 @@ describe("EDOPro parity battle replay fixtures", () => {
           { uid: "p1-deck-200-1", location: "graveyard", controller: 1 },
         ],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Attacks",
+            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
+          },
+        ],
         logIncludes: ["Fixture target left before replay", "Replay decision pending", "Canceled replay attack"],
       },
     };
@@ -228,6 +290,19 @@ describe("EDOPro parity battle replay fixtures", () => {
               { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1", count: 1 },
               { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2", count: 1 },
             ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowKind: "battle",
+                count: 1,
+                actions: [
+                  { type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 },
+                  { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1", count: 1 },
+                  { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2", count: 1 },
+                ],
+              },
+            ],
             logIncludes: ["Replay decision pending"],
           },
         }),
@@ -239,6 +314,15 @@ describe("EDOPro parity battle replay fixtures", () => {
             pendingBattle: true,
             battleWindow: { kind: "replayDecision", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             legalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2", count: 1 }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -253,6 +337,15 @@ describe("EDOPro parity battle replay fixtures", () => {
               { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2" },
             ],
             legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Pass",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "passAttack", player: 1, count: 1 }],
+              },
+            ],
             logIncludes: ["Replayed attack on Replay Target"],
           },
         }),
@@ -285,6 +378,7 @@ describe("EDOPro parity battle replay fixtures", () => {
               { uid: "p1-deck-200-2", location: "graveyard", controller: 1 },
             ],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
           },
         }),
       ],
@@ -309,6 +403,7 @@ describe("EDOPro parity battle replay fixtures", () => {
           { uid: "p1-deck-200-2", location: "graveyard", controller: 1 },
         ],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
         logIncludes: ["Fixture target count changed before replay", "Replay decision pending", "Replayed attack on Replay Target"],
       },
     };
@@ -379,6 +474,26 @@ describe("EDOPro parity battle replay fixtures", () => {
               { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 },
             ],
             absentLegalActions: [{ type: "passDamage", player: 0 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowKind: "battle",
+                count: 1,
+                actions: [
+                  { type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 },
+                  { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Pass",
+                windowKind: "battle",
+                actions: [{ type: "passDamage", player: 0 }],
+              },
+            ],
             logIncludes: ["Replay decision pending"],
           },
         }),
@@ -390,6 +505,15 @@ describe("EDOPro parity battle replay fixtures", () => {
             pendingBattle: true,
             battleWindow: { kind: "replayDecision", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             legalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", count: 1 }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -399,6 +523,15 @@ describe("EDOPro parity battle replay fixtures", () => {
             currentAttack: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Pass",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "passAttack", player: 1, count: 1 }],
+              },
+            ],
             logIncludes: ["Replayed direct attack"],
           },
         }),
@@ -426,6 +559,13 @@ describe("EDOPro parity battle replay fixtures", () => {
             battleDamage: { 1: 1800 },
             locations: { monsterZone: ["100"], graveyard: ["200"] },
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
+              },
+            ],
           },
         }),
       ],
@@ -444,6 +584,13 @@ describe("EDOPro parity battle replay fixtures", () => {
         battleDamage: { 1: 1800 },
         locations: { monsterZone: ["100"], graveyard: ["200"] },
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Attacks",
+            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
+          },
+        ],
         logIncludes: ["Fixture target left before direct replay", "Replay decision pending", "Replayed direct attack"],
       },
     };

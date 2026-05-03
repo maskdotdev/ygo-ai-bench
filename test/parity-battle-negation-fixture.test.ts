@@ -45,6 +45,15 @@ describe("EDOPro parity battle negation fixtures", () => {
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             attacksDeclared: ["p0-deck-100-0"],
             legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Pass",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "passAttack", player: 1, count: 1 }],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1), {
@@ -55,6 +64,15 @@ describe("EDOPro parity battle negation fixtures", () => {
             pendingBattle: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             legalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-attack-negator", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, effectId: "fixture-attack-negator", count: 1 }],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-attack-negator" }), {
@@ -76,6 +94,11 @@ describe("EDOPro parity battle negation fixtures", () => {
               { type: "passDamage", player: 0 },
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" },
             ],
+            absentLegalActionGroups: [
+              { player: 0, label: "Pass", actions: [{ type: "passAttack", player: 0 }] },
+              { player: 0, label: "Pass", actions: [{ type: "passDamage", player: 0 }] },
+              { player: 0, label: "Attacks", actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }] },
+            ],
             logIncludes: ["Negated attack true", "Fixture attack negator resolved", "Negated attack"],
           },
         }),
@@ -95,6 +118,11 @@ describe("EDOPro parity battle negation fixtures", () => {
           { type: "passAttack", player: 0 },
           { type: "passDamage", player: 0 },
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" },
+        ],
+        absentLegalActionGroups: [
+          { player: 0, label: "Pass", actions: [{ type: "passAttack", player: 0 }] },
+          { player: 0, label: "Pass", actions: [{ type: "passDamage", player: 0 }] },
+          { player: 0, label: "Attacks", actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }] },
         ],
         logIncludes: ["Negated attack true", "Fixture attack negator resolved", "Negated attack"],
       },
@@ -146,6 +174,22 @@ describe("EDOPro parity battle negation fixtures", () => {
               { type: "activateEffect", player: 1, effectId: "fixture-opponent-attack-negator", count: 1 },
               { type: "passAttack", player: 1, windowKind: "battle", count: 1 },
             ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 1, effectId: "fixture-opponent-attack-negator", count: 1 }],
+              },
+              {
+                player: 1,
+                label: "Pass",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "passAttack", player: 1, count: 1 }],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-attack-negator" }), {
@@ -164,6 +208,11 @@ describe("EDOPro parity battle negation fixtures", () => {
               { type: "passAttack", player: 1 },
               { type: "passDamage", player: 1 },
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" },
+            ],
+            absentLegalActionGroups: [
+              { player: 1, label: "Pass", actions: [{ type: "passAttack", player: 1 }] },
+              { player: 1, label: "Pass", actions: [{ type: "passDamage", player: 1 }] },
+              { player: 0, label: "Attacks", actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }] },
             ],
             logIncludes: ["Negated attack true", "Fixture opponent attack negator resolved", "Negated attack"],
           },
@@ -184,6 +233,11 @@ describe("EDOPro parity battle negation fixtures", () => {
           { type: "passAttack", player: 1 },
           { type: "passDamage", player: 1 },
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" },
+        ],
+        absentLegalActionGroups: [
+          { player: 1, label: "Pass", actions: [{ type: "passAttack", player: 1 }] },
+          { player: 1, label: "Pass", actions: [{ type: "passDamage", player: 1 }] },
+          { player: 0, label: "Attacks", actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }] },
         ],
         logIncludes: ["Negated attack true", "Fixture opponent attack negator resolved", "Negated attack"],
       },

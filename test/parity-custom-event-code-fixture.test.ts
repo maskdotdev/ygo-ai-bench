@@ -107,7 +107,26 @@ describe("EDOPro parity fixture event codes", () => {
               { eventName: "chainSolved" },
             ],
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-matching-custom-trigger", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, effectId: "fixture-matching-custom-trigger", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, effectId: "fixture-wrong-custom-trigger" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                actions: [{ type: "activateTrigger", player: 0, effectId: "fixture-wrong-custom-trigger" }],
+              },
+            ],
             logIncludes: ["Fixture custom event raised"],
           },
         }),
@@ -136,6 +155,24 @@ describe("EDOPro parity fixture event codes", () => {
             legalActions: [
               { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "fixture-custom-chain-quick", count: 1 },
               { type: "passChain", player: 0, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, effectId: "fixture-custom-chain-quick", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Pass",
+                windowId: 2,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [{ type: "passChain", player: 0, count: 1 }],
+              },
             ],
           },
         }),

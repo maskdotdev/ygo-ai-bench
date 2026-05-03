@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentAttackGroup, absentTurnGroup, attackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle action lock fixtures", () => {
   it("requires first-attack monsters to attack before other monsters", () => {
@@ -48,7 +49,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
             battleWindow: null,
             attacksDeclared: [],
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-101-1", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 }],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-101-1", targetUid: "p1-deck-200-0" }])],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-200-0")],
           },
         }),
       ],
@@ -62,7 +65,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
         battleWindow: null,
         attacksDeclared: [],
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-101-1", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 }],
+        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-101-1", targetUid: "p1-deck-200-0" }])],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-200-0")],
       },
     };
 
@@ -113,7 +118,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
             battleWindow: null,
             attacksDeclared: [],
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 }],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }])],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-300-1")],
           },
         }),
       ],
@@ -127,7 +134,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
         battleWindow: null,
         attacksDeclared: [],
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 }],
+        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }])],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-300-1")],
       },
     };
 
@@ -181,10 +190,12 @@ describe("EDOPro parity battle action lock fixtures", () => {
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 },
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-101-1", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 },
             ],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }, { attackerUid: "p0-deck-101-1", targetUid: "p1-deck-200-0" }])],
             absentLegalActions: [
               { type: "changePhase", player: 0, windowKind: "open" },
               { type: "endTurn", player: 0, windowKind: "open" },
             ],
+            absentLegalActionGroups: [absentTurnGroup("changePhase"), absentTurnGroup("endTurn")],
           },
         }),
       ],
@@ -201,10 +212,12 @@ describe("EDOPro parity battle action lock fixtures", () => {
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 },
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-101-1", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 },
         ],
+        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }, { attackerUid: "p0-deck-101-1", targetUid: "p1-deck-200-0" }])],
         absentLegalActions: [
           { type: "changePhase", player: 0, windowKind: "open" },
           { type: "endTurn", player: 0, windowKind: "open" },
         ],
+        absentLegalActionGroups: [absentTurnGroup("changePhase"), absentTurnGroup("endTurn")],
       },
     };
 
@@ -253,6 +266,8 @@ describe("EDOPro parity battle action lock fixtures", () => {
               { type: "changePhase", player: 0, windowKind: "open", count: 1 },
               { type: "endTurn", player: 0, windowKind: "open", count: 1 },
             ],
+            legalActionGroups: [turnGroup()],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
           },
         }),
       ],
@@ -270,6 +285,8 @@ describe("EDOPro parity battle action lock fixtures", () => {
           { type: "changePhase", player: 0, windowKind: "open", count: 1 },
           { type: "endTurn", player: 0, windowKind: "open", count: 1 },
         ],
+        legalActionGroups: [turnGroup()],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
       },
     };
 
@@ -318,6 +335,8 @@ describe("EDOPro parity battle action lock fixtures", () => {
               { type: "changePhase", player: 0, windowKind: "open", count: 1 },
               { type: "endTurn", player: 0, windowKind: "open", count: 1 },
             ],
+            legalActionGroups: [turnGroup()],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, true)],
           },
         }),
       ],
@@ -335,6 +354,8 @@ describe("EDOPro parity battle action lock fixtures", () => {
           { type: "changePhase", player: 0, windowKind: "open", count: 1 },
           { type: "endTurn", player: 0, windowKind: "open", count: 1 },
         ],
+        legalActionGroups: [turnGroup()],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, true)],
       },
     };
 
@@ -383,7 +404,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
             battleWindow: null,
             attacksDeclared: [],
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 }],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }])],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, true)],
           },
         }),
       ],
@@ -397,7 +420,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
         battleWindow: null,
         attacksDeclared: [],
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 }],
+        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }])],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, true)],
       },
     };
 
@@ -449,6 +474,7 @@ describe("EDOPro parity battle action lock fixtures", () => {
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 },
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowKind: "open", count: 1 },
             ],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }, { attackerUid: "p0-deck-100-0", directAttack: true }])],
           },
         }),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", directAttack: true }), {
@@ -532,7 +558,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
             battleWindow: null,
             attacksDeclared: [],
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 }],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }])],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, true)],
           },
         }),
       ],
@@ -546,7 +574,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
         battleWindow: null,
         attacksDeclared: [],
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 }],
+        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }])],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, true)],
       },
     };
 
@@ -597,7 +627,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
             battleWindow: null,
             attacksDeclared: [],
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0" }])],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-200-0")],
           },
         }),
       ],
@@ -611,7 +643,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
         battleWindow: null,
         attacksDeclared: [],
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
+        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0" }])],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-200-0")],
       },
     };
 
@@ -669,7 +703,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 },
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2", windowKind: "open", count: 1 },
             ],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2" }])],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-300-1")],
           },
         }),
       ],
@@ -686,7 +722,9 @@ describe("EDOPro parity battle action lock fixtures", () => {
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open", count: 1 },
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2", windowKind: "open", count: 1 },
         ],
+        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2" }])],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-300-1")],
       },
     };
 
@@ -742,6 +780,8 @@ describe("EDOPro parity battle action lock fixtures", () => {
               { type: "changePhase", player: 0, windowKind: "open", count: 1 },
               { type: "endTurn", player: 0, windowKind: "open", count: 1 },
             ],
+            legalActionGroups: [turnGroup()],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
           },
         }),
       ],
@@ -762,6 +802,8 @@ describe("EDOPro parity battle action lock fixtures", () => {
           { type: "changePhase", player: 0, windowKind: "open", count: 1 },
           { type: "endTurn", player: 0, windowKind: "open", count: 1 },
         ],
+        legalActionGroups: [turnGroup()],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
       },
     };
 
@@ -817,6 +859,8 @@ describe("EDOPro parity battle action lock fixtures", () => {
               { type: "changePhase", player: 0, windowKind: "open", count: 1 },
               { type: "endTurn", player: 0, windowKind: "open", count: 1 },
             ],
+            legalActionGroups: [turnGroup()],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
           },
         }),
       ],
@@ -837,6 +881,8 @@ describe("EDOPro parity battle action lock fixtures", () => {
           { type: "changePhase", player: 0, windowKind: "open", count: 1 },
           { type: "endTurn", player: 0, windowKind: "open", count: 1 },
         ],
+        legalActionGroups: [turnGroup()],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
       },
     };
 
@@ -885,6 +931,8 @@ describe("EDOPro parity battle action lock fixtures", () => {
               { type: "changePhase", player: 0, windowKind: "open", count: 1 },
               { type: "endTurn", player: 0, windowKind: "open", count: 1 },
             ],
+            legalActionGroups: [turnGroup()],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
           },
         }),
       ],
@@ -902,6 +950,8 @@ describe("EDOPro parity battle action lock fixtures", () => {
           { type: "changePhase", player: 0, windowKind: "open", count: 1 },
           { type: "endTurn", player: 0, windowKind: "open", count: 1 },
         ],
+        legalActionGroups: [turnGroup()],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
       },
     };
 

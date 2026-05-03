@@ -26,6 +26,15 @@ describe("EDOPro parity position lock fixtures", () => {
             waitingFor: 0,
             positionsChanged: [],
             legalActions: [{ type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Actions",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", count: 1 }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -34,6 +43,14 @@ describe("EDOPro parity position lock fixtures", () => {
             waitingFor: 0,
             positionsChanged: ["p0-deck-100-0"],
             absentLegalActions: [{ type: "changePosition", player: 0, uid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Actions",
+                windowKind: "open",
+                actions: [{ type: "changePosition", player: 0, uid: "p0-deck-100-0" }],
+              },
+            ],
           },
         }),
       ],
@@ -44,6 +61,14 @@ describe("EDOPro parity position lock fixtures", () => {
         waitingFor: 0,
         positionsChanged: ["p0-deck-100-0"],
         absentLegalActions: [{ type: "changePosition", player: 0, uid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Actions",
+            windowKind: "open",
+            actions: [{ type: "changePosition", player: 0, uid: "p0-deck-100-0" }],
+          },
+        ],
       },
     };
 
@@ -82,7 +107,24 @@ describe("EDOPro parity position lock fixtures", () => {
             phase: "main1",
             waitingFor: 0,
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "changePosition", player: 0, uid: "p0-deck-100-0", position: "faceUpDefense", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Actions",
+                windowKind: "open",
+                actions: [{ type: "changePosition", player: 0, uid: "p0-deck-100-0", position: "faceUpDefense" }],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -144,7 +186,24 @@ describe("EDOPro parity position lock fixtures", () => {
             phase: "main1",
             waitingFor: 0,
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "changePosition", player: 0, uid: "p0-deck-100-0", position: "faceUpDefense", windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Actions",
+                windowKind: "open",
+                actions: [{ type: "changePosition", player: 0, uid: "p0-deck-100-0", position: "faceUpDefense" }],
+              },
+            ],
           },
           after: {
             source: "edopro",

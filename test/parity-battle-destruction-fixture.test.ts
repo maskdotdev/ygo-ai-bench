@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentOpenAttackGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle destruction fixtures", () => {
   it("destroys both attack-position monsters with equal ATK", () => {
@@ -215,6 +216,7 @@ describe("EDOPro parity battle destruction fixtures", () => {
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100", "200"] },
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0")],
           },
         }),
       ],
@@ -232,6 +234,7 @@ describe("EDOPro parity battle destruction fixtures", () => {
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100", "200"] },
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0")],
       },
     };
 
