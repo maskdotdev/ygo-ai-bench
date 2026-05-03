@@ -55,8 +55,8 @@ describe("Lua raised event payloads", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("condition payload 1/77/64/1");
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventPlayer: 1, eventValue: 77, eventReason: 64, eventReasonPlayer: 1 });
-    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "sentToGraveyard", eventPlayer: 1, eventValue: 77, eventReason: 64, eventReasonPlayer: 1 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 77, eventReason: 64, eventReasonPlayer: 1 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 77, eventReason: 64, eventReasonPlayer: 1 });
 
     activateFirstTrigger(session);
     expect(host.messages).toContain("operation payload 1/77/64/1");
@@ -88,8 +88,8 @@ describe("Lua raised event payloads", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("single condition payload 1/88/64/1");
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToHand", eventPlayer: 1, eventValue: 88, eventReason: 64, eventReasonPlayer: 1 });
-    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "sentToHand", eventPlayer: 1, eventValue: 88, eventReason: 64, eventReasonPlayer: 1 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToHand", eventCode: 1012, eventPlayer: 1, eventValue: 88, eventReason: 64, eventReasonPlayer: 1 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "sentToHand", eventCode: 1012, eventPlayer: 1, eventValue: 88, eventReason: 64, eventReasonPlayer: 1 });
 
     const restored = restoreDuel(serializeDuel(session), createCardReader([
       { code: "100", name: "Raised Target", kind: "monster" },
@@ -142,7 +142,7 @@ describe("Lua raised event payloads", () => {
     expect(startAction).toBeDefined();
     expect(applyResponse(session, startAction!).ok).toBe(true);
     expect(host.messages).toContain("related condition 1/55/64/1/321");
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventPlayer: 1, eventValue: 55, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 55, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", relatedEffectId: 1 })]));
     const restored = restoreDuel(serializeDuel(session), createCardReader([
       { code: "100", name: "Raised Target", kind: "monster" },
@@ -193,7 +193,7 @@ describe("Lua raised event payloads", () => {
     expect(startAction).toBeDefined();
     expect(applyResponse(session, startAction!).ok).toBe(true);
     expect(host.messages).toContain("single related condition 1/44/64/1/987");
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToHand", eventPlayer: 1, eventValue: 44, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToHand", eventCode: 1012, eventPlayer: 1, eventValue: 44, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToHand", relatedEffectId: 1 })]));
 
     activateFirstTrigger(session);
@@ -242,7 +242,7 @@ describe("Lua raised event payloads", () => {
       "queue-restored-payload.lua",
     );
     expect(result.ok, result.error).toBe(true);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventPlayer: 1, eventValue: 99, eventReason: 64, eventReasonPlayer: 1 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 99, eventReason: 64, eventReasonPlayer: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c200.lua" }]);
@@ -313,7 +313,7 @@ describe("Lua raised event payloads", () => {
     const startAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(startAction).toBeDefined();
     expect(applyResponse(session, startAction!).ok).toBe(true);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventPlayer: 1, eventValue: 66, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 66, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }]);
@@ -383,7 +383,7 @@ describe("Lua raised event payloads", () => {
     const startAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(startAction).toBeDefined();
     expect(applyResponse(session, startAction!).ok).toBe(true);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToHand", eventPlayer: 1, eventValue: 33, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToHand", eventCode: 1012, eventPlayer: 1, eventValue: 33, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }]);
