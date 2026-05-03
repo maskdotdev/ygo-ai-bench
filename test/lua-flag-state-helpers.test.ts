@@ -358,6 +358,52 @@ describe("Lua flag state helpers", () => {
     expect(session.state.flagEffects).toHaveLength(0);
   });
 
+  it("expires Lua flag effects at the Battle Step reset boundary", () => {
+    const cards: DuelCardData[] = [
+      { code: "109", name: "Flag Battle Step Attacker", kind: "monster", attack: 1800 },
+      { code: "110", name: "Flag Battle Step Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 146, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["109", "110"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "109");
+    expect(attacker).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c110={}
+      function c110.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Duel.RegisterFlagEffect(0, 929, RESET_PHASE + PHASE_BATTLE_STEP, 0, 1)
+          c:RegisterFlagEffect(930, RESET_PHASE + PHASE_BATTLE_STEP, 0, 1)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flag-battle-step-reset.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([929, 930]);
+
+    enterFlagBattleStep(session, attacker!.uid);
+
+    expect(session.state.battleWindow?.kind).toBe("attackNegationResponse");
+    expect(session.state.flagEffects).toHaveLength(0);
+  });
+
   it("expires Lua flag effects at Damage Step and Damage Calculation reset boundaries", () => {
     const cards: DuelCardData[] = [
       { code: "107", name: "Flag Damage Attacker", kind: "monster", attack: 1800 },
@@ -584,18 +630,22 @@ describe("Lua flag state helpers", () => {
 });
 
 function enterFlagDamageStep(session: ReturnType<typeof createDuel>, attackerUid: string): void {
-  const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
-  expect(battle).toBeDefined();
-  expect(applyResponse(session, battle!).ok).toBe(true);
-  const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attackerUid);
-  expect(attack).toBeDefined();
-  expect(applyResponse(session, attack!).ok).toBe(true);
+  enterFlagBattleStep(session, attackerUid);
   const defenderPass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack");
   expect(defenderPass).toBeDefined();
   expect(applyResponse(session, defenderPass!).ok).toBe(true);
   const attackerPass = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passAttack");
   expect(attackerPass).toBeDefined();
   expect(applyResponse(session, attackerPass!).ok).toBe(true);
+}
+
+function enterFlagBattleStep(session: ReturnType<typeof createDuel>, attackerUid: string): void {
+  const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+  expect(battle).toBeDefined();
+  expect(applyResponse(session, battle!).ok).toBe(true);
+  const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attackerUid);
+  expect(attack).toBeDefined();
+  expect(applyResponse(session, attack!).ok).toBe(true);
 }
 
 function passFlagDamageWindow(session: ReturnType<typeof createDuel>): void {

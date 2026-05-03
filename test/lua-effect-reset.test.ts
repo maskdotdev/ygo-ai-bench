@@ -238,6 +238,42 @@ describe("Lua effect reset", () => {
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect")).toBe(false);
   });
 
+  it("removes Lua RESET_PHASE effects when entering the Battle Step", () => {
+    const { session } = setupLuaChainFixture({
+      seed: 1261,
+      startingHandSize: 2,
+      cards: [
+        { code: "23115", name: "Lua Reset Battle Step Attacker", kind: "monster", attack: 1800 },
+        { code: "23116", name: "Lua Reset Battle Step Source", kind: "monster" },
+        { code: "23215", name: "Lua Reset Battle Step Filler", kind: "monster" },
+      ],
+      decks: {
+        0: { main: ["23115", "23116"] },
+        1: { main: ["23215"] },
+      },
+      expectedEffects: 1,
+      scriptName: "lua-effect-reset-battle-step.lua",
+      script: `
+      c23116={}
+      function c23116.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetReset(RESET_PHASE + PHASE_BATTLE_STEP)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "23115");
+    expect(attacker).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    enterBattleStep(session, attacker!.uid);
+
+    expect(session.state.battleWindow?.kind).toBe("attackNegationResponse");
+    expect(session.state.effects).toHaveLength(0);
+  });
+
   it("removes Lua RESET_PHASE effects when entering the Damage Step", () => {
     const { session } = setupLuaChainFixture({
       seed: 127,
@@ -426,18 +462,22 @@ describe("Lua effect reset", () => {
 });
 
 function enterDamageStep(session: ReturnType<typeof setupLuaChainFixture>["session"], attackerUid: string): void {
-  const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
-  expect(battle).toBeDefined();
-  expect(applyResponse(session, battle!).ok).toBe(true);
-  const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attackerUid);
-  expect(attack).toBeDefined();
-  expect(applyResponse(session, attack!).ok).toBe(true);
+  enterBattleStep(session, attackerUid);
   const defenderPass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack");
   expect(defenderPass).toBeDefined();
   expect(applyResponse(session, defenderPass!).ok).toBe(true);
   const attackerPass = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passAttack");
   expect(attackerPass).toBeDefined();
   expect(applyResponse(session, attackerPass!).ok).toBe(true);
+}
+
+function enterBattleStep(session: ReturnType<typeof setupLuaChainFixture>["session"], attackerUid: string): void {
+  const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+  expect(battle).toBeDefined();
+  expect(applyResponse(session, battle!).ok).toBe(true);
+  const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attackerUid);
+  expect(attack).toBeDefined();
+  expect(applyResponse(session, attack!).ok).toBe(true);
 }
 
 function passDamageWindow(session: ReturnType<typeof setupLuaChainFixture>["session"]): void {

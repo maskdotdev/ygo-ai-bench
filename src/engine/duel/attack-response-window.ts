@@ -11,7 +11,9 @@ export function openAttackResponseWindow(state: DuelState, attackingPlayer: Play
   state.attackPasses = [];
   state.damagePasses = [];
   const responsePlayer = otherPlayer(attackingPlayer);
+  const previousKind = currentBattleWindowKind(state);
   openBattleWindowState(state, "attackNegationResponse", "attack", responsePlayer);
+  pruneBattleSubphaseResets(state, "attackNegationResponse", previousKind);
   state.waitingFor = responsePlayer;
 }
 
@@ -100,9 +102,9 @@ function currentDamageWindowKind(state: DuelState): DamageBattleWindowKind {
   return "startDamageStep";
 }
 
-function pruneBattleSubphaseResets(state: DuelState, kind: DamageBattleWindowKind, previousKind: BattleWindowKind | undefined): void {
+function pruneBattleSubphaseResets(state: DuelState, kind: BattleWindowKind, previousKind: BattleWindowKind | undefined): void {
   if (kind === previousKind) return;
-  const phaseFlag = kind === "startDamageStep" ? 0x20 : kind === "duringDamageCalculation" ? 0x40 : undefined;
+  const phaseFlag = kind === "attackNegationResponse" ? 0x10 : kind === "startDamageStep" ? 0x20 : kind === "duringDamageCalculation" ? 0x40 : undefined;
   if (phaseFlag === undefined) return;
   pruneResetEffectsAfterPhaseFlag(state, phaseFlag);
   pruneDuelFlagEffectsAfterPhaseFlag(state, phaseFlag);
