@@ -49,6 +49,7 @@ describe("Lua battle-start events", () => {
 
     expect(session.state.battleWindow?.kind).toBe("startDamageStep");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleStarted"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1132 });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);

@@ -54,7 +54,7 @@ describe("Lua battle-target events", () => {
     expect(applyResponse(session, attack!).ok).toBe(true);
 
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleTargeted"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: target!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1131, eventCardUid: target!.uid });
     const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);

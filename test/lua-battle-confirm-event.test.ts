@@ -49,13 +49,14 @@ describe("Lua battle-confirm events", () => {
 
     expect(session.state.battleWindow?.kind).toBe("startDamageStep");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleConfirmed"]);
-    expect(session.state.eventHistory.map((event) => event.eventName)).toEqual([
-      "phaseStartBattle",
-      "phaseChanged",
-      "phaseBattle",
-      "attackDeclared",
-      "battleStarted",
-      "battleConfirmed",
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1133 });
+    expect(session.state.eventHistory).toEqual([
+      expect.objectContaining({ eventName: "phaseStartBattle", eventCode: 0x2008 }),
+      expect.objectContaining({ eventName: "phaseChanged" }),
+      expect.objectContaining({ eventName: "phaseBattle", eventCode: 0x1008 }),
+      expect.objectContaining({ eventName: "attackDeclared", eventCode: 1130 }),
+      expect.objectContaining({ eventName: "battleStarted", eventCode: 1132 }),
+      expect.objectContaining({ eventName: "battleConfirmed", eventCode: 1133 }),
     ]);
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");

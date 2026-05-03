@@ -48,7 +48,11 @@ describe("Lua pre-battle-damage events", () => {
 
     expect(session.state.players[1].lifePoints).toBe(6200);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["beforeBattleDamage"]);
-    expect(session.state.eventHistory.map((event) => event.eventName).slice(-2)).toEqual(["beforeBattleDamage", "battleDamageDealt"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1136 });
+    expect(session.state.eventHistory.slice(-2)).toEqual([
+      expect.objectContaining({ eventName: "beforeBattleDamage", eventCode: 1136 }),
+      expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143 }),
+    ]);
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
