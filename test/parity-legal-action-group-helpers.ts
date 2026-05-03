@@ -90,11 +90,15 @@ export const passDamageGroup = (player: 0 | 1, count = 1) => ({
   actions: [{ type: "passDamage" as const, player, count }],
 });
 
-export const turnGroup = () => ({
+export const turnGroup = (windowId?: number) => ({
   player: 0 as const,
   label: "Turn",
+  ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
-  actions: [{ type: "changePhase" as const, player: 0 as const, count: 1 }, { type: "endTurn" as const, player: 0 as const, count: 1 }],
+  actions: [
+    { type: "changePhase" as const, player: 0 as const, ...(windowId === undefined ? {} : { windowId }), count: 1 },
+    { type: "endTurn" as const, player: 0 as const, ...(windowId === undefined ? {} : { windowId }), count: 1 },
+  ],
 });
 
 export const absentTurnGroup = (type: "changePhase" | "endTurn") => ({
