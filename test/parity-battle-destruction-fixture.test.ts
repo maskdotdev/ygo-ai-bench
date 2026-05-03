@@ -29,6 +29,7 @@ describe("EDOPro parity battle destruction fixtures", () => {
             source: "edopro",
             note: "EDOPro opens the attack-response window before resolving equal-ATK battle destruction",
             waitingFor: 1,
+            windowId: 2,
             windowKind: "battle",
             pendingBattle: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },

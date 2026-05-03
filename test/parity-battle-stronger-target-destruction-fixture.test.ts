@@ -29,6 +29,7 @@ describe("EDOPro parity stronger battle target destruction fixtures", () => {
             source: "edopro",
             note: "EDOPro opens the attack-response window before resolving a weaker attacker into a stronger attack-position target",
             waitingFor: 1,
+            windowId: 2,
             windowKind: "battle",
             pendingBattle: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },

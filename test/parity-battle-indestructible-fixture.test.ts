@@ -40,6 +40,7 @@ describe("EDOPro parity battle indestructible fixtures", () => {
             source: "edopro",
             note: "EDOPro opens the normal attack-response window before checking battle destruction prevention",
             waitingFor: 1,
+            windowId: 2,
             windowKind: "battle",
             pendingBattle: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
