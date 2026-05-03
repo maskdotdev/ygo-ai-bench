@@ -164,6 +164,56 @@ describe("Node upstream snapshot restore", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
   });
 
+  it("hides prompt responses when Lua snapshot restore is incomplete", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c) Debug.Message("should not run prompt") end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const session = createDuel({ seed: 8, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    session.state.prompt = { id: "incomplete-lua-prompt", type: "selectOption", player: 1, options: [1, 2], returnTo: 0 };
+    session.state.waitingFor = 1;
+    const snapshot = serializeDuel(session);
+    fs.rmSync(path.join(root, "script", "c100.lua"));
+
+    const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
+
+    expect(restored.restoreComplete).toBe(false);
+    expect(getDuelLegalActions(restored.session, 1).some((candidate) => candidate.type === "selectOption")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
+    const result = applyLuaRestoreResponse(restored, { type: "selectOption", player: 1, promptId: "incomplete-lua-prompt", option: 2, label: "Select option 2" });
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Lua snapshot restore is incomplete: script c100.lua");
+    expect(result.legalActions).toEqual([]);
+    expect(result.legalActionGroups).toEqual([]);
+    expect(restored.session.state.prompt?.id).toBe("incomplete-lua-prompt");
+  });
+
   it("exposes legal actions after complete Lua snapshot restore", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
     tempRoots.push(root);
