@@ -100,6 +100,16 @@ function copyPlaytestAction(action: PlaytestAction): PlaytestAction {
 }
 
 export function applyAction(session: PlaytestSession, action: PlaytestAction): ApplyResult {
+  const beforeActions = getLegalActions(session);
+  if (!beforeActions.some((candidate) => samePlaytestAction(candidate, action))) {
+    return {
+      ok: false,
+      error: "Action is not currently legal",
+      state: publicState(session.engine),
+      legalActions: beforeActions,
+      legalActionGroups: groupLegalActions(beforeActions),
+    };
+  }
   const result = engineApplyAction(session.engine, action);
   const legalActions = getLegalActions(session);
   return {
@@ -108,6 +118,14 @@ export function applyAction(session: PlaytestSession, action: PlaytestAction): A
     legalActions,
     legalActionGroups: groupLegalActions(legalActions),
   };
+}
+
+function samePlaytestAction(a: PlaytestAction, b: PlaytestAction): boolean {
+  if (a.type !== b.type) return false;
+  if (a.type === "end" && b.type === "end") return true;
+  if ("uid" in a && (!("uid" in b) || a.uid !== b.uid)) return false;
+  if (a.type === "activateEffect" && b.type === "activateEffect" && a.effectId !== b.effectId) return false;
+  return true;
 }
 
 export function runPlaytest(session: PlaytestSession, chooseAction: ChooseAction, maxActions = 20): PlaytestSnapshot {

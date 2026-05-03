@@ -48,7 +48,22 @@ describe("engine primitives", () => {
     };
     const result = applyAction(session, secondSummon);
     expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/Normal Summon already used/);
+    expect(result.error).toBe("Action is not currently legal");
+  });
+
+  it("rejects forged playtest actions before dispatch", () => {
+    const session = startPlaytest({
+      deck: [IDS.magiciansRod, IDS.darkMagician],
+      seed: 2,
+      handSize: 2,
+    });
+    const handBefore = session.engine.state.zones.hand.map((card) => card.uid);
+
+    const result = applyAction(session, { type: "activateEffect", uid: handBefore[0]!, effectId: "missing-effect", label: "Forged activation" });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("Action is not currently legal");
+    expect(session.engine.state.zones.hand.map((card) => card.uid)).toEqual(handBefore);
   });
 });
 
