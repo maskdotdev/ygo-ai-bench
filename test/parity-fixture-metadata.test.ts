@@ -50,6 +50,10 @@ describe("parity fixture metadata", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
 
+  it("keeps parity fixture files focused on one observed scenario", () => {
+    expect(parityFixturesWithMultipleScenarios()).toEqual([]);
+  });
+
   it("detects missing source, backlog note, and grouped action metadata in fixture text", () => {
     const lines = [
       "runScriptedDuelFixture({",
@@ -73,6 +77,11 @@ describe("parity fixture metadata", () => {
     expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
     expect(missingLegalActionCountsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
+    expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "  it('one', () => {})", "});"])).toEqual([]);
+    expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "});"])).toEqual(["fixture.ts: expected 1 scenario, found 0"]);
+    expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "  it('one', () => {})", "  it('two', () => {})", "});"])).toEqual([
+      "fixture.ts: expected 1 scenario, found 2",
+    ]);
   });
 });
 
@@ -117,6 +126,10 @@ function missingLegalActionCountCoverage(): string[] {
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
   return parityFixtureFiles().flatMap((file) => parityFixtureWithoutSnapshotRestoreInLines(file, readFixtureLines(file)));
+}
+
+function parityFixturesWithMultipleScenarios(): string[] {
+  return parityFixtureFiles().flatMap((file) => parityFixtureScenarioCountProblem(file, readFixtureLines(file)));
 }
 
 function missingSourcesInLines(file: string, lines: string[]): string[] {
@@ -200,6 +213,11 @@ function missingLegalActionCountsInLines(file: string, lines: string[]): string[
 function parityFixtureWithoutSnapshotRestoreInLines(file: string, lines: string[]): string[] {
   const text = lines.join("\n");
   return text.includes("runScriptedDuelFixture") && !text.includes("snapshotRestore") ? [file] : [];
+}
+
+function parityFixtureScenarioCountProblem(file: string, lines: string[]): string[] {
+  const scenarioCount = lines.filter((line) => /^\s+it\(/.test(line)).length;
+  return scenarioCount === 1 ? [] : [`${file}: expected 1 scenario, found ${scenarioCount}`];
 }
 
 function parityFixtureFiles(): string[] {
