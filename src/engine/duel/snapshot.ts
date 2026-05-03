@@ -47,7 +47,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
     },
     cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
     chain: state.chain.map(copyPublicChainLink),
-    pendingTriggers: state.pendingTriggers.map((trigger) => ({ ...trigger })),
+    pendingTriggers: state.pendingTriggers.map(copyPendingTrigger),
     activityCounts: copyDuelActivityCounts(state.activityCounts),
     attacksDeclared: [...state.attacksDeclared],
     attackCanceledUids: [...state.attackCanceledUids],
@@ -76,8 +76,8 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       chain: session.state.chain.map(copyPublicChainLink),
       chainLimits: session.state.chainLimits.flatMap(serializeChainLimit),
       chainPasses: [...session.state.chainPasses],
-      pendingTriggers: session.state.pendingTriggers.map((trigger) => ({ ...trigger })),
-      eventHistory: session.state.eventHistory.map((event) => ({ ...event })),
+      pendingTriggers: session.state.pendingTriggers.map(copyPendingTrigger),
+      eventHistory: session.state.eventHistory.map(copyEventRecord),
       usedCountKeys: [...session.state.usedCountKeys],
       flagEffects: session.state.flagEffects.map((flag) => ({ ...flag })),
       skippedPhases: session.state.skippedPhases.map((skip) => ({ ...skip })),
@@ -125,8 +125,8 @@ export function restoreDuel(
     chain: snapshot.state.chain.map(copyChainLink),
     chainLimits: snapshot.state.chainLimits.flatMap((limit) => restoreChainLimit(limit, chainLimitRegistry)),
     chainPasses: [...snapshot.state.chainPasses],
-    pendingTriggers: snapshot.state.pendingTriggers.map((trigger) => ({ ...trigger })),
-    eventHistory: snapshot.state.eventHistory.map((event) => ({ ...event })),
+    pendingTriggers: snapshot.state.pendingTriggers.map(copyPendingTrigger),
+    eventHistory: snapshot.state.eventHistory.map(copyEventRecord),
     usedCountKeys: [...snapshot.state.usedCountKeys],
     flagEffects: snapshot.state.flagEffects.map((flag) => ({ ...flag })),
     duelTypeFlags: snapshot.state.duelTypeFlags ?? (0x2000 | 0x4000 | 0x8000 | 0x20000),
@@ -790,12 +790,28 @@ function denyChainLimit(_effect: DuelEffectDefinition, _player: PlayerId, _chain
 }
 
 function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][number] {
-  return { ...link, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };
+  return {
+    ...link,
+    ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
+    ...(link.eventUids === undefined ? {} : { eventUids: [...link.eventUids] }),
+  };
 }
 
 function copyPublicChainLink(link: DuelState["chain"][number]): PublicChainLink {
   const { operationOverride: _operationOverride, ...publicLink } = link;
-  return { ...publicLink, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };
+  return {
+    ...publicLink,
+    ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
+    ...(link.eventUids === undefined ? {} : { eventUids: [...link.eventUids] }),
+  };
+}
+
+function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): DuelState["pendingTriggers"][number] {
+  return { ...trigger, ...(trigger.eventUids === undefined ? {} : { eventUids: [...trigger.eventUids] }) };
+}
+
+function copyEventRecord(event: DuelState["eventHistory"][number]): DuelState["eventHistory"][number] {
+  return { ...event, ...(event.eventUids === undefined ? {} : { eventUids: [...event.eventUids] }) };
 }
 
 function copyCard(card: DuelCardInstance): DuelCardInstance {

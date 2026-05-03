@@ -106,6 +106,31 @@ describe("duel snapshot persistence", () => {
     expect(session.state.chain[0]?.targetUids).toEqual(["target-a"]);
   });
 
+  it("copies event uid arrays out of public and serialized state", () => {
+    const session = createDuel({ seed: 140, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.chain = [{ id: "chain-1", player: 0, sourceUid, effectId: "effect", eventUids: [sourceUid] }];
+    session.state.pendingTriggers = [{ id: "trigger-1", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional", eventUids: [sourceUid] }];
+    session.state.eventHistory = [{ eventName: "customEvent", eventUids: [sourceUid] }];
+
+    const publicState = queryPublicState(session);
+    const serialized = serializeDuel(session);
+    publicState.chain[0]!.eventUids!.push("public-mutation");
+    publicState.pendingTriggers[0]!.eventUids!.push("public-mutation");
+    serialized.state.chain[0]!.eventUids!.push("serialized-mutation");
+    serialized.state.pendingTriggers[0]!.eventUids!.push("serialized-mutation");
+    serialized.state.eventHistory[0]!.eventUids!.push("serialized-mutation");
+
+    expect(session.state.chain[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.pendingTriggers[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.eventHistory[0]?.eventUids).toEqual([sourceUid]);
+  });
+
   it("preserves static continuous effects across snapshots", () => {
     const session = createDuel({ seed: 95, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

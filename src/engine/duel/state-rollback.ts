@@ -66,8 +66,8 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     chain: state.chain.map(copyChainLink),
     chainLimits: state.chainLimits.map((limit) => ({ ...limit })),
     chainPasses: [...state.chainPasses],
-    pendingTriggers: state.pendingTriggers.map((trigger) => ({ ...trigger })),
-    eventHistory: state.eventHistory.map((event) => ({ ...event })),
+    pendingTriggers: state.pendingTriggers.map(copyPendingTrigger),
+    eventHistory: state.eventHistory.map(copyEventRecord),
     usedCountKeys: [...state.usedCountKeys],
     flagEffects: state.flagEffects.map((effect) => ({ ...effect })),
     duelTypeFlags: state.duelTypeFlags,
@@ -116,8 +116,8 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.chain = rollback.chain.map(copyChainLink);
   state.chainLimits = rollback.chainLimits.map((limit) => ({ ...limit }));
   state.chainPasses = [...rollback.chainPasses];
-  state.pendingTriggers = rollback.pendingTriggers.map((trigger) => ({ ...trigger }));
-  state.eventHistory = rollback.eventHistory.map((event) => ({ ...event }));
+  state.pendingTriggers = rollback.pendingTriggers.map(copyPendingTrigger);
+  state.eventHistory = rollback.eventHistory.map(copyEventRecord);
   state.usedCountKeys = [...rollback.usedCountKeys];
   state.flagEffects = rollback.flagEffects.map((effect) => ({ ...effect }));
   state.duelTypeFlags = rollback.duelTypeFlags;
@@ -197,7 +197,19 @@ function copyEffect(effect: DuelEffectDefinition): DuelEffectDefinition {
 }
 
 function copyChainLink(link: ChainLink): ChainLink {
-  return { ...link, ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}) };
+  return {
+    ...link,
+    ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}),
+    ...(link.eventUids ? { eventUids: [...link.eventUids] } : {}),
+  };
+}
+
+function copyPendingTrigger(trigger: PendingTrigger): PendingTrigger {
+  return { ...trigger, ...(trigger.eventUids ? { eventUids: [...trigger.eventUids] } : {}) };
+}
+
+function copyEventRecord(event: DuelEventRecord): DuelEventRecord {
+  return { ...event, ...(event.eventUids ? { eventUids: [...event.eventUids] } : {}) };
 }
 
 function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {

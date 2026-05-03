@@ -365,6 +365,34 @@ describe("duel rollback", () => {
     expect(session.state.chain[0]?.targetUids).toEqual(["target-a", "target-b"]);
   });
 
+  it("rolls back nested event uid arrays without sharing rollback objects", () => {
+    const session = createDuel({ seed: 134, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.chain = [{ id: "chain-1", player: 0, sourceUid, effectId: "effect", eventUids: [sourceUid] }];
+    session.state.pendingTriggers = [{ id: "trigger-1", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional", eventUids: [sourceUid] }];
+    session.state.eventHistory = [{ eventName: "customEvent", eventUids: [sourceUid] }];
+    const rollback = captureDuelState(session.state);
+
+    session.state.chain[0]!.eventUids!.push("chain-mutation");
+    session.state.pendingTriggers[0]!.eventUids!.push("trigger-mutation");
+    session.state.eventHistory[0]!.eventUids!.push("history-mutation");
+    restoreDuelState(session.state, rollback);
+    expect(session.state.chain[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.pendingTriggers[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.eventHistory[0]?.eventUids).toEqual([sourceUid]);
+    rollback.chain[0]!.eventUids!.push("rollback-chain-mutation");
+    rollback.pendingTriggers[0]!.eventUids!.push("rollback-trigger-mutation");
+    rollback.eventHistory[0]!.eventUids!.push("rollback-history-mutation");
+    expect(session.state.chain[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.pendingTriggers[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.eventHistory[0]?.eventUids).toEqual([sourceUid]);
+  });
+
   it("rolls back nested card state without sharing rollback objects", () => {
     const session = createDuel({ seed: 133, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
