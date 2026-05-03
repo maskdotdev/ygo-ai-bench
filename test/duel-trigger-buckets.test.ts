@@ -331,6 +331,54 @@ describe("duel trigger buckets", () => {
     ]);
   });
 
+  it("restores optional trigger decline actions and applies the restored decline", () => {
+    const { session, summoned, turnFirst, turnSecond } = setupTriggerBucketFixture();
+    const withOperation = (effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition => ({
+      ...effect,
+      operation(ctx) {
+        ctx.log(`${effect.id} resolved`);
+      },
+    });
+
+    registerEffect(session, withOperation({
+      id: "first-restored-decline-optional",
+      registryKey: "first-restored-decline-optional",
+      sourceUid: turnFirst.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+    }));
+    registerEffect(session, withOperation({
+      id: "second-restored-decline-optional",
+      registryKey: "second-restored-decline-optional",
+      sourceUid: turnSecond.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+    }));
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "first-restored-decline-optional": withOperation,
+      "second-restored-decline-optional": withOperation,
+    });
+    expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    const decline = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "first-restored-decline-optional");
+    expect(decline).toBeTruthy();
+
+    const result = applyResponse(restored, decline!);
+    expect(result.ok).toBe(true);
+    expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-restored-decline-optional"]);
+    expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-restored-decline-optional"]);
+    expect(restored.state.log.some((entry) => entry.detail === "first-restored-decline-optional resolved")).toBe(false);
+  });
+
   it("restores mandatory bucket handoff without adding decline actions", () => {
     const { session, summoned, turnFirst, turnSecond, opponent } = setupTriggerBucketFixture();
     const withOperation = (effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition => ({
