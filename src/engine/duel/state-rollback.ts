@@ -1,5 +1,5 @@
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
-import type { ChainLimit, ChainLink, DuelBattlePair, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelState, PendingTrigger, PlayerId } from "#duel/types.js";
+import type { ChainLimit, ChainLink, DuelBattlePair, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelPromptState, DuelState, PendingTrigger, PlayerId } from "#duel/types.js";
 
 export interface DuelStateRollback {
   status: DuelState["status"];
@@ -101,7 +101,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     pendingBattle: state.pendingBattle
       ? { ...state.pendingBattle, ...(state.pendingBattle.battleDamageOverrides ? { battleDamageOverrides: { ...state.pendingBattle.battleDamageOverrides } } : {}) }
       : undefined,
-    prompt: state.prompt ? { ...state.prompt } : undefined,
+    prompt: state.prompt ? copyPrompt(state.prompt) : undefined,
     waitingFor: state.waitingFor,
     log: state.log.map((entry) => ({ ...entry })),
   };
@@ -154,9 +154,14 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   else delete state.currentAttack;
   if (rollback.pendingBattle) state.pendingBattle = rollback.pendingBattle;
   else delete state.pendingBattle;
-  if (rollback.prompt) state.prompt = rollback.prompt;
+  if (rollback.prompt) state.prompt = copyPrompt(rollback.prompt);
   else delete state.prompt;
   if (rollback.waitingFor !== undefined) state.waitingFor = rollback.waitingFor;
   else delete state.waitingFor;
   state.log = rollback.log;
+}
+
+function copyPrompt(prompt: DuelPromptState): DuelPromptState {
+  if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options] };
+  return { ...prompt };
 }

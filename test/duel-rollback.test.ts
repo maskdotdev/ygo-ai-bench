@@ -16,6 +16,7 @@ import {
 } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
+import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { cards, findPublicCard, setupFailedMoveAfterFirstFixture } from "./full-duel-engine-fixtures.js";
 
 describe("duel rollback", () => {
@@ -208,6 +209,25 @@ describe("duel rollback", () => {
     expect(result.error).toContain("Targets for failed-target-card-counter are not legal");
     expect(session.state.cards.find((card) => card.uid === counterTarget!.uid)?.counters).toBeUndefined();
     expect(session.state.chain).toHaveLength(0);
+  });
+
+  it("rolls back nested prompt options", () => {
+    const session = createDuel({ seed: 129, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.prompt = { id: "rollback-options", type: "selectOption", player: 0, options: [1, 2], returnTo: 0 };
+    const rollback = captureDuelState(session.state);
+
+    session.state.prompt.options.push(3);
+    restoreDuelState(session.state, rollback);
+    if (session.state.prompt?.type !== "selectOption") throw new Error("Expected select-option prompt");
+
+    expect(session.state.prompt.options).toEqual([1, 2]);
+    rollback.prompt && rollback.prompt.type === "selectOption" && rollback.prompt.options.push(4);
+    expect(session.state.prompt.options).toEqual([1, 2]);
   });
 
   it("rolls back failed trigger activation costs and keeps the trigger pending", () => {
