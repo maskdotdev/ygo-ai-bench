@@ -20,7 +20,10 @@ describe("EDOPro parity summon and set lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits Normal Summon actions for monsters affected by CANNOT_SUMMON while still allowing legal Sets",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "setMonster", player: 0, code: "100", location: "hand", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -80,7 +83,10 @@ describe("EDOPro parity summon and set lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits Tribute Summon actions for high-level monsters affected by CANNOT_SUMMON",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -136,7 +142,10 @@ describe("EDOPro parity summon and set lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits Monster Set actions for monsters affected by CANNOT_MSET while still allowing legal Normal Summons",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -196,7 +205,10 @@ describe("EDOPro parity summon and set lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits Set actions for Spell/Trap cards affected by CANNOT_SSET",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
