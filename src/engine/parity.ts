@@ -117,8 +117,12 @@ function assertSnapshotRestore(
   if (restored.state.actionWindowId !== session.state.actionWindowId) {
     failures.push({ fixture, message: `${context}: snapshot/restore changed actionWindowId from ${session.state.actionWindowId} to ${restored.state.actionWindowId}` });
   }
+  assertSnapshotJsonEqual("battleStep", session.state.battleStep, restored.state.battleStep, fixture, context, failures);
+  assertSnapshotJsonEqual("battleWindow", session.state.battleWindow, restored.state.battleWindow, fixture, context, failures);
   assertSnapshotJsonEqual("pendingBattle", session.state.pendingBattle, restored.state.pendingBattle, fixture, context, failures);
   assertSnapshotJsonEqual("currentAttack", session.state.currentAttack, restored.state.currentAttack, fixture, context, failures);
+  assertSnapshotJsonEqual("prompt", session.state.prompt, restored.state.prompt, fixture, context, failures);
+  assertSnapshotJsonEqual("pendingTriggers", session.state.pendingTriggers, restored.state.pendingTriggers, fixture, context, failures);
   assertSnapshotJsonEqual("eventHistory", session.state.eventHistory, restored.state.eventHistory, fixture, context, failures);
   assertSnapshotJsonEqual("chainLimits", chainLimitMetadata(session.state.chainLimits), chainLimitMetadata(restored.state.chainLimits), fixture, context, failures);
   assertSnapshotJsonEqual("chainPasses", session.state.chainPasses, restored.state.chainPasses, fixture, context, failures);
