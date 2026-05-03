@@ -53,7 +53,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro gives the turn player the next start damage step response and exposes damage-step fast effects",
@@ -101,7 +101,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro continues normal damage-step progression after the quick effect window resolves",
