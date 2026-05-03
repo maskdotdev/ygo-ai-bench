@@ -46,6 +46,10 @@ describe("parity fixture metadata", () => {
     expect(missingLegalActionCountCoverage()).toEqual([]);
   });
 
+  it("requires open-window legal-action expectations to pin window ids", () => {
+    expect(missingOpenLegalActionWindowIds()).toEqual([]);
+  });
+
   it("requires parity fixtures to exercise snapshot restore coverage", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
@@ -76,6 +80,9 @@ describe("parity fixture metadata", () => {
     expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 6), "  source: 'parity-backlog',", '  note: "temporary local behavior",', ...lines.slice(8)])).toEqual(["fixture.ts:7"]);
     expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
     expect(missingLegalActionCountsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
+    expect(missingOpenLegalActionWindowIdsInLines("fixture.ts", [...lines.slice(0, 4), '  legalActions: [{ type: "endTurn", player: 0, windowKind: "open" }],', ...lines.slice(4)])).toEqual([
+      "fixture.ts:5",
+    ]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "  it('one', () => {})", "});"])).toEqual([]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "});"])).toEqual(["fixture.ts: expected 1 scenario, found 0"]);
@@ -122,6 +129,10 @@ function missingAbsentLegalActionGroupCoverage(): string[] {
 
 function missingLegalActionCountCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingLegalActionCountsInLines(file, readFixtureLines(file)));
+}
+
+function missingOpenLegalActionWindowIds(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingOpenLegalActionWindowIdsInLines(file, readFixtureLines(file)));
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
@@ -208,6 +219,16 @@ function missingLegalActionCountsInLines(file: string, lines: string[]): string[
     if (block.includes("legalActionGroups:") && !block.includes("legalActionGroupCounts:")) missingCounts.push(`${file}:${index + 1}`);
   });
   return [...new Set(missingCounts)];
+}
+
+function missingOpenLegalActionWindowIdsInLines(file: string, lines: string[]): string[] {
+  const missingWindowIds: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/(legalActions|absentLegalActions):/.test(line) || !/windowKind:\s*["']open["']/.test(line)) return;
+    const openActionObjects = line.match(/\{[^{}]*windowKind:\s*["']open["'][^{}]*\}/g) ?? [];
+    if (openActionObjects.some((action) => !/\bwindowId:/.test(action))) missingWindowIds.push(`${file}:${index + 1}`);
+  });
+  return missingWindowIds;
 }
 
 function parityFixtureWithoutSnapshotRestoreInLines(file: string, lines: string[]): string[] {
