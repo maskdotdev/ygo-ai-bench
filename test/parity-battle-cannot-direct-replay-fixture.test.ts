@@ -64,7 +64,7 @@ describe("EDOPro parity battle cannot-direct replay fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-remove-cannot-direct-target" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps the attack-response window active after the attack target leaves",
