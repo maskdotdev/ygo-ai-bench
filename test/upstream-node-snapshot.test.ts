@@ -477,6 +477,12 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(["lua-1"]);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
+    const restorePass = applyLuaRestoreResponse(restored, { type: "passChain", player: 1, label: "Pass" });
+    expect(restorePass.ok).toBe(false);
+    expect(restorePass.error).toContain("Lua snapshot restore is incomplete: script c100.lua");
+    expect(restorePass.legalActions).toEqual([]);
+    expect(restorePass.legalActionGroups).toEqual([]);
+    expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(["lua-1"]);
   });
 
   it("filters Lua effects not present in the restored snapshot", () => {
