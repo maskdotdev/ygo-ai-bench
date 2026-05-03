@@ -50,6 +50,10 @@ describe("parity fixture metadata", () => {
     expect(missingOpenLegalActionWindowIds()).toEqual([]);
   });
 
+  it("requires open-window legal-action group expectations to pin window ids", () => {
+    expect(missingOpenLegalActionGroupWindowIds()).toEqual([]);
+  });
+
   it("requires parity fixtures to exercise snapshot restore coverage", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
@@ -83,6 +87,19 @@ describe("parity fixture metadata", () => {
     expect(missingOpenLegalActionWindowIdsInLines("fixture.ts", [...lines.slice(0, 4), '  legalActions: [{ type: "endTurn", player: 0, windowKind: "open" }],', ...lines.slice(4)])).toEqual([
       "fixture.ts:5",
     ]);
+    expect(
+      missingOpenLegalActionGroupWindowIdsInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  legalActionGroups: [",
+        "    {",
+        '      label: "Turn",',
+        '      windowKind: "open",',
+        '      actions: [{ type: "endTurn", player: 0, windowId: 1, windowKind: "open" }],',
+        "    },",
+        "  ],",
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:6"]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "  it('one', () => {})", "});"])).toEqual([]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "});"])).toEqual(["fixture.ts: expected 1 scenario, found 0"]);
@@ -133,6 +150,10 @@ function missingLegalActionCountCoverage(): string[] {
 
 function missingOpenLegalActionWindowIds(): string[] {
   return parityFixtureFiles().flatMap((file) => missingOpenLegalActionWindowIdsInLines(file, readFixtureLines(file)));
+}
+
+function missingOpenLegalActionGroupWindowIds(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingOpenLegalActionGroupWindowIdsInLines(file, readFixtureLines(file)));
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
@@ -229,6 +250,19 @@ function missingOpenLegalActionWindowIdsInLines(file: string, lines: string[]): 
     if (openActionObjects.some((action) => !/\bwindowId:/.test(action))) missingWindowIds.push(`${file}:${index + 1}`);
   });
   return missingWindowIds;
+}
+
+function missingOpenLegalActionGroupWindowIdsInLines(file: string, lines: string[]): string[] {
+  const missingWindowIds: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/label:\s*["']/.test(line)) return;
+    const groupBlock = expectationBlock(lines, index);
+    if (!/windowKind:\s*["']open["']/.test(groupBlock)) return;
+    if (!/actions:\s*\[/.test(groupBlock)) return;
+    const header = groupBlock.split("actions:")[0] ?? "";
+    if (!/\bwindowId:/.test(header)) missingWindowIds.push(`${file}:${findBlockStart(lines, index) + 1}`);
+  });
+  return [...new Set(missingWindowIds)];
 }
 
 function parityFixtureWithoutSnapshotRestoreInLines(file: string, lines: string[]): string[] {
