@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
-import { raiseDuelEvent } from "#duel/core.js";
+import { collectDuelTriggerEffects, raiseDuelEvent } from "#duel/core.js";
 import { createRng } from "#engine/rng.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
 
@@ -42,7 +42,7 @@ function pushTossDice(L: unknown, session: DuelSession): number {
   }
   session.state.lastDiceResults = results;
   pushDuelLog(session.state, "tossDice", player === 1 ? 1 : 0, undefined, results.join(","));
-  raiseDuelEvent(session.state, "diceTossed");
+  collectDuelTriggerEffects(session.state, "diceTossed", undefined, { eventPlayer: normalizePlayer(player), eventValue: results.length });
   for (const result of results) lua.lua_pushinteger(L, result);
   return results.length;
 }
@@ -70,7 +70,7 @@ function pushTossCoin(L: unknown, session: DuelSession): number {
   for (let index = 0; index < count; index += 1) results.push(tossCoin(session));
   session.state.lastCoinResults = results;
   pushDuelLog(session.state, "tossCoin", player === 1 ? 1 : 0, undefined, results.join(","));
-  raiseDuelEvent(session.state, "coinTossed");
+  collectDuelTriggerEffects(session.state, "coinTossed", undefined, { eventPlayer: normalizePlayer(player), eventValue: results.length });
   for (const result of results) lua.lua_pushinteger(L, result);
   return results.length;
 }
@@ -96,7 +96,7 @@ function pushCallCoin(L: unknown, session: DuelSession): number {
   const result = tossCoin(session);
   session.state.lastCoinResults = [result];
   pushDuelLog(session.state, "callCoin", player === 1 ? 1 : 0, undefined, `${call}/${result}`);
-  raiseDuelEvent(session.state, "coinTossed");
+  collectDuelTriggerEffects(session.state, "coinTossed", undefined, { eventPlayer: normalizePlayer(player), eventValue: 1 });
   lua.lua_pushboolean(L, call === result);
   return 1;
 }
@@ -127,6 +127,10 @@ function pushCountTails(L: unknown): number {
   }
   lua.lua_pushinteger(L, count);
   return 1;
+}
+
+function normalizePlayer(player: number): PlayerId {
+  return player === 1 ? 1 : 0;
 }
 
 function readIntegerResults(L: unknown): number[] {
