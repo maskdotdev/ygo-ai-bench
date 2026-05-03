@@ -51,6 +51,31 @@ describe("duel snapshot persistence", () => {
     expect(restored.state.skippedPhases).toEqual([]);
   });
 
+  it("deep-copies replay target sets across snapshots", () => {
+    const session = createDuel({ seed: 181, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = session.state.cards[0]!.uid;
+    const targetUid = session.state.cards[1]!.uid;
+    session.state.currentAttack = { attackerUid, targetUid, replayTargetCount: 1, replayTargetUids: [targetUid] };
+    session.state.pendingBattle = { attackerUid, targetUid, replayTargetCount: 1, replayTargetUids: [targetUid] };
+
+    const snapshot = serializeDuel(session);
+    snapshot.state.currentAttack!.replayTargetUids!.push("snapshot-mutation");
+    snapshot.state.pendingBattle!.replayTargetUids!.push("snapshot-mutation");
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    restored.state.currentAttack!.replayTargetUids!.push("restore-mutation");
+    restored.state.pendingBattle!.replayTargetUids!.push("restore-mutation");
+
+    expect(session.state.currentAttack.replayTargetUids).toEqual([targetUid]);
+    expect(session.state.pendingBattle.replayTargetUids).toEqual([targetUid]);
+    expect(serializeDuel(session).state.currentAttack!.replayTargetUids).toEqual([targetUid]);
+    expect(serializeDuel(session).state.pendingBattle!.replayTargetUids).toEqual([targetUid]);
+  });
+
   it("keeps internal chain operation overrides out of public and serialized state", () => {
     const session = createDuel({ seed: 128, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

@@ -579,12 +579,16 @@ describe("duel snapshot restore shape validation", () => {
     });
     startDuel(session);
     const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const targetUid = serializeDuel(session).state.cards[1]!.uid;
     const badCurrentAttack = serializeDuel(session);
+    const badReplayTargets = serializeDuel(session);
     const badPendingBattle = serializeDuel(session);
     badCurrentAttack.state.currentAttack = { attackerUid, replayTargetCount: "two" as unknown as number };
+    badReplayTargets.state.currentAttack = { attackerUid, replayTargetUids: [targetUid, "missing"] };
     badPendingBattle.state.pendingBattle = { attackerUid, battleDamageOverrides: { 2: 100 } as unknown as Record<0 | 1, number> };
 
     expect(() => restoreDuel(badCurrentAttack, createCardReader(cards))).toThrow("Malformed duel snapshot: state.currentAttack.replayTargetCount must be a number");
+    expect(() => restoreDuel(badReplayTargets, createCardReader(cards))).toThrow("Malformed duel snapshot: state.currentAttack.replayTargetUids.1 must reference a card");
     expect(() => restoreDuel(badPendingBattle, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.battleDamageOverrides must use player ids");
   });
 });
