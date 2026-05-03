@@ -66,6 +66,21 @@ describe("engine primitives", () => {
     expect(session.engine.state.zones.hand.map((card) => card.uid)).toEqual(handBefore);
   });
 
+  it("rejects malformed playtest actions without throwing", () => {
+    const session = startPlaytest({
+      deck: [IDS.magiciansRod, IDS.darkMagician],
+      seed: 2,
+      handSize: 2,
+    });
+    const handBefore = session.engine.state.zones.hand.map((card) => card.uid);
+
+    const result = applyAction(session, null as never);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("Action is not currently legal");
+    expect(session.engine.state.zones.hand.map((card) => card.uid)).toEqual(handBefore);
+  });
+
   it("copies nested public playtest state away from engine state", () => {
     const session = startPlaytest({
       deck: [IDS.magiciansRod, IDS.darkMagician],

@@ -101,7 +101,8 @@ function copyPlaytestAction(action: PlaytestAction): PlaytestAction {
 
 export function applyAction(session: PlaytestSession, action: PlaytestAction): ApplyResult {
   const beforeActions = getLegalActions(session);
-  if (!beforeActions.some((candidate) => samePlaytestAction(candidate, action))) {
+  const canonicalAction = beforeActions.find((candidate) => samePlaytestAction(candidate, action));
+  if (!canonicalAction) {
     return {
       ok: false,
       error: "Action is not currently legal",
@@ -110,7 +111,7 @@ export function applyAction(session: PlaytestSession, action: PlaytestAction): A
       legalActionGroups: groupLegalActions(beforeActions),
     };
   }
-  const result = engineApplyAction(session.engine, action);
+  const result = engineApplyAction(session.engine, canonicalAction);
   const legalActions = getLegalActions(session);
   return {
     ...result,
@@ -120,12 +121,17 @@ export function applyAction(session: PlaytestSession, action: PlaytestAction): A
   };
 }
 
-function samePlaytestAction(a: PlaytestAction, b: PlaytestAction): boolean {
+function samePlaytestAction(a: PlaytestAction, b: unknown): b is PlaytestAction {
+  if (!isRecord(b) || typeof b.type !== "string") return false;
   if (a.type !== b.type) return false;
   if (a.type === "end" && b.type === "end") return true;
   if ("uid" in a && (!("uid" in b) || a.uid !== b.uid)) return false;
   if (a.type === "activateEffect" && b.type === "activateEffect" && a.effectId !== b.effectId) return false;
   return true;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 export function runPlaytest(session: PlaytestSession, chooseAction: ChooseAction, maxActions = 20): PlaytestSnapshot {
