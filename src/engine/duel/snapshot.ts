@@ -115,8 +115,9 @@ export function restoreDuel(
   options: DuelRestoreOptions = {},
 ): DuelSession {
   assertRestorableSnapshot(snapshot);
+  const { pendingTriggerBuckets: _pendingTriggerBuckets, ...restorableState } = snapshot.state;
   const state: DuelState = {
-    ...snapshot.state,
+    ...restorableState,
     players: {
       0: { ...snapshot.state.players[0] },
       1: { ...snapshot.state.players[1] },

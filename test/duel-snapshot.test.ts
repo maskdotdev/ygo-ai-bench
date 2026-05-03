@@ -156,7 +156,10 @@ describe("duel snapshot persistence", () => {
       { triggerBucket: "opponentOptional", player: 1, triggerIds: ["opponent-optional"] },
     ]);
     expect(serializeDuel(session).state.pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
-    expect(restoreDuel(serializeDuel(session), createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false }).state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false });
+    expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect("pendingTriggerBuckets" in restored.state).toBe(false);
+    expect(queryPublicState(restored).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
   });
 
   it("copies prompt options out of public and serialized state", () => {
