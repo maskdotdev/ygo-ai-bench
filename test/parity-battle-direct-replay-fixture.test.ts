@@ -97,7 +97,7 @@ describe("EDOPro parity battle direct replay fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("replayAttack", 0, { attackerUid: "p0-deck-100-0" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro exposes no-target replayAttack as the direct replay choice",
