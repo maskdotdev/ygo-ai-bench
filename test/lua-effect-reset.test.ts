@@ -200,6 +200,44 @@ describe("Lua effect reset", () => {
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect")).toBe(false);
   });
 
+  it("removes Lua RESET_PHASE effects when entering Battle Start", () => {
+    const { session } = setupLuaChainFixture({
+      seed: 126,
+      startingHandSize: 1,
+      cards: [
+        { code: "23110", name: "Lua Reset Battle Start Source", kind: "monster" },
+        { code: "23210", name: "Lua Reset Battle Start Filler", kind: "monster" },
+      ],
+      decks: {
+        0: { main: ["23110"] },
+        1: { main: ["23210"] },
+      },
+      expectedEffects: 1,
+      scriptName: "lua-effect-reset-battle-start.lua",
+      script: `
+      c23110={}
+      function c23110.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetReset(RESET_PHASE + PHASE_BATTLE_START)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua battle-start reset should not resolve")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect")).toBe(true);
+
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+
+    expect(session.state.effects).toHaveLength(0);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect")).toBe(false);
+  });
+
   it("removes Lua RESET_CHAIN effects after their chain resolves", () => {
     const { session } = setupLuaChainFixture({
       seed: 129,

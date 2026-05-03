@@ -21,6 +21,7 @@ export function normalizeResetFlags(flags: number): number {
 }
 
 export function phaseResetFlag(phase: DuelPhase): number {
+  if (phase === "battle") return phaseMask(phase) | 0x8;
   return phaseMask(phase);
 }
 
