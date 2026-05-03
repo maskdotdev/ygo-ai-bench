@@ -215,10 +215,10 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   }
   assertSnapshotChainLimits(state.chainLimits);
   assertSnapshotSkippedPhases(state.skippedPhases);
-  assertSnapshotActivityHistory(state.activityHistory);
-  assertSnapshotFlagEffects(state.flagEffects);
   assertSnapshotLog(state.log);
   const cardUids = assertSnapshotCards(state.cards);
+  assertSnapshotActivityHistory(state.activityHistory, cardUids);
+  assertSnapshotFlagEffects(state.flagEffects, cardUids);
   for (const field of ["attacksDeclared", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
     assertSnapshotCardUidArray(state[field], `state.${field}`, cardUids);
   }
@@ -391,7 +391,7 @@ function assertSnapshotSkippedPhases(skips: unknown): void {
   }
 }
 
-function assertSnapshotActivityHistory(records: unknown): void {
+function assertSnapshotActivityHistory(records: unknown, cardUids: ReadonlySet<string>): void {
   if (!Array.isArray(records)) throw new Error("Malformed duel snapshot: state.activityHistory must be an array");
   for (const [index, record] of records.entries()) {
     const path = `state.activityHistory.${index}`;
@@ -399,16 +399,19 @@ function assertSnapshotActivityHistory(records: unknown): void {
     assertSnapshotPlayerId(record.player, `${path}.player`);
     if (typeof record.activity !== "number") throw new Error(`Malformed duel snapshot: ${path}.activity must be a number`);
     if (record.cardUid !== undefined && typeof record.cardUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.cardUid must be a string`);
+    if (record.cardUid !== undefined && !cardUids.has(record.cardUid)) throw new Error(`Malformed duel snapshot: ${path}.cardUid must reference a card`);
   }
 }
 
-function assertSnapshotFlagEffects(flags: unknown): void {
+function assertSnapshotFlagEffects(flags: unknown, cardUids: ReadonlySet<string>): void {
   if (!Array.isArray(flags)) throw new Error("Malformed duel snapshot: state.flagEffects must be an array");
   for (const [index, flag] of flags.entries()) {
     const path = `state.flagEffects.${index}`;
     if (!isRecord(flag)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
     if (flag.ownerType !== "player" && flag.ownerType !== "card") throw new Error(`Malformed duel snapshot: ${path}.ownerType must be a flag owner type`);
     if (typeof flag.ownerId !== "string") throw new Error(`Malformed duel snapshot: ${path}.ownerId must be a string`);
+    if (flag.ownerType === "player" && flag.ownerId !== "0" && flag.ownerId !== "1") throw new Error(`Malformed duel snapshot: ${path}.ownerId must be a player id`);
+    if (flag.ownerType === "card" && !cardUids.has(flag.ownerId)) throw new Error(`Malformed duel snapshot: ${path}.ownerId must reference a card`);
     for (const field of ["code", "reset", "property", "value", "turn"] as const) {
       if (typeof flag[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
     }

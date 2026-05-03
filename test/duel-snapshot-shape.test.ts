@@ -360,6 +360,19 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badActivity, createCardReader(cards))).toThrow("Malformed duel snapshot: state.activityHistory.0.activity must be a number");
   });
 
+  it("rejects missing activity history card references before restore", () => {
+    const session = createDuel({ seed: 171, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    snapshot.state.activityHistory = [{ player: 0, activity: 1, cardUid: "missing" }];
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.activityHistory.0.cardUid must reference a card");
+  });
+
   it("rejects malformed flag and log snapshots before restore", () => {
     const session = createDuel({ seed: 156, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -374,6 +387,22 @@ describe("duel snapshot restore shape validation", () => {
 
     expect(() => restoreDuel(badFlag, createCardReader(cards))).toThrow("Malformed duel snapshot: state.flagEffects.0.ownerType must be a flag owner type");
     expect(() => restoreDuel(badLog, createCardReader(cards))).toThrow("Malformed duel snapshot: state.log.0.player must be a player id");
+  });
+
+  it("rejects malformed flag owner snapshots before restore", () => {
+    const session = createDuel({ seed: 172, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badPlayer = serializeDuel(session);
+    const badCard = serializeDuel(session);
+    badPlayer.state.flagEffects = [{ ownerType: "player", ownerId: "2", code: 1, reset: 0, property: 0, value: 1, turn: 1 }];
+    badCard.state.flagEffects = [{ ownerType: "card", ownerId: "missing", code: 1, reset: 0, property: 0, value: 1, turn: 1 }];
+
+    expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.flagEffects.0.ownerId must be a player id");
+    expect(() => restoreDuel(badCard, createCardReader(cards))).toThrow("Malformed duel snapshot: state.flagEffects.0.ownerId must reference a card");
   });
 
   it("rejects malformed card snapshots before restore", () => {
