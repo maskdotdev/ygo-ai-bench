@@ -1,0 +1,202 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+
+describe("EDOPro parity trigger chain-window fixtures", () => {
+  it("holds sibling triggers behind the active trigger chain window", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Window Summon", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "First Chain Window Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Opponent Chain Window Quick", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Second Held Trigger", kind: "monster", attack: 1200, defense: 1200 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "trigger chain window held sibling fixture",
+      options: { seed: 182, startingHandSize: 3 },
+      decks: {
+        0: { main: ["100", "300", "500"] },
+        1: { main: ["400", "100", "100"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-first-chain-window-trigger",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            range: ["hand"],
+            logMessage: "First trigger resolved",
+          },
+          {
+            id: "fixture-second-held-trigger",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            range: ["hand"],
+            logMessage: "Second held trigger resolved",
+          },
+          {
+            id: "fixture-opponent-chain-window-quick",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            logMessage: "Opponent chain-window quick resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
+          snapshotRestore: true,
+          after: {
+            source: "edopro",
+            note: "EDOPro exposes same-bucket trigger choices before any selected trigger opens a chain-response window",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-first-chain-window-trigger", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-chain-window-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-chain-window-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-chain-window-trigger", triggerBucket: "turnOptional", count: 1 },
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-chain-window-trigger", triggerBucket: "turnOptional", count: 1 },
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-first-chain-window-trigger" }), {
+          snapshotRestore: true,
+          after: {
+            source: "edopro",
+            note: "EDOPro hides sibling pending triggers while the selected trigger chain link is open for fast responses",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-first-chain-window-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggers: [{ player: 0, effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "fixture-opponent-chain-window-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "fixture-opponent-chain-window-quick", count: 1 }],
+              },
+              {
+                player: 1,
+                label: "Pass",
+                windowId: 2,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [{ type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 }],
+              },
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, effectId: "fixture-second-held-trigger", windowId: 2, windowKind: "chainResponse" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "chainResponse",
+                actions: [{ type: "activateTrigger", player: 0, effectId: "fixture-second-held-trigger", windowId: 2, windowKind: "chainResponse" }],
+              },
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: true,
+          after: {
+            source: "edopro",
+            note: "EDOPro returns to the held trigger bucket after the selected trigger chain resolves",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 3,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 3,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [{ type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", count: 1 }],
+              },
+            ],
+            logIncludes: ["First trigger resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-second-held-trigger" })),
+        makeScriptedStep(makeResponseSelector("passChain", 1)),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro resolves the held sibling trigger only after the first trigger chain window closes",
+        windowId: 5,
+        phase: "main1",
+        waitingFor: 0,
+        chain: [],
+        pendingTriggers: [],
+        locations: { monsterZone: ["100"], hand: ["300", "400", "500"] },
+        logIncludes: ["First trigger resolved", "Second held trigger resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
