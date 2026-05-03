@@ -151,7 +151,7 @@ describe("EDOPro parity battle replay fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("cancelAttack", 0, { attackerUid: "p0-deck-100-0" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro exposes cancel attack as a legal replay response for the turn player",
