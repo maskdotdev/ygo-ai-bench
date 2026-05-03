@@ -57,7 +57,7 @@ describe("EDOPro parity battle target-count replay fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-add-target-before-replay" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps the attack-response window active after a quick effect adds a new possible attack target",
