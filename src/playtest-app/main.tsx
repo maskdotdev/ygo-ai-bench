@@ -787,7 +787,10 @@ function GameCard(props: { card: CardSummary; images: Map<string, CardImageInfo>
 }
 
 function SidePanel(props: { view: PlaytestSnapshot | null; onApplyAction: (action: PlaytestAction) => void; onCollapse: () => void }) {
-  const playable = props.view?.legalActions.filter((action) => action.type !== "end") ?? [];
+  const playableGroups = props.view?.legalActionGroups
+    .map((group) => ({ ...group, actions: group.actions.filter((action) => action.type !== "end") }))
+    .filter((group) => group.actions.length > 0) ?? [];
+  const playableCount = playableGroups.reduce((total, group) => total + group.actions.length, 0);
   
   return (
     <aside className="flex flex-col gap-4">
@@ -804,18 +807,23 @@ function SidePanel(props: { view: PlaytestSnapshot | null; onApplyAction: (actio
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d4af37]/60">Available</p>
             <h2 className="font-['Cinzel'] text-base font-bold text-[#fff7dc]">Legal Actions</h2>
           </div>
-          <span className="tcg-badge rounded-full px-2.5 py-1 text-xs">{playable.length}</span>
+          <span className="tcg-badge rounded-full px-2.5 py-1 text-xs">{playableCount}</span>
         </div>
         <div className="flex max-h-48 flex-col gap-2 overflow-y-auto pr-1">
-          {playable.length ? playable.map((action) => (
-            <button 
-              key={`${action.type}-${action.uid}-${action.label}`} 
-              className="action-button rounded-lg px-3 py-2.5 text-left text-sm font-semibold" 
-              type="button" 
-              onClick={() => props.onApplyAction(action)}
-            >
-              {action.label}
-            </button>
+          {playableGroups.length ? playableGroups.map((group) => (
+            <div key={group.key} className="flex flex-col gap-1.5">
+              <div className="px-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#d4af37]/55">{group.label}</div>
+              {group.actions.map((action) => (
+                <button 
+                  key={`${action.type}-${action.uid}-${action.label}`} 
+                  className="action-button rounded-lg px-3 py-2.5 text-left text-sm font-semibold" 
+                  type="button" 
+                  onClick={() => props.onApplyAction(action)}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
           )) : (
             <div className="empty-state rounded-lg px-4 py-8 text-center text-sm">
               No legal actions available

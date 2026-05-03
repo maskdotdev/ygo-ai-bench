@@ -1200,11 +1200,17 @@ function agentPlaytestBridge() {
     legalActions: (sessionId) => window.duelDeckPlaytest
       ? window.duelDeckPlaytest.legalActions(sessionId)
       : [],
+    legalActionGroups: (sessionId) => window.duelDeckPlaytest
+      ? window.duelDeckPlaytest.legalActionGroups(sessionId)
+      : [],
     action: (action, sessionId) => window.duelDeckPlaytest
       ? window.duelDeckPlaytest.action(action, sessionId)
       : { ok: false, error: 'TypeScript playtest engine is not loaded.' },
     autoRun: (options = {}) => window.duelDeckPlaytest
       ? window.duelDeckPlaytest.autoRun(options)
+      : { ok: false, error: 'TypeScript playtest engine is not loaded.' },
+    runScripted: (steps, sessionId) => window.duelDeckPlaytest
+      ? window.duelDeckPlaytest.runScripted(steps, sessionId)
       : { ok: false, error: 'TypeScript playtest engine is not loaded.' },
   };
 }

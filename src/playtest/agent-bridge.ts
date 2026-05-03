@@ -1,4 +1,4 @@
-import { applyAction, chooseHighestPriority, evaluatePlaytest, getLegalActions, runPlaytest, snapshot, startPlaytest, type PlaytestSession, type StartPlaytestOptions } from "#playtest/api.js";
+import { applyAction, chooseHighestPriority, evaluatePlaytest, getLegalActions, groupLegalActions, runPlaytest, runScriptedPlaytest, snapshot, startPlaytest, type PlaytestActionSelector, type PlaytestSession, type StartPlaytestOptions } from "#playtest/api.js";
 import { parseYdk } from "#playtest/ydk.js";
 import type { PlaytestAction } from "#engine/types.js";
 
@@ -23,8 +23,10 @@ export interface PlaytestAgent {
   start(options: AgentStartOptions): ReturnType<typeof snapshot>;
   state(sessionId?: string): ReturnType<typeof snapshot>;
   legalActions(sessionId?: string): PlaytestAction[];
+  legalActionGroups(sessionId?: string): ReturnType<typeof groupLegalActions>;
   action(action: PlaytestAction, sessionId?: string): ReturnType<typeof applyAction>;
   autoRun(options?: { sessionId?: string; maxActions?: number }): ReturnType<typeof snapshot>;
+  runScripted(steps: PlaytestActionSelector[], sessionId?: string): ReturnType<typeof runScriptedPlaytest>;
   evaluate(sessionId?: string): ReturnType<typeof evaluatePlaytest>;
   clear(sessionId?: string): { ok: boolean; sessions: number; activeSessionId: string | null };
 }
@@ -60,11 +62,17 @@ export function createPlaytestAgent(defaultDeck?: SerializedDeckStateLike): Play
     legalActions(sessionId) {
       return getLegalActions(getSession(sessionId));
     },
+    legalActionGroups(sessionId) {
+      return groupLegalActions(getLegalActions(getSession(sessionId)));
+    },
     action(action, sessionId) {
       return applyAction(getSession(sessionId), action);
     },
     autoRun(options = {}) {
       return runPlaytest(getSession(options.sessionId), chooseHighestPriority, options.maxActions ?? 20);
+    },
+    runScripted(steps, sessionId) {
+      return runScriptedPlaytest(getSession(sessionId), steps);
     },
     evaluate(sessionId) {
       return evaluatePlaytest(getSession(sessionId));

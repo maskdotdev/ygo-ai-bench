@@ -23,6 +23,7 @@ describe("playtest agent bridge", () => {
     expect(started.ok).toBe(true);
     expect(agent.status().sessions).toBe(1);
     expect(started.state.hand).toHaveLength(2);
+    expect(started.legalActionGroups.flatMap((group) => group.actions)).toEqual(started.legalActions);
   });
 
   it("starts from YDK text and can auto-run", () => {
@@ -58,5 +59,86 @@ ${IDS.theDarkMagicians}
 
     expect(parsed.main).toEqual([IDS.darkMagician]);
     expect(parsed.extra).toEqual([IDS.theDarkMagicians]);
+  });
+
+  it("exposes grouped legal actions for app and agent consumers", () => {
+    const agent = createPlaytestAgent({
+      deck: {
+        main: {
+          [IDS.magiciansRod]: 1,
+          [IDS.darkMagicalCircle]: 1,
+          [IDS.darkMagician]: 1,
+        },
+      },
+    });
+
+    const started = agent.start({ seed: 1, handSize: 2 });
+    const groups = agent.legalActionGroups(started.sessionId);
+
+    expect(groups.length).toBeGreaterThan(0);
+    expect(groups.flatMap((group) => group.actions)).toEqual(agent.legalActions(started.sessionId));
+    expect(groups.every((group) => group.key && group.label)).toBe(true);
+  });
+
+  it("returns grouped legal actions after applying an action", () => {
+    const agent = createPlaytestAgent({
+      deck: {
+        main: {
+          [IDS.magiciansRod]: 1,
+          [IDS.darkMagicalCircle]: 1,
+          [IDS.darkMagician]: 1,
+        },
+      },
+    });
+    const started = agent.start({ seed: 1, handSize: 2 });
+    const action = started.legalActions.find((candidate) => candidate.type !== "end");
+
+    const result = agent.action(action!, started.sessionId);
+
+    expect(result.ok).toBe(true);
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  });
+
+  it("runs fixture-style scripted actions through the agent bridge", () => {
+    const agent = createPlaytestAgent({
+      deck: {
+        main: {
+          [IDS.magiciansRod]: 1,
+          [IDS.darkMagicalCircle]: 1,
+          [IDS.darkMagician]: 1,
+        },
+      },
+    });
+    const started = agent.start({ seed: 1, handSize: 2 });
+    const firstAction = started.legalActions.find((candidate) => candidate.type !== "end")!;
+
+    const result = agent.runScripted([{ type: firstAction.type, labelIncludes: firstAction.label }], started.sessionId);
+
+    expect(result.ok).toBe(true);
+    expect(result.failedStep).toBeUndefined();
+    expect(result.state.log.length).toBeGreaterThan(started.state.log.length);
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  });
+
+  it("reports the diverging scripted action step", () => {
+    const agent = createPlaytestAgent({
+      deck: {
+        main: {
+          [IDS.magiciansRod]: 1,
+          [IDS.darkMagicalCircle]: 1,
+          [IDS.darkMagician]: 1,
+        },
+      },
+    });
+    const started = agent.start({ seed: 1, handSize: 2 });
+
+    const result = agent.runScripted([{ type: "activateEffect", effectId: "missing-effect" }], started.sessionId);
+
+    expect(result.ok).toBe(false);
+    expect(result.failedStep).toBe(0);
+    expect(result.failure).toBe("No legal action matched type=activateEffect effectId=missing-effect");
+    expect(result.divergenceGroupKey).toBe(result.legalActionGroups[0]?.key);
+    expect(result.divergenceGroupLabel).toBe(result.legalActionGroups[0]?.label);
+    expect(result.sessionId).toBe(started.sessionId);
   });
 });
