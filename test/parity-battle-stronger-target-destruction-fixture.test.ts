@@ -3,15 +3,15 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 
-describe("EDOPro parity battle destruction fixtures", () => {
-  it("destroys both attack-position monsters with equal ATK", () => {
+describe("EDOPro parity stronger battle target destruction fixtures", () => {
+  it("destroys the attacking monster when it battles a stronger attack-position target", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Equal Attacker", kind: "monster", attack: 1800, defense: 1200 },
-      { code: "200", name: "Equal Target", kind: "monster", attack: 1800, defense: 1000 },
+      { code: "100", name: "Weaker Attacker", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "200", name: "Stronger Target", kind: "monster", attack: 1800, defense: 1000 },
     ];
     const fixture: ScriptedDuelFixture = {
-      name: "equal attack battle destruction fixture",
-      options: { seed: 92, startingHandSize: 1 },
+      name: "weaker attack position attacker destruction fixture",
+      options: { seed: 93, startingHandSize: 1 },
       decks: {
         0: { main: ["100"] },
         1: { main: ["200"] },
@@ -27,7 +27,7 @@ describe("EDOPro parity battle destruction fixtures", () => {
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
           after: {
             source: "edopro",
-            note: "EDOPro opens the attack-response window before resolving equal-ATK battle destruction",
+            note: "EDOPro opens the attack-response window before resolving a weaker attacker into a stronger attack-position target",
             waitingFor: 1,
             windowKind: "battle",
             pendingBattle: true,
@@ -51,34 +51,34 @@ describe("EDOPro parity battle destruction fixtures", () => {
           snapshotRestore: "after",
           after: {
             source: "edopro",
-            note: "EDOPro destroys both attack-position monsters with equal ATK and applies no battle damage",
+            note: "EDOPro destroys only the weaker attack-position attacker and applies reflected battle damage to its controller",
             waitingFor: 0,
             pendingBattle: false,
             currentAttack: false,
             battleWindow: null,
-            lifePoints: { 0: 8000, 1: 8000 },
-            battleDamage: { 0: 0, 1: 0 },
+            lifePoints: { 0: 7400, 1: 8000 },
+            battleDamage: { 0: 600, 1: 0 },
             attacksDeclared: ["p0-deck-100-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
-            locations: { graveyard: ["100", "200"] },
-            logIncludes: ["Destroyed"],
+            locations: { monsterZone: ["200"], graveyard: ["100"] },
+            logIncludes: ["600", "Destroyed"],
           },
         }),
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state preserves mutual equal-ATK battle destruction",
+        note: "EDOPro final fixture state preserves weaker-attacker battle destruction and reflected damage",
         phase: "battle",
         waitingFor: 0,
         pendingBattle: false,
         currentAttack: false,
         battleWindow: null,
-        lifePoints: { 0: 8000, 1: 8000 },
-        battleDamage: { 0: 0, 1: 0 },
+        lifePoints: { 0: 7400, 1: 8000 },
+        battleDamage: { 0: 600, 1: 0 },
         attacksDeclared: ["p0-deck-100-0"],
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
-        locations: { graveyard: ["100", "200"] },
-        logIncludes: ["Destroyed"],
+        locations: { monsterZone: ["200"], graveyard: ["100"] },
+        logIncludes: ["600", "Destroyed"],
       },
     };
 
