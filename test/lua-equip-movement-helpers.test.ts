@@ -365,6 +365,7 @@ describe("Lua equip movement helpers", () => {
     expect(host.messages).toContain("remove count 1");
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "banished" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["banished"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1011, eventCardUid: session.state.cards.find((card) => card.code === "200")?.uid });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);

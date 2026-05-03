@@ -57,16 +57,16 @@ describe("Lua return-to-grave events", () => {
     expect(host.messages).toContain("return count 1");
     expect(target).toMatchObject({ location: "graveyard", reason: 0x20000 });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["returnedToGraveyard"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: target!.uid });
-    expect(session.state.eventHistory.map((event) => event.eventName)).toEqual([
-      "chainActivating",
-      "chaining",
-      "chainSolving",
-      "moved",
-      "banished",
-      "moved",
-      "returnedToGraveyard",
-      "chainSolved",
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1203, eventCardUid: target!.uid });
+    expect(session.state.eventHistory).toEqual([
+      expect.objectContaining({ eventName: "chainActivating", eventCode: 1021 }),
+      expect.objectContaining({ eventName: "chaining", eventCode: 1027 }),
+      expect.objectContaining({ eventName: "chainSolving", eventCode: 1020 }),
+      expect.objectContaining({ eventName: "moved", eventCode: 1030 }),
+      expect.objectContaining({ eventName: "banished", eventCode: 1011 }),
+      expect.objectContaining({ eventName: "moved", eventCode: 1030 }),
+      expect.objectContaining({ eventName: "returnedToGraveyard", eventCode: 1203 }),
+      expect.objectContaining({ eventName: "chainSolved", eventCode: 1022 }),
     ]);
   });
 });

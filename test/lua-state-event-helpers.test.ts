@@ -49,7 +49,7 @@ describe("Lua state event helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(session.state.pendingTriggers).toHaveLength(1);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCardUid: session.state.cards.find((card) => card.code === "100")?.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: session.state.cards.find((card) => card.code === "100")?.uid });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
@@ -100,9 +100,9 @@ describe("Lua state event helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     const raisedUid = session.state.cards.find((card) => card.code === "101")?.uid;
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: raisedUid })]));
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: raisedUid })]));
     expect(session.state.pendingTriggers).toHaveLength(1);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCardUid: raisedUid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: raisedUid });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
@@ -133,7 +133,9 @@ describe("Lua state event helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("check before false");
     expect(host.messages).toContain("check raised true");
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: session.state.cards.find((card) => card.code === "100")?.uid })]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: session.state.cards.find((card) => card.code === "100")?.uid })]),
+    );
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     const restoredHost = createLuaScriptHost(restored);
