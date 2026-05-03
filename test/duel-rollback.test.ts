@@ -459,7 +459,8 @@ describe("duel rollback", () => {
     session.state.attackPasses = [0];
     session.state.damagePasses = [1];
     session.state.positionsChanged = ["position-a"];
-    session.state.currentAttack = { attackerUid: "attacker-a", targetUid: "target-a" };
+    session.state.currentAttack = { attackerUid: "attacker-a", targetUid: "target-a", replayTargetCount: 1, replayTargetUids: ["target-a"] };
+    session.state.pendingBattle = { attackerUid: "attacker-a", targetUid: "target-a", replayTargetCount: 1, replayTargetUids: ["target-a"] };
     session.state.log = [{ step: 1, action: "snapshot", player: 0, detail: "snapshot" }];
     const rollback = captureDuelState(session.state);
 
@@ -482,6 +483,8 @@ describe("duel rollback", () => {
     session.state.damagePasses.push(0);
     session.state.positionsChanged.push("position-b");
     session.state.currentAttack.targetUid = "target-b";
+    session.state.currentAttack.replayTargetUids!.push("target-b");
+    session.state.pendingBattle.replayTargetUids!.push("target-b");
     session.state.log[0]!.action = "mutated";
     restoreDuelState(session.state, rollback);
 
@@ -503,7 +506,8 @@ describe("duel rollback", () => {
     expect(session.state.attackPasses).toEqual([0]);
     expect(session.state.damagePasses).toEqual([1]);
     expect(session.state.positionsChanged).toEqual(["position-a"]);
-    expect(session.state.currentAttack).toEqual({ attackerUid: "attacker-a", targetUid: "target-a" });
+    expect(session.state.currentAttack).toEqual({ attackerUid: "attacker-a", targetUid: "target-a", replayTargetCount: 1, replayTargetUids: ["target-a"] });
+    expect(session.state.pendingBattle).toEqual({ attackerUid: "attacker-a", targetUid: "target-a", replayTargetCount: 1, replayTargetUids: ["target-a"] });
     expect(session.state.log[0]?.action).toBe("snapshot");
 
     rollback.lastDiceResults.push(4);
@@ -525,6 +529,8 @@ describe("duel rollback", () => {
     rollback.damagePasses.push(0);
     rollback.positionsChanged.push("position-c");
     rollback.currentAttack!.targetUid = "target-c";
+    rollback.currentAttack!.replayTargetUids!.push("target-c");
+    rollback.pendingBattle!.replayTargetUids!.push("target-c");
     rollback.log[0]!.action = "rollback-mutated";
 
     expect(session.state.lastDiceResults).toEqual([2, 5]);
@@ -545,7 +551,8 @@ describe("duel rollback", () => {
     expect(session.state.attackPasses).toEqual([0]);
     expect(session.state.damagePasses).toEqual([1]);
     expect(session.state.positionsChanged).toEqual(["position-a"]);
-    expect(session.state.currentAttack).toEqual({ attackerUid: "attacker-a", targetUid: "target-a" });
+    expect(session.state.currentAttack).toEqual({ attackerUid: "attacker-a", targetUid: "target-a", replayTargetCount: 1, replayTargetUids: ["target-a"] });
+    expect(session.state.pendingBattle).toEqual({ attackerUid: "attacker-a", targetUid: "target-a", replayTargetCount: 1, replayTargetUids: ["target-a"] });
     expect(session.state.log[0]?.action).toBe("snapshot");
   });
 
