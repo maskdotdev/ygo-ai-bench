@@ -23,11 +23,9 @@ import {
   xyzSummonDuelCard,
 } from "#duel/core.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
-import { recordDuelEvent } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSetDuelCard, tributeSummonActions } from "#duel/summon.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
-import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
@@ -167,7 +165,7 @@ function setLuaMonsterWithTributes(session: DuelSession, target: DuelCardInstanc
       tributeUids,
       (uid, controller, moveReason) => ({ card: sendDuelCardToGraveyard(session.state, uid, controller, moveReason) }),
       (uid) => canMoveDuelCardToLocation(session.state, uid, "graveyard", reason),
-      (eventName, eventCard) => collectTriggerEffectsRule(session.state, eventName, () => true, eventCard),
+      (eventName, eventCard) => collectDuelTriggerEffects(session.state, eventName, eventCard),
     );
     return { ok: true };
   } catch {
@@ -178,13 +176,13 @@ function setLuaMonsterWithTributes(session: DuelSession, target: DuelCardInstanc
 function setLuaSpellTrap(session: DuelSession, target: DuelCardInstance): { ok: boolean } {
   if (!canLuaSetSpellTrap(session, target)) return { ok: false };
   if (target.location === "hand") {
-    setCoreSpellTrap(session.state, target.controller, target.uid, (eventName, eventCard) => collectTriggerEffectsRule(session.state, eventName, () => true, eventCard));
+    setCoreSpellTrap(session.state, target.controller, target.uid, (eventName, eventCard) => collectDuelTriggerEffects(session.state, eventName, eventCard));
   } else {
     moveDuelCard(session.state, target.uid, "spellTrapZone", target.controller, duelReason.rule, session.state.turnPlayer);
     target.position = "faceDown";
     target.faceUp = false;
     pushDuelLog(session.state, "set", target.controller, target.name, `Set from ${target.previousLocation}`);
-    collectTriggerEffectsRule(session.state, "spellTrapSet", () => true, target);
+    collectDuelTriggerEffects(session.state, "spellTrapSet", target);
   }
   return { ok: true };
 }
@@ -373,8 +371,7 @@ function pushNegateSummon(L: unknown, session: DuelSession, hostState: LuaDuelSu
       moveDuelCard(session.state, card.uid, "graveyard", card.controller, duelReason.disSummon, session.state.turnPlayer);
       delete card.summonType;
       delete card.summonPlayer;
-      recordDuelEvent(session.state, eventName, card);
-      collectTriggerEffectsRule(session.state, eventName, () => true, card);
+      collectDuelTriggerEffects(session.state, eventName, card);
       negated.push(uid);
     } catch {
       // EDOPro-style helpers report successful negations only.

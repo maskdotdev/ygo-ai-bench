@@ -311,6 +311,8 @@ describe("Lua normal summon field helpers", () => {
     expect(setResult.ok, setResult.error).toBe(true);
     expect(host.messages).toContain("sset trigger result 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["spellTrapSet"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1107 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "spellTrapSet", eventCode: 1107 });
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();

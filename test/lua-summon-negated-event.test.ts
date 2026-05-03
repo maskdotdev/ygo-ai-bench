@@ -122,7 +122,7 @@ describe("Lua summon-negated events", () => {
     expect(fixture.host.messages).toContain("negated count 1");
     expect(fixture.session.state.cards.find((card) => card.uid === fixture.summoned.uid)).toMatchObject({ location: "graveyard" });
     expect(fixture.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["normalSummonNegated"]);
-    expect(fixture.session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: fixture.summoned.uid });
+    expect(fixture.session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: fixture.summoned.uid, eventCode: 1114 });
     assertRestoredNegatedTrigger(fixture, "normal summon negated 100");
   });
 
@@ -140,7 +140,7 @@ describe("Lua summon-negated events", () => {
     expect(fixture.host.messages).toContain("negated count 1");
     expect(fixture.session.state.cards.find((card) => card.uid === fixture.summoned.uid)).toMatchObject({ location: "graveyard" });
     expect(fixture.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummonNegated"]);
-    expect(fixture.session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: fixture.summoned.uid });
+    expect(fixture.session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: fixture.summoned.uid, eventCode: 1115 });
     assertRestoredNegatedTrigger(fixture, "flip summon negated 100");
   });
 
@@ -154,7 +154,7 @@ describe("Lua summon-negated events", () => {
     expect(fixture.host.messages).toContain("negated count 1");
     expect(fixture.session.state.cards.find((card) => card.uid === fixture.summoned.uid)).toMatchObject({ location: "graveyard" });
     expect(fixture.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["specialSummonNegated"]);
-    expect(fixture.session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: fixture.summoned.uid });
+    expect(fixture.session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: fixture.summoned.uid, eventCode: 1116 });
     expect(fixture.session.state.eventHistory.map((event) => event.eventName).slice(-2)).toEqual(["specialSummonNegated", "chainSolved"]);
     assertRestoredNegatedTrigger(fixture, "special summon negated 100");
   });
