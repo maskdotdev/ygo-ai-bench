@@ -238,7 +238,7 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
 }
 
 function expectationLabel(expected: ScriptedDuelWindowExpectation): string {
-  const source = expected.source ? ` (${expected.source})` : "";
+  const source = ` (${expected.source})`;
   const note = expected.note ? ` [${expected.note}]` : "";
   return `${source}${note}`;
 }
