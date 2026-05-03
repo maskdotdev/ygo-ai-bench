@@ -277,11 +277,14 @@ describe("duel snapshot restore shape validation", () => {
     const sourceUid = serializeDuel(session).state.cards[0]!.uid;
     const badTargetUids = serializeDuel(session);
     const badPlayer = serializeDuel(session);
+    const badActivationLocation = serializeDuel(session);
     badTargetUids.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", targetUids: ["target", 7 as unknown as string] }];
     badPlayer.state.chain = [{ id: "link", player: 2 as 0, sourceUid, effectId: "effect" }];
+    badActivationLocation.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", activationLocation: "field" as "hand" }];
 
     expect(() => restoreDuel(badTargetUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.targetUids.1 must be a string");
     expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.player must be a player id");
+    expect(() => restoreDuel(badActivationLocation, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.activationLocation must be a card location");
   });
 
   it("rejects missing chain target and event card snapshots before restore", () => {
