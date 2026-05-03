@@ -63,7 +63,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
 }
 
 export function serializeDuel(session: DuelSession): SerializedDuel {
-  return {
+  const snapshot: SerializedDuel = {
     version: 1,
     state: {
       ...session.state,
@@ -100,6 +100,8 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       log: session.state.log.map((entry) => ({ ...entry })),
     },
   };
+  assertNoSnapshotCallbacks(snapshot);
+  return snapshot;
 }
 
 export function restoreDuel(
@@ -217,6 +219,16 @@ function restoreChainLimit(limit: SerializedChainLimit, chainLimitRegistry: Duel
 
 function withDenyChainLimit(limit: SerializedChainLimit): ChainLimit {
   return { ...limit, allows: denyChainLimit };
+}
+
+function assertNoSnapshotCallbacks(value: unknown, path = "snapshot"): void {
+  if (typeof value === "function") throw new Error(`Duel snapshot contains non-serializable callback at ${path}`);
+  if (value === null || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => assertNoSnapshotCallbacks(item, `${path}[${index}]`));
+    return;
+  }
+  for (const [key, child] of Object.entries(value)) assertNoSnapshotCallbacks(child, `${path}.${key}`);
 }
 
 export function prunePendingTriggersWithoutEffects(state: DuelState): void {

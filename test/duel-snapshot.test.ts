@@ -179,6 +179,39 @@ describe("duel snapshot persistence", () => {
     expect(serialized.targetCardPredicate).toBeUndefined();
   });
 
+  it("produces data-only JSON snapshots when live state contains callbacks", () => {
+    const session = createDuel({ seed: 131, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const source = findPublicCard(session, 0, "hand", "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "snapshot-json-effect",
+      registryKey: "snapshot-json-effect",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("callback should not serialize");
+      },
+    });
+    session.state.chainLimits.push({
+      registryKey: "snapshot-json-chain-limit",
+      untilChainEnd: true,
+      allows: () => false,
+      release() {},
+    });
+
+    const roundTripped = JSON.parse(JSON.stringify(serializeDuel(session))) as ReturnType<typeof serializeDuel>;
+
+    expect(roundTripped.state.effects[0]).toMatchObject({ id: "snapshot-json-effect", registryKey: "snapshot-json-effect" });
+    expect(roundTripped.state.chainLimits[0]).toEqual({ registryKey: "snapshot-json-chain-limit", untilChainEnd: true });
+  });
+
   it("copies nested assumed card state by value across snapshots", () => {
     const session = createDuel({ seed: 126, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
