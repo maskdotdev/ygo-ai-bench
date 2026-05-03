@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, type LuaSnapshotRestoreResult, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua chain-disabled events", () => {
   it("queues Lua chain-disabled triggers after a disabled chain link is skipped", () => {
@@ -18,9 +19,10 @@ describe("Lua chain-disabled events", () => {
     });
     startDuel(session);
 
-    const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
       c100={}
       function c100.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -31,6 +33,10 @@ describe("Lua chain-disabled events", () => {
         end)
         c:RegisterEffect(e)
       end
+      `;
+        }
+        if (name === "c200.lua") {
+          return `
 
       c200={}
       function c200.initial_effect(c)
@@ -45,6 +51,10 @@ describe("Lua chain-disabled events", () => {
         end)
         c:RegisterEffect(e)
       end
+      `;
+        }
+        if (name === "c300.lua") {
+          return `
 
       c300={}
       function c300.initial_effect(c)
@@ -57,10 +67,18 @@ describe("Lua chain-disabled events", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "chain-disabled-trigger.lua",
-    );
-    expect(loaded.ok, loaded.error).toBe(true);
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const sourceScript = host.loadCardScript(100, source);
+    const disablerScript = host.loadCardScript(200, source);
+    const watcherScript = host.loadCardScript(300, source);
+    expect(sourceScript.ok, sourceScript.error).toBe(true);
+    expect(disablerScript.ok, disablerScript.error).toBe(true);
+    expect(watcherScript.ok, watcherScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
 
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
@@ -75,11 +93,17 @@ describe("Lua chain-disabled events", () => {
     expect(host.messages).not.toContain("disabled source resolved");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainDisabled"]);
 
-    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c200.lua", "c300.lua"]);
+    expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
-    drainChain(session);
-    expect(host.messages).toContain("chain disabled resolved 0");
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    drainRestoredChain(restored);
+    expect(restored.host.messages).toContain("chain disabled resolved 0");
   });
 });
 
@@ -89,5 +113,14 @@ function drainChain(session: ReturnType<typeof createDuel>): void {
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
     expect(applyResponse(session, pass!).ok).toBe(true);
+  }
+}
+
+function drainRestoredChain(restored: LuaSnapshotRestoreResult): void {
+  while (restored.session.state.chain.length > 0) {
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
   }
 }
