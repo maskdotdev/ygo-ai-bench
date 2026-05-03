@@ -209,6 +209,35 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.host.messages).toContain("restored ignition");
   });
 
+  it("exposes prompt responses after complete Lua snapshot restore", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const session = createDuel({ seed: 7, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+    session.state.prompt = { id: "lua-restore-prompt", type: "selectOption", player: 1, options: [3, 5], returnTo: 0 };
+    session.state.waitingFor = 1;
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: () => undefined }, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([
+      { type: "selectOption", player: 1, promptId: "lua-restore-prompt", option: 3, label: "Select option 3", windowId: 0, windowKind: "prompt" },
+      { type: "selectOption", player: 1, promptId: "lua-restore-prompt", option: 5, label: "Select option 5", windowId: 0, windowKind: "prompt" },
+    ]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+
+    const result = applyLuaRestoreResponse(restored, getLuaRestoreLegalActions(restored, 1)[1]!);
+
+    expect(result.ok).toBe(true);
+    expect(restored.session.state.prompt).toBeUndefined();
+    expect(restored.session.state.waitingFor).toBe(0);
+    expect(restored.session.state.log.some((entry) => entry.action === "selectOption" && entry.detail === "Selected option 5")).toBe(true);
+  });
+
   it("preserves spent Lua count limits across snapshot restore", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
     tempRoots.push(root);
