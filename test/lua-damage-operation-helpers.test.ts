@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -92,6 +92,7 @@ describe("Lua damage operation helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toEqual(["attack cost initial 0", "attack cost paid 1", "attack cost canceled 2", "attack cost clamped 2"]);
     expect(session.state.attackCostPaid).toBe(2);
+    expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.attackCostPaid).toBe(2);
     passBattleResponses(session);
     expect(session.state.attackCostPaid).toBe(0);
   });
