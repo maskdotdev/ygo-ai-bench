@@ -14,12 +14,13 @@ export function installCardFlagApi(L: unknown, session: DuelSession): void {
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const reset = lua.lua_isnumber(state, 3) ? Math.trunc(lua.lua_tonumber(state, 3)) : 0;
     const property = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
-    const value = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0;
+    const resetCount = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 5) : undefined;
+    const value = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : 0;
     if (!uid) {
       lua.lua_pushinteger(state, 0);
       return 1;
     }
-    registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: uid }, code, reset, property, value);
+    registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: uid }, code, reset, property, value, resetCount);
     lua.lua_pushinteger(state, getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: uid }, code));
     return 1;
   });

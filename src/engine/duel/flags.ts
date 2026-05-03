@@ -15,13 +15,14 @@ export type DuelFlagOwner = { ownerType: "player"; ownerId: PlayerId } | { owner
 
 const effectFlagRepeat = 0x200000;
 
-export function registerDuelFlagEffect(state: DuelState, owner: DuelFlagOwner, code: number, reset: number, property: number, value: number): DuelFlagEffect {
+export function registerDuelFlagEffect(state: DuelState, owner: DuelFlagOwner, code: number, reset: number, property: number, value: number, resetCount?: number): DuelFlagEffect {
   if ((property & effectFlagRepeat) === 0) resetDuelFlagEffect(state, owner, code);
   const flag: DuelFlagEffect = {
     ownerType: owner.ownerType,
     ownerId: String(owner.ownerId),
     code,
     reset,
+    ...(resetCount === undefined ? {} : { resetCount }),
     property,
     value,
     turn: state.turn,
@@ -71,10 +72,19 @@ export function pruneDuelFlagEffectsAfterPhase(state: DuelState, phase: DuelPhas
 export function pruneDuelFlagEffectsAfterPhaseFlag(state: DuelState, phaseFlag: number): void {
   state.flagEffects = state.flagEffects.filter((flag) => {
     const flags = normalizeResetFlags(flag.reset);
-    return (flags & resetPhase) === 0 || (flags & phaseFlag) === 0;
+    if ((flags & resetPhase) === 0 || (flags & phaseFlag) === 0) return true;
+    return decrementFlagResetCount(flag);
   });
 }
 
 export function pruneDuelFlagEffectsAfterChain(state: DuelState): void {
-  state.flagEffects = state.flagEffects.filter((flag) => (normalizeResetFlags(flag.reset) & resetChain) === 0);
+  state.flagEffects = state.flagEffects.filter((flag) => (normalizeResetFlags(flag.reset) & resetChain) === 0 || decrementFlagResetCount(flag));
+}
+
+function decrementFlagResetCount(flag: DuelFlagEffect): boolean {
+  if (flag.resetCount !== undefined && flag.resetCount > 1) {
+    flag.resetCount -= 1;
+    return true;
+  }
+  return false;
 }

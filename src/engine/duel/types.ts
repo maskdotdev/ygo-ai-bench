@@ -357,6 +357,7 @@ export interface DuelFlagEffect {
   ownerId: string;
   code: number;
   reset: number;
+  resetCount?: number;
   property: number;
   value: number;
   turn: number;
