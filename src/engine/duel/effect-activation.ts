@@ -2,6 +2,7 @@ import { findCard, pushDuelLog, requireControlledCard } from "#duel/card-state.j
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { pruneSpentMandatoryPendingTriggers } from "#duel/pending-trigger-actions.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
+import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type {
   DuelCardInstance,
   DuelEffectContext,
@@ -183,7 +184,7 @@ export function declineDuelPendingTrigger(session: DuelSession, player: PlayerId
   const trigger = takePendingTrigger(session.state, player, triggerId);
   const source = findCard(session.state, trigger.sourceUid);
   pushDuelLog(session.state, "declineTrigger", player, source?.name, trigger.effectId);
-  session.state.waitingFor = session.state.pendingTriggers[0]?.player ?? session.state.turnPlayer;
+  setWaitingForPendingTriggerBucket(session.state);
 }
 
 function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: string): PendingTrigger {

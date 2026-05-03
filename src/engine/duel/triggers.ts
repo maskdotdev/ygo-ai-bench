@@ -1,5 +1,6 @@
 import { findCard, moveDuelCard } from "#duel/card-state.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
+import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelState, PendingTrigger, PlayerId, TriggerBucket } from "#duel/types.js";
 
 export type DuelTriggerChooser = (state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard?: DuelCardInstance) => boolean;
@@ -33,7 +34,7 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
   }
   collected.sort((a, b) => triggerPriority(state, a.effect) - triggerPriority(state, b.effect) || a.index - b.index);
   for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, eventCard, options));
-  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+  setWaitingForPendingTriggerBucket(state);
 }
 
 function triggerPriority(state: DuelState, effect: DuelEffectDefinition): number {

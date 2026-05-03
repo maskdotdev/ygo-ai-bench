@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { recordSpecialSummonActivity } from "#duel/activity.js";
 import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-state.js";
 import { isControlChangePrevented } from "#duel/continuous-effects.js";
+import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import { createRng } from "#engine/rng.js";
 import {
   banishDuelCard,
@@ -692,7 +693,7 @@ function beginLuaOperationMoveStep(session: DuelSession, hostState: LuaDuelMoveA
     const effect = session.state.effects.find((candidate) => candidate.id === trigger.effectId && candidate.sourceUid === trigger.sourceUid);
     return effect?.optional === false || effect?.triggerTiming !== "when";
   });
-  session.state.waitingFor = session.state.pendingTriggers[0]?.player ?? session.state.turnPlayer;
+  setWaitingForPendingTriggerBucket(session.state);
 }
 
 function finishLuaOperationMoveStep(hostState: LuaDuelMoveApiHostState, moved: boolean): void {

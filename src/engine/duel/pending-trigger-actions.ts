@@ -1,6 +1,6 @@
 import { findCard } from "#duel/card-state.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
-import { activePendingTriggerBucket } from "#duel/trigger-buckets.js";
+import { activePendingTriggerBucket, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { DuelAction, DuelState, PlayerId } from "#duel/types.js";
 
 export function getPendingTriggerActions(state: DuelState, player: PlayerId): DuelAction[] {
@@ -26,5 +26,5 @@ export function pruneSpentMandatoryPendingTriggers(state: DuelState): void {
     const effect = state.effects.find((candidate) => candidate.id === trigger.effectId && candidate.sourceUid === trigger.sourceUid);
     return effect?.optional !== false || canUseEffectCount(state, effect);
   });
-  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+  setWaitingForPendingTriggerBucket(state);
 }

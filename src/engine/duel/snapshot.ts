@@ -1,7 +1,7 @@
 import { copyDuelActivityCounts } from "#duel/activity.js";
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
-import { pendingTriggerBuckets } from "#duel/trigger-buckets.js";
+import { pendingTriggerBuckets, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type {
   DuelCardData,
   DuelCardInstance,
@@ -800,7 +800,7 @@ export function prunePendingTriggersWithoutEffects(state: DuelState): void {
   const beforeCount = state.pendingTriggers.length;
   state.pendingTriggers = state.pendingTriggers.filter((trigger) => state.effects.some((effect) => effect.id === trigger.effectId && effect.sourceUid === trigger.sourceUid));
   if (state.pendingTriggers.length === beforeCount) return;
-  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+  setWaitingForPendingTriggerBucket(state);
 }
 
 function isStaticContinuousEffect(effect: DuelEffectDefinition | SerializedDuelEffect): boolean {

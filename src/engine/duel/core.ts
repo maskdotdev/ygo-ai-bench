@@ -42,6 +42,7 @@ import {
   type DuelActivationHandlers,
 } from "#duel/effect-activation.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
+import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import {
   cancelReplayAttack,
   getDuelAttackCostPaid as getDuelAttackCostPaidRule,
@@ -895,7 +896,7 @@ function resolveChain(state: DuelState): void {
   state.chainPasses = [];
   state.status = "awaiting";
   if (state.pendingTriggers.length === 0) collectTriggerEffects(state, "chainEnded");
-  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+  setWaitingForPendingTriggerBucket(state);
   continueAttackResponseWindow(state, battleContinuationHandlers);
 }
 

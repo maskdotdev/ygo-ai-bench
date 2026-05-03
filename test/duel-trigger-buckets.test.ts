@@ -1,11 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 import { registerBucketTrigger, setupTriggerBucketFixture } from "./duel-trigger-fixtures.js";
 
 describe("duel trigger buckets", () => {
+  it("sets waitingFor from canonical active bucket order", () => {
+    const session = createDuel({ seed: 30, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.pendingTriggers = [
+      { id: "optional-first", player: 0, sourceUid, effectId: "optional", eventName: "customEvent", triggerBucket: "turnOptional" },
+      { id: "mandatory-second", player: 1, sourceUid, effectId: "mandatory", eventName: "customEvent", triggerBucket: "opponentMandatory" },
+    ];
+
+    setWaitingForPendingTriggerBucket(session.state);
+
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([
+      { triggerBucket: "opponentMandatory", player: 1, triggerIds: ["mandatory-second"] },
+      { triggerBucket: "turnOptional", player: 0, triggerIds: ["optional-first"] },
+    ]);
+    expect(session.state.waitingFor).toBe(1);
+  });
+
   it("orders simultaneous triggers by mandatory and turn-player buckets", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

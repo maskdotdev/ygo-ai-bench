@@ -1,4 +1,5 @@
 import { resolvePendingDuelBattle } from "#duel/battle.js";
+import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface BattleEventPayload {
@@ -50,7 +51,7 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
     getDefenseValue: (card) => handlers.getDefenseValue(state, card),
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
   });
-  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
+  setWaitingForPendingTriggerBucket(state);
 }
 
 export function resolvePendingBattleIfReady(state: DuelState, handlers: BattleContinuationHandlers): void {
