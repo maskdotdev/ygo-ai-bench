@@ -153,6 +153,11 @@ describe("Node upstream snapshot restore", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1")).toBe(true);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(action).toBeDefined();
+    const result = applyLuaRestoreResponse(restored, action!);
+    expect(result.ok).toBe(true);
+    expect(restored.host.messages).toContain("restored ignition");
   });
 
   it("hides chain responses when a pending Lua chain link cannot be restored", () => {
