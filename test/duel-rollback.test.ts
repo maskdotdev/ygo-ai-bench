@@ -381,6 +381,7 @@ describe("duel rollback", () => {
     card!.summonMaterialUids = ["material-a"];
     card!.assumedProperties = { 10: 999 };
     card!.uniqueOnField = { self: true, opponent: false, code: 100, locationMask: 0x04 };
+    card!.data = { ...card!.data, setcodes: [0x10], fusionMaterials: ["100"], synchroMaterials: { tuner: "100", nonTuners: ["300"] } };
     const rollback = captureDuelState(session.state);
 
     card!.overlayUids.push("overlay-b");
@@ -390,6 +391,9 @@ describe("duel rollback", () => {
     card!.summonMaterialUids.push("material-b");
     card!.assumedProperties![10] = 888;
     card!.uniqueOnField!.code = 200;
+    card!.data.setcodes!.push(0x20);
+    card!.data.fusionMaterials!.push("300");
+    card!.data.synchroMaterials!.nonTuners.push("400");
     restoreDuelState(session.state, rollback);
 
     const restored = session.state.cards.find((candidate) => candidate.uid === card!.uid);
@@ -400,6 +404,9 @@ describe("duel rollback", () => {
     expect(restored?.summonMaterialUids).toEqual(["material-a"]);
     expect(restored?.assumedProperties).toEqual({ 10: 999 });
     expect(restored?.uniqueOnField).toEqual({ self: true, opponent: false, code: 100, locationMask: 0x04 });
+    expect(restored?.data.setcodes).toEqual([0x10]);
+    expect(restored?.data.fusionMaterials).toEqual(["100"]);
+    expect(restored?.data.synchroMaterials).toEqual({ tuner: "100", nonTuners: ["300"] });
 
     const rollbackCard = rollback.cards.find((candidate) => candidate.uid === card!.uid);
     expect(rollbackCard).toBeTruthy();
@@ -410,6 +417,9 @@ describe("duel rollback", () => {
     rollbackCard!.summonMaterialUids!.push("material-c");
     rollbackCard!.assumedProperties![10] = 777;
     rollbackCard!.uniqueOnField!.code = 300;
+    rollbackCard!.data.setcodes!.push(0x30);
+    rollbackCard!.data.fusionMaterials!.push("400");
+    rollbackCard!.data.synchroMaterials!.nonTuners.push("500");
     expect(restored?.overlayUids).toEqual(["overlay-a"]);
     expect(restored?.counters).toEqual({ 1: 2 });
     expect(restored?.effectRelationIds).toEqual([101]);
@@ -417,6 +427,9 @@ describe("duel rollback", () => {
     expect(restored?.summonMaterialUids).toEqual(["material-a"]);
     expect(restored?.assumedProperties).toEqual({ 10: 999 });
     expect(restored?.uniqueOnField).toEqual({ self: true, opponent: false, code: 100, locationMask: 0x04 });
+    expect(restored?.data.setcodes).toEqual([0x10]);
+    expect(restored?.data.fusionMaterials).toEqual(["100"]);
+    expect(restored?.data.synchroMaterials).toEqual({ tuner: "100", nonTuners: ["300"] });
   });
 
   it("rolls back flat state collections without sharing rollback objects", () => {

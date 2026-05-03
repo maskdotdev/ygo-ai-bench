@@ -1,5 +1,5 @@
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
-import type { ChainLimit, ChainLink, DuelBattlePair, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelPromptState, DuelState, PendingTrigger, PlayerId, SkippedDuelPhase } from "#duel/types.js";
+import type { ChainLimit, ChainLink, DuelBattlePair, DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelPromptState, DuelState, PendingTrigger, PlayerId, SkippedDuelPhase } from "#duel/types.js";
 
 export interface DuelStateRollback {
   status: DuelState["status"];
@@ -160,7 +160,7 @@ function copyPrompt(prompt: DuelPromptState): DuelPromptState {
 function copyCard(card: DuelCardInstance): DuelCardInstance {
   return {
     ...card,
-    data: { ...card.data },
+    data: copyCardData(card.data),
     overlayUids: [...card.overlayUids],
     ...(card.counters ? { counters: { ...card.counters } } : {}),
     ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
@@ -168,6 +168,21 @@ function copyCard(card: DuelCardInstance): DuelCardInstance {
     ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
     ...(card.assumedProperties ? { assumedProperties: { ...card.assumedProperties } } : {}),
     ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
+  };
+}
+
+function copyCardData(data: DuelCardData): DuelCardData {
+  return {
+    ...data,
+    ...(data.setcodes ? { setcodes: [...data.setcodes] } : {}),
+    ...(data.fusionMaterials ? { fusionMaterials: [...data.fusionMaterials] } : {}),
+    ...(data.materialSetcodes ? { materialSetcodes: [...data.materialSetcodes] } : {}),
+    ...(data.synchroMaterials ? { synchroMaterials: { tuner: data.synchroMaterials.tuner, nonTuners: [...data.synchroMaterials.nonTuners] } } : {}),
+    ...(data.xyzMaterials ? { xyzMaterials: [...data.xyzMaterials] } : {}),
+    ...(data.linkMaterials ? { linkMaterials: [...data.linkMaterials] } : {}),
+    ...(data.ritualMaterials ? { ritualMaterials: [...data.ritualMaterials] } : {}),
+    ...(data.listedNames ? { listedNames: [...data.listedNames] } : {}),
+    ...(data.fitMonster ? { fitMonster: [...data.fitMonster] } : {}),
   };
 }
 

@@ -2,6 +2,7 @@ import { copyDuelActivityCounts } from "#duel/activity.js";
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import type {
+  DuelCardData,
   DuelCardInstance,
   DuelCardReader,
   DuelEffectDefinition,
@@ -216,7 +217,7 @@ function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][num
 function copyCard(card: DuelCardInstance): DuelCardInstance {
   return {
     ...card,
-    data: { ...card.data },
+    data: copyCardData(card.data),
     overlayUids: [...card.overlayUids],
     ...(card.counters ? { counters: { ...card.counters } } : {}),
     ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
@@ -224,6 +225,21 @@ function copyCard(card: DuelCardInstance): DuelCardInstance {
     ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
     ...(card.assumedProperties ? { assumedProperties: { ...card.assumedProperties } } : {}),
     ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
+  };
+}
+
+function copyCardData(data: DuelCardData): DuelCardData {
+  return {
+    ...data,
+    ...(data.setcodes ? { setcodes: [...data.setcodes] } : {}),
+    ...(data.fusionMaterials ? { fusionMaterials: [...data.fusionMaterials] } : {}),
+    ...(data.materialSetcodes ? { materialSetcodes: [...data.materialSetcodes] } : {}),
+    ...(data.synchroMaterials ? { synchroMaterials: { tuner: data.synchroMaterials.tuner, nonTuners: [...data.synchroMaterials.nonTuners] } } : {}),
+    ...(data.xyzMaterials ? { xyzMaterials: [...data.xyzMaterials] } : {}),
+    ...(data.linkMaterials ? { linkMaterials: [...data.linkMaterials] } : {}),
+    ...(data.ritualMaterials ? { ritualMaterials: [...data.ritualMaterials] } : {}),
+    ...(data.listedNames ? { listedNames: [...data.listedNames] } : {}),
+    ...(data.fitMonster ? { fitMonster: [...data.fitMonster] } : {}),
   };
 }
 
