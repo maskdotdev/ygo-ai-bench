@@ -186,6 +186,38 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(badBattleDamage, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleDamage.1 must be a number");
   });
 
+  it("rejects malformed pending trigger snapshots before restore", () => {
+    const session = createDuel({ seed: 151, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badBucket = serializeDuel(session);
+    const badPayload = serializeDuel(session);
+    badBucket.state.pendingTriggers = [{ id: "trigger", player: 0, sourceUid: "source", effectId: "effect", eventName: "customEvent", triggerBucket: "optional" as "turnOptional" }];
+    badPayload.state.pendingTriggers = [{ id: "trigger", player: 0, sourceUid: "source", effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional", eventPlayer: 2 as 0 }];
+
+    expect(() => restoreDuel(badBucket, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.triggerBucket must be a trigger bucket");
+    expect(() => restoreDuel(badPayload, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.eventPlayer must be a player id");
+  });
+
+  it("rejects malformed event history snapshots before restore", () => {
+    const session = createDuel({ seed: 152, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badEventName = serializeDuel(session);
+    const badPayload = serializeDuel(session);
+    badEventName.state.eventHistory = [{ eventName: 12 as unknown as "customEvent" }];
+    badPayload.state.eventHistory = [{ eventName: "customEvent", eventCardUid: 12 as unknown as string }];
+
+    expect(() => restoreDuel(badEventName, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventName must be a string");
+    expect(() => restoreDuel(badPayload, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventCardUid must be a string");
+  });
+
   it("rejects malformed optional battle window snapshots before restore", () => {
     const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
