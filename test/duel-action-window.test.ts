@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, restoreDuel, serializeDuel, sendDuelCardToGraveyard, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { stampDuelActions } from "#duel/prompt-response.js";
+import type { DuelAction } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -14,6 +16,19 @@ function setupOneCardDuel(seed: number) {
 }
 
 describe("duel action windows", () => {
+  it("copies stamped action payloads away from the source action list", () => {
+    const actions: DuelAction[] = [{ type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["a", "b"], label: "Fusion" }];
+    const stamped = stampDuelActions(actions, 2, "open");
+    const stampedAction = stamped[0];
+    expect(stampedAction?.type).toBe("fusionSummon");
+    if (!stampedAction || stampedAction.type !== "fusionSummon") throw new Error("Expected a stamped fusion action");
+
+    stampedAction.materialUids.push("c");
+    stampedAction.label = "Mutated Fusion";
+
+    expect(actions[0]).toEqual({ type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["a", "b"], label: "Fusion" });
+  });
+
   it("increments actionWindowId after successful responses", () => {
     const session = setupOneCardDuel(109);
     expect(session.state.actionWindowId).toBe(0);

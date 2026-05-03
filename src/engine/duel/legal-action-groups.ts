@@ -1,3 +1,4 @@
+import { copyDuelAction } from "#duel/action-copy.js";
 import type { DuelAction, DuelActionWindowKind } from "#duel/types.js";
 
 export interface DuelLegalActionGroup {
@@ -27,12 +28,6 @@ export function groupDuelLegalActions(actions: DuelAction[]): DuelLegalActionGro
     }
   }
   return [...groups.values()];
-}
-
-function copyDuelAction(action: DuelAction): DuelAction {
-  if (action.type === "tributeSummon") return { ...action, tributeUids: [...action.tributeUids] };
-  if (action.type === "fusionSummon" || action.type === "synchroSummon" || action.type === "xyzSummon" || action.type === "linkSummon" || action.type === "ritualSummon") return { ...action, materialUids: [...action.materialUids] };
-  return { ...action };
 }
 
 function duelActionGroupKey(action: DuelAction): string {

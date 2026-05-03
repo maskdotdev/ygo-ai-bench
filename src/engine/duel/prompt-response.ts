@@ -1,3 +1,4 @@
+import { copyDuelAction } from "#duel/action-copy.js";
 import { pushDuelLog } from "#duel/card-state.js";
 import type { DuelAction, DuelActionWindowKind, DuelPromptState, DuelResponse, DuelState, PlayerId } from "#duel/types.js";
 
@@ -27,5 +28,5 @@ export function resolveDuelPrompt(state: DuelState, response: Extract<DuelRespon
 }
 
 export function stampDuelActions(actions: DuelAction[], windowId: number, windowKind: DuelActionWindowKind): DuelAction[] {
-  return actions.map((action) => ({ ...action, windowId, windowKind }));
+  return actions.map((action) => ({ ...copyDuelAction(action), windowId, windowKind }));
 }
