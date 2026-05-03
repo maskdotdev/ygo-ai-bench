@@ -29,6 +29,22 @@ describe("duel trigger buckets", () => {
     expect(session.state.waitingFor).toBe(1);
   });
 
+  it("rejects live trigger buckets that do not match the trigger player", () => {
+    const session = createDuel({ seed: 31, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.pendingTriggers = [
+      { id: "bad-opponent", player: 1, sourceUid, effectId: "bad", eventName: "customEvent", triggerBucket: "turnOptional" },
+    ];
+
+    expect(() => queryPublicState(session)).toThrow("Pending trigger bad-opponent bucket turnOptional does not match player 1");
+    expect(() => setWaitingForPendingTriggerBucket(session.state)).toThrow("Pending trigger bad-opponent bucket turnOptional does not match player 1");
+  });
+
   it("orders simultaneous triggers by mandatory and turn-player buckets", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

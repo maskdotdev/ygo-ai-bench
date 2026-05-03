@@ -1,7 +1,7 @@
 import { copyDuelActivityCounts } from "#duel/activity.js";
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
-import { pendingTriggerBuckets, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
+import { pendingTriggerBuckets, pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type {
   DuelCardData,
   DuelCardInstance,
@@ -51,7 +51,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
     cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
     chain: state.chain.map(copyPublicChainLink),
     pendingTriggers: state.pendingTriggers.map(copyPendingTrigger),
-    pendingTriggerBuckets: pendingTriggerBuckets(state.pendingTriggers),
+    pendingTriggerBuckets: pendingTriggerBucketsForState(state),
     activityCounts: copyDuelActivityCounts(state.activityCounts),
     attacksDeclared: [...state.attacksDeclared],
     attackCanceledUids: [...state.attackCanceledUids],
@@ -81,7 +81,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       chainLimits: session.state.chainLimits.flatMap(serializeChainLimit),
       chainPasses: [...session.state.chainPasses],
       pendingTriggers: session.state.pendingTriggers.map(copyPendingTrigger),
-      pendingTriggerBuckets: pendingTriggerBuckets(session.state.pendingTriggers),
+      pendingTriggerBuckets: pendingTriggerBucketsForState(session.state),
       eventHistory: session.state.eventHistory.map(copyEventRecord),
       usedCountKeys: [...session.state.usedCountKeys],
       flagEffects: session.state.flagEffects.map((flag) => ({ ...flag })),

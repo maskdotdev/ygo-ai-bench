@@ -11,10 +11,24 @@ export function pendingTriggerBuckets(triggers: PendingTrigger[]): PendingTrigge
   });
 }
 
+export function pendingTriggerBucketsForState(state: DuelState): PendingTriggerBucketState[] {
+  assertPendingTriggerBucketPlayers(state);
+  return pendingTriggerBuckets(state.pendingTriggers);
+}
+
 export function activePendingTriggerBucket(triggers: PendingTrigger[]): PendingTriggerBucketState | undefined {
   return pendingTriggerBuckets(triggers)[0];
 }
 
 export function setWaitingForPendingTriggerBucket(state: DuelState): void {
-  state.waitingFor = activePendingTriggerBucket(state.pendingTriggers)?.player ?? state.turnPlayer;
+  state.waitingFor = pendingTriggerBucketsForState(state)[0]?.player ?? state.turnPlayer;
+}
+
+function assertPendingTriggerBucketPlayers(state: DuelState): void {
+  for (const trigger of state.pendingTriggers) {
+    const turnBucket = trigger.triggerBucket === "turnMandatory" || trigger.triggerBucket === "turnOptional";
+    if ((turnBucket && trigger.player !== state.turnPlayer) || (!turnBucket && trigger.player === state.turnPlayer)) {
+      throw new Error(`Pending trigger ${trigger.id} bucket ${trigger.triggerBucket} does not match player ${trigger.player}`);
+    }
+  }
 }
