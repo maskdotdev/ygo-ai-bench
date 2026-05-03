@@ -73,7 +73,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-damage-step-quick" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resets damage-step passes after a fast effect resolves and returns priority to the opponent",
