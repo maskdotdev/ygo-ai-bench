@@ -87,7 +87,7 @@ describe("EDOPro parity battle negation fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-attack-negator" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro clears pending battle state after an attack is negated",
