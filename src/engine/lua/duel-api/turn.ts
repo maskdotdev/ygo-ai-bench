@@ -60,7 +60,8 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsMainPhase2"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, session.state.phase === "battle");
+    const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
+    lua.lua_pushboolean(state, session.state.phase === "battle" && matchesTurnPlayer(session.state, player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsBattlePhase"));
@@ -70,17 +71,20 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsAbleToEnterBP"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, isBattleDamageStep(session.state));
+    const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
+    lua.lua_pushboolean(state, isBattleDamageStep(session.state) && matchesTurnPlayer(session.state, player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDamageStep"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, isBattleDamageCalculation(session.state));
+    const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
+    lua.lua_pushboolean(state, isBattleDamageCalculation(session.state) && matchesTurnPlayer(session.state, player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDamageCalculated"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, isBattleDamageCalculation(session.state));
+    const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
+    lua.lua_pushboolean(state, isBattleDamageCalculation(session.state) && matchesTurnPlayer(session.state, player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDamageCalculation"));
@@ -98,10 +102,14 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
 function pushPhasePredicate(L: unknown, fieldName: string, session: DuelSession, predicate: (state: DuelState) => boolean): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
-    lua.lua_pushboolean(state, predicate(session.state) && (player === undefined || session.state.turnPlayer === player));
+    lua.lua_pushboolean(state, predicate(session.state) && matchesTurnPlayer(session.state, player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function matchesTurnPlayer(state: DuelState, player: PlayerId | undefined): boolean {
+  return player === undefined || state.turnPlayer === player;
 }
 
 function normalizePlayer(value: number): PlayerId {

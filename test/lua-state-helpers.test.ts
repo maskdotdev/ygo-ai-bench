@@ -367,9 +367,27 @@ describe("Lua state helpers", () => {
     session.state.battleStep = "attack";
     result = host.loadScript(
       `
-      Debug.Message("phase battle step " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsStartStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()) .. "/" .. tostring(Duel.IsBattlePhase()))
+      Debug.Message("phase battle step " .. tostring(Duel.IsBattleStep()) .. "/" .. tostring(Duel.IsStartOfBattlePhase()) .. "/" .. tostring(Duel.IsStartStep()) .. "/" .. tostring(Duel.IsEndOfBattlePhase()) .. "/" .. tostring(Duel.IsBattlePhase()) .. "/" .. tostring(Duel.IsBattlePhase(0)) .. "/" .. tostring(Duel.IsBattlePhase(1)))
       `,
       "phase-predicate-battle-step.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    session.state.battleStep = "damage";
+    result = host.loadScript(
+      `
+      Debug.Message("phase damage step " .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageStep(0)) .. "/" .. tostring(Duel.IsDamageStep(1)) .. "/" .. tostring(Duel.IsDamageCalculation()))
+      `,
+      "phase-predicate-damage-step.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    session.state.battleStep = "damageCalculation";
+    result = host.loadScript(
+      `
+      Debug.Message("phase damage calc " .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsDamageCalculation()) .. "/" .. tostring(Duel.IsDamageCalculation(0)) .. "/" .. tostring(Duel.IsDamageCalculation(1)) .. "/" .. tostring(Duel.IsDamageCalculated(0)) .. "/" .. tostring(Duel.IsDamageCalculated(1)))
+      `,
+      "phase-predicate-damage-calculation.lua",
     );
     expect(result.ok, result.error).toBe(true);
 
@@ -403,7 +421,9 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("phase draw true/true/false/false");
     expect(host.messages).toContain("phase standby true/false");
     expect(host.messages).toContain("phase main1 true/true/false");
-    expect(host.messages).toContain("phase battle step true/false/false/false/true");
+    expect(host.messages).toContain("phase battle step true/false/false/false/true/true/false");
+    expect(host.messages).toContain("phase damage step true/true/false/false");
+    expect(host.messages).toContain("phase damage calc true/true/true/false/true/false");
     expect(host.messages).toContain("phase battle start false/true/true/true");
     expect(host.messages).toContain("phase battle end false/false/false/true");
     expect(host.messages).toContain("phase end true/true/false");
