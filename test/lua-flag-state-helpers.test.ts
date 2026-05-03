@@ -379,6 +379,53 @@ describe("Lua flag state helpers", () => {
     expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([935]);
   });
 
+  it("expires Lua flag phase resets only on matching opponent turns", () => {
+    const cards: DuelCardData[] = [{ code: "110", name: "Flag Opponent Turn Source", kind: "monster" }];
+    const session = createDuel({ seed: 147, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["110"] },
+      1: { main: ["110"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c110={}
+      function c110.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Duel.RegisterFlagEffect(0, 936, RESET_PHASE + PHASE_END + RESET_OPPO_TURN, 0, 1)
+          c:RegisterFlagEffect(937, RESET_PHASE + PHASE_END + RESET_OPPO_TURN, 0, 1)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flag-opponent-turn-reset.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const playerEnd = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
+    expect(playerEnd).toBeDefined();
+    expect(applyResponse(session, playerEnd!).ok).toBe(true);
+    expect(session.state.turnPlayer).toBe(1);
+    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([936, 937]);
+
+    const opponentEnd = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn");
+    expect(opponentEnd).toBeDefined();
+    expect(applyResponse(session, opponentEnd!).ok).toBe(true);
+
+    expect(session.state.turnPlayer).toBe(0);
+    expect(session.state.flagEffects).toHaveLength(0);
+  });
+
   it("expires Lua flag effects at the Battle Start reset boundary", () => {
     const cards: DuelCardData[] = [{ code: "106", name: "Flag Battle Start Source", kind: "monster" }];
     const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });

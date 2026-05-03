@@ -2,6 +2,7 @@ import {
   destinationResetFlags,
   matchesDestinationReset,
   matchesMovementReset,
+  matchesTurnReset,
   normalizeResetFlags,
   phaseResetFlag,
   resetChain,
@@ -73,6 +74,8 @@ export function pruneDuelFlagEffectsAfterPhaseFlag(state: DuelState, phaseFlag: 
   state.flagEffects = state.flagEffects.filter((flag) => {
     const flags = normalizeResetFlags(flag.reset);
     if ((flags & resetPhase) === 0 || (flags & phaseFlag) === 0) return true;
+    const owner = flagTurnOwner(state, flag);
+    if (owner !== undefined && !matchesTurnReset(flags, owner, state.turnPlayer)) return true;
     return decrementFlagResetCount(flag);
   });
 }
@@ -87,4 +90,9 @@ function decrementFlagResetCount(flag: DuelFlagEffect): boolean {
     return true;
   }
   return false;
+}
+
+function flagTurnOwner(state: DuelState, flag: DuelFlagEffect): PlayerId | undefined {
+  if (flag.ownerType === "player") return flag.ownerId === "1" ? 1 : 0;
+  return state.cards.find((card) => card.uid === flag.ownerId)?.controller;
 }
