@@ -51,7 +51,7 @@ describe("Lua custom events", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "customEvent", eventCode, eventCardUid: target?.uid });
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(restored.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "customEvent", eventCode, eventCardUid: target?.uid })]));
-    expect(restored.state.pendingTriggers[0]).toMatchObject({ eventName: "customEvent", eventCode, eventCardUid: target?.uid });
+    expect(restored.state.pendingTriggers).toEqual([]);
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
