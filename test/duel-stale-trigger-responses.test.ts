@@ -43,6 +43,46 @@ describe("duel stale trigger responses", () => {
     expect(session.state.log.filter((entry) => entry.detail === "Stale activate trigger resolved")).toHaveLength(1);
   });
 
+  it("rejects trigger activations with stale bucket metadata", () => {
+    const session = createDuel({ seed: 116, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(summoned).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    registerEffect(session, {
+      id: "stale-bucket-activate-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Stale bucket activate trigger should not resolve");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    if (!trigger || trigger.type !== "activateTrigger") throw new Error("Expected activate trigger action");
+
+    const forged = { ...trigger, triggerBucket: "opponentOptional" as const };
+    const result = applyResponse(session, forged);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Response is not currently legal");
+    expect(session.state.pendingTriggers).toHaveLength(1);
+    expect(session.state.log.some((entry) => entry.detail === "Stale bucket activate trigger should not resolve")).toBe(false);
+  });
+
   it("rejects stale trigger declines after the trigger is consumed", () => {
     const session = createDuel({ seed: 104, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -81,6 +121,46 @@ describe("duel stale trigger responses", () => {
     expect(session.state.pendingTriggers).toHaveLength(0);
     expect(session.state.log.filter((entry) => entry.action === "declineTrigger" && entry.detail === "stale-decline-trigger")).toHaveLength(1);
     expect(session.state.log.some((entry) => entry.detail === "Stale decline trigger should not resolve")).toBe(false);
+  });
+
+  it("rejects trigger declines with stale bucket metadata", () => {
+    const session = createDuel({ seed: 117, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(summoned).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    registerEffect(session, {
+      id: "stale-bucket-decline-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Stale bucket decline trigger should not resolve");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const decline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger");
+    expect(decline).toBeTruthy();
+    if (!decline || decline.type !== "declineTrigger") throw new Error("Expected decline trigger action");
+
+    const forged = { ...decline, triggerBucket: "opponentOptional" as const };
+    const result = applyResponse(session, forged);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Response is not currently legal");
+    expect(session.state.pendingTriggers).toHaveLength(1);
+    expect(session.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "stale-bucket-decline-trigger")).toBe(false);
   });
 
   it("rejects stale trigger activations captured before snapshot restore", () => {

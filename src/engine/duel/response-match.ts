@@ -12,8 +12,8 @@ export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
   if ("uid" in a && (!("uid" in response) || a.uid !== response.uid)) return false;
   if (a.type === "activateEffect" && response.type === "activateEffect" && a.effectId !== response.effectId) return false;
   if (a.type === "specialSummonProcedure" && response.type === "specialSummonProcedure" && a.effectId !== response.effectId) return false;
-  if (a.type === "activateTrigger" && response.type === "activateTrigger" && a.triggerId !== response.triggerId) return false;
-  if (a.type === "declineTrigger" && response.type === "declineTrigger" && a.triggerId !== response.triggerId) return false;
+  if (a.type === "activateTrigger" && response.type === "activateTrigger" && (a.triggerId !== response.triggerId || a.triggerBucket !== response.triggerBucket)) return false;
+  if (a.type === "declineTrigger" && response.type === "declineTrigger" && (a.triggerId !== response.triggerId || a.triggerBucket !== response.triggerBucket)) return false;
   if (a.type === "selectOption" && response.type === "selectOption" && (a.promptId !== response.promptId || a.option !== response.option)) return false;
   if (a.type === "selectYesNo" && response.type === "selectYesNo" && (a.promptId !== response.promptId || a.yes !== response.yes)) return false;
   if (a.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringSet(a.tributeUids, response.tributeUids)) return false;
