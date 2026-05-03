@@ -101,8 +101,9 @@ export const turnGroup = (windowId?: number) => ({
   ],
 });
 
-export const absentTurnGroup = (type: "changePhase" | "endTurn") => ({
+export const absentTurnGroup = (type: "changePhase" | "endTurn", windowId?: number) => ({
   player: 0 as const,
   label: "Turn",
-  actions: [{ type, player: 0 as const }],
+  ...(windowId === undefined ? {} : { windowId }),
+  actions: [{ type, player: 0 as const, ...(windowId === undefined ? {} : { windowId }) }],
 });
