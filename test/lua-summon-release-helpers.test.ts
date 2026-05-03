@@ -141,6 +141,7 @@ describe("Lua summon and release helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("lua material fusion 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("usedAsMaterial");
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "usedAsMaterial", eventCode: 1108 }));
     const trigger = getLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
@@ -180,6 +181,7 @@ describe("Lua summon and release helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("lua pre material fusion 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("preUsedAsMaterial");
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "preUsedAsMaterial", eventCode: 1109 }));
     const trigger = getLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
