@@ -457,6 +457,7 @@ describe("Lua control and return movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("control trigger take 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["controlChanged"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120 });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);

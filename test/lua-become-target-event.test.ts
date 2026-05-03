@@ -61,6 +61,7 @@ describe("Lua become-target events", () => {
     expect(applyResponse(session, action!).ok).toBe(true);
     expect(host.messages).toContain("targeting effect resolved 200");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["becameTarget"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1028, eventCardUid: session.state.cards.find((card) => card.code === "200")?.uid });
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();

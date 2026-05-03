@@ -149,6 +149,7 @@ describe("Lua release helpers", () => {
     expect(host.messages).toContain("release event count 1");
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["released"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1017, eventCardUid: session.state.cards.find((card) => card.code === "200")?.uid });
     const trigger = getLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);

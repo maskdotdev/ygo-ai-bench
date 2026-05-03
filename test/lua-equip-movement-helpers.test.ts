@@ -136,6 +136,7 @@ describe("Lua equip movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("equip trigger equip true");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["equipped"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: session.state.cards.find((card) => card.code === "500")?.uid });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);

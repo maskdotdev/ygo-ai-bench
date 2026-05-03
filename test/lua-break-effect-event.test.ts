@@ -54,6 +54,13 @@ describe("Lua break-effect events", () => {
     expect(host.messages).toContain("before break");
     expect(host.messages).toContain("after break");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["breakEffect"]);
-    expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "breakEffect", "chainSolved"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1050 });
+    expect(session.state.eventHistory).toEqual([
+      expect.objectContaining({ eventName: "chainActivating", eventCode: 1021 }),
+      expect.objectContaining({ eventName: "chaining", eventCode: 1027 }),
+      expect.objectContaining({ eventName: "chainSolving", eventCode: 1020 }),
+      expect.objectContaining({ eventName: "breakEffect", eventCode: 1050 }),
+      expect.objectContaining({ eventName: "chainSolved", eventCode: 1022 }),
+    ]);
   });
 });
