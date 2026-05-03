@@ -64,7 +64,7 @@ describe("EDOPro parity battle damage prevention fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro applies player-scoped battle damage prevention before LP damage is dealt",
