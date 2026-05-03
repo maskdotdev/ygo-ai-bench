@@ -1,5 +1,5 @@
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
-import type { ChainLink, DuelBattlePair, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelState, PendingTrigger, PlayerId } from "#duel/types.js";
+import type { ChainLimit, ChainLink, DuelBattlePair, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelState, PendingTrigger, PlayerId } from "#duel/types.js";
 
 export interface DuelStateRollback {
   status: DuelState["status"];
@@ -16,6 +16,7 @@ export interface DuelStateRollback {
   cards: DuelCardInstance[];
   effects: DuelEffectDefinition[];
   chain: ChainLink[];
+  chainLimits: ChainLimit[];
   chainPasses: PlayerId[];
   pendingTriggers: PendingTrigger[];
   eventHistory: DuelEventRecord[];
@@ -67,6 +68,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     })),
     effects: state.effects.map((effect) => ({ ...effect, range: [...effect.range], ...(effect.reset ? { reset: { ...effect.reset } } : {}) })),
     chain: state.chain.map((link) => ({ ...link, ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}) })),
+    chainLimits: state.chainLimits.map((limit) => ({ ...limit })),
     chainPasses: [...state.chainPasses],
     pendingTriggers: state.pendingTriggers.map((trigger) => ({ ...trigger })),
     eventHistory: state.eventHistory.map((event) => ({ ...event })),
@@ -116,6 +118,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.cards = rollback.cards;
   state.effects = rollback.effects;
   state.chain = rollback.chain;
+  state.chainLimits = rollback.chainLimits;
   state.chainPasses = rollback.chainPasses;
   state.pendingTriggers = rollback.pendingTriggers;
   state.eventHistory = rollback.eventHistory;

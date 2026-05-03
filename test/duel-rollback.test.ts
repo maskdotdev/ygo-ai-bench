@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  addDuelChainLimit,
   applyResponse,
   createDuel,
   getLegalActions as getDuelLegalActions,
@@ -91,6 +92,46 @@ describe("duel rollback", () => {
     expect(result.error).toContain("Cost for failed-cost could not be paid");
     expect(session.state.cards.find((card) => card.uid === source!.uid)?.location).toBe("hand");
     expect(session.state.cards.find((card) => card.uid === costCard!.uid)?.location).toBe("hand");
+    expect(session.state.chain).toHaveLength(0);
+  });
+
+  it("rolls back chain limits added by failed activation targets", () => {
+    const session = createDuel({ seed: 126, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "failed-target-chain-limit",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      target(ctx) {
+        if (ctx.checkOnly) return true;
+        addDuelChainLimit(ctx.duel, {
+          registryKey: "leaked-chain-limit",
+          untilChainEnd: true,
+          allows: () => false,
+        });
+        return false;
+      },
+      operation(ctx) {
+        ctx.log("should not resolve");
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "failed-target-chain-limit");
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Targets for failed-target-chain-limit are not legal");
+    expect(session.state.chainLimits).toEqual([]);
     expect(session.state.chain).toHaveLength(0);
   });
 
