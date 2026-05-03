@@ -104,4 +104,33 @@ describe("extra deck summon restore", () => {
     expect(result.state.cards.find((card) => card.uid === link!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
   });
+
+  it("restores full-zone Link Summon actions that free space with selected materials", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 7, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500", "500", "500", "500", "500"], extra: ["930"] },
+      1: { main: ["400", "400", "400", "400", "400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const allMonsters = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "monster");
+    expect(allMonsters).toHaveLength(7);
+    for (const monster of allMonsters.slice(0, 5)) moveDuelCard(session.state, monster.uid, "monsterZone", 0);
+
+    const link = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "930");
+    const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "monsterZone" && (card.code === "100" || card.code === "300"));
+    expect(link).toBeTruthy();
+    expect(materials).toHaveLength(2);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid);
+    expect(action).toMatchObject({ type: "linkSummon", materialUids: materials.map((card) => card.uid) });
+    if (!action || action.type !== "linkSummon") throw new Error("Expected restored full-zone Link Summon action");
+
+    const result = applyResponse(restored, action);
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === link!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(materials.every((material) => result.state.cards.find((card) => card.uid === material.uid)?.location === "graveyard")).toBe(true);
+  });
 });
