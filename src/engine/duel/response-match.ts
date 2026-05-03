@@ -1,4 +1,6 @@
-import type { DuelAction, DuelResponse } from "#duel/types.js";
+import type { DuelAction, DuelActionWindowKind, DuelResponse } from "#duel/types.js";
+
+const duelActionWindowKinds = new Set<DuelActionWindowKind>(["prompt", "chainResponse", "triggerBucket", "battle", "open"]);
 
 export function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (a.type !== b.type || a.player !== b.player) return false;
@@ -32,8 +34,8 @@ function hasWindowId(value: DuelAction | DuelResponse): value is (DuelAction | D
   return "windowId" in value && typeof value.windowId === "number";
 }
 
-function hasWindowKind(value: DuelAction | DuelResponse): value is (DuelAction | DuelResponse) & { windowKind: string } {
-  return "windowKind" in value && typeof value.windowKind === "string";
+function hasWindowKind(value: DuelAction | DuelResponse): value is (DuelAction | DuelResponse) & { windowKind: DuelActionWindowKind } {
+  return "windowKind" in value && typeof value.windowKind === "string" && duelActionWindowKinds.has(value.windowKind as DuelActionWindowKind);
 }
 
 function hasPartialWindowStamp(value: DuelResponse): boolean {

@@ -97,9 +97,12 @@ describe("duel action windows", () => {
     expect(summon?.windowKind).toBe("open");
 
     const result = applyResponse(session, { ...summon!, windowId: "0" } as never);
+    const unknownKind = applyResponse(session, { ...summon!, windowKind: "unknown" } as never);
 
     expect(result.ok).toBe(false);
     expect(result.error).toContain("Response is not currently legal");
+    expect(unknownKind.ok).toBe(false);
+    expect(unknownKind.error).toContain("Response is not currently legal");
     expect(session.state.actionWindowId).toBe(0);
     expect(session.state.cards.find((card) => card.uid === summon!.uid)?.location).toBe("hand");
   });
