@@ -12,6 +12,7 @@ import type {
   DuelSession,
   DuelState,
   PlayerId,
+  PublicChainLink,
   PublicDuelCard,
   PublicDuelState,
   SerializedDuel,
@@ -43,7 +44,7 @@ export function queryPublicState(session: DuelSession): PublicDuelState {
       1: { ...state.players[1] },
     },
     cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
-    chain: state.chain.map(copyChainLink),
+    chain: state.chain.map(copyPublicChainLink),
     pendingTriggers: state.pendingTriggers.map((trigger) => ({ ...trigger })),
     activityCounts: copyDuelActivityCounts(state.activityCounts),
     attacksDeclared: [...state.attacksDeclared],
@@ -70,7 +71,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       },
       cards: session.state.cards.map(copyCard),
       effects: session.state.effects.flatMap(serializeEffect),
-      chain: session.state.chain.map(copyChainLink),
+      chain: session.state.chain.map(copyPublicChainLink),
       chainLimits: session.state.chainLimits.flatMap(serializeChainLimit),
       chainPasses: [...session.state.chainPasses],
       pendingTriggers: session.state.pendingTriggers.map((trigger) => ({ ...trigger })),
@@ -212,6 +213,11 @@ function denyChainLimit(_effect: DuelEffectDefinition, _player: PlayerId, _chain
 
 function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][number] {
   return { ...link, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };
+}
+
+function copyPublicChainLink(link: DuelState["chain"][number]): PublicChainLink {
+  const { operationOverride: _operationOverride, ...publicLink } = link;
+  return { ...publicLink, ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }) };
 }
 
 function copyCard(card: DuelCardInstance): DuelCardInstance {

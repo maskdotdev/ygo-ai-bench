@@ -315,6 +315,8 @@ export interface ChainLink {
   operationOverride?: (ctx: DuelEffectContext) => void;
 }
 
+export type PublicChainLink = Omit<ChainLink, "operationOverride">;
+
 export type TriggerBucket = "turnMandatory" | "opponentMandatory" | "turnOptional" | "opponentOptional";
 
 export interface PendingTrigger {
@@ -510,7 +512,7 @@ export interface PublicDuelState {
   prompt?: DuelPromptState;
   players: Record<PlayerId, DuelPlayerState>;
   cards: PublicDuelCard[];
-  chain: ChainLink[];
+  chain: PublicChainLink[];
   pendingTriggers: PendingTrigger[];
   activityCounts: Record<PlayerId, DuelActivityCounts>;
   attacksDeclared: string[];

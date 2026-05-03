@@ -6,6 +6,7 @@ import {
   fusionSummonDuelCard,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  queryPublicState,
   registerEffect,
   restoreDuel,
   serializeDuel,
@@ -48,6 +49,36 @@ describe("duel snapshot persistence", () => {
     expect(next).toMatchObject({ phase: "main2" });
     expect(applyResponse(restored, next!).ok).toBe(true);
     expect(restored.state.skippedPhases).toEqual([]);
+  });
+
+  it("keeps internal chain operation overrides out of public and serialized state", () => {
+    const session = createDuel({ seed: 128, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.chain = [
+      {
+        id: "chain-1",
+        player: 0,
+        sourceUid: "source",
+        effectId: "effect",
+        targetUids: ["target-a"],
+        operationOverride(ctx) {
+          ctx.log("internal override");
+        },
+      },
+    ];
+
+    const publicLink = queryPublicState(session).chain[0] as { operationOverride?: unknown; targetUids?: string[] };
+    const serializedLink = serializeDuel(session).state.chain[0] as { operationOverride?: unknown; targetUids?: string[] };
+
+    expect(publicLink.operationOverride).toBeUndefined();
+    expect(serializedLink.operationOverride).toBeUndefined();
+    publicLink.targetUids!.push("target-b");
+    serializedLink.targetUids!.push("target-c");
+    expect(session.state.chain[0]?.targetUids).toEqual(["target-a"]);
   });
 
   it("preserves static continuous effects across snapshots", () => {
