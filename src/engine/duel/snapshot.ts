@@ -202,13 +202,76 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   }
   if (!duelSnapshotStatuses.has(state.status)) throw new Error("Malformed duel snapshot: state.status must be a duel status");
   if (!duelSnapshotPhases.has(state.phase)) throw new Error("Malformed duel snapshot: state.phase must be a duel phase");
+  if (state.waitingFor !== undefined) assertSnapshotPlayerId(state.waitingFor, "state.waitingFor");
+  if (state.battleStep !== undefined && !duelSnapshotBattleSteps.has(state.battleStep)) throw new Error("Malformed duel snapshot: state.battleStep must be a battle step");
+  if (state.prompt !== undefined) assertSnapshotPrompt(state.prompt);
+  if (state.battleWindow !== undefined) assertSnapshotBattleWindow(state.battleWindow);
+  if (state.currentAttack !== undefined) assertSnapshotBattle(state.currentAttack, "state.currentAttack");
+  if (state.pendingBattle !== undefined) assertSnapshotBattle(state.pendingBattle, "state.pendingBattle");
 }
 
 const duelSnapshotStatuses = new Set<unknown>(["setup", "awaiting", "resolving", "ended"]);
 const duelSnapshotPhases = new Set<unknown>(["draw", "standby", "main1", "battle", "main2", "end"]);
+const duelSnapshotBattleSteps = new Set<unknown>(["attack", "damage", "damageCalculation"]);
+const duelSnapshotBattleWindowKinds = new Set<unknown>([
+  "attackDeclaration",
+  "attackTargetConfirmation",
+  "attackNegationResponse",
+  "replayDecision",
+  "startDamageStep",
+  "beforeDamageCalculation",
+  "duringDamageCalculation",
+  "afterDamageCalculation",
+  "endDamageStep",
+]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function assertSnapshotPlayerId(value: unknown, path: string): asserts value is PlayerId {
+  if (value !== 0 && value !== 1) throw new Error(`Malformed duel snapshot: ${path} must be a player id`);
+}
+
+function assertSnapshotPrompt(prompt: unknown): asserts prompt is DuelPromptState {
+  if (!isRecord(prompt)) throw new Error("Malformed duel snapshot: state.prompt must be an object");
+  if (typeof prompt.id !== "string") throw new Error("Malformed duel snapshot: state.prompt.id must be a string");
+  assertSnapshotPlayerId(prompt.player, "state.prompt.player");
+  if (prompt.returnTo !== undefined) assertSnapshotPlayerId(prompt.returnTo, "state.prompt.returnTo");
+  if (prompt.type === "selectOption") {
+    if (!Array.isArray(prompt.options)) throw new Error("Malformed duel snapshot: state.prompt.options must be an array");
+    if (prompt.options.some((option) => typeof option !== "number")) throw new Error("Malformed duel snapshot: state.prompt.options must contain numbers");
+    return;
+  }
+  if (prompt.type === "selectYesNo") {
+    if (prompt.description !== undefined && typeof prompt.description !== "number") throw new Error("Malformed duel snapshot: state.prompt.description must be a number");
+    return;
+  }
+  throw new Error("Malformed duel snapshot: state.prompt.type must be a prompt type");
+}
+
+function assertSnapshotBattleWindow(window: unknown): void {
+  if (!isRecord(window)) throw new Error("Malformed duel snapshot: state.battleWindow must be an object");
+  if (typeof window.id !== "number") throw new Error("Malformed duel snapshot: state.battleWindow.id must be a number");
+  if (!duelSnapshotBattleWindowKinds.has(window.kind)) throw new Error("Malformed duel snapshot: state.battleWindow.kind must be a battle window kind");
+  if (!duelSnapshotBattleSteps.has(window.step)) throw new Error("Malformed duel snapshot: state.battleWindow.step must be a battle step");
+  if (typeof window.attackerUid !== "string") throw new Error("Malformed duel snapshot: state.battleWindow.attackerUid must be a string");
+  if (window.targetUid !== undefined && typeof window.targetUid !== "string") throw new Error("Malformed duel snapshot: state.battleWindow.targetUid must be a string");
+  assertSnapshotPlayerId(window.responsePlayer, "state.battleWindow.responsePlayer");
+  if (typeof window.attackNegated !== "boolean") throw new Error("Malformed duel snapshot: state.battleWindow.attackNegated must be a boolean");
+}
+
+function assertSnapshotBattle(battle: unknown, path: string): void {
+  if (!isRecord(battle)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+  if (typeof battle.attackerUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.attackerUid must be a string`);
+  if (battle.targetUid !== undefined && typeof battle.targetUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.targetUid must be a string`);
+  if (battle.replayTargetCount !== undefined && typeof battle.replayTargetCount !== "number") throw new Error(`Malformed duel snapshot: ${path}.replayTargetCount must be a number`);
+  if (battle.battleDamageOverrides === undefined) return;
+  if (!isRecord(battle.battleDamageOverrides)) throw new Error(`Malformed duel snapshot: ${path}.battleDamageOverrides must be an object`);
+  for (const [player, amount] of Object.entries(battle.battleDamageOverrides)) {
+    if (player !== "0" && player !== "1") throw new Error(`Malformed duel snapshot: ${path}.battleDamageOverrides must use player ids`);
+    if (typeof amount !== "number") throw new Error(`Malformed duel snapshot: ${path}.battleDamageOverrides.${player} must be a number`);
+  }
 }
 
 function serializeEffect(effect: DuelEffectDefinition): SerializedDuelEffect[] {

@@ -80,6 +80,54 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(badPhase, createCardReader(cards))).toThrow("Malformed duel snapshot: state.phase must be a duel phase");
   });
 
+  it("rejects malformed optional prompt snapshots before restore", () => {
+    const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badOptions = serializeDuel(session);
+    const badReturnTo = serializeDuel(session);
+    badOptions.state.prompt = { id: "bad-prompt", type: "selectOption", player: 0, options: "not-options" as unknown as number[] };
+    badReturnTo.state.prompt = { id: "bad-return", type: "selectYesNo", player: 0, returnTo: 2 as 0 };
+
+    expect(() => restoreDuel(badOptions, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.options must be an array");
+    expect(() => restoreDuel(badReturnTo, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.returnTo must be a player id");
+  });
+
+  it("rejects malformed optional battle window snapshots before restore", () => {
+    const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badKind = serializeDuel(session);
+    const badResponsePlayer = serializeDuel(session);
+    badKind.state.battleWindow = { id: 1, kind: "combat" as "attackDeclaration", step: "attack", attackerUid: "attacker", responsePlayer: 0, attackNegated: false };
+    badResponsePlayer.state.battleWindow = { id: 1, kind: "attackDeclaration", step: "attack", attackerUid: "attacker", responsePlayer: 2 as 0, attackNegated: false };
+
+    expect(() => restoreDuel(badKind, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.kind must be a battle window kind");
+    expect(() => restoreDuel(badResponsePlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.responsePlayer must be a player id");
+  });
+
+  it("rejects malformed optional pending battle snapshots before restore", () => {
+    const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badCurrentAttack = serializeDuel(session);
+    const badPendingBattle = serializeDuel(session);
+    badCurrentAttack.state.currentAttack = { attackerUid: "attacker", replayTargetCount: "two" as unknown as number };
+    badPendingBattle.state.pendingBattle = { attackerUid: "attacker", battleDamageOverrides: { 2: 100 } as unknown as Record<0 | 1, number> };
+
+    expect(() => restoreDuel(badCurrentAttack, createCardReader(cards))).toThrow("Malformed duel snapshot: state.currentAttack.replayTargetCount must be a number");
+    expect(() => restoreDuel(badPendingBattle, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.battleDamageOverrides must use player ids");
+  });
+
   it("serializes every initialized duel state key", () => {
     const session = createDuel({ seed: 137, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
