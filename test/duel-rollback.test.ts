@@ -20,6 +20,22 @@ import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { cards, findPublicCard, setupFailedMoveAfterFirstFixture } from "./full-duel-engine-fixtures.js";
 
 describe("duel rollback", () => {
+  it("captures every mutable duel state key", () => {
+    const session = createDuel({ seed: 136, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const rollback = captureDuelState(session.state);
+    const identityAndConfigKeys = new Set(["id", "seed", "options"]);
+    const missingKeys = Object.keys(session.state)
+      .filter((key) => !identityAndConfigKeys.has(key))
+      .filter((key) => !(key in rollback));
+
+    expect(missingKeys).toEqual([]);
+  });
+
   it("rolls back chain operation failures", () => {
     const session = createDuel({ seed: 84, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
