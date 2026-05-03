@@ -606,6 +606,7 @@ interface ScriptedDuelWindowExpectationFields {
   winner?: DuelWinner | null;
   winReason?: number | null;
   windowId?: number;
+  windowKind?: DuelActionWindowKind;
   waitingFor?: PlayerId;
   turn?: number;
   turnPlayer?: PlayerId;

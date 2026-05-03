@@ -46,6 +46,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
         before: {
           source: "edopro",
           windowId: 0,
+          windowKind: "open",
           waitingFor: 0,
           phase: "main1",
           legalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", count: 1 }],
@@ -56,6 +57,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
             after: {
               source: "edopro",
               windowId: 1,
+              windowKind: "open",
               waitingFor: 0,
               phase: "main1",
               absentLegalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand" }],

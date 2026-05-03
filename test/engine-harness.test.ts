@@ -96,6 +96,34 @@ describe("EDOPro compatibility harness scaffolding", () => {
     ]);
   });
 
+  it("reports action window kind fixture expectation failures", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture({
+      name: "window kind expectation fixture",
+      options: { seed: 7, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      before: {
+        source: "edopro",
+        windowKind: "chainResponse",
+      },
+      responses: [],
+      expected: { source: "edopro" },
+    }, {
+      cardReader: createCardReader(cards),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "window kind expectation fixture",
+        message: "before fixture (edopro): Expected windowKind chainResponse, got open",
+      },
+    ]);
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });

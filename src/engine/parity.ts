@@ -19,6 +19,7 @@ import { describeDuelActionSelector, duelActionMatchesSelector, selectDuelAction
 import type { DuelChainLimitRestoreRegistry, DuelEffectRestoreRegistry } from "#duel/snapshot.js";
 import type {
   DuelAction,
+  DuelActionWindowKind,
   DuelCardReader,
   DuelEffectDefinition,
   DuelLocation,
@@ -202,6 +203,10 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   assertOptionalValueForWindow("winner", state.winner, expected.winner, fail);
   assertOptionalValueForWindow("winReason", state.winReason, expected.winReason, fail);
   if (expected.windowId !== undefined && session.state.actionWindowId !== expected.windowId) fail(`Expected windowId ${expected.windowId}, got ${session.state.actionWindowId}`);
+  if (expected.windowKind !== undefined) {
+    const actualWindowKind = currentWindowKind(session);
+    if (actualWindowKind !== expected.windowKind) fail(`Expected windowKind ${expected.windowKind}, got ${actualWindowKind ?? "none"}`);
+  }
   if (expected.waitingFor !== undefined && state.waitingFor !== expected.waitingFor) fail(`Expected waitingFor ${expected.waitingFor}, got ${state.waitingFor}`);
   if (expected.turn !== undefined && state.turn !== expected.turn) fail(`Expected turn ${expected.turn}, got ${state.turn}`);
   if (expected.turnPlayer !== undefined && state.turnPlayer !== expected.turnPlayer) fail(`Expected turnPlayer ${expected.turnPlayer}, got ${state.turnPlayer}`);
@@ -253,6 +258,16 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   assertStringListForWindow("attackedTargetUids", state.attackedTargetUids, expected.attackedTargetUids, fail);
   assertBattlePairsForWindow(state.battlePairs, expected.battlePairs, fail);
   assertPartialList("log", state.log, expected.log, fail);
+}
+
+function currentWindowKind(session: DuelSession): DuelActionWindowKind | undefined {
+  const { state } = session;
+  if (state.status !== "awaiting" || state.waitingFor === undefined) return undefined;
+  if (state.prompt) return "prompt";
+  if (state.chain.length) return "chainResponse";
+  if (state.pendingTriggers.length) return "triggerBucket";
+  if (state.pendingBattle) return "battle";
+  return "open";
 }
 
 function expectationLabel(expected: ScriptedDuelWindowExpectation): string {
