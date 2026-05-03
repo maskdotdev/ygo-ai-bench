@@ -310,6 +310,8 @@ describe("Lua random helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages[0]).toMatch(/^coin tossed [01],[01]$/);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossed"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "coinTossed", eventCode: 1151 });
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(coinTrigger).toBeDefined();
     expect(applyResponse(session, coinTrigger!).ok).toBe(true);
@@ -325,6 +327,8 @@ describe("Lua random helpers", () => {
     expect(diceResult.ok, diceResult.error).toBe(true);
     expect(host.messages[2]).toMatch(/^dice tossed [1-6],[1-6]$/);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["diceTossed"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1150 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "diceTossed", eventCode: 1150 });
     const diceTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(diceTrigger).toBeDefined();
     expect(applyResponse(session, diceTrigger!).ok).toBe(true);
@@ -353,6 +357,8 @@ describe("Lua random helpers", () => {
     expect(host.messages[0]).toMatch(/^coin called (true|false)$/);
     expect(session.state.lastCoinResults).toHaveLength(1);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossed"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "coinTossed", eventCode: 1151 });
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(coinTrigger).toBeDefined();
     expect(applyResponse(session, coinTrigger!).ok).toBe(true);
@@ -388,6 +394,8 @@ describe("Lua random helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("coin negate check true/false");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossNegated"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1152 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "coinTossNegated", eventCode: 1152 });
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(coinTrigger).toBeDefined();
     expect(applyResponse(session, coinTrigger!).ok).toBe(true);
@@ -402,6 +410,8 @@ describe("Lua random helpers", () => {
     );
     expect(diceResult.ok, diceResult.error).toBe(true);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["diceTossNegated"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1153 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "diceTossNegated", eventCode: 1153 });
     const diceTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(diceTrigger).toBeDefined();
     expect(applyResponse(session, diceTrigger!).ok).toBe(true);
