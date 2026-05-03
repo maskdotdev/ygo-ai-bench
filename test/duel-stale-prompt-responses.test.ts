@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -68,6 +68,9 @@ describe("duel stale prompt responses", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.state.prompt).toBeUndefined();
     expect(restored.state.log.filter((entry) => entry.action === "selectOption" && entry.detail === "Selected option 2")).toHaveLength(1);
     expect(restored.state.log.some((entry) => entry.action === "selectOption" && entry.detail === "Selected option 4")).toBe(false);
@@ -93,6 +96,9 @@ describe("duel stale prompt responses", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.state.prompt).toBeUndefined();
     expect(restored.state.waitingFor).toBe(1);
     expect(restored.state.log.filter((entry) => entry.action === "selectYesNo" && entry.detail === "Selected yes")).toHaveLength(1);
