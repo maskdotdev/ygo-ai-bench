@@ -78,7 +78,7 @@ describe("EDOPro parity battle must-attack-monster replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro offers cancel only because MUST_ATTACK_MONSTER forbids direct replay",
