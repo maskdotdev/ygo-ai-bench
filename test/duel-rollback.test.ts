@@ -173,6 +173,42 @@ describe("duel rollback", () => {
     expect(session.state.chain).toHaveLength(0);
   });
 
+  it("rolls back skipped phases changed by failed activation targets", () => {
+    const session = createDuel({ seed: 135, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "failed-target-skip-phase",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      target(ctx) {
+        if (ctx.checkOnly) return true;
+        ctx.duel.skippedPhases.push({ player: 0, phase: "battle", remaining: 1 });
+        return false;
+      },
+      operation(ctx) {
+        ctx.log("should not resolve");
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "failed-target-skip-phase");
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Targets for failed-target-skip-phase are not legal");
+    expect(session.state.skippedPhases).toEqual([]);
+    expect(session.state.chain).toHaveLength(0);
+  });
+
   it("rolls back nested card counters changed by failed activation targets", () => {
     const session = createDuel({ seed: 128, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

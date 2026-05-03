@@ -1,5 +1,5 @@
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
-import type { ChainLimit, ChainLink, DuelBattlePair, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelPromptState, DuelState, PendingTrigger, PlayerId } from "#duel/types.js";
+import type { ChainLimit, ChainLink, DuelBattlePair, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelPromptState, DuelState, PendingTrigger, PlayerId, SkippedDuelPhase } from "#duel/types.js";
 
 export interface DuelStateRollback {
   status: DuelState["status"];
@@ -26,6 +26,7 @@ export interface DuelStateRollback {
   globalFlags: number;
   unofficialProcEnabled: boolean;
   shuffleCheckDisabled: boolean;
+  skippedPhases: SkippedDuelPhase[];
   activityCounts: DuelState["activityCounts"];
   activityHistory: DuelState["activityHistory"];
   phaseActivity: boolean;
@@ -73,6 +74,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     globalFlags: state.globalFlags,
     unofficialProcEnabled: state.unofficialProcEnabled,
     shuffleCheckDisabled: state.shuffleCheckDisabled,
+    skippedPhases: state.skippedPhases.map((skip) => ({ ...skip })),
     activityCounts: { 0: { ...state.activityCounts[0] }, 1: { ...state.activityCounts[1] } },
     activityHistory: state.activityHistory.map((record) => ({ ...record })),
     phaseActivity: state.phaseActivity,
@@ -122,6 +124,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.globalFlags = rollback.globalFlags;
   state.unofficialProcEnabled = rollback.unofficialProcEnabled;
   state.shuffleCheckDisabled = rollback.shuffleCheckDisabled;
+  state.skippedPhases = rollback.skippedPhases.map((skip) => ({ ...skip }));
   state.activityCounts = { 0: { ...rollback.activityCounts[0] }, 1: { ...rollback.activityCounts[1] } };
   state.activityHistory = rollback.activityHistory.map((record) => ({ ...record }));
   state.phaseActivity = rollback.phaseActivity;
