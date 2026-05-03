@@ -16,10 +16,6 @@ export function pendingTriggerBucketsForState(state: DuelState): PendingTriggerB
   return pendingTriggerBuckets(state.pendingTriggers);
 }
 
-export function activePendingTriggerBucket(triggers: PendingTrigger[]): PendingTriggerBucketState | undefined {
-  return pendingTriggerBuckets(triggers)[0];
-}
-
 export function setWaitingForPendingTriggerBucket(state: DuelState): void {
   state.waitingFor = pendingTriggerBucketsForState(state)[0]?.player ?? state.turnPlayer;
 }
