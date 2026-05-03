@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentOpenAttackGroup } from "./parity-legal-action-group-helpers.js";
+import { absentOpenAttackGroup, passBattleGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity equal defense-position battle result fixtures", () => {
   it("keeps both monsters when ATK equals DEF in defense-position battle", () => {
@@ -30,11 +30,14 @@ describe("EDOPro parity equal defense-position battle result fixtures", () => {
             source: "edopro",
             note: "EDOPro opens the attack-response window before resolving equal ATK versus DEF battle",
             waitingFor: 1,
+            windowId: 2,
             windowKind: "battle",
             pendingBattle: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
             legalActionCounts: { 0: 0, 1: 1 },
             legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowId: 2, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack", 1, 2)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -62,8 +65,8 @@ describe("EDOPro parity equal defense-position battle result fixtures", () => {
             attacksDeclared: ["p0-deck-100-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100", "200"] },
-            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
-            absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0")],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
+            absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
           },
         }),
       ],
@@ -80,8 +83,8 @@ describe("EDOPro parity equal defense-position battle result fixtures", () => {
         attacksDeclared: ["p0-deck-100-0"],
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100", "200"] },
-        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
-        absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0")],
+        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
+        absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
       },
     };
 
