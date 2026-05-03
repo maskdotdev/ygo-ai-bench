@@ -96,4 +96,59 @@ describe("Lua special summon procedure restore", () => {
     expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "hand" });
   });
+
+  it("rolls back restored Lua procedures when operation moves the source out of range", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Self Moving Procedure Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 83, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeTruthy();
+
+    const sourceScript = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          local moved=Duel.SendtoGrave(c, REASON_COST)
+          Debug.Message("restored source moved before summon " .. moved .. "/" .. c:GetLocation())
+        end)
+        c:RegisterEffect(e)
+      end
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const setup = host.loadCardScript(100, sourceScript);
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }]);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+
+    const result = applyLuaRestoreResponse(restored, action!);
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("summon procedure is no longer in range");
+    expect(restored.host.messages).toContain("restored source moved before summon 1/16");
+    expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.log.some((entry) => entry.action === "sendToGraveyard" && entry.card === "Self Moving Procedure Source")).toBe(false);
+  });
 });
