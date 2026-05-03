@@ -449,4 +449,47 @@ describe("Lua overlay and pendulum movement helpers", () => {
     expect(restored.state.cards.find((card) => card.uid === extraPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
     expect(restored.state.cards.find((card) => card.uid === outOfScale!.uid)).toMatchObject({ location: "hand" });
   });
+
+  it("restores Lua special summon eligibility for face-up extra deck pendulum monsters", () => {
+    const cards: DuelCardData[] = [
+      { code: "301", name: "Restored Lua Pendulum Return", kind: "monster", typeFlags: 0x1000001, level: 4 },
+      { code: "920", name: "Restored Lua Face-Down Extra", kind: "extra", typeFlags: 0x800001, level: 4 },
+    ];
+    const session = createDuel({ seed: 37, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["301"], extra: ["920"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const pendulum = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "301");
+    const extra = session.state.cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    expect(pendulum).toBeTruthy();
+    expect(extra).toBeTruthy();
+    moveDuelCard(session.state, pendulum!.uid, "extraDeck", 0);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    const host = createLuaScriptHost(restored);
+    const result = host.loadScript(
+      `
+      local pendulum = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      local extra = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 920), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      Debug.Message("restored pendulum can special " .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, pendulum)))
+      Debug.Message("restored extra can special " .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, extra)))
+      Debug.Message("restored pendulum special " .. Duel.SpecialSummon(pendulum, 0, 0, 0, false, false, POS_FACEUP_ATTACK))
+      Debug.Message("restored extra special " .. Duel.SpecialSummon(extra, 0, 0, 0, false, false, POS_FACEUP_ATTACK))
+      Debug.Message("restored operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "restored-pendulum-extra-special.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("restored pendulum can special true");
+    expect(host.messages).toContain("restored extra can special false");
+    expect(host.messages).toContain("restored pendulum special 1");
+    expect(host.messages).toContain("restored extra special 0");
+    expect(host.messages).toContain("restored operated 0");
+    expect(restored.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
+    expect(restored.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false });
+  });
 });
