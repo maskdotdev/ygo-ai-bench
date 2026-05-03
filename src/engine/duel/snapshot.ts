@@ -222,6 +222,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   assertSnapshotActivityHistory(state.activityHistory);
   assertSnapshotFlagEffects(state.flagEffects);
   assertSnapshotLog(state.log);
+  assertSnapshotCards(state.cards);
   if (!duelSnapshotStatuses.has(state.status)) throw new Error("Malformed duel snapshot: state.status must be a duel status");
   if (!duelSnapshotPhases.has(state.phase)) throw new Error("Malformed duel snapshot: state.phase must be a duel phase");
   if (state.winner !== undefined && state.winner !== "draw") assertSnapshotPlayerId(state.winner, "state.winner");
@@ -249,6 +250,10 @@ const duelSnapshotBattleWindowKinds = new Set<unknown>([
   "endDamageStep",
 ]);
 const duelSnapshotTriggerBuckets = new Set<unknown>(["turnMandatory", "opponentMandatory", "turnOptional", "opponentOptional"]);
+const duelSnapshotCardKinds = new Set<unknown>(["monster", "spell", "trap", "extra"]);
+const duelSnapshotLocations = new Set<unknown>(["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"]);
+const duelSnapshotPositions = new Set<unknown>(["faceDownDefense", "faceUpAttack", "faceUpDefense", "faceDown"]);
+const duelSnapshotSummonTypes = new Set<unknown>(["normal", "tribute", "flip", "special", "fusion", "synchro", "xyz", "link", "ritual"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -399,6 +404,88 @@ function assertSnapshotLog(log: unknown): void {
     }
     if (entry.player !== undefined) assertSnapshotPlayerId(entry.player, `${path}.player`);
     if (entry.card !== undefined && typeof entry.card !== "string") throw new Error(`Malformed duel snapshot: ${path}.card must be a string`);
+  }
+}
+
+function assertSnapshotCards(cards: unknown): void {
+  if (!Array.isArray(cards)) throw new Error("Malformed duel snapshot: state.cards must be an array");
+  for (const [index, card] of cards.entries()) {
+    const path = `state.cards.${index}`;
+    if (!isRecord(card)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+    for (const field of ["uid", "code", "name"] as const) {
+      if (typeof card[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
+    }
+    if (!duelSnapshotCardKinds.has(card.kind)) throw new Error(`Malformed duel snapshot: ${path}.kind must be a card kind`);
+    assertSnapshotPlayerId(card.owner, `${path}.owner`);
+    assertSnapshotPlayerId(card.controller, `${path}.controller`);
+    if (!duelSnapshotLocations.has(card.location)) throw new Error(`Malformed duel snapshot: ${path}.location must be a card location`);
+    if (typeof card.sequence !== "number") throw new Error(`Malformed duel snapshot: ${path}.sequence must be a number`);
+    if (!duelSnapshotPositions.has(card.position)) throw new Error(`Malformed duel snapshot: ${path}.position must be a card position`);
+    if (!Array.isArray(card.overlayUids)) throw new Error(`Malformed duel snapshot: ${path}.overlayUids must be an array`);
+    assertSnapshotStringArray(card.overlayUids, `${path}.overlayUids`);
+    if (typeof card.faceUp !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.faceUp must be a boolean`);
+    assertSnapshotOptionalCardState(card, path);
+    assertSnapshotCardData(card.data, `${path}.data`);
+  }
+}
+
+function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: string): void {
+  for (const field of ["previousLocation"] as const) {
+    if (card[field] !== undefined && !duelSnapshotLocations.has(card[field])) throw new Error(`Malformed duel snapshot: ${path}.${field} must be a card location`);
+  }
+  if (card.previousController !== undefined) assertSnapshotPlayerId(card.previousController, `${path}.previousController`);
+  if (card.reasonPlayer !== undefined) assertSnapshotPlayerId(card.reasonPlayer, `${path}.reasonPlayer`);
+  if (card.summonPlayer !== undefined) assertSnapshotPlayerId(card.summonPlayer, `${path}.summonPlayer`);
+  if (card.previousPosition !== undefined && !duelSnapshotPositions.has(card.previousPosition)) throw new Error(`Malformed duel snapshot: ${path}.previousPosition must be a card position`);
+  if (card.battlePosition !== undefined && !duelSnapshotPositions.has(card.battlePosition)) throw new Error(`Malformed duel snapshot: ${path}.battlePosition must be a card position`);
+  if (card.summonType !== undefined && !duelSnapshotSummonTypes.has(card.summonType)) throw new Error(`Malformed duel snapshot: ${path}.summonType must be a summon type`);
+  if (card.summonPhase !== undefined && !duelSnapshotPhases.has(card.summonPhase)) throw new Error(`Malformed duel snapshot: ${path}.summonPhase must be a duel phase`);
+  for (const field of ["previousSequence", "reason", "reasonEffectId", "customStatusMask", "turnId", "turnCounter", "summonTypeCode", "attackModifier", "defenseModifier", "levelModifier", "rankModifier", "linkModifier", "scaleModifier"] as const) {
+    if (card[field] !== undefined && typeof card[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
+  }
+  for (const field of ["previousFaceUp", "cancelToGrave"] as const) {
+    if (card[field] !== undefined && typeof card[field] !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a boolean`);
+  }
+  for (const field of ["equippedToUid", "reasonCardUid"] as const) {
+    if (card[field] !== undefined && typeof card[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
+  }
+  for (const field of ["effectRelationIds"] as const) {
+    if (card[field] !== undefined) assertSnapshotNumberArray(card[field], `${path}.${field}`);
+  }
+  for (const field of ["cardTargetUids", "summonMaterialUids"] as const) {
+    if (card[field] !== undefined) assertSnapshotStringArray(card[field], `${path}.${field}`);
+  }
+  if (card.counters !== undefined) assertSnapshotNumberRecord(card.counters, `${path}.counters`);
+  if (card.assumedProperties !== undefined) assertSnapshotNumberRecord(card.assumedProperties, `${path}.assumedProperties`);
+}
+
+function assertSnapshotCardData(data: unknown, path: string): void {
+  if (!isRecord(data)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+  for (const field of ["code", "name"] as const) {
+    if (typeof data[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
+  }
+  if (!duelSnapshotCardKinds.has(data.kind)) throw new Error(`Malformed duel snapshot: ${path}.kind must be a card kind`);
+  for (const field of ["typeFlags", "level", "normalTributes", "normalTributeMin", "normalTributeMax", "leftScale", "rightScale", "linkMarkers", "attack", "defense", "race", "attribute"] as const) {
+    if (data[field] !== undefined && typeof data[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
+  }
+  if (data.alias !== undefined && typeof data.alias !== "string") throw new Error(`Malformed duel snapshot: ${path}.alias must be a string`);
+  for (const field of ["setcodes", "materialSetcodes"] as const) {
+    if (data[field] !== undefined) assertSnapshotNumberArray(data[field], `${path}.${field}`);
+  }
+  for (const field of ["fusionMaterials", "xyzMaterials", "linkMaterials", "ritualMaterials", "listedNames", "fitMonster"] as const) {
+    if (data[field] !== undefined) assertSnapshotStringArray(data[field], `${path}.${field}`);
+  }
+  if (data.synchroMaterials === undefined) return;
+  if (!isRecord(data.synchroMaterials)) throw new Error(`Malformed duel snapshot: ${path}.synchroMaterials must be an object`);
+  if (typeof data.synchroMaterials.tuner !== "string") throw new Error(`Malformed duel snapshot: ${path}.synchroMaterials.tuner must be a string`);
+  assertSnapshotStringArray(data.synchroMaterials.nonTuners, `${path}.synchroMaterials.nonTuners`);
+}
+
+function assertSnapshotNumberRecord(record: unknown, path: string): void {
+  if (!isRecord(record)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+  for (const [key, value] of Object.entries(record)) {
+    if (!/^\d+$/.test(key)) throw new Error(`Malformed duel snapshot: ${path} must use numeric keys`);
+    if (typeof value !== "number") throw new Error(`Malformed duel snapshot: ${path}.${key} must be a number`);
   }
 }
 

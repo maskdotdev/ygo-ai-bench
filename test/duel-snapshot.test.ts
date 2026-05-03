@@ -282,6 +282,38 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(badLog, createCardReader(cards))).toThrow("Malformed duel snapshot: state.log.0.player must be a player id");
   });
 
+  it("rejects malformed card snapshots before restore", () => {
+    const session = createDuel({ seed: 157, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badOwner = serializeDuel(session);
+    const badOverlay = serializeDuel(session);
+    badOwner.state.cards[0] = { ...badOwner.state.cards[0]!, owner: 2 as 0 };
+    badOverlay.state.cards[0] = { ...badOverlay.state.cards[0]!, overlayUids: ["mat", 7 as unknown as string] };
+
+    expect(() => restoreDuel(badOwner, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.owner must be a player id");
+    expect(() => restoreDuel(badOverlay, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.overlayUids.1 must be a string");
+  });
+
+  it("rejects malformed card data snapshots before restore", () => {
+    const session = createDuel({ seed: 158, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badKind = serializeDuel(session);
+    const badSynchro = serializeDuel(session);
+    badKind.state.cards[0] = { ...badKind.state.cards[0]!, data: { ...badKind.state.cards[0]!.data, kind: "token" as "monster" } };
+    badSynchro.state.cards[0] = { ...badSynchro.state.cards[0]!, data: { ...badSynchro.state.cards[0]!.data, synchroMaterials: { tuner: "100", nonTuners: [7 as unknown as string] } } };
+
+    expect(() => restoreDuel(badKind, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.data.kind must be a card kind");
+    expect(() => restoreDuel(badSynchro, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.data.synchroMaterials.nonTuners.0 must be a string");
+  });
+
   it("rejects malformed optional battle window snapshots before restore", () => {
     const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
