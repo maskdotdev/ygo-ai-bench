@@ -209,4 +209,81 @@ describe("Lua stale chain responses", () => {
     expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.host.messages).toEqual(["restored stale pass source resolved"]);
   });
+
+  it("rejects stale Lua quick responses captured before snapshot restore", () => {
+    const cards = [
+      { code: "19100", name: "Lua Restore Stale Quick Source", kind: "monster" as const },
+      { code: "19200", name: "Lua Restore Stale Quick Response", kind: "monster" as const },
+      { code: "19300", name: "Lua Restore Stale Quick Filler", kind: "monster" as const },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c19100.lua") {
+          return `
+          c19100={}
+          function c19100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              Debug.Message("restored stale quick source resolved")
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c19200.lua") {
+          return `
+          c19200={}
+          function c19200.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+              return Duel.GetCurrentChain()>0
+            end)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              Debug.Message("restored stale quick response resolved")
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 104, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["19100", "19200"] },
+      1: { main: ["19300", "19300"] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(19100, source).ok).toBe(true);
+    expect(host.loadCardScript(19200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceCard = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "19100");
+    expect(sourceCard).toBeDefined();
+    const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === sourceCard!.uid);
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(0);
+    const staleQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && sourceAction!.type === "activateEffect" && action.effectId !== sourceAction!.effectId);
+    expect(staleQuick).toBeDefined();
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    const restoredPass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
+    expect(restoredPass).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, restoredPass!).ok).toBe(true);
+
+    const replay = applyLuaRestoreResponse(restored, staleQuick!);
+
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
+    expect(restored.session.state.chain).toHaveLength(0);
+    expect(restored.host.messages).toEqual(["restored stale quick source resolved"]);
+  });
 });
