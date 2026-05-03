@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua LP helpers", () => {
@@ -89,33 +90,47 @@ describe("Lua LP helpers", () => {
     });
     startDuel(session);
 
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local burn=Effect.CreateEffect(c)
+            burn:SetType(EFFECT_TYPE_IGNITION)
+            burn:SetRange(LOCATION_HAND)
+            burn:SetOperation(function(e,tp)
+              Debug.Message("burn applied " .. Duel.Damage(1, 700, REASON_EFFECT))
+            end)
+            c:RegisterEffect(burn)
+          end
+          `;
+        }
+        if (name === "c200.lua") {
+          return `
+          c200={}
+          function c200.initial_effect(c)
+            local trigger=Effect.CreateEffect(c)
+            trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+            trigger:SetCode(EVENT_DAMAGE)
+            trigger:SetRange(LOCATION_HAND)
+            trigger:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              Debug.Message("damage trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. Duel.GetLP(1))
+            end)
+            c:RegisterEffect(trigger)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
     const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
-      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-
-      local burn=Effect.CreateEffect(starter)
-      burn:SetType(EFFECT_TYPE_IGNITION)
-      burn:SetRange(LOCATION_HAND)
-      burn:SetOperation(function(e,tp)
-        Debug.Message("burn applied " .. Duel.Damage(1, 700, REASON_EFFECT))
-      end)
-      starter:RegisterEffect(burn)
-
-      local trigger=Effect.CreateEffect(watcher)
-      trigger:SetType(EFFECT_TYPE_TRIGGER_O)
-      trigger:SetCode(EVENT_DAMAGE)
-      trigger:SetRange(LOCATION_HAND)
-      trigger:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
-        Debug.Message("damage trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. Duel.GetLP(1))
-      end)
-      watcher:RegisterEffect(trigger)
-      `,
-      "lua-damage-trigger.lua",
-    );
+    const result = host.loadCardScript(100, source);
+    const watcherResult = host.loadCardScript(200, source);
 
     expect(result.ok, result.error).toBe(true);
+    expect(watcherResult.ok, watcherResult.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
     const burn = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(burn).toBeDefined();
     expect(applyResponse(session, burn!).ok).toBe(true);
@@ -124,6 +139,14 @@ describe("Lua LP helpers", () => {
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["damageDealt"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40 });
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "damageDealt", eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40 })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40 });
+    const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
+    expect(restoredTrigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, restoredTrigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("damage trigger resolved 1/700/64/7300");
 
     const damageTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(damageTrigger).toBeDefined();
