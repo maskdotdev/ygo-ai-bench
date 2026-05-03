@@ -146,7 +146,7 @@ describe("EDOPro parity battle until-chain-end limit fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-allowed-opponent-quick" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the chain when the until-chain-end limit leaves no legal turn-player response",
