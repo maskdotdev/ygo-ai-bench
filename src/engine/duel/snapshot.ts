@@ -112,6 +112,7 @@ export function restoreDuel(
   options: DuelRestoreOptions = {},
 ): DuelSession {
   if (snapshot.version !== 1) throw new Error(`Unsupported duel snapshot version ${snapshot.version}`);
+  assertRestorableSnapshot(snapshot);
   const state: DuelState = {
     ...snapshot.state,
     players: {
@@ -154,6 +155,38 @@ export function restoreDuel(
   };
   if (options.pruneUnrestoredPendingTriggers !== false) prunePendingTriggersWithoutEffects(state);
   return { cardReader, state };
+}
+
+function assertRestorableSnapshot(snapshot: SerializedDuel): void {
+  if (!isRecord(snapshot.state)) throw new Error("Malformed duel snapshot: state must be an object");
+  const state = snapshot.state as Record<string, unknown>;
+  const arrayFields = [
+    "cards",
+    "effects",
+    "chain",
+    "chainLimits",
+    "chainPasses",
+    "pendingTriggers",
+    "eventHistory",
+    "usedCountKeys",
+    "flagEffects",
+    "skippedPhases",
+    "attacksDeclared",
+    "attackPasses",
+    "damagePasses",
+    "log",
+    "positionsChanged",
+  ];
+  for (const field of arrayFields) {
+    if (!Array.isArray(state[field])) throw new Error(`Malformed duel snapshot: state.${field} must be an array`);
+  }
+  for (const field of ["players", "activityCounts", "battleDamage"] as const) {
+    if (!isRecord(state[field])) throw new Error(`Malformed duel snapshot: state.${field} must be an object`);
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function serializeEffect(effect: DuelEffectDefinition): SerializedDuelEffect[] {

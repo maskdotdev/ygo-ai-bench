@@ -17,6 +17,23 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { cards, findPublicCard } from "./full-duel-engine-fixtures.js";
 
 describe("duel snapshot persistence", () => {
+  it("rejects malformed snapshot roots before restore", () => {
+    expect(() => restoreDuel({ version: 1, state: null } as never, createCardReader(cards))).toThrow("Malformed duel snapshot: state must be an object");
+  });
+
+  it("rejects malformed snapshot collections before restore", () => {
+    const session = createDuel({ seed: 138, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    (snapshot.state as { cards?: unknown }).cards = undefined;
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards must be an array");
+  });
+
   it("serializes every initialized duel state key", () => {
     const session = createDuel({ seed: 137, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
