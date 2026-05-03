@@ -59,6 +59,7 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             source: "edopro",
             note: "EDOPro keeps ATTACK_ALL attackers legal against remaining opposing monsters after one battle resolves",
             phase: "battle",
+            windowKind: "open",
             waitingFor: 0,
             pendingBattle: false,
             currentAttack: false,
@@ -66,6 +67,8 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             attacksDeclared: ["p0-deck-100-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100", "300"], graveyard: ["200"] },
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -92,6 +95,7 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state exposes the next remaining attack-all target",
         phase: "battle",
+        windowKind: "open",
         waitingFor: 0,
         pendingBattle: false,
         currentAttack: false,
@@ -99,6 +103,8 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         attacksDeclared: ["p0-deck-100-0"],
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100", "300"], graveyard: ["200"] },
+        legalActionCounts: { 0: 3, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open", count: 1 }],
         legalActionGroups: [
           {
@@ -164,6 +170,7 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             source: "edopro",
             note: "EDOPro lets general EXTRA_ATTACK attackers use their remaining attack directly when the opponent controls no monsters",
             phase: "battle",
+            windowKind: "open",
             waitingFor: 0,
             pendingBattle: false,
             currentAttack: false,
@@ -171,6 +178,8 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             attacksDeclared: ["p0-deck-100-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100"], graveyard: ["200"] },
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -188,6 +197,7 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state exposes the direct extra attack after the field is cleared",
         phase: "battle",
+        windowKind: "open",
         waitingFor: 0,
         pendingBattle: false,
         currentAttack: false,
@@ -195,6 +205,8 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         attacksDeclared: ["p0-deck-100-0"],
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100"], graveyard: ["200"] },
+        legalActionCounts: { 0: 3, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
         legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
         legalActionGroups: [
           {
@@ -251,6 +263,7 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             source: "edopro",
             note: "EDOPro monster-only extra attacks do not become direct attacks after all opposing monsters leave the field",
             phase: "battle",
+            windowKind: "open",
             waitingFor: 0,
             pendingBattle: false,
             currentAttack: false,
@@ -258,6 +271,8 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             attacksDeclared: ["p0-deck-100-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100"], graveyard: ["200"] },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
             absentLegalActionGroups: [
               {
@@ -274,6 +289,7 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state withholds direct attack actions from monster-only extra attackers",
         phase: "battle",
+        windowKind: "open",
         waitingFor: 0,
         pendingBattle: false,
         currentAttack: false,
@@ -281,6 +297,8 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         attacksDeclared: ["p0-deck-100-0"],
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100"], graveyard: ["200"] },
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
         absentLegalActionGroups: [
           {
