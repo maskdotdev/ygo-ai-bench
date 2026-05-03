@@ -34,7 +34,10 @@ describe("EDOPro parity phase lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits Battle Phase and exposes Main Phase 2 when SKIP_BP applies to the turn player",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "changePhase", player: 0, phase: "main2", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -108,7 +111,10 @@ describe("EDOPro parity phase lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits Battle Phase and exposes Main Phase 2 when CANNOT_BP prevents entering Battle Phase",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "changePhase", player: 0, phase: "main2", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -183,7 +189,10 @@ describe("EDOPro parity phase lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits Main Phase 2 and exposes End Phase when SKIP_M2 applies to the turn player",
             phase: "battle",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "changePhase", player: 0, phase: "end", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -258,7 +267,10 @@ describe("EDOPro parity phase lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits Main Phase 2 and exposes End Phase when CANNOT_M2 prevents entering Main Phase 2",
             phase: "battle",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "changePhase", player: 0, phase: "end", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -333,9 +345,12 @@ describe("EDOPro parity phase lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits End Phase transition actions when CANNOT_EP prevents entering End Phase",
             phase: "main2",
+            windowKind: "open",
             waitingFor: 0,
             pendingBattle: false,
             battleWindow: null,
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "endTurn", player: 0, windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -362,9 +377,12 @@ describe("EDOPro parity phase lock fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state remains Main Phase 2 with explicit End Phase entry blocked",
         phase: "main2",
+        windowKind: "open",
         waitingFor: 0,
         pendingBattle: false,
         battleWindow: null,
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
         legalActions: [{ type: "endTurn", player: 0, windowKind: "open", count: 1 }],
         legalActionGroups: [
           {
@@ -421,9 +439,12 @@ describe("EDOPro parity phase lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits End Phase transition actions when SKIP_EP applies to the turn player",
             phase: "main2",
+            windowKind: "open",
             waitingFor: 0,
             pendingBattle: false,
             battleWindow: null,
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "endTurn", player: 0, windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -450,9 +471,12 @@ describe("EDOPro parity phase lock fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state remains Main Phase 2 with explicit End Phase entry skipped",
         phase: "main2",
+        windowKind: "open",
         waitingFor: 0,
         pendingBattle: false,
         battleWindow: null,
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
         legalActions: [{ type: "endTurn", player: 0, windowKind: "open", count: 1 }],
         legalActionGroups: [
           {
