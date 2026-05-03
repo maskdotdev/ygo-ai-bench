@@ -6,7 +6,7 @@ export const directAttackGroup = (player: 0 | 1, attackerUid: string, count = 1,
   ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
   count,
-  actions: [{ type: "declareAttack" as const, player, attackerUid, ...(windowId === undefined ? {} : { windowId }), count }],
+  actions: [{ type: "declareAttack" as const, player, attackerUid, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const, count }],
 });
 
 export const targetedAttackGroup = (player: 0 | 1, attackerUid: string, targetUid: string, count = 1, windowId?: number) => ({
@@ -15,7 +15,7 @@ export const targetedAttackGroup = (player: 0 | 1, attackerUid: string, targetUi
   ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
   count,
-  actions: [{ type: "declareAttack" as const, player, attackerUid, targetUid, ...(windowId === undefined ? {} : { windowId }), count }],
+  actions: [{ type: "declareAttack" as const, player, attackerUid, targetUid, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const, count }],
 });
 
 export const attackGroup = (attacks: AttackChoice[], count = 1, windowId?: number) => ({
@@ -31,6 +31,7 @@ export const attackGroup = (attacks: AttackChoice[], count = 1, windowId?: numbe
     ...(targetUid === undefined ? {} : { targetUid }),
     ...(targetUid === undefined && directAttack ? { directAttack } : {}),
     ...(windowId === undefined ? {} : { windowId }),
+    windowKind: "open" as const,
     count: 1,
   })),
 });
@@ -40,7 +41,7 @@ export const absentOpenAttackGroup = (player: 0 | 1, attackerUid: string, window
   label: "Attacks",
   ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
-  actions: [{ type: "declareAttack" as const, player, attackerUid, ...(windowId === undefined ? {} : { windowId }) }],
+  actions: [{ type: "declareAttack" as const, player, attackerUid, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const }],
 });
 
 export const absentAttackGroup = (attackerUid: string, targetUid?: string, directAttack?: true, windowId?: number) => ({
@@ -55,6 +56,7 @@ export const absentAttackGroup = (attackerUid: string, targetUid?: string, direc
       ...(targetUid === undefined ? {} : { targetUid }),
       ...(targetUid === undefined && directAttack ? { directAttack } : {}),
       ...(windowId === undefined ? {} : { windowId }),
+      windowKind: "open" as const,
     },
   ],
 });
@@ -65,7 +67,7 @@ export const passBattleGroup = (player: 0 | 1, type: "passAttack" | "passDamage"
   ...(windowId === undefined ? {} : { windowId }),
   windowKind: "battle" as const,
   count,
-  actions: [{ type, player, ...(windowId === undefined ? {} : { windowId }), count }],
+  actions: [{ type, player, ...(windowId === undefined ? {} : { windowId }), windowKind: "battle" as const, count }],
 });
 
 export const effectGroup = (player: 0 | 1, effectId: string, count = 1, windowId?: number) => ({
@@ -74,14 +76,14 @@ export const effectGroup = (player: 0 | 1, effectId: string, count = 1, windowId
   ...(windowId === undefined ? {} : { windowId }),
   windowKind: "battle" as const,
   count,
-  actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), count }],
+  actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), windowKind: "battle" as const, count }],
 });
 
 export const absentEffectGroup = (player: 0 | 1, effectId: string, windowId?: number) => ({
   player,
   label: "Effects",
   ...(windowId === undefined ? {} : { windowId }),
-  actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }) }],
+  actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), windowKind: "battle" as const }],
 });
 
 export const passDamageGroup = (player: 0 | 1, count = 1, windowId?: number) => ({
@@ -90,7 +92,7 @@ export const passDamageGroup = (player: 0 | 1, count = 1, windowId?: number) => 
   ...(windowId === undefined ? {} : { windowId }),
   windowKind: "battle" as const,
   count,
-  actions: [{ type: "passDamage" as const, player, ...(windowId === undefined ? {} : { windowId }), count }],
+  actions: [{ type: "passDamage" as const, player, ...(windowId === undefined ? {} : { windowId }), windowKind: "battle" as const, count }],
 });
 
 export const turnGroup = (windowId?: number) => ({
@@ -99,8 +101,8 @@ export const turnGroup = (windowId?: number) => ({
   ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
   actions: [
-    { type: "changePhase" as const, player: 0 as const, ...(windowId === undefined ? {} : { windowId }), count: 1 },
-    { type: "endTurn" as const, player: 0 as const, ...(windowId === undefined ? {} : { windowId }), count: 1 },
+    { type: "changePhase" as const, player: 0 as const, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const, count: 1 },
+    { type: "endTurn" as const, player: 0 as const, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const, count: 1 },
   ],
 });
 
@@ -108,5 +110,5 @@ export const absentTurnGroup = (type: "changePhase" | "endTurn", windowId?: numb
   player: 0 as const,
   label: "Turn",
   ...(windowId === undefined ? {} : { windowId }),
-  actions: [{ type, player: 0 as const, ...(windowId === undefined ? {} : { windowId }) }],
+  actions: [{ type, player: 0 as const, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const }],
 });
