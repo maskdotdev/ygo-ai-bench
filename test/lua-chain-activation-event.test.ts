@@ -7,15 +7,15 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaS
 
 describe("Lua chain activation events", () => {
   it("queues chain-activating triggers with the chain source as event card", () => {
-    expect(runChainEventFixture("EVENT_CHAIN_ACTIVATING")).toEqual(["chainActivating"]);
+    expect(runChainEventFixture("EVENT_CHAIN_ACTIVATING")).toEqual([{ eventName: "chainActivating", eventCode: 1021 }]);
   });
 
   it("queues chaining triggers with the chain source as event card", () => {
-    expect(runChainEventFixture("EVENT_CHAINING")).toEqual(["chaining"]);
+    expect(runChainEventFixture("EVENT_CHAINING")).toEqual([{ eventName: "chaining", eventCode: 1027, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 }]);
   });
 });
 
-function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAINING"): string[] {
+function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAINING") {
   const cards: DuelCardData[] = [
     { code: "100", name: "Chain Starter", kind: "monster" },
     { code: "200", name: "Chain Event Watcher", kind: "monster" },
@@ -77,7 +77,14 @@ function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAIN
   expect(applyResponse(session, action!).ok).toBe(true);
 
   expect(host.messages).toContain("starter resolved");
-  const queuedEvents = session.state.pendingTriggers.map((trigger) => trigger.eventName);
+  const queuedEvents = session.state.pendingTriggers.map((trigger) => ({
+    eventName: trigger.eventName,
+    eventCode: trigger.eventCode,
+    ...(trigger.eventPlayer === undefined ? {} : { eventPlayer: trigger.eventPlayer }),
+    ...(trigger.eventValue === undefined ? {} : { eventValue: trigger.eventValue }),
+    ...(trigger.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: trigger.eventReasonPlayer }),
+  }));
+  expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining(queuedEvents[0] ?? {})]));
   const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
   expect(restored.restoreComplete).toBe(true);
   expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }]);
