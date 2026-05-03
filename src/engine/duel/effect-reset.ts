@@ -3,6 +3,7 @@ import {
   destinationResetFlags,
   matchesDestinationReset,
   matchesMovementReset,
+  matchesTurnReset,
   normalizeResetFlags,
   phaseResetFlag,
   resetChain,
@@ -34,6 +35,7 @@ export function pruneResetEffectsAfterPhaseFlag(state: DuelState, phaseFlag: num
     const reset = effect.reset;
     const flags = normalizeResetFlags(reset?.flags ?? 0);
     if (!reset || (flags & resetPhase) === 0 || (flags & phaseFlag) === 0) return true;
+    if (!matchesTurnReset(flags, effect.controller, state.turnPlayer)) return true;
     if (reset.count !== undefined && reset.count > 1) {
       reset.count -= 1;
       return true;

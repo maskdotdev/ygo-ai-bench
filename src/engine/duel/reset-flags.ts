@@ -5,6 +5,8 @@ export const resetEvent = 0x1000;
 export const resetLeave = 0x800000;
 export const resetPhase = 0x40000000;
 export const resetChain = 0x80000000;
+export const resetSelfTurn = 0x10000000;
+export const resetOppoTurn = 0x20000000;
 
 const resetToGrave = 0x40000;
 const resetRemove = 0x80000;
@@ -38,6 +40,13 @@ export function matchesDestinationReset(flags: number, card: DuelCardInstance): 
   if ((flags & resetToHand) !== 0 && card.location === "hand") return true;
   if ((flags & resetToDeck) !== 0 && (card.location === "deck" || card.location === "extraDeck")) return true;
   return false;
+}
+
+export function matchesTurnReset(flags: number, owner: 0 | 1, turnPlayer: 0 | 1): boolean {
+  const selfTurn = (flags & resetSelfTurn) !== 0;
+  const oppoTurn = (flags & resetOppoTurn) !== 0;
+  if (!selfTurn && !oppoTurn) return true;
+  return (selfTurn && turnPlayer === owner) || (oppoTurn && turnPlayer !== owner);
 }
 
 function isFieldLocation(location: DuelCardInstance["location"] | undefined): boolean {

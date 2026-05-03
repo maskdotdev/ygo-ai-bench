@@ -200,6 +200,46 @@ describe("Lua effect reset", () => {
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect")).toBe(false);
   });
 
+  it("removes Lua RESET_PHASE effects only on matching opponent turns", () => {
+    const { session } = setupLuaChainFixture({
+      seed: 1251,
+      startingHandSize: 1,
+      cards: [
+        { code: "23105", name: "Lua Reset Opponent Turn Source", kind: "monster" },
+        { code: "23205", name: "Lua Reset Opponent Turn Filler", kind: "monster" },
+      ],
+      decks: {
+        0: { main: ["23105"] },
+        1: { main: ["23205"] },
+      },
+      expectedEffects: 1,
+      scriptName: "lua-effect-reset-opponent-turn.lua",
+      script: `
+      c23105={}
+      function c23105.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetReset(RESET_PHASE + PHASE_END + RESET_OPPO_TURN)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+
+    const playerEnd = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
+    expect(playerEnd).toBeDefined();
+    expect(applyResponse(session, playerEnd!).ok).toBe(true);
+    expect(session.state.turnPlayer).toBe(1);
+    expect(session.state.effects).toHaveLength(1);
+
+    const opponentEnd = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn");
+    expect(opponentEnd).toBeDefined();
+    expect(applyResponse(session, opponentEnd!).ok).toBe(true);
+
+    expect(session.state.turnPlayer).toBe(0);
+    expect(session.state.effects).toHaveLength(0);
+  });
+
   it("removes Lua RESET_PHASE effects when entering Battle Start", () => {
     const { session } = setupLuaChainFixture({
       seed: 126,
