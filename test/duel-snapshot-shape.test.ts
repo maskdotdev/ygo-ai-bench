@@ -387,6 +387,22 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(wrongLocation, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.overlayUids.0 must reference an overlay card");
   });
 
+  it("rejects broken card state references before restore", () => {
+    const session = createDuel({ seed: 166, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badEquippedTo = serializeDuel(session);
+    const badMaterial = serializeDuel(session);
+    badEquippedTo.state.cards[0] = { ...badEquippedTo.state.cards[0]!, equippedToUid: "missing" };
+    badMaterial.state.cards[0] = { ...badMaterial.state.cards[0]!, summonMaterialUids: [badMaterial.state.cards[1]!.uid, "missing"] };
+
+    expect(() => restoreDuel(badEquippedTo, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.equippedToUid must reference a card");
+    expect(() => restoreDuel(badMaterial, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.summonMaterialUids.1 must reference a card");
+  });
+
   it("rejects malformed effect snapshots before restore", () => {
     const session = createDuel({ seed: 159, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

@@ -444,8 +444,23 @@ function assertSnapshotCards(cards: unknown): Set<string> {
       if (!locationsByUid.has(uid)) throw new Error(`Malformed duel snapshot: state.cards.${index}.overlayUids.${overlayIndex} must reference a card`);
       if (locationsByUid.get(uid) !== "overlay") throw new Error(`Malformed duel snapshot: state.cards.${index}.overlayUids.${overlayIndex} must reference an overlay card`);
     }
+    assertSnapshotCardReferences(card as Record<string, unknown>, `state.cards.${index}`, locationsByUid);
   }
   return seenUids;
+}
+
+function assertSnapshotCardReferences(card: Record<string, unknown>, path: string, locationsByUid: ReadonlyMap<string, unknown>): void {
+  for (const field of ["equippedToUid", "reasonCardUid"] as const) {
+    const uid = card[field];
+    if (uid !== undefined && !locationsByUid.has(uid as string)) throw new Error(`Malformed duel snapshot: ${path}.${field} must reference a card`);
+  }
+  for (const field of ["cardTargetUids", "summonMaterialUids"] as const) {
+    const uids = card[field];
+    if (uids === undefined) continue;
+    for (const [index, uid] of (uids as string[]).entries()) {
+      if (!locationsByUid.has(uid)) throw new Error(`Malformed duel snapshot: ${path}.${field}.${index} must reference a card`);
+    }
+  }
 }
 
 function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>): void {
