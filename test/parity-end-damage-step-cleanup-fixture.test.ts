@@ -49,7 +49,7 @@ describe("EDOPro parity end damage step cleanup fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro passes end damage step priority back to the turn player after the opponent passes",
@@ -66,7 +66,7 @@ describe("EDOPro parity end damage step cleanup fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro clears the pending battle after both players pass end damage step responses",
