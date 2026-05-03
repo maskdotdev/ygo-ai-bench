@@ -18,9 +18,10 @@ export const targetedAttackGroup = (player: 0 | 1, attackerUid: string, targetUi
   actions: [{ type: "declareAttack" as const, player, attackerUid, targetUid, ...(windowId === undefined ? {} : { windowId }), count }],
 });
 
-export const attackGroup = (attacks: AttackChoice[], count = 1) => ({
+export const attackGroup = (attacks: AttackChoice[], count = 1, windowId?: number) => ({
   player: 0 as const,
   label: "Attacks",
+  ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
   count,
   actions: attacks.map(({ attackerUid, targetUid, directAttack }) => ({
@@ -29,6 +30,7 @@ export const attackGroup = (attacks: AttackChoice[], count = 1) => ({
     attackerUid,
     ...(targetUid === undefined ? {} : { targetUid }),
     ...(targetUid === undefined && directAttack ? { directAttack } : {}),
+    ...(windowId === undefined ? {} : { windowId }),
     count: 1,
   })),
 });
@@ -41,10 +43,20 @@ export const absentOpenAttackGroup = (player: 0 | 1, attackerUid: string, window
   actions: [{ type: "declareAttack" as const, player, attackerUid, ...(windowId === undefined ? {} : { windowId }) }],
 });
 
-export const absentAttackGroup = (attackerUid: string, targetUid?: string, directAttack?: true) => ({
+export const absentAttackGroup = (attackerUid: string, targetUid?: string, directAttack?: true, windowId?: number) => ({
   player: 0 as const,
   label: "Attacks",
-  actions: [{ type: "declareAttack" as const, player: 0 as const, attackerUid, ...(targetUid === undefined ? {} : { targetUid }), ...(targetUid === undefined && directAttack ? { directAttack } : {}) }],
+  ...(windowId === undefined ? {} : { windowId }),
+  actions: [
+    {
+      type: "declareAttack" as const,
+      player: 0 as const,
+      attackerUid,
+      ...(targetUid === undefined ? {} : { targetUid }),
+      ...(targetUid === undefined && directAttack ? { directAttack } : {}),
+      ...(windowId === undefined ? {} : { windowId }),
+    },
+  ],
 });
 
 export const passBattleGroup = (player: 0 | 1, type: "passAttack" | "passDamage", count = 1, windowId?: number) => ({
