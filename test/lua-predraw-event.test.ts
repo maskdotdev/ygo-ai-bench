@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua predraw events", () => {
   it("queues predraw triggers before the turn draw is applied", () => {
@@ -22,9 +23,10 @@ describe("Lua predraw events", () => {
     expect(watcher).toBeDefined();
     moveDuelCard(session.state, watcher!.uid, "hand", 1);
 
-    const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const source = {
+      readScript(name: string) {
+        if (name !== "c100.lua") return undefined;
+        return `
       c100={}
       function c100.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -36,9 +38,12 @@ describe("Lua predraw events", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "predraw-trigger.lua",
-    );
+      `;
+      },
+    };
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadCardScript(100, source);
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
@@ -57,6 +62,15 @@ describe("Lua predraw events", () => {
       expect.objectContaining({ eventName: "phaseMain1", eventCode: 0x1004 }),
     ]);
 
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1113, eventPlayer: 1, eventValue: 1 });
+    const restoredTrigger = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateTrigger");
+    expect(restoredTrigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, restoredTrigger!).ok).toBe(true);
+    drainRestoredChain(restored);
+    expect(restored.host.messages).toContain("predraw resolved 1/1/1/2");
+
     const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
@@ -71,5 +85,14 @@ function drainChain(session: ReturnType<typeof createDuel>): void {
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
     expect(applyResponse(session, pass!).ok).toBe(true);
+  }
+}
+
+function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  while (restored.session.state.chain.length > 0) {
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
   }
 }

@@ -435,6 +435,7 @@ interface DuelEventPayload {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventUids?: string[];
 }
 
 export function raiseDuelEventWithCode(state: DuelState, eventName: DuelEventName, eventCode: number, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): void {
@@ -514,8 +515,12 @@ function createReleasePredicate(state: DuelState, reason: number): DuelMaterialP
 
 export function drawDuelCards(state: DuelState, player: PlayerId, count: number, detail = "Effect draw"): number {
   if (!canDuelPlayerDraw(state, player, count)) return 0;
+  const eventUids = getCards(state, player, "deck")
+    .sort((a, b) => a.sequence - b.sequence)
+    .slice(0, Math.max(0, count))
+    .map((card) => card.uid);
   const drawn = drawDuelCardsFromDeck(state, player, Math.max(0, count), detail);
-  if (drawn > 0) collectDuelTriggerEffects(state, "cardsDrawn", undefined, { eventPlayer: player, eventValue: drawn });
+  if (drawn > 0) collectDuelTriggerEffects(state, "cardsDrawn", undefined, { eventPlayer: player, eventValue: drawn, eventUids: eventUids.slice(0, drawn) });
   return drawn;
 }
 
@@ -583,6 +588,7 @@ function createEffectContext(
   eventReason?: number,
   eventReasonPlayer?: PlayerId,
   relatedEffectId?: number,
+  eventUids?: string[],
 ): DuelEffectContext {
   const ctx: DuelEffectContext = {
     duel: state,
@@ -597,6 +603,7 @@ function createEffectContext(
     ...(eventReason === undefined ? {} : { eventReason }),
     ...(eventReasonPlayer === undefined ? {} : { eventReasonPlayer }),
     ...(relatedEffectId === undefined ? {} : { relatedEffectId }),
+    ...(eventUids === undefined || eventUids.length === 0 ? {} : { eventUids: [...eventUids] }),
     ...(eventCard === undefined ? {} : { eventCard }),
     ...(checkOnly ? { checkOnly } : {}),
     targetUids,
@@ -737,6 +744,7 @@ function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source:
     payload.eventReason,
     payload.eventReasonPlayer,
     payload.relatedEffectId,
+    payload.eventUids,
   );
   if (effect.canActivate && !effect.canActivate(ctx)) return false;
   if (effect.cost && !effect.cost(ctx)) return false;
@@ -766,6 +774,7 @@ function pushChainLink(
   eventReason?: number,
   eventReasonPlayer?: PlayerId,
   relatedEffectId?: number,
+  eventUids?: string[],
 ): void {
   const source = findCard(state, sourceUid);
   state.chain.push({
@@ -781,6 +790,7 @@ function pushChainLink(
     ...(eventReason === undefined ? {} : { eventReason }),
     ...(eventReasonPlayer === undefined ? {} : { eventReasonPlayer }),
     ...(relatedEffectId === undefined ? {} : { relatedEffectId }),
+    ...(eventUids === undefined || eventUids.length === 0 ? {} : { eventUids: [...eventUids] }),
     ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
     ...(targetUids.length === 0 ? {} : { targetUids: [...targetUids] }),
     ...(targetPlayer === undefined ? {} : { targetPlayer }),
@@ -866,6 +876,7 @@ function resolveChain(state: DuelState): void {
         link.eventReason,
         link.eventReasonPlayer,
         link.relatedEffectId,
+        link.eventUids,
       );
       (link.operationOverride ?? effect.operation)(ctx);
       collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload);

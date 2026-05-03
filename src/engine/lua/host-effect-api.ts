@@ -715,11 +715,13 @@ function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectConte
   const previousContext = hostState.activeContext;
   const previousTriggerStart = hostState.activeOperationTriggerStart;
   const previousOperationMoved = hostState.activeOperationMoved;
+  const previousOperatedUids = [...hostState.operatedUids];
   hostState.activeTargetUids = ctx?.targetUids;
   hostState.activeLuaEffectId = luaEffectId;
   hostState.activeContext = ctx;
   hostState.activeOperationTriggerStart = ctx ? hostState.session.state.pendingTriggers.length : previousTriggerStart;
   hostState.activeOperationMoved = false;
+  if (ctx?.eventUids) hostState.operatedUids.splice(0, hostState.operatedUids.length, ...ctx.eventUids);
   try {
     return callback();
   } finally {
@@ -728,5 +730,6 @@ function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectConte
     hostState.activeContext = previousContext;
     hostState.activeOperationTriggerStart = previousTriggerStart;
     hostState.activeOperationMoved = previousOperationMoved;
+    if (ctx?.eventUids) hostState.operatedUids.splice(0, hostState.operatedUids.length, ...previousOperatedUids);
   }
 }

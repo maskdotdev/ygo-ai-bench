@@ -12,6 +12,7 @@ export interface DuelTriggerCollectOptions {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventUids?: string[];
 }
 
 export function collectTriggerEffects(state: DuelState, eventName: DuelEventName, canChooseEffect: DuelTriggerChooser, eventCard?: DuelCardInstance, options: DuelTriggerCollectOptions = {}): void {
@@ -53,6 +54,7 @@ function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, so
     ...(options.eventReason === undefined ? {} : { eventReason: options.eventReason }),
     ...(options.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }),
     ...(options.relatedEffectId === undefined ? {} : { relatedEffectId: options.relatedEffectId }),
+    ...(options.eventUids === undefined || options.eventUids.length === 0 ? {} : { eventUids: [...options.eventUids] }),
     ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
   };
 }

@@ -282,33 +282,48 @@ describe("Lua LP helpers", () => {
       moveDuelCard(session.state, card!.uid, "hand", 0);
     }
 
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local draw=Effect.CreateEffect(c)
+            draw:SetType(EFFECT_TYPE_IGNITION)
+            draw:SetRange(LOCATION_HAND)
+            draw:SetOperation(function(e,tp)
+              Debug.Message("draw applied " .. Duel.Draw(0, 1, REASON_EFFECT))
+            end)
+            c:RegisterEffect(draw)
+          end
+          `;
+        }
+        if (name === "c200.lua") {
+          return `
+          c200={}
+          function c200.initial_effect(c)
+            local trigger=Effect.CreateEffect(c)
+            trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+            trigger:SetCode(EVENT_DRAW)
+            trigger:SetRange(LOCATION_HAND)
+            trigger:SetOperation(function(e,tp,eg,ep,ev)
+              Debug.Message("draw trigger resolved " .. ep .. "/" .. ev .. "/" .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetFieldGroupCount(0, LOCATION_HAND, 0))
+            end)
+            c:RegisterEffect(trigger)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+
     const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
-      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+    const starterLoaded = host.loadCardScript(100, source);
+    const watcherLoaded = host.loadCardScript(200, source);
 
-      local draw=Effect.CreateEffect(starter)
-      draw:SetType(EFFECT_TYPE_IGNITION)
-      draw:SetRange(LOCATION_HAND)
-      draw:SetOperation(function(e,tp)
-        Debug.Message("draw applied " .. Duel.Draw(0, 1, REASON_EFFECT))
-      end)
-      starter:RegisterEffect(draw)
-
-      local trigger=Effect.CreateEffect(watcher)
-      trigger:SetType(EFFECT_TYPE_TRIGGER_O)
-      trigger:SetCode(EVENT_DRAW)
-      trigger:SetRange(LOCATION_HAND)
-      trigger:SetOperation(function(e,tp,eg,ep,ev)
-        Debug.Message("draw trigger resolved " .. ep .. "/" .. ev .. "/" .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetFieldGroupCount(0, LOCATION_HAND, 0))
-      end)
-      watcher:RegisterEffect(trigger)
-      `,
-      "lua-draw-trigger.lua",
-    );
-
-    expect(result.ok, result.error).toBe(true);
+    expect(starterLoaded.ok, starterLoaded.error).toBe(true);
+    expect(watcherLoaded.ok, watcherLoaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
     const draw = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(draw).toBeDefined();
     expect(applyResponse(session, draw!).ok).toBe(true);
@@ -317,6 +332,14 @@ describe("Lua LP helpers", () => {
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["cardsDrawn"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1 });
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1 })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1 });
+    const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
+    expect(restoredTrigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, restoredTrigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("draw trigger resolved 0/1/1/3");
 
     const drawTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(drawTrigger).toBeDefined();

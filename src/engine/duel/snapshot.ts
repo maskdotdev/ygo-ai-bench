@@ -340,6 +340,12 @@ function assertSnapshotEventPayload(payload: Record<string, unknown>, path: stri
   }
   if (payload.eventCardUid !== undefined && typeof payload.eventCardUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.eventCardUid must be a string`);
   if (payload.eventCardUid !== undefined && !cardUids.has(payload.eventCardUid)) throw new Error(`Malformed duel snapshot: ${path}.eventCardUid must reference a card`);
+  if (payload.eventUids !== undefined) {
+    if (!Array.isArray(payload.eventUids)) throw new Error(`Malformed duel snapshot: ${path}.eventUids must be an array`);
+    for (const [index, uid] of payload.eventUids.entries()) {
+      if (typeof uid !== "string" || !cardUids.has(uid)) throw new Error(`Malformed duel snapshot: ${path}.eventUids.${index} must reference a card`);
+    }
+  }
 }
 
 function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): void {

@@ -34,6 +34,7 @@ export interface DuelActivationHandlers {
     eventReason?: number,
     eventReasonPlayer?: PlayerId,
     relatedEffectId?: number,
+    eventUids?: string[],
   ): DuelEffectContext;
   pushChainLink(
     state: DuelState,
@@ -51,6 +52,7 @@ export interface DuelActivationHandlers {
     eventReason?: number,
     eventReasonPlayer?: PlayerId,
     relatedEffectId?: number,
+    eventUids?: string[],
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
@@ -139,6 +141,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventReason,
       trigger.eventReasonPlayer,
       trigger.relatedEffectId,
+      trigger.eventUids,
     );
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
     if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
@@ -158,6 +161,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventReason,
       trigger.eventReasonPlayer,
       trigger.relatedEffectId,
+      trigger.eventUids,
     );
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
     markEffectUsed(session.state, effect);
