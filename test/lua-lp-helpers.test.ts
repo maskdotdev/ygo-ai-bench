@@ -122,6 +122,7 @@ describe("Lua LP helpers", () => {
     expect(host.messages).toContain("burn applied 700");
     expect(session.state.players[1].lifePoints).toBe(7300);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["damageDealt"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1111 });
 
     const damageTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(damageTrigger).toBeDefined();
@@ -175,6 +176,7 @@ describe("Lua LP helpers", () => {
     expect(host.messages).toContain("recover applied 900");
     expect(session.state.players[0].lifePoints).toBe(7400);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["recoveredLifePoints"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1112 });
 
     const recoverTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(recoverTrigger).toBeDefined();
@@ -228,6 +230,7 @@ describe("Lua LP helpers", () => {
     expect(host.messages).toContain("cost paid 7400");
     expect(session.state.players[0].lifePoints).toBe(7400);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["lifePointCostPaid"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1201 });
 
     const costTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(costTrigger).toBeDefined();

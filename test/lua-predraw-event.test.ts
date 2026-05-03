@@ -49,7 +49,13 @@ describe("Lua predraw events", () => {
     expect(session.state.turnPlayer).toBe(1);
     expect(session.state.cards.filter((card) => card.controller === 1 && card.location === "hand")).toHaveLength(2);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["preDraw"]);
-    expect(session.state.eventHistory.map((event) => event.eventName).slice(-4)).toEqual(["preDraw", "phaseStartMain1", "turnStarted", "phaseMain1"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1113 });
+    expect(session.state.eventHistory.slice(-4)).toEqual([
+      expect.objectContaining({ eventName: "preDraw", eventCode: 1113 }),
+      expect.objectContaining({ eventName: "phaseStartMain1", eventCode: 0x2004 }),
+      expect.objectContaining({ eventName: "turnStarted" }),
+      expect.objectContaining({ eventName: "phaseMain1", eventCode: 0x1004 }),
+    ]);
 
     const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
