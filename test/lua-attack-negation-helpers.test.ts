@@ -110,9 +110,10 @@ describe("Lua attack negation helpers", () => {
     session.state.currentAttack = { attackerUid: attacker!.uid, targetUid: target!.uid };
     session.state.pendingBattle = { attackerUid: attacker!.uid, targetUid: target!.uid };
 
-    const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const source = {
+      readScript(name: string) {
+        if (name !== "c300.lua") return undefined;
+        return `
       c300={}
       function c300.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -124,16 +125,27 @@ describe("Lua attack negation helpers", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "attack-disabled-trigger.lua",
-    );
+      `;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadCardScript(300, source);
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     const result = host.loadScript(`Debug.Message("negate disabled " .. tostring(Duel.NegateAttack()))`, "negate-disabled.lua");
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("negate disabled true");
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0 });
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0 })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0 });
+    const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(restoredTrigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, restoredTrigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("attack disabled trigger 100/0");
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
