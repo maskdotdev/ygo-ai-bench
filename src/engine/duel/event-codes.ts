@@ -1,3 +1,4 @@
+import { phaseMask } from "#duel/phase-mask.js";
 import type { DuelEventName, DuelPhase } from "#duel/types.js";
 
 const eventCodes: Partial<Record<DuelEventName, number>> = {
@@ -84,21 +85,11 @@ export function duelEventNameFromCode(code: number | undefined): DuelEventName |
 }
 
 export function phaseEventCode(phase: DuelPhase): number {
-  if (phase === "draw") return 0x1001;
-  if (phase === "standby") return 0x1002;
-  if (phase === "main1") return 0x1004;
-  if (phase === "battle") return 0x1080;
-  if (phase === "main2") return 0x1100;
-  return 0x1200;
+  return 0x1000 | phaseMask(phase);
 }
 
 export function phaseStartEventCode(phase: DuelPhase): number {
-  if (phase === "draw") return 0x2001;
-  if (phase === "standby") return 0x2002;
-  if (phase === "main1") return 0x2004;
-  if (phase === "battle") return 0x2080;
-  if (phase === "main2") return 0x2100;
-  return 0x2200;
+  return 0x2000 | phaseMask(phase);
 }
 
 function phaseEventNameFromCode(code: number): DuelEventName | undefined {
