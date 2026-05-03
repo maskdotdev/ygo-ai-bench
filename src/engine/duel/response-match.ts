@@ -40,6 +40,7 @@ function hasPartialWindowStamp(value: DuelResponse): boolean {
   return hasWindowId(value) !== hasWindowKind(value);
 }
 
-function sameStringSet(a: string[], b: string[]): boolean {
+function sameStringSet(a: unknown, b: unknown): boolean {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
   return a.length === b.length && a.every((value) => b.includes(value));
 }
