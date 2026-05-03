@@ -64,7 +64,7 @@ describe("EDOPro parity battle destroy redirect fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro redirects a monster destroyed by battle according to EFFECT_BATTLE_DESTROY_REDIRECT",
