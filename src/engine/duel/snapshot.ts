@@ -216,14 +216,14 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   assertSnapshotBattlePairs(state.battlePairs);
   assertSnapshotPendingTriggers(state.pendingTriggers);
   assertSnapshotEventHistory(state.eventHistory);
-  assertSnapshotChain(state.chain);
   assertSnapshotChainLimits(state.chainLimits);
   assertSnapshotSkippedPhases(state.skippedPhases);
   assertSnapshotActivityHistory(state.activityHistory);
   assertSnapshotFlagEffects(state.flagEffects);
   assertSnapshotLog(state.log);
-  assertSnapshotCards(state.cards);
-  assertSnapshotEffects(state.effects);
+  const cardUids = assertSnapshotCards(state.cards);
+  assertSnapshotChain(state.chain, cardUids);
+  assertSnapshotEffects(state.effects, cardUids);
   if (!duelSnapshotStatuses.has(state.status)) throw new Error("Malformed duel snapshot: state.status must be a duel status");
   if (!duelSnapshotPhases.has(state.phase)) throw new Error("Malformed duel snapshot: state.phase must be a duel phase");
   if (state.winner !== undefined && state.winner !== "draw") assertSnapshotPlayerId(state.winner, "state.winner");
@@ -328,7 +328,7 @@ function assertSnapshotEventPayload(payload: Record<string, unknown>, path: stri
   if (payload.eventCardUid !== undefined && typeof payload.eventCardUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.eventCardUid must be a string`);
 }
 
-function assertSnapshotChain(chain: unknown): void {
+function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): void {
   if (!Array.isArray(chain)) throw new Error("Malformed duel snapshot: state.chain must be an array");
   for (const [index, link] of chain.entries()) {
     const path = `state.chain.${index}`;
@@ -336,6 +336,7 @@ function assertSnapshotChain(chain: unknown): void {
     for (const field of ["id", "sourceUid", "effectId"] as const) {
       if (typeof link[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
     }
+    if (!cardUids.has(link.sourceUid as string)) throw new Error(`Malformed duel snapshot: ${path}.sourceUid must reference a card`);
     assertSnapshotPlayerId(link.player, `${path}.player`);
     if (link.activationLocation !== undefined && typeof link.activationLocation !== "string") throw new Error(`Malformed duel snapshot: ${path}.activationLocation must be a string`);
     for (const field of ["activationSequence", "targetParam", "disableReason"] as const) {
@@ -409,7 +410,7 @@ function assertSnapshotLog(log: unknown): void {
   }
 }
 
-function assertSnapshotCards(cards: unknown): void {
+function assertSnapshotCards(cards: unknown): Set<string> {
   if (!Array.isArray(cards)) throw new Error("Malformed duel snapshot: state.cards must be an array");
   const seenUids = new Set<string>();
   const locationsByUid = new Map<string, unknown>();
@@ -442,9 +443,10 @@ function assertSnapshotCards(cards: unknown): void {
       if (locationsByUid.get(uid) !== "overlay") throw new Error(`Malformed duel snapshot: state.cards.${index}.overlayUids.${overlayIndex} must reference an overlay card`);
     }
   }
+  return seenUids;
 }
 
-function assertSnapshotEffects(effects: unknown): void {
+function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>): void {
   if (!Array.isArray(effects)) throw new Error("Malformed duel snapshot: state.effects must be an array");
   for (const [index, effect] of effects.entries()) {
     const path = `state.effects.${index}`;
@@ -452,6 +454,7 @@ function assertSnapshotEffects(effects: unknown): void {
     for (const field of ["id", "sourceUid"] as const) {
       if (typeof effect[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
     }
+    if (!cardUids.has(effect.sourceUid as string)) throw new Error(`Malformed duel snapshot: ${path}.sourceUid must reference a card`);
     assertSnapshotPlayerId(effect.controller, `${path}.controller`);
     if (effect.ownerPlayer !== undefined) assertSnapshotPlayerId(effect.ownerPlayer, `${path}.ownerPlayer`);
     if (effect.registryKey !== undefined && typeof effect.registryKey !== "string") throw new Error(`Malformed duel snapshot: ${path}.registryKey must be a string`);

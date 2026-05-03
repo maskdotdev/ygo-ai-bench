@@ -225,13 +225,41 @@ describe("duel snapshot persistence", () => {
       1: { main: ["400"] },
     });
     startDuel(session);
+    const sourceUid = serializeDuel(session).state.cards[0]!.uid;
     const badTargetUids = serializeDuel(session);
     const badPlayer = serializeDuel(session);
-    badTargetUids.state.chain = [{ id: "link", player: 0, sourceUid: "source", effectId: "effect", targetUids: ["target", 7 as unknown as string] }];
-    badPlayer.state.chain = [{ id: "link", player: 2 as 0, sourceUid: "source", effectId: "effect" }];
+    badTargetUids.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", targetUids: ["target", 7 as unknown as string] }];
+    badPlayer.state.chain = [{ id: "link", player: 2 as 0, sourceUid, effectId: "effect" }];
 
     expect(() => restoreDuel(badTargetUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.targetUids.1 must be a string");
     expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.player must be a player id");
+  });
+
+  it("rejects missing chain and effect source card snapshots before restore", () => {
+    const session = createDuel({ seed: 164, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const source = findPublicCard(session, 0, "hand", "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "snapshot-missing-source-effect",
+      registryKey: "snapshot-missing-source-effect",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation() {},
+    });
+    const missingChainSource = serializeDuel(session);
+    const missingEffectSource = serializeDuel(session);
+    missingChainSource.state.chain = [{ id: "link", player: 0, sourceUid: "missing", effectId: "effect" }];
+    missingEffectSource.state.effects[0] = { ...missingEffectSource.state.effects[0]!, sourceUid: "missing" };
+
+    expect(() => restoreDuel(missingChainSource, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.sourceUid must reference a card");
+    expect(() => restoreDuel(missingEffectSource, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.sourceUid must reference a card");
   });
 
   it("rejects malformed chain limit snapshots before restore", () => {
