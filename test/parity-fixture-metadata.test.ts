@@ -54,6 +54,10 @@ describe("parity fixture metadata", () => {
     expect(missingOpenLegalActionGroupWindowIds()).toEqual([]);
   });
 
+  it("requires timing-window legal-action expectations to pin window ids", () => {
+    expect(missingTimingLegalActionWindowIds()).toEqual([]);
+  });
+
   it("requires parity fixtures to exercise snapshot restore coverage", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
@@ -87,6 +91,14 @@ describe("parity fixture metadata", () => {
     expect(missingOpenLegalActionWindowIdsInLines("fixture.ts", [...lines.slice(0, 4), '  legalActions: [{ type: "endTurn", player: 0, windowKind: "open" }],', ...lines.slice(4)])).toEqual([
       "fixture.ts:5",
     ]);
+    expect(
+      missingTimingLegalActionWindowIdsInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        '  legalActions: [{ type: "passDamage", player: 0, windowKind: "battle" }],',
+        '  absentLegalActions: [{ type: "activateEffect", player: 1, windowKind: "chainResponse", effectId: "fixture-chain" }],',
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:5", "fixture.ts:6"]);
     expect(
       missingOpenLegalActionGroupWindowIdsInLines("fixture.ts", [
         ...lines.slice(0, 4),
@@ -154,6 +166,10 @@ function missingOpenLegalActionWindowIds(): string[] {
 
 function missingOpenLegalActionGroupWindowIds(): string[] {
   return parityFixtureFiles().flatMap((file) => missingOpenLegalActionGroupWindowIdsInLines(file, readFixtureLines(file)));
+}
+
+function missingTimingLegalActionWindowIds(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingTimingLegalActionWindowIdsInLines(file, readFixtureLines(file)));
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
@@ -243,26 +259,46 @@ function missingLegalActionCountsInLines(file: string, lines: string[]): string[
 }
 
 function missingOpenLegalActionWindowIdsInLines(file: string, lines: string[]): string[] {
+  return missingLegalActionWindowIdsInLines(file, lines, ["open"]);
+}
+
+function missingOpenLegalActionGroupWindowIdsInLines(file: string, lines: string[]): string[] {
+  return missingLegalActionGroupWindowIdsInLines(file, lines, ["open"]);
+}
+
+function missingTimingLegalActionWindowIdsInLines(file: string, lines: string[]): string[] {
+  return missingLegalActionWindowIdsInLines(file, lines, ["battle", "chainResponse", "triggerBucket"]);
+}
+
+function missingLegalActionWindowIdsInLines(file: string, lines: string[], windowKinds: string[]): string[] {
   const missingWindowIds: string[] = [];
   lines.forEach((line, index) => {
-    if (!/(legalActions|absentLegalActions):/.test(line) || !/windowKind:\s*["']open["']/.test(line)) return;
-    const openActionObjects = line.match(/\{[^{}]*windowKind:\s*["']open["'][^{}]*\}/g) ?? [];
-    if (openActionObjects.some((action) => !/\bwindowId:/.test(action))) missingWindowIds.push(`${file}:${index + 1}`);
+    if (!/(legalActions|absentLegalActions):/.test(line)) return;
+    const actionObjects = line.match(/\{[^{}]*windowKind:\s*["'][^"']+["'][^{}]*\}/g) ?? [];
+    if (actionObjects.some((action) => actionHasWindowKind(action, windowKinds) && !/\bwindowId:/.test(action))) missingWindowIds.push(`${file}:${index + 1}`);
   });
   return missingWindowIds;
 }
 
-function missingOpenLegalActionGroupWindowIdsInLines(file: string, lines: string[]): string[] {
+function missingLegalActionGroupWindowIdsInLines(file: string, lines: string[], windowKinds: string[]): string[] {
   const missingWindowIds: string[] = [];
   lines.forEach((line, index) => {
     if (!/label:\s*["']/.test(line)) return;
     const groupBlock = expectationBlock(lines, index);
-    if (!/windowKind:\s*["']open["']/.test(groupBlock)) return;
+    if (!blockHasWindowKind(groupBlock, windowKinds)) return;
     if (!/actions:\s*\[/.test(groupBlock)) return;
     const header = groupBlock.split("actions:")[0] ?? "";
     if (!/\bwindowId:/.test(header)) missingWindowIds.push(`${file}:${findBlockStart(lines, index) + 1}`);
   });
   return [...new Set(missingWindowIds)];
+}
+
+function actionHasWindowKind(action: string, windowKinds: string[]): boolean {
+  return windowKinds.some((windowKind) => new RegExp(`windowKind:\\s*["']${windowKind}["']`).test(action));
+}
+
+function blockHasWindowKind(block: string, windowKinds: string[]): boolean {
+  return windowKinds.some((windowKind) => new RegExp(`windowKind:\\s*["']${windowKind}["']`).test(block));
 }
 
 function parityFixtureWithoutSnapshotRestoreInLines(file: string, lines: string[]): string[] {
