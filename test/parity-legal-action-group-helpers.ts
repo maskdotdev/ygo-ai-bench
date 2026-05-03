@@ -33,11 +33,12 @@ export const attackGroup = (attacks: AttackChoice[], count = 1) => ({
   })),
 });
 
-export const absentOpenAttackGroup = (player: 0 | 1, attackerUid: string) => ({
+export const absentOpenAttackGroup = (player: 0 | 1, attackerUid: string, windowId?: number) => ({
   player,
   label: "Attacks",
+  ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
-  actions: [{ type: "declareAttack" as const, player, attackerUid }],
+  actions: [{ type: "declareAttack" as const, player, attackerUid, ...(windowId === undefined ? {} : { windowId }) }],
 });
 
 export const absentAttackGroup = (attackerUid: string, targetUid?: string, directAttack?: true) => ({
