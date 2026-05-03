@@ -284,6 +284,35 @@ describe("duel rollback", () => {
     expect(session.state.effects[0]?.hintTiming).toEqual([4, 8]);
   });
 
+  it("rolls back nested chain target arrays", () => {
+    const session = createDuel({ seed: 132, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.chain = [
+      {
+        id: "chain-1",
+        player: 0,
+        sourceUid: "source",
+        effectId: "effect",
+        targetUids: ["target-a", "target-b"],
+        operationOverride(ctx) {
+          ctx.log("chain link");
+        },
+      },
+    ];
+    const rollback = captureDuelState(session.state);
+
+    session.state.chain[0]!.targetUids!.push("target-c");
+    restoreDuelState(session.state, rollback);
+
+    expect(session.state.chain[0]?.targetUids).toEqual(["target-a", "target-b"]);
+    rollback.chain[0]!.targetUids!.push("target-d");
+    expect(session.state.chain[0]?.targetUids).toEqual(["target-a", "target-b"]);
+  });
+
   it("rolls back failed trigger activation costs and keeps the trigger pending", () => {
     const session = createDuel({ seed: 83, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

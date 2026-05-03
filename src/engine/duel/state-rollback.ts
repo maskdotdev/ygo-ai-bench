@@ -72,7 +72,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
       ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
     })),
     effects: state.effects.map(copyEffect),
-    chain: state.chain.map((link) => ({ ...link, ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}) })),
+    chain: state.chain.map(copyChainLink),
     chainLimits: state.chainLimits.map((limit) => ({ ...limit })),
     chainPasses: [...state.chainPasses],
     pendingTriggers: state.pendingTriggers.map((trigger) => ({ ...trigger })),
@@ -121,7 +121,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.players = rollback.players;
   state.cards = rollback.cards;
   state.effects = rollback.effects.map(copyEffect);
-  state.chain = rollback.chain;
+  state.chain = rollback.chain.map(copyChainLink);
   state.chainLimits = rollback.chainLimits;
   state.chainPasses = rollback.chainPasses;
   state.pendingTriggers = rollback.pendingTriggers;
@@ -172,6 +172,10 @@ function copyEffect(effect: DuelEffectDefinition): DuelEffectDefinition {
     ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
     ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
   };
+}
+
+function copyChainLink(link: ChainLink): ChainLink {
+  return { ...link, ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}) };
 }
 
 function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {
