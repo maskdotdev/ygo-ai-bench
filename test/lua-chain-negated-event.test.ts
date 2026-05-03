@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua chain-negated events", () => {
   it("queues Lua chain-negated triggers after a chain link is negated", () => {
@@ -18,9 +19,10 @@ describe("Lua chain-negated events", () => {
     });
     startDuel(session);
 
-    const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
       c100={}
       function c100.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -31,6 +33,10 @@ describe("Lua chain-negated events", () => {
         end)
         c:RegisterEffect(e)
       end
+      `;
+        }
+        if (name === "c200.lua") {
+          return `
 
       c200={}
       function c200.initial_effect(c)
@@ -45,6 +51,10 @@ describe("Lua chain-negated events", () => {
         end)
         c:RegisterEffect(e)
       end
+      `;
+        }
+        if (name === "c300.lua") {
+          return `
 
       c300={}
       function c300.initial_effect(c)
@@ -57,10 +67,18 @@ describe("Lua chain-negated events", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "chain-negated-trigger.lua",
-    );
-    expect(loaded.ok, loaded.error).toBe(true);
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const sourceScript = host.loadCardScript(100, source);
+    const negatorScript = host.loadCardScript(200, source);
+    const watcherScript = host.loadCardScript(300, source);
+    expect(sourceScript.ok, sourceScript.error).toBe(true);
+    expect(negatorScript.ok, negatorScript.error).toBe(true);
+    expect(watcherScript.ok, watcherScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
 
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
@@ -80,15 +98,21 @@ describe("Lua chain-negated events", () => {
     expect(host.messages).not.toContain("negated source resolved");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainNegated"]);
 
-    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c200.lua", "c300.lua"]);
+    expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
-    while (session.state.chain.length > 0) {
-      const player = session.state.waitingFor ?? session.state.turnPlayer;
-      const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    while (restored.session.state.chain.length > 0) {
+      const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+      const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
       expect(pass).toBeDefined();
-      expect(applyResponse(session, pass!).ok).toBe(true);
+      expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
     }
-    expect(host.messages).toContain("chain negated resolved 0");
+    expect(restored.host.messages).toContain("chain negated resolved 0");
   });
 });
