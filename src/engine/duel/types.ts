@@ -588,7 +588,7 @@ export interface ScriptedLegalActionGroupExpectation {
 }
 
 export interface ScriptedDuelWindowExpectation {
-  source?: "edopro" | "parity-backlog";
+  source: "edopro" | "parity-backlog";
   note?: string;
   status?: DuelStatus;
   winner?: DuelWinner | null;
