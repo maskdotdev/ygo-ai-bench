@@ -106,7 +106,7 @@ describe("extra deck summon restore", () => {
   });
 });
 
-function assertRestoredFullZoneExtraDeckSummon(type: "synchroSummon" | "xyzSummon" | "linkSummon", code: string, materialLocation: "graveyard" | "overlay"): void {
+function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSummon" | "xyzSummon" | "linkSummon", code: string, materialLocation: "graveyard" | "overlay"): void {
   const session = createDuel({ seed: 1, startingHandSize: 7, cardReader: createCardReader(cards) });
   loadDecks(session, {
     0: { main: ["100", "300", "500", "500", "500", "500", "500"], extra: [code] },
@@ -136,6 +136,10 @@ function assertRestoredFullZoneExtraDeckSummon(type: "synchroSummon" | "xyzSummo
 }
 
 describe("full-zone extra deck summon restore", () => {
+  it("restores full-zone Fusion Summon actions that free space with selected materials", () => {
+    assertRestoredFullZoneExtraDeckSummon("fusionSummon", "900", "graveyard");
+  });
+
   it("restores full-zone Synchro Summon actions that free space with selected materials", () => {
     assertRestoredFullZoneExtraDeckSummon("synchroSummon", "910", "graveyard");
   });
