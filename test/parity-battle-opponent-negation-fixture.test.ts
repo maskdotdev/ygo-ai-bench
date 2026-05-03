@@ -73,7 +73,7 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-attack-negator" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro clears the attack immediately when the defending player's attack-negating response resolves",
