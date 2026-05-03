@@ -136,7 +136,7 @@ function pushChainEvent(L: unknown, session: DuelSession, hostState: LuaDuelChai
     return 1;
   }
   const eventCard = link.eventCardUid === undefined ? undefined : session.state.cards.find((card) => card.uid === link.eventCardUid);
-  pushGroupTable(L, eventCard ? [eventCard.uid] : []);
+  pushGroupTable(L, link.eventUids ?? (eventCard ? [eventCard.uid] : []));
   lua.lua_pushinteger(L, link.eventPlayer ?? eventCard?.controller ?? link.player);
   lua.lua_pushinteger(L, link.eventValue ?? 0);
   pushRelatedEffectById(L, hostState, link.relatedEffectId);

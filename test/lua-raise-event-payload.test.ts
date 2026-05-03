@@ -282,6 +282,8 @@ describe("Lua raised event payloads", () => {
           end)
           e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
             Debug.Message("restored group operation " .. eg:GetCount() .. "/" .. eg:GetFirst():GetCode() .. "/" .. ep .. "/" .. ev)
+            local ceg,cep,cev=Duel.GetChainEvent(0)
+            Debug.Message("restored group chain " .. ceg:GetCount() .. "/" .. ceg:GetFirst():GetCode() .. "/" .. cep .. "/" .. cev)
             local ok,eg2,ep2,ev2=Duel.CheckEvent(EVENT_TO_GRAVE,true)
             Debug.Message("restored group check " .. tostring(ok) .. "/" .. eg2:GetCount() .. "/" .. ep2 .. "/" .. ev2)
           end)
@@ -315,6 +317,7 @@ describe("Lua raised event payloads", () => {
 
     activateFirstTrigger(restored.session);
     expect(restored.host.messages).toContain("restored group operation 2/100/1/22");
+    expect(restored.host.messages).toContain("restored group chain 2/100/1/22");
     expect(restored.host.messages).toContain("restored group check true/2/1/22");
   });
 
