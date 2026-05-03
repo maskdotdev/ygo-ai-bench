@@ -190,6 +190,8 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   for (const field of ["players", "activityCounts", "battleDamage", "options"] as const) {
     if (!isRecord(state[field])) throw new Error(`Malformed duel snapshot: state.${field} must be an object`);
   }
+  assertSnapshotPlayers(state.players);
+  assertSnapshotOptions(state.options);
   for (const field of ["id", "seed", "status", "phase"] as const) {
     if (typeof state[field] !== "string") throw new Error(`Malformed duel snapshot: state.${field} must be a string`);
   }
@@ -202,6 +204,8 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   }
   if (!duelSnapshotStatuses.has(state.status)) throw new Error("Malformed duel snapshot: state.status must be a duel status");
   if (!duelSnapshotPhases.has(state.phase)) throw new Error("Malformed duel snapshot: state.phase must be a duel phase");
+  if (state.winner !== undefined && state.winner !== "draw") assertSnapshotPlayerId(state.winner, "state.winner");
+  if (state.winReason !== undefined && typeof state.winReason !== "number") throw new Error("Malformed duel snapshot: state.winReason must be a number");
   if (state.waitingFor !== undefined) assertSnapshotPlayerId(state.waitingFor, "state.waitingFor");
   if (state.battleStep !== undefined && !duelSnapshotBattleSteps.has(state.battleStep)) throw new Error("Malformed duel snapshot: state.battleStep must be a battle step");
   if (state.prompt !== undefined) assertSnapshotPrompt(state.prompt);
@@ -231,6 +235,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function assertSnapshotPlayerId(value: unknown, path: string): asserts value is PlayerId {
   if (value !== 0 && value !== 1) throw new Error(`Malformed duel snapshot: ${path} must be a player id`);
+}
+
+function assertSnapshotPlayers(players: unknown): void {
+  if (!isRecord(players)) throw new Error("Malformed duel snapshot: state.players must be an object");
+  assertSnapshotPlayer(players[0], 0);
+  assertSnapshotPlayer(players[1], 1);
+}
+
+function assertSnapshotPlayer(player: unknown, expectedId: PlayerId): void {
+  const path = `state.players.${expectedId}`;
+  if (!isRecord(player)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+  if (player.id !== expectedId) throw new Error(`Malformed duel snapshot: ${path}.id must match the player id`);
+  if (typeof player.lifePoints !== "number") throw new Error(`Malformed duel snapshot: ${path}.lifePoints must be a number`);
+  if (typeof player.normalSummonAvailable !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.normalSummonAvailable must be a boolean`);
+  if (player.initialMainDeckSize !== undefined && typeof player.initialMainDeckSize !== "number") throw new Error(`Malformed duel snapshot: ${path}.initialMainDeckSize must be a number`);
+}
+
+function assertSnapshotOptions(options: unknown): void {
+  if (!isRecord(options)) throw new Error("Malformed duel snapshot: state.options must be an object");
+  for (const field of ["startingLifePoints", "startingHandSize", "drawPerTurn"] as const) {
+    if (typeof options[field] !== "number") throw new Error(`Malformed duel snapshot: state.options.${field} must be a number`);
+  }
 }
 
 function assertSnapshotPrompt(prompt: unknown): asserts prompt is DuelPromptState {

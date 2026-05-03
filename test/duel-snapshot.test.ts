@@ -96,6 +96,38 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(badReturnTo, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.returnTo must be a player id");
   });
 
+  it("rejects malformed player and option snapshots before restore", () => {
+    const session = createDuel({ seed: 145, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badPlayer = serializeDuel(session);
+    const badOption = serializeDuel(session);
+    badPlayer.state.players[1] = { ...badPlayer.state.players[1], lifePoints: "8000" as unknown as number };
+    badOption.state.options = { ...badOption.state.options, drawPerTurn: "one" as unknown as number };
+
+    expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.players.1.lifePoints must be a number");
+    expect(() => restoreDuel(badOption, createCardReader(cards))).toThrow("Malformed duel snapshot: state.options.drawPerTurn must be a number");
+  });
+
+  it("rejects malformed winner snapshots before restore", () => {
+    const session = createDuel({ seed: 146, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badWinner = serializeDuel(session);
+    const badWinReason = serializeDuel(session);
+    badWinner.state.winner = "timeout" as unknown as 0;
+    badWinReason.state.winReason = "battle" as unknown as number;
+
+    expect(() => restoreDuel(badWinner, createCardReader(cards))).toThrow("Malformed duel snapshot: state.winner must be a player id");
+    expect(() => restoreDuel(badWinReason, createCardReader(cards))).toThrow("Malformed duel snapshot: state.winReason must be a number");
+  });
+
   it("rejects malformed optional battle window snapshots before restore", () => {
     const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
