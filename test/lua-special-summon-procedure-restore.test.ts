@@ -224,4 +224,91 @@ describe("Lua special summon procedure restore", () => {
     expect(restored.session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(4);
     expect(restored.session.state.log.some((entry) => entry.action === "specialSummon" && entry.card === "Zone Lost Filler")).toBe(false);
   });
+
+  it("rolls back restored Lua procedures when checked material moves are partial", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Partial Move Procedure Source", kind: "monster" },
+      { code: "200", name: "First Partial Material", kind: "monster" },
+      { code: "300", name: "Blocked Partial Material", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 85, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstMaterial = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const blockedMaterial = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(firstMaterial).toBeTruthy();
+    expect(blockedMaterial).toBeTruthy();
+
+    const sourceScript = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_SPSUMMON_PROC)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          local first=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 200), c:GetControler(), LOCATION_HAND, 0, 1, 1, c):GetFirst()
+          local blocked=Duel.SelectMatchingCard(c:GetControler(), aux.FilterBoolFunction(Card.IsCode, 300), c:GetControler(), LOCATION_HAND, 0, 1, 1, c):GetFirst()
+          local g=Group.FromCards(first, blocked)
+          local moved=Duel.SendtoGrave(g, REASON_MATERIAL + REASON_SPSUMMON)
+          Debug.Message("restored partial material moves " .. moved .. "/" .. g:GetCount())
+          if moved~=g:GetCount() then error("restored procedure material move count mismatch") end
+        end)
+        c:RegisterEffect(e)
+      end
+      `;
+        }
+        if (name === "c300.lua") {
+          return `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_CANNOT_TO_GRAVE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetCondition(function(e,tp)
+          return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_GRAVE, 0, 1, nil)
+        end)
+        c:RegisterEffect(e)
+      end
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const setup = host.loadCardScript(100, sourceScript);
+    const blockerSetup = host.loadCardScript(300, sourceScript);
+    expect(setup.ok, setup.error).toBe(true);
+    expect(blockerSetup.ok, blockerSetup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c300.lua"]);
+    expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+
+    const result = applyLuaRestoreResponse(restored, action!);
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("restored procedure material move count mismatch");
+    expect(restored.host.messages).toContain("restored partial material moves 1/2");
+    expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === firstMaterial!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === blockedMaterial!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.log.some((entry) => entry.action === "sendToGraveyard" && entry.card === "First Partial Material")).toBe(false);
+  });
 });
