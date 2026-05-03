@@ -3,32 +3,32 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 
-describe("EDOPro parity battle negation fixtures", () => {
-  it("clears the battle window when a quick effect negates an attack", () => {
+describe("EDOPro parity battle opponent negation fixtures", () => {
+  it("lets the non-turn player negate from the first attack-response window", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Negated Attacker", kind: "monster", attack: 1800, defense: 1200 },
-      { code: "300", name: "Attack Negator", kind: "monster", attack: 500, defense: 500 },
+      { code: "300", name: "Opponent Negator", kind: "monster", attack: 500, defense: 500 },
     ];
     const fixture: ScriptedDuelFixture = {
-      name: "attack response negation fixture",
-      options: { seed: 72, startingHandSize: 2 },
+      name: "opponent attack response negation fixture",
+      options: { seed: 73, startingHandSize: 1 },
       decks: {
-        0: { main: ["100", "300"] },
-        1: { main: ["300", "300"] },
+        0: { main: ["100"] },
+        1: { main: ["300"] },
       },
       setup: {
         moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
         effects: [
           {
-            id: "fixture-attack-negator",
-            player: 0,
+            id: "fixture-opponent-attack-negator",
+            player: 1,
             code: "300",
             location: "hand",
             event: "quick",
             range: ["hand"],
             oncePerTurn: true,
             negateAttackOnResolve: true,
-            logMessage: "Fixture attack negator resolved",
+            logMessage: "Fixture opponent attack negator resolved",
           },
         ],
       },
@@ -38,17 +38,26 @@ describe("EDOPro parity battle negation fixtures", () => {
           snapshotRestore: "after",
           after: {
             source: "edopro",
-            note: "EDOPro opens the opponent's attack-response window after a direct attack declaration",
+            note: "EDOPro gives the non-turn player first chance to respond to an attack declaration",
             waitingFor: 1,
             windowKind: "battle",
             pendingBattle: true,
             currentAttack: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
-            attacksDeclared: ["p0-deck-100-0"],
-            legalActionCounts: { 0: 0, 1: 1 },
-            legalActionGroupCounts: { 0: 0, 1: 1 },
-            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, effectId: "fixture-opponent-attack-negator", count: 1 },
+              { type: "passAttack", player: 1, windowKind: "battle", count: 1 },
+            ],
             legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 1, windowKind: "battle", effectId: "fixture-opponent-attack-negator", count: 1 }],
+              },
               {
                 player: 1,
                 label: "Pass",
@@ -59,59 +68,35 @@ describe("EDOPro parity battle negation fixtures", () => {
             ],
           },
         }),
-        makeScriptedStep(makeResponseSelector("passAttack", 1), {
-          after: {
-            source: "edopro",
-            note: "EDOPro passes attack-response priority to the turn player, who may activate attack-negating fast effects",
-            waitingFor: 0,
-            windowKind: "battle",
-            pendingBattle: true,
-            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
-            legalActionCounts: { 0: 2, 1: 0 },
-            legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-attack-negator", count: 1 }],
-            legalActionGroups: [
-              {
-                player: 0,
-                label: "Effects",
-                windowKind: "battle",
-                count: 1,
-                actions: [{ type: "activateEffect", player: 0, windowKind: "battle", effectId: "fixture-attack-negator", count: 1 }],
-              },
-            ],
-          },
-        }),
-        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-attack-negator" }), {
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-attack-negator" }), {
           snapshotRestore: "after",
           after: {
             source: "edopro",
-            note: "EDOPro clears pending battle state after an attack is negated",
+            note: "EDOPro clears the attack immediately when the defending player's attack-negating response resolves",
             waitingFor: 0,
             pendingBattle: false,
             currentAttack: false,
             battleWindow: null,
-            attackPasses: [],
-            damagePasses: [],
             lifePoints: { 0: 8000, 1: 8000 },
             attacksDeclared: ["p0-deck-100-0"],
             attackCanceledUids: ["p0-deck-100-0"],
             absentLegalActions: [
-              { type: "passAttack", player: 0 },
-              { type: "passDamage", player: 0 },
+              { type: "passAttack", player: 1 },
+              { type: "passDamage", player: 1 },
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" },
             ],
             absentLegalActionGroups: [
-              { player: 0, label: "Pass", actions: [{ type: "passAttack", player: 0, windowKind: "battle" }] },
-              { player: 0, label: "Pass", actions: [{ type: "passDamage", player: 0, windowKind: "battle" }] },
+              { player: 1, label: "Pass", actions: [{ type: "passAttack", player: 1, windowKind: "battle" }] },
+              { player: 1, label: "Pass", actions: [{ type: "passDamage", player: 1, windowKind: "battle" }] },
               { player: 0, label: "Attacks", actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }] },
             ],
-            logIncludes: ["Negated attack true", "Fixture attack negator resolved", "Negated attack"],
+            logIncludes: ["Negated attack true", "Fixture opponent attack negator resolved", "Negated attack"],
           },
         }),
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state keeps the attack spent but cancels all active battle windows",
+        note: "EDOPro final fixture state keeps the attack spent after the defending player negates it",
         phase: "battle",
         waitingFor: 0,
         pendingBattle: false,
@@ -121,16 +106,16 @@ describe("EDOPro parity battle negation fixtures", () => {
         attacksDeclared: ["p0-deck-100-0"],
         attackCanceledUids: ["p0-deck-100-0"],
         absentLegalActions: [
-          { type: "passAttack", player: 0 },
-          { type: "passDamage", player: 0 },
+          { type: "passAttack", player: 1 },
+          { type: "passDamage", player: 1 },
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" },
         ],
         absentLegalActionGroups: [
-          { player: 0, label: "Pass", actions: [{ type: "passAttack", player: 0, windowKind: "battle" }] },
-          { player: 0, label: "Pass", actions: [{ type: "passDamage", player: 0, windowKind: "battle" }] },
+          { player: 1, label: "Pass", actions: [{ type: "passAttack", player: 1, windowKind: "battle" }] },
+          { player: 1, label: "Pass", actions: [{ type: "passDamage", player: 1, windowKind: "battle" }] },
           { player: 0, label: "Attacks", actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }] },
         ],
-        logIncludes: ["Negated attack true", "Fixture attack negator resolved", "Negated attack"],
+        logIncludes: ["Negated attack true", "Fixture opponent attack negator resolved", "Negated attack"],
       },
     };
 
