@@ -95,18 +95,19 @@ Or run individual checks with:
 
 ```bash
 bun run check:loc
+bun run scan:lua-parity
 bun run typecheck
 bun run test
 bun run build
 ```
 
-To rank missing EDOPro Lua APIs and constants against a local Project Ignis card-script checkout, clone scripts into the ignored upstream workspace and run the scanners:
+`bun run check` includes the combined Lua parity scanner. To inspect missing EDOPro Lua APIs or constants against a local Project Ignis card-script checkout, clone scripts into the ignored upstream workspace and run the scanners directly:
 
 ```bash
 git clone --depth 1 https://github.com/ProjectIgnis/CardScripts .upstream/ignis/script
-npm run scan:lua-api -- --limit 50
-npm run scan:lua-constants -- --fail-on-missing
-npm run scan:lua-parity
+bun run scan:lua-api -- --limit 50
+bun run scan:lua-constants -- --fail-on-missing
+bun run scan:lua-parity
 ```
 
 These scanners are parity guardrails. Missing APIs or constants should become implementation work or fixture-backed parity backlog, not permanent exclusions from the engine target.
