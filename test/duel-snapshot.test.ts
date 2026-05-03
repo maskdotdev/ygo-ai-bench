@@ -218,6 +218,38 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(badPayload, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventCardUid must be a string");
   });
 
+  it("rejects malformed chain snapshots before restore", () => {
+    const session = createDuel({ seed: 153, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badTargetUids = serializeDuel(session);
+    const badPlayer = serializeDuel(session);
+    badTargetUids.state.chain = [{ id: "link", player: 0, sourceUid: "source", effectId: "effect", targetUids: ["target", 7 as unknown as string] }];
+    badPlayer.state.chain = [{ id: "link", player: 2 as 0, sourceUid: "source", effectId: "effect" }];
+
+    expect(() => restoreDuel(badTargetUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.targetUids.1 must be a string");
+    expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.player must be a player id");
+  });
+
+  it("rejects malformed chain limit snapshots before restore", () => {
+    const session = createDuel({ seed: 154, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badRegistryKey = serializeDuel(session);
+    const badExpiry = serializeDuel(session);
+    badRegistryKey.state.chainLimits = [{ registryKey: 7 as unknown as string, untilChainEnd: true }];
+    badExpiry.state.chainLimits = [{ registryKey: "limit", expiresAtChainLength: "one" as unknown as number, untilChainEnd: true }];
+
+    expect(() => restoreDuel(badRegistryKey, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainLimits.0.registryKey must be a string");
+    expect(() => restoreDuel(badExpiry, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainLimits.0.expiresAtChainLength must be a number");
+  });
+
   it("rejects malformed optional battle window snapshots before restore", () => {
     const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

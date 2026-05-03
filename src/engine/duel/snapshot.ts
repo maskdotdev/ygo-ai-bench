@@ -216,6 +216,8 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   assertSnapshotBattlePairs(state.battlePairs);
   assertSnapshotPendingTriggers(state.pendingTriggers);
   assertSnapshotEventHistory(state.eventHistory);
+  assertSnapshotChain(state.chain);
+  assertSnapshotChainLimits(state.chainLimits);
   if (!duelSnapshotStatuses.has(state.status)) throw new Error("Malformed duel snapshot: state.status must be a duel status");
   if (!duelSnapshotPhases.has(state.phase)) throw new Error("Malformed duel snapshot: state.phase must be a duel phase");
   if (state.winner !== undefined && state.winner !== "draw") assertSnapshotPlayerId(state.winner, "state.winner");
@@ -313,6 +315,38 @@ function assertSnapshotEventPayload(payload: Record<string, unknown>, path: stri
     if (payload[field] !== undefined) assertSnapshotPlayerId(payload[field], `${path}.${field}`);
   }
   if (payload.eventCardUid !== undefined && typeof payload.eventCardUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.eventCardUid must be a string`);
+}
+
+function assertSnapshotChain(chain: unknown): void {
+  if (!Array.isArray(chain)) throw new Error("Malformed duel snapshot: state.chain must be an array");
+  for (const [index, link] of chain.entries()) {
+    const path = `state.chain.${index}`;
+    if (!isRecord(link)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+    for (const field of ["id", "sourceUid", "effectId"] as const) {
+      if (typeof link[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
+    }
+    assertSnapshotPlayerId(link.player, `${path}.player`);
+    if (link.activationLocation !== undefined && typeof link.activationLocation !== "string") throw new Error(`Malformed duel snapshot: ${path}.activationLocation must be a string`);
+    for (const field of ["activationSequence", "targetParam", "disableReason"] as const) {
+      if (link[field] !== undefined && typeof link[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
+    }
+    if (link.targetUids !== undefined) assertSnapshotStringArray(link.targetUids, `${path}.targetUids`);
+    if (link.targetPlayer !== undefined) assertSnapshotPlayerId(link.targetPlayer, `${path}.targetPlayer`);
+    if (link.disablePlayer !== undefined) assertSnapshotPlayerId(link.disablePlayer, `${path}.disablePlayer`);
+    if (link.negated !== undefined && typeof link.negated !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.negated must be a boolean`);
+    assertSnapshotEventPayload(link, path);
+  }
+}
+
+function assertSnapshotChainLimits(limits: unknown): void {
+  if (!Array.isArray(limits)) throw new Error("Malformed duel snapshot: state.chainLimits must be an array");
+  for (const [index, limit] of limits.entries()) {
+    const path = `state.chainLimits.${index}`;
+    if (!isRecord(limit)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+    if (limit.registryKey !== undefined && typeof limit.registryKey !== "string") throw new Error(`Malformed duel snapshot: ${path}.registryKey must be a string`);
+    if (limit.expiresAtChainLength !== undefined && typeof limit.expiresAtChainLength !== "number") throw new Error(`Malformed duel snapshot: ${path}.expiresAtChainLength must be a number`);
+    if (typeof limit.untilChainEnd !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.untilChainEnd must be a boolean`);
+  }
 }
 
 function assertSnapshotPlayers(players: unknown): void {
