@@ -228,6 +228,39 @@ describe("duel battle timing", () => {
     expect(restored.state.effects).toHaveLength(0);
   });
 
+  it("prunes damage subphase flag effects after restoring an attack response window", () => {
+    const session = createDuel({ seed: 61, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    session.state.flagEffects.push(
+      { ownerType: "player", ownerId: "0", code: 610, reset: 0x40000000 | 0x20, property: 0, value: 1, turn: session.state.turn },
+      { ownerType: "player", ownerId: "0", code: 611, reset: 0x40000000 | 0x40, property: 0, value: 1, turn: session.state.turn },
+    );
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([610, 611]);
+
+    passBattleWindow(restored);
+    expect(restored.state.battleWindow?.kind).toBe("startDamageStep");
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([611]);
+    passDamageWindow(restored);
+    expect(restored.state.battleWindow?.kind).toBe("beforeDamageCalculation");
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([611]);
+    passDamageWindow(restored);
+
+    expect(restored.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    expect(restored.state.flagEffects).toHaveLength(0);
+  });
+
   it("restores a pending after-damage trigger and continues the battle window after it resolves", () => {
     const session = createDuel({ seed: 56, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
