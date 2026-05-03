@@ -92,7 +92,7 @@ describe("EDOPro parity battle only-be-attacked replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro replay choices are forced toward the newly required ONLY_BE_ATTACKED target",
