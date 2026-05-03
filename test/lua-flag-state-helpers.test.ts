@@ -293,6 +293,7 @@ describe("Lua flag state helpers", () => {
         e:SetOperation(function(e,c)
           Debug.Message("duel flag phase " .. Duel.RegisterFlagEffect(0, 921, RESET_PHASE + PHASE_BATTLE, 0, 1))
           Debug.Message("card flag field " .. c:RegisterFlagEffect(922, RESET_EVENT + RESET_TOFIELD, 0, 1))
+          Debug.Message("card flag counted field " .. c:RegisterFlagEffect(923, RESET_EVENT + RESET_TOFIELD, 0, 2, 32))
         end)
         c:RegisterEffect(e)
       end
@@ -305,8 +306,14 @@ describe("Lua flag state helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
     expect(applyResponse(session, action!).ok).toBe(true);
-    expect(session.state.flagEffects).toHaveLength(2);
+    expect(session.state.flagEffects).toHaveLength(3);
 
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    expect(session.state.flagEffects).toEqual([
+      expect.objectContaining({ code: 921 }),
+      expect.objectContaining({ code: 923, resetCount: 1, value: 32 }),
+    ]);
+    moveDuelCard(session.state, source!.uid, "hand", 0);
     moveDuelCard(session.state, source!.uid, "monsterZone", 0);
     expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([921]);
 

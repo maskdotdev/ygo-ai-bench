@@ -57,11 +57,11 @@ export function pruneDuelFlagEffectsAfterMove(state: DuelState, card: DuelCardIn
     if (flag.ownerType !== "card" || flag.ownerId !== card.uid) return true;
     const flags = normalizeResetFlags(flag.reset);
     if ((flags & resetEvent) === 0) return true;
-    if ((flags & resetLeave) !== 0 && card.previousLocation !== card.location) return false;
-    if (matchesMovementReset(flags, card)) return false;
-    if ((flags & destinationResetFlags) !== 0) return !matchesDestinationReset(flags, card);
+    if ((flags & resetLeave) !== 0 && card.previousLocation !== card.location) return decrementFlagResetCount(flag);
+    if (matchesMovementReset(flags, card)) return decrementFlagResetCount(flag);
+    if ((flags & destinationResetFlags) !== 0) return matchesDestinationReset(flags, card) ? decrementFlagResetCount(flag) : true;
     const previousLocation = card.previousLocation ?? card.location;
-    return previousLocation === card.location;
+    return previousLocation === card.location || decrementFlagResetCount(flag);
   });
 }
 
