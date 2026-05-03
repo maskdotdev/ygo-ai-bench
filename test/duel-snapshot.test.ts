@@ -121,6 +121,64 @@ describe("duel snapshot persistence", () => {
     ).toThrow("cannot be used as fusion material");
   });
 
+  it("keeps unregistered continuous effect callbacks out of snapshots", () => {
+    const session = createDuel({ seed: 129, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+    const source = findPublicCard(session, 0, "hand", "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "snapshot-unregistered-predicate",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 235,
+      range: ["hand"],
+      targetCardPredicate: (_ctx, card) => card.uid === source!.uid,
+      operation() {},
+    });
+
+    const snapshot = serializeDuel(session);
+    const restored = restoreDuel(snapshot, createCardReader(cards));
+
+    expect(snapshot.state.effects).toEqual([]);
+    expect(restored.state.effects).toEqual([]);
+  });
+
+  it("strips registry-backed effect callbacks from snapshot data", () => {
+    const session = createDuel({ seed: 130, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const source = findPublicCard(session, 0, "hand", "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "snapshot-registry-predicate",
+      registryKey: "snapshot-registry-predicate",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 235,
+      range: ["hand"],
+      targetCardPredicate: (_ctx, card) => card.uid === source!.uid,
+      operation() {},
+    });
+
+    const serialized = serializeDuel(session).state.effects[0] as {
+      operation?: unknown;
+      targetCardPredicate?: unknown;
+    };
+
+    expect(serialized).toMatchObject({ id: "snapshot-registry-predicate", registryKey: "snapshot-registry-predicate" });
+    expect(serialized.operation).toBeUndefined();
+    expect(serialized.targetCardPredicate).toBeUndefined();
+  });
+
   it("copies nested assumed card state by value across snapshots", () => {
     const session = createDuel({ seed: 126, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

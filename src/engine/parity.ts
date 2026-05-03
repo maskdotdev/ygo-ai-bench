@@ -33,6 +33,7 @@ import type {
   ScriptedLegalActionGroupExpectation,
   ScriptedLegalActionExpectation,
   ScriptedResponseSelector,
+  SerializedDuelEffect,
 } from "#duel/types.js";
 
 type ScriptedStepResponse = DuelResponse | ScriptedResponseSelector;
@@ -167,8 +168,21 @@ function assertSnapshotJsonEqual(name: string, before: unknown, after: unknown, 
   if (JSON.stringify(after) !== JSON.stringify(before)) failures.push({ fixture, message: `${context}: snapshot/restore changed ${name}` });
 }
 
-function snapshotEffects(effects: DuelSession["state"]["effects"]): unknown[] {
-  return effects.map(({ canActivate: _canActivate, cost: _cost, target: _target, operation: _operation, battleDamageValue: _battleDamageValue, valueCardPredicate: _valueCardPredicate, valuePredicate: _valuePredicate, ...effect }) => effect);
+function snapshotEffects(effects: Array<DuelSession["state"]["effects"][number] | SerializedDuelEffect>): unknown[] {
+  return effects.map((effect) => {
+    const {
+      battleDamageValue: _battleDamageValue,
+      canActivate: _canActivate,
+      cost: _cost,
+      operation: _operation,
+      target: _target,
+      targetCardPredicate: _targetCardPredicate,
+      valueCardPredicate: _valueCardPredicate,
+      valuePredicate: _valuePredicate,
+      ...metadata
+    } = effect as DuelSession["state"]["effects"][number] & Partial<SerializedDuelEffect>;
+    return metadata;
+  });
 }
 
 function chainLimitMetadata(chainLimits: DuelSession["state"]["chainLimits"]): Array<Pick<DuelSession["state"]["chainLimits"][number], "registryKey" | "untilChainEnd" | "expiresAtChainLength">> {

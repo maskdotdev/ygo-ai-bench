@@ -15,7 +15,9 @@ import type {
   PublicChainLink,
   PublicDuelCard,
   PublicDuelState,
+  SerializedChainLimit,
   SerializedDuel,
+  SerializedDuelEffect,
 } from "#duel/types.js";
 
 export type DuelEffectRestoreFactory = (effect: DuelEffectDefinition) => DuelEffectDefinition;
@@ -152,46 +154,69 @@ export function restoreDuel(
   return { cardReader, state };
 }
 
-function serializeEffect(effect: DuelEffectDefinition): DuelEffectDefinition[] {
+function serializeEffect(effect: DuelEffectDefinition): SerializedDuelEffect[] {
   if (!isStaticContinuousEffect(effect) && effect.registryKey === undefined) return [];
+  if (effect.registryKey === undefined && hasUnserializableEffectCallbacks(effect)) return [];
   return [copySerializedEffect(effect)];
 }
 
-function copySerializedEffect(effect: DuelEffectDefinition): DuelEffectDefinition {
-  const { canActivate: _canActivate, cost: _cost, target: _target, operation: _operation, ...metadata } = effect;
+function copySerializedEffect(effect: DuelEffectDefinition): SerializedDuelEffect {
+  const {
+    battleDamageValue: _battleDamageValue,
+    canActivate: _canActivate,
+    cost: _cost,
+    operation: _operation,
+    target: _target,
+    targetCardPredicate: _targetCardPredicate,
+    valueCardPredicate: _valueCardPredicate,
+    valuePredicate: _valuePredicate,
+    ...metadata
+  } = effect;
   return {
     ...metadata,
     range: [...effect.range],
     ...(effect.reset ? { reset: { ...effect.reset } } : {}),
     ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
     ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
-    operation: noopEffectOperation,
   };
 }
 
-function restoreEffect(effect: DuelEffectDefinition, effectRegistry: DuelEffectRestoreRegistry): DuelEffectDefinition[] {
+function restoreEffect(effect: SerializedDuelEffect, effectRegistry: DuelEffectRestoreRegistry): DuelEffectDefinition[] {
+  const restoredEffect = withNoopOperation(effect);
   if (effect.registryKey !== undefined) {
     const factory = effectRegistry[effect.registryKey];
-    return factory ? [factory(copySerializedEffect(effect))] : [];
+    return factory ? [factory(restoredEffect)] : [];
   }
   if (!isStaticContinuousEffect(effect)) return [];
-  return [copySerializedEffect(effect)];
+  return [restoredEffect];
 }
 
-function serializeChainLimit(limit: ChainLimit): ChainLimit[] {
+function withNoopOperation(effect: SerializedDuelEffect): DuelEffectDefinition {
+  return { ...effect, operation: noopEffectOperation };
+}
+
+function hasUnserializableEffectCallbacks(effect: DuelEffectDefinition): boolean {
+  return effect.battleDamageValue !== undefined || effect.targetCardPredicate !== undefined || effect.valueCardPredicate !== undefined || effect.valuePredicate !== undefined;
+}
+
+function serializeChainLimit(limit: ChainLimit): SerializedChainLimit[] {
   if (limit.registryKey === undefined) return [];
   return [copySerializedChainLimit(limit)];
 }
 
-function copySerializedChainLimit(limit: ChainLimit): ChainLimit {
+function copySerializedChainLimit(limit: ChainLimit): SerializedChainLimit {
   const { allows: _allows, release: _release, ...metadata } = limit;
-  return { ...metadata, allows: denyChainLimit };
+  return { ...metadata };
 }
 
-function restoreChainLimit(limit: ChainLimit, chainLimitRegistry: DuelChainLimitRestoreRegistry): ChainLimit[] {
+function restoreChainLimit(limit: SerializedChainLimit, chainLimitRegistry: DuelChainLimitRestoreRegistry): ChainLimit[] {
   if (limit.registryKey === undefined) return [];
   const factory = chainLimitRegistry[limit.registryKey];
-  return factory ? [factory(copySerializedChainLimit(limit))] : [];
+  return factory ? [factory(withDenyChainLimit(limit))] : [];
+}
+
+function withDenyChainLimit(limit: SerializedChainLimit): ChainLimit {
+  return { ...limit, allows: denyChainLimit };
 }
 
 export function prunePendingTriggersWithoutEffects(state: DuelState): void {
@@ -201,8 +226,8 @@ export function prunePendingTriggersWithoutEffects(state: DuelState): void {
   state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
 }
 
-function isStaticContinuousEffect(effect: DuelEffectDefinition): boolean {
-  return effect.event === "continuous" && effect.canActivate === undefined && effect.cost === undefined && effect.target === undefined;
+function isStaticContinuousEffect(effect: DuelEffectDefinition | SerializedDuelEffect): boolean {
+  return effect.event === "continuous" && !("canActivate" in effect) && !("cost" in effect) && !("target" in effect);
 }
 
 function noopEffectOperation(_ctx: DuelEffectContext): void {}

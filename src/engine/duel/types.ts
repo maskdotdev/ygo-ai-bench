@@ -263,6 +263,12 @@ export interface ChainLimit {
   release?: () => void;
 }
 
+export type SerializedDuelEffect = Omit<
+  DuelEffectDefinition,
+  "battleDamageValue" | "canActivate" | "cost" | "operation" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
+>;
+export type SerializedChainLimit = Omit<ChainLimit, "allows" | "release">;
+
 export interface DuelEffectContext {
   duel: DuelState;
   source: DuelCardInstance;
@@ -547,7 +553,11 @@ export interface ScriptedDuelRunResult extends ApplyDuelResponseResult {
 
 export interface SerializedDuel {
   version: 1;
-  state: DuelState;
+  state: Omit<DuelState, "chain" | "chainLimits" | "effects"> & {
+    chain: PublicChainLink[];
+    chainLimits: SerializedChainLimit[];
+    effects: SerializedDuelEffect[];
+  };
 }
 
 export interface ScriptedResponseSelector {
