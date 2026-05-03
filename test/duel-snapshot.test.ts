@@ -38,6 +38,19 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards must be an array");
   });
 
+  it("rejects incomplete current-version snapshot collections before restore", () => {
+    const session = createDuel({ seed: 139, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    (snapshot.state as { battlePairs?: unknown }).battlePairs = undefined;
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battlePairs must be an array");
+  });
+
   it("serializes every initialized duel state key", () => {
     const session = createDuel({ seed: 137, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
