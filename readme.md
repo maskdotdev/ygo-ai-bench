@@ -192,7 +192,7 @@ after: {
 }
 ```
 
-Use `source: 'edopro'` only for expectations backed by observed EDOPro behavior. Use `source: 'parity-backlog'` for known gaps, and include a `note` that points to the missing EDOPro behavior so the gap stays attached to implementation work. For UI-facing timing behavior, assert raw `legalActions`, aggregate `legalActionCounts`, grouped `legalActionGroups`, and aggregate `legalActionGroupCounts`; use `absentLegalActions` and `absentLegalActionGroups` when an illegal response must not be exposed.
+Use `source: 'edopro'` only for expectations backed by observed EDOPro behavior. Use `source: 'parity-backlog'` for known gaps. Every sourced expectation block should include a `note` that names the EDOPro behavior being preserved or tracked so the fixture stays attached to implementation work. For UI-facing timing behavior, assert raw `legalActions`, aggregate `legalActionCounts`, grouped `legalActionGroups`, and aggregate `legalActionGroupCounts`; use `absentLegalActions` and `absentLegalActionGroups` when an illegal response must not be exposed.
 
 ## Included decks
 

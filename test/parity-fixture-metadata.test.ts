@@ -26,6 +26,10 @@ describe("parity fixture metadata", () => {
     expect(missingBacklogNotes()).toEqual([]);
   });
 
+  it("requires sourced parity expectations to carry observation notes", () => {
+    expect(missingExpectationNotes()).toEqual([]);
+  });
+
   it("requires backlog expectation notes to reference EDOPro behavior", () => {
     expect(backlogNotesWithoutEdopro()).toEqual([]);
   });
@@ -63,6 +67,7 @@ describe("parity fixture metadata", () => {
     expect(invalidSourcesInLines("fixture.ts", [...lines.slice(0, 3), '  source: "local",', ...lines.slice(3)])).toEqual(["fixture.ts:2"]);
     expect(invalidSourcesInLines("fixture.ts", [...lines.slice(0, 3), "  source: 'local',", ...lines.slice(3)])).toEqual(["fixture.ts:2"]);
     expect(missingBacklogNotesInLines("fixture.ts", lines)).toEqual(["fixture.ts:7"]);
+    expect(missingExpectationNotesInLines("fixture.ts", [...lines.slice(0, 3), '  source: "edopro",', ...lines.slice(3, 5)])).toEqual(["fixture.ts:2"]);
     expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 7), '  note: "temporary local behavior",', ...lines.slice(7)])).toEqual(["fixture.ts:7"]);
     expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 6), "  source: 'parity-backlog',", '  note: "temporary local behavior",', ...lines.slice(8)])).toEqual(["fixture.ts:7"]);
     expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
@@ -88,6 +93,10 @@ function unsupportedParityDocLanguage(): string[] {
 
 function missingBacklogNotes(): string[] {
   return scriptedFixtureFiles().flatMap((file) => missingBacklogNotesInLines(file, readFixtureLines(file)));
+}
+
+function missingExpectationNotes(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingExpectationNotesInLines(file, readFixtureLines(file)));
 }
 
 function backlogNotesWithoutEdopro(): string[] {
@@ -134,6 +143,16 @@ function missingBacklogNotesInLines(file: string, lines: string[]): string[] {
   lines.forEach((line, index) => {
     if (!hasParityBacklogSource(line)) return;
     if (!expectationBlock(lines, index).includes("note:")) missingNotes.push(`${file}:${index + 1}`);
+  });
+  return missingNotes;
+}
+
+function missingExpectationNotesInLines(file: string, lines: string[]): string[] {
+  const missingNotes: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    if (sourceLineInBlock(block) !== undefined && !block.includes("note:")) missingNotes.push(`${file}:${index + 1}`);
   });
   return missingNotes;
 }
