@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua chain-solving events", () => {
   it("queues chain-solving triggers with the resolving chain source as event card", () => {
@@ -17,9 +18,10 @@ describe("Lua chain-solving events", () => {
     });
     startDuel(session);
 
-    const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
       c100={}
       function c100.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -30,6 +32,10 @@ describe("Lua chain-solving events", () => {
         end)
         c:RegisterEffect(e)
       end
+      `;
+        }
+        if (name === "c200.lua") {
+          return `
 
       c200={}
       function c200.initial_effect(c)
@@ -45,10 +51,16 @@ describe("Lua chain-solving events", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "chain-solving-trigger.lua",
-    );
-    expect(loaded.ok, loaded.error).toBe(true);
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const starterScript = host.loadCardScript(100, source);
+    const watcherScript = host.loadCardScript(200, source);
+    expect(starterScript.ok, starterScript.error).toBe(true);
+    expect(watcherScript.ok, watcherScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
@@ -58,5 +70,14 @@ describe("Lua chain-solving events", () => {
     expect(host.messages).toContain("starter resolved");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainSolving"]);
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "chainSolved"]);
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }]);
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("chain solving resolved 0");
   });
 });
