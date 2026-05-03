@@ -75,11 +75,20 @@ describe("duel snapshot restore shape validation", () => {
     });
     startDuel(session);
     const badOptions = serializeDuel(session);
+    const badOptionValue = serializeDuel(session);
+    const badPromptType = serializeDuel(session);
+    const badDescription = serializeDuel(session);
     const badReturnTo = serializeDuel(session);
     badOptions.state.prompt = { id: "bad-prompt", type: "selectOption", player: 0, options: "not-options" as unknown as number[] };
+    badOptionValue.state.prompt = { id: "bad-option-value", type: "selectOption", player: 0, options: [1, "two" as unknown as number] };
+    badPromptType.state.prompt = { id: "bad-type", type: "selectCard" as "selectOption", player: 0, options: [1] };
+    badDescription.state.prompt = { id: "bad-description", type: "selectYesNo", player: 0, description: "yes" as unknown as number };
     badReturnTo.state.prompt = { id: "bad-return", type: "selectYesNo", player: 0, returnTo: 2 as 0 };
 
     expect(() => restoreDuel(badOptions, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.options must be an array");
+    expect(() => restoreDuel(badOptionValue, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.options must contain numbers");
+    expect(() => restoreDuel(badPromptType, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.type must be a prompt type");
+    expect(() => restoreDuel(badDescription, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.description must be a number");
     expect(() => restoreDuel(badReturnTo, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.returnTo must be a player id");
   });
 
