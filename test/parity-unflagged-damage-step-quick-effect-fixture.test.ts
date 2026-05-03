@@ -72,7 +72,7 @@ describe("EDOPro parity unflagged damage-step quick-effect fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro also keeps unflagged quick effects unavailable during damage calculation",
@@ -125,7 +125,7 @@ describe("EDOPro parity unflagged damage-step quick-effect fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves battle normally after players pass every damage-step window",
