@@ -58,6 +58,8 @@ window.duelDeckAgent.addCard('89631139', 'main', 3)
 window.duelDeckAgent.validateDeck()
 window.duelDeckAgent.analyzeDeck()
 window.duelDeckAgent.simulateHands({ trials: 20, handSize: 5, seed: 42 })
+window.duelDeckAgent.playtest.legalActionGroups()
+window.duelDeckAgent.playtest.runScripted([{ type: 'normalSummon', labelIncludes: 'Magician' }])
 window.duelDeckAgent.exportYdk()
 window.duelDeckAgent.importYdk('#main\n89631139\n#extra\n!side\n')
 ```
@@ -69,29 +71,49 @@ window.duelDeckAgent.importYdk('#main\n89631139\n#extra\n!side\n')
 The framework-agnostic playtest engine lives under `src`. The `/playtest.html` arena consumes it through a React/TanStack Router app styled with Tailwind.
 
 ```ts
-import { chooseHighestPriority, parseYdk, runPlaytest, startPlaytest } from './src/playtest';
+import { chooseHighestPriority, parseYdk, runPlaytest, snapshot, startPlaytest } from './src/playtest';
 
 const ydk = parseYdk(deckText);
 const session = startPlaytest({ deck: ydk.main, extraDeck: ydk.extra, seed: 42, handSize: 5 });
+const view = snapshot(session);
 const result = runPlaytest(session, chooseHighestPriority, 10);
 ```
+
+`snapshot(session)` and `applyAction(session, action)` return `legalActions` plus `legalActionGroups`. UI and browser agents should render or choose from those engine-provided actions directly; grouping is presentation metadata, not a separate legality system.
+
+The full duel engine exposes the same pattern through `getDuelLegalActions(session, player)`, `groupDuelLegalActions(actions)`, and the convenience `getGroupedDuelLegalActions(session, player)`. Grouped full-duel actions preserve `windowId` and `windowKind`, so UI code can render prompt, chain-response, trigger-bucket, battle, and open-game windows without rebuilding timing rules.
+
+Full-duel automation can reuse the fixture selector path with `selectDuelActionBySelector(actions, selector, cards)` or apply a sequence with `runScriptedDuelResponses(session, selectors)`. The scripted runner returns `failedStep`, `failure`, `divergencePlayer`, `divergenceWindowId`, `divergenceWindowKind`, `divergenceGroupKey`, and `divergenceGroupLabel` when the legal-action window diverges.
 
 Run checks with:
 
 ```bash
+bun run check
+```
+
+Or run individual checks with:
+
+```bash
+bun run check:loc
 bun run typecheck
 bun run test
 bun run build
 ```
 
-To rank missing EDOPro Lua APIs against a local Project Ignis card-script checkout, clone scripts into the ignored upstream workspace and run the scanner:
+To rank missing EDOPro Lua APIs and constants against a local Project Ignis card-script checkout, clone scripts into the ignored upstream workspace and run the scanners:
 
 ```bash
 git clone --depth 1 https://github.com/ProjectIgnis/CardScripts .upstream/ignis/script
 npm run scan:lua-api -- --limit 50
+npm run scan:lua-constants -- --fail-on-missing
+npm run scan:lua-parity
 ```
 
+These scanners are parity guardrails. Missing APIs or constants should become implementation work or fixture-backed parity backlog, not permanent exclusions from the engine target.
+
 `bun run build` emits the React playtest page and `dist/playtest-engine.js`, which exposes `window.duelDeckPlaytest` in the browser. If that bundle is loaded, the existing `window.duelDeckAgent.playtest` bridge can start, inspect, step, and auto-run playtest sessions from the current deck.
+
+For browser automation, `window.duelDeckAgent.playtest.runScripted(steps, sessionId)` accepts fixture-style action selectors (`type`, `uid`, `id`, `effectId`, `labelIncludes`, `occurrence`) and returns `failedStep`, `failure`, `divergenceGroupKey`, and `divergenceGroupLabel` when the current legal-action group diverges from the script.
 
 ## Duel snapshot persistence
 
@@ -107,7 +129,7 @@ Current restore behavior:
 Minimal Lua restore guard:
 
 ```ts
-import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts, serializeDuel } from './src/engine';
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts, serializeDuel } from './src/engine';
 
 const snapshot = serializeDuel(session);
 const restored = restoreDuelWithLuaScripts(snapshot, scriptSource, cardReader);
@@ -118,6 +140,7 @@ if (!restored.restoreComplete) {
 }
 
 const legalActions = getLuaRestoreLegalActions(restored, 0);
+const legalActionGroups = getLuaRestoreLegalActionGroups(restored, 0);
 ```
 
 Minimal manual registry example:
@@ -147,10 +170,26 @@ after: {
   source: 'parity-backlog',
   note: 'EDOPro keeps optional if triggers available after mandatory when triggers enter the chain',
   legalActions: [{ type: 'activateTrigger', player: 0, effectId: 'fixture-optional-if', count: 1 }],
+  legalActionGroups: [
+    {
+      player: 0,
+      label: 'Trigger Activations',
+      windowKind: 'triggerBucket',
+      actions: [{ type: 'activateTrigger', player: 0, effectId: 'fixture-optional-if', count: 1 }],
+    },
+  ],
+  absentLegalActionGroups: [
+    {
+      player: 0,
+      label: 'Trigger Declines',
+      windowKind: 'triggerBucket',
+      actions: [{ type: 'declineTrigger', player: 0, effectId: 'fixture-mandatory-when' }],
+    },
+  ],
 }
 ```
 
-Use `source: 'edopro'` only for expectations backed by observed EDOPro behavior. Use `source: 'parity-backlog'` for known gaps, and include a `note` that points to the missing EDOPro behavior rather than treating it as out of scope.
+Use `source: 'edopro'` only for expectations backed by observed EDOPro behavior. Use `source: 'parity-backlog'` for known gaps, and include a `note` that points to the missing EDOPro behavior so the gap stays attached to implementation work. For UI-facing timing behavior, assert both raw `legalActions` and grouped `legalActionGroups`; use `absentLegalActions` and `absentLegalActionGroups` when an illegal response must not be exposed.
 
 ## Included decks
 
