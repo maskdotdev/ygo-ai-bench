@@ -42,6 +42,22 @@ describe("duel action windows", () => {
     expect(session.state.actionWindowId).toBe(0);
   });
 
+  it("rejects responses stamped with the wrong window kind", () => {
+    const session = setupOneCardDuel(116);
+    session.state.prompt = { id: "window-kind-mismatch", type: "selectYesNo", player: 0 };
+    session.state.waitingFor = 0;
+    const yes = getDuelLegalActions(session, 0).find((action) => action.type === "selectYesNo" && action.yes);
+    expect(yes).toBeDefined();
+    expect(yes?.windowKind).toBe("prompt");
+
+    const result = applyResponse(session, { ...yes!, windowKind: "open" });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Response is not currently legal");
+    expect(session.state.actionWindowId).toBe(0);
+    expect(session.state.prompt).toBeDefined();
+  });
+
   it("restores actionWindowId after failed response rollback", () => {
     const session = createDuel({ seed: 111, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
