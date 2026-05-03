@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { attackGroup } from "./parity-legal-action-group-helpers.js";
 
 const resolveBattleStepsBeforeFinalPass = [
   makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -58,6 +59,7 @@ describe("EDOPro parity battle extra attack fixtures", () => {
             source: "edopro",
             note: "EDOPro lets general EXTRA_ATTACK attackers use their remaining attack directly when the opponent controls no monsters",
             phase: "battle",
+            windowId: 14,
             windowKind: "open",
             waitingFor: 0,
             pendingBattle: false,
@@ -68,16 +70,8 @@ describe("EDOPro parity battle extra attack fixtures", () => {
             locations: { monsterZone: ["100"], graveyard: ["200"] },
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
-            legalActionGroups: [
-              {
-                player: 0,
-                label: "Attacks",
-                windowKind: "open",
-                count: 1,
-                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
-              },
-            ],
+            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open", count: 1 }],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0" }], 1, 14)],
           },
         }),
       ],
@@ -85,6 +79,7 @@ describe("EDOPro parity battle extra attack fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state exposes the direct extra attack after the field is cleared",
         phase: "battle",
+        windowId: 14,
         windowKind: "open",
         waitingFor: 0,
         pendingBattle: false,
@@ -95,16 +90,8 @@ describe("EDOPro parity battle extra attack fixtures", () => {
         locations: { monsterZone: ["100"], graveyard: ["200"] },
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
-        legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
-        legalActionGroups: [
-          {
-            player: 0,
-            label: "Attacks",
-            windowKind: "open",
-            count: 1,
-            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
-          },
-        ],
+        legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open", count: 1 }],
+        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0" }], 1, 14)],
       },
     };
 
