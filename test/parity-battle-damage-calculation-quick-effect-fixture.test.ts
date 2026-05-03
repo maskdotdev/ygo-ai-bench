@@ -77,7 +77,7 @@ describe("EDOPro parity battle damage-calculation quick-effect fixtures", () => 
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro exposes damage-calculation fast effects during the damage calculation response window",
@@ -125,7 +125,7 @@ describe("EDOPro parity battle damage-calculation quick-effect fixtures", () => 
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro continues battle resolution after damage-calculation fast effects resolve",
