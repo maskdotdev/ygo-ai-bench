@@ -269,6 +269,8 @@ describe("Node upstream snapshot restore", () => {
     startDuel(session);
     session.state.prompt = { id: "lua-restore-prompt", type: "selectOption", player: 1, options: [3, 5], returnTo: 0 };
     session.state.waitingFor = 1;
+    const staleOption = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "selectOption" && candidate.option === 3);
+    expect(staleOption).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: () => undefined }, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
@@ -286,6 +288,11 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.session.state.prompt).toBeUndefined();
     expect(restored.session.state.waitingFor).toBe(0);
     expect(restored.session.state.log.some((entry) => entry.action === "selectOption" && entry.detail === "Selected option 5")).toBe(true);
+    const staleOptionResult = applyLuaRestoreResponse(restored, staleOption!);
+    expect(staleOptionResult.ok).toBe(false);
+    expect(staleOptionResult.error).toContain("Response is not currently legal");
+    expect(staleOptionResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleOptionResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
     restored.session.state.prompt = { id: "lua-restore-yes-no", type: "selectYesNo", player: 0, description: 101, returnTo: 1 };
     restored.session.state.waitingFor = 0;
@@ -293,12 +300,19 @@ describe("Node upstream snapshot restore", () => {
       { type: "selectYesNo", player: 0, promptId: "lua-restore-yes-no", yes: true, label: "Yes", windowId: 1, windowKind: "prompt" },
       { type: "selectYesNo", player: 0, promptId: "lua-restore-yes-no", yes: false, label: "No", windowId: 1, windowKind: "prompt" },
     ]);
+    const staleYes = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "selectYesNo" && candidate.yes);
+    expect(staleYes).toBeDefined();
     const no = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "selectYesNo" && !candidate.yes);
     expect(no).toBeDefined();
     expect(applyLuaRestoreResponse(restored, no!).ok).toBe(true);
     expect(restored.session.state.prompt).toBeUndefined();
     expect(restored.session.state.waitingFor).toBe(1);
     expect(restored.session.state.log.some((entry) => entry.action === "selectYesNo" && entry.detail === "Selected no")).toBe(true);
+    const staleYesResult = applyLuaRestoreResponse(restored, staleYes!);
+    expect(staleYesResult.ok).toBe(false);
+    expect(staleYesResult.error).toContain("Response is not currently legal");
+    expect(staleYesResult.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleYesResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
   });
 
   it("preserves spent Lua count limits across snapshot restore", () => {
