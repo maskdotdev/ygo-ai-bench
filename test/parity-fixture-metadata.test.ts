@@ -58,6 +58,10 @@ describe("parity fixture metadata", () => {
     expect(missingTimingLegalActionWindowIds()).toEqual([]);
   });
 
+  it("requires timing-window legal-action group expectations to pin window ids", () => {
+    expect(missingTimingLegalActionGroupWindowIds()).toEqual([]);
+  });
+
   it("requires parity fixtures to exercise snapshot restore coverage", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
@@ -122,6 +126,19 @@ describe("parity fixture metadata", () => {
         ...lines.slice(4),
       ]),
     ).toEqual(["fixture.ts:6"]);
+    expect(
+      missingTimingLegalActionGroupWindowIdsInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  legalActionGroups: [",
+        "    {",
+        '      label: "Pass",',
+        '      windowKind: "battle",',
+        '      actions: [{ type: "passAttack", player: 0, windowId: 2, windowKind: "battle" }],',
+        "    },",
+        "  ],",
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:6"]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "  it('one', () => {})", "});"])).toEqual([]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "});"])).toEqual(["fixture.ts: expected 1 scenario, found 0"]);
@@ -180,6 +197,10 @@ function missingOpenLegalActionGroupWindowIds(): string[] {
 
 function missingTimingLegalActionWindowIds(): string[] {
   return parityFixtureFiles().flatMap((file) => missingTimingLegalActionWindowIdsInLines(file, readFixtureLines(file)));
+}
+
+function missingTimingLegalActionGroupWindowIds(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingTimingLegalActionGroupWindowIdsInLines(file, readFixtureLines(file)));
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
@@ -278,6 +299,10 @@ function missingOpenLegalActionGroupWindowIdsInLines(file: string, lines: string
 
 function missingTimingLegalActionWindowIdsInLines(file: string, lines: string[]): string[] {
   return missingLegalActionWindowIdsInLines(file, lines, ["battle", "chainResponse", "triggerBucket"]);
+}
+
+function missingTimingLegalActionGroupWindowIdsInLines(file: string, lines: string[]): string[] {
+  return missingLegalActionGroupWindowIdsInLines(file, lines, ["battle", "chainResponse", "triggerBucket"]);
 }
 
 function missingLegalActionWindowIdsInLines(file: string, lines: string[], windowKinds: string[]): string[] {
