@@ -178,13 +178,14 @@ describe("EDOPro parity missed timing fixtures", () => {
         ],
         locationCounts: { graveyard: { "600": 2 }, hand: { "100": 1, "300": 1, "400": 1, "500": 1 } },
         logIncludes: ["Mandatory when resolved", "Optional if resolved"],
-        absentLegalActions: [{ type: "activateTrigger", player: 0, effectId: "fixture-optional-when" }],
+        absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-optional-when" }],
         absentLegalActionGroups: [
           {
             player: 0,
             label: "Trigger Activations",
+            windowId: 3,
             windowKind: "triggerBucket",
-            actions: [{ type: "activateTrigger", player: 0, windowKind: "triggerBucket", effectId: "fixture-optional-when" }],
+            actions: [{ type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-optional-when" }],
           },
         ],
       },

@@ -152,13 +152,14 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
         chain: [],
         locations: { monsterZone: ["100"], hand: ["300", "400"] },
         logIncludes: ["Mandatory trigger resolved", "fixture-optional-second"],
-        absentLegalActions: [{ type: "activateTrigger", player: 0, effectId: "fixture-optional-second" }],
+        absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-optional-second" }],
         absentLegalActionGroups: [
           {
             player: 0,
             label: "Trigger Activations",
+            windowId: 3,
             windowKind: "triggerBucket",
-            actions: [{ type: "activateTrigger", player: 0, effectId: "fixture-optional-second" }],
+            actions: [{ type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-optional-second" }],
           },
         ],
       },
