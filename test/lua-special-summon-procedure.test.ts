@@ -336,9 +336,10 @@ describe("Lua special summon procedures", () => {
     expect(material).toBeTruthy();
     moveDuelCard(session.state, material!.uid, "monsterZone", 0);
 
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
+    const sourceScript = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
       c100={}
       function c100.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -355,6 +356,10 @@ describe("Lua special summon procedures", () => {
         end)
         c:RegisterEffect(e)
       end
+      `;
+        }
+        if (name === "c200.lua") {
+          return `
       c200={}
       function c200.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -366,16 +371,37 @@ describe("Lua special summon procedures", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "material-special-summon-procedure.lua",
-    );
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const sourceLoad = host.loadCardScript(100, sourceScript);
+    const blockedLoad = host.loadCardScript(200, sourceScript);
 
-    expect(result.ok, result.error).toBe(true);
+    expect(sourceLoad.ok, sourceLoad.error).toBe(true);
+    expect(blockedLoad.ok, blockedLoad.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("100"));
     const blocked = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("200"));
     expect(action).toBeDefined();
     expect(blocked).toBeUndefined();
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c200.lua"]);
+    expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const restoredAction = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("100"));
+    expect(restoredAction).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    expect(restored.host.messages).toContain("material procedure selected 1/300");
+    expect(restored.session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(restored.session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+    expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
+
     expect(applyResponse(session, action!).ok).toBe(true);
 
     expect(host.messages).toContain("material procedure selected 1/300");
