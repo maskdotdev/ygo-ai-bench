@@ -253,7 +253,11 @@ const responseHandlers: DuelResponseHandlers = {
   },
   endTurn(state, player) {
     endDuelTurn(state, player, {
-      collectEvent: (eventName, eventCode) => collectDuelTriggerEffects(state, eventName, undefined, eventCode === undefined ? {} : { eventCode }),
+      collectEvent: (eventName, eventCode) =>
+        collectDuelTriggerEffects(state, eventName, undefined, {
+          ...(eventCode === undefined ? {} : { eventCode }),
+          ...(eventName === "preDraw" ? { eventPlayer: state.turnPlayer, eventValue: state.options.drawPerTurn } : {}),
+        }),
       canDraw: (drawPlayer) => !isDrawPrevented(state, drawPlayer, createContinuousEffectContext(state)),
       canLoseByDeck: (drawPlayer) => !isDeckLossDefeatPrevented(state, drawPlayer, createContinuousEffectContext(state)),
       executePhaseEffects: (reachedPhase) => executeContinuousPhaseEffects(state, reachedPhase),
@@ -511,7 +515,7 @@ function createReleasePredicate(state: DuelState, reason: number): DuelMaterialP
 export function drawDuelCards(state: DuelState, player: PlayerId, count: number, detail = "Effect draw"): number {
   if (!canDuelPlayerDraw(state, player, count)) return 0;
   const drawn = drawDuelCardsFromDeck(state, player, Math.max(0, count), detail);
-  if (drawn > 0) collectTriggerEffects(state, "cardsDrawn");
+  if (drawn > 0) collectDuelTriggerEffects(state, "cardsDrawn", undefined, { eventPlayer: player, eventValue: drawn });
   return drawn;
 }
 

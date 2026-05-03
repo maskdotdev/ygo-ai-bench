@@ -31,8 +31,8 @@ describe("Lua predraw events", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_PREDRAW)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp)
-          Debug.Message("predraw resolved " .. tp .. "/" .. Duel.GetFieldGroupCount(tp, LOCATION_HAND, 0))
+        e:SetOperation(function(e,tp,eg,ep,ev)
+          Debug.Message("predraw resolved " .. tp .. "/" .. ep .. "/" .. ev .. "/" .. Duel.GetFieldGroupCount(tp, LOCATION_HAND, 0))
         end)
         c:RegisterEffect(e)
       end
@@ -49,9 +49,9 @@ describe("Lua predraw events", () => {
     expect(session.state.turnPlayer).toBe(1);
     expect(session.state.cards.filter((card) => card.controller === 1 && card.location === "hand")).toHaveLength(2);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["preDraw"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1113 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1113, eventPlayer: 1, eventValue: 1 });
     expect(session.state.eventHistory.slice(-4)).toEqual([
-      expect.objectContaining({ eventName: "preDraw", eventCode: 1113 }),
+      expect.objectContaining({ eventName: "preDraw", eventCode: 1113, eventPlayer: 1, eventValue: 1 }),
       expect.objectContaining({ eventName: "phaseStartMain1", eventCode: 0x2004 }),
       expect.objectContaining({ eventName: "turnStarted" }),
       expect.objectContaining({ eventName: "phaseMain1", eventCode: 0x1004 }),
@@ -61,7 +61,7 @@ describe("Lua predraw events", () => {
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
     drainChain(session);
-    expect(host.messages).toContain("predraw resolved 1/2");
+    expect(host.messages).toContain("predraw resolved 1/1/1/2");
   });
 });
 
