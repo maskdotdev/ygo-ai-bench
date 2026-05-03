@@ -49,7 +49,7 @@ describe("EDOPro parity defense-position reflected damage fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro applies reflected battle damage without destroying either monster when ATK is below DEF",
