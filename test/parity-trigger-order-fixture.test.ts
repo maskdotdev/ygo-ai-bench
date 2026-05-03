@@ -59,8 +59,8 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [
-              { type: "activateTrigger", player: 0, windowId: 1, effectId: "fixture-first-mandatory", count: 1 },
-              { type: "activateTrigger", player: 0, windowId: 1, effectId: "fixture-second-mandatory", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-mandatory", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-mandatory", count: 1 },
             ],
             legalActionGroups: [
               {
@@ -103,7 +103,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             waitingFor: 0,
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
-            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, effectId: "fixture-second-mandatory", count: 1 }],
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-mandatory", count: 1 }],
             legalActionGroups: [
               {
                 player: 0,
@@ -125,7 +125,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             pendingTriggers: [{ player: 0, effectId: "fixture-first-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
             legalActionCounts: { 0: 1, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
-            legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, effectId: "fixture-first-mandatory", count: 1 }],
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-first-mandatory", count: 1 }],
             legalActionGroups: [
               {
                 player: 0,
@@ -232,10 +232,10 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             legalActionCounts: { 0: 4, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateTrigger", player: 0, windowId: 1, effectId: "fixture-first-optional", count: 1 },
-              { type: "declineTrigger", player: 0, windowId: 1, effectId: "fixture-first-optional", count: 1 },
-              { type: "activateTrigger", player: 0, windowId: 1, effectId: "fixture-second-optional", count: 1 },
-              { type: "declineTrigger", player: 0, windowId: 1, effectId: "fixture-second-optional", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-optional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-optional", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-optional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-optional", count: 1 },
             ],
             legalActionGroups: [
               {
@@ -273,7 +273,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             waitingFor: 0,
             legalActionCounts: { 0: 4, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "declineTrigger", player: 0, windowId: 1, effectId: "fixture-first-optional", count: 1 }],
+            legalActions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-optional", count: 1 }],
             legalActionGroups: [
               {
                 player: 0,
@@ -295,8 +295,8 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateTrigger", player: 0, windowId: 2, effectId: "fixture-second-optional", count: 1 },
-              { type: "declineTrigger", player: 0, windowId: 2, effectId: "fixture-second-optional", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-optional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-optional", count: 1 },
             ],
             legalActionGroups: [
               {
@@ -398,7 +398,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             ],
             legalActionCounts: { 0: 1, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
-            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, effectId: "fixture-mandatory-first", count: 1 }],
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-first", count: 1 }],
             legalActionGroups: [
               {
                 player: 0,
@@ -436,8 +436,8 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateTrigger", player: 0, windowId: 2, effectId: "fixture-optional-second", count: 1 },
-              { type: "declineTrigger", player: 0, windowId: 2, effectId: "fixture-optional-second", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-second", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-second", count: 1 },
             ],
             legalActionGroups: [
               {
@@ -470,7 +470,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             waitingFor: 0,
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "declineTrigger", player: 0, windowId: 2, effectId: "fixture-optional-second", count: 1 }],
+            legalActions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-second", count: 1 }],
             legalActionGroups: [
               {
                 player: 0,
