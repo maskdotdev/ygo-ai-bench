@@ -153,6 +153,45 @@ describe("duel snapshot persistence", () => {
     expect(freshSerializedPrompt.options).toEqual([1, 2]);
   });
 
+  it("copies battle response collections out of public and serialized state", () => {
+    const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = session.state.cards[0]!.uid;
+    const targetUid = session.state.cards[1]!.uid;
+    session.state.attacksDeclared = [attackerUid];
+    session.state.attackCanceledUids = [attackerUid];
+    session.state.attackedTargetUids = [targetUid];
+    session.state.battlePairs = [{ attackerUid, targetUid }];
+    session.state.attackPasses = [0];
+    session.state.damagePasses = [1];
+
+    const publicState = queryPublicState(session);
+    const serialized = serializeDuel(session);
+    publicState.attacksDeclared.push("public-attack");
+    publicState.attackCanceledUids.push("public-cancel");
+    publicState.attackedTargetUids.push("public-target");
+    publicState.battlePairs[0]!.targetUid = "public-target";
+    publicState.attackPasses.push(1);
+    publicState.damagePasses.push(0);
+    serialized.state.attacksDeclared.push("serialized-attack");
+    serialized.state.attackCanceledUids.push("serialized-cancel");
+    serialized.state.attackedTargetUids.push("serialized-target");
+    serialized.state.battlePairs[0]!.targetUid = "serialized-target";
+    serialized.state.attackPasses.push(1);
+    serialized.state.damagePasses.push(0);
+
+    expect(session.state.attacksDeclared).toEqual([attackerUid]);
+    expect(session.state.attackCanceledUids).toEqual([attackerUid]);
+    expect(session.state.attackedTargetUids).toEqual([targetUid]);
+    expect(session.state.battlePairs).toEqual([{ attackerUid, targetUid }]);
+    expect(session.state.attackPasses).toEqual([0]);
+    expect(session.state.damagePasses).toEqual([1]);
+  });
+
   it("preserves static continuous effects across snapshots", () => {
     const session = createDuel({ seed: 95, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
