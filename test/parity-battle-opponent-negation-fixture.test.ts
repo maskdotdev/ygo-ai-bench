@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentAttackGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle opponent negation fixtures", () => {
   it("lets the non-turn player negate from the first attack-response window", () => {
@@ -76,6 +77,7 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
             waitingFor: 0,
             pendingBattle: false,
             currentAttack: false,
+            windowId: 3,
             battleWindow: null,
             lifePoints: { 0: 8000, 1: 8000 },
             attacksDeclared: ["p0-deck-100-0"],
@@ -83,12 +85,12 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
             absentLegalActions: [
               { type: "passAttack", player: 1 },
               { type: "passDamage", player: 1 },
-              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" },
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 3, windowKind: "open" },
             ],
             absentLegalActionGroups: [
               { player: 1, label: "Pass", actions: [{ type: "passAttack", player: 1, windowKind: "battle" }] },
               { player: 1, label: "Pass", actions: [{ type: "passDamage", player: 1, windowKind: "battle" }] },
-              { player: 0, label: "Attacks", actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }] },
+              absentAttackGroup("p0-deck-100-0", undefined, undefined, 3),
             ],
             logIncludes: ["Negated attack true", "Fixture opponent attack negator resolved", "Negated attack"],
           },
@@ -101,6 +103,7 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
         waitingFor: 0,
         pendingBattle: false,
         currentAttack: false,
+        windowId: 3,
         battleWindow: null,
         lifePoints: { 0: 8000, 1: 8000 },
         attacksDeclared: ["p0-deck-100-0"],
@@ -108,12 +111,12 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
         absentLegalActions: [
           { type: "passAttack", player: 1 },
           { type: "passDamage", player: 1 },
-          { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" },
+          { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 3, windowKind: "open" },
         ],
         absentLegalActionGroups: [
           { player: 1, label: "Pass", actions: [{ type: "passAttack", player: 1, windowKind: "battle" }] },
           { player: 1, label: "Pass", actions: [{ type: "passDamage", player: 1, windowKind: "battle" }] },
-          { player: 0, label: "Attacks", actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }] },
+          absentAttackGroup("p0-deck-100-0", undefined, undefined, 3),
         ],
         logIncludes: ["Negated attack true", "Fixture opponent attack negator resolved", "Negated attack"],
       },
