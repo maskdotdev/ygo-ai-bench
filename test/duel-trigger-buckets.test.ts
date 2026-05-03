@@ -40,8 +40,10 @@ describe("duel trigger buckets", () => {
     session.state.pendingTriggers = [
       { id: "bad-opponent", player: 1, sourceUid, effectId: "bad", eventName: "customEvent", triggerBucket: "turnOptional" },
     ];
+    session.state.waitingFor = 1;
 
     expect(() => queryPublicState(session)).toThrow("Pending trigger bad-opponent bucket turnOptional does not match player 1");
+    expect(() => getDuelLegalActions(session, 1)).toThrow("Pending trigger bad-opponent bucket turnOptional does not match player 1");
     expect(() => setWaitingForPendingTriggerBucket(session.state)).toThrow("Pending trigger bad-opponent bucket turnOptional does not match player 1");
   });
 

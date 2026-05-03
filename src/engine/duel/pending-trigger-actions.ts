@@ -1,10 +1,10 @@
 import { findCard } from "#duel/card-state.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
-import { activePendingTriggerBucket, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
+import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { DuelAction, DuelState, PlayerId } from "#duel/types.js";
 
 export function getPendingTriggerActions(state: DuelState, player: PlayerId): DuelAction[] {
-  const activeBucket = activePendingTriggerBucket(state.pendingTriggers);
+  const activeBucket = pendingTriggerBucketsForState(state)[0];
   if (!activeBucket || activeBucket.player !== player) return [];
   const actions: DuelAction[] = [];
 
