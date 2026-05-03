@@ -63,7 +63,7 @@ describe("EDOPro parity battle damage reflection fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro reflects battle damage from the attacker's controller to the opponent when the battling attacker has REFLECT_BATTLE_DAMAGE",
