@@ -1,0 +1,200 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { passBattleGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity battle destroy redirect fixtures", () => {
+  it("redirects battle-destroyed cards to the banished zone", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Redirect Attacker", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Redirect Target", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "battle destroy redirect fixture",
+      options: { seed: 89, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 1, code: "200", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+        ],
+        effects: [
+          {
+            id: "fixture-battle-destroy-redirect",
+            player: 0,
+            code: "100",
+            location: "monsterZone",
+            event: "continuous",
+            effectCode: 204,
+            value: 0x20,
+            range: ["monsterZone"],
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the attack-response window before battle-destroy redirects can apply",
+            waitingFor: 1,
+            windowKind: "battle",
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+            legalActionCounts: { 0: 0, 1: 1 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passAttack", 1)),
+        makeScriptedStep(makeResponseSelector("passAttack", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0), {
+          snapshotRestore: "after",
+          after: {
+            source: "edopro",
+            note: "EDOPro redirects a monster destroyed by battle according to EFFECT_BATTLE_DESTROY_REDIRECT",
+            waitingFor: 0,
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            lifePoints: { 0: 8000, 1: 7200 },
+            battleDamage: { 0: 0, 1: 800 },
+            attacksDeclared: ["p0-deck-100-0"],
+            battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+            locations: { monsterZone: ["100"], banished: ["200"] },
+            logIncludes: ["Destroyed and moved to banished"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final fixture state preserves battle destruction redirect to banished",
+        phase: "battle",
+        waitingFor: 0,
+        pendingBattle: false,
+        currentAttack: false,
+        battleWindow: null,
+        lifePoints: { 0: 8000, 1: 7200 },
+        battleDamage: { 0: 0, 1: 800 },
+        attacksDeclared: ["p0-deck-100-0"],
+        battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+        locations: { monsterZone: ["100"], banished: ["200"] },
+        logIncludes: ["Destroyed and moved to banished"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+
+  it("applies field-scoped battle destroy redirects from non-battling cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Field Redirect Attacker", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Field Redirect Target", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Field Redirect Source", kind: "monster", attack: 500, defense: 500 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "field battle destroy redirect fixture",
+      options: { seed: 90, startingHandSize: 2 },
+      decks: {
+        0: { main: ["100", "300"] },
+        1: { main: ["200"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 0, code: "300", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 1, code: "200", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+        ],
+        effects: [
+          {
+            id: "fixture-field-battle-destroy-redirect",
+            player: 0,
+            code: "300",
+            location: "monsterZone",
+            event: "continuous",
+            effectCode: 204,
+            value: 0x20,
+            targetRange: [1, 0],
+            range: ["monsterZone"],
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the attack-response window before field-scoped battle-destroy redirects can apply",
+            waitingFor: 1,
+            windowKind: "battle",
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+            legalActionCounts: { 0: 0, 1: 1 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack")],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passAttack", 1)),
+        makeScriptedStep(makeResponseSelector("passAttack", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0), {
+          snapshotRestore: "after",
+          after: {
+            source: "edopro",
+            note: "EDOPro lets non-battling field effects redirect monsters destroyed by battles involving affected monsters",
+            waitingFor: 0,
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            lifePoints: { 0: 8000, 1: 7200 },
+            battleDamage: { 0: 0, 1: 800 },
+            attacksDeclared: ["p0-deck-100-0"],
+            battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+            locations: { monsterZone: ["100", "300"], banished: ["200"] },
+            logIncludes: ["Destroyed and moved to banished"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final fixture state preserves field-scoped battle destruction redirect",
+        phase: "battle",
+        waitingFor: 0,
+        pendingBattle: false,
+        currentAttack: false,
+        battleWindow: null,
+        lifePoints: { 0: 8000, 1: 7200 },
+        battleDamage: { 0: 0, 1: 800 },
+        attacksDeclared: ["p0-deck-100-0"],
+        battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
+        locations: { monsterZone: ["100", "300"], banished: ["200"] },
+        logIncludes: ["Destroyed and moved to banished"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
