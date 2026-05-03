@@ -231,11 +231,14 @@ describe("duel snapshot restore shape validation", () => {
     const sourceUid = serializeDuel(session).state.cards[0]!.uid;
     const badSource = serializeDuel(session);
     const badEventCard = serializeDuel(session);
+    const badEventUid = serializeDuel(session);
     badSource.state.pendingTriggers = [{ id: "trigger", player: 0, sourceUid: "missing", effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional" }];
     badEventCard.state.pendingTriggers = [{ id: "trigger", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional", eventCardUid: "missing" }];
+    badEventUid.state.pendingTriggers = [{ id: "trigger", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional", eventUids: ["missing"] }];
 
     expect(() => restoreDuel(badSource, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.sourceUid must reference a card");
     expect(() => restoreDuel(badEventCard, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.eventCardUid must reference a card");
+    expect(() => restoreDuel(badEventUid, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.eventUids.0 must reference a card");
   });
 
   it("rejects malformed event history snapshots before restore", () => {
@@ -247,11 +250,14 @@ describe("duel snapshot restore shape validation", () => {
     startDuel(session);
     const badEventName = serializeDuel(session);
     const badPayload = serializeDuel(session);
+    const badEventUids = serializeDuel(session);
     badEventName.state.eventHistory = [{ eventName: 12 as unknown as "customEvent" }];
     badPayload.state.eventHistory = [{ eventName: "customEvent", eventCardUid: 12 as unknown as string }];
+    badEventUids.state.eventHistory = [{ eventName: "customEvent", eventUids: "uid" as unknown as string[] }];
 
     expect(() => restoreDuel(badEventName, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventName must be a string");
     expect(() => restoreDuel(badPayload, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventCardUid must be a string");
+    expect(() => restoreDuel(badEventUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventUids must be an array");
   });
 
   it("rejects missing event history card references before restore", () => {
@@ -262,9 +268,12 @@ describe("duel snapshot restore shape validation", () => {
     });
     startDuel(session);
     const snapshot = serializeDuel(session);
+    const badEventUid = serializeDuel(session);
     snapshot.state.eventHistory = [{ eventName: "customEvent", eventCardUid: "missing" }];
+    badEventUid.state.eventHistory = [{ eventName: "customEvent", eventUids: ["missing"] }];
 
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventCardUid must reference a card");
+    expect(() => restoreDuel(badEventUid, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventUids.0 must reference a card");
   });
 
   it("rejects malformed chain snapshots before restore", () => {
@@ -276,13 +285,16 @@ describe("duel snapshot restore shape validation", () => {
     startDuel(session);
     const sourceUid = serializeDuel(session).state.cards[0]!.uid;
     const badTargetUids = serializeDuel(session);
+    const badEventUids = serializeDuel(session);
     const badPlayer = serializeDuel(session);
     const badActivationLocation = serializeDuel(session);
     badTargetUids.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", targetUids: ["target", 7 as unknown as string] }];
+    badEventUids.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", eventUids: [7 as unknown as string] }];
     badPlayer.state.chain = [{ id: "link", player: 2 as 0, sourceUid, effectId: "effect" }];
     badActivationLocation.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", activationLocation: "field" as "hand" }];
 
     expect(() => restoreDuel(badTargetUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.targetUids.1 must be a string");
+    expect(() => restoreDuel(badEventUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.eventUids.0 must reference a card");
     expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.player must be a player id");
     expect(() => restoreDuel(badActivationLocation, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.activationLocation must be a card location");
   });
@@ -297,11 +309,14 @@ describe("duel snapshot restore shape validation", () => {
     const sourceUid = serializeDuel(session).state.cards[0]!.uid;
     const badTarget = serializeDuel(session);
     const badEventCard = serializeDuel(session);
+    const badEventUid = serializeDuel(session);
     badTarget.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", targetUids: ["missing"] }];
     badEventCard.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", eventCardUid: "missing" }];
+    badEventUid.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", eventUids: ["missing"] }];
 
     expect(() => restoreDuel(badTarget, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.targetUids.0 must reference a card");
     expect(() => restoreDuel(badEventCard, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.eventCardUid must reference a card");
+    expect(() => restoreDuel(badEventUid, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.eventUids.0 must reference a card");
   });
 
   it("rejects missing chain and effect source card snapshots before restore", () => {
