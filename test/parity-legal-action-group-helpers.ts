@@ -9,12 +9,13 @@ export const directAttackGroup = (player: 0 | 1, attackerUid: string, count = 1,
   actions: [{ type: "declareAttack" as const, player, attackerUid, ...(windowId === undefined ? {} : { windowId }), count }],
 });
 
-export const targetedAttackGroup = (player: 0 | 1, attackerUid: string, targetUid: string, count = 1) => ({
+export const targetedAttackGroup = (player: 0 | 1, attackerUid: string, targetUid: string, count = 1, windowId?: number) => ({
   player,
   label: "Attacks",
+  ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
   count,
-  actions: [{ type: "declareAttack" as const, player, attackerUid, targetUid, count }],
+  actions: [{ type: "declareAttack" as const, player, attackerUid, targetUid, ...(windowId === undefined ? {} : { windowId }), count }],
 });
 
 export const attackGroup = (attacks: AttackChoice[], count = 1) => ({
