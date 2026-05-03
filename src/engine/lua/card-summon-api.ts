@@ -1,8 +1,9 @@
 import fengari from "fengari";
 import { getDuelFlagEffectLabel } from "#duel/flags.js";
+import { phaseMask } from "#duel/phase-mask.js";
 import { readTableStringField } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
-import type { DuelCardInstance, DuelPhase, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 const cardSalamangreatSanctuary = 1295111;
@@ -122,16 +123,6 @@ function materialCount(card: DuelCardInstance | undefined): number {
 function materialCountRush(card: DuelCardInstance | undefined): number {
   const count = materialCount(card);
   return summonTypeMask(card) === 0x11000000 + 100 ? count + 1 : count;
-}
-
-function phaseMask(phase: DuelPhase | undefined): number {
-  if (phase === "draw") return 0x1;
-  if (phase === "standby") return 0x2;
-  if (phase === "main1") return 0x4;
-  if (phase === "battle") return 0x80;
-  if (phase === "main2") return 0x100;
-  if (phase === "end") return 0x200;
-  return 0;
 }
 
 function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
