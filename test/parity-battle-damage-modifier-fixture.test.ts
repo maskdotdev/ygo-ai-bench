@@ -63,7 +63,7 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro applies piercing battle damage equal to ATK minus DEF and destroys the defense-position target",
