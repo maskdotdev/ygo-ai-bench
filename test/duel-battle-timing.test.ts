@@ -200,6 +200,66 @@ describe("duel battle timing", () => {
     expect(restored.state.flagEffects).toHaveLength(0);
   });
 
+  it("keeps turn-qualified battle-step resets until their matching turn", () => {
+    const session = createDuel({ seed: 63, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnPlayerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const nonTurnPlayerSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(turnPlayerSource).toBeTruthy();
+    expect(nonTurnPlayerSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    const battleStepOpponentTurnReset = 0x40000000 | 0x10 | 0x20000000;
+    const restoreResetEffect = (effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition => ({ ...effect, operation() {} });
+    registerEffect(session, restoreResetEffect({
+      id: "turn-player-opponent-turn-battle-step-reset",
+      registryKey: "turn-player-opponent-turn-battle-step-reset",
+      sourceUid: turnPlayerSource!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      reset: { flags: battleStepOpponentTurnReset },
+    }));
+    registerEffect(session, restoreResetEffect({
+      id: "non-turn-player-opponent-turn-battle-step-reset",
+      registryKey: "non-turn-player-opponent-turn-battle-step-reset",
+      sourceUid: nonTurnPlayerSource!.uid,
+      controller: 1,
+      event: "ignition",
+      range: ["hand"],
+      reset: { flags: battleStepOpponentTurnReset },
+    }));
+    session.state.flagEffects.push(
+      { ownerType: "player", ownerId: "0", code: 612, reset: battleStepOpponentTurnReset, property: 0, value: 1, turn: session.state.turn },
+      { ownerType: "player", ownerId: "1", code: 613, reset: battleStepOpponentTurnReset, property: 0, value: 1, turn: session.state.turn },
+    );
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "turn-player-opponent-turn-battle-step-reset": restoreResetEffect,
+      "non-turn-player-opponent-turn-battle-step-reset": restoreResetEffect,
+    });
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual([
+      "turn-player-opponent-turn-battle-step-reset",
+      "non-turn-player-opponent-turn-battle-step-reset",
+    ]);
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([612, 613]);
+
+    const attack = getDuelLegalActions(restored, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
+    expect(attack).toBeTruthy();
+    expect(applyResponse(restored, attack!).ok).toBe(true);
+
+    expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", attackerUid: attacker!.uid });
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["turn-player-opponent-turn-battle-step-reset"]);
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([612]);
+  });
+
   it("prunes damage subphase reset effects after restoring an attack response window", () => {
     const session = createDuel({ seed: 60, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
