@@ -175,6 +175,59 @@ describe("duel battle timing", () => {
     expect(restored.state.effects).toHaveLength(0);
   });
 
+  it("prunes damage subphase reset effects after restoring an attack response window", () => {
+    const session = createDuel({ seed: 60, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const sources = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(sources).toHaveLength(2);
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    const restoreResetEffect = (effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition => ({ ...effect, operation() {} });
+    registerEffect(session, restoreResetEffect({
+      id: "restore-damage-step-reset",
+      registryKey: "restore-damage-step-reset",
+      sourceUid: sources[0]!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      reset: { flags: 0x40000000 | 0x20 },
+    }));
+    registerEffect(session, restoreResetEffect({
+      id: "restore-damage-calc-reset",
+      registryKey: "restore-damage-calc-reset",
+      sourceUid: sources[1]!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      reset: { flags: 0x40000000 | 0x40 },
+    }));
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-damage-step-reset": restoreResetEffect,
+      "restore-damage-calc-reset": restoreResetEffect,
+    });
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-step-reset", "restore-damage-calc-reset"]);
+
+    passBattleWindow(restored);
+    expect(restored.state.battleWindow?.kind).toBe("startDamageStep");
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-calc-reset"]);
+    passDamageWindow(restored);
+    expect(restored.state.battleWindow?.kind).toBe("beforeDamageCalculation");
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-calc-reset"]);
+    passDamageWindow(restored);
+
+    expect(restored.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    expect(restored.state.effects).toHaveLength(0);
+  });
+
   it("restores a pending after-damage trigger and continues the battle window after it resolves", () => {
     const session = createDuel({ seed: 56, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -394,6 +447,28 @@ function legalEffectIds(session: ReturnType<typeof createDuel>, player: 0 | 1): 
   return getDuelLegalActions(session, player)
     .filter((action) => action.type === "activateEffect")
     .map((action) => action.effectId);
+}
+
+function passBattleWindow(session: ReturnType<typeof createDuel>): void {
+  const firstPlayer = session.state.waitingFor ?? session.state.turnPlayer;
+  const firstPass = getDuelLegalActions(session, firstPlayer).find((action) => action.type === "passAttack");
+  expect(firstPass).toBeTruthy();
+  expect(applyResponse(session, firstPass!).ok).toBe(true);
+  const secondPlayer = session.state.waitingFor ?? session.state.turnPlayer;
+  const secondPass = getDuelLegalActions(session, secondPlayer).find((action) => action.type === "passAttack");
+  expect(secondPass).toBeTruthy();
+  expect(applyResponse(session, secondPass!).ok).toBe(true);
+}
+
+function passDamageWindow(session: ReturnType<typeof createDuel>): void {
+  const firstPlayer = session.state.waitingFor ?? session.state.turnPlayer;
+  const firstPass = getDuelLegalActions(session, firstPlayer).find((action) => action.type === "passDamage");
+  expect(firstPass).toBeTruthy();
+  expect(applyResponse(session, firstPass!).ok).toBe(true);
+  const secondPlayer = session.state.waitingFor ?? session.state.turnPlayer;
+  const secondPass = getDuelLegalActions(session, secondPlayer).find((action) => action.type === "passDamage");
+  expect(secondPass).toBeTruthy();
+  expect(applyResponse(session, secondPass!).ok).toBe(true);
 }
 
 function passCurrentChainIfPending(session: ReturnType<typeof createDuel>): boolean {
