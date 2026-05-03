@@ -65,7 +65,7 @@ describe("EDOPro parity battle only-be-attacked replay fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-summon-only-be-attacked-target" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps the attack-response window active after an ONLY_BE_ATTACKED monster appears",
