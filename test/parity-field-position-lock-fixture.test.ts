@@ -3,27 +3,34 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 
-describe("EDOPro parity position lock fixtures", () => {
-  it("removes manual position changes for monsters affected by cannot-change-position effects", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "Position Locked Monster", kind: "monster", attack: 1000, defense: 1000 }];
+describe("EDOPro parity field position lock fixtures", () => {
+  it("removes manual position changes when another monster applies cannot-change-position to its field", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Field Locked Monster", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "200", name: "Position Lock Source", kind: "monster", attack: 500, defense: 500 },
+    ];
     const fixture: ScriptedDuelFixture = {
-      name: "cannot change position legal action fixture",
-      options: { seed: 78, startingHandSize: 1 },
+      name: "field scoped cannot change position legal action fixture",
+      options: { seed: 79, startingHandSize: 2 },
       decks: {
-        0: { main: ["100"] },
+        0: { main: ["100", "200"] },
         1: { main: [] },
       },
       setup: {
-        moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
+        moveCards: [
+          { player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 0, code: "200", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+        ],
         effects: [
           {
-            id: "fixture-cannot-change-position",
+            id: "fixture-field-cannot-change-position",
             player: 0,
-            code: "100",
+            code: "200",
             location: "monsterZone",
             event: "continuous",
             effectCode: 14,
             range: ["monsterZone"],
+            targetRange: [1, 0],
           },
         ],
       },
@@ -32,7 +39,7 @@ describe("EDOPro parity position lock fixtures", () => {
           snapshotRestore: "before",
           before: {
             source: "edopro",
-            note: "EDOPro omits manual position-change actions for monsters affected by CANNOT_CHANGE_POSITION",
+            note: "EDOPro field-scoped CANNOT_CHANGE_POSITION effects suppress affected monsters' manual position-change actions",
             phase: "main1",
             windowKind: "open",
             waitingFor: 0,
@@ -60,18 +67,18 @@ describe("EDOPro parity position lock fixtures", () => {
           },
           after: {
             source: "edopro",
-            note: "EDOPro keeps the position-locked monster unchanged after leaving Main Phase 1",
+            note: "EDOPro keeps the field-locked monster unchanged after the phase advances",
             phase: "battle",
-            locations: { monsterZone: ["100"] },
+            locations: { monsterZone: ["100", "200"] },
             positionsChanged: [],
           },
         }),
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state preserves the locked monster's unchanged position",
+        note: "EDOPro final fixture state preserves field-scoped position locks",
         phase: "battle",
-        locations: { monsterZone: ["100"] },
+        locations: { monsterZone: ["100", "200"] },
         positionsChanged: [],
       },
     };
