@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
 import { isEffectDefeatPrevented } from "#duel/continuous-effects.js";
-import { damageDuelPlayer, raiseDuelEvent, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/core.js";
+import { collectDuelTriggerEffects, damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import type { DuelSession, DuelWinner, PlayerId } from "#duel/types.js";
@@ -34,7 +34,7 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
     const value = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0);
     if (session.state.players[player].lifePoints > value) {
       setDuelPlayerLifePoints(session.state, player, session.state.players[player].lifePoints - value);
-      if (value > 0) raiseDuelEvent(session.state, "lifePointCostPaid");
+      if (value > 0) collectDuelTriggerEffects(session.state, "lifePointCostPaid", undefined, { eventPlayer: player, eventValue: value });
     }
     return 0;
   });
@@ -44,7 +44,7 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
     const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
     const applied = damageDuelPlayer(session.state, player, value, reason);
-    if (applied > 0) raiseDuelEvent(session.state, "damageDealt");
+    if (applied > 0) collectDuelTriggerEffects(session.state, "damageDealt", undefined, { eventPlayer: player, eventValue: applied, eventReason: reason });
     lua.lua_pushinteger(state, applied);
     return 1;
   });
@@ -53,7 +53,7 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const applied = recoverDuelPlayer(session.state, player, value);
-    if (applied > 0) raiseDuelEvent(session.state, "recoveredLifePoints");
+    if (applied > 0) collectDuelTriggerEffects(session.state, "recoveredLifePoints", undefined, { eventPlayer: player, eventValue: applied });
     lua.lua_pushinteger(state, applied);
     return 1;
   });

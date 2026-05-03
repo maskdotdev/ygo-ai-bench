@@ -107,8 +107,8 @@ describe("Lua LP helpers", () => {
       trigger:SetType(EFFECT_TYPE_TRIGGER_O)
       trigger:SetCode(EVENT_DAMAGE)
       trigger:SetRange(LOCATION_HAND)
-      trigger:SetOperation(function(e,tp)
-        Debug.Message("damage trigger resolved " .. Duel.GetLP(1))
+      trigger:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+        Debug.Message("damage trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. Duel.GetLP(1))
       end)
       watcher:RegisterEffect(trigger)
       `,
@@ -122,12 +122,13 @@ describe("Lua LP helpers", () => {
     expect(host.messages).toContain("burn applied 700");
     expect(session.state.players[1].lifePoints).toBe(7300);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["damageDealt"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1111 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "damageDealt", eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40 })]));
 
     const damageTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(damageTrigger).toBeDefined();
     expect(applyResponse(session, damageTrigger!).ok).toBe(true);
-    expect(host.messages).toContain("damage trigger resolved 7300");
+    expect(host.messages).toContain("damage trigger resolved 1/700/64/7300");
   });
 
   it("queues Lua recover triggers after Duel.Recover applies recovery", () => {
@@ -161,8 +162,8 @@ describe("Lua LP helpers", () => {
       trigger:SetType(EFFECT_TYPE_TRIGGER_O)
       trigger:SetCode(EVENT_RECOVER)
       trigger:SetRange(LOCATION_HAND)
-      trigger:SetOperation(function(e,tp)
-        Debug.Message("recover trigger resolved " .. Duel.GetLP(0))
+      trigger:SetOperation(function(e,tp,eg,ep,ev)
+        Debug.Message("recover trigger resolved " .. ep .. "/" .. ev .. "/" .. Duel.GetLP(0))
       end)
       watcher:RegisterEffect(trigger)
       `,
@@ -176,12 +177,13 @@ describe("Lua LP helpers", () => {
     expect(host.messages).toContain("recover applied 900");
     expect(session.state.players[0].lifePoints).toBe(7400);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["recoveredLifePoints"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1112 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1112, eventPlayer: 0, eventValue: 900 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112, eventPlayer: 0, eventValue: 900 })]));
 
     const recoverTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(recoverTrigger).toBeDefined();
     expect(applyResponse(session, recoverTrigger!).ok).toBe(true);
-    expect(host.messages).toContain("recover trigger resolved 7400");
+    expect(host.messages).toContain("recover trigger resolved 0/900/7400");
   });
 
   it("queues Lua LP-cost triggers after Duel.PayLPCost pays a cost", () => {
@@ -215,8 +217,8 @@ describe("Lua LP helpers", () => {
       trigger:SetType(EFFECT_TYPE_TRIGGER_O)
       trigger:SetCode(EVENT_PAY_LPCOST)
       trigger:SetRange(LOCATION_HAND)
-      trigger:SetOperation(function(e,tp)
-        Debug.Message("cost trigger resolved " .. Duel.GetLP(0))
+      trigger:SetOperation(function(e,tp,eg,ep,ev)
+        Debug.Message("cost trigger resolved " .. ep .. "/" .. ev .. "/" .. Duel.GetLP(0))
       end)
       watcher:RegisterEffect(trigger)
       `,
@@ -230,12 +232,13 @@ describe("Lua LP helpers", () => {
     expect(host.messages).toContain("cost paid 7400");
     expect(session.state.players[0].lifePoints).toBe(7400);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["lifePointCostPaid"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1201 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1201, eventPlayer: 0, eventValue: 600 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 0, eventValue: 600 })]));
 
     const costTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(costTrigger).toBeDefined();
     expect(applyResponse(session, costTrigger!).ok).toBe(true);
-    expect(host.messages).toContain("cost trigger resolved 7400");
+    expect(host.messages).toContain("cost trigger resolved 0/600/7400");
   });
 
   it("queues Lua draw triggers after Duel.Draw draws cards", () => {
