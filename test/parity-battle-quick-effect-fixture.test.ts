@@ -720,8 +720,11 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
           after: {
             source: "edopro",
             note: "EDOPro exposes damage-step fast effects before damage calculation",
+            windowKind: "battle",
             waitingFor: 0,
             battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-step-only-quick", count: 1 }],
             legalActionGroups: [effectGroup(0, "fixture-damage-step-only-quick")],
           },
@@ -734,10 +737,13 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
           after: {
             source: "edopro",
             note: "EDOPro does not expose regular damage-step fast effects during damage calculation",
+            windowKind: "battle",
             waitingFor: 0,
             pendingBattle: true,
             battleStep: "damageCalculation",
             battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-step-only-quick" }],
             absentLegalActionGroups: [
               { player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-step-only-quick" }] },
@@ -751,8 +757,11 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
           after: {
             source: "edopro",
             note: "EDOPro exposes damage-step fast effects again after damage calculation",
+            windowKind: "battle",
             waitingFor: 0,
             battleWindow: { kind: "afterDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-damage-step-only-quick", count: 1 }],
             legalActionGroups: [effectGroup(0, "fixture-damage-step-only-quick")],
           },
