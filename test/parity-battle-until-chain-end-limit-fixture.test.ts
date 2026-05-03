@@ -88,7 +88,7 @@ describe("EDOPro parity battle until-chain-end limit fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-until-chain-end-limiter" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps Duel.SetChainLimitTillChainEnd restrictions active for the whole response chain",
