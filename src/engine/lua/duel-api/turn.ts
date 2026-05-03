@@ -13,7 +13,8 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetTurnPlayer"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, session.state.turn);
+    const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
+    lua.lua_pushinteger(state, player === undefined ? session.state.turn : playerTurnCount(session.state, player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetTurnCount"));
@@ -110,6 +111,11 @@ function pushPhasePredicate(L: unknown, fieldName: string, session: DuelSession,
 
 function matchesTurnPlayer(state: DuelState, player: PlayerId | undefined): boolean {
   return player === undefined || state.turnPlayer === player;
+}
+
+function playerTurnCount(state: DuelState, player: PlayerId): number {
+  if (state.turn <= 0) return 0;
+  return player === 0 ? Math.ceil(state.turn / 2) : Math.floor(state.turn / 2);
 }
 
 function normalizePlayer(value: number): PlayerId {

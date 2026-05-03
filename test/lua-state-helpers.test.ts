@@ -45,6 +45,40 @@ describe("Lua state helpers", () => {
     expect(defaultHost.messages).toContain("default hand draw counts 5/1");
   });
 
+  it("lets Lua scripts query duel and per-player turn counts", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Turn Count Probe", kind: "monster" }];
+    const session = createDuel({ seed: 168, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+
+    let result = host.loadScript(
+      `
+      Debug.Message("turn counts p0 " .. Duel.GetTurnCount() .. "/" .. Duel.GetTurnCount(0) .. "/" .. Duel.GetTurnCount(1))
+      `,
+      "turn-count-player-zero.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    const end = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
+    expect(end).toBeDefined();
+    expect(applyResponse(session, end!).ok).toBe(true);
+
+    result = host.loadScript(
+      `
+      Debug.Message("turn counts p1 " .. Duel.GetTurnCount() .. "/" .. Duel.GetTurnCount(0) .. "/" .. Duel.GetTurnCount(1))
+      `,
+      "turn-count-player-one.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    expect(host.messages).toContain("turn counts p0 1/1/0");
+    expect(host.messages).toContain("turn counts p1 2/1/1");
+  });
+
   it("lets Lua scripts set and clear custom card status bits", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Status Probe", kind: "monster" }];
     const session = createDuel({ seed: 166, startingHandSize: 1, cardReader: createCardReader(cards) });
