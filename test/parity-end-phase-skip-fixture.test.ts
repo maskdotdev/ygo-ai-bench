@@ -3,12 +3,12 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 
-describe("EDOPro parity End Phase lock fixtures", () => {
-  it("removes End Phase legal actions for players affected by cannot-enter-end effects", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "End Phase Lock Source", kind: "monster", attack: 1000, defense: 1000 }];
+describe("EDOPro parity End Phase skip fixtures", () => {
+  it("removes End Phase legal actions for players affected by skip-end effects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "End Phase Skip Source", kind: "monster", attack: 1000, defense: 1000 }];
     const fixture: ScriptedDuelFixture = {
-      name: "cannot enter end phase legal action fixture",
-      options: { seed: 82, startingHandSize: 1 },
+      name: "skip end phase legal action fixture",
+      options: { seed: 79, startingHandSize: 1 },
       decks: {
         0: { main: ["100"] },
         1: { main: [] },
@@ -17,12 +17,12 @@ describe("EDOPro parity End Phase lock fixtures", () => {
         moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
         effects: [
           {
-            id: "fixture-cannot-ep",
+            id: "fixture-skip-ep",
             player: 0,
             code: "100",
             location: "monsterZone",
             event: "continuous",
-            effectCode: 187,
+            effectCode: 189,
             range: ["monsterZone"],
           },
         ],
@@ -33,7 +33,7 @@ describe("EDOPro parity End Phase lock fixtures", () => {
           snapshotRestore: "after",
           after: {
             source: "edopro",
-            note: "EDOPro omits End Phase transition actions when CANNOT_EP prevents entering End Phase",
+            note: "EDOPro omits End Phase transition actions when SKIP_EP applies to the turn player",
             phase: "main2",
             windowKind: "open",
             waitingFor: 0,
@@ -65,7 +65,7 @@ describe("EDOPro parity End Phase lock fixtures", () => {
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state remains Main Phase 2 with explicit End Phase entry blocked",
+        note: "EDOPro final fixture state remains Main Phase 2 with explicit End Phase entry skipped",
         phase: "main2",
         windowKind: "open",
         waitingFor: 0,
