@@ -91,8 +91,8 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 3, windowKind: "open" },
             ],
             absentLegalActionGroups: [
-              { player: 1, label: "Pass", windowId: 3, actions: [{ type: "passAttack", player: 1, windowId: 3, windowKind: "battle" }] },
-              { player: 1, label: "Pass", windowId: 3, actions: [{ type: "passDamage", player: 1, windowId: 3, windowKind: "battle" }] },
+              { player: 1, label: "Pass", windowId: 3, windowKind: "battle", actions: [{ type: "passAttack", player: 1, windowId: 3, windowKind: "battle" }] },
+              { player: 1, label: "Pass", windowId: 3, windowKind: "battle", actions: [{ type: "passDamage", player: 1, windowId: 3, windowKind: "battle" }] },
               absentAttackGroup("p0-deck-100-0", undefined, undefined, 3),
             ],
             logIncludes: ["Negated attack true", "Fixture opponent attack negator resolved", "Negated attack"],
@@ -117,8 +117,8 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 3, windowKind: "open" },
         ],
         absentLegalActionGroups: [
-          { player: 1, label: "Pass", windowId: 3, actions: [{ type: "passAttack", player: 1, windowId: 3, windowKind: "battle" }] },
-          { player: 1, label: "Pass", windowId: 3, actions: [{ type: "passDamage", player: 1, windowId: 3, windowKind: "battle" }] },
+          { player: 1, label: "Pass", windowId: 3, windowKind: "battle", actions: [{ type: "passAttack", player: 1, windowId: 3, windowKind: "battle" }] },
+          { player: 1, label: "Pass", windowId: 3, windowKind: "battle", actions: [{ type: "passDamage", player: 1, windowId: 3, windowKind: "battle" }] },
           absentAttackGroup("p0-deck-100-0", undefined, undefined, 3),
         ],
         logIncludes: ["Negated attack true", "Fixture opponent attack negator resolved", "Negated attack"],

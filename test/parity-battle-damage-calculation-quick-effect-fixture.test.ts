@@ -50,7 +50,7 @@ describe("EDOPro parity battle damage-calculation quick-effect fixtures", () => 
             legalActionGroupCounts: { 0: 1, 1: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "battle", effectId: "fixture-damage-calculation-quick" }],
             absentLegalActionGroups: [
-              { player: 0, label: "Effects", windowId: 5, actions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "battle", effectId: "fixture-damage-calculation-quick" }] },
+              { player: 0, label: "Effects", windowId: 5, windowKind: "battle", actions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "battle", effectId: "fixture-damage-calculation-quick" }] },
             ],
             legalActions: [{ type: "passDamage", player: 0, windowId: 5, windowKind: "battle", count: 1 }],
             legalActionGroups: [passDamageGroup(0, 1, 5)],
@@ -69,7 +69,7 @@ describe("EDOPro parity battle damage-calculation quick-effect fixtures", () => 
             legalActionGroupCounts: { 0: 1, 1: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 7, windowKind: "battle", effectId: "fixture-damage-calculation-quick" }],
             absentLegalActionGroups: [
-              { player: 0, label: "Effects", windowId: 7, actions: [{ type: "activateEffect", player: 0, windowId: 7, windowKind: "battle", effectId: "fixture-damage-calculation-quick" }] },
+              { player: 0, label: "Effects", windowId: 7, windowKind: "battle", actions: [{ type: "activateEffect", player: 0, windowId: 7, windowKind: "battle", effectId: "fixture-damage-calculation-quick" }] },
             ],
             legalActions: [{ type: "passDamage", player: 0, windowId: 7, windowKind: "battle", count: 1 }],
             legalActionGroups: [passDamageGroup(0, 1, 7)],
@@ -114,7 +114,7 @@ describe("EDOPro parity battle damage-calculation quick-effect fixtures", () => 
             legalActions: [{ type: "passDamage", player: 1, windowId: 10, windowKind: "battle", count: 1 }],
             legalActionGroups: [passDamageGroup(1, 1, 10)],
             absentLegalActionGroups: [
-              { player: 0, label: "Effects", windowId: 10, actions: [{ type: "activateEffect", player: 0, windowId: 10, windowKind: "battle", effectId: "fixture-damage-calculation-quick" }] },
+              { player: 0, label: "Effects", windowId: 10, windowKind: "battle", actions: [{ type: "activateEffect", player: 0, windowId: 10, windowKind: "battle", effectId: "fixture-damage-calculation-quick" }] },
             ],
             logIncludes: ["Fixture damage-calculation quick resolved"],
           },

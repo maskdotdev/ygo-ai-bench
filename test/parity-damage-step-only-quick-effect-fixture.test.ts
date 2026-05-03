@@ -70,7 +70,7 @@ describe("EDOPro parity damage-step-only quick-effect timing fixtures", () => {
             legalActionGroupCounts: { 0: 1, 1: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 9, windowKind: "battle", effectId: "fixture-damage-step-only-quick" }],
             absentLegalActionGroups: [
-              { player: 0, label: "Effects", windowId: 9, actions: [{ type: "activateEffect", player: 0, windowId: 9, windowKind: "battle", effectId: "fixture-damage-step-only-quick" }] },
+              { player: 0, label: "Effects", windowId: 9, windowKind: "battle", actions: [{ type: "activateEffect", player: 0, windowId: 9, windowKind: "battle", effectId: "fixture-damage-step-only-quick" }] },
             ],
             legalActions: [{ type: "passDamage", player: 0, windowId: 9, windowKind: "battle", count: 1 }],
             legalActionGroups: [passDamageGroup(0, 1, 9)],

@@ -107,8 +107,8 @@ describe("EDOPro parity battle negation fixtures", () => {
               { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 4, windowKind: "open" },
             ],
             absentLegalActionGroups: [
-              { player: 0, label: "Pass", windowId: 4, actions: [{ type: "passAttack", player: 0, windowId: 4, windowKind: "battle" }] },
-              { player: 0, label: "Pass", windowId: 4, actions: [{ type: "passDamage", player: 0, windowId: 4, windowKind: "battle" }] },
+              { player: 0, label: "Pass", windowId: 4, windowKind: "battle", actions: [{ type: "passAttack", player: 0, windowId: 4, windowKind: "battle" }] },
+              { player: 0, label: "Pass", windowId: 4, windowKind: "battle", actions: [{ type: "passDamage", player: 0, windowId: 4, windowKind: "battle" }] },
               absentAttackGroup("p0-deck-100-0", undefined, undefined, 4),
             ],
             logIncludes: ["Negated attack true", "Fixture attack negator resolved", "Negated attack"],
@@ -133,8 +133,8 @@ describe("EDOPro parity battle negation fixtures", () => {
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 4, windowKind: "open" },
         ],
         absentLegalActionGroups: [
-          { player: 0, label: "Pass", windowId: 4, actions: [{ type: "passAttack", player: 0, windowId: 4, windowKind: "battle" }] },
-          { player: 0, label: "Pass", windowId: 4, actions: [{ type: "passDamage", player: 0, windowId: 4, windowKind: "battle" }] },
+          { player: 0, label: "Pass", windowId: 4, windowKind: "battle", actions: [{ type: "passAttack", player: 0, windowId: 4, windowKind: "battle" }] },
+          { player: 0, label: "Pass", windowId: 4, windowKind: "battle", actions: [{ type: "passDamage", player: 0, windowId: 4, windowKind: "battle" }] },
           absentAttackGroup("p0-deck-100-0", undefined, undefined, 4),
         ],
         logIncludes: ["Negated attack true", "Fixture attack negator resolved", "Negated attack"],

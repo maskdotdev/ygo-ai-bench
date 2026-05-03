@@ -73,7 +73,7 @@ describe("EDOPro parity opponent battle quick-effect fixtures", () => {
             legalActionGroups: [passDamageGroup(1, 1, 5)],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 5, windowKind: "battle", effectId: "fixture-opponent-damage-step-quick" }],
             absentLegalActionGroups: [
-              { player: 1, label: "Effects", windowId: 5, actions: [{ type: "activateEffect", player: 1, windowId: 5, windowKind: "battle", effectId: "fixture-opponent-damage-step-quick" }] },
+              { player: 1, label: "Effects", windowId: 5, windowKind: "battle", actions: [{ type: "activateEffect", player: 1, windowId: 5, windowKind: "battle", effectId: "fixture-opponent-damage-step-quick" }] },
             ],
             logIncludes: ["Fixture opponent damage-step quick resolved"],
           },
