@@ -3,9 +3,13 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const parityFixtureDir = path.resolve("test");
-const parityDocFiles = ["readme.md", path.join("docs", "gameplay-parity-plan.md")];
+const parityDocFiles = ["README.md", path.join("docs", "gameplay-parity-plan.md")];
 
 describe("parity fixture metadata", () => {
+  it("scans existing parity documentation files", () => {
+    expect(parityDocFiles.filter((file) => !fs.existsSync(file))).toEqual([]);
+  });
+
   it("keeps parity docs from framing engine gaps as unsupported", () => {
     expect(unsupportedParityDocLanguage()).toEqual([]);
   });
