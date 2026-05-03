@@ -128,6 +128,48 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(badWinReason, createCardReader(cards))).toThrow("Malformed duel snapshot: state.winReason must be a number");
   });
 
+  it("rejects malformed snapshot player-id collections before restore", () => {
+    const session = createDuel({ seed: 147, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badChainPasses = serializeDuel(session);
+    badChainPasses.state.chainPasses = [0, 2 as 0];
+
+    expect(() => restoreDuel(badChainPasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainPasses.1 must be a player id");
+  });
+
+  it("rejects malformed snapshot scalar collections before restore", () => {
+    const session = createDuel({ seed: 148, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badDice = serializeDuel(session);
+    const badUid = serializeDuel(session);
+    badDice.state.lastDiceResults = [6, "one" as unknown as number];
+    badUid.state.attackCanceledUids = ["attacker", 7 as unknown as string];
+
+    expect(() => restoreDuel(badDice, createCardReader(cards))).toThrow("Malformed duel snapshot: state.lastDiceResults.1 must be a number");
+    expect(() => restoreDuel(badUid, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackCanceledUids.1 must be a string");
+  });
+
+  it("rejects malformed snapshot battle pair collections before restore", () => {
+    const session = createDuel({ seed: 149, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badPair = serializeDuel(session);
+    badPair.state.battlePairs = [{ attackerUid: "attacker", targetUid: 7 as unknown as string }];
+
+    expect(() => restoreDuel(badPair, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battlePairs.0.targetUid must be a string");
+  });
+
   it("rejects malformed optional battle window snapshots before restore", () => {
     const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

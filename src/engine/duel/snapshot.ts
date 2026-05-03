@@ -202,6 +202,16 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   for (const field of ["unofficialProcEnabled", "shuffleCheckDisabled", "phaseActivity"] as const) {
     if (typeof state[field] !== "boolean") throw new Error(`Malformed duel snapshot: state.${field} must be a boolean`);
   }
+  for (const field of ["chainPasses", "attackPasses", "damagePasses"] as const) {
+    assertSnapshotPlayerIdArray(state[field], `state.${field}`);
+  }
+  for (const field of ["lastDiceResults", "lastCoinResults"] as const) {
+    assertSnapshotNumberArray(state[field], `state.${field}`);
+  }
+  for (const field of ["usedCountKeys", "attacksDeclared", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
+    assertSnapshotStringArray(state[field], `state.${field}`);
+  }
+  assertSnapshotBattlePairs(state.battlePairs);
   if (!duelSnapshotStatuses.has(state.status)) throw new Error("Malformed duel snapshot: state.status must be a duel status");
   if (!duelSnapshotPhases.has(state.phase)) throw new Error("Malformed duel snapshot: state.phase must be a duel phase");
   if (state.winner !== undefined && state.winner !== "draw") assertSnapshotPlayerId(state.winner, "state.winner");
@@ -235,6 +245,35 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function assertSnapshotPlayerId(value: unknown, path: string): asserts value is PlayerId {
   if (value !== 0 && value !== 1) throw new Error(`Malformed duel snapshot: ${path} must be a player id`);
+}
+
+function assertSnapshotPlayerIdArray(values: unknown, path: string): void {
+  if (!Array.isArray(values)) throw new Error(`Malformed duel snapshot: ${path} must be an array`);
+  for (const [index, value] of values.entries()) assertSnapshotPlayerId(value, `${path}.${index}`);
+}
+
+function assertSnapshotNumberArray(values: unknown, path: string): void {
+  if (!Array.isArray(values)) throw new Error(`Malformed duel snapshot: ${path} must be an array`);
+  for (const [index, value] of values.entries()) {
+    if (typeof value !== "number") throw new Error(`Malformed duel snapshot: ${path}.${index} must be a number`);
+  }
+}
+
+function assertSnapshotStringArray(values: unknown, path: string): void {
+  if (!Array.isArray(values)) throw new Error(`Malformed duel snapshot: ${path} must be an array`);
+  for (const [index, value] of values.entries()) {
+    if (typeof value !== "string") throw new Error(`Malformed duel snapshot: ${path}.${index} must be a string`);
+  }
+}
+
+function assertSnapshotBattlePairs(pairs: unknown): void {
+  if (!Array.isArray(pairs)) throw new Error("Malformed duel snapshot: state.battlePairs must be an array");
+  for (const [index, pair] of pairs.entries()) {
+    const path = `state.battlePairs.${index}`;
+    if (!isRecord(pair)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+    if (typeof pair.attackerUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.attackerUid must be a string`);
+    if (typeof pair.targetUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.targetUid must be a string`);
+  }
 }
 
 function assertSnapshotPlayers(players: unknown): void {
