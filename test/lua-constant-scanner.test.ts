@@ -89,6 +89,33 @@ describe("Lua constant scanner", () => {
     expect(output).toContain("No missing constants found.");
   });
 
+  it("fails combined Lua parity scans when upstream scripts use missing APIs", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "lua-parity-scan-"));
+    const scripts = path.join(root, "script");
+    const source = path.join(root, "source");
+    const upstream = path.join(root, "constant.lua");
+    fs.mkdirSync(path.join(source, "duel-api"), { recursive: true });
+    fs.mkdirSync(scripts, { recursive: true });
+    fs.writeFileSync(path.join(scripts, "c100.lua"), "Duel.MissingApi(0)\n");
+    fs.writeFileSync(path.join(source, "basic-test-constant-data.ts"), "export const constants = { REASON_EFFECT: 0x40 };\n");
+    fs.writeFileSync(upstream, "REASON_EFFECT = 0x40\n");
+
+    const result = spawnSync(process.execPath, [
+      parityScannerPath,
+      "--scripts",
+      scripts,
+      "--upstream",
+      upstream,
+      "--source",
+      source,
+      "--fail-on-missing",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toContain("Top missing APIs:");
+    expect(result.stdout).toContain("Duel.MissingApi");
+  });
+
   it("rejects constant scanner options that are missing required values", () => {
     const result = spawnSync(process.execPath, [scannerPath, "--upstream", "--source", "src"], { encoding: "utf8" });
 
