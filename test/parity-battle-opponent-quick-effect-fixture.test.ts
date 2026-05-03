@@ -57,7 +57,7 @@ describe("EDOPro parity opponent battle quick-effect fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-damage-step-quick" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps start damage step timing with the non-turn player after their fast effect resolves",
