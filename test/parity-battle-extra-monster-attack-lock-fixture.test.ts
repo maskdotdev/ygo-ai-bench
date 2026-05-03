@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentOpenAttackGroup } from "./parity-legal-action-group-helpers.js";
 
 const resolveBattleStepsBeforeFinalPass = [
   makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -58,6 +59,7 @@ describe("EDOPro parity battle extra monster attack lock fixtures", () => {
             source: "edopro",
             note: "EDOPro monster-only extra attacks do not become direct attacks after all opposing monsters leave the field",
             phase: "battle",
+            windowId: 14,
             windowKind: "open",
             waitingFor: 0,
             pendingBattle: false,
@@ -68,15 +70,8 @@ describe("EDOPro parity battle extra monster attack lock fixtures", () => {
             locations: { monsterZone: ["100"], graveyard: ["200"] },
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
-            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
-            absentLegalActionGroups: [
-              {
-                player: 0,
-                label: "Attacks",
-                windowKind: "open",
-                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
-              },
-            ],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
+            absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
           },
         }),
       ],
@@ -84,6 +79,7 @@ describe("EDOPro parity battle extra monster attack lock fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state withholds direct attack actions from monster-only extra attackers",
         phase: "battle",
+        windowId: 14,
         windowKind: "open",
         waitingFor: 0,
         pendingBattle: false,
@@ -94,15 +90,8 @@ describe("EDOPro parity battle extra monster attack lock fixtures", () => {
         locations: { monsterZone: ["100"], graveyard: ["200"] },
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
-        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
-        absentLegalActionGroups: [
-          {
-            player: 0,
-            label: "Attacks",
-            windowKind: "open",
-            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
-          },
-        ],
+        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
+        absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
       },
     };
 
