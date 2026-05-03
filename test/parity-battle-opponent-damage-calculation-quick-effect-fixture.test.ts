@@ -42,7 +42,7 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro gives the non-turn player first response during damage calculation and exposes their damage-calculation fast effects",
@@ -91,7 +91,7 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves battle normally after the opponent's damage-calculation fast effect resolves",
