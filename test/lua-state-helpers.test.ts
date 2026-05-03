@@ -289,7 +289,10 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("is main phase 2 true");
   });
 
-  it("lets Lua battle-phase entry queries respect continuous phase locks", () => {
+  it.each([
+    { code: 183, label: "skip" },
+    { code: 185, label: "cannot" },
+  ])("lets Lua battle-phase entry queries respect continuous $label locks", ({ code, label }) => {
     const cards: DuelCardData[] = [{ code: "100", name: "Battle Phase Lock", kind: "monster" }];
     const session = createDuel({ seed: 152, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -301,11 +304,11 @@ describe("Lua state helpers", () => {
     expect(source).toBeDefined();
     moveDuelCard(session.state, source!.uid, "monsterZone", 0).position = "faceUpAttack";
     registerEffect(session, {
-      id: "lua-cannot-battle-phase",
+      id: `lua-${label}-battle-phase`,
       sourceUid: source!.uid,
       controller: 0,
       event: "continuous",
-      code: 185,
+      code,
       range: ["monsterZone"],
       operation() {},
     });
@@ -315,7 +318,7 @@ describe("Lua state helpers", () => {
       `
       Debug.Message("able continuous locked " .. tostring(Duel.IsAbleToEnterBP()))
       `,
-      "battle-phase-continuous-lock.lua",
+      `battle-phase-continuous-${label}-lock.lua`,
     );
 
     expect(result.ok, result.error).toBe(true);

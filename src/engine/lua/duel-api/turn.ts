@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { currentBattleStep, isBattleAttackStep, isBattleDamageCalculation, isBattleDamageStep } from "#duel/battle-window-state.js";
 import { isPhaseEntryPrevented } from "#duel/continuous-effects.js";
+import { nextAvailableDuelPhase } from "#duel/turn-flow.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -135,19 +136,12 @@ function phasesFromMask(mask: number): DuelPhase[] {
 }
 
 function isAbleToEnterBattlePhase(state: DuelState): boolean {
-  return nextAvailablePhase(state, state.turnPlayer) === "battle" && !isPhaseEntryPrevented(state, state.turnPlayer, "battle", createContinuousPhaseContext(state));
+  return nextAvailableDuelPhase(state, state.turnPlayer, (phase) => canEnterPhase(state, phase)) === "battle";
 }
 
-function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
-  const phaseOrder = ["draw", "standby", "main1", "battle", "main2", "end"] satisfies DuelPhase[];
-  for (const phase of phaseOrder.slice(phaseOrder.indexOf(state.phase) + 1)) {
-    if (!isPhaseSkipped(state, player, phase)) return phase;
-  }
-  return undefined;
-}
-
-function isPhaseSkipped(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {
-  return state.skippedPhases.some((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0);
+function canEnterPhase(state: DuelState, phase: DuelPhase): boolean {
+  if (phase !== "battle" && phase !== "main2" && phase !== "end") return true;
+  return !isPhaseEntryPrevented(state, state.turnPlayer, phase, createContinuousPhaseContext(state));
 }
 
 function skipPhase(session: DuelSession, player: PlayerId, phase: DuelPhase, count: number): void {
