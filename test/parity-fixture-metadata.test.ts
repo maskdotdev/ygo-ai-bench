@@ -62,6 +62,10 @@ describe("parity fixture metadata", () => {
     expect(missingTimingLegalActionGroupWindowIds()).toEqual([]);
   });
 
+  it("requires grouped legal-action entries to pin window ids", () => {
+    expect(missingNestedLegalActionGroupWindowIds()).toEqual([]);
+  });
+
   it("requires timing-window expectation blocks to pin window ids", () => {
     expect(missingTimingExpectationWindowIds()).toEqual([]);
   });
@@ -144,6 +148,20 @@ describe("parity fixture metadata", () => {
       ]),
     ).toEqual(["fixture.ts:6"]);
     expect(
+      missingNestedLegalActionGroupWindowIdsInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  legalActionGroups: [",
+        "    {",
+        '      label: "Pass",',
+        "      windowId: 2,",
+        '      windowKind: "battle",',
+        '      actions: [{ type: "passAttack", player: 0, windowKind: "battle" }],',
+        "    },",
+        "  ],",
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:6"]);
+    expect(
       missingTimingExpectationWindowIdsInLines("fixture.ts", [
         ...lines.slice(0, 3),
         '  windowKind: "battle",',
@@ -213,6 +231,10 @@ function missingTimingLegalActionWindowIds(): string[] {
 
 function missingTimingLegalActionGroupWindowIds(): string[] {
   return parityFixtureFiles().flatMap((file) => missingTimingLegalActionGroupWindowIdsInLines(file, readFixtureLines(file)));
+}
+
+function missingNestedLegalActionGroupWindowIds(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingNestedLegalActionGroupWindowIdsInLines(file, readFixtureLines(file)));
 }
 
 function missingTimingExpectationWindowIds(): string[] {
@@ -366,6 +388,18 @@ function missingLegalActionGroupWindowIdsInLines(file: string, lines: string[], 
     if (!/actions:\s*\[/.test(groupBlock)) return;
     const header = groupBlock.split("actions:")[0] ?? "";
     if (!/\bwindowId:/.test(header)) missingWindowIds.push(`${file}:${findBlockStart(lines, index) + 1}`);
+  });
+  return [...new Set(missingWindowIds)];
+}
+
+function missingNestedLegalActionGroupWindowIdsInLines(file: string, lines: string[]): string[] {
+  const missingWindowIds: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/label:\s*["']/.test(line)) return;
+    const groupBlock = expectationBlock(lines, index);
+    if (!/actions:\s*\[/.test(groupBlock)) return;
+    const actionObjects = groupBlock.match(/\{[^{}]*windowKind:\s*["'](battle|chainResponse|triggerBucket|open)["'][^{}]*\}/g) ?? [];
+    if (actionObjects.some((action) => !/\bwindowId:/.test(action))) missingWindowIds.push(`${file}:${findBlockStart(lines, index) + 1}`);
   });
   return [...new Set(missingWindowIds)];
 }
