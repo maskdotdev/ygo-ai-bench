@@ -7,7 +7,7 @@ import { createCardReader, createUpstreamSourceConfig, normalizeCdbRows } from "
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 
 const tempRoots: string[] = [];
@@ -364,6 +364,11 @@ describe("Node upstream snapshot restore", () => {
     const forgedAction = getDuelLegalActions(restored.session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
     expect(forgedAction).toBeDefined();
     expect(getLuaRestoreLegalActions(restored, 1)).not.toContain(forgedAction);
+    const forgedResult = applyLuaRestoreResponse(restored, forgedAction!);
+    expect(forgedResult.ok).toBe(false);
+    expect(forgedResult.error).toContain("Lua snapshot restore is incomplete");
+    expect(forgedResult.legalActions).toEqual([]);
+    expect(forgedResult.legalActionGroups).toEqual([]);
   });
 
 });

@@ -1,9 +1,9 @@
 import { fallbackCardReader } from "#duel/card-reader.js";
-import { getGroupedDuelLegalActions, getLegalActions } from "#duel/core.js";
+import { applyResponse, getGroupedDuelLegalActions, getLegalActions, queryPublicState } from "#duel/core.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
-import type { DuelAction, DuelCardReader, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
+import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelResponse, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
 
 export interface LuaSnapshotRestoreResult {
   session: DuelSession;
@@ -45,6 +45,19 @@ export function getLuaRestoreLegalActions(restored: LuaSnapshotRestoreResult, pl
 export function getLuaRestoreLegalActionGroups(restored: LuaSnapshotRestoreResult, player: PlayerId): DuelLegalActionGroup[] {
   if (!restored.restoreComplete) return [];
   return getGroupedDuelLegalActions(restored.session, player);
+}
+
+export function applyLuaRestoreResponse(restored: LuaSnapshotRestoreResult, response: DuelResponse): ApplyDuelResponseResult {
+  if (!restored.restoreComplete) {
+    return {
+      ok: false,
+      error: "Lua snapshot restore is incomplete",
+      state: queryPublicState(restored.session),
+      legalActions: [],
+      legalActionGroups: [],
+    };
+  }
+  return applyResponse(restored.session, response);
 }
 
 function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string>): string[] {
