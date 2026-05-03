@@ -1,11 +1,12 @@
 type AttackChoice = { attackerUid: string; targetUid?: string; directAttack?: true };
 
-export const directAttackGroup = (player: 0 | 1, attackerUid: string, count = 1) => ({
+export const directAttackGroup = (player: 0 | 1, attackerUid: string, count = 1, windowId?: number) => ({
   player,
   label: "Attacks",
+  ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
   count,
-  actions: [{ type: "declareAttack" as const, player, attackerUid, count }],
+  actions: [{ type: "declareAttack" as const, player, attackerUid, ...(windowId === undefined ? {} : { windowId }), count }],
 });
 
 export const targetedAttackGroup = (player: 0 | 1, attackerUid: string, targetUid: string, count = 1) => ({
@@ -44,12 +45,13 @@ export const absentAttackGroup = (attackerUid: string, targetUid?: string, direc
   actions: [{ type: "declareAttack" as const, player: 0 as const, attackerUid, ...(targetUid === undefined ? {} : { targetUid }), ...(targetUid === undefined && directAttack ? { directAttack } : {}) }],
 });
 
-export const passBattleGroup = (player: 0 | 1, type: "passAttack" | "passDamage", count = 1) => ({
+export const passBattleGroup = (player: 0 | 1, type: "passAttack" | "passDamage", count = 1, windowId?: number) => ({
   player,
   label: "Pass",
+  ...(windowId === undefined ? {} : { windowId }),
   windowKind: "battle" as const,
   count,
-  actions: [{ type, player, count }],
+  actions: [{ type, player, ...(windowId === undefined ? {} : { windowId }), count }],
 });
 
 export const effectGroup = (player: 0 | 1, effectId: string, count = 1) => ({
