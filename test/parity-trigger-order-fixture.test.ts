@@ -50,11 +50,14 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             source: "edopro",
             note: "EDOPro lets the trigger player order multiple same-bucket mandatory triggers and does not offer decline actions",
             windowId: 1,
+            windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
               { player: 0, effectId: "fixture-first-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
               { player: 0, effectId: "fixture-second-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, effectId: "fixture-first-mandatory", count: 1 },
               { type: "activateTrigger", player: 0, windowId: 1, effectId: "fixture-second-mandatory", count: 1 },
@@ -96,7 +99,10 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             source: "edopro",
             note: "EDOPro allows either same-bucket mandatory trigger to be selected first by its controller",
             windowId: 1,
+            windowKind: "triggerBucket",
             waitingFor: 0,
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, effectId: "fixture-second-mandatory", count: 1 }],
             legalActionGroups: [
               {
@@ -113,9 +119,12 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             source: "edopro",
             note: "EDOPro keeps the remaining mandatory trigger pending after the selected mandatory trigger resolves",
             windowId: 2,
+            windowKind: "triggerBucket",
             waitingFor: 0,
             chain: [],
             pendingTriggers: [{ player: 0, effectId: "fixture-first-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, effectId: "fixture-first-mandatory", count: 1 }],
             legalActionGroups: [
               {
