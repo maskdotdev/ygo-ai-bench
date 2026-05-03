@@ -587,8 +587,7 @@ export interface ScriptedLegalActionGroupExpectation {
   actions?: ScriptedLegalActionExpectation[];
 }
 
-export interface ScriptedDuelWindowExpectation {
-  source: "edopro" | "parity-backlog";
+interface ScriptedDuelWindowExpectationFields {
   note?: string;
   status?: DuelStatus;
   winner?: DuelWinner | null;
@@ -641,6 +640,11 @@ export interface ScriptedDuelWindowExpectation {
   log?: Array<Partial<DuelLogEntry>>;
   logIncludes?: string[];
 }
+
+export type ScriptedDuelWindowExpectation = ScriptedDuelWindowExpectationFields & (
+  | { source: "edopro"; note?: string }
+  | { source: "parity-backlog"; note: string }
+);
 
 export interface ScriptedDuelStepWithAssertions {
   response: DuelResponse | ScriptedResponseSelector;
