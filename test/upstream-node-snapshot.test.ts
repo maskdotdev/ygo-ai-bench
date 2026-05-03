@@ -377,7 +377,9 @@ describe("Node upstream snapshot restore", () => {
     specialSummonDuelCard(session.state, summon!.uid);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["lua-1-1102", "lua-2-1102"]);
     const firstTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "lua-1-1102");
+    const staleSecondTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "lua-2-1102");
     expect(firstTrigger).toBeDefined();
+    expect(staleSecondTrigger).toBeDefined();
     expect(applyResponse(session, firstTrigger!).ok).toBe(true);
     expect(session.state.usedCountKeys).toEqual(["turn-1:0:code-1365"]);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["lua-2-1102"]);
@@ -390,6 +392,9 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.session.state.usedCountKeys).toEqual(["turn-1:0:code-1365"]);
 
     expect(getLuaRestoreLegalActions(restored, 0).filter((candidate) => candidate.type === "activateTrigger")).toEqual([]);
+    const staleResult = applyLuaRestoreResponse(restored, staleSecondTrigger!);
+    expect(staleResult.ok).toBe(false);
+    expect(staleResult.error).toContain("Response is not currently legal");
     expect(restored.host.messages).toEqual([]);
   });
 
