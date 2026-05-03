@@ -7,6 +7,102 @@ import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActions, type LuaSnapshotRestoreResult, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua summon-negated events", () => {
+  it("removes matching summon-success triggers when an attempt trigger negates the summon", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Attempt-Negated Summon", kind: "monster" },
+      { code: "200", name: "Attempt Negator", kind: "monster" },
+      { code: "300", name: "Success Watcher", kind: "monster" },
+      { code: "400", name: "Negated Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 201, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const scriptSource = {
+      readScript(name: string) {
+        if (name === "c200.lua") {
+          return `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          Debug.Message("attempt negate " .. Duel.NegateSummon(eg:GetFirst()))
+        end)
+        c:RegisterEffect(e)
+      end
+      `;
+        }
+        if (name === "c300.lua") {
+          return `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          Debug.Message("success should not resolve " .. eg:GetFirst():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `;
+        }
+        if (name === "c400.lua") {
+          return `
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_NEGATED)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          Debug.Message("negated after attempt " .. eg:GetFirst():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    for (const code of [200, 300, 400]) {
+      const loaded = host.loadCardScript(code, scriptSource);
+      expect(loaded.ok, loaded.error).toBe(true);
+    }
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const summoned = session.state.cards.find((card) => card.code === "100");
+    expect(summoned).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summoned!.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["normalSummoning", "normalSummoned"]);
+
+    const attemptNegator = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("200"));
+    expect(attemptNegator).toBeDefined();
+    expect(applyResponse(session, attemptNegator!).ok).toBe(true);
+    drainChain(session);
+
+    expect(host.messages).toContain("attempt negate 1");
+    expect(session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "graveyard" });
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["normalSummonNegated"]);
+    expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("normalSummoned");
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("300"))).toBe(false);
+
+    const negatedTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("400"));
+    expect(negatedTrigger).toBeDefined();
+    expect(applyResponse(session, negatedTrigger!).ok).toBe(true);
+    drainChain(session);
+    expect(host.messages).toContain("negated after attempt 100");
+    expect(host.messages.some((message) => message.startsWith("success should not resolve"))).toBe(false);
+  });
+
   it("queues summon-negated triggers when Duel.NegateSummon negates a Normal Summon", () => {
     const fixture = createNegatedSummonFixture(198, "EVENT_SUMMON_NEGATED", "normal summon negated");
     const summon = getDuelLegalActions(fixture.session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === fixture.summoned.uid);
@@ -56,6 +152,15 @@ describe("Lua summon-negated events", () => {
     assertRestoredNegatedTrigger(fixture, "special summon negated 100");
   });
 });
+
+function drainChain(session: ReturnType<typeof createDuel>): void {
+  while (session.state.chain.length > 0) {
+    const player = session.state.waitingFor ?? session.state.turnPlayer;
+    const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+    expect(applyResponse(session, pass!).ok).toBe(true);
+  }
+}
 
 interface NegatedSummonFixture {
   cards: DuelCardData[];
