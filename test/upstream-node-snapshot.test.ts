@@ -4,7 +4,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import { createCardReader, createUpstreamSourceConfig, normalizeCdbRows } from "#engine/data-loaders.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -314,6 +314,82 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.session.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
 
     expect(getLuaRestoreLegalActions(restored, 0).filter((candidate) => candidate.type === "activateEffect").map((candidate) => candidate.effectId)).toEqual([]);
+    expect(restored.host.messages).toEqual([]);
+  });
+
+  it("preserves spent Lua shared count codes for restored pending triggers", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SPSUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetCountLimit(1, 0x555)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("restored pending shared first")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(root, "script", "c200.lua"),
+      `
+      c200 = {}
+      c200.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SPSUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetCountLimit(1, 0x555)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("restored pending shared second")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 24, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.loadCardScript(200, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const summon = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(summon).toBeDefined();
+
+    specialSummonDuelCard(session.state, summon!.uid);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["lua-1-1102", "lua-2-1102"]);
+    const firstTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "lua-1-1102");
+    expect(firstTrigger).toBeDefined();
+    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+    expect(session.state.usedCountKeys).toEqual(["turn-1:0:code-1365"]);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["lua-2-1102"]);
+    expect(getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "activateTrigger")).toEqual([]);
+    expect(host.messages).toContain("restored pending shared first");
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(restored.session.state.usedCountKeys).toEqual(["turn-1:0:code-1365"]);
+
+    expect(getLuaRestoreLegalActions(restored, 0).filter((candidate) => candidate.type === "activateTrigger")).toEqual([]);
     expect(restored.host.messages).toEqual([]);
   });
 
