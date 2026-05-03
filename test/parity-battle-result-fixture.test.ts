@@ -66,7 +66,7 @@ describe("EDOPro parity battle result fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro passes end damage step priority back before battle resolution destroys the weaker monster",
@@ -83,7 +83,7 @@ describe("EDOPro parity battle result fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro applies attack-position battle damage and destroys the lower-ATK battle target after end damage step passes",
