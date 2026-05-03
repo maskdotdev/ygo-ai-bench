@@ -46,6 +46,27 @@ describe("Lua CheckEvent payloads", () => {
     expect(host.messages).toContain("check event codes true/false");
   });
 
+  it("preserves numeric alias codes from Lua-raised events", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Alias Event Card", kind: "monster" }];
+    const session = createDuel({ seed: 213, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Duel.RaiseEvent(target, EVENT_LEAVE_FIELD_P, nil, REASON_EFFECT, 0, 0, 0)
+      Debug.Message("raised alias check " .. tostring(Duel.CheckEvent(EVENT_LEAVE_FIELD_P)) .. "/" .. tostring(Duel.CheckEvent(EVENT_LEAVE_FIELD)))
+      `,
+      "check-event-raised-alias.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("raised alias check true/false");
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "leftField", eventCode: 1019 });
+  });
+
   it("returns EVENT_CHAINING payloads from the active chain window", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Chain Starter", kind: "monster" },

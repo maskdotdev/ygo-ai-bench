@@ -161,7 +161,7 @@ function readOptionalEffectId(L: unknown, index: number): number | undefined {
 }
 
 function raiseOperationEvent(session: DuelSession, eventName: DuelEventName, card: DuelCardInstance, eventCode: number | undefined, payload: LuaRaiseEventPayload): void {
-  if (eventName === "customEvent" && eventCode !== undefined) raiseDuelEventWithCode(session.state, eventName, eventCode, card, payload);
+  if (eventCode !== undefined) raiseDuelEventWithCode(session.state, eventName, eventCode, card, payload);
   else if (Object.keys(payload).length > 0) collectDuelTriggerEffects(session.state, eventName, card, payload);
   else raiseDuelEvent(session.state, eventName, card);
 }
