@@ -1,3 +1,4 @@
+import { phaseMask } from "#duel/phase-mask.js";
 import type { DuelCardInstance, DuelPhase } from "#duel/types.js";
 
 export const resetEvent = 0x1000;
@@ -15,21 +16,12 @@ const resetOverlay = 0x4000000;
 
 export const destinationResetFlags = resetToGrave | resetRemove | resetToHand | resetToDeck;
 
-const phaseFlags: Record<DuelPhase, number> = {
-  draw: 0x1,
-  standby: 0x2,
-  main1: 0x4,
-  battle: 0x80,
-  main2: 0x100,
-  end: 0x200,
-};
-
 export function normalizeResetFlags(flags: number): number {
   return flags >>> 0;
 }
 
 export function phaseResetFlag(phase: DuelPhase): number {
-  return phaseFlags[phase];
+  return phaseMask(phase);
 }
 
 export function matchesMovementReset(flags: number, card: DuelCardInstance): boolean {
