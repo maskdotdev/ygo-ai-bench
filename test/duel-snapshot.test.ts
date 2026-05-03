@@ -16,6 +16,22 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { cards, findPublicCard } from "./full-duel-engine-fixtures.js";
 
 describe("duel snapshot persistence", () => {
+  it("serializes every initialized duel state key", () => {
+    const session = createDuel({ seed: 137, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    const missingSnapshotKeys = Object.keys(session.state).filter((key) => !(key in snapshot.state));
+    const restored = restoreDuel(snapshot, createCardReader(cards));
+    const missingRestoredKeys = Object.keys(session.state).filter((key) => !(key in restored.state));
+
+    expect(missingSnapshotKeys).toEqual([]);
+    expect(missingRestoredKeys).toEqual([]);
+  });
+
   it("preserves skipped phases across snapshots", () => {
     const session = createDuel({ seed: 122, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
