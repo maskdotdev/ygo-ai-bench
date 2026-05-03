@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 const scannerPath = path.resolve("tools/scan-lua-api-usage.mjs");
@@ -61,5 +61,12 @@ describe("Lua API usage scanner", () => {
     expect(output).not.toContain("Duel.NamedRegistered");
     expect(output).not.toContain("Card.IsCode");
     expect(output).not.toContain("Duel.CommentedCall");
+  });
+
+  it("rejects scanner options that are missing required values", () => {
+    const result = spawnSync(process.execPath, [scannerPath, "--scripts", "--limit", "5"], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Missing value for --scripts");
   });
 });

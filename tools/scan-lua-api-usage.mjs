@@ -42,14 +42,20 @@ function parseArgs(argv) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") options.help = true;
     else if (arg === "--fail-on-missing") options.failOnMissing = true;
-    else if (arg === "--scripts") options.scriptRoot = argv[++index];
-    else if (arg === "--source") options.sourceRoot = argv[++index];
-    else if (arg === "--limit") options.limit = Number(argv[++index]);
+    else if (arg === "--scripts") options.scriptRoot = requireOptionValue(argv, ++index, arg);
+    else if (arg === "--source") options.sourceRoot = requireOptionValue(argv, ++index, arg);
+    else if (arg === "--limit") options.limit = Number(requireOptionValue(argv, ++index, arg));
     else if (!options.scriptRoot) options.scriptRoot = arg;
     else throw new Error(`Unknown argument: ${arg}`);
   }
   options.limit = Number.isFinite(options.limit) && options.limit > 0 ? Math.floor(options.limit) : 40;
   return options;
+}
+
+function requireOptionValue(argv, index, option) {
+  const value = argv[index];
+  if (value === undefined || value.startsWith("--")) throw new Error(`Missing value for ${option}`);
+  return value;
 }
 
 function printHelp() {
