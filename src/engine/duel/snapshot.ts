@@ -223,6 +223,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   assertSnapshotFlagEffects(state.flagEffects);
   assertSnapshotLog(state.log);
   assertSnapshotCards(state.cards);
+  assertSnapshotEffects(state.effects);
   if (!duelSnapshotStatuses.has(state.status)) throw new Error("Malformed duel snapshot: state.status must be a duel status");
   if (!duelSnapshotPhases.has(state.phase)) throw new Error("Malformed duel snapshot: state.phase must be a duel phase");
   if (state.winner !== undefined && state.winner !== "draw") assertSnapshotPlayerId(state.winner, "state.winner");
@@ -254,6 +255,7 @@ const duelSnapshotCardKinds = new Set<unknown>(["monster", "spell", "trap", "ext
 const duelSnapshotLocations = new Set<unknown>(["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"]);
 const duelSnapshotPositions = new Set<unknown>(["faceDownDefense", "faceUpAttack", "faceUpDefense", "faceDown"]);
 const duelSnapshotSummonTypes = new Set<unknown>(["normal", "tribute", "flip", "special", "fusion", "synchro", "xyz", "link", "ritual"]);
+const duelSnapshotEffectEvents = new Set<unknown>(["ignition", "trigger", "quick", "continuous", "summonProcedure"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -426,6 +428,50 @@ function assertSnapshotCards(cards: unknown): void {
     if (typeof card.faceUp !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.faceUp must be a boolean`);
     assertSnapshotOptionalCardState(card, path);
     assertSnapshotCardData(card.data, `${path}.data`);
+  }
+}
+
+function assertSnapshotEffects(effects: unknown): void {
+  if (!Array.isArray(effects)) throw new Error("Malformed duel snapshot: state.effects must be an array");
+  for (const [index, effect] of effects.entries()) {
+    const path = `state.effects.${index}`;
+    if (!isRecord(effect)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+    for (const field of ["id", "sourceUid"] as const) {
+      if (typeof effect[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
+    }
+    assertSnapshotPlayerId(effect.controller, `${path}.controller`);
+    if (effect.ownerPlayer !== undefined) assertSnapshotPlayerId(effect.ownerPlayer, `${path}.ownerPlayer`);
+    if (effect.registryKey !== undefined && typeof effect.registryKey !== "string") throw new Error(`Malformed duel snapshot: ${path}.registryKey must be a string`);
+    if (!duelSnapshotEffectEvents.has(effect.event)) throw new Error(`Malformed duel snapshot: ${path}.event must be an effect event`);
+    if (!Array.isArray(effect.range)) throw new Error(`Malformed duel snapshot: ${path}.range must be an array`);
+    for (const [rangeIndex, location] of effect.range.entries()) {
+      if (!duelSnapshotLocations.has(location)) throw new Error(`Malformed duel snapshot: ${path}.range.${rangeIndex} must be a card location`);
+    }
+    for (const field of ["code", "value", "triggerCode", "countLimit", "countLimitCode", "description", "category", "property"] as const) {
+      if (effect[field] !== undefined && typeof effect[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
+    }
+    for (const field of ["triggerSourceOnly", "optional", "oncePerTurn"] as const) {
+      if (effect[field] !== undefined && typeof effect[field] !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a boolean`);
+    }
+    if (effect.triggerEvent !== undefined && typeof effect.triggerEvent !== "string") throw new Error(`Malformed duel snapshot: ${path}.triggerEvent must be a string`);
+    if (effect.triggerTiming !== undefined && effect.triggerTiming !== "if" && effect.triggerTiming !== "when") throw new Error(`Malformed duel snapshot: ${path}.triggerTiming must be trigger timing`);
+    if (effect.reset !== undefined) assertSnapshotEffectReset(effect.reset, `${path}.reset`);
+    if (effect.targetRange !== undefined) assertSnapshotNumberTuple(effect.targetRange, `${path}.targetRange`);
+    if (effect.hintTiming !== undefined) assertSnapshotNumberTuple(effect.hintTiming, `${path}.hintTiming`);
+  }
+}
+
+function assertSnapshotEffectReset(reset: unknown, path: string): void {
+  if (!isRecord(reset)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+  if (typeof reset.flags !== "number") throw new Error(`Malformed duel snapshot: ${path}.flags must be a number`);
+  if (reset.count !== undefined && typeof reset.count !== "number") throw new Error(`Malformed duel snapshot: ${path}.count must be a number`);
+}
+
+function assertSnapshotNumberTuple(tuple: unknown, path: string): void {
+  if (!Array.isArray(tuple)) throw new Error(`Malformed duel snapshot: ${path} must be an array`);
+  if (tuple.length < 1 || tuple.length > 2) throw new Error(`Malformed duel snapshot: ${path} must contain one or two numbers`);
+  for (const [index, value] of tuple.entries()) {
+    if (typeof value !== "number") throw new Error(`Malformed duel snapshot: ${path}.${index} must be a number`);
   }
 }
 
