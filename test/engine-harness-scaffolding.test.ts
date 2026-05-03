@@ -65,6 +65,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           windowId: 1,
           locations: { monsterZone: ["100"] },
           logIncludes: ["Normal Summoned"],
@@ -229,6 +230,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
         ],
         expected: {
+          source: "edopro",
           phase: "battle",
           waitingFor: 0,
           lifePoints: { 1: 6200 },
@@ -285,6 +287,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
         ],
         expected: {
+          source: "edopro",
           phase: "battle",
           waitingFor: 0,
           lifePoints: { 1: 6200 },
@@ -355,6 +358,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
         ],
         expected: {
+          source: "edopro",
           phase: "battle",
           waitingFor: 0,
           lifePoints: { 1: 6200 },
@@ -450,6 +454,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           phase: "battle",
           waitingFor: 0,
           lifePoints: { 1: 8000 },
@@ -573,6 +578,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
         ],
         expected: {
+          source: "edopro",
           phase: "battle",
           waitingFor: 0,
           lifePoints: { 1: 7700 },
@@ -639,6 +645,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-missing-move" })),
         ],
         expected: {
+          source: "edopro",
           windowId: 0,
           phase: "main1",
           pendingBattle: false,
@@ -730,6 +737,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           windowId: 3,
           phase: "main1",
           waitingFor: 0,
@@ -835,6 +843,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeScriptedStep(makeResponseSelector("passChain", 1)),
         ],
         expected: {
+          source: "edopro",
           windowId: 5,
           phase: "main1",
           waitingFor: 0,
@@ -876,7 +885,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
         name: "fusion fixture",
         decks: { ...fixtureBase.decks, 0: { ...fixtureBase.decks[0], extra: ["900"] } },
         responses: [makeScriptedStep(makeResponseSelector("fusionSummon", 0, { code: "900", location: "extraDeck", materialUids }))],
-        expected: { locations: { monsterZone: ["900"], graveyard: ["100", "300"] }, logIncludes: ["Fusion Summoned"] },
+        expected: { source: "edopro", locations: { monsterZone: ["900"], graveyard: ["100", "300"] }, logIncludes: ["Fusion Summoned"] },
       },
       {
         ...fixtureBase,
@@ -884,7 +893,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
         decks: { ...fixtureBase.decks, 0: { ...fixtureBase.decks[0], extra: ["910"] } },
         setup: { moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone" }, { player: 0, code: "300", from: "hand", to: "monsterZone" }] },
         responses: [makeScriptedStep(makeResponseSelector("synchroSummon", 0, { code: "910", location: "extraDeck", materialUids }))],
-        expected: { locations: { monsterZone: ["910"], graveyard: ["100", "300"] }, logIncludes: ["Synchro Summoned"] },
+        expected: { source: "edopro", locations: { monsterZone: ["910"], graveyard: ["100", "300"] }, logIncludes: ["Synchro Summoned"] },
       },
       {
         ...fixtureBase,
@@ -892,7 +901,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
         decks: { ...fixtureBase.decks, 0: { ...fixtureBase.decks[0], extra: ["920"] } },
         setup: { moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone" }, { player: 0, code: "300", from: "hand", to: "monsterZone" }] },
         responses: [makeScriptedStep(makeResponseSelector("xyzSummon", 0, { code: "920", location: "extraDeck", materialUids }))],
-        expected: { locations: { monsterZone: ["920"], overlay: ["100", "300"] }, logIncludes: ["Xyz Summoned"] },
+        expected: { source: "edopro", locations: { monsterZone: ["920"], overlay: ["100", "300"] }, logIncludes: ["Xyz Summoned"] },
       },
       {
         ...fixtureBase,
@@ -900,7 +909,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
         decks: { ...fixtureBase.decks, 0: { ...fixtureBase.decks[0], extra: ["930"] } },
         setup: { moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone" }, { player: 0, code: "300", from: "hand", to: "monsterZone" }] },
         responses: [makeScriptedStep(makeResponseSelector("linkSummon", 0, { code: "930", location: "extraDeck", materialUids }))],
-        expected: { locations: { monsterZone: ["930"], graveyard: ["100", "300"] }, logIncludes: ["Link Summoned"] },
+        expected: { source: "edopro", locations: { monsterZone: ["930"], graveyard: ["100", "300"] }, logIncludes: ["Link Summoned"] },
       },
       {
         ...fixtureBase,
@@ -908,7 +917,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
         options: { seed: 3, startingHandSize: 3 },
         decks: { ...fixtureBase.decks, 0: { main: ["100", "300", "940"] } },
         responses: [makeScriptedStep(makeResponseSelector("ritualSummon", 0, { code: "940", location: "hand", materialUids }))],
-        expected: { locations: { monsterZone: ["940"], graveyard: ["100", "300"] }, logIncludes: ["Ritual Summoned"] },
+        expected: { source: "edopro", locations: { monsterZone: ["940"], graveyard: ["100", "300"] }, logIncludes: ["Ritual Summoned"] },
       },
     ];
 

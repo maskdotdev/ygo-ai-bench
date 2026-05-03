@@ -33,6 +33,69 @@ describe("EDOPro compatibility harness scaffolding", () => {
     ]);
   });
 
+  it("reports grouped legal-action fixture expectation failures", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture({
+      name: "grouped legal action expectation fixture",
+      options: { seed: 3, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      before: {
+        source: "edopro",
+        legalActionGroups: [{ player: 0, label: "Pass", windowKind: "open", count: 1 }],
+      },
+      responses: [],
+      expected: { source: "edopro" },
+    }, {
+      cardReader: createCardReader(cards),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "grouped legal action expectation fixture",
+        message: "before fixture (edopro): Expected legal action group player=0 label=Pass windowKind=open matched 0, expected 1",
+      },
+    ]);
+  });
+
+  it("reports absent grouped legal-action fixture expectation failures", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture({
+      name: "absent grouped legal action expectation fixture",
+      options: { seed: 4, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      before: {
+        source: "edopro",
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Turn",
+            windowKind: "open",
+            actions: [{ type: "changePhase", player: 0, phase: "battle" }],
+          },
+        ],
+      },
+      responses: [],
+      expected: { source: "edopro" },
+    }, {
+      cardReader: createCardReader(cards),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "absent grouped legal action expectation fixture",
+        message: "before fixture (edopro): Expected no legal action group player=0 label=Turn windowKind=open matched 1",
+      },
+    ]);
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -190,6 +253,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           windowId: 1,
           turn: 1,
           turnPlayer: 0,
@@ -273,6 +337,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           phase: "battle",
           waitingFor: 0,
           pendingBattle: true,
@@ -367,6 +432,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           phase: "main1",
           waitingFor: 0,
           chainPasses: [1],
@@ -420,6 +486,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           waitingFor: 0,
           prompt: null,
           logIncludes: ["Selected option 4"],
@@ -466,6 +533,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           waitingFor: 1,
           prompt: null,
           logIncludes: ["Selected yes"],
@@ -524,6 +592,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           phase: "main1",
           waitingFor: 0,
           pendingTriggers: [
@@ -585,6 +654,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           positionsChanged: ["p0-deck-100-0"],
           cards: [{ uid: "p0-deck-100-0", location: "monsterZone", position: "faceUpDefense" }],
           log: [
@@ -657,6 +727,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-allowed-quick" })),
         ],
         expected: {
+          source: "edopro",
           waitingFor: 0,
           chainLimits: [],
           chain: [],
@@ -749,6 +820,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           }),
         ],
         expected: {
+          source: "edopro",
           status: "awaiting",
           winner: null,
           winReason: null,
