@@ -12,6 +12,7 @@ import {
   applyResponse,
   canMoveDuelCardToLocation,
   canSpecialSummonDuelCard,
+  collectDuelTriggerEffects,
   fusionSummonDuelCard,
   linkSummonDuelCard,
   ritualSummonDuelCard,
@@ -270,9 +271,7 @@ function ritualSummonSelectedMaterials(session: DuelSession, target: DuelCardIns
   target.summonMaterialUids = [...materialUids];
   recordSpecialSummonActivity(session.state, target.controller, target);
   pushDuelLog(session.state, "ritualSummon", target.controller, target.name, `Ritual Summoned with ${materialUids.length} material(s)`);
-  session.state.eventHistory.push({ eventName: "specialSummoned", eventCardUid: target.uid });
-  session.state.eventHistory = session.state.eventHistory.slice(-32);
-  collectTriggerEffectsRule(session.state, "specialSummoned", () => true, target);
+  collectDuelTriggerEffects(session.state, "specialSummoned", target);
 }
 
 function pushRitualMaterial(L: unknown, session: DuelSession): number {

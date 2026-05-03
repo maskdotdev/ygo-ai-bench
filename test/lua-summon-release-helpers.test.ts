@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
-import { applyResponse, createDuel, getLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions, loadDecks, registerEffect, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -224,6 +224,50 @@ describe("Lua summon and release helpers", () => {
     });
     expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "graveyard" });
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+  });
+
+  it("records event-code metadata for Lua ritual summons with selected materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Ritual Material A", kind: "monster", level: 4 },
+      { code: "300", name: "Ritual Material B", kind: "monster", level: 4 },
+      { code: "500", name: "Ritual Trigger Source", kind: "monster", level: 4 },
+      { code: "940", name: "Lua Ritual", kind: "monster", typeFlags: 0x81, level: 8 },
+    ];
+    const session = createDuel({ seed: 157, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "500");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "lua-ritual-event-code",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "specialSummoned",
+      triggerCode: 1102,
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("ritual event-code trigger resolved");
+      },
+    });
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local ritual = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 940), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local materials = Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(100) or tc:IsCode(300) end, 0, LOCATION_HAND, 0, 2, 2, ritual)
+      Debug.Message("selected ritual " .. Duel.RitualSummon(ritual, materials))
+      `,
+      "lua-selected-ritual-event-code.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("selected ritual 1");
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "specialSummoned", eventCode: 1102 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ effectId: "lua-ritual-event-code", eventName: "specialSummoned", eventCode: 1102 });
   });
 
   it("lets Lua scripts register generic Fusion, Synchro, and cost procedure helpers", () => {
