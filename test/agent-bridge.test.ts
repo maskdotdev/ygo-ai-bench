@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createPlaytestAgent, toStartOptions } from "#playtest/agent-bridge.js";
+import { groupLegalActions } from "#playtest/api.js";
 import { parseYdk } from "#playtest/ydk.js";
+import type { PlaytestAction } from "#engine/types.js";
 import { DARK_MAGICIAN_CARD_IDS as IDS } from "#cards/definitions.js";
 
 describe("playtest agent bridge", () => {
@@ -78,6 +80,17 @@ ${IDS.theDarkMagicians}
     expect(groups.length).toBeGreaterThan(0);
     expect(groups.flatMap((group) => group.actions)).toEqual(agent.legalActions(started.sessionId));
     expect(groups.every((group) => group.key && group.label)).toBe(true);
+  });
+
+  it("copies grouped legal action payloads away from the source action list", () => {
+    const actions: PlaytestAction[] = [{ type: "normalSummon", uid: "card-a", label: "Normal Summon card-a" }];
+    const groups = groupLegalActions(actions);
+    const groupedAction = groups[0]?.actions[0];
+    expect(groupedAction).toBeDefined();
+
+    groupedAction!.label = "Mutated action";
+
+    expect(actions[0]).toEqual({ type: "normalSummon", uid: "card-a", label: "Normal Summon card-a" });
   });
 
   it("returns grouped legal actions after applying an action", () => {

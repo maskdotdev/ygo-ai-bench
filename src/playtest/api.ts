@@ -89,10 +89,14 @@ export function groupLegalActions(actions: PlaytestAction[]): PlaytestLegalActio
   for (const action of actions) {
     const key = legalActionGroupKey(action);
     const existing = groups.get(key);
-    if (existing) existing.actions.push(action);
-    else groups.set(key, { key, label: legalActionGroupLabel(key), actions: [action] });
+    if (existing) existing.actions.push(copyPlaytestAction(action));
+    else groups.set(key, { key, label: legalActionGroupLabel(key), actions: [copyPlaytestAction(action)] });
   }
   return [...groups.values()];
+}
+
+function copyPlaytestAction(action: PlaytestAction): PlaytestAction {
+  return { ...action };
 }
 
 export function applyAction(session: PlaytestSession, action: PlaytestAction): ApplyResult {
