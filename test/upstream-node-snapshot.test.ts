@@ -361,6 +361,9 @@ describe("Node upstream snapshot restore", () => {
     expect(getDuelLegalActions(restored.session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
+    const forgedAction = getDuelLegalActions(restored.session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
+    expect(forgedAction).toBeDefined();
+    expect(getLuaRestoreLegalActions(restored, 1)).not.toContain(forgedAction);
   });
 
 });
