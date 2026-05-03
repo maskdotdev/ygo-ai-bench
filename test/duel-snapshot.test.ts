@@ -90,6 +90,36 @@ describe("duel snapshot persistence", () => {
     ).toThrow("cannot be used as fusion material");
   });
 
+  it("copies nested assumed card state by value across snapshots", () => {
+    const session = createDuel({ seed: 126, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const card = session.state.cards.find((candidate) => candidate.code === "100");
+    expect(card).toBeTruthy();
+    card!.assumedProperties = { 1: 999, 10: 15 };
+    card!.uniqueOnField = { self: true, opponent: false, code: 100, locationMask: 0x04 };
+
+    const snapshot = serializeDuel(session);
+    card!.assumedProperties[1] = 888;
+    card!.uniqueOnField.code = 200;
+
+    const restored = restoreDuel(snapshot, createCardReader(cards));
+    const restoredCard = restored.state.cards.find((candidate) => candidate.uid === card!.uid);
+
+    expect(restoredCard?.assumedProperties).toEqual({ 1: 999, 10: 15 });
+    expect(restoredCard?.uniqueOnField).toEqual({ self: true, opponent: false, code: 100, locationMask: 0x04 });
+
+    snapshot.state.cards.find((candidate) => candidate.uid === card!.uid)!.assumedProperties![1] = 777;
+    snapshot.state.cards.find((candidate) => candidate.uid === card!.uid)!.uniqueOnField!.code = 300;
+
+    expect(restoredCard?.assumedProperties).toEqual({ 1: 999, 10: 15 });
+    expect(restoredCard?.uniqueOnField).toEqual({ self: true, opponent: false, code: 100, locationMask: 0x04 });
+  });
+
   it("restores registry-backed effects across snapshots", () => {
     const session = createDuel({ seed: 96, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

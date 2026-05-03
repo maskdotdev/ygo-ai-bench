@@ -222,6 +222,8 @@ function copyCard(card: DuelCardInstance): DuelCardInstance {
     ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
     ...(card.cardTargetUids ? { cardTargetUids: [...card.cardTargetUids] } : {}),
     ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
+    ...(card.assumedProperties ? { assumedProperties: { ...card.assumedProperties } } : {}),
+    ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
   };
 }
 
