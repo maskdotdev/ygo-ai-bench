@@ -6,6 +6,7 @@ export interface DuelEventRecordPayload {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventUids?: string[];
 }
 
 export function recordDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, eventCode?: number, payload: DuelEventRecordPayload = {}): void {

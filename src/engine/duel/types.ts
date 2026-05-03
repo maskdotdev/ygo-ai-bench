@@ -352,6 +352,7 @@ export interface DuelEventRecord {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventUids?: string[];
   eventCardUid?: string;
 }
 
@@ -642,7 +643,7 @@ interface ScriptedDuelWindowExpectationFields {
   damagePasses?: PlayerId[];
   chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid">>>;
   pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "triggerBucket" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid">>>;
-  eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventCardUid">>>;
+  eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid">>>;
   prompt?: Partial<DuelPromptState> | null;
   legalActionCounts?: Partial<Record<PlayerId, number>>;
   legalActionGroupCounts?: Partial<Record<PlayerId, number>>;

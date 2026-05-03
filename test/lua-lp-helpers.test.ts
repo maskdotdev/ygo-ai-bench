@@ -331,11 +331,14 @@ describe("Lua LP helpers", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("hand");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["cardsDrawn"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1 });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1 })]));
+    const drawnUid = session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.uid;
+    expect(drawnUid).toBeDefined();
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventUids: [drawnUid] });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1, eventUids: [drawnUid] })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1, eventUids: [drawnUid] });
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
     expect(applyLuaRestoreResponse(restored, restoredTrigger!).ok).toBe(true);

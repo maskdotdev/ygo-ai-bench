@@ -665,6 +665,7 @@ export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEvent
     ...(options.eventReason === undefined ? {} : { eventReason: options.eventReason }),
     ...(options.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }),
     ...(options.relatedEffectId === undefined ? {} : { relatedEffectId: options.relatedEffectId }),
+    ...(options.eventUids === undefined || options.eventUids.length === 0 ? {} : { eventUids: [...options.eventUids] }),
   });
   collectTriggerEffectsRule(
     state,
