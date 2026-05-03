@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, restoreDuel, sendDuelCardToGraveyard, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -287,6 +287,40 @@ describe("Lua state helpers", () => {
     expect(after.ok, after.error).toBe(true);
     expect(host.messages).toContain("able main2 false");
     expect(host.messages).toContain("is main phase 2 true");
+  });
+
+  it("lets Lua battle-phase entry queries respect continuous phase locks", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Battle Phase Lock", kind: "monster" }];
+    const session = createDuel({ seed: 152, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0).position = "faceUpAttack";
+    registerEffect(session, {
+      id: "lua-cannot-battle-phase",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 185,
+      range: ["monsterZone"],
+      operation() {},
+    });
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("able continuous locked " .. tostring(Duel.IsAbleToEnterBP()))
+      `,
+      "battle-phase-continuous-lock.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("able continuous locked false");
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "changePhase" && action.phase === "battle")).toBe(false);
   });
 
   it("lets Lua scripts query current phase helper predicates", () => {

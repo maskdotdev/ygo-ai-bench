@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { currentBattleStep, isBattleAttackStep, isBattleDamageCalculation, isBattleDamageStep } from "#duel/battle-window-state.js";
-import type { DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import { isPhaseEntryPrevented } from "#duel/continuous-effects.js";
+import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -134,7 +135,7 @@ function phasesFromMask(mask: number): DuelPhase[] {
 }
 
 function isAbleToEnterBattlePhase(state: DuelState): boolean {
-  return nextAvailablePhase(state, state.turnPlayer) === "battle";
+  return nextAvailablePhase(state, state.turnPlayer) === "battle" && !isPhaseEntryPrevented(state, state.turnPlayer, "battle", createContinuousPhaseContext(state));
 }
 
 function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
@@ -153,4 +154,27 @@ function skipPhase(session: DuelSession, player: PlayerId, phase: DuelPhase, cou
   const existing = session.state.skippedPhases.find((skip) => skip.player === player && skip.phase === phase);
   if (existing) existing.remaining = Math.max(existing.remaining, count);
   else session.state.skippedPhases.push({ player, phase, remaining: count });
+}
+
+function createContinuousPhaseContext(state: DuelState) {
+  return (effect: DuelEffectDefinition, source: DuelCardInstance): DuelEffectContext => ({
+    duel: state,
+    source,
+    player: effect.controller,
+    checkOnly: true,
+    targetUids: [],
+    log() {},
+    moveCard() {
+      throw new Error("Cannot move cards while checking phase entry");
+    },
+    negateChainLink() {
+      return false;
+    },
+    setTargets() {},
+    getTargets() {
+      return [];
+    },
+    setTargetPlayer() {},
+    setTargetParam() {},
+  });
 }
