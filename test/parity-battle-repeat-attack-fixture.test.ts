@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentAttackGroup, attackGroup } from "./parity-legal-action-group-helpers.js";
 
 const resolveBattleStepsBeforeFinalPass = [
   makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -59,6 +60,7 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             source: "edopro",
             note: "EDOPro keeps ATTACK_ALL attackers legal against remaining opposing monsters after one battle resolves",
             phase: "battle",
+            windowId: 14,
             windowKind: "open",
             waitingFor: 0,
             pendingBattle: false,
@@ -69,25 +71,10 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
             locations: { monsterZone: ["100", "300"], graveyard: ["200"] },
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open", count: 1 }],
-            legalActionGroups: [
-              {
-                player: 0,
-                label: "Attacks",
-                windowKind: "open",
-                count: 1,
-                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open", count: 1 }],
-              },
-            ],
-            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open" }],
-            absentLegalActionGroups: [
-              {
-                player: 0,
-                label: "Attacks",
-                windowKind: "open",
-                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open" }],
-              },
-            ],
+            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowId: 14, windowKind: "open", count: 1 }],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1" }], 1, 14)],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowId: 14, windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-200-0", undefined, 14)],
           },
         }),
       ],
@@ -95,6 +82,7 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state exposes the next remaining attack-all target",
         phase: "battle",
+        windowId: 14,
         windowKind: "open",
         waitingFor: 0,
         pendingBattle: false,
@@ -105,25 +93,10 @@ describe("EDOPro parity battle repeat attack fixtures", () => {
         locations: { monsterZone: ["100", "300"], graveyard: ["200"] },
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
-        legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open", count: 1 }],
-        legalActionGroups: [
-          {
-            player: 0,
-            label: "Attacks",
-            windowKind: "open",
-            count: 1,
-            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowKind: "open", count: 1 }],
-          },
-        ],
-        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open" }],
-        absentLegalActionGroups: [
-          {
-            player: 0,
-            label: "Attacks",
-            windowKind: "open",
-            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowKind: "open" }],
-          },
-        ],
+        legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowId: 14, windowKind: "open", count: 1 }],
+        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1" }], 1, 14)],
+        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowId: 14, windowKind: "open" }],
+        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-200-0", undefined, 14)],
       },
     };
 
