@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua summon-attempt events", () => {
   it("queues normal-summon attempt triggers before normal-summon success triggers", () => {
@@ -18,9 +19,10 @@ describe("Lua summon-attempt events", () => {
     });
     startDuel(session);
 
-    const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const sourceScript = {
+      readScript(name: string) {
+        if (name === "c200.lua") {
+          return `
       c200={}
       function c200.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -32,9 +34,13 @@ describe("Lua summon-attempt events", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "normal-summon-attempt.lua",
-    );
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadCardScript(200, sourceScript);
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
@@ -46,6 +52,16 @@ describe("Lua summon-attempt events", () => {
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["normalSummoning"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: summoned!.uid });
     expect(session.state.eventHistory.map((event) => event.eventName).slice(-2)).toEqual(["normalSummoning", "normalSummoned"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts).toEqual([{ ok: true, name: "c200.lua" }]);
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("normal attempt 100");
   });
 
   it("queues special-summon attempt triggers before special-summon success triggers", () => {
@@ -60,9 +76,10 @@ describe("Lua summon-attempt events", () => {
     });
     startDuel(session);
 
-    const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const sourceScript = {
+      readScript(name: string) {
+        if (name === "c200.lua") {
+          return `
       c200={}
       function c200.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -74,19 +91,33 @@ describe("Lua summon-attempt events", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "special-summon-attempt.lua",
-    );
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadCardScript(200, sourceScript);
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
-    const source = session.state.cards.find((card) => card.code === "100");
-    expect(source).toBeDefined();
-    specialSummonDuelCard(session.state, source!.uid, 0);
+    const sourceCard = session.state.cards.find((card) => card.code === "100");
+    expect(sourceCard).toBeDefined();
+    specialSummonDuelCard(session.state, sourceCard!.uid, 0);
 
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["specialSummoning"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: sourceCard!.uid });
     expect(session.state.eventHistory.map((event) => event.eventName).slice(-2)).toEqual(["specialSummoning", "specialSummoned"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts).toEqual([{ ok: true, name: "c200.lua" }]);
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("special attempt 100");
   });
 
   it("queues flip-summon attempt triggers before flip-summon success triggers", () => {
@@ -106,9 +137,10 @@ describe("Lua summon-attempt events", () => {
     moveDuelCard(session.state, source!.uid, "monsterZone", 0).position = "faceDownDefense";
     source!.faceUp = false;
 
-    const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const sourceScript = {
+      readScript(name: string) {
+        if (name === "c200.lua") {
+          return `
       c200={}
       function c200.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -120,9 +152,13 @@ describe("Lua summon-attempt events", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "flip-summon-attempt.lua",
-    );
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadCardScript(200, sourceScript);
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
@@ -133,5 +169,15 @@ describe("Lua summon-attempt events", () => {
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummoning"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid });
     expect(session.state.eventHistory.map((event) => event.eventName).slice(-2)).toEqual(["flipSummoning", "flipSummoned"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts).toEqual([{ ok: true, name: "c200.lua" }]);
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("flip attempt 100");
   });
 });
