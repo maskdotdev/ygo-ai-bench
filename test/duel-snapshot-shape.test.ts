@@ -205,6 +205,23 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badPayload, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.eventPlayer must be a player id");
   });
 
+  it("rejects missing pending trigger card references before restore", () => {
+    const session = createDuel({ seed: 167, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = serializeDuel(session).state.cards[0]!.uid;
+    const badSource = serializeDuel(session);
+    const badEventCard = serializeDuel(session);
+    badSource.state.pendingTriggers = [{ id: "trigger", player: 0, sourceUid: "missing", effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional" }];
+    badEventCard.state.pendingTriggers = [{ id: "trigger", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional", eventCardUid: "missing" }];
+
+    expect(() => restoreDuel(badSource, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.sourceUid must reference a card");
+    expect(() => restoreDuel(badEventCard, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.eventCardUid must reference a card");
+  });
+
   it("rejects malformed event history snapshots before restore", () => {
     const session = createDuel({ seed: 152, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -219,6 +236,19 @@ describe("duel snapshot restore shape validation", () => {
 
     expect(() => restoreDuel(badEventName, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventName must be a string");
     expect(() => restoreDuel(badPayload, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventCardUid must be a string");
+  });
+
+  it("rejects missing event history card references before restore", () => {
+    const session = createDuel({ seed: 168, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    snapshot.state.eventHistory = [{ eventName: "customEvent", eventCardUid: "missing" }];
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventCardUid must reference a card");
   });
 
   it("rejects malformed chain snapshots before restore", () => {
@@ -236,6 +266,23 @@ describe("duel snapshot restore shape validation", () => {
 
     expect(() => restoreDuel(badTargetUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.targetUids.1 must be a string");
     expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.player must be a player id");
+  });
+
+  it("rejects missing chain target and event card snapshots before restore", () => {
+    const session = createDuel({ seed: 169, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = serializeDuel(session).state.cards[0]!.uid;
+    const badTarget = serializeDuel(session);
+    const badEventCard = serializeDuel(session);
+    badTarget.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", targetUids: ["missing"] }];
+    badEventCard.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", eventCardUid: "missing" }];
+
+    expect(() => restoreDuel(badTarget, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.targetUids.0 must reference a card");
+    expect(() => restoreDuel(badEventCard, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.eventCardUid must reference a card");
   });
 
   it("rejects missing chain and effect source card snapshots before restore", () => {
