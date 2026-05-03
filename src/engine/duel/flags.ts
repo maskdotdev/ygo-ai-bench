@@ -65,7 +65,10 @@ export function pruneDuelFlagEffectsAfterMove(state: DuelState, card: DuelCardIn
 }
 
 export function pruneDuelFlagEffectsAfterPhase(state: DuelState, phase: DuelPhase): void {
-  const phaseFlag = phaseResetFlag(phase);
+  pruneDuelFlagEffectsAfterPhaseFlag(state, phaseResetFlag(phase));
+}
+
+export function pruneDuelFlagEffectsAfterPhaseFlag(state: DuelState, phaseFlag: number): void {
   state.flagEffects = state.flagEffects.filter((flag) => {
     const flags = normalizeResetFlags(flag.reset);
     return (flags & resetPhase) === 0 || (flags & phaseFlag) === 0;

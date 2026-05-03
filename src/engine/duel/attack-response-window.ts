@@ -1,5 +1,7 @@
 import { findCard } from "#duel/card-state.js";
 import { currentBattleStep, currentBattleWindowKind, isBattleDamageStep, openBattleWindowState, setBattleWindowResponsePlayer } from "#duel/battle-window-state.js";
+import { pruneResetEffectsAfterPhaseFlag } from "#duel/effect-reset.js";
+import { pruneDuelFlagEffectsAfterPhaseFlag } from "#duel/flags.js";
 import { resolvePendingBattle, type BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import type { BattleWindowKind, DuelState, PlayerId } from "#duel/types.js";
 
@@ -62,7 +64,9 @@ export function markBattleWindowChainStarted(state: DuelState): void {
 function openDamageResponseWindow(state: DuelState, lastResponder: PlayerId, kind: DamageBattleWindowKind = "startDamageStep"): void {
   state.damagePasses = [];
   const responsePlayer = otherPlayer(lastResponder);
+  const previousKind = currentBattleWindowKind(state);
   openBattleWindowState(state, kind, kind === "duringDamageCalculation" ? "damageCalculation" : "damage", responsePlayer);
+  pruneBattleSubphaseResets(state, kind, previousKind);
   state.waitingFor = responsePlayer;
 }
 
@@ -94,6 +98,14 @@ function currentDamageWindowKind(state: DuelState): DamageBattleWindowKind {
   const kind = currentBattleWindowKind(state);
   if (kind === "beforeDamageCalculation" || kind === "duringDamageCalculation" || kind === "afterDamageCalculation" || kind === "endDamageStep") return kind;
   return "startDamageStep";
+}
+
+function pruneBattleSubphaseResets(state: DuelState, kind: DamageBattleWindowKind, previousKind: BattleWindowKind | undefined): void {
+  if (kind === previousKind) return;
+  const phaseFlag = kind === "startDamageStep" ? 0x20 : kind === "duringDamageCalculation" ? 0x40 : undefined;
+  if (phaseFlag === undefined) return;
+  pruneResetEffectsAfterPhaseFlag(state, phaseFlag);
+  pruneDuelFlagEffectsAfterPhaseFlag(state, phaseFlag);
 }
 
 function otherPlayer(player: PlayerId): PlayerId {

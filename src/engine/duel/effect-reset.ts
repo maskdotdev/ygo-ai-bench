@@ -26,7 +26,10 @@ export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInsta
 }
 
 export function pruneResetEffectsAfterPhase(state: DuelState, phase: DuelPhase): void {
-  const phaseFlag = phaseResetFlag(phase);
+  pruneResetEffectsAfterPhaseFlag(state, phaseResetFlag(phase));
+}
+
+export function pruneResetEffectsAfterPhaseFlag(state: DuelState, phaseFlag: number): void {
   state.effects = state.effects.filter((effect) => {
     const reset = effect.reset;
     const flags = normalizeResetFlags(reset?.flags ?? 0);
