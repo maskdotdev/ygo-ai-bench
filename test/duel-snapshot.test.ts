@@ -131,6 +131,28 @@ describe("duel snapshot persistence", () => {
     expect(session.state.eventHistory[0]?.eventUids).toEqual([sourceUid]);
   });
 
+  it("copies prompt options out of public and serialized state", () => {
+    const session = createDuel({ seed: 141, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.prompt = { id: "snapshot-options", type: "selectOption", player: 0, options: [1, 2], returnTo: 0 };
+
+    const publicPrompt = queryPublicState(session).prompt;
+    const serializedPrompt = serializeDuel(session).state.prompt;
+    if (publicPrompt?.type !== "selectOption" || serializedPrompt?.type !== "selectOption") throw new Error("Expected select-option prompts");
+    publicPrompt.options.push(3);
+    serializedPrompt.options.push(4);
+
+    if (session.state.prompt?.type !== "selectOption") throw new Error("Expected live select-option prompt");
+    const freshSerializedPrompt = serializeDuel(session).state.prompt;
+    if (freshSerializedPrompt?.type !== "selectOption") throw new Error("Expected fresh serialized select-option prompt");
+    expect(session.state.prompt.options).toEqual([1, 2]);
+    expect(freshSerializedPrompt.options).toEqual([1, 2]);
+  });
+
   it("preserves static continuous effects across snapshots", () => {
     const session = createDuel({ seed: 95, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
