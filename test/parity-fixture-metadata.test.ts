@@ -3,20 +3,42 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const parityFixtureDir = path.resolve("test");
+const parityDocFiles = ["readme.md", path.join("docs", "gameplay-parity-plan.md")];
 
 describe("parity fixture metadata", () => {
+  it("keeps parity docs from framing engine gaps as unsupported", () => {
+    expect(unsupportedParityDocLanguage()).toEqual([]);
+  });
+
   it("requires expectation blocks in parity fixtures to declare their evidence source", () => {
     expect(missingExpectationSources()).toEqual([]);
+  });
+
+  it("requires expectation evidence sources to be EDOPro observations or parity backlog", () => {
+    expect(invalidExpectationSources()).toEqual([]);
   });
 
   it("requires backlog expectations in parity fixtures to explain the EDOPro behavior they track", () => {
     expect(missingBacklogNotes()).toEqual([]);
   });
 
-  it("detects missing source and backlog note metadata in fixture text", () => {
+  it("requires backlog expectation notes to reference EDOPro behavior", () => {
+    expect(backlogNotesWithoutEdopro()).toEqual([]);
+  });
+
+  it("requires UI-facing grouped legal-action expectations to track raw positive legal-action expectations", () => {
+    expect(missingLegalActionGroupCoverage()).toEqual([]);
+  });
+
+  it("requires UI-facing grouped absence expectations to track raw absent legal-action expectations", () => {
+    expect(missingAbsentLegalActionGroupCoverage()).toEqual([]);
+  });
+
+  it("detects missing source, backlog note, and grouped action metadata in fixture text", () => {
     const lines = [
       "after: {",
       "  waitingFor: 0,",
+      "  legalActions: [],",
       "},",
       "expected: {",
       '  source: "parity-backlog",',
@@ -25,25 +47,61 @@ describe("parity fixture metadata", () => {
     ];
 
     expect(missingSourcesInLines("fixture.ts", lines)).toEqual(["fixture.ts:1"]);
-    expect(missingBacklogNotesInLines("fixture.ts", lines)).toEqual(["fixture.ts:5"]);
+    expect(invalidSourcesInLines("fixture.ts", [...lines.slice(0, 2), '  source: "local",', ...lines.slice(2)])).toEqual(["fixture.ts:1"]);
+    expect(missingBacklogNotesInLines("fixture.ts", lines)).toEqual(["fixture.ts:6"]);
+    expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 6), '  note: "temporary local behavior",', ...lines.slice(6)])).toEqual(["fixture.ts:6"]);
+    expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:1"]);
   });
 });
 
 function missingExpectationSources(): string[] {
-  return parityFixtureFiles().flatMap((file) => missingSourcesInLines(file, readFixtureLines(file)));
+  return scriptedFixtureFiles().flatMap((file) => missingSourcesInLines(file, readFixtureLines(file)));
+}
+
+function invalidExpectationSources(): string[] {
+  return scriptedFixtureFiles().flatMap((file) => invalidSourcesInLines(file, readFixtureLines(file)));
+}
+
+function unsupportedParityDocLanguage(): string[] {
+  return parityDocFiles.flatMap((file) => {
+    const lines = fs.readFileSync(file, "utf8").split("\n");
+    return lines.flatMap((line, index) => /unsupported|not supported|out of scope/i.test(line) ? [`${file}:${index + 1}`] : []);
+  });
 }
 
 function missingBacklogNotes(): string[] {
-  return parityFixtureFiles().flatMap((file) => missingBacklogNotesInLines(file, readFixtureLines(file)));
+  return scriptedFixtureFiles().flatMap((file) => missingBacklogNotesInLines(file, readFixtureLines(file)));
+}
+
+function backlogNotesWithoutEdopro(): string[] {
+  return scriptedFixtureFiles().flatMap((file) => backlogNotesWithoutEdoproInLines(file, readFixtureLines(file)));
+}
+
+function missingLegalActionGroupCoverage(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingLegalActionGroupsInLines(file, readFixtureLines(file), "legalActions:", "legalActionGroups:"));
+}
+
+function missingAbsentLegalActionGroupCoverage(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingLegalActionGroupsInLines(file, readFixtureLines(file), "absentLegalActions:", "absentLegalActionGroups:"));
 }
 
 function missingSourcesInLines(file: string, lines: string[]): string[] {
   const missingSources: string[] = [];
   lines.forEach((line, index) => {
     if (!/^\s*(before|after|expected): \{/.test(line)) return;
-    if (!expectationBlock(lines, index).includes("source:")) missingSources.push(`${file}:${index + 1}`);
+    if (sourceLineInBlock(expectationBlock(lines, index)) === undefined) missingSources.push(`${file}:${index + 1}`);
   });
   return missingSources;
+}
+
+function invalidSourcesInLines(file: string, lines: string[]): string[] {
+  const invalidSources: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const sourceLine = sourceLineInBlock(expectationBlock(lines, index));
+    if (sourceLine !== undefined && !/source:\s*"(edopro|parity-backlog)"/.test(sourceLine)) invalidSources.push(`${file}:${index + 1}`);
+  });
+  return invalidSources;
 }
 
 function missingBacklogNotesInLines(file: string, lines: string[]): string[] {
@@ -55,8 +113,44 @@ function missingBacklogNotesInLines(file: string, lines: string[]): string[] {
   return missingNotes;
 }
 
+function backlogNotesWithoutEdoproInLines(file: string, lines: string[]): string[] {
+  const missingEdopro: string[] = [];
+  lines.forEach((line, index) => {
+    if (!line.includes('source: "parity-backlog"')) return;
+    const noteLine = expectationBlock(lines, index).split("\n").find((blockLine) => blockLine.includes("note:"));
+    if (noteLine !== undefined && !/edopro/i.test(noteLine)) missingEdopro.push(`${file}:${index + 1}`);
+  });
+  return missingEdopro;
+}
+
+function missingAnyLegalActionGroupsInLines(file: string, lines: string[]): string[] {
+  return [
+    ...missingLegalActionGroupsInLines(file, lines, "legalActions:", "legalActionGroups:"),
+    ...missingLegalActionGroupsInLines(file, lines, "absentLegalActions:", "absentLegalActionGroups:"),
+  ];
+}
+
+function missingLegalActionGroupsInLines(file: string, lines: string[], rawSearch: string, groupSearch: string): string[] {
+  const missingGroups: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    const rawCount = occurrenceCount(block, rawSearch);
+    const groupCount = occurrenceCount(block, groupSearch);
+    if (rawCount > groupCount) missingGroups.push(`${file}:${index + 1}`);
+  });
+  return missingGroups;
+}
+
 function parityFixtureFiles(): string[] {
   return fs.readdirSync(parityFixtureDir).filter((name) => /^parity-.*\.test\.ts$/.test(name) && name !== "parity-fixture-metadata.test.ts");
+}
+
+function scriptedFixtureFiles(): string[] {
+  return fs.readdirSync(parityFixtureDir).filter((name) => {
+    if (!name.endsWith(".test.ts") || name === "parity-fixture-metadata.test.ts") return false;
+    return fs.readFileSync(path.join(parityFixtureDir, name), "utf8").includes("runScriptedDuelFixture");
+  });
 }
 
 function readFixtureLines(file: string): string[] {
@@ -85,4 +179,12 @@ function findBlockStart(lines: string[], sourceIndex: number): number {
 
 function braceDelta(line: string): number {
   return [...line].reduce((total, char) => total + (char === "{" ? 1 : char === "}" ? -1 : 0), 0);
+}
+
+function occurrenceCount(text: string, search: string): number {
+  return text.split(search).length - 1;
+}
+
+function sourceLineInBlock(block: string): string | undefined {
+  return block.split("\n").find((line) => /\bsource:/.test(line));
 }
