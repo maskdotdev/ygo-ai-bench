@@ -68,26 +68,29 @@ export const passBattleGroup = (player: 0 | 1, type: "passAttack" | "passDamage"
   actions: [{ type, player, ...(windowId === undefined ? {} : { windowId }), count }],
 });
 
-export const effectGroup = (player: 0 | 1, effectId: string, count = 1) => ({
+export const effectGroup = (player: 0 | 1, effectId: string, count = 1, windowId?: number) => ({
   player,
   label: "Effects",
+  ...(windowId === undefined ? {} : { windowId }),
   windowKind: "battle" as const,
   count,
-  actions: [{ type: "activateEffect" as const, player, effectId, count }],
+  actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), count }],
 });
 
-export const absentEffectGroup = (player: 0 | 1, effectId: string) => ({
+export const absentEffectGroup = (player: 0 | 1, effectId: string, windowId?: number) => ({
   player,
   label: "Effects",
-  actions: [{ type: "activateEffect" as const, player, effectId }],
+  ...(windowId === undefined ? {} : { windowId }),
+  actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }) }],
 });
 
-export const passDamageGroup = (player: 0 | 1, count = 1) => ({
+export const passDamageGroup = (player: 0 | 1, count = 1, windowId?: number) => ({
   player,
   label: "Pass",
+  ...(windowId === undefined ? {} : { windowId }),
   windowKind: "battle" as const,
   count,
-  actions: [{ type: "passDamage" as const, player, count }],
+  actions: [{ type: "passDamage" as const, player, ...(windowId === undefined ? {} : { windowId }), count }],
 });
 
 export const turnGroup = (windowId?: number) => ({
