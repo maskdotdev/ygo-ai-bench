@@ -63,7 +63,7 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-damage-calculation-quick" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resumes damage calculation timing after the opponent's damage-calculation fast effect resolves",
