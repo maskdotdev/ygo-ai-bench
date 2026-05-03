@@ -2,8 +2,7 @@ import fengari from "fengari";
 import { moveDuelCard } from "#duel/card-state.js";
 import { isCounterPlacementPrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
-import { recordDuelEvent } from "#duel/event-history.js";
-import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
+import { collectDuelTriggerEffects } from "#duel/core.js";
 import { readTableStringField } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEventName, DuelSession } from "#duel/types.js";
 
@@ -105,8 +104,7 @@ function totalCounters(card: DuelCardInstance): number {
 }
 
 function collectCounterEvent(session: DuelSession, eventName: DuelEventName, card: DuelCardInstance): void {
-  recordDuelEvent(session.state, eventName, card);
-  collectTriggerEffectsRule(session.state, eventName, () => true, card);
+  collectDuelTriggerEffects(session.state, eventName, card);
 }
 
 function canPlaceCounter(session: DuelSession, card: DuelCardInstance | undefined, count: number): boolean {

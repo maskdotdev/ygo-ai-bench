@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard } from "#duel/core.js";
+import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard, collectDuelTriggerEffects } from "#duel/core.js";
 import { findCard, hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import {
   isCounterPlacementPrevented,
@@ -10,11 +10,9 @@ import {
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import { canAddDuelCardCounter, canRemoveDuelCounters, getDuelCardCounter, removeDuelCounters } from "#duel/counters.js";
-import { recordDuelEvent } from "#duel/event-history.js";
 import { getDuelFlagEffectCount } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
-import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
@@ -204,8 +202,7 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelP
   for (const uid of removed) {
     const card = findCard(session.state, uid);
     if (!card) continue;
-    recordDuelEvent(session.state, "counterRemoved", card);
-    collectTriggerEffectsRule(session.state, "counterRemoved", () => true, card);
+    collectDuelTriggerEffects(session.state, "counterRemoved", card);
   }
   lua.lua_pushinteger(L, removed.length > 0 ? query.count : 0);
   return 1;

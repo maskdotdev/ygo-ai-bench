@@ -58,8 +58,9 @@ describe("Lua counter events", () => {
 
     expect(host.messages).toContain("add counter true");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["counterAdded"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: target!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: target!.uid, eventCode: 0x10000 });
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "counterAdded", "chainSolved"]);
+    expect(session.state.eventHistory.find((event) => event.eventName === "counterAdded")).toMatchObject({ eventCode: 0x10000 });
   });
 
   it("queues remove-counter triggers when Lua removes counters from the field", () => {
@@ -113,7 +114,8 @@ describe("Lua counter events", () => {
 
     expect(host.messages).toContain("remove counter 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["counterRemoved"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: target!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: target!.uid, eventCode: 0x20000 });
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "counterRemoved", "chainSolved"]);
+    expect(session.state.eventHistory.find((event) => event.eventName === "counterRemoved")).toMatchObject({ eventCode: 0x20000 });
   });
 });

@@ -55,7 +55,8 @@ describe("Lua level-up events", () => {
     const source = session.state.cards.find((card) => card.code === "100");
     expect(host.messages).toContain("level delta 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["levelChanged"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid, eventCode: 1200 });
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "levelChanged", "chainSolved"]);
+    expect(session.state.eventHistory.find((event) => event.eventName === "levelChanged")).toMatchObject({ eventCode: 1200 });
   });
 });

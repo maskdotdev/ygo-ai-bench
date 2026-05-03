@@ -1,6 +1,5 @@
 import fengari from "fengari";
-import { recordDuelEvent } from "#duel/event-history.js";
-import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
+import { collectDuelTriggerEffects } from "#duel/core.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession, DuelState } from "#duel/types.js";
@@ -283,8 +282,7 @@ function pushUpdateLevel(L: unknown, session: DuelSession): number {
 }
 
 function collectStatEvent(session: DuelSession, eventName: "levelChanged", card: DuelCardInstance): void {
-  recordDuelEvent(session.state, eventName, card);
-  collectTriggerEffectsRule(session.state, eventName, () => true, card);
+  collectDuelTriggerEffects(session.state, eventName, card);
 }
 
 function pushUpdateRank(L: unknown, session: DuelSession): number {
