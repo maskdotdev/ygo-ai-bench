@@ -63,6 +63,15 @@ describe("Lua API usage scanner", () => {
     expect(output).not.toContain("Duel.CommentedCall");
   });
 
+  it("keeps local Lua API names aligned with upstream Project Ignis scripts", () => {
+    const scripts = ".upstream/ignis/script";
+    if (!fs.existsSync(scripts)) return;
+
+    const output = execFileSync(process.execPath, [scannerPath, "--scripts", scripts, "--fail-on-missing"], { encoding: "utf8" });
+
+    expect(output).toContain("No missing API usages found.");
+  });
+
   it("rejects scanner options that are missing required values", () => {
     const result = spawnSync(process.execPath, [scannerPath, "--scripts", "--limit", "5"], { encoding: "utf8" });
 
