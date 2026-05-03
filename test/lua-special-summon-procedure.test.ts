@@ -244,9 +244,10 @@ describe("Lua special summon procedures", () => {
     expect(extra).toBeTruthy();
     moveDuelCard(session.state, pendulum!.uid, "extraDeck", 0);
 
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
+    const sourceScript = {
+      readScript(name: string) {
+        if (name === "c301.lua") {
+          return `
       c301={}
       function c301.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -262,6 +263,10 @@ describe("Lua special summon procedures", () => {
         end)
         c:RegisterEffect(e)
       end
+      `;
+        }
+        if (name === "c920.lua") {
+          return `
       c920={}
       function c920.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -274,16 +279,38 @@ describe("Lua special summon procedures", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "extra-special-summon-procedure.lua",
-    );
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const pendulumLoad = host.loadCardScript(301, sourceScript);
+    const blockedLoad = host.loadCardScript(920, sourceScript);
 
-    expect(result.ok, result.error).toBe(true);
+    expect(pendulumLoad.ok, pendulumLoad.error).toBe(true);
+    expect(blockedLoad.ok, blockedLoad.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === pendulum!.uid);
     const blocked = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === extra!.uid);
     expect(action).toBeDefined();
     expect(blocked).toBeUndefined();
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c301.lua", "c920.lua"]);
+    expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const restoredAction = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === pendulum!.uid);
+    const restoredBlocked = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === extra!.uid);
+    expect(restoredAction).toBeDefined();
+    expect(restoredBlocked).toBeUndefined();
+    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    expect(restored.host.messages).toContain("extra procedure value true/64");
+    expect(restored.host.messages).toContain("extra procedure operation 301");
+    expect(restored.session.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(restored.session.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false });
+
     expect(applyResponse(session, action!).ok).toBe(true);
 
     expect(host.messages).toContain("extra procedure value true/64");
