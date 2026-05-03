@@ -40,7 +40,9 @@ describe("EDOPro parity battle direct replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1" })),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
-        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-remove-target-before-direct-replay" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-remove-target-before-direct-replay" }), {
+          snapshotRestore: "both",
+        }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
