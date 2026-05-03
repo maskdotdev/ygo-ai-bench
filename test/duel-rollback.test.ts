@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { addDuelCardCounter } from "#duel/counters.js";
 import {
   addDuelChainLimit,
   applyResponse,
@@ -168,6 +169,44 @@ describe("duel rollback", () => {
     expect(result.ok).toBe(false);
     expect(result.error).toContain("Targets for failed-target-shuffle-check are not legal");
     expect(session.state.shuffleCheckDisabled).toBe(false);
+    expect(session.state.chain).toHaveLength(0);
+  });
+
+  it("rolls back nested card counters changed by failed activation targets", () => {
+    const session = createDuel({ seed: 128, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const counterTarget = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(counterTarget).toBeTruthy();
+    registerEffect(session, {
+      id: "failed-target-card-counter",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      target(ctx) {
+        if (ctx.checkOnly) return true;
+        expect(addDuelCardCounter(counterTarget, 99, 1)).toBe(true);
+        return false;
+      },
+      operation(ctx) {
+        ctx.log("should not resolve");
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "failed-target-card-counter");
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Targets for failed-target-card-counter are not legal");
+    expect(session.state.cards.find((card) => card.uid === counterTarget!.uid)?.counters).toBeUndefined();
     expect(session.state.chain).toHaveLength(0);
   });
 
