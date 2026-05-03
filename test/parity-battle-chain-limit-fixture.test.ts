@@ -131,7 +131,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-turn-chain-limiter" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro applies Duel.SetChainLimit-style restrictions immediately after the attack-response quick effect is placed on chain",
