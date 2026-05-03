@@ -32,6 +32,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
             source: "edopro",
             note: "EDOPro SEGOC collects turn mandatory, opponent mandatory, turn optional, then opponent optional trigger buckets",
             windowId: 1,
+            windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
               { player: 0, effectId: "fixture-turn-mandatory", eventName: "normalSummoned", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-100-0" },
@@ -39,6 +40,8 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
               { player: 0, effectId: "fixture-turn-optional", eventName: "normalSummoned", triggerBucket: "turnOptional", eventCardUid: "p0-deck-100-0" },
               { player: 1, effectId: "fixture-opponent-optional", eventName: "normalSummoned", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-100-0" },
             ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-turn-mandatory", triggerBucket: "turnMandatory", count: 1 }],
             legalActionGroups: [
               {
@@ -72,12 +75,15 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
             source: "edopro",
             note: "EDOPro passes priority to the opponent mandatory bucket after the turn player's mandatory trigger is placed on chain",
             windowId: 2,
+            windowKind: "triggerBucket",
             waitingFor: 1,
             pendingTriggers: [
               { player: 1, effectId: "fixture-opponent-mandatory", triggerBucket: "opponentMandatory" },
               { player: 0, effectId: "fixture-turn-optional", triggerBucket: "turnOptional" },
               { player: 1, effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional" },
             ],
+            legalActionCounts: { 0: 0, 1: 1 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
             legalActions: [{ type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-mandatory", triggerBucket: "opponentMandatory", count: 1 }],
             legalActionGroups: [
               {
@@ -107,11 +113,14 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
             source: "edopro",
             note: "EDOPro presents turn-player optional triggers before opponent optional triggers after mandatory buckets are consumed",
             windowId: 3,
+            windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
               { player: 0, effectId: "fixture-turn-optional", triggerBucket: "turnOptional" },
               { player: 1, effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional" },
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-turn-optional", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-turn-optional", triggerBucket: "turnOptional", count: 1 },
@@ -152,8 +161,11 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
             source: "edopro",
             note: "EDOPro presents opponent optional triggers only after the turn-player optional bucket is activated or declined",
             windowId: 4,
+            windowKind: "triggerBucket",
             waitingFor: 1,
             pendingTriggers: [{ player: 1, effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
             legalActions: [
               { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
               { type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
