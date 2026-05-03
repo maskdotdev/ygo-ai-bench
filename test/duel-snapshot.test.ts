@@ -327,6 +327,19 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(badUnique, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.uniqueOnField.opponent must be a boolean");
   });
 
+  it("rejects duplicate card uid snapshots before restore", () => {
+    const session = createDuel({ seed: 162, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const duplicateUid = serializeDuel(session);
+    duplicateUid.state.cards[1] = { ...duplicateUid.state.cards[1]!, uid: duplicateUid.state.cards[0]!.uid };
+
+    expect(() => restoreDuel(duplicateUid, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.1.uid must be unique");
+  });
+
   it("rejects malformed effect snapshots before restore", () => {
     const session = createDuel({ seed: 159, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

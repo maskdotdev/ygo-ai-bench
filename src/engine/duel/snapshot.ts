@@ -411,12 +411,16 @@ function assertSnapshotLog(log: unknown): void {
 
 function assertSnapshotCards(cards: unknown): void {
   if (!Array.isArray(cards)) throw new Error("Malformed duel snapshot: state.cards must be an array");
+  const seenUids = new Set<string>();
   for (const [index, card] of cards.entries()) {
     const path = `state.cards.${index}`;
     if (!isRecord(card)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
     for (const field of ["uid", "code", "name"] as const) {
       if (typeof card[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
     }
+    const uid = card.uid as string;
+    if (seenUids.has(uid)) throw new Error(`Malformed duel snapshot: ${path}.uid must be unique`);
+    seenUids.add(uid);
     if (!duelSnapshotCardKinds.has(card.kind)) throw new Error(`Malformed duel snapshot: ${path}.kind must be a card kind`);
     assertSnapshotPlayerId(card.owner, `${path}.owner`);
     assertSnapshotPlayerId(card.controller, `${path}.controller`);
