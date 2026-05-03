@@ -99,7 +99,7 @@ function copyPlaytestAction(action: PlaytestAction): PlaytestAction {
   return { ...action };
 }
 
-export function applyAction(session: PlaytestSession, action: PlaytestAction): ApplyResult {
+export function applyAction(session: PlaytestSession, action: unknown): ApplyResult {
   const beforeActions = getLegalActions(session);
   const canonicalAction = beforeActions.find((candidate) => samePlaytestAction(candidate, action));
   if (!canonicalAction) {

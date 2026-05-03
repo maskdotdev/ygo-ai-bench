@@ -24,7 +24,7 @@ export interface PlaytestAgent {
   state(sessionId?: string): ReturnType<typeof snapshot>;
   legalActions(sessionId?: string): PlaytestAction[];
   legalActionGroups(sessionId?: string): ReturnType<typeof groupLegalActions>;
-  action(action: PlaytestAction, sessionId?: string): ReturnType<typeof applyAction>;
+  action(action: unknown, sessionId?: string): ReturnType<typeof applyAction>;
   autoRun(options?: { sessionId?: string; maxActions?: number }): ReturnType<typeof snapshot>;
   runScripted(steps: PlaytestActionSelector[], sessionId?: string): ReturnType<typeof runScriptedPlaytest>;
   evaluate(sessionId?: string): ReturnType<typeof evaluatePlaytest>;

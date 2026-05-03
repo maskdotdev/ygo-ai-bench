@@ -112,6 +112,24 @@ ${IDS.theDarkMagicians}
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   });
 
+  it("rejects malformed agent actions through the public action boundary", () => {
+    const agent = createPlaytestAgent({
+      deck: {
+        main: {
+          [IDS.magiciansRod]: 1,
+          [IDS.darkMagician]: 1,
+        },
+      },
+    });
+    const started = agent.start({ seed: 2, handSize: 2 });
+
+    const result = agent.action(null, started.sessionId);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("Action is not currently legal");
+    expect(result.state.hand.map((card) => card.uid)).toEqual(started.state.hand.map((card) => card.uid));
+  });
+
   it("runs fixture-style scripted actions through the agent bridge", () => {
     const agent = createPlaytestAgent({
       deck: {
