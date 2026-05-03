@@ -1,6 +1,8 @@
 import fengari from "fengari";
+import { isPhaseEntryPrevented } from "#duel/continuous-effects.js";
 import { canDuelCardAttack } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
+import { nextAvailableDuelPhase } from "#duel/turn-flow.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
@@ -8,7 +10,7 @@ import { matchingLuaEffects } from "#lua/card-effect-query-api.js";
 import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
-import type { CardPosition, DuelCardInstance, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelPhase, DuelSession, DuelState } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -105,15 +107,35 @@ function canGetPiercingRush<EffectRecord extends LuaCardApiEffectRecord>(state: 
 }
 
 function canEnterBattlePhase(state: DuelState): boolean {
-  return nextAvailablePhase(state, state.turnPlayer) === "battle";
+  return nextAvailableDuelPhase(state, state.turnPlayer, (phase) => canEnterPhase(state, phase)) === "battle";
 }
 
-function nextAvailablePhase(state: DuelState, player: PlayerId): DuelPhase | undefined {
-  const phaseOrder = ["draw", "standby", "main1", "battle", "main2", "end"] satisfies DuelPhase[];
-  for (const phase of phaseOrder.slice(phaseOrder.indexOf(state.phase) + 1)) {
-    if (!state.skippedPhases.some((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0)) return phase;
-  }
-  return undefined;
+function canEnterPhase(state: DuelState, phase: DuelPhase): boolean {
+  if (phase !== "battle" && phase !== "main2" && phase !== "end") return true;
+  return !isPhaseEntryPrevented(state, state.turnPlayer, phase, createContinuousPhaseContext(state));
+}
+
+function createContinuousPhaseContext(state: DuelState) {
+  return (effect: DuelEffectDefinition, source: DuelCardInstance): DuelEffectContext => ({
+    duel: state,
+    source,
+    player: effect.controller,
+    checkOnly: true,
+    targetUids: [],
+    log() {},
+    moveCard() {
+      throw new Error("Cannot move cards while checking phase entry");
+    },
+    negateChainLink() {
+      return false;
+    },
+    setTargets() {},
+    getTargets() {
+      return [];
+    },
+    setTargetPlayer() {},
+    setTargetParam() {},
+  });
 }
 
 function positionMaskFromPosition(position: CardPosition | undefined): number {

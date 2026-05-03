@@ -350,13 +350,16 @@ describe("Lua state helpers", () => {
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
       `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("able continuous locked " .. tostring(Duel.IsAbleToEnterBP()))
+      Debug.Message("piercing continuous locked " .. tostring(c:CanGetPiercingRush()))
       `,
       `battle-phase-continuous-${label}-lock.lua`,
     );
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("able continuous locked false");
+    expect(host.messages).toContain("piercing continuous locked false");
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "changePhase" && action.phase === "battle")).toBe(false);
   });
 
