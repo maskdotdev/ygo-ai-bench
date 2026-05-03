@@ -1,11 +1,12 @@
 import { copyDuelAction } from "#duel/action-copy.js";
-import type { DuelAction, DuelActionWindowKind } from "#duel/types.js";
+import type { DuelAction, DuelActionWindowKind, PendingTriggerBucketState } from "#duel/types.js";
 
 export interface DuelLegalActionGroup {
   key: string;
   label: string;
   windowId?: number;
   windowKind?: DuelActionWindowKind;
+  triggerBucket?: PendingTriggerBucketState;
   actions: DuelAction[];
 }
 
@@ -16,18 +17,33 @@ export function groupDuelLegalActions(actions: DuelAction[]): DuelLegalActionGro
     const actionKey = duelActionGroupKey(action);
     const key = `${action.windowId ?? "none"}:${windowKey}:${actionKey}`;
     const existing = groups.get(key);
-    if (existing) existing.actions.push(copyDuelAction(action));
+    if (existing) {
+      if ((action.type === "activateTrigger" || action.type === "declineTrigger") && existing.triggerBucket) existing.triggerBucket.triggerIds.push(action.triggerId);
+      existing.actions.push(copyDuelAction(action));
+    }
     else {
       groups.set(key, {
         key,
         label: duelActionGroupLabel(actionKey),
         ...(action.windowId === undefined ? {} : { windowId: action.windowId }),
         ...(action.windowKind === undefined ? {} : { windowKind: action.windowKind }),
+        ...triggerBucketGroupState(action),
         actions: [copyDuelAction(action)],
       });
     }
   }
   return [...groups.values()];
+}
+
+function triggerBucketGroupState(action: DuelAction): { triggerBucket: PendingTriggerBucketState } | Record<string, never> {
+  if (action.type !== "activateTrigger" && action.type !== "declineTrigger") return {};
+  return {
+    triggerBucket: {
+      triggerBucket: action.triggerBucket,
+      player: action.player,
+      triggerIds: [action.triggerId],
+    },
+  };
 }
 
 function duelActionGroupKey(action: DuelAction): string {

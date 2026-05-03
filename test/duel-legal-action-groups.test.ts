@@ -41,6 +41,10 @@ describe("duel legal action groups", () => {
     expect(groups).toHaveLength(2);
     expect(groups.map((group) => group.label)).toEqual(["Trigger Activations", "Trigger Declines"]);
     expect(groups.every((group) => group.windowId === session.state.actionWindowId && group.windowKind === "triggerBucket")).toBe(true);
+    expect(groups.map((group) => group.triggerBucket)).toEqual([
+      { triggerBucket: "turnOptional", player: 0, triggerIds: [actions.find((action) => action.type === "activateTrigger")!.triggerId] },
+      { triggerBucket: "turnOptional", player: 0, triggerIds: [actions.find((action) => action.type === "declineTrigger")!.triggerId] },
+    ]);
     expect(groups.flatMap((group) => group.actions)).toEqual(actions);
   });
 
@@ -56,6 +60,23 @@ describe("duel legal action groups", () => {
     expect(groups).toHaveLength(2);
     expect(groups.map((group) => group.key)).toEqual(["4:prompt:prompt:prompt-a", "4:prompt:prompt:prompt-b"]);
     expect(groups.flatMap((group) => group.actions)).toEqual(actions);
+  });
+
+  it("summarizes same-bucket trigger ids on grouped trigger actions", () => {
+    const actions: DuelAction[] = [
+      { type: "activateTrigger", player: 0, triggerId: "trigger-a", triggerBucket: "turnMandatory", uid: "card-a", effectId: "effect-a", label: "A", windowId: 7, windowKind: "triggerBucket" },
+      { type: "activateTrigger", player: 0, triggerId: "trigger-b", triggerBucket: "turnMandatory", uid: "card-b", effectId: "effect-b", label: "B", windowId: 7, windowKind: "triggerBucket" },
+      { type: "declineTrigger", player: 0, triggerId: "trigger-c", triggerBucket: "turnOptional", uid: "card-c", effectId: "effect-c", label: "C", windowId: 7, windowKind: "triggerBucket" },
+    ];
+
+    const groups = groupDuelLegalActions(actions);
+
+    expect(groups.map((group) => group.triggerBucket)).toEqual([
+      { triggerBucket: "turnMandatory", player: 0, triggerIds: ["trigger-a", "trigger-b"] },
+      { triggerBucket: "turnOptional", player: 0, triggerIds: ["trigger-c"] },
+    ]);
+    groups[0]!.triggerBucket!.triggerIds.push("mutated");
+    expect(actions.map((action) => action.type === "activateTrigger" || action.type === "declineTrigger" ? action.triggerId : undefined)).toEqual(["trigger-a", "trigger-b", "trigger-c"]);
   });
 
   it("copies grouped action payloads away from the source action list", () => {
