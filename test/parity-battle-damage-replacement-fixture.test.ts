@@ -4,15 +4,15 @@ import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 import { passBattleGroup } from "./parity-legal-action-group-helpers.js";
 
-describe("EDOPro parity battle damage modifier fixtures", () => {
-  it("applies piercing battle damage against defense-position targets", () => {
+describe("EDOPro parity battle damage replacement fixtures", () => {
+  it("applies continuous battle damage replacement values", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Piercing Attacker", kind: "monster", attack: 1800, defense: 1200 },
-      { code: "200", name: "Pierced Defender", kind: "monster", attack: 500, defense: 1100 },
+      { code: "100", name: "Double Damage Attacker", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Double Damage Target", kind: "monster", attack: 1000, defense: 1000 },
     ];
     const fixture: ScriptedDuelFixture = {
-      name: "piercing battle damage fixture",
-      options: { seed: 82, startingHandSize: 1 },
+      name: "changed battle damage fixture",
+      options: { seed: 83, startingHandSize: 1 },
       decks: {
         0: { main: ["100"] },
         1: { main: ["200"] },
@@ -20,16 +20,17 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
       setup: {
         moveCards: [
           { player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" },
-          { player: 1, code: "200", from: "hand", to: "monsterZone", position: "faceUpDefense" },
+          { player: 1, code: "200", from: "hand", to: "monsterZone", position: "faceUpAttack" },
         ],
         effects: [
           {
-            id: "fixture-piercing-damage",
+            id: "fixture-double-battle-damage",
             player: 0,
             code: "100",
             location: "monsterZone",
             event: "continuous",
-            effectCode: 203,
+            effectCode: 208,
+            value: 0x80000000,
             range: ["monsterZone"],
           },
         ],
@@ -39,7 +40,7 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
           after: {
             source: "edopro",
-            note: "EDOPro opens the attack-response window before piercing damage is calculated",
+            note: "EDOPro opens the attack-response window before changed battle damage is applied",
             waitingFor: 1,
             windowKind: "battle",
             pendingBattle: true,
@@ -65,34 +66,34 @@ describe("EDOPro parity battle damage modifier fixtures", () => {
           snapshotRestore: "after",
           after: {
             source: "edopro",
-            note: "EDOPro applies piercing battle damage equal to ATK minus DEF and destroys the defense-position target",
+            note: "EDOPro applies CHANGE_BATTLE_DAMAGE replacement before LP damage is dealt",
             waitingFor: 0,
             pendingBattle: false,
             currentAttack: false,
             battleWindow: null,
-            lifePoints: { 0: 8000, 1: 7300 },
-            battleDamage: { 0: 0, 1: 700 },
+            lifePoints: { 0: 8000, 1: 6400 },
+            battleDamage: { 0: 0, 1: 1600 },
             attacksDeclared: ["p0-deck-100-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100"], graveyard: ["200"] },
-            logIncludes: ["700", "Destroyed"],
+            logIncludes: ["1600", "Destroyed"],
           },
         }),
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state preserves piercing damage and battle destruction",
+        note: "EDOPro final fixture state preserves changed battle damage and battle destruction",
         phase: "battle",
         waitingFor: 0,
         pendingBattle: false,
         currentAttack: false,
         battleWindow: null,
-        lifePoints: { 0: 8000, 1: 7300 },
-        battleDamage: { 0: 0, 1: 700 },
+        lifePoints: { 0: 8000, 1: 6400 },
+        battleDamage: { 0: 0, 1: 1600 },
         attacksDeclared: ["p0-deck-100-0"],
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100"], graveyard: ["200"] },
-        logIncludes: ["700", "Destroyed"],
+        logIncludes: ["1600", "Destroyed"],
       },
     };
 
