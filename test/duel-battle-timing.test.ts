@@ -134,6 +134,47 @@ describe("duel battle timing", () => {
     expect(restored.state.log.some((entry) => entry.detail === "restore negate true")).toBe(true);
   });
 
+  it("prunes battle-step reset effects after restoring before attack declaration", () => {
+    const session = createDuel({ seed: 59, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(attacker).toBeTruthy();
+    expect(source).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    const restoreBattleStepReset = (effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition => ({
+      ...effect,
+      operation() {},
+    });
+    registerEffect(session, restoreBattleStepReset({
+      id: "restore-battle-step-reset",
+      registryKey: "restore-battle-step-reset",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      reset: { flags: 0x40000000 | 0x10 },
+    }));
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-battle-step-reset": restoreBattleStepReset,
+    });
+    expect(restored.state.effects).toHaveLength(1);
+
+    const attack = getDuelLegalActions(restored, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
+    expect(attack).toBeTruthy();
+    expect(applyResponse(restored, attack!).ok).toBe(true);
+
+    expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", attackerUid: attacker!.uid });
+    expect(restored.state.effects).toHaveLength(0);
+  });
+
   it("restores a pending after-damage trigger and continues the battle window after it resolves", () => {
     const session = createDuel({ seed: 56, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
