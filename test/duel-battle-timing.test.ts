@@ -175,6 +175,31 @@ describe("duel battle timing", () => {
     expect(restored.state.effects).toHaveLength(0);
   });
 
+  it("prunes battle-step flag effects after restoring before attack declaration", () => {
+    const session = createDuel({ seed: 62, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    session.state.flagEffects.push({ ownerType: "player", ownerId: "0", code: 609, reset: 0x40000000 | 0x10, property: 0, value: 1, turn: session.state.turn });
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([609]);
+
+    const attack = getDuelLegalActions(restored, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
+    expect(attack).toBeTruthy();
+    expect(applyResponse(restored, attack!).ok).toBe(true);
+
+    expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", attackerUid: attacker!.uid });
+    expect(restored.state.flagEffects).toHaveLength(0);
+  });
+
   it("prunes damage subphase reset effects after restoring an attack response window", () => {
     const session = createDuel({ seed: 60, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
