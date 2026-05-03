@@ -135,6 +135,42 @@ describe("duel rollback", () => {
     expect(session.state.chain).toHaveLength(0);
   });
 
+  it("rolls back shuffle-check state changed by failed activation targets", () => {
+    const session = createDuel({ seed: 127, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "failed-target-shuffle-check",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      target(ctx) {
+        if (ctx.checkOnly) return true;
+        ctx.duel.shuffleCheckDisabled = true;
+        return false;
+      },
+      operation(ctx) {
+        ctx.log("should not resolve");
+      },
+    });
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "failed-target-shuffle-check");
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Targets for failed-target-shuffle-check are not legal");
+    expect(session.state.shuffleCheckDisabled).toBe(false);
+    expect(session.state.chain).toHaveLength(0);
+  });
+
   it("rolls back failed trigger activation costs and keeps the trigger pending", () => {
     const session = createDuel({ seed: 83, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
