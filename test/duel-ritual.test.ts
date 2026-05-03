@@ -6,7 +6,9 @@ import {
   loadDecks,
   queryPublicState,
   registerEffect,
+  restoreDuel,
   ritualSummonDuelCard,
+  serializeDuel,
   startDuel,
 } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
@@ -269,5 +271,36 @@ describe("duel ritual summons", () => {
     expect(session.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("graveyard");
     expect(session.state.cards.find((card) => card.uid === secondMaterial!.uid)?.location).toBe("graveyard");
+  });
+
+  it("restores full-zone Ritual Summon actions that free space with selected field materials", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 8, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300", "500", "500", "500", "500", "500"] },
+      1: { main: ["400", "400", "400", "400", "400", "400", "400", "400"] },
+    });
+    startDuel(session);
+    const firstMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const blockers = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.kind === "monster" && card.code === "500");
+    expect(firstMaterial).toBeTruthy();
+    expect(blockers).toHaveLength(5);
+    moveDuelCard(session.state, firstMaterial!.uid, "monsterZone", 0);
+    for (const blocker of blockers.slice(0, 4)) moveDuelCard(session.state, blocker.uid, "monsterZone", 0);
+
+    const ritual = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const secondMaterial = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(ritual).toBeTruthy();
+    expect(secondMaterial).toBeTruthy();
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
+    expect(action).toMatchObject({ type: "ritualSummon", materialUids: [firstMaterial!.uid, secondMaterial!.uid] });
+    if (!action || action.type !== "ritualSummon") throw new Error("Expected restored full-zone Ritual Summon action");
+
+    const result = applyResponse(restored, action);
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(result.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("graveyard");
+    expect(result.state.cards.find((card) => card.uid === secondMaterial!.uid)?.location).toBe("graveyard");
   });
 });
