@@ -20,6 +20,7 @@ import type {
   SerializedChainLimit,
   SerializedDuel,
   SerializedDuelEffect,
+  TriggerBucket,
 } from "#duel/types.js";
 
 export type DuelEffectRestoreFactory = (effect: DuelEffectDefinition) => DuelEffectDefinition;
@@ -227,7 +228,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   for (const field of ["attacksDeclared", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
     assertSnapshotCardUidArray(state[field], `state.${field}`, cardUids);
   }
-  assertSnapshotPendingTriggers(state.pendingTriggers, cardUids);
+  assertSnapshotPendingTriggers(state.pendingTriggers, cardUids, state.turnPlayer);
   if (state.pendingTriggerBuckets !== undefined) assertSnapshotPendingTriggerBuckets(state.pendingTriggerBuckets, state.pendingTriggers);
   assertSnapshotEventHistory(state.eventHistory, cardUids);
   assertSnapshotBattlePairs(state.battlePairs, cardUids);
@@ -312,7 +313,7 @@ function assertSnapshotBattlePairs(pairs: unknown, cardUids: ReadonlySet<string>
   }
 }
 
-function assertSnapshotPendingTriggers(triggers: unknown, cardUids: ReadonlySet<string>): void {
+function assertSnapshotPendingTriggers(triggers: unknown, cardUids: ReadonlySet<string>, turnPlayer: PlayerId): void {
   if (!Array.isArray(triggers)) throw new Error("Malformed duel snapshot: state.pendingTriggers must be an array");
   for (const [index, trigger] of triggers.entries()) {
     const path = `state.pendingTriggers.${index}`;
@@ -322,9 +323,15 @@ function assertSnapshotPendingTriggers(triggers: unknown, cardUids: ReadonlySet<
     }
     assertSnapshotPlayerId(trigger.player, `${path}.player`);
     if (!duelSnapshotTriggerBuckets.has(trigger.triggerBucket)) throw new Error(`Malformed duel snapshot: ${path}.triggerBucket must be a trigger bucket`);
+    if (!snapshotTriggerBucketMatchesPlayer(trigger.triggerBucket as TriggerBucket, trigger.player as PlayerId, turnPlayer)) throw new Error(`Malformed duel snapshot: ${path}.triggerBucket must match the trigger player`);
     assertSnapshotEventPayload(trigger, path, cardUids);
     if (!cardUids.has(trigger.sourceUid as string)) throw new Error(`Malformed duel snapshot: ${path}.sourceUid must reference a card`);
   }
+}
+
+function snapshotTriggerBucketMatchesPlayer(bucket: TriggerBucket, player: PlayerId, turnPlayer: PlayerId): boolean {
+  const turnBucket = bucket === "turnMandatory" || bucket === "turnOptional";
+  return turnBucket ? player === turnPlayer : player !== turnPlayer;
 }
 
 function assertSnapshotPendingTriggerBuckets(buckets: unknown, triggers: unknown): void {
