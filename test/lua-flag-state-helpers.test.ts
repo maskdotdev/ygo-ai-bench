@@ -337,8 +337,10 @@ describe("Lua flag state helpers", () => {
         e:SetOperation(function(e,c)
           Duel.RegisterFlagEffect(0, 933, RESET_PHASE + PHASE_BATTLE + PHASE_MAIN2, 0, 2, 71)
           c:RegisterFlagEffect(934, RESET_PHASE + PHASE_BATTLE + PHASE_MAIN2, 0, 2, 81)
+          c:RegisterFlagEffect(935, 0, EFFECT_FLAG_CLIENT_HINT, nil, 91)
           Debug.Message("duel counted label " .. Duel.GetFlagEffectLabel(0, 933))
           Debug.Message("card counted label " .. c:GetFlagEffectLabel(934))
+          Debug.Message("nil count label " .. c:GetFlagEffectLabel(935))
         end)
         c:RegisterEffect(e)
       end
@@ -353,20 +355,21 @@ describe("Lua flag state helpers", () => {
     expect(applyResponse(session, action!).ok).toBe(true);
     expect(host.messages).toContain("duel counted label 71");
     expect(host.messages).toContain("card counted label 81");
+    expect(host.messages).toContain("nil count label 91");
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
     expect(applyResponse(session, battle!).ok).toBe(true);
-    expect(session.state.flagEffects).toEqual([
+    expect(session.state.flagEffects.filter((flag) => flag.code === 933 || flag.code === 934)).toEqual([
       expect.objectContaining({ code: 933, resetCount: 1, value: 71 }),
       expect.objectContaining({ code: 934, resetCount: 1, value: 81 }),
     ]);
-    expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.flagEffects.map((flag) => flag.resetCount)).toEqual([1, 1]);
+    expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.flagEffects.filter((flag) => flag.code === 933 || flag.code === 934).map((flag) => flag.resetCount)).toEqual([1, 1]);
 
     const main2 = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "main2");
     expect(main2).toBeDefined();
     expect(applyResponse(session, main2!).ok).toBe(true);
-    expect(session.state.flagEffects).toHaveLength(0);
+    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([935]);
   });
 
   it("expires Lua flag effects at the Battle Start reset boundary", () => {
@@ -523,15 +526,15 @@ describe("Lua flag state helpers", () => {
         e:SetType(EFFECT_TYPE_IGNITION)
         e:SetRange(LOCATION_HAND)
         e:SetOperation(function(e,c)
-          Debug.Message("duel flag first " .. Duel.RegisterFlagEffect(0, 931, RESET_EVENT, 0, 11))
-          Debug.Message("duel flag replace " .. Duel.RegisterFlagEffect(0, 931, RESET_EVENT, 0, 12))
+          Debug.Message("duel flag first " .. Duel.RegisterFlagEffect(0, 931, RESET_EVENT, 0, 1, 11))
+          Debug.Message("duel flag replace " .. Duel.RegisterFlagEffect(0, 931, RESET_EVENT, 0, 1, 12))
           Debug.Message("duel flag label " .. Duel.GetFlagEffectLabel(0, 931))
-          Debug.Message("duel flag repeat " .. Duel.RegisterFlagEffect(0, 931, RESET_EVENT, EFFECT_FLAG_REPEAT, 13))
+          Debug.Message("duel flag repeat " .. Duel.RegisterFlagEffect(0, 931, RESET_EVENT, EFFECT_FLAG_REPEAT, 1, 13))
           Debug.Message("duel flag repeat label " .. Duel.GetFlagEffectLabel(0, 931))
-          Debug.Message("card flag first " .. c:RegisterFlagEffect(932, RESET_EVENT, 0, 21))
-          Debug.Message("card flag replace " .. c:RegisterFlagEffect(932, RESET_EVENT, 0, 22))
+          Debug.Message("card flag first " .. c:RegisterFlagEffect(932, RESET_EVENT, 0, 1, 21))
+          Debug.Message("card flag replace " .. c:RegisterFlagEffect(932, RESET_EVENT, 0, 1, 22))
           Debug.Message("card flag label " .. c:GetFlagEffectLabel(932))
-          Debug.Message("card flag repeat " .. c:RegisterFlagEffect(932, RESET_EVENT, EFFECT_FLAG_REPEAT, 23))
+          Debug.Message("card flag repeat " .. c:RegisterFlagEffect(932, RESET_EVENT, EFFECT_FLAG_REPEAT, 1, 23))
           Debug.Message("card flag repeat label " .. c:GetFlagEffectLabel(932))
         end)
         c:RegisterEffect(e)
@@ -582,8 +585,8 @@ describe("Lua flag state helpers", () => {
         e:SetType(EFFECT_TYPE_IGNITION)
         e:SetRange(LOCATION_HAND)
         e:SetOperation(function(e,c)
-          Duel.RegisterFlagEffect(0, 941, RESET_EVENT, 0, 31)
-          c:RegisterFlagEffect(942, RESET_EVENT, 0, 41)
+          Duel.RegisterFlagEffect(0, 941, RESET_EVENT, 0, 1, 31)
+          c:RegisterFlagEffect(942, RESET_EVENT, 0, 1, 41)
           Debug.Message("duel set label " .. Duel.SetFlagEffectLabel(0, 941, 32))
           Debug.Message("card set label " .. c:SetFlagEffectLabel(942, 42))
           Debug.Message("duel updated label " .. Duel.GetFlagEffectLabel(0, 941))
@@ -631,10 +634,10 @@ describe("Lua flag state helpers", () => {
         e:SetType(EFFECT_TYPE_IGNITION)
         e:SetRange(LOCATION_HAND)
         e:SetOperation(function(e,c)
-          Duel.RegisterFlagEffect(0, 951, RESET_EVENT, EFFECT_FLAG_REPEAT, 51)
-          Duel.RegisterFlagEffect(0, 951, RESET_EVENT, EFFECT_FLAG_REPEAT, 52)
-          c:RegisterFlagEffect(952, RESET_EVENT, EFFECT_FLAG_REPEAT, 61)
-          c:RegisterFlagEffect(952, RESET_EVENT, EFFECT_FLAG_REPEAT, 62)
+          Duel.RegisterFlagEffect(0, 951, RESET_EVENT, EFFECT_FLAG_REPEAT, 1, 51)
+          Duel.RegisterFlagEffect(0, 951, RESET_EVENT, EFFECT_FLAG_REPEAT, 1, 52)
+          c:RegisterFlagEffect(952, RESET_EVENT, EFFECT_FLAG_REPEAT, 1, 61)
+          c:RegisterFlagEffect(952, RESET_EVENT, EFFECT_FLAG_REPEAT, 1, 62)
           Debug.Message("duel repeated count " .. Duel.GetFlagEffect(0, 951))
           Debug.Message("card repeated count " .. c:GetFlagEffect(952))
           Debug.Message("duel repeated label " .. Duel.GetFlagEffectLabel(0, 951))
