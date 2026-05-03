@@ -20,6 +20,7 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
   for (const [index, effect] of state.effects.entries()) {
     if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
     if (eventName === "customEvent" && effect.triggerCode !== options.eventCode) continue;
+    if (isPhaseEventName(eventName) && effect.triggerCode !== undefined && options.eventCode !== undefined && effect.triggerCode !== options.eventCode) continue;
     if (effect.optional !== false && effect.triggerTiming === "when" && !eventIsLast) continue;
     if (!canUseEffectCount(state, effect)) continue;
     const source = findCard(state, effect.sourceUid);
@@ -67,6 +68,10 @@ function triggerBucketPriority(bucket: TriggerBucket): number {
   if (bucket === "opponentMandatory") return 1;
   if (bucket === "turnOptional") return 2;
   return 3;
+}
+
+function isPhaseEventName(eventName: DuelEventName): boolean {
+  return eventName.startsWith("phase");
 }
 
 function isTriggerPrevented(state: DuelState, card: DuelCardInstance): boolean {

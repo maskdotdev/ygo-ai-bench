@@ -451,7 +451,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.code === undefined ? {} : { code: luaEffect.code }),
     ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
-    ...(triggerEvent === "customEvent" && luaEffect.code !== undefined ? { triggerCode: luaEffect.code } : {}),
+    ...(triggerEvent !== undefined && shouldKeepTriggerCode(triggerEvent, luaEffect.code) ? { triggerCode: luaEffect.code } : {}),
     ...(event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEvent) ? { triggerSourceOnly: true } : {}),
     ...(event === "trigger" ? { optional: luaEffectTriggerIsOptional(luaEffect.typeFlags) } : {}),
     ...(event === "trigger" ? { triggerTiming: luaEffectTriggerTiming(luaEffect) } : {}),
@@ -561,6 +561,10 @@ function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecor
   if ((luaEffect.typeFlags & 0x10) !== 0 && (card.kind === "spell" || card.kind === "trap")) return ["hand", "spellTrapZone"];
   if (card.kind === "spell" || card.kind === "trap") return ["spellTrapZone"];
   return ["monsterZone"];
+}
+
+function shouldKeepTriggerCode(triggerEvent: DuelEventName, code: number | undefined): code is number {
+  return code !== undefined && (triggerEvent === "customEvent" || triggerEvent.startsWith("phase"));
 }
 
 function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEventName | undefined): boolean {
