@@ -124,7 +124,7 @@ describe("EDOPro parity battle replay fixtures", () => {
               { type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, count: 1 },
               { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, count: 1 },
             ],
-            absentLegalActions: [{ type: "passDamage", player: 0, windowKind: "battle" }],
+            absentLegalActions: [{ type: "passDamage", player: 0, windowId: 16, windowKind: "battle" }],
             legalActionGroups: [
               {
                 player: 0,
@@ -142,8 +142,9 @@ describe("EDOPro parity battle replay fixtures", () => {
               {
                 player: 0,
                 label: "Pass",
+                windowId: 16,
                 windowKind: "battle",
-                actions: [{ type: "passDamage", player: 0, windowKind: "battle" }],
+                actions: [{ type: "passDamage", player: 0, windowId: 16, windowKind: "battle" }],
               },
             ],
             logIncludes: ["Replay decision pending"],
