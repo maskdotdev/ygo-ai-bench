@@ -5,6 +5,44 @@ import type { DuelCardData, DuelPhase } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua phase-start events", () => {
+  it("queues Battle Start triggers with the EDOPro battle-start phase mask", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Battle Start Watcher", kind: "monster" }];
+    const session = createDuel({ seed: 201, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_PHASE_START+PHASE_BATTLE_START)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("battle start " .. Duel.GetCurrentPhase())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "phase-start-battle-trigger.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+
+    expect(session.state.pendingTriggers).toEqual([expect.objectContaining({ eventName: "phaseStartBattle", eventCode: 0x2008 })]);
+    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "phaseStartBattle", eventCode: 0x2008 }));
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("battle start 8");
+  });
+
   it("queues Lua phase-start triggers before regular phase triggers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Phase Start Watcher", kind: "monster" },

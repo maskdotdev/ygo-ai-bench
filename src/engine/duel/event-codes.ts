@@ -85,10 +85,12 @@ export function duelEventNameFromCode(code: number | undefined): DuelEventName |
 }
 
 export function phaseEventCode(phase: DuelPhase): number {
+  if (phase === "battle") return 0x1008;
   return 0x1000 | phaseMask(phase);
 }
 
 export function phaseStartEventCode(phase: DuelPhase): number {
+  if (phase === "battle") return 0x2008;
   return 0x2000 | phaseMask(phase);
 }
 
@@ -96,12 +98,14 @@ function phaseEventNameFromCode(code: number): DuelEventName | undefined {
   if (code === 0x1001) return "phaseDraw";
   if (code === 0x1002) return "phaseStandby";
   if (code === 0x1004) return "phaseMain1";
+  if (code === 0x1008) return "phaseBattle";
   if (code === 0x1080) return "phaseBattle";
   if (code === 0x1100) return "phaseMain2";
   if (code === 0x1200) return "phaseEnd";
   if (code === 0x2001) return "phaseStartDraw";
   if (code === 0x2002) return "phaseStartStandby";
   if (code === 0x2004) return "phaseStartMain1";
+  if (code === 0x2008) return "phaseStartBattle";
   if (code === 0x2080) return "phaseStartBattle";
   if (code === 0x2100) return "phaseStartMain2";
   if (code === 0x2200) return "phaseStartEnd";
