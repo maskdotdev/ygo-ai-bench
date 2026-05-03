@@ -142,8 +142,9 @@ describe("Lua chain event helpers", () => {
     expect(applyResponse(session, action!).ok).toBe(true);
 
     expect(host.messages).toContain("starter resolved");
-    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "chainEnded" }));
+    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "chainEnded", eventCode: 1026 }));
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainEnded"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1026 });
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }]);

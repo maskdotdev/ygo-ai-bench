@@ -97,6 +97,8 @@ describe("Lua chain-negated events", () => {
     expect(host.messages).toContain("negate result true");
     expect(host.messages).not.toContain("negated source resolved");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainNegated"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1024 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainNegated", eventCode: 1024 })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
