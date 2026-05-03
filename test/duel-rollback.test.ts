@@ -249,6 +249,41 @@ describe("duel rollback", () => {
     expect(session.state.pendingBattle?.battleDamageOverrides).toEqual({ 1: 600 });
   });
 
+  it("rolls back nested effect metadata arrays", () => {
+    const session = createDuel({ seed: 131, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "rollback-effect-metadata",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      targetRange: [1, 2],
+      hintTiming: [4, 8],
+      operation(ctx) {
+        ctx.log("metadata effect");
+      },
+    });
+    const rollback = captureDuelState(session.state);
+
+    session.state.effects[0]!.targetRange![0] = 9;
+    session.state.effects[0]!.hintTiming!.push(16);
+    restoreDuelState(session.state, rollback);
+
+    expect(session.state.effects[0]?.targetRange).toEqual([1, 2]);
+    expect(session.state.effects[0]?.hintTiming).toEqual([4, 8]);
+    rollback.effects[0]!.targetRange![0] = 12;
+    rollback.effects[0]!.hintTiming!.push(32);
+    expect(session.state.effects[0]?.targetRange).toEqual([1, 2]);
+    expect(session.state.effects[0]?.hintTiming).toEqual([4, 8]);
+  });
+
   it("rolls back failed trigger activation costs and keeps the trigger pending", () => {
     const session = createDuel({ seed: 83, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

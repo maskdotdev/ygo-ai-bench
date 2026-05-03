@@ -71,7 +71,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
       ...(card.assumedProperties ? { assumedProperties: { ...card.assumedProperties } } : {}),
       ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
     })),
-    effects: state.effects.map((effect) => ({ ...effect, range: [...effect.range], ...(effect.reset ? { reset: { ...effect.reset } } : {}) })),
+    effects: state.effects.map(copyEffect),
     chain: state.chain.map((link) => ({ ...link, ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}) })),
     chainLimits: state.chainLimits.map((limit) => ({ ...limit })),
     chainPasses: [...state.chainPasses],
@@ -120,7 +120,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.lastCoinResults = rollback.lastCoinResults;
   state.players = rollback.players;
   state.cards = rollback.cards;
-  state.effects = rollback.effects;
+  state.effects = rollback.effects.map(copyEffect);
   state.chain = rollback.chain;
   state.chainLimits = rollback.chainLimits;
   state.chainPasses = rollback.chainPasses;
@@ -162,6 +162,16 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
 function copyPrompt(prompt: DuelPromptState): DuelPromptState {
   if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options] };
   return { ...prompt };
+}
+
+function copyEffect(effect: DuelEffectDefinition): DuelEffectDefinition {
+  return {
+    ...effect,
+    range: [...effect.range],
+    ...(effect.reset ? { reset: { ...effect.reset } } : {}),
+    ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
+    ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
+  };
 }
 
 function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {
