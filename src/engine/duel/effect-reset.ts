@@ -17,11 +17,11 @@ export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInsta
     if (effect.sourceUid !== card.uid) return true;
     const flags = normalizeResetFlags(effect.reset?.flags ?? 0);
     if ((flags & resetEvent) === 0) return true;
-    if ((flags & resetLeave) !== 0 && card.previousLocation !== card.location) return removeResetEffect(state, effect);
-    if (matchesMovementReset(flags, card)) return removeResetEffect(state, effect);
-    if ((flags & destinationResetFlags) !== 0) return matchesDestinationReset(flags, card) ? removeResetEffect(state, effect) : true;
+    if ((flags & resetLeave) !== 0 && card.previousLocation !== card.location) return decrementOrRemoveResetEffect(state, effect);
+    if (matchesMovementReset(flags, card)) return decrementOrRemoveResetEffect(state, effect);
+    if ((flags & destinationResetFlags) !== 0) return matchesDestinationReset(flags, card) ? decrementOrRemoveResetEffect(state, effect) : true;
     const previousLocation = card.previousLocation ?? card.location;
-    return !effect.range.includes(previousLocation) || effect.range.includes(card.location) || removeResetEffect(state, effect);
+    return !effect.range.includes(previousLocation) || effect.range.includes(card.location) || decrementOrRemoveResetEffect(state, effect);
   });
 }
 
@@ -58,4 +58,13 @@ export function pruneResetEffectsAfterChain(state: DuelState): void {
 function removeResetEffect(state: DuelState, effect: DuelEffectDefinition): false {
   clearEffectCountUsage(state, effect);
   return false;
+}
+
+function decrementOrRemoveResetEffect(state: DuelState, effect: DuelEffectDefinition): boolean {
+  const reset = effect.reset;
+  if (reset?.count !== undefined && reset.count > 1) {
+    reset.count -= 1;
+    return true;
+  }
+  return removeResetEffect(state, effect);
 }

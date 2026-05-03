@@ -459,6 +459,45 @@ describe("Lua effect reset", () => {
 
     expect(session.state.effects).toHaveLength(0);
   });
+
+  it("counts Lua RESET_TOFIELD effects before removing them", () => {
+    const cards: DuelCardData[] = [
+      { code: "26110", name: "Lua Reset Count Field Source", kind: "monster" },
+      { code: "26210", name: "Lua Reset Count Field Filler", kind: "monster" },
+    ];
+    const { session } = setupLuaChainFixture({
+      seed: 137,
+      startingHandSize: 1,
+      cards,
+      decks: {
+        0: { main: ["26110"] },
+        1: { main: ["26210"] },
+      },
+      expectedEffects: 1,
+      scriptName: "lua-effect-reset-to-field-count.lua",
+      script: `
+      c26110={}
+      function c26110.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND + LOCATION_MZONE)
+        e:SetReset(RESET_EVENT + RESET_TOFIELD, 2)
+        c:RegisterEffect(e)
+      end
+      `,
+    });
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "26110");
+    expect(source).toBeDefined();
+
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    expect(session.state.effects).toEqual([expect.objectContaining({ id: expect.any(String), reset: { flags: 0x1000 + 0x1000000, count: 1 } })]);
+    expect(serializeDuel(session).state.effects[0]).toMatchObject({ reset: { flags: 0x1000 + 0x1000000, count: 1 } });
+
+    moveDuelCard(session.state, source!.uid, "hand", 0);
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+
+    expect(session.state.effects).toHaveLength(0);
+  });
 });
 
 function enterDamageStep(session: ReturnType<typeof setupLuaChainFixture>["session"], attackerUid: string): void {
