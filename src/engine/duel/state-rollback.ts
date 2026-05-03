@@ -60,17 +60,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     lastDiceResults: [...state.lastDiceResults],
     lastCoinResults: [...state.lastCoinResults],
     players: { 0: { ...state.players[0] }, 1: { ...state.players[1] } },
-    cards: state.cards.map((card) => ({
-      ...card,
-      data: { ...card.data },
-      overlayUids: [...card.overlayUids],
-      ...(card.counters ? { counters: { ...card.counters } } : {}),
-      ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
-      ...(card.cardTargetUids ? { cardTargetUids: [...card.cardTargetUids] } : {}),
-      ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
-      ...(card.assumedProperties ? { assumedProperties: { ...card.assumedProperties } } : {}),
-      ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
-    })),
+    cards: state.cards.map(copyCard),
     effects: state.effects.map(copyEffect),
     chain: state.chain.map(copyChainLink),
     chainLimits: state.chainLimits.map((limit) => ({ ...limit })),
@@ -119,7 +109,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.lastDiceResults = rollback.lastDiceResults;
   state.lastCoinResults = rollback.lastCoinResults;
   state.players = rollback.players;
-  state.cards = rollback.cards;
+  state.cards = rollback.cards.map(copyCard);
   state.effects = rollback.effects.map(copyEffect);
   state.chain = rollback.chain.map(copyChainLink);
   state.chainLimits = rollback.chainLimits;
@@ -162,6 +152,20 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
 function copyPrompt(prompt: DuelPromptState): DuelPromptState {
   if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options] };
   return { ...prompt };
+}
+
+function copyCard(card: DuelCardInstance): DuelCardInstance {
+  return {
+    ...card,
+    data: { ...card.data },
+    overlayUids: [...card.overlayUids],
+    ...(card.counters ? { counters: { ...card.counters } } : {}),
+    ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
+    ...(card.cardTargetUids ? { cardTargetUids: [...card.cardTargetUids] } : {}),
+    ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
+    ...(card.assumedProperties ? { assumedProperties: { ...card.assumedProperties } } : {}),
+    ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
+  };
 }
 
 function copyEffect(effect: DuelEffectDefinition): DuelEffectDefinition {

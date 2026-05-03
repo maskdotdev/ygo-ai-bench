@@ -313,6 +313,60 @@ describe("duel rollback", () => {
     expect(session.state.chain[0]?.targetUids).toEqual(["target-a", "target-b"]);
   });
 
+  it("rolls back nested card state without sharing rollback objects", () => {
+    const session = createDuel({ seed: 133, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === "100");
+    expect(card).toBeTruthy();
+    card!.overlayUids.push("overlay-a");
+    card!.counters = { 1: 2 };
+    card!.effectRelationIds = [101];
+    card!.cardTargetUids = ["target-a"];
+    card!.summonMaterialUids = ["material-a"];
+    card!.assumedProperties = { 10: 999 };
+    card!.uniqueOnField = { self: true, opponent: false, code: 100, locationMask: 0x04 };
+    const rollback = captureDuelState(session.state);
+
+    card!.overlayUids.push("overlay-b");
+    card!.counters[1] = 5;
+    card!.effectRelationIds!.push(102);
+    card!.cardTargetUids.push("target-b");
+    card!.summonMaterialUids.push("material-b");
+    card!.assumedProperties![10] = 888;
+    card!.uniqueOnField!.code = 200;
+    restoreDuelState(session.state, rollback);
+
+    const restored = session.state.cards.find((candidate) => candidate.uid === card!.uid);
+    expect(restored?.overlayUids).toEqual(["overlay-a"]);
+    expect(restored?.counters).toEqual({ 1: 2 });
+    expect(restored?.effectRelationIds).toEqual([101]);
+    expect(restored?.cardTargetUids).toEqual(["target-a"]);
+    expect(restored?.summonMaterialUids).toEqual(["material-a"]);
+    expect(restored?.assumedProperties).toEqual({ 10: 999 });
+    expect(restored?.uniqueOnField).toEqual({ self: true, opponent: false, code: 100, locationMask: 0x04 });
+
+    const rollbackCard = rollback.cards.find((candidate) => candidate.uid === card!.uid);
+    expect(rollbackCard).toBeTruthy();
+    rollbackCard!.overlayUids.push("overlay-c");
+    rollbackCard!.counters![1] = 7;
+    rollbackCard!.effectRelationIds!.push(103);
+    rollbackCard!.cardTargetUids!.push("target-c");
+    rollbackCard!.summonMaterialUids!.push("material-c");
+    rollbackCard!.assumedProperties![10] = 777;
+    rollbackCard!.uniqueOnField!.code = 300;
+    expect(restored?.overlayUids).toEqual(["overlay-a"]);
+    expect(restored?.counters).toEqual({ 1: 2 });
+    expect(restored?.effectRelationIds).toEqual([101]);
+    expect(restored?.cardTargetUids).toEqual(["target-a"]);
+    expect(restored?.summonMaterialUids).toEqual(["material-a"]);
+    expect(restored?.assumedProperties).toEqual({ 10: 999 });
+    expect(restored?.uniqueOnField).toEqual({ self: true, opponent: false, code: 100, locationMask: 0x04 });
+  });
+
   it("rolls back failed trigger activation costs and keeps the trigger pending", () => {
     const session = createDuel({ seed: 83, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
