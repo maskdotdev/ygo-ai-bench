@@ -181,7 +181,9 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
             logIncludes: ["First trigger resolved"],
           },
         }),
-        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-second-held-trigger" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-second-held-trigger" }), {
+          snapshotRestore: true,
+        }),
         makeScriptedStep(makeResponseSelector("passChain", 1)),
       ],
       expected: {
