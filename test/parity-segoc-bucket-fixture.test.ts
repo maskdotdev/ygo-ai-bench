@@ -109,6 +109,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-opponent-mandatory" }), {
+          snapshotRestore: true,
           after: {
             source: "edopro",
             note: "EDOPro presents turn-player optional triggers before opponent optional triggers after mandatory buckets are consumed",
