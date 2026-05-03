@@ -259,6 +259,7 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   assertStringListForWindow("attackCanceledUids", state.attackCanceledUids, expected.attackCanceledUids, fail);
   assertStringListForWindow("attackedTargetUids", state.attackedTargetUids, expected.attackedTargetUids, fail);
   assertBattlePairsForWindow(state.battlePairs, expected.battlePairs, fail);
+  if (expected.logCount !== undefined && state.log.length !== expected.logCount) fail(`Expected log count ${expected.logCount}, got ${state.log.length}`);
   assertPartialList("log", state.log, expected.log, fail);
 }
 

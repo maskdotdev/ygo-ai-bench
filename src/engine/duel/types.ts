@@ -653,6 +653,7 @@ interface ScriptedDuelWindowExpectationFields {
   attackCanceledUids?: string[];
   attackedTargetUids?: string[];
   battlePairs?: DuelBattlePair[];
+  logCount?: number;
   log?: Array<Partial<DuelLogEntry>>;
   logIncludes?: string[];
 }
