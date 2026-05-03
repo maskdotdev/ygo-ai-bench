@@ -17,15 +17,15 @@ const resolveBattleStepsBeforeFinalPass = [
   makeScriptedStep(makeResponseSelector("passDamage", 1)),
 ];
 
-describe("EDOPro parity battle extra attack fixtures", () => {
-  it("allows extra-attack monsters to attack directly after clearing the field", () => {
+describe("EDOPro parity battle extra monster attack lock fixtures", () => {
+  it("does not convert extra monster attacks into direct attacks", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Extra Attack Attacker", kind: "monster", attack: 3000, defense: 2500 },
-      { code: "200", name: "Only Extra Attack Target", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "100", name: "Extra Monster Attacker", kind: "monster", attack: 3000, defense: 2500 },
+      { code: "200", name: "Only Monster Attack Target", kind: "monster", attack: 1000, defense: 1000 },
     ];
     const fixture: ScriptedDuelFixture = {
-      name: "extra attack direct legal action fixture",
-      options: { seed: 91, startingHandSize: 1 },
+      name: "extra attack monster direct lock fixture",
+      options: { seed: 90, startingHandSize: 1 },
       decks: {
         0: { main: ["100"] },
         1: { main: ["200"] },
@@ -37,12 +37,12 @@ describe("EDOPro parity battle extra attack fixtures", () => {
         ],
         effects: [
           {
-            id: "fixture-extra-attack",
+            id: "fixture-extra-attack-monster",
             player: 0,
             code: "100",
             location: "monsterZone",
             event: "continuous",
-            effectCode: 194,
+            effectCode: 346,
             value: 1,
             range: ["monsterZone"],
           },
@@ -56,7 +56,7 @@ describe("EDOPro parity battle extra attack fixtures", () => {
           snapshotRestore: "after",
           after: {
             source: "edopro",
-            note: "EDOPro lets general EXTRA_ATTACK attackers use their remaining attack directly when the opponent controls no monsters",
+            note: "EDOPro monster-only extra attacks do not become direct attacks after all opposing monsters leave the field",
             phase: "battle",
             windowKind: "open",
             waitingFor: 0,
@@ -66,16 +66,15 @@ describe("EDOPro parity battle extra attack fixtures", () => {
             attacksDeclared: ["p0-deck-100-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100"], graveyard: ["200"] },
-            legalActionCounts: { 0: 3, 1: 0 },
-            legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
-            legalActionGroups: [
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+            absentLegalActionGroups: [
               {
                 player: 0,
                 label: "Attacks",
                 windowKind: "open",
-                count: 1,
-                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
+                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
               },
             ],
           },
@@ -83,7 +82,7 @@ describe("EDOPro parity battle extra attack fixtures", () => {
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state exposes the direct extra attack after the field is cleared",
+        note: "EDOPro final fixture state withholds direct attack actions from monster-only extra attackers",
         phase: "battle",
         windowKind: "open",
         waitingFor: 0,
@@ -93,16 +92,15 @@ describe("EDOPro parity battle extra attack fixtures", () => {
         attacksDeclared: ["p0-deck-100-0"],
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100"], graveyard: ["200"] },
-        legalActionCounts: { 0: 3, 1: 0 },
-        legalActionGroupCounts: { 0: 2, 1: 0 },
-        legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
-        legalActionGroups: [
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
+        absentLegalActionGroups: [
           {
             player: 0,
             label: "Attacks",
             windowKind: "open",
-            count: 1,
-            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open", count: 1 }],
+            actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowKind: "open" }],
           },
         ],
       },
