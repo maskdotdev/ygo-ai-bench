@@ -258,6 +258,65 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.host.messages).toEqual([]);
   });
 
+  it("preserves spent Lua shared count codes across snapshot restore", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e1 = Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_IGNITION)
+        e1:SetRange(LOCATION_HAND)
+        e1:SetCountLimit(1, 0x444)
+        e1:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("restored shared count first")
+        end)
+        c:RegisterEffect(e1)
+        local e2 = Effect.CreateEffect(c)
+        e2:SetType(EFFECT_TYPE_IGNITION)
+        e2:SetRange(LOCATION_HAND)
+        e2:SetCountLimit(1, 0x444)
+        e2:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("restored shared count second")
+        end)
+        c:RegisterEffect(e2)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 23, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "activateEffect").map((candidate) => candidate.effectId)).toEqual(["lua-1", "lua-2"]);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(session.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
+    expect(host.messages).toContain("restored shared count first");
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.effects.map((effect) => effect.id)).toEqual(["lua-1", "lua-2"]);
+    expect(restored.session.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
+
+    expect(getLuaRestoreLegalActions(restored, 0).filter((candidate) => candidate.type === "activateEffect").map((candidate) => candidate.effectId)).toEqual([]);
+    expect(restored.host.messages).toEqual([]);
+  });
+
   it("hides chain responses when a pending Lua chain link cannot be restored", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
     tempRoots.push(root);
