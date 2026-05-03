@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua special summon procedures", () => {
   it("registers Lua Malefic summon procedures", () => {
@@ -65,9 +66,10 @@ describe("Lua special summon procedures", () => {
     });
     startDuel(session);
 
-    const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
+    const sourceScript = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
       c100={}
       function c100.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -88,6 +90,10 @@ describe("Lua special summon procedures", () => {
         end)
         c:RegisterEffect(e)
       end
+      `;
+        }
+        if (name === "c200.lua") {
+          return `
       c200={}
       function c200.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -100,16 +106,39 @@ describe("Lua special summon procedures", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "special-summon-procedure.lua",
-    );
+      `;
+        }
+        return undefined;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    const sourceLoad = host.loadCardScript(100, sourceScript);
+    const blockedLoad = host.loadCardScript(200, sourceScript);
 
-    expect(result.ok, result.error).toBe(true);
+    expect(sourceLoad.ok, sourceLoad.error).toBe(true);
+    expect(blockedLoad.ok, blockedLoad.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("100"));
     const blocked = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("200"));
     expect(action).toBeDefined();
     expect(blocked).toBeUndefined();
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c200.lua"]);
+    expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const restoredAction = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("100"));
+    expect(restoredAction).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    expect(restored.host.messages).toContain("procedure value 100");
+    expect(restored.host.messages).toContain("blocked procedure value 200");
+    expect(restored.host.messages).toContain("procedure operation cost 1");
+    expect(restored.session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    expect(restored.session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+    expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
+
     expect(applyResponse(session, action!).ok).toBe(true);
 
     expect(host.messages).toContain("procedure value 100");
