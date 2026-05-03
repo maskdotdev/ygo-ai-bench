@@ -96,6 +96,49 @@ describe("EDOPro compatibility harness scaffolding", () => {
     ]);
   });
 
+  it("matches concrete special summon procedure responses by effect id", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture({
+      name: "special summon procedure effect-id response fixture",
+      options: { seed: 5, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "available-procedure",
+            player: 0,
+            code: "100",
+            event: "summonProcedure",
+            range: ["hand"],
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep({
+          type: "specialSummonProcedure",
+          player: 0,
+          uid: "p0-deck-100-0",
+          effectId: "missing-procedure",
+          label: "Special Summon",
+        }),
+      ],
+      expected: { source: "edopro" },
+    }, {
+      cardReader: createCardReader(cards),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "special summon procedure effect-id response fixture",
+        message: "No legal response matched type=specialSummonProcedure player=0 uid=p0-deck-100-0 effectId=missing-procedure",
+      },
+    ]);
+  });
+
   it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
