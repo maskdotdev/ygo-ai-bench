@@ -4,15 +4,15 @@ import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 import { passBattleGroup } from "./parity-legal-action-group-helpers.js";
 
-describe("EDOPro parity battle damage reflection fixtures", () => {
-  it("applies battle damage reflection effects from battling cards", () => {
+describe("EDOPro parity also battle damage fixtures", () => {
+  it("applies also-battle-damage effects when the source controller takes battle damage", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Reflecting Attacker", kind: "monster", attack: 1000, defense: 1200 },
-      { code: "200", name: "Reflecting Defender", kind: "monster", attack: 500, defense: 1800 },
+      { code: "100", name: "Also Damage Attacker", kind: "monster", attack: 1000, defense: 1200 },
+      { code: "200", name: "Also Damage Defender", kind: "monster", attack: 500, defense: 1800 },
     ];
     const fixture: ScriptedDuelFixture = {
-      name: "battle damage reflection fixture",
-      options: { seed: 85, startingHandSize: 1 },
+      name: "also battle damage fixture",
+      options: { seed: 87, startingHandSize: 1 },
       decks: {
         0: { main: ["100"] },
         1: { main: ["200"] },
@@ -24,12 +24,12 @@ describe("EDOPro parity battle damage reflection fixtures", () => {
         ],
         effects: [
           {
-            id: "fixture-reflect-attacker-battle-damage",
+            id: "fixture-also-battle-damage",
             player: 0,
             code: "100",
             location: "monsterZone",
             event: "continuous",
-            effectCode: 202,
+            effectCode: 207,
             range: ["monsterZone"],
           },
         ],
@@ -39,7 +39,7 @@ describe("EDOPro parity battle damage reflection fixtures", () => {
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
           after: {
             source: "edopro",
-            note: "EDOPro opens the attack-response window before battle damage reflection is applied",
+            note: "EDOPro opens the attack-response window before also-battle-damage reflection is applied",
             waitingFor: 1,
             windowKind: "battle",
             pendingBattle: true,
@@ -65,13 +65,13 @@ describe("EDOPro parity battle damage reflection fixtures", () => {
           snapshotRestore: "after",
           after: {
             source: "edopro",
-            note: "EDOPro reflects battle damage from the attacker's controller to the opponent when the battling attacker has REFLECT_BATTLE_DAMAGE",
+            note: "EDOPro applies ALSO_BATTLE_DAMAGE by making the opponent also take battle damage when the source controller is damaged",
             waitingFor: 0,
             pendingBattle: false,
             currentAttack: false,
             battleWindow: null,
-            lifePoints: { 0: 8000, 1: 7200 },
-            battleDamage: { 0: 0, 1: 800 },
+            lifePoints: { 0: 7200, 1: 7200 },
+            battleDamage: { 0: 800, 1: 800 },
             attacksDeclared: ["p0-deck-100-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100", "200"] },
@@ -81,14 +81,14 @@ describe("EDOPro parity battle damage reflection fixtures", () => {
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state preserves reflected battle damage without battle destruction",
+        note: "EDOPro final fixture state preserves also-battle-damage reflection to the opponent",
         phase: "battle",
         waitingFor: 0,
         pendingBattle: false,
         currentAttack: false,
         battleWindow: null,
-        lifePoints: { 0: 8000, 1: 7200 },
-        battleDamage: { 0: 0, 1: 800 },
+        lifePoints: { 0: 7200, 1: 7200 },
+        battleDamage: { 0: 800, 1: 800 },
         attacksDeclared: ["p0-deck-100-0"],
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100", "200"] },
