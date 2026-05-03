@@ -53,8 +53,10 @@ describe("parity fixture metadata", () => {
 
     expect(missingSourcesInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
     expect(invalidSourcesInLines("fixture.ts", [...lines.slice(0, 3), '  source: "local",', ...lines.slice(3)])).toEqual(["fixture.ts:2"]);
+    expect(invalidSourcesInLines("fixture.ts", [...lines.slice(0, 3), "  source: 'local',", ...lines.slice(3)])).toEqual(["fixture.ts:2"]);
     expect(missingBacklogNotesInLines("fixture.ts", lines)).toEqual(["fixture.ts:7"]);
     expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 7), '  note: "temporary local behavior",', ...lines.slice(7)])).toEqual(["fixture.ts:7"]);
+    expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 6), "  source: 'parity-backlog',", '  note: "temporary local behavior",', ...lines.slice(8)])).toEqual(["fixture.ts:7"]);
     expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
   });
@@ -109,7 +111,7 @@ function invalidSourcesInLines(file: string, lines: string[]): string[] {
   lines.forEach((line, index) => {
     if (!/^\s*(before|after|expected): \{/.test(line)) return;
     const sourceLine = sourceLineInBlock(expectationBlock(lines, index));
-    if (sourceLine !== undefined && !/source:\s*"(edopro|parity-backlog)"/.test(sourceLine)) invalidSources.push(`${file}:${index + 1}`);
+    if (sourceLine !== undefined && !/source:\s*["'](edopro|parity-backlog)["']/.test(sourceLine)) invalidSources.push(`${file}:${index + 1}`);
   });
   return invalidSources;
 }
@@ -117,7 +119,7 @@ function invalidSourcesInLines(file: string, lines: string[]): string[] {
 function missingBacklogNotesInLines(file: string, lines: string[]): string[] {
   const missingNotes: string[] = [];
   lines.forEach((line, index) => {
-    if (!line.includes('source: "parity-backlog"')) return;
+    if (!hasParityBacklogSource(line)) return;
     if (!expectationBlock(lines, index).includes("note:")) missingNotes.push(`${file}:${index + 1}`);
   });
   return missingNotes;
@@ -126,7 +128,7 @@ function missingBacklogNotesInLines(file: string, lines: string[]): string[] {
 function backlogNotesWithoutEdoproInLines(file: string, lines: string[]): string[] {
   const missingEdopro: string[] = [];
   lines.forEach((line, index) => {
-    if (!line.includes('source: "parity-backlog"')) return;
+    if (!hasParityBacklogSource(line)) return;
     const noteLine = expectationBlock(lines, index).split("\n").find((blockLine) => blockLine.includes("note:"));
     if (noteLine !== undefined && !/edopro/i.test(noteLine)) missingEdopro.push(`${file}:${index + 1}`);
   });
@@ -202,4 +204,8 @@ function occurrenceCount(text: string, search: string): number {
 
 function sourceLineInBlock(block: string): string | undefined {
   return block.split("\n").find((line) => /\bsource:/.test(line));
+}
+
+function hasParityBacklogSource(line: string): boolean {
+  return /source:\s*["']parity-backlog["']/.test(line);
 }
