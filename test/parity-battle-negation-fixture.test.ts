@@ -40,10 +40,13 @@ describe("EDOPro parity battle negation fixtures", () => {
             source: "edopro",
             note: "EDOPro opens the opponent's attack-response window after a direct attack declaration",
             waitingFor: 1,
+            windowKind: "battle",
             pendingBattle: true,
             currentAttack: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
             attacksDeclared: ["p0-deck-100-0"],
+            legalActionCounts: { 0: 0, 1: 1 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
             legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
             legalActionGroups: [
               {
@@ -61,8 +64,11 @@ describe("EDOPro parity battle negation fixtures", () => {
             source: "edopro",
             note: "EDOPro passes attack-response priority to the turn player, who may activate attack-negating fast effects",
             waitingFor: 0,
+            windowKind: "battle",
             pendingBattle: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-attack-negator", count: 1 }],
             legalActionGroups: [
               {
@@ -167,9 +173,12 @@ describe("EDOPro parity battle negation fixtures", () => {
             source: "edopro",
             note: "EDOPro gives the non-turn player first chance to respond to an attack declaration",
             waitingFor: 1,
+            windowKind: "battle",
             pendingBattle: true,
             currentAttack: true,
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
             legalActions: [
               { type: "activateEffect", player: 1, effectId: "fixture-opponent-attack-negator", count: 1 },
               { type: "passAttack", player: 1, windowKind: "battle", count: 1 },
