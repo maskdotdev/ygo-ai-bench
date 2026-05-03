@@ -250,6 +250,38 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(badExpiry, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainLimits.0.expiresAtChainLength must be a number");
   });
 
+  it("rejects malformed phase and activity history snapshots before restore", () => {
+    const session = createDuel({ seed: 155, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badSkip = serializeDuel(session);
+    const badActivity = serializeDuel(session);
+    badSkip.state.skippedPhases = [{ player: 0, phase: "combat" as "battle", remaining: 1 }];
+    badActivity.state.activityHistory = [{ player: 0, activity: "attack" as unknown as number }];
+
+    expect(() => restoreDuel(badSkip, createCardReader(cards))).toThrow("Malformed duel snapshot: state.skippedPhases.0.phase must be a duel phase");
+    expect(() => restoreDuel(badActivity, createCardReader(cards))).toThrow("Malformed duel snapshot: state.activityHistory.0.activity must be a number");
+  });
+
+  it("rejects malformed flag and log snapshots before restore", () => {
+    const session = createDuel({ seed: 156, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badFlag = serializeDuel(session);
+    const badLog = serializeDuel(session);
+    badFlag.state.flagEffects = [{ ownerType: "duel" as "player", ownerId: "0", code: 1, reset: 0, property: 0, value: 1, turn: 1 }];
+    badLog.state.log = [{ step: 1, action: "bad", player: 2 as 0, detail: "bad player" }];
+
+    expect(() => restoreDuel(badFlag, createCardReader(cards))).toThrow("Malformed duel snapshot: state.flagEffects.0.ownerType must be a flag owner type");
+    expect(() => restoreDuel(badLog, createCardReader(cards))).toThrow("Malformed duel snapshot: state.log.0.player must be a player id");
+  });
+
   it("rejects malformed optional battle window snapshots before restore", () => {
     const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
