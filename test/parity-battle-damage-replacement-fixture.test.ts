@@ -64,7 +64,7 @@ describe("EDOPro parity battle damage replacement fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro applies CHANGE_BATTLE_DAMAGE replacement before LP damage is dealt",
