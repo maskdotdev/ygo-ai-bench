@@ -317,6 +317,47 @@ describe("Lua flag state helpers", () => {
     expect(session.state.flagEffects).toHaveLength(0);
   });
 
+  it("expires Lua flag effects at the Battle Start reset boundary", () => {
+    const cards: DuelCardData[] = [{ code: "106", name: "Flag Battle Start Source", kind: "monster" }];
+    const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["106"] },
+      1: { main: ["106"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c106={}
+      function c106.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,c)
+          Debug.Message("duel flag battle start " .. Duel.RegisterFlagEffect(0, 925, RESET_PHASE + PHASE_BATTLE_START, 0, 1))
+          Debug.Message("card flag battle start " .. c:RegisterFlagEffect(926, RESET_PHASE + PHASE_BATTLE_START, 0, 1))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flag-battle-start-reset.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([925, 926]);
+
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+
+    expect(session.state.flagEffects).toHaveLength(0);
+  });
+
   it("replaces non-repeat flag effects and exposes flag labels", () => {
     const cards: DuelCardData[] = [{ code: "103", name: "Flag Repeat Source", kind: "monster" }];
     const session = createDuel({ seed: 139, startingHandSize: 1, cardReader: createCardReader(cards) });
