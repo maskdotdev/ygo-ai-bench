@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -232,6 +232,18 @@ describe("Lua battle timing helpers", () => {
     expect(restored.session.state.battleDamage[1]).toBe(700);
     expect(restored.session.state.pendingBattle?.battleDamageOverrides).toEqual({ 1: 700 });
     expect(restored.host.messages).toEqual(["restored damage before 0", "restored damage changed 700", "restored damage after 700"]);
+    const damagePassPlayer = restored.session.state.waitingFor;
+    if (damagePassPlayer === undefined) throw new Error("Expected restored damage window to wait for a player");
+    const staleDamagePass = getLuaRestoreLegalActions(restored, damagePassPlayer).find((candidate) => candidate.type === "passDamage");
+    expect(staleDamagePass).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, staleDamagePass!).ok).toBe(true);
+    const replay = applyLuaRestoreResponse(restored, staleDamagePass!);
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    const currentPlayer = restored.session.state.waitingFor;
+    if (currentPlayer === undefined) throw new Error("Expected restored damage window replay to keep waiting for a player");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(restored.session, currentPlayer));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, currentPlayer));
   });
 
   it("queues Lua battle timing triggers before and after damage calculation", () => {
