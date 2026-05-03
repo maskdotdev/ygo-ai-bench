@@ -3,12 +3,12 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 
-describe("EDOPro parity phase lock fixtures", () => {
-  it("skips Battle Phase legal actions for players affected by skip-battle effects", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "Battle Phase Skip Source", kind: "monster", attack: 1000, defense: 1000 }];
+describe("EDOPro parity Battle Phase entry lock fixtures", () => {
+  it("skips Battle Phase legal actions for players affected by cannot-enter-battle effects", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Battle Phase Lock Source", kind: "monster", attack: 1000, defense: 1000 }];
     const fixture: ScriptedDuelFixture = {
-      name: "skip battle phase legal action fixture",
-      options: { seed: 81, startingHandSize: 1 },
+      name: "cannot enter battle phase legal action fixture",
+      options: { seed: 84, startingHandSize: 1 },
       decks: {
         0: { main: ["100"] },
         1: { main: [] },
@@ -17,12 +17,12 @@ describe("EDOPro parity phase lock fixtures", () => {
         moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
         effects: [
           {
-            id: "fixture-skip-bp",
+            id: "fixture-cannot-bp",
             player: 0,
             code: "100",
             location: "monsterZone",
             event: "continuous",
-            effectCode: 183,
+            effectCode: 185,
             range: ["monsterZone"],
           },
         ],
@@ -32,7 +32,7 @@ describe("EDOPro parity phase lock fixtures", () => {
           snapshotRestore: "before",
           before: {
             source: "edopro",
-            note: "EDOPro omits Battle Phase and exposes Main Phase 2 when SKIP_BP applies to the turn player",
+            note: "EDOPro omits Battle Phase and exposes Main Phase 2 when CANNOT_BP prevents entering Battle Phase",
             phase: "main1",
             windowKind: "open",
             waitingFor: 0,
@@ -60,7 +60,7 @@ describe("EDOPro parity phase lock fixtures", () => {
           },
           after: {
             source: "edopro",
-            note: "EDOPro accepts Main Phase 2 as the next available phase after SKIP_BP",
+            note: "EDOPro accepts the next available phase after Battle Phase is blocked",
             phase: "main2",
             waitingFor: 0,
             pendingBattle: false,
@@ -70,7 +70,7 @@ describe("EDOPro parity phase lock fixtures", () => {
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state is Main Phase 2 after SKIP_BP skips Battle Phase entry",
+        note: "EDOPro final fixture state is Main Phase 2 after CANNOT_BP skips Battle Phase entry",
         phase: "main2",
         waitingFor: 0,
         pendingBattle: false,
