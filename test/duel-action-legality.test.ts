@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyResponse,
   createDuel,
   getLegalActions as getDuelLegalActions,
   loadDecks,
@@ -23,5 +24,21 @@ describe("duel action legality", () => {
     for (const card of spells.slice(0, 5)) moveDuelCard(session.state, card.uid, "spellTrapZone", 0);
 
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "setSpellTrap")).toBe(false);
+  });
+
+  it("rejects malformed responses missing required action fields at the legality boundary", () => {
+    const session = createDuel({ seed: 2, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const result = applyResponse(session, { type: "normalSummon", player: 0, label: "Malformed Normal Summon" } as never);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("Response is not currently legal");
+    expect(session.state.actionWindowId).toBe(0);
+    expect(session.state.cards.find((card) => card.code === "100")?.location).toBe("hand");
   });
 });

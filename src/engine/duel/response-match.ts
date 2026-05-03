@@ -5,7 +5,7 @@ export function sameAction(a: DuelAction, b: DuelResponse): boolean {
   if (hasPartialWindowStamp(b)) return false;
   if (hasWindowId(a) && hasWindowId(b) && a.windowId !== b.windowId) return false;
   if (hasWindowKind(a) && hasWindowKind(b) && a.windowKind !== b.windowKind) return false;
-  if ("uid" in a && "uid" in b && a.uid !== b.uid) return false;
+  if ("uid" in a && (!("uid" in b) || a.uid !== b.uid)) return false;
   if (a.type === "activateEffect" && b.type === "activateEffect" && a.effectId !== b.effectId) return false;
   if (a.type === "specialSummonProcedure" && b.type === "specialSummonProcedure" && a.effectId !== b.effectId) return false;
   if (a.type === "activateTrigger" && b.type === "activateTrigger" && a.triggerId !== b.triggerId) return false;
