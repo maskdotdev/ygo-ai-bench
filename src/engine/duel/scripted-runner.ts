@@ -5,7 +5,7 @@ import type { DuelAction, DuelResponse, DuelSession, PlayerId, ScriptedDuelRunRe
 
 export interface ScriptedDuelHandlers {
   getLegalActions(session: DuelSession, player: PlayerId): DuelAction[];
-  applyResponse(session: DuelSession, response: DuelResponse): { ok: boolean; error?: string };
+  applyResponse(session: DuelSession, response: unknown): { ok: boolean; error?: string };
 }
 
 export function runScriptedDuelResponses(

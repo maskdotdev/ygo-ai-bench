@@ -40,20 +40,31 @@ export interface DuelResponseHandlers {
   endTurn(state: DuelState, player: PlayerId): void;
 }
 
-export function applyDuelResponse(session: DuelSession, response: DuelResponse, handlers: DuelResponseHandlers): ApplyDuelResponseResult {
-  const legal = handlers.getLegalActions(session, response.player);
-  const isLegal = legal.some((action) => sameAction(action, response));
-  if (!isLegal) return result(session, handlers, false, "Response is not currently legal");
+export function applyDuelResponse(session: DuelSession, response: unknown, handlers: DuelResponseHandlers): ApplyDuelResponseResult {
+  const player = responsePlayer(response);
+  if (player === undefined) return result(session, handlers, false, "Response is not currently legal");
+  const legal = handlers.getLegalActions(session, player);
+  const canonicalResponse = legal.find((action) => sameAction(action, response));
+  if (!canonicalResponse) return result(session, handlers, false, "Response is not currently legal");
 
   const rollback = captureDuelState(session.state);
   try {
-    dispatchDuelResponse(session, response, handlers);
+    dispatchDuelResponse(session, canonicalResponse, handlers);
     session.state.actionWindowId += 1;
     return result(session, handlers, true);
   } catch (error) {
     restoreDuelState(session.state, rollback);
     return result(session, handlers, false, error instanceof Error ? error.message : "Unknown duel engine error");
   }
+}
+
+function responsePlayer(response: unknown): PlayerId | undefined {
+  if (!isRecord(response)) return undefined;
+  return response.player === 0 || response.player === 1 ? response.player : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function dispatchDuelResponse(session: DuelSession, response: DuelResponse, handlers: DuelResponseHandlers): void {

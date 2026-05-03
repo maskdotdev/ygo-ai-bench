@@ -42,6 +42,38 @@ describe("duel action legality", () => {
     expect(session.state.cards.find((card) => card.code === "100")?.location).toBe("hand");
   });
 
+  it("rejects malformed duel responses without throwing", () => {
+    const session = createDuel({ seed: 2, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const result = applyResponse(session, null);
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("Response is not currently legal");
+    expect(session.state.actionWindowId).toBe(0);
+    expect(session.state.cards.find((card) => card.code === "100")?.location).toBe("hand");
+  });
+
+  it("dispatches the canonical legal response payload", () => {
+    const session = createDuel({ seed: 2, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon");
+    expect(summon).toBeDefined();
+
+    const result = applyResponse(session, { type: "normalSummon", player: 0, uid: summon!.uid, label: "Forged label" });
+
+    expect(result.ok).toBe(true);
+    expect(session.state.cards.find((card) => card.uid === summon!.uid)?.location).toBe("monsterZone");
+  });
+
   it("rejects malformed material responses at the legality boundary", () => {
     const session = createDuel({ seed: 3, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

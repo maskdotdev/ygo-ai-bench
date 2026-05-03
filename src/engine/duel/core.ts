@@ -337,7 +337,7 @@ export function getGroupedDuelLegalActions(session: DuelSession, player: PlayerI
   return groupDuelLegalActions(getLegalActions(session, player));
 }
 
-export function applyResponse(session: DuelSession, response: DuelResponse): ApplyDuelResponseResult {
+export function applyResponse(session: DuelSession, response: unknown): ApplyDuelResponseResult {
   return applyDuelResponse(session, response, responseHandlers);
 }
 
