@@ -73,6 +73,23 @@ describe("duel legal action groups", () => {
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   });
 
+  it("returns grouped legal actions after rejecting an illegal response", () => {
+    const session = createDuel({ seed: 97, startingHandSize: 2 });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["300", "400"] },
+    });
+    startDuel(session);
+
+    const result = applyResponse(session, { type: "endTurn", player: 1, label: "End Turn" });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("Response is not currently legal");
+    expect(result.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  });
+
   it("selects legal actions with the same selectors used by parity fixtures", () => {
     const session = createDuel({ seed: 94, startingHandSize: 2 });
     loadDecks(session, {
