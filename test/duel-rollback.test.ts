@@ -367,6 +367,123 @@ describe("duel rollback", () => {
     expect(restored?.uniqueOnField).toEqual({ self: true, opponent: false, code: 100, locationMask: 0x04 });
   });
 
+  it("rolls back flat state collections without sharing rollback objects", () => {
+    const session = createDuel({ seed: 134, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.lastDiceResults = [2, 5];
+    session.state.lastCoinResults = [1];
+    session.state.players[0].lifePoints = 7000;
+    session.state.chainPasses = [0];
+    session.state.pendingTriggers = [
+      { id: "trigger-a", player: 0, sourceUid: "source", effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional" },
+    ];
+    session.state.eventHistory = [{ eventName: "customEvent", eventCode: 10 }];
+    session.state.usedCountKeys = ["count-a"];
+    session.state.flagEffects = [{ ownerType: "player", ownerId: "0", code: 1, reset: 2, property: 3, value: 4, turn: 5 }];
+    session.state.activityCounts[0].attack = 1;
+    session.state.activityHistory = [{ player: 0, activity: 7, cardUid: "card-a" }];
+    session.state.battleDamage = { 0: 100, 1: 200 };
+    session.state.attacksDeclared = ["attack-a"];
+    session.state.attackCanceledUids = ["cancel-a"];
+    session.state.attackedTargetUids = ["target-a"];
+    session.state.battlePairs = [{ attackerUid: "attacker-a", targetUid: "target-a" }];
+    session.state.attackPasses = [0];
+    session.state.damagePasses = [1];
+    session.state.positionsChanged = ["position-a"];
+    session.state.currentAttack = { attackerUid: "attacker-a", targetUid: "target-a" };
+    session.state.log = [{ step: 1, action: "snapshot", player: 0, detail: "snapshot" }];
+    const rollback = captureDuelState(session.state);
+
+    session.state.lastDiceResults.push(6);
+    session.state.lastCoinResults.push(0);
+    session.state.players[0].lifePoints = 5000;
+    session.state.chainPasses.push(1);
+    session.state.pendingTriggers[0]!.effectId = "effect-mutated";
+    session.state.eventHistory[0]!.eventCode = 20;
+    session.state.usedCountKeys.push("count-b");
+    session.state.flagEffects[0]!.value = 8;
+    session.state.activityCounts[0].attack = 3;
+    session.state.activityHistory[0]!.activity = 9;
+    session.state.battleDamage[0] = 300;
+    session.state.attacksDeclared.push("attack-b");
+    session.state.attackCanceledUids.push("cancel-b");
+    session.state.attackedTargetUids.push("target-b");
+    session.state.battlePairs[0]!.targetUid = "target-b";
+    session.state.attackPasses.push(1);
+    session.state.damagePasses.push(0);
+    session.state.positionsChanged.push("position-b");
+    session.state.currentAttack.targetUid = "target-b";
+    session.state.log[0]!.action = "mutated";
+    restoreDuelState(session.state, rollback);
+
+    expect(session.state.lastDiceResults).toEqual([2, 5]);
+    expect(session.state.lastCoinResults).toEqual([1]);
+    expect(session.state.players[0].lifePoints).toBe(7000);
+    expect(session.state.chainPasses).toEqual([0]);
+    expect(session.state.pendingTriggers[0]?.effectId).toBe("effect");
+    expect(session.state.eventHistory[0]?.eventCode).toBe(10);
+    expect(session.state.usedCountKeys).toEqual(["count-a"]);
+    expect(session.state.flagEffects[0]?.value).toBe(4);
+    expect(session.state.activityCounts[0].attack).toBe(1);
+    expect(session.state.activityHistory[0]?.activity).toBe(7);
+    expect(session.state.battleDamage).toEqual({ 0: 100, 1: 200 });
+    expect(session.state.attacksDeclared).toEqual(["attack-a"]);
+    expect(session.state.attackCanceledUids).toEqual(["cancel-a"]);
+    expect(session.state.attackedTargetUids).toEqual(["target-a"]);
+    expect(session.state.battlePairs).toEqual([{ attackerUid: "attacker-a", targetUid: "target-a" }]);
+    expect(session.state.attackPasses).toEqual([0]);
+    expect(session.state.damagePasses).toEqual([1]);
+    expect(session.state.positionsChanged).toEqual(["position-a"]);
+    expect(session.state.currentAttack).toEqual({ attackerUid: "attacker-a", targetUid: "target-a" });
+    expect(session.state.log[0]?.action).toBe("snapshot");
+
+    rollback.lastDiceResults.push(4);
+    rollback.lastCoinResults.push(0);
+    rollback.players[0].lifePoints = 6000;
+    rollback.chainPasses.push(1);
+    rollback.pendingTriggers[0]!.effectId = "rollback-mutated";
+    rollback.eventHistory[0]!.eventCode = 30;
+    rollback.usedCountKeys.push("count-c");
+    rollback.flagEffects[0]!.value = 10;
+    rollback.activityCounts[0].attack = 11;
+    rollback.activityHistory[0]!.activity = 12;
+    rollback.battleDamage[0] = 400;
+    rollback.attacksDeclared.push("attack-c");
+    rollback.attackCanceledUids.push("cancel-c");
+    rollback.attackedTargetUids.push("target-c");
+    rollback.battlePairs[0]!.targetUid = "target-c";
+    rollback.attackPasses.push(1);
+    rollback.damagePasses.push(0);
+    rollback.positionsChanged.push("position-c");
+    rollback.currentAttack!.targetUid = "target-c";
+    rollback.log[0]!.action = "rollback-mutated";
+
+    expect(session.state.lastDiceResults).toEqual([2, 5]);
+    expect(session.state.lastCoinResults).toEqual([1]);
+    expect(session.state.players[0].lifePoints).toBe(7000);
+    expect(session.state.chainPasses).toEqual([0]);
+    expect(session.state.pendingTriggers[0]?.effectId).toBe("effect");
+    expect(session.state.eventHistory[0]?.eventCode).toBe(10);
+    expect(session.state.usedCountKeys).toEqual(["count-a"]);
+    expect(session.state.flagEffects[0]?.value).toBe(4);
+    expect(session.state.activityCounts[0].attack).toBe(1);
+    expect(session.state.activityHistory[0]?.activity).toBe(7);
+    expect(session.state.battleDamage).toEqual({ 0: 100, 1: 200 });
+    expect(session.state.attacksDeclared).toEqual(["attack-a"]);
+    expect(session.state.attackCanceledUids).toEqual(["cancel-a"]);
+    expect(session.state.attackedTargetUids).toEqual(["target-a"]);
+    expect(session.state.battlePairs).toEqual([{ attackerUid: "attacker-a", targetUid: "target-a" }]);
+    expect(session.state.attackPasses).toEqual([0]);
+    expect(session.state.damagePasses).toEqual([1]);
+    expect(session.state.positionsChanged).toEqual(["position-a"]);
+    expect(session.state.currentAttack).toEqual({ attackerUid: "attacker-a", targetUid: "target-a" });
+    expect(session.state.log[0]?.action).toBe("snapshot");
+  });
+
   it("rolls back failed trigger activation costs and keeps the trigger pending", () => {
     const session = createDuel({ seed: 83, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
