@@ -120,7 +120,7 @@ describe("EDOPro parity battle target-count replay fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("replayAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro exposes each current legal target as a replay attack choice",
