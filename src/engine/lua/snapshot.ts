@@ -3,7 +3,7 @@ import { applyResponse, getGroupedDuelLegalActions, getLegalActions, queryPublic
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
-import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelResponse, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
+import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
 
 export interface LuaSnapshotRestoreResult {
   session: DuelSession;
@@ -28,7 +28,7 @@ export function restoreDuelWithLuaScripts(
   const registryKeys = luaRegistryKeys(snapshot);
   const loadedScripts = [...luaRegistryCardCodes(registryKeys)].map((code) => host.loadCardScript(code, source));
   const registeredEffects = loadedScripts.every((result) => result.ok) ? host.registerInitialEffects() : 0;
-  const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys);
+  const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys, snapshot.state.effects);
   prunePendingTriggersWithoutEffects(session.state);
   const missingRegistryKeys = [...registryKeys].filter((key) => !restoredRegistryKeys.includes(key));
   const chainLimitRegistryKeys = luaChainLimitRegistryKeys(snapshot);
@@ -62,10 +62,18 @@ export function applyLuaRestoreResponse(restored: LuaSnapshotRestoreResult, resp
   return applyResponse(restored.session, response);
 }
 
-function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string>): string[] {
+function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string>, snapshotEffects: SerializedDuelEffect[]): string[] {
   if (registryKeys.size === 0) return [];
-  session.state.effects = session.state.effects.filter((effect) => effect.registryKey === undefined || registryKeys.has(effect.registryKey));
+  const snapshotEffectsByKey = new Map(snapshotEffects.map((effect) => [effect.registryKey, effect]).filter((entry): entry is [string, SerializedDuelEffect] => Boolean(entry[0])));
+  session.state.effects = session.state.effects
+    .filter((effect) => effect.registryKey === undefined || registryKeys.has(effect.registryKey))
+    .map((effect) => mergeRestoredLuaEffectMetadata(effect, snapshotEffectsByKey.get(effect.registryKey ?? "")));
   return session.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua:")));
+}
+
+function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEffect: SerializedDuelEffect | undefined): DuelEffectDefinition {
+  if (snapshotEffect?.reset === undefined) return effect;
+  return { ...effect, reset: { ...snapshotEffect.reset } };
 }
 
 function luaRegistryKeys(snapshot: SerializedDuel): Set<string> {

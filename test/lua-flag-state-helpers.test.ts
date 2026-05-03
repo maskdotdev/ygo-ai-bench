@@ -466,16 +466,22 @@ describe("Lua flag state helpers", () => {
       expect.objectContaining({ code: 939, resetCount: 1, value: 82 }),
     ]);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(session.state.turnPlayer).toBe(0);
-    expect(session.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([
       expect.objectContaining({ code: 938, resetCount: 1, value: 72 }),
       expect.objectContaining({ code: 939, resetCount: 1, value: 82 }),
     ]);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(session.state.turnPlayer).toBe(1);
-    expect(session.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([]);
+    expect(applyResponse(restored, getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    expect(restored.state.turnPlayer).toBe(0);
+    expect(restored.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([
+      expect.objectContaining({ code: 938, resetCount: 1, value: 72 }),
+      expect.objectContaining({ code: 939, resetCount: 1, value: 82 }),
+    ]);
+
+    expect(applyResponse(restored, getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    expect(restored.state.turnPlayer).toBe(1);
+    expect(restored.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([]);
   });
 
   it("expires Lua flag effects at the Battle Start reset boundary", () => {
