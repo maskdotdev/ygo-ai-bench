@@ -105,13 +105,12 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
 }
 
 export function restoreDuel(
-  snapshot: SerializedDuel,
+  snapshot: unknown,
   cardReader: DuelCardReader = fallbackCardReader,
   effectRegistry: DuelEffectRestoreRegistry = {},
   chainLimitRegistry: DuelChainLimitRestoreRegistry = {},
   options: DuelRestoreOptions = {},
 ): DuelSession {
-  if (snapshot.version !== 1) throw new Error(`Unsupported duel snapshot version ${snapshot.version}`);
   assertRestorableSnapshot(snapshot);
   const state: DuelState = {
     ...snapshot.state,
@@ -157,7 +156,9 @@ export function restoreDuel(
   return { cardReader, state };
 }
 
-function assertRestorableSnapshot(snapshot: SerializedDuel): void {
+function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is SerializedDuel {
+  if (!isRecord(snapshot)) throw new Error("Malformed duel snapshot: root must be an object");
+  if (snapshot.version !== 1) throw new Error(`Unsupported duel snapshot version ${String(snapshot.version)}`);
   if (!isRecord(snapshot.state)) throw new Error("Malformed duel snapshot: state must be an object");
   const state = snapshot.state as Record<string, unknown>;
   const arrayFields = [
