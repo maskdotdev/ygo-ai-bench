@@ -164,6 +164,43 @@ describe("duel snapshot persistence", () => {
     expect(result.state.log.some((entry) => entry.detail === "Restored delayed trigger resolved")).toBe(true);
   });
 
+  it("prunes pending triggers whose non-registry effects cannot be restored", () => {
+    const session = createDuel({ seed: 124, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = findPublicCard(session, 0, "hand", "100");
+    const triggerSource = findPublicCard(session, 0, "hand", "300");
+    expect(summoned).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    registerEffect(session, {
+      id: "non-registry-pending-trigger",
+      sourceUid: triggerSource!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Non-registry trigger should not restore");
+      },
+    });
+
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["non-registry-pending-trigger"]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+
+    expect(restored.state.effects).toEqual([]);
+    expect(restored.state.pendingTriggers).toEqual([]);
+    expect(restored.state.waitingFor).toBe(0);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "activateTrigger")).toBe(false);
+  });
+
   it("keeps reset-pruned effects gone across snapshots", () => {
     const session = createDuel({ seed: 121, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

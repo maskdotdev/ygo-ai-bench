@@ -21,6 +21,10 @@ export type DuelEffectRestoreRegistry = Record<string, DuelEffectRestoreFactory>
 export type DuelChainLimitRestoreFactory = (limit: ChainLimit) => ChainLimit;
 export type DuelChainLimitRestoreRegistry = Record<string, DuelChainLimitRestoreFactory>;
 
+export interface DuelRestoreOptions {
+  pruneUnrestoredPendingTriggers?: boolean;
+}
+
 export function queryPublicState(session: DuelSession): PublicDuelState {
   const state = session.state;
   return {
@@ -99,51 +103,51 @@ export function restoreDuel(
   cardReader: DuelCardReader = fallbackCardReader,
   effectRegistry: DuelEffectRestoreRegistry = {},
   chainLimitRegistry: DuelChainLimitRestoreRegistry = {},
+  options: DuelRestoreOptions = {},
 ): DuelSession {
   if (snapshot.version !== 1) throw new Error(`Unsupported duel snapshot version ${snapshot.version}`);
-  return {
-    cardReader,
-    state: {
-      ...snapshot.state,
-      players: {
-        0: { ...snapshot.state.players[0] },
-        1: { ...snapshot.state.players[1] },
-      },
-      cards: snapshot.state.cards.map(copyCard),
-      effects: snapshot.state.effects.flatMap((effect) => restoreEffect(effect, effectRegistry)),
-      lastDiceResults: [...(snapshot.state.lastDiceResults ?? [])],
-      lastCoinResults: [...(snapshot.state.lastCoinResults ?? [])],
-      chain: snapshot.state.chain.map(copyChainLink),
-      chainLimits: snapshot.state.chainLimits.flatMap((limit) => restoreChainLimit(limit, chainLimitRegistry)),
-      chainPasses: [...snapshot.state.chainPasses],
-      pendingTriggers: snapshot.state.pendingTriggers.map((trigger) => ({ ...trigger })),
-      eventHistory: snapshot.state.eventHistory.map((event) => ({ ...event })),
-      usedCountKeys: [...snapshot.state.usedCountKeys],
-      flagEffects: snapshot.state.flagEffects.map((flag) => ({ ...flag })),
-      duelTypeFlags: snapshot.state.duelTypeFlags ?? (0x2000 | 0x4000 | 0x8000 | 0x20000),
-      globalFlags: snapshot.state.globalFlags ?? 0,
-      unofficialProcEnabled: snapshot.state.unofficialProcEnabled ?? false,
-      skippedPhases: snapshot.state.skippedPhases.map((skip) => ({ ...skip })),
-      activityCounts: copyDuelActivityCounts(snapshot.state.activityCounts),
-      activityHistory: (snapshot.state.activityHistory ?? []).map((record) => ({ ...record })),
-      phaseActivity: snapshot.state.phaseActivity ?? false,
-      battleDamage: { ...snapshot.state.battleDamage },
-      attackCostPaid: snapshot.state.attackCostPaid ?? 0,
-      attacksDeclared: [...snapshot.state.attacksDeclared],
-      attackCanceledUids: [...(snapshot.state.attackCanceledUids ?? [])],
-      attackedTargetUids: [...(snapshot.state.attackedTargetUids ?? [])],
-      battlePairs: (snapshot.state.battlePairs ?? []).map((pair) => ({ ...pair })),
-      attackPasses: [...snapshot.state.attackPasses],
-      damagePasses: [...snapshot.state.damagePasses],
-      ...(snapshot.state.battleStep === undefined ? {} : { battleStep: snapshot.state.battleStep }),
-      ...(snapshot.state.battleWindow === undefined ? {} : { battleWindow: copyBattleWindowState(snapshot.state.battleWindow) }),
-      positionsChanged: [...snapshot.state.positionsChanged],
-      ...(snapshot.state.currentAttack === undefined ? {} : { currentAttack: { ...snapshot.state.currentAttack } }),
-      ...(snapshot.state.pendingBattle === undefined ? {} : { pendingBattle: copyPendingBattle(snapshot.state.pendingBattle) }),
-      ...(snapshot.state.prompt === undefined ? {} : { prompt: copyPrompt(snapshot.state.prompt) }),
-      log: snapshot.state.log.map((entry) => ({ ...entry })),
+  const state: DuelState = {
+    ...snapshot.state,
+    players: {
+      0: { ...snapshot.state.players[0] },
+      1: { ...snapshot.state.players[1] },
     },
+    cards: snapshot.state.cards.map(copyCard),
+    effects: snapshot.state.effects.flatMap((effect) => restoreEffect(effect, effectRegistry)),
+    lastDiceResults: [...(snapshot.state.lastDiceResults ?? [])],
+    lastCoinResults: [...(snapshot.state.lastCoinResults ?? [])],
+    chain: snapshot.state.chain.map(copyChainLink),
+    chainLimits: snapshot.state.chainLimits.flatMap((limit) => restoreChainLimit(limit, chainLimitRegistry)),
+    chainPasses: [...snapshot.state.chainPasses],
+    pendingTriggers: snapshot.state.pendingTriggers.map((trigger) => ({ ...trigger })),
+    eventHistory: snapshot.state.eventHistory.map((event) => ({ ...event })),
+    usedCountKeys: [...snapshot.state.usedCountKeys],
+    flagEffects: snapshot.state.flagEffects.map((flag) => ({ ...flag })),
+    duelTypeFlags: snapshot.state.duelTypeFlags ?? (0x2000 | 0x4000 | 0x8000 | 0x20000),
+    globalFlags: snapshot.state.globalFlags ?? 0,
+    unofficialProcEnabled: snapshot.state.unofficialProcEnabled ?? false,
+    skippedPhases: snapshot.state.skippedPhases.map((skip) => ({ ...skip })),
+    activityCounts: copyDuelActivityCounts(snapshot.state.activityCounts),
+    activityHistory: (snapshot.state.activityHistory ?? []).map((record) => ({ ...record })),
+    phaseActivity: snapshot.state.phaseActivity ?? false,
+    battleDamage: { ...snapshot.state.battleDamage },
+    attackCostPaid: snapshot.state.attackCostPaid ?? 0,
+    attacksDeclared: [...snapshot.state.attacksDeclared],
+    attackCanceledUids: [...(snapshot.state.attackCanceledUids ?? [])],
+    attackedTargetUids: [...(snapshot.state.attackedTargetUids ?? [])],
+    battlePairs: (snapshot.state.battlePairs ?? []).map((pair) => ({ ...pair })),
+    attackPasses: [...snapshot.state.attackPasses],
+    damagePasses: [...snapshot.state.damagePasses],
+    ...(snapshot.state.battleStep === undefined ? {} : { battleStep: snapshot.state.battleStep }),
+    ...(snapshot.state.battleWindow === undefined ? {} : { battleWindow: copyBattleWindowState(snapshot.state.battleWindow) }),
+    positionsChanged: [...snapshot.state.positionsChanged],
+    ...(snapshot.state.currentAttack === undefined ? {} : { currentAttack: { ...snapshot.state.currentAttack } }),
+    ...(snapshot.state.pendingBattle === undefined ? {} : { pendingBattle: copyPendingBattle(snapshot.state.pendingBattle) }),
+    ...(snapshot.state.prompt === undefined ? {} : { prompt: copyPrompt(snapshot.state.prompt) }),
+    log: snapshot.state.log.map((entry) => ({ ...entry })),
   };
+  if (options.pruneUnrestoredPendingTriggers !== false) prunePendingTriggersWithoutEffects(state);
+  return { cardReader, state };
 }
 
 function serializeEffect(effect: DuelEffectDefinition): DuelEffectDefinition[] {
@@ -186,6 +190,13 @@ function restoreChainLimit(limit: ChainLimit, chainLimitRegistry: DuelChainLimit
   if (limit.registryKey === undefined) return [];
   const factory = chainLimitRegistry[limit.registryKey];
   return factory ? [factory(copySerializedChainLimit(limit))] : [];
+}
+
+export function prunePendingTriggersWithoutEffects(state: DuelState): void {
+  const beforeCount = state.pendingTriggers.length;
+  state.pendingTriggers = state.pendingTriggers.filter((trigger) => state.effects.some((effect) => effect.id === trigger.effectId && effect.sourceUid === trigger.sourceUid));
+  if (state.pendingTriggers.length === beforeCount) return;
+  state.waitingFor = state.pendingTriggers[0]?.player ?? state.turnPlayer;
 }
 
 function isStaticContinuousEffect(effect: DuelEffectDefinition): boolean {

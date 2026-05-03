@@ -73,6 +73,128 @@ describe("Lua script loading", () => {
     expect(host.messages).toEqual(["races 8/16/65536/16777216/33554432"]);
   });
 
+  it("installs newer Project Ignis race and event constants used by real scripts", () => {
+    const session = createDuel({ seed: 158, startingHandSize: 0 });
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("rush races " .. RACE_CYBORG .. "/" .. RACE_HIGHDRAGON .. "/" .. RACE_GALAXY .. "/" .. RACES_BEAST_BWARRIOR_WINGB)
+      Debug.Message("event constants " .. EVENT_LEAVE_GRAVE .. "/" .. EVENT_DAMAGE_CALCULATING .. "/" .. EVENT_BATTLE_END .. "/" .. EVENT_CONFIRM .. "/" .. EVENT_TOHAND_CONFIRM)
+      Debug.Message("counter constants " .. COUNTER_NEED_ENABLE .. "/" .. EFFECT_COUNTER_PERMIT .. "/" .. EFFECT_COUNTER_LIMIT .. "/" .. EFFECT_RCOUNTER_REPLACE .. "/" .. SUMMON_TYPE_MAXIMUM)
+      `,
+      "newer-race-event-constants.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "rush races 67108864/268435456/2147483648.0/49664",
+      "event constants 1031/1135/1137/1211/1212",
+      "counter constants 8192/65536/131072/196608/1308622848",
+    ]);
+  });
+
+  it("installs common Project Ignis aggregate constants", () => {
+    const session = createDuel({ seed: 157, startingHandSize: 0 });
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("positions " .. POS_ATTACK .. "/" .. POS_DEFENSE .. "/" .. POS_FACEDOWN .. "/" .. ZONE_CENTER_MMZ .. "/" .. NO_FLIP_EFFECT)
+      Debug.Message("types " .. TYPE_TOKEN .. "/" .. TYPE_QUICKPLAY .. "/" .. TYPE_COUNTER .. "/" .. TYPE_FLIP .. "/" .. TYPE_TOON .. "/" .. TYPE_EXTRA)
+      Debug.Message("aggregate " .. ATTRIBUTE_ALL .. "/" .. TYPES_TOKEN .. "/" .. PLAYER_EITHER .. "/" .. PLAYER_SELFDES .. "/" .. REASON_RDAMAGE .. "/" .. REASON_RRECOVER)
+      `,
+      "standard-aggregate-constants.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "positions 3/12/10/4/65536",
+      "types 16384/65536/1048576/2097152/4194304/75505728",
+      "aggregate 127/16401/4/5/32768/65536",
+    ]);
+  });
+
+  it("installs newer Project Ignis effect flag and marker constants", () => {
+    const session = createDuel({ seed: 160, startingHandSize: 0 });
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("flag2 constants " .. EFFECT_FLAG2_CONTINUOUS_EQUIP .. "/" .. EFFECT_FLAG2_CHECK_SIMULTANEOUS .. "/" .. EFFECT_FLAG2_FORCE_ACTIVATE_LOCATION .. "/" .. EFFECT_FLAG2_MAJESTIC_MUST_COPY)
+      Debug.Message("link marker constants " .. EFFECT_CHANGE_LINKMARKER .. "/" .. EFFECT_FORCE_NORMAL_SUMMON_POSITION .. "/" .. EFFECT_FORCE_SPSUMMON_POSITION .. "/" .. EFFECT_DARKNESS_HIDE .. "/" .. EFFECT_NORMAL_SUMMON_FACEUP_DEFENSE)
+      `,
+      "newer-effect-constants.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "flag2 constants 1/4/1073741824/2147483648.0",
+      "link marker constants 425/426/427/428/429",
+    ]);
+  });
+
+  it("installs Project Ignis hint, select, declaration, and opcode constants", () => {
+    const session = createDuel({ seed: 161, startingHandSize: 0 });
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("hint constants " .. HINT_EVENT .. "/" .. HINT_EFFECT .. "/" .. HINT_RACE .. "/" .. HINT_ATTRIB .. "/" .. HINT_CODE .. "/" .. HINT_SKILL_REMOVE)
+      Debug.Message("card hint constants " .. CHINT_TURN .. "/" .. CHINT_ATTRIBUTE .. "/" .. CHINT_DESC_REMOVE .. "/" .. PHINT_DESC_ADD .. "/" .. PHINT_DESC_REMOVE)
+      Debug.Message("select constants " .. SELECT_HEADS .. "/" .. SELECT_TAILS .. "/" .. DECLTYPE_MONSTER .. "/" .. DECLTYPE_SPELL .. "/" .. DECLTYPE_TRAP .. "/" .. EFFECT_COUNT_CODE_CHAIN)
+      Debug.Message("opcode available " .. tostring(OPCODE_ADD ~= nil) .. "/" .. tostring(OPCODE_ISCODE ~= nil) .. "/" .. tostring(OPCODE_GETATTRIBUTE ~= nil))
+      `,
+      "hint-opcode-constants.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "hint constants 1/5/6/7/8/203",
+      "card hint constants 1/4/7/6/7",
+      "select constants 60/61/70/71/72/8",
+      "opcode available true/true/true",
+    ]);
+  });
+
+  it("installs Project Ignis procedure, duel-mode, and material constants", () => {
+    const session = createDuel({ seed: 162, startingHandSize: 0 });
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("procedure constants " .. EFFECT_TUNER_MATERIAL_LIMIT .. "/" .. FUSPROC_CONTACTFUS .. "/" .. FUSPROC_CANCELABLE .. "/" .. RITPROC_EQUAL .. "/" .. RITPROC_GREATER)
+      Debug.Message("restriction constants " .. EFFECT_FUSION_MAT_RESTRICTION .. "/" .. EFFECT_SYNCHRO_MAT_RESTRICTION .. "/" .. EFFECT_XYZ_MAT_RESTRICTION .. "/" .. EFFECT_SYNCHRO_MAT_FROM_HAND .. "/" .. EFFECT_XYZ_MAT_FROM_GRAVE)
+      Debug.Message("duel mode constants " .. DUEL_MODE_SPEED .. "/" .. DUEL_MODE_MR1 .. "/" .. DUEL_MODE_MR5 .. "/" .. DUEL_OBSOLETE_RULING .. "/" .. ACTIVITY_BATTLE_PHASE .. "/" .. ANNOUNCE_CARD .. "/" .. ANNOUNCE_CARD_FILTER)
+      Debug.Message("material constants available " .. tostring(MATERIAL_FUSION ~= nil) .. "/" .. tostring(MATERIAL_SYNCHRO ~= nil) .. "/" .. tostring(MATERIAL_XYZ ~= nil) .. "/" .. tostring(MATERIAL_LINK ~= nil))
+      `,
+      "procedure-mode-material-constants.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "procedure constants 353/512/4096/1/2",
+      "restriction constants 73941556/73949684/82330100/97682931/511002793",
+      "duel mode constants 6422528/853760/190464/853760/6/7/8",
+      "material constants available true/true/true/true",
+    ]);
+  });
+
+  it("installs Project Ignis hardcoded effect marker constants", () => {
+    const session = createDuel({ seed: 163, startingHandSize: 0 });
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("hardcoded effects " .. EFFECT_CAN_BE_TUNER .. "/" .. EFFECT_CLEAR_WALL .. "/" .. EFFECT_CYBERDARK_WORLD .. "/" .. EFFECT_WITCHCRAFTER_REPLACE)
+      Debug.Message("effect markers " .. EFFECT_MARKER_DETACH_XMAT .. "/" .. EFFECT_MARKER_CARDIAN .. "/" .. EFFECT_MARKER_DRAGON_RULER)
+      Debug.Message("register marker aliases " .. REGISTER_FLAG_DETACH_XMAT .. "/" .. REGISTER_FLAG_CARDIAN .. "/" .. REGISTER_FLAG_DRAGON_RULER)
+      `,
+      "hardcoded-effect-marker-constants.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "hardcoded effects 30765615/6089145/64753988/83289866",
+      "effect markers 511002571/511001692/4965193",
+      "register marker aliases 511002571/511001692/4965193",
+    ]);
+  });
+
   it("lets Lua scripts load other configured scripts once unless forced", () => {
     const session = createDuel({ seed: 91, startingHandSize: 0 });
     const scripts = new Map<string, string>([

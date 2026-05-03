@@ -1,7 +1,8 @@
 import { fallbackCardReader } from "#duel/card-reader.js";
-import { getLegalActions } from "#duel/core.js";
-import { restoreDuel } from "#duel/snapshot.js";
+import { getGroupedDuelLegalActions, getLegalActions } from "#duel/core.js";
+import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
+import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { DuelAction, DuelCardReader, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
 
 export interface LuaSnapshotRestoreResult {
@@ -21,12 +22,13 @@ export function restoreDuelWithLuaScripts(
   source: LuaScriptSource,
   cardReader: DuelCardReader = fallbackCardReader,
 ): LuaSnapshotRestoreResult {
-  const session = restoreDuel(snapshot, cardReader);
+  const session = restoreDuel(snapshot, cardReader, {}, {}, { pruneUnrestoredPendingTriggers: false });
   const host = createLuaScriptHost(session);
   const registryKeys = luaRegistryKeys(snapshot);
   const loadedScripts = [...luaRegistryCardCodes(registryKeys)].map((code) => host.loadCardScript(code, source));
   const registeredEffects = loadedScripts.every((result) => result.ok) ? host.registerInitialEffects() : 0;
   const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys);
+  prunePendingTriggersWithoutEffects(session.state);
   const missingRegistryKeys = [...registryKeys].filter((key) => !restoredRegistryKeys.includes(key));
   const chainLimitRegistryKeys = luaChainLimitRegistryKeys(snapshot);
   const restoredChainLimitRegistryKeys = luaChainLimitRegistryKeys({ ...snapshot, state: session.state });
@@ -38,6 +40,11 @@ export function restoreDuelWithLuaScripts(
 export function getLuaRestoreLegalActions(restored: LuaSnapshotRestoreResult, player: PlayerId): DuelAction[] {
   if (!restored.restoreComplete) return [];
   return getLegalActions(restored.session, player);
+}
+
+export function getLuaRestoreLegalActionGroups(restored: LuaSnapshotRestoreResult, player: PlayerId): DuelLegalActionGroup[] {
+  if (!restored.restoreComplete) return [];
+  return getGroupedDuelLegalActions(restored.session, player);
 }
 
 function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string>): string[] {
