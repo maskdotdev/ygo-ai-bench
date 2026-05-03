@@ -230,6 +230,25 @@ describe("duel rollback", () => {
     expect(session.state.prompt.options).toEqual([1, 2]);
   });
 
+  it("rolls back nested pending battle damage overrides", () => {
+    const session = createDuel({ seed: 130, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.pendingBattle = { attackerUid: "attacker", targetUid: "target", battleDamageOverrides: { 1: 600 } };
+    const rollback = captureDuelState(session.state);
+
+    session.state.pendingBattle.battleDamageOverrides![1] = 1200;
+    restoreDuelState(session.state, rollback);
+
+    expect(session.state.pendingBattle?.battleDamageOverrides).toEqual({ 1: 600 });
+    if (rollback.pendingBattle?.battleDamageOverrides === undefined) throw new Error("Expected rollback battle damage overrides");
+    rollback.pendingBattle.battleDamageOverrides[1] = 1800;
+    expect(session.state.pendingBattle?.battleDamageOverrides).toEqual({ 1: 600 });
+  });
+
   it("rolls back failed trigger activation costs and keeps the trigger pending", () => {
     const session = createDuel({ seed: 83, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

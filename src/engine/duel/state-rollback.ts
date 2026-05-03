@@ -98,9 +98,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     battleWindow: state.battleWindow ? copyBattleWindowState(state.battleWindow) : undefined,
     positionsChanged: [...state.positionsChanged],
     currentAttack: state.currentAttack ? { ...state.currentAttack } : undefined,
-    pendingBattle: state.pendingBattle
-      ? { ...state.pendingBattle, ...(state.pendingBattle.battleDamageOverrides ? { battleDamageOverrides: { ...state.pendingBattle.battleDamageOverrides } } : {}) }
-      : undefined,
+    pendingBattle: state.pendingBattle ? copyPendingBattle(state.pendingBattle) : undefined,
     prompt: state.prompt ? copyPrompt(state.prompt) : undefined,
     waitingFor: state.waitingFor,
     log: state.log.map((entry) => ({ ...entry })),
@@ -152,7 +150,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   state.positionsChanged = rollback.positionsChanged;
   if (rollback.currentAttack) state.currentAttack = rollback.currentAttack;
   else delete state.currentAttack;
-  if (rollback.pendingBattle) state.pendingBattle = rollback.pendingBattle;
+  if (rollback.pendingBattle) state.pendingBattle = copyPendingBattle(rollback.pendingBattle);
   else delete state.pendingBattle;
   if (rollback.prompt) state.prompt = copyPrompt(rollback.prompt);
   else delete state.prompt;
@@ -164,4 +162,11 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
 function copyPrompt(prompt: DuelPromptState): DuelPromptState {
   if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options] };
   return { ...prompt };
+}
+
+function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {
+  return {
+    ...pendingBattle,
+    ...(pendingBattle.battleDamageOverrides === undefined ? {} : { battleDamageOverrides: { ...pendingBattle.battleDamageOverrides } }),
+  };
 }
