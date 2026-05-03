@@ -84,6 +84,7 @@ describe("EDOPro parity fixture event codes", () => {
             source: "edopro",
             note: "EDOPro custom events preserve event code, player, value, reason, reason player, and related effect payload for trigger filtering",
             windowId: 1,
+            windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
               {
@@ -106,6 +107,8 @@ describe("EDOPro parity fixture event codes", () => {
               { eventName: "customEvent", eventCode, eventPlayer: 1, eventValue: 77, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 7001, eventCardUid: "p0-deck-500-3" },
               { eventName: "chainSolved" },
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-matching-custom-trigger", count: 1 }],
             legalActionGroups: [
               {
@@ -136,6 +139,7 @@ describe("EDOPro parity fixture event codes", () => {
             source: "edopro",
             note: "EDOPro carries custom event payload fields onto the activated trigger chain link",
             windowId: 2,
+            windowKind: "chainResponse",
             waitingFor: 0,
             chain: [
               {
@@ -152,6 +156,8 @@ describe("EDOPro parity fixture event codes", () => {
               },
             ],
             pendingTriggers: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
               { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "fixture-custom-chain-quick", count: 1 },
               { type: "passChain", player: 0, windowId: 2, windowKind: "chainResponse", count: 1 },
