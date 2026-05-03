@@ -214,6 +214,65 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.session.state.prompt?.id).toBe("incomplete-lua-prompt");
   });
 
+  it("rejects trigger responses when Lua snapshot restore is incomplete", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("should not run incomplete trigger")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
+    const session = createDuel({ seed: 25, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["300", "300"] },
+    });
+    startDuel(session);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(summonSource).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+
+    const snapshot = serializeDuel(session);
+    fs.rmSync(path.join(root, "script", "c100.lua"));
+    const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
+
+    expect(restored.restoreComplete).toBe(false);
+    expect(restored.incompleteReasons).toEqual(["script c100.lua: Script c100.lua was not found", "missing Lua effect registry keys: lua:100:lua-1-1100"]);
+    expect(restored.session.state.pendingTriggers).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
+    const result = applyLuaRestoreResponse(restored, trigger!);
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Lua snapshot restore is incomplete: script c100.lua");
+    expect(result.legalActions).toEqual([]);
+    expect(result.legalActionGroups).toEqual([]);
+    expect(restored.host.messages).toEqual([]);
+  });
+
   it("exposes legal actions after complete Lua snapshot restore", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
     tempRoots.push(root);
