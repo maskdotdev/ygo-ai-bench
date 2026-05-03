@@ -412,6 +412,7 @@ function assertSnapshotLog(log: unknown): void {
 function assertSnapshotCards(cards: unknown): void {
   if (!Array.isArray(cards)) throw new Error("Malformed duel snapshot: state.cards must be an array");
   const seenUids = new Set<string>();
+  const locationsByUid = new Map<string, unknown>();
   for (const [index, card] of cards.entries()) {
     const path = `state.cards.${index}`;
     if (!isRecord(card)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
@@ -421,6 +422,7 @@ function assertSnapshotCards(cards: unknown): void {
     const uid = card.uid as string;
     if (seenUids.has(uid)) throw new Error(`Malformed duel snapshot: ${path}.uid must be unique`);
     seenUids.add(uid);
+    locationsByUid.set(uid, card.location);
     if (!duelSnapshotCardKinds.has(card.kind)) throw new Error(`Malformed duel snapshot: ${path}.kind must be a card kind`);
     assertSnapshotPlayerId(card.owner, `${path}.owner`);
     assertSnapshotPlayerId(card.controller, `${path}.controller`);
@@ -432,6 +434,13 @@ function assertSnapshotCards(cards: unknown): void {
     if (typeof card.faceUp !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.faceUp must be a boolean`);
     assertSnapshotOptionalCardState(card, path);
     assertSnapshotCardData(card.data, `${path}.data`);
+  }
+  for (const [index, card] of cards.entries()) {
+    const overlayUids = (card as { overlayUids: string[] }).overlayUids;
+    for (const [overlayIndex, uid] of overlayUids.entries()) {
+      if (!locationsByUid.has(uid)) throw new Error(`Malformed duel snapshot: state.cards.${index}.overlayUids.${overlayIndex} must reference a card`);
+      if (locationsByUid.get(uid) !== "overlay") throw new Error(`Malformed duel snapshot: state.cards.${index}.overlayUids.${overlayIndex} must reference an overlay card`);
+    }
   }
 }
 

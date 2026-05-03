@@ -340,6 +340,22 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(duplicateUid, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.1.uid must be unique");
   });
 
+  it("rejects broken overlay references before restore", () => {
+    const session = createDuel({ seed: 163, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const missingOverlay = serializeDuel(session);
+    const wrongLocation = serializeDuel(session);
+    missingOverlay.state.cards[0] = { ...missingOverlay.state.cards[0]!, overlayUids: ["missing-material"] };
+    wrongLocation.state.cards[0] = { ...wrongLocation.state.cards[0]!, overlayUids: [wrongLocation.state.cards[1]!.uid] };
+
+    expect(() => restoreDuel(missingOverlay, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.overlayUids.0 must reference a card");
+    expect(() => restoreDuel(wrongLocation, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.overlayUids.0 must reference an overlay card");
+  });
+
   it("rejects malformed effect snapshots before restore", () => {
     const session = createDuel({ seed: 159, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
