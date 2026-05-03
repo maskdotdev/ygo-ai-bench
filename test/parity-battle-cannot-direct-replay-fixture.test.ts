@@ -91,7 +91,7 @@ describe("EDOPro parity battle cannot-direct replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro offers cancel only because CANNOT_DIRECT_ATTACK forbids direct replay",
