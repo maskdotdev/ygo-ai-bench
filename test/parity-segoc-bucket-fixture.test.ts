@@ -52,7 +52,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
             legalActionGroups: [
               {
                 player: 0,
-                key: "1:triggerBucket:trigger-activate",
+                key: "1:triggerBucket:trigger-activate:turnMandatory:0",
                 label: "Trigger Activations",
                 windowId: 1,
                 windowKind: "triggerBucket",
@@ -100,7 +100,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
             legalActionGroups: [
               {
                 player: 1,
-                key: "2:triggerBucket:trigger-activate",
+                key: "2:triggerBucket:trigger-activate:opponentMandatory:1",
                 label: "Trigger Activations",
                 windowId: 2,
                 windowKind: "triggerBucket",

@@ -15,7 +15,7 @@ export function groupDuelLegalActions(actions: DuelAction[]): DuelLegalActionGro
   for (const action of actions) {
     const windowKey = action.windowKind ?? "unknown";
     const actionKey = duelActionGroupKey(action);
-    const key = `${action.windowId ?? "none"}:${windowKey}:${actionKey}`;
+    const key = `${action.windowId ?? "none"}:${windowKey}:${actionKey}${triggerBucketGroupKey(action)}`;
     const existing = groups.get(key);
     if (existing) {
       if ((action.type === "activateTrigger" || action.type === "declineTrigger") && existing.triggerBucket) existing.triggerBucket.triggerIds.push(action.triggerId);
@@ -33,6 +33,11 @@ export function groupDuelLegalActions(actions: DuelAction[]): DuelLegalActionGro
     }
   }
   return [...groups.values()];
+}
+
+function triggerBucketGroupKey(action: DuelAction): string {
+  if (action.type !== "activateTrigger" && action.type !== "declineTrigger") return "";
+  return `:${action.triggerBucket}:${action.player}`;
 }
 
 function triggerBucketGroupState(action: DuelAction): { triggerBucket: PendingTriggerBucketState } | Record<string, never> {

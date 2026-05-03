@@ -79,6 +79,24 @@ describe("duel legal action groups", () => {
     expect(actions.map((action) => action.type === "activateTrigger" || action.type === "declineTrigger" ? action.triggerId : undefined)).toEqual(["trigger-a", "trigger-b", "trigger-c"]);
   });
 
+  it("keeps different trigger buckets in separate groups", () => {
+    const actions: DuelAction[] = [
+      { type: "activateTrigger", player: 0, triggerId: "trigger-a", triggerBucket: "turnMandatory", uid: "card-a", effectId: "effect-a", label: "A", windowId: 7, windowKind: "triggerBucket" },
+      { type: "activateTrigger", player: 1, triggerId: "trigger-b", triggerBucket: "opponentMandatory", uid: "card-b", effectId: "effect-b", label: "B", windowId: 7, windowKind: "triggerBucket" },
+    ];
+
+    const groups = groupDuelLegalActions(actions);
+
+    expect(groups.map((group) => group.key)).toEqual([
+      "7:triggerBucket:trigger-activate:turnMandatory:0",
+      "7:triggerBucket:trigger-activate:opponentMandatory:1",
+    ]);
+    expect(groups.map((group) => group.triggerBucket)).toEqual([
+      { triggerBucket: "turnMandatory", player: 0, triggerIds: ["trigger-a"] },
+      { triggerBucket: "opponentMandatory", player: 1, triggerIds: ["trigger-b"] },
+    ]);
+  });
+
   it("copies grouped action payloads away from the source action list", () => {
     const actions: DuelAction[] = [{ type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["a", "b"], label: "Fusion", windowId: 2, windowKind: "open" }];
 
