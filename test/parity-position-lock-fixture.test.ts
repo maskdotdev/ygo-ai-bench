@@ -23,8 +23,11 @@ describe("EDOPro parity position lock fixtures", () => {
             source: "edopro",
             note: "EDOPro exposes manual Attack-to-Defense position changes for eligible unlocked monsters",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
             positionsChanged: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -105,7 +108,10 @@ describe("EDOPro parity position lock fixtures", () => {
             source: "edopro",
             note: "EDOPro omits manual position-change actions for monsters affected by CANNOT_CHANGE_POSITION",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
@@ -184,7 +190,10 @@ describe("EDOPro parity position lock fixtures", () => {
             source: "edopro",
             note: "EDOPro field-scoped CANNOT_CHANGE_POSITION effects suppress affected monsters' manual position-change actions",
             phase: "main1",
+            windowKind: "open",
             waitingFor: 0,
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowKind: "open", count: 1 }],
             legalActionGroups: [
               {
