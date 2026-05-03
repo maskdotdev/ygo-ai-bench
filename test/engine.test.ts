@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAction, getLegalActions, startPlaytest } from "#playtest/api.js";
+import { applyAction, getLegalActions, snapshot, startPlaytest } from "#playtest/api.js";
 import { DARK_MAGICIAN_CARD_IDS as IDS } from "#cards/definitions.js";
 
 describe("engine primitives", () => {
@@ -64,6 +64,25 @@ describe("engine primitives", () => {
     expect(result.ok).toBe(false);
     expect(result.error).toBe("Action is not currently legal");
     expect(session.engine.state.zones.hand.map((card) => card.uid)).toEqual(handBefore);
+  });
+
+  it("copies nested public playtest state away from engine state", () => {
+    const session = startPlaytest({
+      deck: [IDS.magiciansRod, IDS.darkMagician],
+      seed: 2,
+      handSize: 2,
+    });
+    const view = snapshot(session);
+    const firstCard = view.state.hand[0];
+    const firstLog = view.state.log[0];
+    expect(firstCard).toBeDefined();
+    expect(firstLog).toBeDefined();
+
+    firstCard!.tags.push("mutated-tag");
+    firstLog!.detail = "Mutated log";
+
+    expect(session.engine.state.zones.hand[0]?.tags).not.toContain("mutated-tag");
+    expect(session.engine.state.log[0]?.detail).not.toBe("Mutated log");
   });
 });
 

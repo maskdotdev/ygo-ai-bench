@@ -95,7 +95,7 @@ export function publicState(session: EngineSession): PublicGameState {
     banished: state.zones.banished.map(summarize),
     extraDeck: state.zones.extraDeck.map(summarize),
     normalSummonUsed: state.normalSummonUsed,
-    log: state.log.slice(),
+    log: state.log.map((entry) => ({ ...entry })),
   };
 }
 
@@ -186,5 +186,5 @@ function allCards(session: EngineSession): CardInstance[] {
 }
 
 function summarize(card: CardInstance) {
-  return { uid: card.uid, id: card.id, name: card.name, type: card.type, tags: card.tags };
+  return { uid: card.uid, id: card.id, name: card.name, type: card.type, tags: [...card.tags] };
 }
