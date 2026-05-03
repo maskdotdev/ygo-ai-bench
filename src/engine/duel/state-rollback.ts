@@ -89,7 +89,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     battleStep: state.battleStep,
     battleWindow: state.battleWindow ? copyBattleWindowState(state.battleWindow) : undefined,
     positionsChanged: [...state.positionsChanged],
-    currentAttack: state.currentAttack ? { ...state.currentAttack } : undefined,
+    currentAttack: state.currentAttack ? copyBattleAttack(state.currentAttack) : undefined,
     pendingBattle: state.pendingBattle ? copyPendingBattle(state.pendingBattle) : undefined,
     prompt: state.prompt ? copyPrompt(state.prompt) : undefined,
     waitingFor: state.waitingFor,
@@ -141,7 +141,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   if (rollback.battleWindow) state.battleWindow = copyBattleWindowState(rollback.battleWindow);
   else delete state.battleWindow;
   state.positionsChanged = [...rollback.positionsChanged];
-  if (rollback.currentAttack) state.currentAttack = { ...rollback.currentAttack };
+  if (rollback.currentAttack) state.currentAttack = copyBattleAttack(rollback.currentAttack);
   else delete state.currentAttack;
   if (rollback.pendingBattle) state.pendingBattle = copyPendingBattle(rollback.pendingBattle);
   else delete state.pendingBattle;
@@ -202,7 +202,14 @@ function copyChainLink(link: ChainLink): ChainLink {
 
 function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {
   return {
-    ...pendingBattle,
+    ...copyBattleAttack(pendingBattle),
     ...(pendingBattle.battleDamageOverrides === undefined ? {} : { battleDamageOverrides: { ...pendingBattle.battleDamageOverrides } }),
+  };
+}
+
+function copyBattleAttack<T extends NonNullable<DuelState["currentAttack"]>>(battle: T): T {
+  return {
+    ...battle,
+    ...(battle.replayTargetUids === undefined ? {} : { replayTargetUids: [...battle.replayTargetUids] }),
   };
 }

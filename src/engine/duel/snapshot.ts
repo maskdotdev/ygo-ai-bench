@@ -94,7 +94,7 @@ export function serializeDuel(session: DuelSession): SerializedDuel {
       ...(session.state.battleStep === undefined ? {} : { battleStep: session.state.battleStep }),
       ...(session.state.battleWindow === undefined ? {} : { battleWindow: copyBattleWindowState(session.state.battleWindow) }),
       positionsChanged: [...session.state.positionsChanged],
-      ...(session.state.currentAttack === undefined ? {} : { currentAttack: { ...session.state.currentAttack } }),
+      ...(session.state.currentAttack === undefined ? {} : { currentAttack: copyBattleAttack(session.state.currentAttack) }),
       ...(session.state.pendingBattle === undefined ? {} : { pendingBattle: copyPendingBattle(session.state.pendingBattle) }),
       ...(session.state.prompt === undefined ? {} : { prompt: copyPrompt(session.state.prompt) }),
       log: session.state.log.map((entry) => ({ ...entry })),
@@ -147,7 +147,7 @@ export function restoreDuel(
     ...(snapshot.state.battleStep === undefined ? {} : { battleStep: snapshot.state.battleStep }),
     ...(snapshot.state.battleWindow === undefined ? {} : { battleWindow: copyBattleWindowState(snapshot.state.battleWindow) }),
     positionsChanged: [...snapshot.state.positionsChanged],
-    ...(snapshot.state.currentAttack === undefined ? {} : { currentAttack: { ...snapshot.state.currentAttack } }),
+    ...(snapshot.state.currentAttack === undefined ? {} : { currentAttack: copyBattleAttack(snapshot.state.currentAttack) }),
     ...(snapshot.state.pendingBattle === undefined ? {} : { pendingBattle: copyPendingBattle(snapshot.state.pendingBattle) }),
     ...(snapshot.state.prompt === undefined ? {} : { prompt: copyPrompt(snapshot.state.prompt) }),
     log: snapshot.state.log.map((entry) => ({ ...entry })),
@@ -679,6 +679,10 @@ function assertSnapshotBattle(battle: unknown, path: string, cardUids: ReadonlyS
   if (!cardUids.has(battle.attackerUid)) throw new Error(`Malformed duel snapshot: ${path}.attackerUid must reference a card`);
   if (battle.targetUid !== undefined && !cardUids.has(battle.targetUid)) throw new Error(`Malformed duel snapshot: ${path}.targetUid must reference a card`);
   if (battle.replayTargetCount !== undefined && typeof battle.replayTargetCount !== "number") throw new Error(`Malformed duel snapshot: ${path}.replayTargetCount must be a number`);
+  if (battle.replayTargetUids !== undefined) {
+    assertSnapshotStringArray(battle.replayTargetUids, `${path}.replayTargetUids`);
+    assertSnapshotCardUidArray(battle.replayTargetUids, `${path}.replayTargetUids`, cardUids);
+  }
   if (battle.battleDamageOverrides === undefined) return;
   if (!isRecord(battle.battleDamageOverrides)) throw new Error(`Malformed duel snapshot: ${path}.battleDamageOverrides must be an object`);
   for (const [player, amount] of Object.entries(battle.battleDamageOverrides)) {
@@ -819,8 +823,15 @@ function copyCardData(data: DuelCardData): DuelCardData {
 
 function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {
   return {
-    ...pendingBattle,
+    ...copyBattleAttack(pendingBattle),
     ...(pendingBattle.battleDamageOverrides === undefined ? {} : { battleDamageOverrides: { ...pendingBattle.battleDamageOverrides } }),
+  };
+}
+
+function copyBattleAttack<T extends NonNullable<DuelState["currentAttack"]>>(battle: T): T {
+  return {
+    ...battle,
+    ...(battle.replayTargetUids === undefined ? {} : { replayTargetUids: [...battle.replayTargetUids] }),
   };
 }
 

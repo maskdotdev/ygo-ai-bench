@@ -440,11 +440,13 @@ export interface DuelState {
     attackerUid: string;
     targetUid?: string;
     replayTargetCount?: number;
+    replayTargetUids?: string[];
   };
   pendingBattle?: {
     attackerUid: string;
     targetUid?: string;
     replayTargetCount?: number;
+    replayTargetUids?: string[];
     battleDamageOverrides?: Partial<Record<PlayerId, number>>;
   };
   prompt?: DuelPromptState;
