@@ -58,6 +58,19 @@ describe("duel legal action groups", () => {
     expect(groups.flatMap((group) => group.actions)).toEqual(actions);
   });
 
+  it("copies grouped action payloads away from the source action list", () => {
+    const actions: DuelAction[] = [{ type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["a", "b"], label: "Fusion", windowId: 2, windowKind: "open" }];
+
+    const groups = groupDuelLegalActions(actions);
+    const groupedAction = groups[0]?.actions[0];
+    expect(groupedAction?.type).toBe("fusionSummon");
+    if (!groupedAction || groupedAction.type !== "fusionSummon") throw new Error("Expected grouped fusion action");
+    groupedAction.materialUids.push("c");
+    groupedAction.label = "Mutated Fusion";
+
+    expect(actions[0]).toEqual({ type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["a", "b"], label: "Fusion", windowId: 2, windowKind: "open" });
+  });
+
   it("returns grouped legal actions after applying a response", () => {
     const session = createDuel({ seed: 93, startingHandSize: 2 });
     loadDecks(session, {

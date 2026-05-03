@@ -15,18 +15,24 @@ export function groupDuelLegalActions(actions: DuelAction[]): DuelLegalActionGro
     const actionKey = duelActionGroupKey(action);
     const key = `${action.windowId ?? "none"}:${windowKey}:${actionKey}`;
     const existing = groups.get(key);
-    if (existing) existing.actions.push(action);
+    if (existing) existing.actions.push(copyDuelAction(action));
     else {
       groups.set(key, {
         key,
         label: duelActionGroupLabel(actionKey),
         ...(action.windowId === undefined ? {} : { windowId: action.windowId }),
         ...(action.windowKind === undefined ? {} : { windowKind: action.windowKind }),
-        actions: [action],
+        actions: [copyDuelAction(action)],
       });
     }
   }
   return [...groups.values()];
+}
+
+function copyDuelAction(action: DuelAction): DuelAction {
+  if (action.type === "tributeSummon") return { ...action, tributeUids: [...action.tributeUids] };
+  if (action.type === "fusionSummon" || action.type === "synchroSummon" || action.type === "xyzSummon" || action.type === "linkSummon" || action.type === "ritualSummon") return { ...action, materialUids: [...action.materialUids] };
+  return { ...action };
 }
 
 function duelActionGroupKey(action: DuelAction): string {
