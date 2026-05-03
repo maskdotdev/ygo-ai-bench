@@ -587,7 +587,7 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
     return 2;
   }
   lua.lua_pushinteger(L, ctx?.player ?? card.controller);
-  pushGroupTable(L, ctx?.eventCard ? [ctx.eventCard.uid] : []);
+  pushGroupTable(L, ctx?.eventUids ?? (ctx?.eventCard ? [ctx.eventCard.uid] : []));
   lua.lua_pushinteger(L, chainLink?.eventPlayer ?? chainLink?.player ?? ctx?.eventPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
   lua.lua_pushinteger(L, chainLink?.eventValue ?? ctx?.eventValue ?? (chainLink ? hostState.session.state.chain.length : 0));
   pushRelatedEffectTable(L, hostState, firstFiniteNumber(chainLink?.relatedEffectId, ctx?.chainLink?.relatedEffectId, ctx?.relatedEffectId, relatedEffectIdFromEventHistory(hostState, ctx)));

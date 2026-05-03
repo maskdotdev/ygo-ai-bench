@@ -256,6 +256,68 @@ describe("Lua raised event payloads", () => {
     expect(restored.host.messages).toContain("restored operation payload 1/99/64/1");
   });
 
+  it("preserves raised event groups when a queued Lua trigger is restored and resolved", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restored Group Target A", kind: "monster" },
+      { code: "101", name: "Restored Group Target B", kind: "monster" },
+      { code: "200", name: "Restored Group Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 210, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "101", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const source = {
+      readScript(name: string) {
+        if (name !== "c200.lua") return undefined;
+        return `
+        c200={}
+        function c200.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_TRIGGER_O)
+          e:SetCode(EVENT_TO_GRAVE)
+          e:SetRange(LOCATION_HAND)
+          e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+            Debug.Message("restored group condition " .. eg:GetCount() .. "/" .. ep .. "/" .. ev)
+            return eg:GetCount()==2 and ep==1 and ev==22
+          end)
+          e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+            Debug.Message("restored group operation " .. eg:GetCount() .. "/" .. eg:GetFirst():GetCode() .. "/" .. ep .. "/" .. ev)
+            local ok,eg2,ep2,ev2=Duel.CheckEvent(EVENT_TO_GRAVE,true)
+            Debug.Message("restored group check " .. tostring(ok) .. "/" .. eg2:GetCount() .. "/" .. ep2 .. "/" .. ev2)
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const result = host.loadScript(
+      `
+      local targets=Duel.SelectMatchingCard(0, function(c) return c:IsCode(100) or c:IsCode(101) end, 0, LOCATION_HAND, 0, 2, 2, nil)
+      Duel.RaiseEvent(targets, EVENT_TO_GRAVE, nil, REASON_EFFECT, 1, 1, 22)
+      `,
+      "queue-restored-group-payload.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("restored group condition 2/1/22");
+    const eventUids = session.state.cards.filter((card) => card.code === "100" || card.code === "101").map((card) => card.uid);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 22, eventUids });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 22, eventUids });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+
+    activateFirstTrigger(restored.session);
+    expect(restored.host.messages).toContain("restored group operation 2/100/1/22");
+    expect(restored.host.messages).toContain("restored group check true/2/1/22");
+  });
+
   it("preserves the related effect when a queued Lua trigger is restored and resolved", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Restored Related Starter", kind: "monster" },

@@ -83,9 +83,10 @@ function pushRaiseEvent(L: unknown, session: DuelSession): number {
   const eventCode = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
   const payload = readRaiseEventPayload(L);
   if (!eventName) return 0;
-  for (const uid of readCardOrGroupUids(L, 1)) {
+  const eventUids = readCardOrGroupUids(L, 1);
+  for (const uid of eventUids) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (card) raiseOperationEvent(session, eventName, card, eventCode, payload);
+    if (card) raiseOperationEvent(session, eventName, card, eventCode, { ...payload, eventUids });
   }
   return 0;
 }
@@ -96,7 +97,7 @@ function pushRaiseSingleEvent(L: unknown, session: DuelSession): number {
   const eventName = triggerEventFromCode(eventCode);
   const payload = readRaiseEventPayload(L);
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-  if (card && eventName) raiseOperationEvent(session, eventName, card, eventCode, payload);
+  if (card && eventName) raiseOperationEvent(session, eventName, card, eventCode, { ...payload, eventUids: [card.uid] });
   return 0;
 }
 
@@ -122,7 +123,7 @@ function matchingEventRecord(session: DuelSession, eventName: DuelEventName, eve
 
 function pushEventRecordPayload(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState, event: DuelEventRecord): void {
   const eventCard = event.eventCardUid === undefined ? undefined : session.state.cards.find((card) => card.uid === event.eventCardUid);
-  pushGroupTable(L, eventCard ? [eventCard.uid] : []);
+  pushGroupTable(L, event.eventUids ?? (eventCard ? [eventCard.uid] : []));
   lua.lua_pushinteger(L, event.eventPlayer ?? eventCard?.controller ?? session.state.turnPlayer);
   lua.lua_pushinteger(L, event.eventValue ?? 0);
   if (event.relatedEffectId !== undefined && Number.isFinite(event.relatedEffectId)) hostState.pushEffectTable(L, event.relatedEffectId);
@@ -137,6 +138,7 @@ interface LuaRaiseEventPayload {
   eventReasonPlayer?: PlayerId;
   eventPlayer?: PlayerId;
   eventValue?: number;
+  eventUids?: string[];
 }
 
 function readRaiseEventPayload(L: unknown): LuaRaiseEventPayload {
