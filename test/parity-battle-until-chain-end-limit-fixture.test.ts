@@ -69,8 +69,8 @@ describe("EDOPro parity battle until-chain-end limit fixtures", () => {
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateEffect", player: 0, windowId: 3, effectId: "fixture-until-chain-end-limiter", count: 1 },
-              { type: "activateEffect", player: 0, windowId: 3, effectId: "fixture-blocked-turn-quick", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-until-chain-end-limiter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-blocked-turn-quick", count: 1 },
             ],
             legalActionGroups: [
               {
@@ -102,7 +102,7 @@ describe("EDOPro parity battle until-chain-end limit fixtures", () => {
             legalActionCounts: { 0: 0, 1: 2 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
             legalActions: [
-              { type: "activateEffect", player: 1, windowId: 4, effectId: "fixture-allowed-opponent-quick", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-allowed-opponent-quick", count: 1 },
               { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
             ],
             legalActionGroups: [

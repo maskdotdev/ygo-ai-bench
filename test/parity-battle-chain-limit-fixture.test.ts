@@ -68,7 +68,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
             legalActionCounts: { 0: 0, 1: 2 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
             legalActions: [
-              { type: "activateEffect", player: 1, windowId: 2, effectId: "fixture-opponent-blocked-quick", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "battle", effectId: "fixture-opponent-blocked-quick", count: 1 },
               { type: "passAttack", player: 1, windowId: 2, windowKind: "battle", count: 1 },
             ],
             legalActionGroups: [
@@ -103,8 +103,8 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateEffect", player: 0, windowId: 3, effectId: "fixture-turn-chain-limiter", count: 1 },
-              { type: "activateEffect", player: 0, windowId: 3, effectId: "fixture-turn-followup-quick", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-turn-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-turn-followup-quick", count: 1 },
               { type: "passAttack", player: 0, windowId: 3, windowKind: "battle", count: 1 },
             ],
             legalActionGroups: [
@@ -145,7 +145,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateEffect", player: 0, windowId: 4, effectId: "fixture-turn-followup-quick", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-turn-followup-quick", count: 1 },
               { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
             ],
             legalActionGroups: [
@@ -201,7 +201,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
             legalActionCounts: { 0: 0, 1: 2 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
             legalActions: [
-              { type: "activateEffect", player: 1, windowId: 5, effectId: "fixture-opponent-blocked-quick", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "battle", effectId: "fixture-opponent-blocked-quick", count: 1 },
               { type: "passAttack", player: 1, windowId: 5, windowKind: "battle", count: 1 },
             ],
             legalActionGroups: [

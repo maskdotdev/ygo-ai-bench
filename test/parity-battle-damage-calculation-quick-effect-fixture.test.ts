@@ -91,7 +91,7 @@ describe("EDOPro parity battle damage-calculation quick-effect fixtures", () => 
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateEffect", player: 0, windowId: 9, effectId: "fixture-damage-calculation-quick", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 9, windowKind: "battle", effectId: "fixture-damage-calculation-quick", count: 1 },
               { type: "passDamage", player: 0, windowId: 9, windowKind: "battle", count: 1 },
             ],
             legalActionGroups: [effectGroup(0, "fixture-damage-calculation-quick", 1, 9), passDamageGroup(0, 1, 9)],

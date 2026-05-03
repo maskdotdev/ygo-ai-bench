@@ -541,9 +541,9 @@ describe("EDOPro compatibility harness scaffolding", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [
-                { type: "cancelAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", count: 1 },
-                { type: "replayAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2", count: 1 },
-                { type: "replayAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1", count: 1 },
+                { type: "cancelAttack", player: 0, windowId: 16, windowKind: "battle", attackerUid: "p0-deck-100-0", count: 1 },
+                { type: "replayAttack", player: 0, windowId: 16, windowKind: "battle", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2", count: 1 },
+                { type: "replayAttack", player: 0, windowId: 16, windowKind: "battle", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1", count: 1 },
               ],
               logIncludes: ["Replay decision pending"],
             },
@@ -555,7 +555,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
               battleWindow: { kind: "replayDecision", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
               pendingBattle: true,
               currentAttack: true,
-              legalActions: [{ type: "replayAttack", player: 0, windowId: 16, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1", count: 1 }],
+              legalActions: [{ type: "replayAttack", player: 0, windowId: 16, windowKind: "battle", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1", count: 1 }],
             },
             after: {
               source: "edopro",

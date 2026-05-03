@@ -98,9 +98,9 @@ describe("EDOPro parity battle target-count replay fixtures", () => {
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [
-              { type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, count: 1 },
-              { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1", windowId: 16, count: 1 },
-              { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2", windowId: 16, count: 1 },
+              { type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 },
+              { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1", windowId: 16, windowKind: "battle", count: 1 },
+              { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2", windowId: 16, windowKind: "battle", count: 1 },
             ],
             legalActionGroups: [
               {
@@ -130,7 +130,7 @@ describe("EDOPro parity battle target-count replay fixtures", () => {
             battleWindow: { kind: "replayDecision", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
-            legalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2", windowId: 16, count: 1 }],
+            legalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2", windowId: 16, windowKind: "battle", count: 1 }],
             legalActionGroups: [
               {
                 player: 0,

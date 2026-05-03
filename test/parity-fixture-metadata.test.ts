@@ -58,6 +58,10 @@ describe("parity fixture metadata", () => {
     expect(missingTimingLegalActionWindowIds()).toEqual([]);
   });
 
+  it("requires timing-window legal-action expectations with window ids to pin window kinds", () => {
+    expect(missingTimingLegalActionWindowKinds()).toEqual([]);
+  });
+
   it("requires timing-window legal-action group expectations to pin window ids", () => {
     expect(missingTimingLegalActionGroupWindowIds()).toEqual([]);
   });
@@ -122,6 +126,14 @@ describe("parity fixture metadata", () => {
         '    { type: "activateEffect", player: 0, effectId: "fixture-effect", count: 1 },',
         '    { type: "passAttack", player: 0, windowKind: "battle", count: 1 },',
         "  ],",
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:5"]);
+    expect(
+      missingTimingLegalActionWindowKindsInLines("fixture.ts", [
+        ...lines.slice(0, 3),
+        '  windowKind: "battle",',
+        '  legalActions: [{ type: "passDamage", player: 0, windowId: 2 }],',
         ...lines.slice(4),
       ]),
     ).toEqual(["fixture.ts:5"]);
@@ -245,6 +257,10 @@ function missingOpenLegalActionGroupWindowIds(): string[] {
 
 function missingTimingLegalActionWindowIds(): string[] {
   return parityFixtureFiles().flatMap((file) => missingTimingLegalActionWindowIdsInLines(file, readFixtureLines(file)));
+}
+
+function missingTimingLegalActionWindowKinds(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingTimingLegalActionWindowKindsInLines(file, readFixtureLines(file)));
 }
 
 function missingTimingLegalActionGroupWindowIds(): string[] {
@@ -373,6 +389,18 @@ function missingTimingLegalActionWindowIdsInLines(file: string, lines: string[])
   return missingLegalActionWindowIdsInLines(file, lines, ["battle", "chainResponse", "triggerBucket"]);
 }
 
+function missingTimingLegalActionWindowKindsInLines(file: string, lines: string[]): string[] {
+  const missingWindowKinds: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/(legalActions|absentLegalActions):/.test(line)) return;
+    const block = expectationBlock(lines, findExpectationHeader(lines, index));
+    if (!blockHasWindowKind(block, ["battle", "chainResponse", "triggerBucket"])) return;
+    const actionObjects = legalActionArrayText(lines, index).match(/\{[^{}]*windowId:\s*\d+[^{}]*\}/g) ?? [];
+    if (actionObjects.some((action) => !/\bwindowKind:/.test(action))) missingWindowKinds.push(`${file}:${index + 1}`);
+  });
+  return missingWindowKinds;
+}
+
 function missingTimingLegalActionGroupWindowIdsInLines(file: string, lines: string[]): string[] {
   return missingLegalActionGroupWindowIdsInLines(file, lines, ["battle", "chainResponse", "triggerBucket"]);
 }
@@ -487,6 +515,13 @@ function expectationBlock(lines: string[], sourceIndex: number): string {
 function findBlockStart(lines: string[], sourceIndex: number): number {
   for (let index = sourceIndex; index >= 0; index -= 1) {
     if ((lines[index] ?? "").includes("{")) return index;
+  }
+  return sourceIndex;
+}
+
+function findExpectationHeader(lines: string[], sourceIndex: number): number {
+  for (let index = sourceIndex; index >= 0; index -= 1) {
+    if (/^\s*(before|after|expected): \{/.test(lines[index] ?? "")) return index;
   }
   return sourceIndex;
 }

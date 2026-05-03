@@ -49,7 +49,7 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
             legalActionCounts: { 0: 0, 1: 2 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
             legalActions: [
-              { type: "activateEffect", player: 1, windowId: 2, effectId: "fixture-opponent-attack-negator", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "battle", effectId: "fixture-opponent-attack-negator", count: 1 },
               { type: "passAttack", player: 1, windowId: 2, windowKind: "battle", count: 1 },
             ],
             legalActionGroups: [
