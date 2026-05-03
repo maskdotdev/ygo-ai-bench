@@ -51,6 +51,19 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battlePairs must be an array");
   });
 
+  it("rejects malformed current-version snapshot scalar fields before restore", () => {
+    const session = createDuel({ seed: 140, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    (snapshot.state as { turnPlayer?: unknown }).turnPlayer = 2;
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.turnPlayer must be a player id");
+  });
+
   it("serializes every initialized duel state key", () => {
     const session = createDuel({ seed: 137, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

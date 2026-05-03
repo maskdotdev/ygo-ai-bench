@@ -187,8 +187,18 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   for (const field of arrayFields) {
     if (!Array.isArray(state[field])) throw new Error(`Malformed duel snapshot: state.${field} must be an array`);
   }
-  for (const field of ["players", "activityCounts", "battleDamage"] as const) {
+  for (const field of ["players", "activityCounts", "battleDamage", "options"] as const) {
     if (!isRecord(state[field])) throw new Error(`Malformed duel snapshot: state.${field} must be an object`);
+  }
+  for (const field of ["id", "seed", "status", "phase"] as const) {
+    if (typeof state[field] !== "string") throw new Error(`Malformed duel snapshot: state.${field} must be a string`);
+  }
+  for (const field of ["actionWindowId", "turn", "randomCounter", "duelTypeFlags", "globalFlags", "attackCostPaid"] as const) {
+    if (typeof state[field] !== "number") throw new Error(`Malformed duel snapshot: state.${field} must be a number`);
+  }
+  if (state.turnPlayer !== 0 && state.turnPlayer !== 1) throw new Error("Malformed duel snapshot: state.turnPlayer must be a player id");
+  for (const field of ["unofficialProcEnabled", "shuffleCheckDisabled", "phaseActivity"] as const) {
+    if (typeof state[field] !== "boolean") throw new Error(`Malformed duel snapshot: state.${field} must be a boolean`);
   }
 }
 
