@@ -3,6 +3,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua attack negation helpers", () => {
@@ -138,5 +139,70 @@ describe("Lua attack negation helpers", () => {
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
     expect(host.messages).toContain("attack disabled trigger");
+  });
+
+  it("applies restored Lua attack-window quick effects through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Restore Target", kind: "monster", attack: 1000 },
+      { code: "300", name: "Restore Attack Negator", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c300.lua") return undefined;
+        return `
+        c300={}
+        function c300.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_QUICK_O)
+          e:SetRange(LOCATION_HAND)
+          e:SetCondition(function(e,tp)
+            return Duel.GetAttacker()~=nil
+          end)
+          e:SetOperation(function(e,tp)
+            Debug.Message("restored attack negate " .. tostring(Duel.NegateAttack()))
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 146, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: ["200", "300"] } });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+    session.state.phase = "battle";
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.targetUid === target!.uid);
+    expect(attack).toBeDefined();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+    expect(getDuelLegalActions(session, 1).some((action) => action.type === "activateEffect")).toBe(true);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    const negate = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
+    expect(negate).toBeDefined();
+    const result = applyLuaRestoreResponse(restored, negate!);
+
+    expect(result.ok).toBe(true);
+    expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(["lua-1"]);
+    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
+    expect(restored.host.messages).toEqual(["restored attack negate true"]);
+    expect(restored.session.state.currentAttack).toBeUndefined();
+    expect(restored.session.state.pendingBattle).toBeUndefined();
+    expect(restored.session.state.attackCanceledUids).toEqual([attacker!.uid]);
+    expect(restored.session.state.eventHistory.some((event) => event.eventName === "attackDisabled")).toBe(true);
   });
 });
