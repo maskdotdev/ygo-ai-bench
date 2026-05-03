@@ -15,6 +15,7 @@ export interface LuaSnapshotRestoreResult {
   missingRegistryKeys: string[];
   chainLimitRegistryKeys: string[];
   missingChainLimitRegistryKeys: string[];
+  incompleteReasons: string[];
 }
 
 export function restoreDuelWithLuaScripts(
@@ -33,8 +34,9 @@ export function restoreDuelWithLuaScripts(
   const chainLimitRegistryKeys = luaChainLimitRegistryKeys(snapshot);
   const restoredChainLimitRegistryKeys = luaChainLimitRegistryKeys({ ...snapshot, state: session.state });
   const missingChainLimitRegistryKeys = chainLimitRegistryKeys.filter((key) => !restoredChainLimitRegistryKeys.includes(key));
-  const restoreComplete = loadedScripts.every((result) => result.ok) && missingRegistryKeys.length === 0 && missingChainLimitRegistryKeys.length === 0;
-  return { session, host, restoreComplete, loadedScripts, registeredEffects, restoredRegistryKeys, missingRegistryKeys, chainLimitRegistryKeys, missingChainLimitRegistryKeys };
+  const incompleteReasons = luaRestoreIncompleteReasons(loadedScripts, missingRegistryKeys, missingChainLimitRegistryKeys);
+  const restoreComplete = incompleteReasons.length === 0;
+  return { session, host, restoreComplete, loadedScripts, registeredEffects, restoredRegistryKeys, missingRegistryKeys, chainLimitRegistryKeys, missingChainLimitRegistryKeys, incompleteReasons };
 }
 
 export function getLuaRestoreLegalActions(restored: LuaSnapshotRestoreResult, player: PlayerId): DuelAction[] {
@@ -51,7 +53,7 @@ export function applyLuaRestoreResponse(restored: LuaSnapshotRestoreResult, resp
   if (!restored.restoreComplete) {
     return {
       ok: false,
-      error: "Lua snapshot restore is incomplete",
+      error: luaRestoreIncompleteError(restored),
       state: queryPublicState(restored.session),
       legalActions: [],
       legalActionGroups: [],
@@ -72,6 +74,18 @@ function luaRegistryKeys(snapshot: SerializedDuel): Set<string> {
 
 function luaChainLimitRegistryKeys(snapshot: SerializedDuel): string[] {
   return snapshot.state.chainLimits.map((limit) => limit.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua-chain-limit:")));
+}
+
+function luaRestoreIncompleteReasons(loadedScripts: LuaScriptLoadResult[], missingRegistryKeys: string[], missingChainLimitRegistryKeys: string[]): string[] {
+  return [
+    ...loadedScripts.filter((result) => !result.ok).map((result) => `script ${result.name}: ${result.error}`),
+    ...(missingRegistryKeys.length === 0 ? [] : [`missing Lua effect registry keys: ${missingRegistryKeys.join(", ")}`]),
+    ...(missingChainLimitRegistryKeys.length === 0 ? [] : [`missing Lua chain-limit registry keys: ${missingChainLimitRegistryKeys.join(", ")}`]),
+  ];
+}
+
+function luaRestoreIncompleteError(restored: LuaSnapshotRestoreResult): string {
+  return restored.incompleteReasons.length === 0 ? "Lua snapshot restore is incomplete" : `Lua snapshot restore is incomplete: ${restored.incompleteReasons.join("; ")}`;
 }
 
 function luaRegistryCardCodes(registryKeys: Set<string>): Set<string> {

@@ -105,6 +105,7 @@ describe("Node upstream snapshot restore", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
 
     expect(restored.restoreComplete).toBe(false);
+    expect(restored.incompleteReasons).toEqual(["script c100.lua: Script c100.lua was not found", "missing Lua effect registry keys: lua:100:lua-1"]);
     expect(restored.loadedScripts).toEqual([{ ok: false, name: "c100.lua", error: "Script c100.lua was not found" }]);
     expect(restored.registeredEffects).toBe(0);
     expect(restored.restoredRegistryKeys).toEqual([]);
@@ -219,6 +220,11 @@ describe("Node upstream snapshot restore", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
 
     expect(restored.restoreComplete).toBe(false);
+    expect(restored.incompleteReasons).toEqual([
+      "script c100.lua: Script c100.lua was not found",
+      "script c200.lua: Script c200.lua was not found",
+      "missing Lua effect registry keys: lua:100:lua-1, lua:200:lua-2",
+    ]);
     expect(restored.loadedScripts).toEqual([
       { ok: false, name: "c100.lua", error: "Script c100.lua was not found" },
       { ok: false, name: "c200.lua", error: "Script c200.lua was not found" },
@@ -363,6 +369,7 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.restoreComplete).toBe(false);
     expect(restored.chainLimitRegistryKeys).toHaveLength(1);
     expect(restored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
+    expect(restored.incompleteReasons).toEqual([`missing Lua chain-limit registry keys: ${restored.chainLimitRegistryKeys[0]}`]);
     expect(getDuelLegalActions(restored.session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
@@ -371,7 +378,7 @@ describe("Node upstream snapshot restore", () => {
     expect(getLuaRestoreLegalActions(restored, 1)).not.toContain(forgedAction);
     const forgedResult = applyLuaRestoreResponse(restored, forgedAction!);
     expect(forgedResult.ok).toBe(false);
-    expect(forgedResult.error).toContain("Lua snapshot restore is incomplete");
+    expect(forgedResult.error).toContain("Lua snapshot restore is incomplete: missing Lua chain-limit registry keys: lua-chain-limit:");
     expect(forgedResult.legalActions).toEqual([]);
     expect(forgedResult.legalActionGroups).toEqual([]);
   });
