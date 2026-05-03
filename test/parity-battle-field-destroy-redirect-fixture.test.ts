@@ -67,7 +67,7 @@ describe("EDOPro parity field battle destroy redirect fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro lets non-battling field effects redirect monsters destroyed by battles involving affected monsters",
