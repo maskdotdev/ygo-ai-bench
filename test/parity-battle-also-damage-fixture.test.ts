@@ -63,7 +63,7 @@ describe("EDOPro parity also battle damage fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro applies ALSO_BATTLE_DAMAGE by making the opponent also take battle damage when the source controller is damaged",
