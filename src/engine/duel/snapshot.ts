@@ -192,6 +192,8 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   }
   assertSnapshotPlayers(state.players);
   assertSnapshotOptions(state.options);
+  assertSnapshotActivityCounts(state.activityCounts);
+  assertSnapshotBattleDamage(state.battleDamage);
   for (const field of ["id", "seed", "status", "phase"] as const) {
     if (typeof state[field] !== "string") throw new Error(`Malformed duel snapshot: state.${field} must be a string`);
   }
@@ -295,6 +297,26 @@ function assertSnapshotOptions(options: unknown): void {
   if (!isRecord(options)) throw new Error("Malformed duel snapshot: state.options must be an object");
   for (const field of ["startingLifePoints", "startingHandSize", "drawPerTurn"] as const) {
     if (typeof options[field] !== "number") throw new Error(`Malformed duel snapshot: state.options.${field} must be a number`);
+  }
+}
+
+function assertSnapshotActivityCounts(counts: unknown): void {
+  if (!isRecord(counts)) throw new Error("Malformed duel snapshot: state.activityCounts must be an object");
+  assertSnapshotActivityCount(counts[0], "state.activityCounts.0");
+  assertSnapshotActivityCount(counts[1], "state.activityCounts.1");
+}
+
+function assertSnapshotActivityCount(count: unknown, path: string): void {
+  if (!isRecord(count)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+  for (const field of ["summon", "normalSummon", "specialSummon", "flipSummon", "attack"] as const) {
+    if (typeof count[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
+  }
+}
+
+function assertSnapshotBattleDamage(battleDamage: unknown): void {
+  if (!isRecord(battleDamage)) throw new Error("Malformed duel snapshot: state.battleDamage must be an object");
+  for (const player of [0, 1] as const) {
+    if (typeof battleDamage[player] !== "number") throw new Error(`Malformed duel snapshot: state.battleDamage.${player} must be a number`);
   }
 }
 

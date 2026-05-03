@@ -170,6 +170,22 @@ describe("duel snapshot persistence", () => {
     expect(() => restoreDuel(badPair, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battlePairs.0.targetUid must be a string");
   });
 
+  it("rejects malformed snapshot activity and damage records before restore", () => {
+    const session = createDuel({ seed: 150, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badActivity = serializeDuel(session);
+    const badBattleDamage = serializeDuel(session);
+    badActivity.state.activityCounts[0] = { ...badActivity.state.activityCounts[0], attack: "one" as unknown as number };
+    badBattleDamage.state.battleDamage = { ...badBattleDamage.state.battleDamage, 1: "1000" as unknown as number };
+
+    expect(() => restoreDuel(badActivity, createCardReader(cards))).toThrow("Malformed duel snapshot: state.activityCounts.0.attack must be a number");
+    expect(() => restoreDuel(badBattleDamage, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleDamage.1 must be a number");
+  });
+
   it("rejects malformed optional battle window snapshots before restore", () => {
     const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
