@@ -564,7 +564,7 @@ function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecor
 }
 
 function shouldKeepTriggerCode(triggerEvent: DuelEventName, code: number | undefined): code is number {
-  return code !== undefined && (triggerEvent === "customEvent" || triggerEvent.startsWith("phase"));
+  return code !== undefined;
 }
 
 function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEventName | undefined): boolean {

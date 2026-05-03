@@ -48,15 +48,33 @@ describe("Lua CheckEvent payloads", () => {
   });
 
   it("preserves numeric alias codes from Lua-raised events", () => {
-    const cards: DuelCardData[] = [{ code: "100", name: "Alias Event Card", kind: "monster" }];
-    const session = createDuel({ seed: 213, startingHandSize: 1, cardReader: createCardReader(cards) });
-    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Alias Event Card", kind: "monster" },
+      { code: "200", name: "Primary Alias Watcher", kind: "monster" },
+      { code: "300", name: "Secondary Alias Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 213, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
     startDuel(session);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
       `
       local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local primary = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local secondary = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local p=Effect.CreateEffect(primary)
+      p:SetType(EFFECT_TYPE_TRIGGER_O)
+      p:SetCode(EVENT_LEAVE_FIELD)
+      p:SetRange(LOCATION_HAND)
+      p:SetOperation(function(e,tp,eg) Debug.Message("primary alias should not queue") end)
+      primary:RegisterEffect(p)
+      local s=Effect.CreateEffect(secondary)
+      s:SetType(EFFECT_TYPE_TRIGGER_O)
+      s:SetCode(EVENT_LEAVE_FIELD_P)
+      s:SetRange(LOCATION_HAND)
+      s:SetOperation(function(e,tp,eg) Debug.Message("secondary alias queued " .. eg:GetFirst():GetCode()) end)
+      secondary:RegisterEffect(s)
       Duel.RaiseEvent(target, EVENT_LEAVE_FIELD_P, nil, REASON_EFFECT, 0, 0, 0)
       Debug.Message("raised alias check " .. tostring(Duel.CheckEvent(EVENT_LEAVE_FIELD_P)) .. "/" .. tostring(Duel.CheckEvent(EVENT_LEAVE_FIELD)))
       `,
@@ -66,6 +84,7 @@ describe("Lua CheckEvent payloads", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("raised alias check true/false");
     expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "leftField", eventCode: 1019 });
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventCode)).toEqual([1019]);
   });
 
   it("restores queued Lua triggers raised with numeric alias event codes", () => {
