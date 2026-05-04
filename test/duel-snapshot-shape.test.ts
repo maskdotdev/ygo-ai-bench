@@ -179,6 +179,27 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badDamagePasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.damagePasses requires a pending battle");
   });
 
+  it("rejects impossible chain pass snapshots before restore", () => {
+    const session = createDuel({ seed: 176, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = serializeDuel(session).state.cards[0]!.uid;
+    const badWaitingPass = serializeDuel(session);
+    const badBothPassed = serializeDuel(session);
+    badWaitingPass.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect" }];
+    badWaitingPass.state.waitingFor = 1;
+    badWaitingPass.state.chainPasses = [1];
+    badBothPassed.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect" }];
+    badBothPassed.state.waitingFor = 0;
+    badBothPassed.state.chainPasses = [0, 1];
+
+    expect(() => restoreDuel(badWaitingPass, createCardReader(cards))).toThrow("Malformed duel snapshot: state.waitingFor must not be included in chainPasses");
+    expect(() => restoreDuel(badBothPassed, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainPasses must not contain both players");
+  });
+
   it("rejects battle pass snapshots outside their battle step before restore", () => {
     const session = createDuel({ seed: 174, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
