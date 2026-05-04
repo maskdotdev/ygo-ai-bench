@@ -11,6 +11,9 @@ export function assertSnapshotBattlePassWindows(state: Record<string, unknown>):
 }
 
 export function assertSnapshotBattleStateConsistency(state: Record<string, unknown>): void {
+  if (state.currentAttack === undefined && state.pendingBattle === undefined) return;
+  if (!isRecord(state.currentAttack)) throw new Error("Malformed duel snapshot: state.currentAttack is required with pendingBattle");
+  if (!isRecord(state.pendingBattle)) throw new Error("Malformed duel snapshot: state.pendingBattle is required with currentAttack");
   if (!isRecord(state.currentAttack) || !isRecord(state.pendingBattle)) return;
   if (state.currentAttack.attackerUid !== state.pendingBattle.attackerUid) throw new Error("Malformed duel snapshot: state.pendingBattle.attackerUid must match currentAttack");
   if (state.currentAttack.targetUid !== state.pendingBattle.targetUid) throw new Error("Malformed duel snapshot: state.pendingBattle.targetUid must match currentAttack");

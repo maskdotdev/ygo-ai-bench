@@ -49,9 +49,11 @@ describe("duel snapshot battle restore shape validation", () => {
     const mismatchedStep = serializeDuel(session);
     const mismatchedWaitingFor = serializeDuel(session);
     orphanedWindow.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+    mismatchedStep.state.currentAttack = { attackerUid };
     mismatchedStep.state.pendingBattle = { attackerUid };
     mismatchedStep.state.battleStep = "damage";
     mismatchedStep.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+    mismatchedWaitingFor.state.currentAttack = { attackerUid };
     mismatchedWaitingFor.state.pendingBattle = { attackerUid };
     mismatchedWaitingFor.state.waitingFor = 0;
     mismatchedWaitingFor.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
@@ -72,9 +74,11 @@ describe("duel snapshot battle restore shape validation", () => {
     const targetUid = serializeDuel(session).state.cards[1]!.uid;
     const mismatchedAttacker = serializeDuel(session);
     const mismatchedTarget = serializeDuel(session);
+    mismatchedAttacker.state.currentAttack = { attackerUid };
     mismatchedAttacker.state.pendingBattle = { attackerUid };
     mismatchedAttacker.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid: targetUid, responsePlayer: 1, attackNegated: false };
     mismatchedAttacker.state.waitingFor = 1;
+    mismatchedTarget.state.currentAttack = { attackerUid, targetUid };
     mismatchedTarget.state.pendingBattle = { attackerUid, targetUid };
     mismatchedTarget.state.battleWindow = { id: 1, kind: "attackTargetConfirmation", step: "attack", attackerUid, responsePlayer: 0, attackNegated: false };
     mismatchedTarget.state.waitingFor = 0;
@@ -92,6 +96,7 @@ describe("duel snapshot battle restore shape validation", () => {
     startDuel(session);
     const attackerUid = serializeDuel(session).state.cards[0]!.uid;
     const negatedWindow = serializeDuel(session);
+    negatedWindow.state.currentAttack = { attackerUid };
     negatedWindow.state.pendingBattle = { attackerUid };
     negatedWindow.state.waitingFor = 1;
     negatedWindow.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: true };
@@ -109,10 +114,12 @@ describe("duel snapshot battle restore shape validation", () => {
     const attackerUid = serializeDuel(session).state.cards[0]!.uid;
     const wrongPlayer = serializeDuel(session);
     const wrongLocation = serializeDuel(session);
+    wrongPlayer.state.currentAttack = { attackerUid };
     wrongPlayer.state.pendingBattle = { attackerUid };
     wrongPlayer.state.waitingFor = 1;
     wrongPlayer.state.cards[0] = { ...wrongPlayer.state.cards[0]!, location: "monsterZone" };
     wrongPlayer.state.battleWindow = { id: 1, kind: "replayDecision", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+    wrongLocation.state.currentAttack = { attackerUid };
     wrongLocation.state.pendingBattle = { attackerUid };
     wrongLocation.state.waitingFor = 0;
     wrongLocation.state.cards[0] = { ...wrongLocation.state.cards[0]!, location: "graveyard" };
@@ -143,9 +150,13 @@ describe("duel snapshot battle restore shape validation", () => {
     badTarget.state.currentAttack = { attackerUid, targetUid: 7 as unknown as string };
     badCurrentAttack.state.currentAttack = { attackerUid, replayTargetCount: "two" as unknown as number };
     badReplayTargets.state.currentAttack = { attackerUid, replayTargetUids: [targetUid, "missing"] };
+    badPendingReplayTargets.state.currentAttack = { attackerUid, replayTargetUids: [targetUid] };
     badPendingReplayTargets.state.pendingBattle = { attackerUid, replayTargetUids: [targetUid, "missing"] };
+    badPendingBattle.state.currentAttack = { attackerUid };
     badPendingBattle.state.pendingBattle = { attackerUid, battleDamageOverrides: { 2: 100 } as unknown as Record<0 | 1, number> };
+    badDamageOverrides.state.currentAttack = { attackerUid };
     badDamageOverrides.state.pendingBattle = { attackerUid, battleDamageOverrides: "100" as unknown as Record<0 | 1, number> };
+    badDamageAmount.state.currentAttack = { attackerUid };
     badDamageAmount.state.pendingBattle = { attackerUid, battleDamageOverrides: { 0: "100" as unknown as number } };
 
     expect(() => restoreDuel(badAttacker, createCardReader(cards))).toThrow("Malformed duel snapshot: state.currentAttack.attackerUid must reference a card");
@@ -156,6 +167,23 @@ describe("duel snapshot battle restore shape validation", () => {
     expect(() => restoreDuel(badPendingBattle, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.battleDamageOverrides must use player ids");
     expect(() => restoreDuel(badDamageOverrides, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.battleDamageOverrides must be an object");
     expect(() => restoreDuel(badDamageAmount, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.battleDamageOverrides.0 must be a number");
+  });
+
+  it("rejects half-present battle state before restore", () => {
+    const session = createDuel({ seed: 185, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const missingCurrentAttack = serializeDuel(session);
+    const missingPendingBattle = serializeDuel(session);
+    missingCurrentAttack.state.pendingBattle = { attackerUid };
+    missingPendingBattle.state.currentAttack = { attackerUid };
+
+    expect(() => restoreDuel(missingCurrentAttack, createCardReader(cards))).toThrow("Malformed duel snapshot: state.currentAttack is required with pendingBattle");
+    expect(() => restoreDuel(missingPendingBattle, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle is required with currentAttack");
   });
 
   it("rejects pending battle snapshots that diverge from current attack before restore", () => {
