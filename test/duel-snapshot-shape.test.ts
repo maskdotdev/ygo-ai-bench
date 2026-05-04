@@ -200,6 +200,21 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badBothPassed, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainPasses must not contain both players");
   });
 
+  it("rejects active chain snapshots without a waiting player before restore", () => {
+    const session = createDuel({ seed: 178, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = serializeDuel(session).state.cards[0]!.uid;
+    const snapshot = serializeDuel(session);
+    snapshot.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect" }];
+    delete snapshot.state.waitingFor;
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.waitingFor is required for a pending chain");
+  });
+
   it("rejects battle pass snapshots outside their battle step before restore", () => {
     const session = createDuel({ seed: 174, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
