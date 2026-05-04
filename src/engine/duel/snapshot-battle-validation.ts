@@ -11,7 +11,10 @@ export function assertSnapshotBattlePassWindows(state: Record<string, unknown>):
 }
 
 export function assertSnapshotBattleStateConsistency(state: Record<string, unknown>): void {
-  if (state.currentAttack === undefined && state.pendingBattle === undefined) return;
+  if (state.currentAttack === undefined && state.pendingBattle === undefined) {
+    if (state.battleStep !== undefined) throw new Error("Malformed duel snapshot: state.battleStep requires battle state");
+    return;
+  }
   if (state.phase !== "battle") throw new Error("Malformed duel snapshot: battle state requires the battle phase");
   if (!isRecord(state.currentAttack)) throw new Error("Malformed duel snapshot: state.currentAttack is required with pendingBattle");
   if (!isRecord(state.pendingBattle)) throw new Error("Malformed duel snapshot: state.pendingBattle is required with currentAttack");

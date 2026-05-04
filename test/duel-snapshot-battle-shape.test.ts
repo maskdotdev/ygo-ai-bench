@@ -208,6 +208,19 @@ describe("duel snapshot battle restore shape validation", () => {
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: battle state requires the battle phase");
   });
 
+  it("rejects battle steps without battle state before restore", () => {
+    const session = createDuel({ seed: 187, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    snapshot.state.battleStep = "damage";
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleStep requires battle state");
+  });
+
   it("rejects pending battle snapshots that diverge from current attack before restore", () => {
     const session = createDuel({ seed: 183, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
