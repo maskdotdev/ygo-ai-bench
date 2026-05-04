@@ -336,6 +336,25 @@ describe("duel snapshot battle restore shape validation", () => {
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleStep is required with battleWindow");
   });
 
+  it("rejects battle windows with mismatched action window ids before restore", () => {
+    const session = createDuel({ seed: 190, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const snapshot = serializeDuel(session);
+    putInBattlePhase(snapshot);
+    snapshot.state.currentAttack = { attackerUid };
+    snapshot.state.pendingBattle = { attackerUid };
+    snapshot.state.battleStep = "attack";
+    snapshot.state.actionWindowId = 1;
+    snapshot.state.battleWindow = { id: snapshot.state.actionWindowId + 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.id must not exceed actionWindowId");
+  });
+
   it("rejects pending battle snapshots that diverge from current attack before restore", () => {
     const session = createDuel({ seed: 183, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -367,5 +386,8 @@ describe("duel snapshot battle restore shape validation", () => {
 });
 
 function putInBattlePhase(...snapshots: Array<ReturnType<typeof serializeDuel>>): void {
-  for (const snapshot of snapshots) snapshot.state.phase = "battle";
+  for (const snapshot of snapshots) {
+    snapshot.state.phase = "battle";
+    snapshot.state.actionWindowId = Math.max(snapshot.state.actionWindowId, 1);
+  }
 }

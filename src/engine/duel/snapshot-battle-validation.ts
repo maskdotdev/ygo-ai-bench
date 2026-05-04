@@ -30,6 +30,9 @@ export function assertSnapshotBattleWindowContext(state: Record<string, unknown>
   if (state.battleWindow === undefined) return;
   if (state.pendingBattle === undefined && state.currentAttack === undefined) throw new Error("Malformed duel snapshot: state.battleWindow requires battle state");
   if (state.battleStep === undefined) throw new Error("Malformed duel snapshot: state.battleStep is required with battleWindow");
+  if (isRecord(state.battleWindow) && typeof state.actionWindowId === "number" && typeof state.battleWindow.id === "number" && state.battleWindow.id > state.actionWindowId) {
+    throw new Error("Malformed duel snapshot: state.battleWindow.id must not exceed actionWindowId");
+  }
   assertBattleWindowMatchesBattleState(state);
   if (isRecord(state.battleWindow) && state.battleWindow.attackNegated) throw new Error("Malformed duel snapshot: state.battleWindow.attackNegated cannot be pending");
   assertReplayDecisionWindowMatchesAttacker(state);
