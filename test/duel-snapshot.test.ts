@@ -60,6 +60,7 @@ describe("duel snapshot persistence", () => {
     startDuel(session);
     const attackerUid = session.state.cards[0]!.uid;
     const targetUid = session.state.cards[1]!.uid;
+    session.state.phase = "battle";
     session.state.currentAttack = { attackerUid, targetUid, replayTargetCount: 1, replayTargetUids: [targetUid] };
     session.state.pendingBattle = { attackerUid, targetUid, replayTargetCount: 1, replayTargetUids: [targetUid] };
 
