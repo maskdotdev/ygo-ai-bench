@@ -211,7 +211,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
     if (typeof state[field] !== "boolean") throw new Error(`Malformed duel snapshot: state.${field} must be a boolean`);
   }
   for (const field of ["chainPasses", "attackPasses", "damagePasses"] as const) {
-    assertSnapshotPlayerIdArray(state[field], `state.${field}`);
+    assertSnapshotPlayerPassArray(state[field], `state.${field}`);
   }
   for (const field of ["lastDiceResults", "lastCoinResults"] as const) {
     assertSnapshotNumberArray(state[field], `state.${field}`);
@@ -278,6 +278,11 @@ function assertSnapshotPlayerId(value: unknown, path: string): asserts value is 
 function assertSnapshotPlayerIdArray(values: unknown, path: string): void {
   if (!Array.isArray(values)) throw new Error(`Malformed duel snapshot: ${path} must be an array`);
   for (const [index, value] of values.entries()) assertSnapshotPlayerId(value, `${path}.${index}`);
+}
+
+function assertSnapshotPlayerPassArray(values: unknown, path: string): void {
+  assertSnapshotPlayerIdArray(values, path);
+  if (new Set(values as PlayerId[]).size !== (values as PlayerId[]).length) throw new Error(`Malformed duel snapshot: ${path} must not contain duplicate players`);
 }
 
 function assertSnapshotNumberArray(values: unknown, path: string): void {

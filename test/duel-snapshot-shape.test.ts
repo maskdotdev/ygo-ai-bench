@@ -137,6 +137,25 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badChainPasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainPasses.1 must be a player id");
   });
 
+  it("rejects duplicate pending-window pass players before restore", () => {
+    const session = createDuel({ seed: 172, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badChainPasses = serializeDuel(session);
+    const badAttackPasses = serializeDuel(session);
+    const badDamagePasses = serializeDuel(session);
+    badChainPasses.state.chainPasses = [0, 0];
+    badAttackPasses.state.attackPasses = [1, 1];
+    badDamagePasses.state.damagePasses = [0, 0];
+
+    expect(() => restoreDuel(badChainPasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainPasses must not contain duplicate players");
+    expect(() => restoreDuel(badAttackPasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackPasses must not contain duplicate players");
+    expect(() => restoreDuel(badDamagePasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.damagePasses must not contain duplicate players");
+  });
+
   it("rejects malformed snapshot scalar collections before restore", () => {
     const session = createDuel({ seed: 148, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
