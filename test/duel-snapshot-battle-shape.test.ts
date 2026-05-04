@@ -274,6 +274,22 @@ describe("duel snapshot battle restore shape validation", () => {
     expect(() => restoreDuel(missingPendingBattle, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle is required with currentAttack");
   });
 
+  it("rejects current attack damage override snapshots before restore", () => {
+    const session = createDuel({ seed: 189, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const snapshot = serializeDuel(session);
+    putInBattlePhase(snapshot);
+    snapshot.state.currentAttack = { attackerUid, battleDamageOverrides: { 1: 100 } } as NonNullable<typeof snapshot.state.currentAttack>;
+    snapshot.state.pendingBattle = { attackerUid };
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.currentAttack must not contain battleDamageOverrides");
+  });
+
   it("rejects battle state outside the battle phase before restore", () => {
     const session = createDuel({ seed: 186, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
