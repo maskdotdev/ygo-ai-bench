@@ -28,6 +28,7 @@ export function assertSnapshotBattleStateConsistency(state: Record<string, unkno
 export function assertSnapshotBattleWindowContext(state: Record<string, unknown>): void {
   if (state.battleWindow === undefined) return;
   if (state.pendingBattle === undefined && state.currentAttack === undefined) throw new Error("Malformed duel snapshot: state.battleWindow requires battle state");
+  if (state.battleStep === undefined) throw new Error("Malformed duel snapshot: state.battleStep is required with battleWindow");
   assertBattleWindowMatchesBattleState(state);
   if (isRecord(state.battleWindow) && state.battleWindow.attackNegated) throw new Error("Malformed duel snapshot: state.battleWindow.attackNegated cannot be pending");
   assertReplayDecisionWindowMatchesAttacker(state);

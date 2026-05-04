@@ -56,6 +56,7 @@ describe("duel snapshot battle restore shape validation", () => {
     mismatchedStep.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
     mismatchedWaitingFor.state.currentAttack = { attackerUid };
     mismatchedWaitingFor.state.pendingBattle = { attackerUid };
+    mismatchedWaitingFor.state.battleStep = "attack";
     mismatchedWaitingFor.state.waitingFor = 0;
     mismatchedWaitingFor.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
 
@@ -78,10 +79,12 @@ describe("duel snapshot battle restore shape validation", () => {
     putInBattlePhase(mismatchedAttacker, mismatchedTarget);
     mismatchedAttacker.state.currentAttack = { attackerUid };
     mismatchedAttacker.state.pendingBattle = { attackerUid };
+    mismatchedAttacker.state.battleStep = "attack";
     mismatchedAttacker.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid: targetUid, responsePlayer: 1, attackNegated: false };
     mismatchedAttacker.state.waitingFor = 1;
     mismatchedTarget.state.currentAttack = { attackerUid, targetUid };
     mismatchedTarget.state.pendingBattle = { attackerUid, targetUid };
+    mismatchedTarget.state.battleStep = "attack";
     mismatchedTarget.state.battleWindow = { id: 1, kind: "attackTargetConfirmation", step: "attack", attackerUid, responsePlayer: 0, attackNegated: false };
     mismatchedTarget.state.waitingFor = 0;
 
@@ -101,6 +104,7 @@ describe("duel snapshot battle restore shape validation", () => {
     putInBattlePhase(negatedWindow);
     negatedWindow.state.currentAttack = { attackerUid };
     negatedWindow.state.pendingBattle = { attackerUid };
+    negatedWindow.state.battleStep = "attack";
     negatedWindow.state.waitingFor = 1;
     negatedWindow.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: true };
 
@@ -120,11 +124,13 @@ describe("duel snapshot battle restore shape validation", () => {
     putInBattlePhase(wrongPlayer, wrongLocation);
     wrongPlayer.state.currentAttack = { attackerUid };
     wrongPlayer.state.pendingBattle = { attackerUid };
+    wrongPlayer.state.battleStep = "attack";
     wrongPlayer.state.waitingFor = 1;
     wrongPlayer.state.cards[0] = { ...wrongPlayer.state.cards[0]!, location: "monsterZone" };
     wrongPlayer.state.battleWindow = { id: 1, kind: "replayDecision", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
     wrongLocation.state.currentAttack = { attackerUid };
     wrongLocation.state.pendingBattle = { attackerUid };
+    wrongLocation.state.battleStep = "attack";
     wrongLocation.state.waitingFor = 0;
     wrongLocation.state.cards[0] = { ...wrongLocation.state.cards[0]!, location: "graveyard" };
     wrongLocation.state.battleWindow = { id: 1, kind: "replayDecision", step: "attack", attackerUid, responsePlayer: 0, attackNegated: false };
@@ -219,6 +225,23 @@ describe("duel snapshot battle restore shape validation", () => {
     snapshot.state.battleStep = "damage";
 
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleStep requires battle state");
+  });
+
+  it("rejects battle windows without mirrored battle step before restore", () => {
+    const session = createDuel({ seed: 188, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const snapshot = serializeDuel(session);
+    putInBattlePhase(snapshot);
+    snapshot.state.currentAttack = { attackerUid };
+    snapshot.state.pendingBattle = { attackerUid };
+    snapshot.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleStep is required with battleWindow");
   });
 
   it("rejects pending battle snapshots that diverge from current attack before restore", () => {
