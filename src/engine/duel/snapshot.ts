@@ -301,6 +301,11 @@ function assertSnapshotBattleWindowContext(state: Record<string, unknown>): void
   if (state.battleWindow === undefined) return;
   if (state.pendingBattle === undefined && state.currentAttack === undefined) throw new Error("Malformed duel snapshot: state.battleWindow requires battle state");
   if (state.battleStep !== undefined && isRecord(state.battleWindow) && state.battleStep !== state.battleWindow.step) throw new Error("Malformed duel snapshot: state.battleStep must match battleWindow.step");
+  if (battleWindowIsActivePendingWindow(state) && isRecord(state.battleWindow) && state.waitingFor !== state.battleWindow.responsePlayer) throw new Error("Malformed duel snapshot: state.waitingFor must match battleWindow.responsePlayer");
+}
+
+function battleWindowIsActivePendingWindow(state: Record<string, unknown>): boolean {
+  return state.prompt === undefined && (state.chain as unknown[]).length === 0 && (state.pendingTriggers as unknown[]).length === 0;
 }
 
 function assertSnapshotPromptWindow(state: Record<string, unknown>): void {

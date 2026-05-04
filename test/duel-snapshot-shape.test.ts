@@ -720,13 +720,18 @@ describe("duel snapshot restore shape validation", () => {
     const attackerUid = serializeDuel(session).state.cards[0]!.uid;
     const orphanedWindow = serializeDuel(session);
     const mismatchedStep = serializeDuel(session);
+    const mismatchedWaitingFor = serializeDuel(session);
     orphanedWindow.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
     mismatchedStep.state.pendingBattle = { attackerUid };
     mismatchedStep.state.battleStep = "damage";
     mismatchedStep.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+    mismatchedWaitingFor.state.pendingBattle = { attackerUid };
+    mismatchedWaitingFor.state.waitingFor = 0;
+    mismatchedWaitingFor.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
 
     expect(() => restoreDuel(orphanedWindow, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow requires battle state");
     expect(() => restoreDuel(mismatchedStep, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleStep must match battleWindow.step");
+    expect(() => restoreDuel(mismatchedWaitingFor, createCardReader(cards))).toThrow("Malformed duel snapshot: state.waitingFor must match battleWindow.responsePlayer");
   });
 
   it("rejects malformed optional pending battle snapshots before restore", () => {
