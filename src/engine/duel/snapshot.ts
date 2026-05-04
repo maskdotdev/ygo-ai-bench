@@ -245,6 +245,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   if (state.battleWindow !== undefined) assertSnapshotBattleWindow(state.battleWindow, cardUids);
   if (state.currentAttack !== undefined) assertSnapshotBattle(state.currentAttack, "state.currentAttack", cardUids);
   if (state.pendingBattle !== undefined) assertSnapshotBattle(state.pendingBattle, "state.pendingBattle", cardUids);
+  assertSnapshotBattleWindowContext(state);
 }
 
 const duelSnapshotStatuses = new Set<unknown>(["setup", "awaiting", "resolving", "ended"]);
@@ -293,6 +294,12 @@ function assertSnapshotPassWindows(state: Record<string, unknown>): void {
   const battleStep = isRecord(state.battleWindow) ? state.battleWindow.step : state.battleStep;
   if ((state.attackPasses as unknown[]).length > 0 && battleStep !== "attack") throw new Error("Malformed duel snapshot: state.attackPasses requires an attack battle step");
   if ((state.damagePasses as unknown[]).length > 0 && battleStep !== "damage" && battleStep !== "damageCalculation") throw new Error("Malformed duel snapshot: state.damagePasses requires a damage battle step");
+}
+
+function assertSnapshotBattleWindowContext(state: Record<string, unknown>): void {
+  if (state.battleWindow === undefined) return;
+  if (state.pendingBattle === undefined && state.currentAttack === undefined) throw new Error("Malformed duel snapshot: state.battleWindow requires battle state");
+  if (state.battleStep !== undefined && isRecord(state.battleWindow) && state.battleStep !== state.battleWindow.step) throw new Error("Malformed duel snapshot: state.battleStep must match battleWindow.step");
 }
 
 function assertSnapshotNumberArray(values: unknown, path: string): void {

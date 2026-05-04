@@ -703,6 +703,25 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badResponsePlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.responsePlayer must be a player id");
   });
 
+  it("rejects battle windows without matching battle context before restore", () => {
+    const session = createDuel({ seed: 175, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const orphanedWindow = serializeDuel(session);
+    const mismatchedStep = serializeDuel(session);
+    orphanedWindow.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+    mismatchedStep.state.pendingBattle = { attackerUid };
+    mismatchedStep.state.battleStep = "damage";
+    mismatchedStep.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+
+    expect(() => restoreDuel(orphanedWindow, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow requires battle state");
+    expect(() => restoreDuel(mismatchedStep, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleStep must match battleWindow.step");
+  });
+
   it("rejects malformed optional pending battle snapshots before restore", () => {
     const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
