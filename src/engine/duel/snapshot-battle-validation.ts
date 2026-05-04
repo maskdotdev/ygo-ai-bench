@@ -16,6 +16,7 @@ export function assertSnapshotBattleStateConsistency(state: Record<string, unkno
     return;
   }
   if (state.phase !== "battle") throw new Error("Malformed duel snapshot: battle state requires the battle phase");
+  if (state.status !== "awaiting" && state.status !== "resolving") throw new Error("Malformed duel snapshot: battle state requires an active duel");
   if (!isRecord(state.currentAttack)) throw new Error("Malformed duel snapshot: state.currentAttack is required with pendingBattle");
   if (!isRecord(state.pendingBattle)) throw new Error("Malformed duel snapshot: state.pendingBattle is required with currentAttack");
   if (!isRecord(state.currentAttack) || !isRecord(state.pendingBattle)) return;
