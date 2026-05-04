@@ -242,6 +242,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   if (state.waitingFor !== undefined) assertSnapshotPlayerId(state.waitingFor, "state.waitingFor");
   if (state.battleStep !== undefined && !duelSnapshotBattleSteps.has(state.battleStep)) throw new Error("Malformed duel snapshot: state.battleStep must be a battle step");
   if (state.prompt !== undefined) assertSnapshotPrompt(state.prompt);
+  assertSnapshotPromptWindow(state);
   if (state.battleWindow !== undefined) assertSnapshotBattleWindow(state.battleWindow, cardUids);
   if (state.currentAttack !== undefined) assertSnapshotBattle(state.currentAttack, "state.currentAttack", cardUids);
   if (state.pendingBattle !== undefined) assertSnapshotBattle(state.pendingBattle, "state.pendingBattle", cardUids);
@@ -300,6 +301,11 @@ function assertSnapshotBattleWindowContext(state: Record<string, unknown>): void
   if (state.battleWindow === undefined) return;
   if (state.pendingBattle === undefined && state.currentAttack === undefined) throw new Error("Malformed duel snapshot: state.battleWindow requires battle state");
   if (state.battleStep !== undefined && isRecord(state.battleWindow) && state.battleStep !== state.battleWindow.step) throw new Error("Malformed duel snapshot: state.battleStep must match battleWindow.step");
+}
+
+function assertSnapshotPromptWindow(state: Record<string, unknown>): void {
+  if (!isRecord(state.prompt)) return;
+  if (state.waitingFor !== state.prompt.player) throw new Error("Malformed duel snapshot: state.waitingFor must match prompt.player");
 }
 
 function assertSnapshotNumberArray(values: unknown, path: string): void {
