@@ -21,6 +21,8 @@ export function assertSnapshotBattleStateConsistency(state: Record<string, unkno
   if (!isRecord(state.pendingBattle)) throw new Error("Malformed duel snapshot: state.pendingBattle is required with currentAttack");
   if (!isRecord(state.currentAttack) || !isRecord(state.pendingBattle)) return;
   if (state.currentAttack.battleDamageOverrides !== undefined) throw new Error("Malformed duel snapshot: state.currentAttack must not contain battleDamageOverrides");
+  assertReplayTargetCountMatchesUids(state.currentAttack, "state.currentAttack");
+  assertReplayTargetCountMatchesUids(state.pendingBattle, "state.pendingBattle");
   if (state.currentAttack.attackerUid !== state.pendingBattle.attackerUid) throw new Error("Malformed duel snapshot: state.pendingBattle.attackerUid must match currentAttack");
   if (state.currentAttack.targetUid !== state.pendingBattle.targetUid) throw new Error("Malformed duel snapshot: state.pendingBattle.targetUid must match currentAttack");
   if (state.currentAttack.replayTargetCount !== state.pendingBattle.replayTargetCount) throw new Error("Malformed duel snapshot: state.pendingBattle.replayTargetCount must match currentAttack");
@@ -78,6 +80,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function findSnapshotCard(state: Record<string, unknown>, uid: unknown): Record<string, unknown> | undefined {
   return (state.cards as unknown[]).find((card) => isRecord(card) && card.uid === uid) as Record<string, unknown> | undefined;
+}
+
+function assertReplayTargetCountMatchesUids(battle: Record<string, unknown>, path: string): void {
+  if (typeof battle.replayTargetCount !== "number" || !Array.isArray(battle.replayTargetUids)) return;
+  if (battle.replayTargetCount !== battle.replayTargetUids.length) throw new Error(`Malformed duel snapshot: ${path}.replayTargetCount must match replayTargetUids length`);
 }
 
 function sameOptionalStringArray(left: unknown, right: unknown): boolean {
