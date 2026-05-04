@@ -235,11 +235,11 @@ const responseHandlers: DuelResponseHandlers = {
   replayAttack: (state, player, attackerUid, targetUid) => replayCoreDuelAttack(state, player, attackerUid, targetUid, coreBattleHandlers),
   cancelAttack: cancelReplayAttack,
   resolvePrompt: resolveDuelPrompt,
-  activateTrigger(session, player, triggerId) {
-    activateDuelPendingTrigger(session, player, triggerId, activationHandlers);
+  activateTrigger(session, response) {
+    activateDuelPendingTrigger(session, response.player, response.triggerId, response.triggerBucket, activationHandlers);
   },
-  declineTrigger(session, player, triggerId) {
-    declineDuelPendingTrigger(session, player, triggerId);
+  declineTrigger(session, response) {
+    declineDuelPendingTrigger(session, response.player, response.triggerId, response.triggerBucket);
     continueAttackResponseWindow(session.state, battleContinuationHandlers);
   },
   flipSummon: flipSummonDuelCard,

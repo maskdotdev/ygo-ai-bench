@@ -2,7 +2,7 @@ import { findCard, pushDuelLog, requireControlledCard } from "#duel/card-state.j
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { pruneSpentMandatoryPendingTriggers } from "#duel/pending-trigger-actions.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
-import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
+import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type {
   DuelCardInstance,
   DuelEffectContext,
@@ -11,8 +11,8 @@ import type {
   DuelSession,
   DuelState,
   ChainLink,
-  PendingTrigger,
   PlayerId,
+  TriggerBucket,
 } from "#duel/types.js";
 
 export interface DuelActivationHandlers {
@@ -112,10 +112,10 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
   }
 }
 
-export function activateDuelPendingTrigger(session: DuelSession, player: PlayerId, triggerId: string, handlers: DuelActivationHandlers): void {
+export function activateDuelPendingTrigger(session: DuelSession, player: PlayerId, triggerId: string, triggerBucket: TriggerBucket, handlers: DuelActivationHandlers): void {
   const rollback = captureDuelState(session.state);
   try {
-    const trigger = takePendingTrigger(session.state, player, triggerId);
+    const trigger = takePendingTrigger(session.state, player, triggerId, triggerBucket);
     const effect = session.state.effects.find((candidate) => candidate.sourceUid === trigger.sourceUid && candidate.id === trigger.effectId);
     if (!effect) throw new Error(`Effect ${trigger.effectId} is not registered`);
     if (!canUseEffectCount(session.state, effect)) throw new Error(`Count limit for ${effect.id} has already been used`);
@@ -180,16 +180,21 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
   }
 }
 
-export function declineDuelPendingTrigger(session: DuelSession, player: PlayerId, triggerId: string): void {
-  const trigger = takePendingTrigger(session.state, player, triggerId);
+export function declineDuelPendingTrigger(session: DuelSession, player: PlayerId, triggerId: string, triggerBucket: TriggerBucket): void {
+  const trigger = takePendingTrigger(session.state, player, triggerId, triggerBucket);
   const source = findCard(session.state, trigger.sourceUid);
   pushDuelLog(session.state, "declineTrigger", player, source?.name, trigger.effectId);
   setWaitingForPendingTriggerBucket(session.state);
 }
 
-function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: string): PendingTrigger {
+function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: string, triggerBucket: TriggerBucket): DuelState["pendingTriggers"][number] {
+  const activeBucket = pendingTriggerBucketsForState(state)[0];
+  if (!activeBucket || activeBucket.player !== player || activeBucket.triggerBucket !== triggerBucket) {
+    throw new Error(`Trigger ${triggerId} is not pending in the active ${triggerBucket} bucket for player ${player}`);
+  }
   const triggerIndex = state.pendingTriggers.findIndex((candidate) => candidate.id === triggerId && candidate.player === player);
   if (triggerIndex < 0) throw new Error(`Trigger ${triggerId} is not pending for player ${player}`);
+  if (state.pendingTriggers[triggerIndex]?.triggerBucket !== triggerBucket) throw new Error(`Trigger ${triggerId} is not pending in bucket ${triggerBucket}`);
   const [trigger] = state.pendingTriggers.splice(triggerIndex, 1);
   if (!trigger) throw new Error(`Trigger ${triggerId} is not pending`);
   return trigger;

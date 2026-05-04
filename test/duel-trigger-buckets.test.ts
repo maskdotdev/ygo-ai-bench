@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { declineDuelPendingTrigger } from "#duel/effect-activation.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
@@ -225,6 +226,46 @@ describe("duel trigger buckets", () => {
     expect(afterSecondDecline.state.waitingFor).toBe(1);
     expect(getDuelLegalActions(session, 0)).toHaveLength(0);
     expect(getDuelLegalActions(session, 1).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["opponent-later-optional-bucket"]);
+  });
+
+  it("rejects direct trigger handling outside the active bucket", () => {
+    const { session, summoned, turnFirst, opponent } = setupTriggerBucketFixture();
+
+    registerBucketTrigger(session, "active-turn-optional-bucket", turnFirst, 0);
+    registerBucketTrigger(session, "later-opponent-optional-bucket", opponent, 1);
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const laterTrigger = session.state.pendingTriggers.find((trigger) => trigger.effectId === "later-opponent-optional-bucket");
+    expect(laterTrigger).toBeTruthy();
+
+    expect(() => declineDuelPendingTrigger(session, 1, laterTrigger!.id, "opponentOptional")).toThrow(
+      `Trigger ${laterTrigger!.id} is not pending in the active opponentOptional bucket for player 1`,
+    );
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
+      "active-turn-optional-bucket",
+      "later-opponent-optional-bucket",
+    ]);
+  });
+
+  it("rejects direct trigger handling for later same-player buckets without consuming them", () => {
+    const { session, summoned, turnFirst, turnSecond } = setupTriggerBucketFixture();
+
+    registerBucketTrigger(session, "active-turn-mandatory-bucket", turnFirst, 0, false);
+    registerBucketTrigger(session, "later-turn-optional-bucket", turnSecond, 0);
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const laterTrigger = session.state.pendingTriggers.find((trigger) => trigger.effectId === "later-turn-optional-bucket");
+    expect(laterTrigger).toBeTruthy();
+
+    expect(() => declineDuelPendingTrigger(session, 0, laterTrigger!.id, "turnMandatory")).toThrow(`Trigger ${laterTrigger!.id} is not pending in bucket turnMandatory`);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
+      "active-turn-mandatory-bucket",
+      "later-turn-optional-bucket",
+    ]);
   });
 
   it("activates optional trigger buckets without exposing later buckets early", () => {
