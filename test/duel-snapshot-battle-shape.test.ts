@@ -139,6 +139,82 @@ describe("duel snapshot battle restore shape validation", () => {
     expect(() => restoreDuel(wrongLocation, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.attackerUid must reference a monster-zone card for replay decision");
   });
 
+  it("rejects battle pass snapshots outside their battle step before restore", () => {
+    const session = createDuel({ seed: 174, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const badAttackStep = serializeDuel(session);
+    const badDamageStep = serializeDuel(session);
+    putInBattlePhase(badAttackStep, badDamageStep);
+    badAttackStep.state.currentAttack = { attackerUid };
+    badAttackStep.state.pendingBattle = { attackerUid };
+    badAttackStep.state.battleStep = "damage";
+    badAttackStep.state.attackPasses = [1];
+    badDamageStep.state.currentAttack = { attackerUid };
+    badDamageStep.state.pendingBattle = { attackerUid };
+    badDamageStep.state.battleStep = "attack";
+    badDamageStep.state.damagePasses = [0];
+
+    expect(() => restoreDuel(badAttackStep, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackPasses requires an attack battle step");
+    expect(() => restoreDuel(badDamageStep, createCardReader(cards))).toThrow("Malformed duel snapshot: state.damagePasses requires a damage battle step");
+  });
+
+  it("rejects active battle response players already marked as passed before restore", () => {
+    const session = createDuel({ seed: 179, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const badAttackPass = serializeDuel(session);
+    const badDamagePass = serializeDuel(session);
+    putInBattlePhase(badAttackPass, badDamagePass);
+    badAttackPass.state.currentAttack = { attackerUid };
+    badAttackPass.state.pendingBattle = { attackerUid };
+    badAttackPass.state.battleStep = "attack";
+    badAttackPass.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+    badAttackPass.state.waitingFor = 1;
+    badAttackPass.state.attackPasses = [1];
+    badDamagePass.state.currentAttack = { attackerUid };
+    badDamagePass.state.pendingBattle = { attackerUid };
+    badDamagePass.state.battleStep = "damage";
+    badDamagePass.state.battleWindow = { id: 1, kind: "startDamageStep", step: "damage", attackerUid, responsePlayer: 0, attackNegated: false };
+    badDamagePass.state.waitingFor = 0;
+    badDamagePass.state.damagePasses = [0];
+
+    expect(() => restoreDuel(badAttackPass, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.responsePlayer must not be included in attackPasses");
+    expect(() => restoreDuel(badDamagePass, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.responsePlayer must not be included in damagePasses");
+  });
+
+  it("rejects completed battle pass snapshots before restore", () => {
+    const session = createDuel({ seed: 180, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const badAttackPasses = serializeDuel(session);
+    const badDamagePasses = serializeDuel(session);
+    putInBattlePhase(badAttackPasses, badDamagePasses);
+    badAttackPasses.state.currentAttack = { attackerUid };
+    badAttackPasses.state.pendingBattle = { attackerUid };
+    badAttackPasses.state.battleStep = "attack";
+    badAttackPasses.state.attackPasses = [0, 1];
+    badDamagePasses.state.currentAttack = { attackerUid };
+    badDamagePasses.state.pendingBattle = { attackerUid };
+    badDamagePasses.state.battleStep = "damage";
+    badDamagePasses.state.damagePasses = [0, 1];
+
+    expect(() => restoreDuel(badAttackPasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackPasses must not contain both players");
+    expect(() => restoreDuel(badDamagePasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.damagePasses must not contain both players");
+  });
+
   it("rejects malformed optional pending battle snapshots before restore", () => {
     const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
