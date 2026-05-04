@@ -141,4 +141,32 @@ describe("duel snapshot battle restore shape validation", () => {
     expect(() => restoreDuel(badDamageOverrides, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.battleDamageOverrides must be an object");
     expect(() => restoreDuel(badDamageAmount, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.battleDamageOverrides.0 must be a number");
   });
+
+  it("rejects pending battle snapshots that diverge from current attack before restore", () => {
+    const session = createDuel({ seed: 183, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const targetUid = serializeDuel(session).state.cards[1]!.uid;
+    const mismatchedAttacker = serializeDuel(session);
+    const mismatchedTarget = serializeDuel(session);
+    const mismatchedReplayCount = serializeDuel(session);
+    const mismatchedReplayTargets = serializeDuel(session);
+    mismatchedAttacker.state.currentAttack = { attackerUid };
+    mismatchedAttacker.state.pendingBattle = { attackerUid: targetUid };
+    mismatchedTarget.state.currentAttack = { attackerUid, targetUid };
+    mismatchedTarget.state.pendingBattle = { attackerUid };
+    mismatchedReplayCount.state.currentAttack = { attackerUid, replayTargetCount: 1 };
+    mismatchedReplayCount.state.pendingBattle = { attackerUid, replayTargetCount: 2 };
+    mismatchedReplayTargets.state.currentAttack = { attackerUid, replayTargetUids: [targetUid] };
+    mismatchedReplayTargets.state.pendingBattle = { attackerUid, replayTargetUids: [] };
+
+    expect(() => restoreDuel(mismatchedAttacker, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.attackerUid must match currentAttack");
+    expect(() => restoreDuel(mismatchedTarget, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.targetUid must match currentAttack");
+    expect(() => restoreDuel(mismatchedReplayCount, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.replayTargetCount must match currentAttack");
+    expect(() => restoreDuel(mismatchedReplayTargets, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingBattle.replayTargetUids must match currentAttack");
+  });
 });

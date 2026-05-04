@@ -3,6 +3,7 @@ import type { PendingTrigger, PlayerId } from "#duel/types.js";
 
 export function assertSnapshotPendingWindowConsistency(state: Record<string, unknown>): void {
   assertSnapshotPassWindows(state);
+  assertSnapshotBattleStateConsistency(state);
   assertSnapshotPromptWindow(state);
   assertSnapshotTriggerWindow(state);
   assertSnapshotBattleWindowContext(state);
@@ -24,6 +25,14 @@ function assertSnapshotPassWindows(state: Record<string, unknown>): void {
 
 function chainWindowIsActive(state: Record<string, unknown>): boolean {
   return state.status === "awaiting" && state.prompt === undefined && (state.chain as unknown[]).length > 0;
+}
+
+function assertSnapshotBattleStateConsistency(state: Record<string, unknown>): void {
+  if (!isRecord(state.currentAttack) || !isRecord(state.pendingBattle)) return;
+  if (state.currentAttack.attackerUid !== state.pendingBattle.attackerUid) throw new Error("Malformed duel snapshot: state.pendingBattle.attackerUid must match currentAttack");
+  if (state.currentAttack.targetUid !== state.pendingBattle.targetUid) throw new Error("Malformed duel snapshot: state.pendingBattle.targetUid must match currentAttack");
+  if (state.currentAttack.replayTargetCount !== state.pendingBattle.replayTargetCount) throw new Error("Malformed duel snapshot: state.pendingBattle.replayTargetCount must match currentAttack");
+  if (!sameOptionalStringArray(state.currentAttack.replayTargetUids, state.pendingBattle.replayTargetUids)) throw new Error("Malformed duel snapshot: state.pendingBattle.replayTargetUids must match currentAttack");
 }
 
 function assertSnapshotBattleWindowContext(state: Record<string, unknown>): void {
@@ -84,4 +93,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function findSnapshotCard(state: Record<string, unknown>, uid: unknown): Record<string, unknown> | undefined {
   return (state.cards as unknown[]).find((card) => isRecord(card) && card.uid === uid) as Record<string, unknown> | undefined;
+}
+
+function sameOptionalStringArray(left: unknown, right: unknown): boolean {
+  if (left === undefined || right === undefined) return left === right;
+  return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((uid, index) => uid === right[index]);
 }
