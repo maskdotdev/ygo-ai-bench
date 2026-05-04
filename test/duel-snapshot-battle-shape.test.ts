@@ -83,6 +83,22 @@ describe("duel snapshot battle restore shape validation", () => {
     expect(() => restoreDuel(mismatchedTarget, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.targetUid must match battle state");
   });
 
+  it("rejects negated battle windows before restore", () => {
+    const session = createDuel({ seed: 184, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const negatedWindow = serializeDuel(session);
+    negatedWindow.state.pendingBattle = { attackerUid };
+    negatedWindow.state.waitingFor = 1;
+    negatedWindow.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: true };
+
+    expect(() => restoreDuel(negatedWindow, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.attackNegated cannot be pending");
+  });
+
   it("rejects replay decision windows that do not match the attacker before restore", () => {
     const session = createDuel({ seed: 182, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
