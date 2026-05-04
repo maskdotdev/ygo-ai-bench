@@ -83,6 +83,29 @@ describe("duel snapshot battle restore shape validation", () => {
     expect(() => restoreDuel(mismatchedTarget, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.targetUid must match battle state");
   });
 
+  it("rejects replay decision windows that do not match the attacker before restore", () => {
+    const session = createDuel({ seed: 182, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const wrongPlayer = serializeDuel(session);
+    const wrongLocation = serializeDuel(session);
+    wrongPlayer.state.pendingBattle = { attackerUid };
+    wrongPlayer.state.waitingFor = 1;
+    wrongPlayer.state.cards[0] = { ...wrongPlayer.state.cards[0]!, location: "monsterZone" };
+    wrongPlayer.state.battleWindow = { id: 1, kind: "replayDecision", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+    wrongLocation.state.pendingBattle = { attackerUid };
+    wrongLocation.state.waitingFor = 0;
+    wrongLocation.state.cards[0] = { ...wrongLocation.state.cards[0]!, location: "graveyard" };
+    wrongLocation.state.battleWindow = { id: 1, kind: "replayDecision", step: "attack", attackerUid, responsePlayer: 0, attackNegated: false };
+
+    expect(() => restoreDuel(wrongPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.responsePlayer must match replay attacker controller");
+    expect(() => restoreDuel(wrongLocation, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.attackerUid must reference a monster-zone card for replay decision");
+  });
+
   it("rejects malformed optional pending battle snapshots before restore", () => {
     const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

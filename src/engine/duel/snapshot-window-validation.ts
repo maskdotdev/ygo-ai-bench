@@ -30,6 +30,7 @@ function assertSnapshotBattleWindowContext(state: Record<string, unknown>): void
   if (state.battleWindow === undefined) return;
   if (state.pendingBattle === undefined && state.currentAttack === undefined) throw new Error("Malformed duel snapshot: state.battleWindow requires battle state");
   assertBattleWindowMatchesBattleState(state);
+  assertReplayDecisionWindowMatchesAttacker(state);
   if (state.battleStep !== undefined && isRecord(state.battleWindow) && state.battleStep !== state.battleWindow.step) throw new Error("Malformed duel snapshot: state.battleStep must match battleWindow.step");
   if (battleWindowIsActivePendingWindow(state) && isRecord(state.battleWindow) && state.waitingFor !== state.battleWindow.responsePlayer) throw new Error("Malformed duel snapshot: state.waitingFor must match battleWindow.responsePlayer");
   assertActiveBattleResponsePlayerHasNotPassed(state);
@@ -45,6 +46,13 @@ function assertBattleWindowMatchesBattleState(state: Record<string, unknown>): v
   if (!isRecord(battle)) return;
   if (state.battleWindow.attackerUid !== battle.attackerUid) throw new Error("Malformed duel snapshot: state.battleWindow.attackerUid must match battle state");
   if (state.battleWindow.targetUid !== battle.targetUid) throw new Error("Malformed duel snapshot: state.battleWindow.targetUid must match battle state");
+}
+
+function assertReplayDecisionWindowMatchesAttacker(state: Record<string, unknown>): void {
+  if (!isRecord(state.battleWindow) || state.battleWindow.kind !== "replayDecision") return;
+  const attacker = findSnapshotCard(state, state.battleWindow.attackerUid);
+  if (attacker?.location !== "monsterZone") throw new Error("Malformed duel snapshot: state.battleWindow.attackerUid must reference a monster-zone card for replay decision");
+  if (state.battleWindow.responsePlayer !== attacker.controller) throw new Error("Malformed duel snapshot: state.battleWindow.responsePlayer must match replay attacker controller");
 }
 
 function assertActiveBattleResponsePlayerHasNotPassed(state: Record<string, unknown>): void {
@@ -72,4 +80,8 @@ function assertSnapshotTriggerWindow(state: Record<string, unknown>): void {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function findSnapshotCard(state: Record<string, unknown>, uid: unknown): Record<string, unknown> | undefined {
+  return (state.cards as unknown[]).find((card) => isRecord(card) && card.uid === uid) as Record<string, unknown> | undefined;
 }
