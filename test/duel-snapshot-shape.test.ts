@@ -175,6 +175,27 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badDamagePasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.damagePasses requires a pending battle");
   });
 
+  it("rejects battle pass snapshots outside their battle step before restore", () => {
+    const session = createDuel({ seed: 174, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const badAttackStep = serializeDuel(session);
+    const badDamageStep = serializeDuel(session);
+    badAttackStep.state.pendingBattle = { attackerUid };
+    badAttackStep.state.battleStep = "damage";
+    badAttackStep.state.attackPasses = [1];
+    badDamageStep.state.pendingBattle = { attackerUid };
+    badDamageStep.state.battleStep = "attack";
+    badDamageStep.state.damagePasses = [0];
+
+    expect(() => restoreDuel(badAttackStep, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackPasses requires an attack battle step");
+    expect(() => restoreDuel(badDamageStep, createCardReader(cards))).toThrow("Malformed duel snapshot: state.damagePasses requires a damage battle step");
+  });
+
   it("rejects malformed snapshot scalar collections before restore", () => {
     const session = createDuel({ seed: 148, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
