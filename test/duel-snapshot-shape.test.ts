@@ -688,12 +688,14 @@ describe("duel snapshot restore shape validation", () => {
     const badTarget = serializeDuel(session);
     const badAttackNegated = serializeDuel(session);
     const badResponsePlayer = serializeDuel(session);
+    const badKindStep = serializeDuel(session);
     badId.state.battleWindow = { id: "one" as unknown as number, kind: "attackDeclaration", step: "attack", attackerUid, targetUid, responsePlayer: 0, attackNegated: false };
     badKind.state.battleWindow = { id: 1, kind: "combat" as "attackDeclaration", step: "attack", attackerUid, responsePlayer: 0, attackNegated: false };
     badStep.state.battleWindow = { id: 1, kind: "attackDeclaration", step: "combat" as "attack", attackerUid, targetUid, responsePlayer: 0, attackNegated: false };
     badTarget.state.battleWindow = { id: 1, kind: "attackDeclaration", step: "attack", attackerUid, targetUid: "missing", responsePlayer: 0, attackNegated: false };
     badAttackNegated.state.battleWindow = { id: 1, kind: "attackDeclaration", step: "attack", attackerUid, targetUid, responsePlayer: 0, attackNegated: "no" as unknown as boolean };
     badResponsePlayer.state.battleWindow = { id: 1, kind: "attackDeclaration", step: "attack", attackerUid, responsePlayer: 2 as 0, attackNegated: false };
+    badKindStep.state.battleWindow = { id: 1, kind: "duringDamageCalculation", step: "damage", attackerUid, responsePlayer: 0, attackNegated: false };
 
     expect(() => restoreDuel(badId, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.id must be a number");
     expect(() => restoreDuel(badKind, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.kind must be a battle window kind");
@@ -701,6 +703,7 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badTarget, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.targetUid must reference a card");
     expect(() => restoreDuel(badAttackNegated, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.attackNegated must be a boolean");
     expect(() => restoreDuel(badResponsePlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.responsePlayer must be a player id");
+    expect(() => restoreDuel(badKindStep, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.kind must match step");
   });
 
   it("rejects battle windows without matching battle context before restore", () => {

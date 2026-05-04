@@ -723,12 +723,19 @@ function assertSnapshotBattleWindow(window: unknown, cardUids: ReadonlySet<strin
   if (typeof window.id !== "number") throw new Error("Malformed duel snapshot: state.battleWindow.id must be a number");
   if (!duelSnapshotBattleWindowKinds.has(window.kind)) throw new Error("Malformed duel snapshot: state.battleWindow.kind must be a battle window kind");
   if (!duelSnapshotBattleSteps.has(window.step)) throw new Error("Malformed duel snapshot: state.battleWindow.step must be a battle step");
+  if (!snapshotBattleWindowKindMatchesStep(window.kind, window.step)) throw new Error("Malformed duel snapshot: state.battleWindow.kind must match step");
   if (typeof window.attackerUid !== "string") throw new Error("Malformed duel snapshot: state.battleWindow.attackerUid must be a string");
   if (window.targetUid !== undefined && typeof window.targetUid !== "string") throw new Error("Malformed duel snapshot: state.battleWindow.targetUid must be a string");
   if (!cardUids.has(window.attackerUid)) throw new Error("Malformed duel snapshot: state.battleWindow.attackerUid must reference a card");
   if (window.targetUid !== undefined && !cardUids.has(window.targetUid)) throw new Error("Malformed duel snapshot: state.battleWindow.targetUid must reference a card");
   assertSnapshotPlayerId(window.responsePlayer, "state.battleWindow.responsePlayer");
   if (typeof window.attackNegated !== "boolean") throw new Error("Malformed duel snapshot: state.battleWindow.attackNegated must be a boolean");
+}
+
+function snapshotBattleWindowKindMatchesStep(kind: unknown, step: unknown): boolean {
+  if (kind === "duringDamageCalculation") return step === "damageCalculation";
+  if (kind === "startDamageStep" || kind === "beforeDamageCalculation" || kind === "afterDamageCalculation" || kind === "endDamageStep") return step === "damage";
+  return step === "attack";
 }
 
 function assertSnapshotBattle(battle: unknown, path: string, cardUids: ReadonlySet<string>): void {
