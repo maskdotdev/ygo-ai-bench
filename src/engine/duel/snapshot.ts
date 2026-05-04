@@ -234,6 +234,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   assertSnapshotBattlePairs(state.battlePairs, cardUids);
   assertSnapshotChain(state.chain, cardUids);
   assertSnapshotEffects(state.effects, cardUids);
+  assertSnapshotPassWindows(state);
   if (!duelSnapshotStatuses.has(state.status)) throw new Error("Malformed duel snapshot: state.status must be a duel status");
   if (!duelSnapshotPhases.has(state.phase)) throw new Error("Malformed duel snapshot: state.phase must be a duel phase");
   if (state.winner !== undefined && state.winner !== "draw") assertSnapshotPlayerId(state.winner, "state.winner");
@@ -283,6 +284,12 @@ function assertSnapshotPlayerIdArray(values: unknown, path: string): void {
 function assertSnapshotPlayerPassArray(values: unknown, path: string): void {
   assertSnapshotPlayerIdArray(values, path);
   if (new Set(values as PlayerId[]).size !== (values as PlayerId[]).length) throw new Error(`Malformed duel snapshot: ${path} must not contain duplicate players`);
+}
+
+function assertSnapshotPassWindows(state: Record<string, unknown>): void {
+  if ((state.chain as unknown[]).length === 0 && (state.chainPasses as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.chainPasses requires a pending chain");
+  if (state.pendingBattle === undefined && (state.attackPasses as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.attackPasses requires a pending battle");
+  if (state.pendingBattle === undefined && (state.damagePasses as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.damagePasses requires a pending battle");
 }
 
 function assertSnapshotNumberArray(values: unknown, path: string): void {

@@ -156,6 +156,25 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badDamagePasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.damagePasses must not contain duplicate players");
   });
 
+  it("rejects pass snapshots without their pending window before restore", () => {
+    const session = createDuel({ seed: 173, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badChainPasses = serializeDuel(session);
+    const badAttackPasses = serializeDuel(session);
+    const badDamagePasses = serializeDuel(session);
+    badChainPasses.state.chainPasses = [0];
+    badAttackPasses.state.attackPasses = [1];
+    badDamagePasses.state.damagePasses = [0];
+
+    expect(() => restoreDuel(badChainPasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainPasses requires a pending chain");
+    expect(() => restoreDuel(badAttackPasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackPasses requires a pending battle");
+    expect(() => restoreDuel(badDamagePasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.damagePasses requires a pending battle");
+  });
+
   it("rejects malformed snapshot scalar collections before restore", () => {
     const session = createDuel({ seed: 148, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
