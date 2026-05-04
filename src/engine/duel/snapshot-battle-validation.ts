@@ -1,5 +1,15 @@
 import type { PlayerId } from "#duel/types.js";
 
+export function assertSnapshotBattlePassWindows(state: Record<string, unknown>): void {
+  if (state.pendingBattle === undefined && (state.attackPasses as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.attackPasses requires a pending battle");
+  if (state.pendingBattle === undefined && (state.damagePasses as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.damagePasses requires a pending battle");
+  if ((state.attackPasses as PlayerId[]).length === 2) throw new Error("Malformed duel snapshot: state.attackPasses must not contain both players");
+  if ((state.damagePasses as PlayerId[]).length === 2) throw new Error("Malformed duel snapshot: state.damagePasses must not contain both players");
+  const battleStep = isRecord(state.battleWindow) ? state.battleWindow.step : state.battleStep;
+  if ((state.attackPasses as unknown[]).length > 0 && battleStep !== "attack") throw new Error("Malformed duel snapshot: state.attackPasses requires an attack battle step");
+  if ((state.damagePasses as unknown[]).length > 0 && battleStep !== "damage" && battleStep !== "damageCalculation") throw new Error("Malformed duel snapshot: state.damagePasses requires a damage battle step");
+}
+
 export function assertSnapshotBattleStateConsistency(state: Record<string, unknown>): void {
   if (!isRecord(state.currentAttack) || !isRecord(state.pendingBattle)) return;
   if (state.currentAttack.attackerUid !== state.pendingBattle.attackerUid) throw new Error("Malformed duel snapshot: state.pendingBattle.attackerUid must match currentAttack");

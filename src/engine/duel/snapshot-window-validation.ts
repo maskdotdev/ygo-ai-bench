@@ -1,9 +1,10 @@
-import { assertSnapshotBattleStateConsistency, assertSnapshotBattleWindowContext } from "#duel/snapshot-battle-validation.js";
+import { assertSnapshotBattlePassWindows, assertSnapshotBattleStateConsistency, assertSnapshotBattleWindowContext } from "#duel/snapshot-battle-validation.js";
 import { pendingTriggerBuckets } from "#duel/trigger-buckets.js";
 import type { PendingTrigger, PlayerId } from "#duel/types.js";
 
 export function assertSnapshotPendingWindowConsistency(state: Record<string, unknown>): void {
   assertSnapshotPassWindows(state);
+  assertSnapshotBattlePassWindows(state);
   assertSnapshotBattleStateConsistency(state);
   assertSnapshotPromptWindow(state);
   assertSnapshotTriggerWindow(state);
@@ -15,13 +16,6 @@ function assertSnapshotPassWindows(state: Record<string, unknown>): void {
   if (chainWindowIsActive(state) && state.waitingFor === undefined) throw new Error("Malformed duel snapshot: state.waitingFor is required for a pending chain");
   if ((state.chain as unknown[]).length > 0 && (state.chainPasses as PlayerId[]).length === 2) throw new Error("Malformed duel snapshot: state.chainPasses must not contain both players");
   if ((state.chain as unknown[]).length > 0 && state.waitingFor !== undefined && (state.chainPasses as PlayerId[]).includes(state.waitingFor as PlayerId)) throw new Error("Malformed duel snapshot: state.waitingFor must not be included in chainPasses");
-  if (state.pendingBattle === undefined && (state.attackPasses as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.attackPasses requires a pending battle");
-  if (state.pendingBattle === undefined && (state.damagePasses as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.damagePasses requires a pending battle");
-  if ((state.attackPasses as PlayerId[]).length === 2) throw new Error("Malformed duel snapshot: state.attackPasses must not contain both players");
-  if ((state.damagePasses as PlayerId[]).length === 2) throw new Error("Malformed duel snapshot: state.damagePasses must not contain both players");
-  const battleStep = isRecord(state.battleWindow) ? state.battleWindow.step : state.battleStep;
-  if ((state.attackPasses as unknown[]).length > 0 && battleStep !== "attack") throw new Error("Malformed duel snapshot: state.attackPasses requires an attack battle step");
-  if ((state.damagePasses as unknown[]).length > 0 && battleStep !== "damage" && battleStep !== "damageCalculation") throw new Error("Malformed duel snapshot: state.damagePasses requires a damage battle step");
 }
 
 function chainWindowIsActive(state: Record<string, unknown>): boolean {
