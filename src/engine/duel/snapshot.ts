@@ -243,6 +243,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   if (state.battleStep !== undefined && !duelSnapshotBattleSteps.has(state.battleStep)) throw new Error("Malformed duel snapshot: state.battleStep must be a battle step");
   if (state.prompt !== undefined) assertSnapshotPrompt(state.prompt);
   assertSnapshotPromptWindow(state);
+  assertSnapshotTriggerWindow(state);
   if (state.battleWindow !== undefined) assertSnapshotBattleWindow(state.battleWindow, cardUids);
   if (state.currentAttack !== undefined) assertSnapshotBattle(state.currentAttack, "state.currentAttack", cardUids);
   if (state.pendingBattle !== undefined) assertSnapshotBattle(state.pendingBattle, "state.pendingBattle", cardUids);
@@ -313,6 +314,13 @@ function battleWindowIsActivePendingWindow(state: Record<string, unknown>): bool
 function assertSnapshotPromptWindow(state: Record<string, unknown>): void {
   if (!isRecord(state.prompt)) return;
   if (state.waitingFor !== state.prompt.player) throw new Error("Malformed duel snapshot: state.waitingFor must match prompt.player");
+}
+
+function assertSnapshotTriggerWindow(state: Record<string, unknown>): void {
+  const pendingTriggers = state.pendingTriggers as PendingTrigger[];
+  if (state.prompt !== undefined || (state.chain as unknown[]).length > 0 || pendingTriggers.length === 0) return;
+  const activeBucket = pendingTriggerBuckets(pendingTriggers)[0];
+  if (activeBucket && state.waitingFor !== activeBucket.player) throw new Error("Malformed duel snapshot: state.waitingFor must match active trigger bucket player");
 }
 
 function assertSnapshotNumberArray(values: unknown, path: string): void {

@@ -317,6 +317,22 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badBucketPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.triggerBucket must match the trigger player");
   });
 
+  it("rejects active trigger snapshots with mismatched waiting player before restore", () => {
+    const session = createDuel({ seed: 177, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = serializeDuel(session).state.cards[0]!.uid;
+    const snapshot = serializeDuel(session);
+    snapshot.state.pendingTriggers = [{ id: "trigger", player: 1, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "opponentMandatory" }];
+    snapshot.state.pendingTriggerBuckets = [{ triggerBucket: "opponentMandatory", player: 1, triggerIds: ["trigger"] }];
+    snapshot.state.waitingFor = 0;
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.waitingFor must match active trigger bucket player");
+  });
+
   it("rejects missing pending trigger card references before restore", () => {
     const session = createDuel({ seed: 167, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
