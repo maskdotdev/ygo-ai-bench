@@ -29,10 +29,22 @@ function assertSnapshotBattleWindowContext(state: Record<string, unknown>): void
   if (state.pendingBattle === undefined && state.currentAttack === undefined) throw new Error("Malformed duel snapshot: state.battleWindow requires battle state");
   if (state.battleStep !== undefined && isRecord(state.battleWindow) && state.battleStep !== state.battleWindow.step) throw new Error("Malformed duel snapshot: state.battleStep must match battleWindow.step");
   if (battleWindowIsActivePendingWindow(state) && isRecord(state.battleWindow) && state.waitingFor !== state.battleWindow.responsePlayer) throw new Error("Malformed duel snapshot: state.waitingFor must match battleWindow.responsePlayer");
+  assertActiveBattleResponsePlayerHasNotPassed(state);
 }
 
 function battleWindowIsActivePendingWindow(state: Record<string, unknown>): boolean {
   return state.prompt === undefined && (state.chain as unknown[]).length === 0 && (state.pendingTriggers as unknown[]).length === 0;
+}
+
+function assertActiveBattleResponsePlayerHasNotPassed(state: Record<string, unknown>): void {
+  if (!battleWindowIsActivePendingWindow(state) || !isRecord(state.battleWindow)) return;
+  const responsePlayer = state.battleWindow.responsePlayer as PlayerId;
+  if (state.battleWindow.step === "attack" && (state.attackPasses as PlayerId[]).includes(responsePlayer)) {
+    throw new Error("Malformed duel snapshot: state.battleWindow.responsePlayer must not be included in attackPasses");
+  }
+  if ((state.battleWindow.step === "damage" || state.battleWindow.step === "damageCalculation") && (state.damagePasses as PlayerId[]).includes(responsePlayer)) {
+    throw new Error("Malformed duel snapshot: state.battleWindow.responsePlayer must not be included in damagePasses");
+  }
 }
 
 function assertSnapshotPromptWindow(state: Record<string, unknown>): void {
