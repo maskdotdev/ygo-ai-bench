@@ -135,6 +135,7 @@ describe("Lua special summon procedures", () => {
     expect(restoredAction).toMatchObject({ windowId: restoredPublic.actionWindowId, windowKind: "open" });
     const restoredResult = applyLuaRestoreResponse(restored, restoredAction!);
     expect(restoredResult.ok).toBe(true);
+    expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restored.host.messages).toContain("procedure value 100");
     expect(restored.host.messages).toContain("blocked procedure value 200");
@@ -319,6 +320,7 @@ describe("Lua special summon procedures", () => {
     expect(restoredBlocked).toBeUndefined();
     const restoredResult = applyLuaRestoreResponse(restored, restoredAction!);
     expect(restoredResult.ok).toBe(true);
+    expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restored.host.messages).toContain("extra procedure value true/64");
     expect(restored.host.messages).toContain("extra procedure operation 301");
@@ -412,6 +414,7 @@ describe("Lua special summon procedures", () => {
     expect(restoredAction).toBeDefined();
     const restoredResult = applyLuaRestoreResponse(restored, restoredAction!);
     expect(restoredResult.ok).toBe(true);
+    expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restored.host.messages).toContain("material procedure selected 1/300");
     expect(restored.session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
@@ -599,6 +602,7 @@ describe("Lua special summon procedures", () => {
     expect(restored.host.messages).not.toContain("procedure release cost 1/1");
     const restoredResult = applyLuaRestoreResponse(restored, restoredAction!);
     expect(restoredResult.ok).toBe(true);
+    expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restored.host.messages).toContain("procedure release cost 1/1");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
