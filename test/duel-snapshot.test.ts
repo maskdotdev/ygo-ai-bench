@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import {
   applyResponse,
+  addDuelChainLimit,
   createDuel,
   fusionSummonDuelCard,
   getLegalActions as getDuelLegalActions,
@@ -390,6 +391,16 @@ describe("duel snapshot persistence", () => {
     expect(roundTripped.state.effects[0]).toMatchObject({ id: "snapshot-json-effect", registryKey: "snapshot-json-effect" });
     expect(roundTripped.state.chainLimits[0]).toEqual({ registryKey: "snapshot-json-chain-limit", untilChainEnd: true });
     expect(roundTripped.state.chainLimits[0]).not.toHaveProperty("expiresAtChainLength");
+  });
+
+  it("serializes expiring chain limits with their expiry window", () => {
+    const session = createDuel({ seed: 132, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: ["400"] } });
+    startDuel(session);
+    session.state.chain = [{ id: "chain-1", player: 0, sourceUid: session.state.cards[0]!.uid, effectId: "effect" }];
+    addDuelChainLimit(session.state, { registryKey: "snapshot-expiring-chain-limit", untilChainEnd: false, allows: () => false });
+
+    expect(serializeDuel(session).state.chainLimits[0]).toEqual({ registryKey: "snapshot-expiring-chain-limit", untilChainEnd: false, expiresAtChainLength: 2 });
   });
 
   it("copies nested assumed card state by value across snapshots", () => {
