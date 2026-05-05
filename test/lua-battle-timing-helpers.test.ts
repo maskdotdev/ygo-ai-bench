@@ -222,17 +222,21 @@ describe("Lua battle timing helpers", () => {
     expect(legalEffectCodes(session, 0)).toEqual(["300"]);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
     const actionResult = applyLuaRestoreResponse(restored, action!);
     expect(actionResult.ok).toBe(true);
+    expect(actionResult.legalActions).toEqual(getDuelLegalActions(restored.session, actionResult.state.waitingFor!));
     expect(actionResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, actionResult.state.waitingFor!));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
     const passResult = applyLuaRestoreResponse(restored, pass!);
     expect(passResult.ok).toBe(true);
+    expect(passResult.legalActions).toEqual(getDuelLegalActions(restored.session, passResult.state.waitingFor!));
     expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
 
     expect(restored.session.state.battleDamage[1]).toBe(700);
@@ -244,6 +248,7 @@ describe("Lua battle timing helpers", () => {
     expect(staleDamagePass).toBeDefined();
     const stalePassResult = applyLuaRestoreResponse(restored, staleDamagePass!);
     expect(stalePassResult.ok).toBe(true);
+    expect(stalePassResult.legalActions).toEqual(getDuelLegalActions(restored.session, stalePassResult.state.waitingFor!));
     expect(stalePassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, stalePassResult.state.waitingFor!));
     const replay = applyLuaRestoreResponse(restored, staleDamagePass!);
     expect(replay.ok).toBe(false);
