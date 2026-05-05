@@ -14,6 +14,22 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("duel pendulum summons", () => {
+  it("exposes normal summon and set actions for pendulum monsters in hand", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["350"], extra: [] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const pendulum = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "350");
+    expect(pendulum).toBeTruthy();
+
+    const legal = getDuelLegalActions(session, 0);
+    expect(legal.some((action) => action.type === "normalSummon" && action.uid === pendulum!.uid)).toBe(true);
+    expect(legal.some((action) => action.type === "setMonster" && action.uid === pendulum!.uid)).toBe(true);
+  });
+
   it("moves pendulum monsters to the extra deck face-up", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
