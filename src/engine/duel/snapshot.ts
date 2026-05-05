@@ -531,7 +531,7 @@ function assertSnapshotCards(cards: unknown): Set<string> {
     assertSnapshotPlayerId(card.owner, `${path}.owner`);
     assertSnapshotPlayerId(card.controller, `${path}.controller`);
     if (!duelSnapshotLocations.has(card.location)) throw new Error(`Malformed duel snapshot: ${path}.location must be a card location`);
-    if (typeof card.sequence !== "number") throw new Error(`Malformed duel snapshot: ${path}.sequence must be a number`);
+    assertSnapshotNonNegativeInteger(card.sequence, `${path}.sequence`);
     if (!duelSnapshotPositions.has(card.position)) throw new Error(`Malformed duel snapshot: ${path}.position must be a card position`);
     if (!Array.isArray(card.overlayUids)) throw new Error(`Malformed duel snapshot: ${path}.overlayUids must be an array`);
     assertSnapshotStringArray(card.overlayUids, `${path}.overlayUids`);
@@ -620,7 +620,10 @@ function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: st
   if (card.battlePosition !== undefined && !duelSnapshotPositions.has(card.battlePosition)) throw new Error(`Malformed duel snapshot: ${path}.battlePosition must be a card position`);
   if (card.summonType !== undefined && !duelSnapshotSummonTypes.has(card.summonType)) throw new Error(`Malformed duel snapshot: ${path}.summonType must be a summon type`);
   if (card.summonPhase !== undefined && !duelSnapshotPhases.has(card.summonPhase)) throw new Error(`Malformed duel snapshot: ${path}.summonPhase must be a duel phase`);
-  for (const field of ["previousSequence", "reason", "reasonEffectId", "customStatusMask", "turnId", "turnCounter", "summonTypeCode", "attackModifier", "defenseModifier", "levelModifier", "rankModifier", "linkModifier", "scaleModifier"] as const) {
+  for (const field of ["previousSequence", "turnId", "turnCounter"] as const) {
+    if (card[field] !== undefined) assertSnapshotNonNegativeInteger(card[field], `${path}.${field}`);
+  }
+  for (const field of ["reason", "reasonEffectId", "customStatusMask", "summonTypeCode", "attackModifier", "defenseModifier", "levelModifier", "rankModifier", "linkModifier", "scaleModifier"] as const) {
     if (card[field] !== undefined && typeof card[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
   }
   for (const field of ["previousFaceUp", "cancelToGrave"] as const) {
