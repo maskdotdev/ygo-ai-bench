@@ -536,6 +536,7 @@ function assertSnapshotCards(cards: unknown): Set<string> {
     if (!duelSnapshotPositions.has(card.position)) throw new Error(`Malformed duel snapshot: ${path}.position must be a card position`);
     if (!Array.isArray(card.overlayUids)) throw new Error(`Malformed duel snapshot: ${path}.overlayUids must be an array`);
     assertSnapshotStringArray(card.overlayUids, `${path}.overlayUids`);
+    assertSnapshotUniqueStringArray(card.overlayUids, `${path}.overlayUids`);
     if (typeof card.faceUp !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.faceUp must be a boolean`);
     assertSnapshotOptionalCardState(card, path);
     assertSnapshotCardData(card.data, `${path}.data`);
