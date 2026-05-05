@@ -18,7 +18,7 @@ The engine already has useful surfaces to build on:
 - Battle state exists across `currentAttack`, `pendingBattle`, `battleStep`, `attackPasses`, `damagePasses`, and battle damage overrides.
 - Legal actions are routed through `getLegalActions()` and `applyResponse()`, with pending prompts, chain links, pending triggers, and pending battle windows already serialized.
 - The current battle implementation covers attack declaration, simple attack response windows, damage and damage calculation passes, damage override effects, attack negation, target/attacker leaving before damage, and basic battle destruction.
-- Trigger collection currently builds a flat list with priority sorting, and legal actions approximate active SEGOC buckets. It does not yet preserve explicit serializable trigger buckets, optional ordering prompts, missed timing, or exact fast effect windows.
+- Trigger collection now assigns explicit turn-player/opponent mandatory/optional buckets, exposes active trigger buckets through public state and snapshots, and has SEGOC fixture coverage for bucket order. It still needs richer same-bucket ordering prompts, broader missed timing coverage, and exact fast effect windows.
 - Summon helpers exist for Normal, Tribute, Flip, Fusion, Synchro, Xyz, Link, Ritual, and summon procedures, but they are simplified compared with EDOPro procedure helpers.
 - Lua API coverage is broad enough for smoke probing, but should continue to be driven by failing real card scripts and fixture needs.
 
@@ -147,7 +147,7 @@ Acceptance gates:
 - Missed timing fixtures distinguish "when optional" from "if optional".
 - Snapshot restore preserves pending trigger buckets and ordering prompts.
 - Snapshot restore preserves or explicitly reports active chain-limit predicates so reconnects cannot silently expose illegal chain responses.
-- Existing flat-list bucket approximation tests still pass until migrated to explicit bucket assertions.
+- Existing trigger bucket tests and SEGOC fixtures should continue to assert explicit bucket state, grouped legal actions, and snapshot restore behavior.
 
 ## Phase 3: Summon Procedure Parity
 
