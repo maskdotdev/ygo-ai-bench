@@ -158,6 +158,7 @@ export const triggerActivationGroup = (player: 0 | 1, effectId: string, triggerB
   label: "Trigger Activations",
   ...(windowId === undefined ? {} : { windowId }),
   windowKind: "triggerBucket" as const,
+  triggerBucket: { player, triggerBucket },
   count,
   actions: [{ type: "activateTrigger" as const, player, effectId, triggerBucket, ...(windowId === undefined ? {} : { windowId }), windowKind: "triggerBucket" as const, count }],
 });
