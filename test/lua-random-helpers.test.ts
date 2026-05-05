@@ -663,6 +663,56 @@ describe("Lua random helpers", () => {
     expect(host.messages[1]).toMatch(/^called coin trigger resolved 0\/1\/[01]$/);
   });
 
+  it("applies restored Lua called-coin triggers through restore responses", () => {
+    const session = setupSession(173);
+    const source = {
+      readScript(name: string) {
+        if (name !== "c100.lua") return undefined;
+        return `
+        c100={}
+        function c100.initial_effect(c)
+          local coin=Effect.CreateEffect(c)
+          coin:SetType(EFFECT_TYPE_TRIGGER_O)
+          coin:SetCode(EVENT_TOSS_COIN)
+          coin:SetRange(LOCATION_HAND)
+          coin:SetCondition(function(e,tp) return e:GetHandler():GetControler()==0 end)
+          coin:SetOperation(function(e,tp,eg,ep,ev)
+            Debug.Message("restored called coin trigger " .. ep .. "/" .. ev .. "/" .. table.concat({Duel.GetCoinResult()}, ","))
+          end)
+          c:RegisterEffect(coin)
+        end
+        `;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const result = host.loadScript(
+      `
+      Debug.Message("coin called " .. tostring(Duel.CallCoin(0)))
+      `,
+      "restore-random-call-coin-trigger.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages[0]).toMatch(/^coin called (true|false)$/);
+    expect(session.state.lastCoinResults).toHaveLength(1);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossed"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 1 });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossed"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 1 });
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(restoredTrigger).toBeDefined();
+    const restoredResult = applyLuaRestoreResponse(restored, restoredTrigger!);
+    expect(restoredResult.ok).toBe(true);
+    expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
+    expect(restored.host.messages[0]).toMatch(/^restored called coin trigger 0\/1\/[01]$/);
+  });
+
   it("maps raised Lua toss-negate event codes to matching triggers", () => {
     const session = setupSession(172);
     const host = createLuaScriptHost(session);
