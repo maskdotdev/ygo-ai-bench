@@ -116,6 +116,62 @@ describe("Lua flag state helpers", () => {
     expect(session.state.flagEffects).toHaveLength(0);
   });
 
+  it("keeps flag helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Ended Flag Source", kind: "monster" }];
+    const session = createDuel({ seed: 201, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      Duel.RegisterFlagEffect(0,951,RESET_EVENT,0,1,51)
+      c:RegisterFlagEffect(952,RESET_EVENT,0,1,61)
+      Duel.Win(0,WIN_REASON_EXODIA)
+      Debug.Message("duel register ended " .. Duel.RegisterFlagEffect(0,951,RESET_EVENT,0,1,52))
+      Debug.Message("card register ended " .. c:RegisterFlagEffect(952,RESET_EVENT,0,1,62))
+      Debug.Message("duel set ended " .. Duel.SetFlagEffectLabel(0,951,53))
+      Debug.Message("card set ended " .. c:SetFlagEffectLabel(952,63))
+      Debug.Message("duel reset ended " .. Duel.ResetFlagEffect(0,951))
+      Debug.Message("card reset ended " .. c:ResetFlagEffect(952))
+      Duel.EnableUnofficialProc()
+      Duel.EnableGlobalFlag(GLOBALFLAG_DETACH_EVENT)
+      c:SetUniqueOnField(1,1,100,LOCATION_MZONE)
+      c:MoveToDeckMasterZone(0)
+      Debug.Message("duel flag kept " .. Duel.GetFlagEffect(0,951) .. "/" .. Duel.GetFlagEffectLabel(0,951))
+      Debug.Message("card flag kept " .. c:GetFlagEffect(952) .. "/" .. c:GetFlagEffectLabel(952))
+      `,
+      "ended-flag-noop.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    expect(host.messages).toEqual([
+      "duel register ended 0",
+      "card register ended 0",
+      "duel set ended 0",
+      "card set ended 0",
+      "duel reset ended 0",
+      "card reset ended 0",
+      "duel flag kept 1/51",
+      "card flag kept 1/61",
+    ]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.globalFlags).toBe(0);
+    expect(session.state.unofficialProcEnabled).toBe(false);
+    expect(target!.location).toBe("hand");
+    expect(target!.uniqueOnField).toBeUndefined();
+    expect(session.state.flagEffects).toEqual([
+      expect.objectContaining({ ownerType: "player", ownerId: "0", code: 951, value: 51 }),
+      expect.objectContaining({ ownerType: "card", ownerId: target!.uid, code: 952, value: 61 }),
+    ]);
+  });
+
   it("lets Lua scripts identify deck master flagged cards", () => {
     const cards: DuelCardData[] = [{ code: "153000001", name: "Deck Master Probe", kind: "monster" }];
     const session = createDuel({ seed: 178, startingHandSize: 1, cardReader: createCardReader(cards) });

@@ -10,6 +10,10 @@ const flagDeckMaster = 153000000;
 
 export function installCardFlagApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const uid = readCardUid(state, 1);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const reset = lua.lua_isnumber(state, 3) ? Math.trunc(lua.lua_tonumber(state, 3)) : 0;
@@ -48,6 +52,10 @@ export function installCardFlagApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetFlagEffectLabel"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const uid = readCardUid(state, 1);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const value = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
@@ -56,6 +64,10 @@ export function installCardFlagApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("SetFlagEffectLabel"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const uid = readCardUid(state, 1);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     lua.lua_pushinteger(state, uid ? resetDuelFlagEffect(session.state, { ownerType: "card", ownerId: uid }, code) : 0);
@@ -69,6 +81,7 @@ export function installCardFlagApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsDeckMaster"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
     if (card) {
@@ -83,6 +96,7 @@ export function installCardFlagApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("SetUniqueOnField"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
     if (!card) return 0;

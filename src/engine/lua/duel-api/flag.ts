@@ -15,6 +15,7 @@ export function installDuelFlagApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("IsDuelType"));
   lua.lua_pushcfunction(L, () => {
+    if (session.state.status === "ended") return 0;
     session.state.unofficialProcEnabled = true;
     return 0;
   });
@@ -36,24 +37,37 @@ export function installDuelFlagApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetDeckMaster"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     lua.lua_pushinteger(state, clearDeckMaster(session, player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ClearDeckMasterZone"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     lua.lua_pushinteger(state, summonDeckMaster(session, player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("SummonDeckMaster"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const flag = lua.lua_isnumber(state, 1) ? Math.trunc(lua.lua_tonumber(state, 1)) : 0;
     if (flag > 0) session.state.globalFlags = Number(BigInt(session.state.globalFlags) | BigInt(flag));
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("EnableGlobalFlag"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const reset = lua.lua_isnumber(state, 3) ? Math.trunc(lua.lua_tonumber(state, 3)) : 0;
@@ -88,6 +102,10 @@ export function installDuelFlagApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetFlagEffectLabel"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const value = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
@@ -96,6 +114,10 @@ export function installDuelFlagApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("SetFlagEffectLabel"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     lua.lua_pushinteger(state, resetDuelFlagEffect(session.state, { ownerType: "player", ownerId: player }, code));
