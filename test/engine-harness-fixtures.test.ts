@@ -141,6 +141,80 @@ describe("EDOPro compatibility harness fixtures", () => {
     expect(result).toEqual({ ok: true, failures: [] });
   });
 
+  it("snapshot-restores setup move event packets", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "setup move event packet fixture",
+        options: { seed: 16, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        setup: {
+          moveCards: [
+            {
+              player: 0,
+              code: "100",
+              from: "hand",
+              to: "graveyard",
+              collectEvent: "sentToGraveyard",
+              eventPlayer: 0,
+              eventValue: 1,
+              eventReason: 64,
+              eventReasonPlayer: 0,
+              eventReasonCardUid: "p1-deck-200-0",
+              eventReasonEffectId: 8101,
+              relatedEffectId: 8102,
+              eventChainDepth: 1,
+              eventChainLinkId: "setup-origin-link",
+              eventUids: ["p0-deck-100-0", "p1-deck-200-0"],
+            },
+          ],
+        },
+        before: {
+          source: "edopro",
+          windowId: 0,
+          windowKind: "open",
+          waitingFor: 0,
+          locations: { graveyard: ["100"] },
+          eventHistory: [
+            {
+              eventName: "sentToGraveyard",
+              eventPlayer: 0,
+              eventValue: 1,
+              eventReason: 64,
+              eventReasonPlayer: 0,
+              eventReasonCardUid: "p1-deck-200-0",
+              eventReasonEffectId: 8101,
+              relatedEffectId: 8102,
+              eventChainDepth: 1,
+              eventChainLinkId: "setup-origin-link",
+              eventUids: ["p0-deck-100-0", "p1-deck-200-0"],
+              eventCardUid: "p0-deck-100-0",
+              eventPreviousState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+              eventCurrentState: { controller: 0, location: "graveyard", sequence: 0, position: "faceDown", faceUp: true },
+            },
+          ],
+        },
+        responses: [
+          makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
+            snapshotRestore: "before",
+          }),
+        ],
+        expected: {
+          source: "edopro",
+          windowId: 1,
+          phase: "battle",
+          locations: { graveyard: ["100"] },
+        },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result).toEqual({ ok: true, failures: [] });
+  });
+
   it("reports fixture effect movement failures with rollback", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Fixture Ignition", kind: "monster", attack: 1800, defense: 1200 },
