@@ -215,9 +215,9 @@ describe("Lua trigger chain windows", () => {
     loadDecks(session, { 0: { main: ["15100", "15200", "15300"] }, 1: { main: ["15400", "15500", "15500"] } });
     startDuel(session);
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(15200, source).ok).toBe(true);
-    expect(host.loadCardScript(15300, source).ok).toBe(true);
-    expect(host.loadCardScript(15400, source).ok).toBe(true);
+    loadCardScriptAndAssert(host, 15200, source);
+    loadCardScriptAndAssert(host, 15300, source);
+    loadCardScriptAndAssert(host, 15400, source);
     expect(host.registerInitialEffects()).toBe(3);
 
     const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "15100");
@@ -293,8 +293,8 @@ describe("Lua trigger chain windows", () => {
     loadDecks(session, { 0: { main: ["16100", "16200", "16400"] }, 1: { main: ["16300", "16400", "16400"] } });
     startDuel(session);
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(16200, source).ok).toBe(true);
-    expect(host.loadCardScript(16300, source).ok).toBe(true);
+    loadCardScriptAndAssert(host, 16200, source);
+    loadCardScriptAndAssert(host, 16300, source);
     expect(host.registerInitialEffects()).toBe(2);
 
     const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "16100");
@@ -400,10 +400,10 @@ describe("Lua trigger chain windows", () => {
     loadDecks(session, { 0: { main: ["17100", "17200", "17400"] }, 1: { main: ["17300", "17500", "17600"] } });
     startDuel(session);
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(17200, source).ok).toBe(true);
-    expect(host.loadCardScript(17300, source).ok).toBe(true);
-    expect(host.loadCardScript(17400, source).ok).toBe(true);
-    expect(host.loadCardScript(17500, source).ok).toBe(true);
+    loadCardScriptAndAssert(host, 17200, source);
+    loadCardScriptAndAssert(host, 17300, source);
+    loadCardScriptAndAssert(host, 17400, source);
+    loadCardScriptAndAssert(host, 17500, source);
     expect(host.registerInitialEffects()).toBe(4);
 
     const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "17100");
@@ -654,6 +654,11 @@ function effectIdForSourceCode(session: ReturnType<typeof createDuel>, code: str
   });
   expect(effect).toBeDefined();
   return effect!.id;
+}
+
+function loadCardScriptAndAssert(host: ReturnType<typeof createLuaScriptHost>, code: number, source: Parameters<ReturnType<typeof createLuaScriptHost>["loadCardScript"]>[1]) {
+  const loaded = host.loadCardScript(code, source);
+  expect(loaded.ok, loaded.error).toBe(true);
 }
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
