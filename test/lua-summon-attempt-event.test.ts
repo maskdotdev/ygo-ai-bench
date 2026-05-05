@@ -57,7 +57,7 @@ describe("Lua summon-attempt events", () => {
     ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c200.lua" }]);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -116,7 +116,7 @@ describe("Lua summon-attempt events", () => {
     ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c200.lua" }]);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -180,7 +180,7 @@ describe("Lua summon-attempt events", () => {
     ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c200.lua" }]);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
