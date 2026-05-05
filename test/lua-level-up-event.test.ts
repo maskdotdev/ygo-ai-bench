@@ -39,8 +39,8 @@ describe("Lua level-up events", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_LEVEL_UP)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp,eg)
-          Debug.Message("level event " .. eg:GetFirst():GetCode())
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("level event " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
         end)
         c:RegisterEffect(e)
       end
@@ -57,9 +57,9 @@ describe("Lua level-up events", () => {
     const source = session.state.cards.find((card) => card.code === "100");
     expect(host.messages).toContain("level delta 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["levelChanged"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid, eventCode: 1200 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid, eventCode: 1200, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "levelChanged", "chainSolved"]);
-    expect(session.state.eventHistory.find((event) => event.eventName === "levelChanged")).toMatchObject({ eventCode: 1200 });
+    expect(session.state.eventHistory.find((event) => event.eventName === "levelChanged")).toMatchObject({ eventCode: 1200, eventReason: 0x40, eventReasonPlayer: 0 });
   });
 
   it("applies restored Lua level-change triggers through restore responses", () => {
@@ -91,8 +91,8 @@ describe("Lua level-up events", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_LEVEL_UP)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
-              Debug.Message("restored level trigger " .. eg:GetFirst():GetCode())
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              Debug.Message("restored level trigger " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
             end)
             c:RegisterEffect(e)
           end
@@ -121,7 +121,7 @@ describe("Lua level-up events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["levelChanged"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1200, eventCardUid: changed!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1200, eventCardUid: changed!.uid, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
@@ -131,7 +131,7 @@ describe("Lua level-up events", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(restored.host.messages).toContain("restored level trigger 100");
+    expect(restored.host.messages).toContain("restored level trigger 100/64/0");
   });
 
   it("makes earlier Lua optional when triggers miss timing at level-change boundaries", () => {

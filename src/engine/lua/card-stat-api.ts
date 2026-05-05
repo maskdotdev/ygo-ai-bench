@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { collectDuelTriggerEffects } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
@@ -292,15 +293,15 @@ function pushUpdateLevel(L: unknown, session: DuelSession, hostState: LuaOperati
   const delta = currentLevel(card) - before;
   if (delta !== 0) {
     markLuaOperationTimingBoundary(session, hostState);
-    collectStatEvent(session, "levelChanged", card);
+    collectStatEvent(session, hostState, "levelChanged", card);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
   }
   lua.lua_pushinteger(L, delta);
   return 1;
 }
 
-function collectStatEvent(session: DuelSession, eventName: "levelChanged", card: DuelCardInstance): void {
-  collectDuelTriggerEffects(session.state, eventName, card);
+function collectStatEvent(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, eventName: "levelChanged", card: DuelCardInstance): void {
+  collectDuelTriggerEffects(session.state, eventName, card, { eventReason: duelReason.effect, eventReasonPlayer: hostState.activeContext?.player ?? session.state.turnPlayer });
 }
 
 function pushUpdateRank(L: unknown, session: DuelSession): number {
