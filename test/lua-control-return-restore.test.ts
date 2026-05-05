@@ -74,6 +74,7 @@ describe("Lua control and return restore helpers", () => {
     expect(trigger).toBeDefined();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored to deck trigger 200");
   });
@@ -139,6 +140,7 @@ describe("Lua control and return restore helpers", () => {
     expect(trigger).toBeDefined();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored control trigger 0");
   });
