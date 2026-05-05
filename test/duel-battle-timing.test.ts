@@ -25,6 +25,10 @@ describe("duel battle timing", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(restored.state.battleWindow).toEqual(session.state.battleWindow);
     expect(restored.state.pendingBattle).toEqual(session.state.pendingBattle);
+    expect(getDuelLegalActions(restored, 1).find((action) => action.type === "passDamage")).toMatchObject({
+      windowId: restored.state.actionWindowId,
+      windowKind: "battle",
+    });
 
     while (restored.state.battleWindow) {
       const player = restored.state.battleWindow.responsePlayer;
