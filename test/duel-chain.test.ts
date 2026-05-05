@@ -665,6 +665,8 @@ describe("duel chains", () => {
     const pass = getDuelLegalActions(session, 0).find((action) => action.type === "passChain");
     expect(staleQuick).toBeTruthy();
     expect(pass).toBeTruthy();
+    expect(staleQuick).toMatchObject({ windowId: queryPublicState(session).actionWindowId, windowKind: "chainResponse" });
+    expect(pass).toMatchObject({ windowId: queryPublicState(session).actionWindowId, windowKind: "chainResponse" });
     expect(applyResponse(session, pass!).ok).toBe(true);
 
     const replay = applyResponse(session, staleQuick!);
