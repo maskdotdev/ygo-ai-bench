@@ -60,23 +60,21 @@ describe("Lua overlay restore helpers", () => {
     xyz!.overlayUids.push(material!.uid);
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(920, source).ok).toBe(true);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const xyzScript = host.loadCardScript(920, source);
+    const watcherScript = host.loadCardScript(300, source);
+    expect(xyzScript.ok, xyzScript.error).toBe(true);
+    expect(watcherScript.ok, watcherScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === xyz!.uid);
     expect(action).toBeDefined();
-    const response = applyResponse(session, action!);
-    expect(response.ok).toBe(true);
-    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
-    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
-    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+    applyAndAssert(session, action!);
     expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["detachedMaterial"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1202, eventCardUid: material!.uid });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["detachedMaterial"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1202, eventCardUid: material!.uid });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -89,6 +87,15 @@ describe("Lua overlay restore helpers", () => {
     expect(restored.host.messages).toContain("restored detach trigger 100");
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
 
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const response = applyLuaRestoreResponse(restored, action);

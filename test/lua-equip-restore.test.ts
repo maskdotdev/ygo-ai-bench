@@ -52,24 +52,22 @@ describe("Lua equip restore helpers", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(100, source).ok).toBe(true);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const starterScript = host.loadCardScript(100, source);
+    const watcherScript = host.loadCardScript(300, source);
+    expect(starterScript.ok, starterScript.error).toBe(true);
+    expect(watcherScript.ok, watcherScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    const response = applyResponse(session, action!);
-    expect(response.ok).toBe(true);
-    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
-    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
-    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+    applyAndAssert(session, action!);
     const removed = session.state.cards.find((card) => card.code === "200");
     expect(removed).toMatchObject({ location: "banished" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["banished"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1011, eventCardUid: removed!.uid });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["banished"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1011, eventCardUid: removed!.uid });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -82,6 +80,15 @@ describe("Lua equip restore helpers", () => {
     expect(restored.host.messages).toContain("restored remove trigger 200");
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
 
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const response = applyLuaRestoreResponse(restored, action);
