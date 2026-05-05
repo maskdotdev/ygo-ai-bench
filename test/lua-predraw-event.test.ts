@@ -70,6 +70,7 @@ describe("Lua predraw events", () => {
     expect(restoredTrigger).toBeDefined();
     const restoredTriggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
     expect(restoredTriggerResult.ok).toBe(true);
+    expect(restoredTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
     expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("predraw resolved 1/1/1/2");
@@ -98,6 +99,7 @@ function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScript
     expect(pass).toBeDefined();
     const result = applyLuaRestoreResponse(restored, pass!);
     expect(result.ok).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   }
 }
