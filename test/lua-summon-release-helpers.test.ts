@@ -61,7 +61,7 @@ describe("Lua summon and release helpers", () => {
     expect(unsummoned).toMatchObject({ location: "hand" });
   });
 
-  it("lets Lua scripts invoke scaffolded summon helpers", () => {
+  it("lets Lua scripts invoke summon helper APIs", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Material A", kind: "monster" },
       { code: "300", name: "Material B", kind: "monster" },
