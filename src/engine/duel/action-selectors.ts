@@ -27,6 +27,7 @@ export function describeDuelActionSelector(selector: ScriptedResponseSelector): 
     selector.phase ? `phase=${selector.phase}` : undefined,
     selector.attackerUid ? `attackerUid=${selector.attackerUid}` : undefined,
     selector.targetUid ? `targetUid=${selector.targetUid}` : undefined,
+    selector.directAttack !== undefined ? `directAttack=${selector.directAttack}` : undefined,
     selector.promptId ? `promptId=${selector.promptId}` : undefined,
     selector.effectId ? `effectId=${selector.effectId}` : undefined,
     selector.triggerId ? `triggerId=${selector.triggerId}` : undefined,

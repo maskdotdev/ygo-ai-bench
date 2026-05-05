@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { duelActionMatchesSelector } from "#duel/action-selectors.js";
+import { describeDuelActionSelector, duelActionMatchesSelector } from "#duel/action-selectors.js";
 import { sameAction } from "#duel/response-match.js";
 import type { DuelAction } from "#duel/types.js";
 
@@ -40,6 +40,11 @@ describe("duel response matching", () => {
 
     expect(duelActionMatchesSelector(direct, { type: "declareAttack", player: 0, directAttack: true }, [])).toBe(true);
     expect(duelActionMatchesSelector(unstamped, { type: "declareAttack", player: 0, directAttack: true }, [])).toBe(false);
+  });
+
+  it("describes direct attack selectors with their explicit direct attack intent", () => {
+    expect(describeDuelActionSelector({ type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true })).toContain("directAttack=true");
+    expect(describeDuelActionSelector({ type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: false })).toContain("directAttack=false");
   });
 
   it("matches explicit direct attack responses only to direct attack actions", () => {
