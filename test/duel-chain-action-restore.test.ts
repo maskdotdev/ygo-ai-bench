@@ -106,6 +106,10 @@ describe("chain action restore", () => {
     const chained = applyResponse(restored, quick!);
     expect(chained.ok).toBe(true);
     expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, chained.state.waitingFor!));
+    const staleQuick = applyResponse(restored, quick!);
+    expect(staleQuick.ok).toBe(false);
+    expect(staleQuick.error).toContain("Response is not currently legal");
+    expect(staleQuick.state.actionWindowId).toBe(restored.state.actionWindowId);
   });
 });
 
