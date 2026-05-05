@@ -59,14 +59,22 @@ describe("Lua become-target events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(host.messages).toContain("targeting effect resolved 200");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["becameTarget"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1028, eventCardUid: session.state.cards.find((card) => card.code === "200")?.uid });
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    const triggerResponse = applyResponse(session, trigger!);
+    expect(triggerResponse.ok).toBe(true);
+    expect(triggerResponse.legalActions).toEqual(getDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResponse.legalActions);
     expect(host.messages).toContain("become target resolved 200");
   });
 
@@ -128,7 +136,11 @@ describe("Lua become-target events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(host.messages).toContain("restored target effect resolved 200");
 
     const target = session.state.cards.find((card) => card.code === "200");
@@ -230,7 +242,11 @@ describe("Lua become-target events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1028");
