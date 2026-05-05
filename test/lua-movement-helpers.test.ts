@@ -180,10 +180,10 @@ describe("Lua movement helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === mover!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid !== mover!.uid);
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("left field trigger 200/16");
   });
 
@@ -241,14 +241,14 @@ describe("Lua movement helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === mover!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["leftGraveyard"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1031, eventCardUid: leaving!.uid });
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "leftGraveyard", eventCode: 1031, eventCardUid: leaving!.uid })]));
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid !== mover!.uid);
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("left grave trigger 200/true/true");
   });
 
@@ -317,7 +317,7 @@ describe("Lua movement helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === mover!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["leftField"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
@@ -402,7 +402,7 @@ describe("Lua movement helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sender!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("sentToGraveyard");
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1014, eventCardUid: target!.uid }));
 
@@ -484,7 +484,7 @@ describe("Lua movement helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === mover!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["leftGraveyard"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
@@ -505,3 +505,12 @@ describe("Lua movement helpers", () => {
   });
 
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
