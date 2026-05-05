@@ -27,9 +27,11 @@ export function recordDuelEvent(state: DuelState, eventName: DuelEventName, even
   state.eventHistory = state.eventHistory.slice(-32);
 }
 
-export function eventCardReasonPayload(eventCard?: DuelCardInstance): Pick<DuelEventRecordPayload, "eventReasonCardUid" | "eventReasonEffectId"> {
+export function eventCardReasonPayload(eventCard?: DuelCardInstance): Pick<DuelEventRecordPayload, "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId"> {
   if (!eventCard) return {};
   return {
+    ...(eventCard.reason === undefined ? {} : { eventReason: eventCard.reason }),
+    ...(eventCard.reasonPlayer === undefined ? {} : { eventReasonPlayer: eventCard.reasonPlayer }),
     ...(eventCard.reasonCardUid === undefined ? {} : { eventReasonCardUid: eventCard.reasonCardUid }),
     ...(eventCard.reasonEffectId === undefined ? {} : { eventReasonEffectId: eventCard.reasonEffectId }),
   };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 
@@ -44,7 +45,7 @@ describe("duel event state packets", () => {
       operation() {},
     });
 
-    sendDuelCardToGraveyard(session.state, moved!.uid, 0);
+    sendDuelCardToGraveyard(session.state, moved!.uid, 0, duelReason.effect, 1);
 
     const expectedPrevious = {
       controller: 0,
@@ -62,18 +63,64 @@ describe("duel event state packets", () => {
     };
 
     expect(session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: moved!.uid, eventReasonCardUid: reasonSource!.uid, eventReasonEffectId: 3001, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventName: "sentToGraveyard",
+          eventCardUid: moved!.uid,
+          eventReason: duelReason.effect,
+          eventReasonPlayer: 1,
+          eventReasonCardUid: reasonSource!.uid,
+          eventReasonEffectId: 3001,
+          eventPreviousState: expectedPrevious,
+          eventCurrentState: expectedCurrent,
+        }),
+      ]),
     );
     expect(session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventReasonCardUid: reasonSource!.uid, eventReasonEffectId: 3001, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          effectId: "watch-sent",
+          eventCardUid: moved!.uid,
+          eventReason: duelReason.effect,
+          eventReasonPlayer: 1,
+          eventReasonCardUid: reasonSource!.uid,
+          eventReasonEffectId: 3001,
+          eventPreviousState: expectedPrevious,
+          eventCurrentState: expectedCurrent,
+          eventTriggerTiming: "if",
+        }),
+      ]),
     );
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false });
     expect(restored.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: moved!.uid, eventReasonCardUid: reasonSource!.uid, eventReasonEffectId: 3001, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventName: "sentToGraveyard",
+          eventCardUid: moved!.uid,
+          eventReason: duelReason.effect,
+          eventReasonPlayer: 1,
+          eventReasonCardUid: reasonSource!.uid,
+          eventReasonEffectId: 3001,
+          eventPreviousState: expectedPrevious,
+          eventCurrentState: expectedCurrent,
+        }),
+      ]),
     );
     expect(restored.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventReasonCardUid: reasonSource!.uid, eventReasonEffectId: 3001, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          effectId: "watch-sent",
+          eventCardUid: moved!.uid,
+          eventReason: duelReason.effect,
+          eventReasonPlayer: 1,
+          eventReasonCardUid: reasonSource!.uid,
+          eventReasonEffectId: 3001,
+          eventPreviousState: expectedPrevious,
+          eventCurrentState: expectedCurrent,
+          eventTriggerTiming: "if",
+        }),
+      ]),
     );
 
     const triggerAction = getLegalActions(session, 0).find((action) => action.type === "activateTrigger");
@@ -81,7 +128,19 @@ describe("duel event state packets", () => {
     const result = applyResponse(session, triggerAction!);
     expect(result.ok, result.error).toBe(true);
     expect(session.state.chain).toEqual(
-      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventReasonCardUid: reasonSource!.uid, eventReasonEffectId: 3001, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          effectId: "watch-sent",
+          eventCardUid: moved!.uid,
+          eventReason: duelReason.effect,
+          eventReasonPlayer: 1,
+          eventReasonCardUid: reasonSource!.uid,
+          eventReasonEffectId: 3001,
+          eventPreviousState: expectedPrevious,
+          eventCurrentState: expectedCurrent,
+          eventTriggerTiming: "if",
+        }),
+      ]),
     );
   });
 });

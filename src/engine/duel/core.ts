@@ -708,11 +708,11 @@ export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEvent
   const eventCode = options.eventCode ?? duelEventCode(eventName);
   const triggerOptions = eventCode === undefined ? options : { ...options, eventCode };
   recordDuelEvent(state, eventName, eventCard, eventCode, {
+    ...eventCardReasonPayload(eventCard),
     ...(options.eventPlayer === undefined ? {} : { eventPlayer: options.eventPlayer }),
     ...(options.eventValue === undefined ? {} : { eventValue: options.eventValue }),
     ...(options.eventReason === undefined ? {} : { eventReason: options.eventReason }),
     ...(options.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }),
-    ...eventCardReasonPayload(eventCard),
     ...(options.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: options.eventReasonCardUid }),
     ...(options.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: options.eventReasonEffectId }),
     ...(options.relatedEffectId === undefined ? {} : { relatedEffectId: options.relatedEffectId }),
