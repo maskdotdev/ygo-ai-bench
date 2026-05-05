@@ -197,7 +197,11 @@ function setupRestoredChainResponse(kind: "pass" | "quick") {
 
   const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === `restore-${kind}-original`);
   expect(original).toBeTruthy();
-  expect(applyResponse(session, original!).state.chain).toHaveLength(1);
+  const opened = applyResponse(session, original!);
+  expect(opened.state.chain).toHaveLength(1);
+  expect(opened.legalActions).toEqual(getDuelLegalActions(session, 1));
+  expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+  expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
 
   const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
     [`restore-${kind}-original`]: restoreChainEffect(`Restored ${kind} original resolved`),
