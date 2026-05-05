@@ -624,7 +624,12 @@ describe("Lua battle timing helpers", () => {
     expect(restored.session.state.chain).toEqual([]);
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.players[1].lifePoints).toBe(6200);
-    expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "changePhase" && candidate.phase === "main2")).toBe(true);
+    expect(queryPublicState(restored.session)).toMatchObject({ windowKind: "open", waitingFor: 0 });
+    expect(queryPublicState(restored.session)).not.toHaveProperty("battleWindow");
+    expect(getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "main2")).toMatchObject({
+      windowId: restored.session.state.actionWindowId,
+      windowKind: "open",
+    });
   });
 
   it("queues Lua battle damage triggers after battle damage is applied", () => {
