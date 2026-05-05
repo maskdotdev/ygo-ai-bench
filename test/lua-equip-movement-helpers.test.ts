@@ -434,10 +434,14 @@ describe("Lua equip movement helpers", () => {
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1012");
     expect(pendingEffectIds).toContain("lua-4-1121");
+    const sourceCard = session.state.cards.find((card) => card.code === "100");
+    const equipCard = session.state.cards.find((card) => card.code === "500");
+    expect(sourceCard).toBeDefined();
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "equipped", eventCode: 1121, eventCardUid: equipCard?.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: sourceCard!.uid, eventReasonEffectId: 1 }));
     expect(session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "sentToHand", eventCode: 1012 }), expect.objectContaining({ eventName: "equipped", eventCode: 1121 })]),
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToHand", eventCode: 1012 }), expect.objectContaining({ eventName: "equipped", eventCode: 1121, eventReasonCardUid: sourceCard!.uid, eventReasonEffectId: 1 })]),
     );
-    expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: monster!.uid, faceUp: true });
+    expect(equipCard).toMatchObject({ location: "spellTrapZone", equippedToUid: monster!.uid, faceUp: true });
   });
 
   it("keeps effect equip helpers from mutating ended duels", () => {

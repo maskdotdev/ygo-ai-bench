@@ -5,6 +5,7 @@ import { registerDuelFlagEffect } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { readCardUid, readTableNumberField, readTableStringField } from "#lua/api-utils.js";
 import { matchingLuaEffects } from "#lua/card-effect-query-api.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary } from "#lua/duel-api/move.js";
 import { pushCardTable } from "#lua/card-table-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -62,7 +63,7 @@ function pushEquipByEffectAndLimitRegister<EffectRecord extends LuaCardApiEffect
     equip.faceUp = true;
     if (code !== undefined) registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: equip.uid }, code, 0x1fe0000, 0, 0);
     pushDuelLog(session.state, "equip", player, equip.name, `Equipped to ${target.name}`);
-    collectDuelTriggerEffects(session.state, "equipped", equip, { eventReason: duelReason.effect, eventReasonPlayer: hostState.activeContext?.player ?? player });
+    collectDuelTriggerEffects(session.state, "equipped", equip, luaEffectReasonPayload(hostState, duelReason.effect, hostState.activeContext?.player ?? player));
     if (hostState.activeContext) hostState.activeOperationMoved = true;
     setOperatedUids(hostState, [equip.uid]);
     lua.lua_pushboolean(L, true);
