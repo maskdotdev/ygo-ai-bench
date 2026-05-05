@@ -154,7 +154,7 @@ describe("Lua special summon procedures", () => {
     expect(staleRestoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(staleRestoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleRestoredResult.legalActions);
 
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(host.messages).toContain("procedure value 100");
     expect(host.messages).toContain("blocked procedure value 200");
@@ -188,7 +188,7 @@ describe("Lua special summon procedures", () => {
     expect(source).toBeTruthy();
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
     expect(session.state.cards.find((card) => card.uid === cost!.uid)).toMatchObject({ location: "deck", reason: 0x80 });
@@ -229,14 +229,14 @@ describe("Lua special summon procedures", () => {
 
     const placeAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
     expect(placeAction).toBeDefined();
-    expect(applyResponse(session, placeAction!).ok).toBe(true);
+    applyAndAssert(session, placeAction!);
     expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "graveyard" });
     expect(session.state.cards.find((card) => card.uid === mindShuffle!.uid)).toMatchObject({ location: "spellTrapZone", controller: 0, faceUp: true });
 
     moveDuelCard(session.state, source!.uid, "monsterZone", 0);
     const banishAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
     expect(banishAction).toBeDefined();
-    expect(applyResponse(session, banishAction!).ok).toBe(true);
+    applyAndAssert(session, banishAction!);
     expect(session.state.cards.find((card) => card.uid === opponentA!.uid)).toMatchObject({ location: "banished" });
     expect(session.state.cards.find((card) => card.uid === opponentB!.uid)).toMatchObject({ location: "banished" });
   });
@@ -332,7 +332,7 @@ describe("Lua special summon procedures", () => {
     expect(restored.session.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false });
 
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(host.messages).toContain("extra procedure value true/64");
     expect(host.messages).toContain("extra procedure operation 301");
@@ -429,7 +429,7 @@ describe("Lua special summon procedures", () => {
     expect(restored.session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
     expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
 
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(host.messages).toContain("material procedure selected 1/300");
     expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
@@ -507,7 +507,7 @@ describe("Lua special summon procedures", () => {
     const blocked = actions.find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === blockedSource!.uid);
     expect(action).toBeDefined();
     expect(blocked).toBeUndefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(host.messages).toContain("full zone material selected 1/1");
     expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
@@ -619,7 +619,7 @@ describe("Lua special summon procedures", () => {
     expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
 
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(host.messages).toContain("procedure release cost 1/1");
     expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
@@ -943,7 +943,7 @@ describe("Lua special summon procedures", () => {
     expect(host.registerInitialEffects()).toBe(1);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
-    const result = applyResponse(session, action!);
+    const result = applyAndAssert(session, action!);
 
     expect(result.ok).toBe(true);
     expect(host.messages).toContain("return false material moves 1/2");
@@ -952,3 +952,12 @@ describe("Lua special summon procedures", () => {
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)).toMatchObject({ location: "hand" });
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
