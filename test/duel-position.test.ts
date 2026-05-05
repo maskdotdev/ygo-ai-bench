@@ -257,23 +257,31 @@ describe("duel position changes", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     const playerEndResult = applyResponse(restored, getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn")!);
     expect(playerEndResult.ok).toBe(true);
+    expect(playerEndResult.legalActions).toEqual(getDuelLegalActions(restored, playerEndResult.state.waitingFor!));
     expect(playerEndResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, playerEndResult.state.waitingFor!));
+    expect(playerEndResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(playerEndResult.legalActions);
     const opponentEndResult = applyResponse(restored, getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn")!);
     expect(opponentEndResult.ok).toBe(true);
+    expect(opponentEndResult.legalActions).toEqual(getDuelLegalActions(restored, opponentEndResult.state.waitingFor!));
     expect(opponentEndResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, opponentEndResult.state.waitingFor!));
+    expect(opponentEndResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(opponentEndResult.legalActions);
 
     const changePosition = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "changePosition" && candidate.uid === summoned!.uid && candidate.position === "faceUpDefense");
     expect(changePosition).toBeTruthy();
     const changeResult = applyResponse(restored, changePosition!);
     expect(changeResult.ok).toBe(true);
+    expect(changeResult.legalActions).toEqual(getDuelLegalActions(restored, changeResult.state.waitingFor!));
     expect(changeResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, changeResult.state.waitingFor!));
+    expect(changeResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(changeResult.legalActions);
     expect(restored.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ position: "faceUpDefense", faceUp: true });
 
     const flipSummon = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === set!.uid);
     expect(flipSummon).toBeTruthy();
     const flipResult = applyResponse(restored, flipSummon!);
     expect(flipResult.ok).toBe(true);
+    expect(flipResult.legalActions).toEqual(getDuelLegalActions(restored, flipResult.state.waitingFor!));
     expect(flipResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, flipResult.state.waitingFor!));
+    expect(flipResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(flipResult.legalActions);
     expect(restored.state.cards.find((card) => card.uid === set!.uid)).toMatchObject({ position: "faceUpAttack", faceUp: true, summonType: "flip" });
   });
 

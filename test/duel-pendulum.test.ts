@@ -168,12 +168,16 @@ describe("duel pendulum summons", () => {
     expect(playerEnd).toBeDefined();
     const playerEndResult = applyResponse(restored, playerEnd!);
     expect(playerEndResult.ok).toBe(true);
+    expect(playerEndResult.legalActions).toEqual(getDuelLegalActions(restored, playerEndResult.state.waitingFor!));
     expect(playerEndResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, playerEndResult.state.waitingFor!));
+    expect(playerEndResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(playerEndResult.legalActions);
     const opponentEnd = getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn");
     expect(opponentEnd).toBeDefined();
     const opponentEndResult = applyResponse(restored, opponentEnd!);
     expect(opponentEndResult.ok).toBe(true);
+    expect(opponentEndResult.legalActions).toEqual(getDuelLegalActions(restored, opponentEndResult.state.waitingFor!));
     expect(opponentEndResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, opponentEndResult.state.waitingFor!));
+    expect(opponentEndResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(opponentEndResult.legalActions);
 
     expect(restored.state.players[0].pendulumSummonAvailable).toBe(true);
     expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "pendulumSummon")).toBe(true);
