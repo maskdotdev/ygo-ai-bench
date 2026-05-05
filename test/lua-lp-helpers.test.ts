@@ -581,6 +581,7 @@ describe("Lua LP helpers", () => {
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
     const restoredTriggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
@@ -934,6 +935,7 @@ describe("Lua LP helpers", () => {
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1, eventUids: [drawnUid], eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
     const restoredTriggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
