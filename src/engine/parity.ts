@@ -56,7 +56,7 @@ export interface ParityRunResult {
 }
 
 export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: ParityRunOptions = {}): ParityRunResult {
-  const session = createDuel({ ...fixture.options, ...options });
+  let session = createDuel({ ...fixture.options, ...options });
   loadDecks(session, fixture.decks);
   startDuel(session);
 
@@ -71,7 +71,10 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
   for (const step of fixture.responses) {
     const stepResponse = step.response;
     assertWindow(session, scriptedStepBefore(step), fixture.name, `before ${describeStep(stepResponse)}`, failures);
-    if (scriptedStepSnapshotRestoreBefore(step)) assertSnapshotRestore(session, fixture.name, `before ${describeStep(stepResponse)}`, failures, options.cardReader, effectRegistry, chainLimitRegistry);
+    if (scriptedStepSnapshotRestoreBefore(step)) {
+      const restored = assertSnapshotRestore(session, fixture.name, `before ${describeStep(stepResponse)}`, failures, options.cardReader, effectRegistry, chainLimitRegistry);
+      if (restored) session = restored;
+    }
     if (failures.length) break;
     const legal = getLegalActions(session, stepResponse.player);
     const response = resolveScriptedStep(stepResponse, legal, queryPublicState(session).cards);
@@ -85,7 +88,10 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
       break;
     }
     assertWindow(session, scriptedStepAfter(step), fixture.name, `after ${describeStep(stepResponse)}`, failures);
-    if (scriptedStepSnapshotRestoreAfter(step)) assertSnapshotRestore(session, fixture.name, `after ${describeStep(stepResponse)}`, failures, options.cardReader, effectRegistry, chainLimitRegistry);
+    if (scriptedStepSnapshotRestoreAfter(step)) {
+      const restored = assertSnapshotRestore(session, fixture.name, `after ${describeStep(stepResponse)}`, failures, options.cardReader, effectRegistry, chainLimitRegistry);
+      if (restored) session = restored;
+    }
   }
 
   assertWindow(session, fixture.expected, fixture.name, "final expected", failures);
@@ -112,7 +118,7 @@ function assertSnapshotRestore(
   cardReader?: DuelCardReader,
   effectRegistry: DuelEffectRestoreRegistry = {},
   chainLimitRegistry: DuelChainLimitRestoreRegistry = {},
-): void {
+): DuelSession | undefined {
   const before = JSON.stringify(queryPublicState(session));
   const snapshot = serializeDuel(session);
   const restored = restoreDuel(snapshot, cardReader ?? session.cardReader, effectRegistry, chainLimitRegistry);
@@ -166,6 +172,7 @@ function assertSnapshotRestore(
     const afterGroups = JSON.stringify(getGroupedDuelLegalActions(restored, player));
     if (afterGroups !== beforeGroups) failures.push({ fixture, message: `${context}: snapshot/restore changed player ${player} legal action groups` });
   }
+  return failures.length === 0 ? restored : undefined;
 }
 
 function assertSnapshotJsonEqual(name: string, before: unknown, after: unknown, fixture: string, context: string, failures: ParityFailure[]): void {

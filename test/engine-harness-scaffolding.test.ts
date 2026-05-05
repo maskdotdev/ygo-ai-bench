@@ -85,6 +85,56 @@ describe("EDOPro compatibility harness scaffolding", () => {
     expect(result).toEqual({ ok: true, failures: [] });
   });
 
+  it("continues scripted fixtures from restored snapshots", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }, { id: 400, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "restore before response fixture",
+        options: { seed: 14, startingHandSize: 2 },
+        decks: {
+          0: { main: ["100", "200"] },
+          1: { main: ["300", "400"] },
+        },
+        responses: [
+          makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
+            snapshotRestore: "before",
+            before: {
+              source: "edopro",
+              windowId: 0,
+              windowKind: "open",
+              waitingFor: 0,
+              phase: "main1",
+              legalActionCounts: { 0: 6, 1: 0 },
+              legalActionGroupCounts: { 0: 2, 1: 0 },
+              legalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", windowId: 0, windowKind: "open", count: 1 }],
+            },
+            after: {
+              source: "edopro",
+              windowId: 1,
+              windowKind: "open",
+              waitingFor: 0,
+              phase: "main1",
+              locations: { monsterZone: ["100"] },
+              absentLegalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", windowId: 1, windowKind: "open" }],
+              legalActionCounts: { 0: 2 },
+              legalActionGroupCounts: { 0: 1 },
+            },
+          }),
+        ],
+        expected: {
+          source: "edopro",
+          windowId: 1,
+          windowKind: "open",
+          locations: { monsterZone: ["100"] },
+          logIncludes: ["Normal Summoned"],
+        },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result).toEqual({ ok: true, failures: [] });
+  });
+
   it("runs scripted battle-window fixtures against the TypeScript engine", () => {
     const battleCards: DuelCardData[] = [
       { code: "100", name: "Fixture Attacker", kind: "monster", attack: 1800, defense: 1200 },
