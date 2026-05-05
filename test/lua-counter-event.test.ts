@@ -118,4 +118,34 @@ describe("Lua counter events", () => {
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "counterRemoved", "chainSolved"]);
     expect(session.state.eventHistory.find((event) => event.eventName === "counterRemoved")).toMatchObject({ eventCode: 0x20000 });
   });
+
+  it("keeps counter helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Ended Counter", kind: "monster" }];
+    const session = createDuel({ seed: 200, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+    expect(addDuelCardCounter(target!, 99, 1)).toBe(true);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
+      Duel.Win(0,WIN_REASON_EXODIA)
+      Debug.Message("add ended " .. tostring(target:AddCounter(99,1)))
+      Debug.Message("remove ended " .. tostring(target:RemoveCounter(0,99,1,REASON_EFFECT)))
+      Debug.Message("counter " .. target:GetCounter(99))
+      `,
+      "ended-counter-noop.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    expect(host.messages).toEqual(["add ended false", "remove ended false", "counter 1"]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.pendingTriggers).toEqual([]);
+    expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("counterAdded");
+    expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("counterRemoved");
+  });
 });

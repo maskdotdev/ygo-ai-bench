@@ -46,6 +46,10 @@ function pushHasCounter(L: unknown, session: DuelSession): number {
 }
 
 function pushAddCounter(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
   const card = readCard(L, session);
   const counterType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const count = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
@@ -56,6 +60,10 @@ function pushAddCounter(L: unknown, session: DuelSession): number {
 }
 
 function pushRemoveCounter(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
   const card = readCard(L, session);
   const hasPlayerArgument = lua.lua_gettop(L) >= 4;
   const counterTypeIndex = hasPlayerArgument ? 3 : 2;
