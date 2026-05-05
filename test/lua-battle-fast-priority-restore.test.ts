@@ -453,6 +453,12 @@ describe("Lua battle fast priority restore", () => {
     expect(restored.session.state.pendingBattle).toBeUndefined();
     expect(restored.session.state.battleWindow).toBeUndefined();
     expect(restored.host.messages).toEqual(["restored cleanup counter battle damage 0/800/32/1/7200"]);
+    const staleTrigger = applyLuaRestoreResponse(restored, trigger!);
+    expect(staleTrigger.ok).toBe(false);
+    expect(staleTrigger.error).toContain("Response is not currently legal");
+    expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, staleTrigger.state.waitingFor!));
+    expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleTrigger.state.waitingFor!));
+    expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
   });
 });
 
