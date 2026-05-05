@@ -4,7 +4,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua deck and field helpers", () => {
   it("lets Lua scripts inspect, confirm, and move deck-top groups", () => {
@@ -226,6 +226,8 @@ describe("Lua deck and field helpers", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["confirmed"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1211, eventPlayer: 1, eventValue: 2 });
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
@@ -283,6 +285,8 @@ describe("Lua deck and field helpers", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHandConfirmed"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1212, eventPlayer: 1, eventValue: 1 });
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
