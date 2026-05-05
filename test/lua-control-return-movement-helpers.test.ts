@@ -7,6 +7,7 @@ import {
   destroyDuelCard,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  serializeDuel,
   specialSummonDuelCard,
   startDuel,
   xyzSummonDuelCard,
@@ -15,6 +16,7 @@ import { getCards, moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua control and return movement helpers", () => {
   it("lets Lua scripts hide Spell/Trap cards as face-down monster-zone decoys", () => {
@@ -219,6 +221,77 @@ describe("Lua control and return movement helpers", () => {
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
     expect(host.messages).toContain("to hand trigger resolved 200");
+  });
+
+  it("applies restored Lua to-hand triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore To Hand Starter", kind: "monster" },
+      { code: "200", name: "Restore To Hand Target", kind: "monster" },
+      { code: "300", name: "Restore To Hand Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 1, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+              Duel.SendtoHand(target, 1, REASON_EFFECT)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c300.lua") {
+          return `
+          c300={}
+          function c300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_TO_HAND)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp,eg)
+              Debug.Message("restored to hand trigger " .. eg:GetFirst():GetCode())
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 182, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "300"] }, 1: { main: ["200"] } });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "graveyard", 1);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand", controller: 1 });
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHand"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1012, eventCardUid: target!.uid });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHand"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1012, eventCardUid: target!.uid });
+
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored to hand trigger 200");
   });
 
   it("makes Lua optional when to-hand triggers miss timing after later event boundaries", () => {
