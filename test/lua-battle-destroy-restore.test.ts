@@ -78,6 +78,7 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   expect(trigger).toBeDefined();
   const triggerResult = applyLuaRestoreResponse(restored, trigger!);
   expect(triggerResult.ok).toBe(true);
+  expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
   expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
   return { messages: restored.host.messages };
 }
