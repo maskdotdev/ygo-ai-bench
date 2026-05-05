@@ -24,6 +24,7 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("SetLP"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const value = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0);
     lua.lua_pushboolean(state, session.state.players[player].lifePoints > value);

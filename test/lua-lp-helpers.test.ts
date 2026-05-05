@@ -73,6 +73,7 @@ describe("Lua LP helpers", () => {
       Debug.Message("damage " .. Duel.Damage(1, 500, REASON_EFFECT))
       Debug.Message("recover " .. Duel.Recover(0, 500, REASON_EFFECT))
       Duel.SetLP(1, 1234)
+      Duel.PayLPCost(0, 500)
       `,
       "ended-lp-noop.lua",
     );
@@ -83,6 +84,7 @@ describe("Lua LP helpers", () => {
     expect(session.state.winner).toBe(0);
     expect(session.state.players[0].lifePoints).toBe(8000);
     expect(session.state.players[1].lifePoints).toBe(8000);
+    expect(session.state.pendingTriggers).toEqual([]);
     expect(session.state.log.filter((entry) => entry.action === "win")).toHaveLength(1);
   });
 
