@@ -438,9 +438,12 @@ describe("Lua chain helpers", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(100, source).ok).toBe(true);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
-    expect(host.loadCardScript(400, source).ok).toBe(true);
+    const sourceScript = host.loadCardScript(100, source);
+    const turnQuickScript = host.loadCardScript(300, source);
+    const opponentQuickScript = host.loadCardScript(400, source);
+    expect(sourceScript.ok, sourceScript.error).toBe(true);
+    expect(turnQuickScript.ok, turnQuickScript.error).toBe(true);
+    expect(opponentQuickScript.ok, opponentQuickScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
 
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
@@ -463,6 +466,13 @@ describe("Lua chain helpers", () => {
     expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open" })]));
     expect(getDuelLegalActions(restored.session, 1)).toEqual([]);
+    const stalePass = applyLuaRestoreResponse(restored, pass!);
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
     expect(restored.host.messages).toContain("restore open priority source resolved");
     expect(restored.host.messages).not.toContain("restore turn open quick resolved");
     expect(restored.host.messages).not.toContain("restore opponent chain quick resolved");
