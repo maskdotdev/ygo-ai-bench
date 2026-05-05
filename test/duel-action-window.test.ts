@@ -182,6 +182,44 @@ describe("duel action windows", () => {
     expect(restored.state.actionWindowId).toBe(1);
   });
 
+  it("rejects stale replay decisions captured before snapshot restore", () => {
+    const session = setupOneCardDuel(119);
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeDefined();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    session.state.phase = "battle";
+    session.state.actionWindowId = 5;
+    session.state.waitingFor = 0;
+    session.state.attacksDeclared = [attacker!.uid];
+    session.state.currentAttack = { attackerUid: attacker!.uid, replayTargetCount: 0, replayTargetUids: [] };
+    session.state.pendingBattle = { attackerUid: attacker!.uid, replayTargetCount: 0, replayTargetUids: [] };
+    session.state.battleStep = "attack";
+    session.state.battleWindow = {
+      id: 5,
+      kind: "replayDecision",
+      step: "attack",
+      attackerUid: attacker!.uid,
+      responsePlayer: 0,
+      attackNegated: false,
+    };
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    const replayAttack = getDuelLegalActions(restored, 0).find((action) => action.type === "replayAttack" && action.attackerUid === attacker!.uid);
+    const staleCancel = getDuelLegalActions(restored, 0).find((action) => action.type === "cancelAttack" && action.attackerUid === attacker!.uid);
+    expect(replayAttack?.windowId).toBe(5);
+    expect(replayAttack?.windowKind).toBe("battle");
+    expect(staleCancel?.windowId).toBe(5);
+    expect(staleCancel?.windowKind).toBe("battle");
+
+    expect(applyResponse(restored, replayAttack!).ok).toBe(true);
+    expect(restored.state.actionWindowId).toBe(6);
+    const staleReplay = applyResponse(restored, staleCancel!);
+
+    expect(staleReplay.ok).toBe(false);
+    expect(staleReplay.error).toContain("Response is not currently legal");
+    expect(restored.state.actionWindowId).toBe(6);
+  });
+
   it("stamps chain response legal actions with their window kind", () => {
     const session = createDuel({ seed: 113, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
