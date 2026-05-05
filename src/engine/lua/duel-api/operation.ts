@@ -4,14 +4,18 @@ import { collectDuelTriggerEffects, raiseDuelEvent, raiseDuelEventWithCode } fro
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid } from "#lua/api-utils.js";
+import { markLuaOperationTimingBoundary } from "#lua/duel-api/move.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
-import type { DuelCardInstance, DuelEventName, DuelEventRecord, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelEventName, DuelEventRecord, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
 export interface LuaDuelOperationApiHostState {
   operationInfos: LuaDuelOperationInfo[];
   possibleOperationInfos: LuaDuelOperationInfo[];
+  activeContext?: DuelEffectContext | undefined;
+  activeOperationTriggerStart?: number | undefined;
+  activeOperationMoved?: boolean;
   pushEffectTable: (state: unknown, id: number) => void;
 }
 
@@ -43,7 +47,7 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("RaiseSingleEvent"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckEvent(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("CheckEvent"));
-  lua.lua_pushcfunction(L, () => pushBreakEffect(session));
+  lua.lua_pushcfunction(L, () => pushBreakEffect(session, hostState));
   lua.lua_setfield(L, -2, to_luastring("BreakEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAdjustInstantly(state, session));
   lua.lua_setfield(L, -2, to_luastring("AdjustInstantly"));
@@ -53,8 +57,9 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("AssumeReset"));
 }
 
-function pushBreakEffect(session: DuelSession): number {
+function pushBreakEffect(session: DuelSession, hostState: LuaDuelOperationApiHostState): number {
   if (session.state.status === "ended") return 0;
+  markLuaOperationTimingBoundary(session, hostState);
   pushDuelLog(session.state, "breakEffect", session.state.turnPlayer, undefined, "Effect operation break");
   raiseDuelEvent(session.state, "breakEffect");
   return 0;

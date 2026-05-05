@@ -32,6 +32,12 @@ const { lua, to_luastring } = fengari;
 
 type LuaCardMover = (state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId) => DuelCardInstance;
 
+export interface LuaOperationTimingBoundaryHostState {
+  activeContext?: DuelEffectContext | undefined;
+  activeOperationTriggerStart?: number | undefined;
+  activeOperationMoved?: boolean | undefined;
+}
+
 export interface LuaDuelMoveApiHostState {
   operatedUids: string[];
   activeContext?: DuelEffectContext | undefined;
@@ -779,7 +785,7 @@ function shuffleMovedDecks(session: DuelSession, movedUids: string[]): void {
   }
 }
 
-function beginLuaOperationMoveStep(session: DuelSession, hostState: LuaDuelMoveApiHostState): void {
+export function markLuaOperationTimingBoundary(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): void {
   const start = hostState.activeOperationTriggerStart;
   if (!hostState.activeContext || start === undefined || !hostState.activeOperationMoved) return;
   session.state.pendingTriggers = session.state.pendingTriggers.filter((trigger, index) => {
@@ -788,6 +794,10 @@ function beginLuaOperationMoveStep(session: DuelSession, hostState: LuaDuelMoveA
     return effect?.optional === false || effect?.triggerTiming !== "when";
   });
   setWaitingForPendingTriggerBucket(session.state);
+}
+
+function beginLuaOperationMoveStep(session: DuelSession, hostState: LuaDuelMoveApiHostState): void {
+  markLuaOperationTimingBoundary(session, hostState);
 }
 
 function finishLuaOperationMoveStep(hostState: LuaDuelMoveApiHostState, moved: boolean): void {
