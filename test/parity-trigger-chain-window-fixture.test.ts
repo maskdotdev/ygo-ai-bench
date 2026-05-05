@@ -79,6 +79,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
                 label: "Trigger Activations",
                 windowId: 1,
                 windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
                 count: 1,
                 actions: [
                   { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-chain-window-trigger", triggerBucket: "turnOptional", count: 1 },
@@ -90,6 +91,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
                 label: "Trigger Declines",
                 windowId: 1,
                 windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
                 count: 1,
                 actions: [
                   { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-chain-window-trigger", triggerBucket: "turnOptional", count: 1 },
@@ -122,6 +124,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
                 label: "Trigger Activations",
                 windowId: 2,
                 windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
                 count: 1,
                 actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", count: 1 }],
               },
@@ -130,6 +133,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
                 label: "Trigger Declines",
                 windowId: 2,
                 windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
                 count: 1,
                 actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", count: 1 }],
               },
