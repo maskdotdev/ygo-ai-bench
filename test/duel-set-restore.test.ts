@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -23,6 +23,8 @@ describe("set action restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
     expect(result.state.players[0].normalSummonAvailable).toBe(false);
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.state.log.some((entry) => entry.action === "setMonster" && entry.card === "Normal Test Monster")).toBe(true);
   });
 
@@ -44,6 +46,8 @@ describe("set action restore", () => {
     const result = applyResponse(restored, action!);
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === spell!.uid)).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.state.log.some((entry) => entry.action === "set" && entry.card === "Test Spell")).toBe(true);
   });
 });
