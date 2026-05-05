@@ -107,9 +107,9 @@ describe("parity fixture metadata", () => {
     expect(missingBattleWindowCoverage()).toEqual([]);
   });
 
-  it("requires battle-window expectations to pin the matching waiting player", () => {
-    expect(mismatchedBattleWindowWaitingPlayers()).toEqual([]);
-  });
+  it("requires battle-window expectations to pin the matching waiting player", () => expect(mismatchedBattleWindowWaitingPlayers()).toEqual([]));
+
+  it("requires pinned battle steps to match battle-window steps", () => expect(mismatchedBattleWindowSteps()).toEqual([]));
 
   it("requires non-empty pending trigger expectations to pin trigger bucket summaries", () => {
     expect(missingPendingTriggerBucketCoverage()).toEqual([]);
@@ -346,11 +346,11 @@ describe("parity fixture metadata", () => {
     const battleWindowMatch = [...lines.slice(0, 2), '  windowKind: "battle",', "  waitingFor: 1,", '  battleWindow: { kind: "startDamageStep", responsePlayer: 1 },', ...lines.slice(2)];
     expect(mismatchedBattleWindowWaitingPlayersInLines("fixture.ts", battleWindowMismatch)).toEqual(["fixture.ts:2"]);
     expect(mismatchedBattleWindowWaitingPlayersInLines("fixture.ts", battleWindowMatch)).toEqual([]);
-    expect(mismatchedBattleWindowWaitingPlayersInLines("fixture.ts", [...lines.slice(0, 2), '  windowKind: "battle",', '  battleWindow: { kind: "startDamageStep", responsePlayer: 1 },', ...lines.slice(2)])).toEqual([
-      "fixture.ts:2",
-    ]);
+    expect(mismatchedBattleWindowWaitingPlayersInLines("fixture.ts", [...lines.slice(0, 2), '  windowKind: "battle",', '  battleWindow: { kind: "startDamageStep", responsePlayer: 1 },', ...lines.slice(2)])).toEqual(["fixture.ts:2"]);
     const chainResponseWithBattleState = [...lines.slice(0, 2), '  windowKind: "chainResponse",', "  waitingFor: 1,", '  battleWindow: { kind: "attackNegationResponse", responsePlayer: 0 },', ...lines.slice(2)];
     expect(mismatchedBattleWindowWaitingPlayersInLines("fixture.ts", chainResponseWithBattleState)).toEqual([]);
+    expect(mismatchedBattleWindowStepsInLines("fixture.ts", [...lines.slice(0, 2), '  windowKind: "battle",', '  battleStep: "attack",', '  battleWindow: { kind: "startDamageStep", step: "damage" },', ...lines.slice(2)])).toEqual(["fixture.ts:2"]);
+    expect(mismatchedBattleWindowStepsInLines("fixture.ts", [...lines.slice(0, 2), '  windowKind: "battle",', '  battleStep: "damage",', '  battleWindow: { kind: "startDamageStep", step: "damage" },', ...lines.slice(2)])).toEqual([]);
     expect(missingPendingTriggerBucketCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  pendingTriggers: [{ player: 0, effectId: 'trigger' }],", ...lines.slice(4)])).toEqual([
       "fixture.ts:2",
     ]);
@@ -531,9 +531,8 @@ function missingBattleWindowCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingBattleWindowCoverageInLines(file, readFixtureLines(file)));
 }
 
-function mismatchedBattleWindowWaitingPlayers(): string[] {
-  return parityFixtureFiles().flatMap((file) => mismatchedBattleWindowWaitingPlayersInLines(file, readFixtureLines(file)));
-}
+function mismatchedBattleWindowWaitingPlayers(): string[] { return parityFixtureFiles().flatMap((file) => mismatchedBattleWindowWaitingPlayersInLines(file, readFixtureLines(file))); }
+function mismatchedBattleWindowSteps(): string[] { return parityFixtureFiles().flatMap((file) => mismatchedBattleWindowStepsInLines(file, readFixtureLines(file))); }
 
 function missingPendingTriggerBucketCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingPendingTriggerBucketCoverageInLines(file, readFixtureLines(file)));
@@ -725,34 +724,38 @@ function missingTimingExpectationWindowIdsInLines(file: string, lines: string[])
 }
 
 function missingBattleWindowCoverageInLines(file: string, lines: string[]): string[] {
-  const missingWindows: string[] = [];
-  lines.forEach((line, index) => {
-    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+  return lines.flatMap((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return [];
     const block = expectationBlock(lines, index);
-    if (!/\b(pendingBattle|currentAttack):/.test(block)) return;
-    if (!/\bbattleWindow:/.test(block)) missingWindows.push(`${file}:${index + 1}`);
+    return /\b(pendingBattle|currentAttack):/.test(block) && !/\bbattleWindow:/.test(block) ? [`${file}:${index + 1}`] : [];
   });
-  return missingWindows;
 }
 
 function mismatchedBattleWindowWaitingPlayersInLines(file: string, lines: string[]): string[] {
-  const mismatches: string[] = [];
-  lines.forEach((line, index) => {
-    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+  return lines.flatMap((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return [];
     const block = expectationBlock(lines, index);
-    const header = expectationHeaderText(block);
-    if (!/\bwindowKind:\s*["']battle["']/.test(header)) return;
+    if (!/\bwindowKind:\s*["']battle["']/.test(expectationHeaderText(block))) return [];
     const responsePlayer = block.match(/\bbattleWindow:\s*\{[^{}]*\bresponsePlayer:\s*([01])/)?.[1];
-    if (responsePlayer === undefined) return;
+    if (responsePlayer === undefined) return [];
     const waitingFor = block.match(/\bwaitingFor:\s*([01])/)?.[1];
-    if (waitingFor !== responsePlayer) mismatches.push(`${file}:${index + 1}`);
+    return waitingFor !== responsePlayer ? [`${file}:${index + 1}`] : [];
   });
-  return mismatches;
 }
 
-function expectationHeaderText(block: string): string {
-  return block.split(/\n\s*(legalActions|absentLegalActions|legalActionGroups|absentLegalActionGroups):/)[0] ?? block;
+function mismatchedBattleWindowStepsInLines(file: string, lines: string[]): string[] {
+  return lines.flatMap((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return [];
+    const block = expectationBlock(lines, index);
+    if (!/\bwindowKind:\s*["']battle["']/.test(expectationHeaderText(block))) return [];
+    const step = block.match(/\bbattleWindow:\s*\{[^{}]*\bstep:\s*["']([^"']+)["']/)?.[1];
+    if (step === undefined) return [];
+    const battleStep = block.match(/\bbattleStep:\s*["']([^"']+)["']/)?.[1];
+    return battleStep !== undefined && battleStep !== step ? [`${file}:${index + 1}`] : [];
+  });
 }
+
+function expectationHeaderText(block: string): string { return block.split(/\n\s*(legalActions|absentLegalActions|legalActionGroups|absentLegalActionGroups):/)[0] ?? block; }
 
 function missingPendingTriggerBucketCoverageInLines(file: string, lines: string[]): string[] {
   const missingBuckets: string[] = [];
