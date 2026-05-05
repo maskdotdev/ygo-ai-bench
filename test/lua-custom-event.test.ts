@@ -76,8 +76,8 @@ describe("Lua custom events", () => {
           e:SetType(EFFECT_TYPE_TRIGGER_O)
           e:SetCode(EVENT_CUSTOM+7)
           e:SetRange(LOCATION_HAND)
-          e:SetOperation(function(e,tp,eg)
-            Debug.Message("restored custom trigger " .. eg:GetFirst():GetCode())
+          e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+            Debug.Message("restored custom trigger " .. eg:GetFirst():GetCode() .. "/" .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp)
           end)
           c:RegisterEffect(e)
         end
@@ -95,7 +95,7 @@ describe("Lua custom events", () => {
     const raised = host.loadScript(
       `
       local target=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
-      Duel.RaiseEvent(target,EVENT_CUSTOM+7,nil,REASON_EFFECT,0,0,0)
+      Duel.RaiseEvent(target,EVENT_CUSTOM+7,nil,REASON_EFFECT,1,0,77)
       `,
       "custom-event-restore-raise.lua",
     );
@@ -105,16 +105,16 @@ describe("Lua custom events", () => {
     const target = session.state.cards.find((card) => card.code === "100");
     expect(target).toBeDefined();
     expect(session.state.pendingTriggers).toHaveLength(1);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "customEvent", eventCode, eventCardUid: target!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "customEvent", eventCode, eventCardUid: target!.uid, eventPlayer: 0, eventValue: 77, eventReason: 64, eventReasonPlayer: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers).toHaveLength(1);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "customEvent", eventCode, eventCardUid: target!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "customEvent", eventCode, eventCardUid: target!.uid, eventPlayer: 0, eventValue: 77, eventReason: 64, eventReasonPlayer: 1 });
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
-    expect(restored.host.messages).toContain("restored custom trigger 100");
+    expect(restored.host.messages).toContain("restored custom trigger 100/0/77/64/1");
   });
 });
