@@ -247,6 +247,7 @@ describe("Lua battle timing helpers", () => {
     const replay = applyLuaRestoreResponse(restored, staleDamagePass!);
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.state.actionWindowId).toBe(restored.session.state.actionWindowId);
     const currentPlayer = restored.session.state.waitingFor;
     if (currentPlayer === undefined) throw new Error("Expected restored damage window replay to keep waiting for a player");
     expect(replay.legalActions).toEqual(getDuelLegalActions(restored.session, currentPlayer));
@@ -449,6 +450,7 @@ describe("Lua battle timing helpers", () => {
     const staleTriggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(staleTriggerResult.ok).toBe(false);
     expect(staleTriggerResult.error).toContain("Response is not currently legal");
+    expect(staleTriggerResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
     expect(staleTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, staleTriggerResult.state.waitingFor!));
     expect(staleTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleTriggerResult.state.waitingFor!));
     expect(staleTriggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTriggerResult.legalActions);
