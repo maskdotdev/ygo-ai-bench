@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentSummonGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity cannot-flip-summon lock fixtures", () => {
   it("removes Flip Summon actions for monsters affected by cannot-flip-summon effects", () => {
@@ -51,15 +52,7 @@ describe("EDOPro parity cannot-flip-summon lock fixtures", () => {
               },
             ],
             absentLegalActions: [{ type: "flipSummon", player: 0, uid: "p0-deck-100-0", windowId: 0, windowKind: "open" }],
-            absentLegalActionGroups: [
-              {
-                player: 0,
-                label: "Summons",
-                windowId: 0,
-                windowKind: "open",
-                actions: [{ type: "flipSummon", player: 0, uid: "p0-deck-100-0", windowId: 0, windowKind: "open" }],
-              },
-            ],
+            absentLegalActionGroups: [absentSummonGroup({ type: "flipSummon", player: 0, uid: "p0-deck-100-0" }, 0)],
           },
           after: {
             source: "edopro",

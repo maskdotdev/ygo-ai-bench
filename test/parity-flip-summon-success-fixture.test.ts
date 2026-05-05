@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { summonGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Flip Summon success fixtures", () => {
   it("opens Flip Summon actions and resolves success triggers", () => {
@@ -45,18 +46,11 @@ describe("EDOPro parity Flip Summon success fixtures", () => {
             legalActionGroupCounts: { 0: 3, 1: 0 },
             legalActions: [{ type: "flipSummon", player: 0, code: "100", location: "monsterZone", windowId: 0, windowKind: "open", count: 1 }],
             legalActionGroups: [
-              {
-                player: 0,
-                label: "Summons",
-                windowId: 0,
-                windowKind: "open",
-                count: 1,
-                actions: [
-                  { type: "normalSummon", player: 0, code: "200", location: "hand", windowId: 0, windowKind: "open", count: 1 },
-                  { type: "setMonster", player: 0, code: "200", location: "hand", windowId: 0, windowKind: "open", count: 1 },
-                  { type: "flipSummon", player: 0, code: "100", location: "monsterZone", windowId: 0, windowKind: "open", count: 1 },
-                ],
-              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "200", location: "hand" },
+                { type: "setMonster", player: 0, code: "200", location: "hand" },
+                { type: "flipSummon", player: 0, code: "100", location: "monsterZone" },
+              ], 1, 0),
               {
                 player: 0,
                 label: "Turn",

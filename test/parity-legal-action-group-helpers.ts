@@ -1,3 +1,5 @@
+import type { ScriptedLegalActionExpectation, ScriptedLegalActionGroupExpectation } from "#duel/types.js";
+
 type AttackChoice = { attackerUid: string; targetUid?: string; directAttack?: true };
 
 export const directAttackGroup = (player: 0 | 1, attackerUid: string, count = 1, windowId?: number) => ({
@@ -62,6 +64,7 @@ export const absentAttackGroup = (attackerUid: string, targetUid?: string, direc
 });
 
 type ReplayAttackChoice = { attackerUid: string; targetUid?: string; directAttack?: true; cancel?: true };
+type OpenAction = Omit<ScriptedLegalActionExpectation, "windowId" | "windowKind" | "count"> & { windowId?: number; windowKind?: "open"; count?: number };
 
 export const replayAttackGroup = (attacks: ReplayAttackChoice[], count = 1, windowId?: number) => ({
   player: 0 as const,
@@ -131,6 +134,23 @@ export const absentNormalSummonGroup = (player: 0 | 1, code: string, location: "
   ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
   actions: [{ type: "normalSummon" as const, player, code, location, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const }],
+});
+
+export const summonGroup = (actions: OpenAction[], count = 1, windowId?: number): ScriptedLegalActionGroupExpectation => ({
+  player: actions[0]?.player ?? (0 as const),
+  label: "Summons",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "open" as const,
+  count,
+  actions: actions.map((action) => ({ ...action, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const, count })),
+});
+
+export const absentSummonGroup = (action: Omit<OpenAction, "count">, windowId?: number): ScriptedLegalActionGroupExpectation => ({
+  player: action.player,
+  label: "Summons",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "open" as const,
+  actions: [{ ...action, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const }],
 });
 
 export const triggerActivationGroup = (player: 0 | 1, effectId: string, triggerBucket: "turnMandatory" | "turnOptional" | "opponentMandatory" | "opponentOptional", count = 1, windowId?: number) => ({

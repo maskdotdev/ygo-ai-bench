@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { summonGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity flip summon lock fixtures", () => {
   it("exposes Flip Summon actions for eligible face-down monsters", () => {
@@ -29,16 +30,7 @@ describe("EDOPro parity flip summon lock fixtures", () => {
             legalActionCounts: { 0: 4, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
             legalActions: [{ type: "flipSummon", player: 0, code: "100", location: "monsterZone", windowId: 0, windowKind: "open", count: 1 }],
-            legalActionGroups: [
-              {
-                player: 0,
-                label: "Summons",
-                windowId: 0,
-                windowKind: "open",
-                count: 1,
-                actions: [{ type: "flipSummon", player: 0, code: "100", location: "monsterZone", windowId: 0, windowKind: "open", count: 1 }],
-              },
-            ],
+            legalActionGroups: [summonGroup([{ type: "flipSummon", player: 0, code: "100", location: "monsterZone" }], 1, 0)],
           },
           after: {
             source: "edopro",
