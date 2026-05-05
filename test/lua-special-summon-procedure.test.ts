@@ -134,11 +134,7 @@ describe("Lua special summon procedures", () => {
     expect(restoredAction).toBeDefined();
     const restoredPublic = queryPublicState(restored.session);
     expect(restoredAction).toMatchObject({ windowId: restoredPublic.actionWindowId, windowKind: "open" });
-    const restoredResult = applyLuaRestoreResponse(restored, restoredAction!);
-    expect(restoredResult.ok).toBe(true);
-    expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
-    expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
-    expect(restoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
     expect(restored.host.messages).toContain("procedure value 100");
     expect(restored.host.messages).toContain("blocked procedure value 200");
     expect(restored.host.messages).toContain("procedure operation cost 1");
@@ -322,11 +318,7 @@ describe("Lua special summon procedures", () => {
     const restoredBlocked = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === extra!.uid);
     expect(restoredAction).toBeDefined();
     expect(restoredBlocked).toBeUndefined();
-    const restoredResult = applyLuaRestoreResponse(restored, restoredAction!);
-    expect(restoredResult.ok).toBe(true);
-    expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
-    expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
-    expect(restoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
     expect(restored.host.messages).toContain("extra procedure value true/64");
     expect(restored.host.messages).toContain("extra procedure operation 301");
     expect(restored.session.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
@@ -418,11 +410,7 @@ describe("Lua special summon procedures", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredAction = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("100"));
     expect(restoredAction).toBeDefined();
-    const restoredResult = applyLuaRestoreResponse(restored, restoredAction!);
-    expect(restoredResult.ok).toBe(true);
-    expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
-    expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
-    expect(restoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
     expect(restored.host.messages).toContain("material procedure selected 1/300");
     expect(restored.session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
@@ -608,11 +596,7 @@ describe("Lua special summon procedures", () => {
     const restoredAction = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(restoredAction).toBeDefined();
     expect(restored.host.messages).not.toContain("procedure release cost 1/1");
-    const restoredResult = applyLuaRestoreResponse(restored, restoredAction!);
-    expect(restoredResult.ok).toBe(true);
-    expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
-    expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
-    expect(restoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
     expect(restored.host.messages).toContain("procedure release cost 1/1");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === blockedSource!.uid)).toMatchObject({ location: "hand" });
@@ -955,9 +939,18 @@ describe("Lua special summon procedures", () => {
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
   const response = applyResponse(session, action);
-  expect(response.ok).toBe(true);
+  expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
 }
