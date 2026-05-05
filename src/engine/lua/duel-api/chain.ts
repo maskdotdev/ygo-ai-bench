@@ -186,6 +186,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number): string | undefi
   if (cardUid) return `closure:card-not-handler:${cardUid}`;
   const typeMask = capturedTypeMask(L, index);
   if (typeMask !== undefined) return `closure:type-mask-response-player:${typeMask}`;
+  const responsePlayer = capturedResponsePlayer(L, index);
+  if (responsePlayer !== undefined) return `closure:response-player:${responsePlayer}`;
   const chainPlayer = capturedChainPlayer(L, index);
   if (chainPlayer !== undefined) return `closure:chain-player:${chainPlayer}`;
   return undefined;
@@ -277,7 +279,21 @@ function isTypeMaskUpvalueName(name: string): boolean {
   return name === "typ" || name === "typeMask" || name === "type_mask";
 }
 
+function capturedResponsePlayer(L: unknown, index: number): PlayerId | undefined {
+  const captured = capturedSinglePlayerUpvalue(L, index, isResponsePlayerUpvalueName);
+  return captured === 0 || captured === 1 ? captured : undefined;
+}
+
+function isResponsePlayerUpvalueName(name: string): boolean {
+  return name === "responsePlayer" || name === "response_player";
+}
+
 function capturedChainPlayer(L: unknown, index: number): PlayerId | undefined {
+  const captured = capturedSinglePlayerUpvalue(L, index, isChainPlayerUpvalueName);
+  return captured === 0 || captured === 1 ? captured : undefined;
+}
+
+function capturedSinglePlayerUpvalue(L: unknown, index: number, matchesName: (name: string) => boolean): number | undefined {
   const absoluteIndex = lua.lua_absindex(L, index);
   const numbers: Array<{ name: string; value: number }> = [];
   for (let upvalueIndex = 1;; upvalueIndex += 1) {
@@ -293,8 +309,7 @@ function capturedChainPlayer(L: unknown, index: number): PlayerId | undefined {
     }
     lua.lua_pop(L, 1);
   }
-  const captured = numbers.length === 1 && isChainPlayerUpvalueName(numbers[0]!.name) ? numbers[0]!.value : undefined;
-  return captured === 0 || captured === 1 ? captured : undefined;
+  return numbers.length === 1 && matchesName(numbers[0]!.name) ? numbers[0]!.value : undefined;
 }
 
 function isChainPlayerUpvalueName(name: string): boolean {
