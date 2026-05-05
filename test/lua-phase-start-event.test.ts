@@ -167,6 +167,7 @@ describe("Lua phase-start events", () => {
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x2200 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expectGroupedActionsToContainLegalActions(restored, 0);
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
@@ -180,6 +181,7 @@ describe("Lua phase-start events", () => {
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x1200 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
 
     const phaseEndTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(phaseEndTrigger).toBeDefined();
@@ -191,3 +193,10 @@ describe("Lua phase-start events", () => {
     expect(restored.host.messages).toContain("restored phase end 512");
   });
 });
+
+function expectGroupedActionsToContainLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  const groupedActions = getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions);
+  const legalActions = getLuaRestoreLegalActions(restored, player);
+  expect(groupedActions).toHaveLength(legalActions.length);
+  expect(groupedActions).toEqual(expect.arrayContaining(legalActions));
+}
