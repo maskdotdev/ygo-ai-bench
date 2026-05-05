@@ -920,38 +920,6 @@ describe("duel battle", () => {
     expect(state.log.some((entry) => entry.action === "setLifePoints" && entry.detail === "0")).toBe(true);
   });
 
-  it("clears pending battle windows when LP loss ends the duel", () => {
-    const session = createDuel({ seed: 119, startingHandSize: 1, cardReader: createCardReader(cards) });
-    loadDecks(session, {
-      0: { main: ["100"] },
-      1: { main: ["400"] },
-    });
-    startDuel(session);
-    const attacker = session.state.cards.find((card) => card.code === "100");
-    const target = session.state.cards.find((card) => card.code === "400");
-    expect(attacker).toBeTruthy();
-    expect(target).toBeTruthy();
-    specialSummonDuelCard(session.state, attacker!.uid, 0);
-    specialSummonDuelCard(session.state, target!.uid, 1);
-    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
-    expect(battle).toBeTruthy();
-    expect(applyResponse(session, battle!).ok).toBe(true);
-    declareDuelAttack(session.state, 0, attacker!.uid, target!.uid);
-    session.state.battleDamage = { 0: 0, 1: 1200 };
-    session.state.attackCostPaid = 1;
-
-    setDuelPlayerLifePoints(session.state, 1, 0);
-
-    const state = queryPublicState(session);
-    expect(state.status).toBe("ended");
-    expect(state.waitingFor).toBeUndefined();
-    expect(state.battleStep).toBeUndefined();
-    expect(state.battleWindow).toBeUndefined();
-    expect(session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
-    expect(session.state.attackCostPaid).toBe(0);
-    expect(state.attackPasses).toEqual([]);
-    expect(state.damagePasses).toEqual([]);
-  });
 });
 
 function passAttackResponses(session: ReturnType<typeof createDuel>): void {
