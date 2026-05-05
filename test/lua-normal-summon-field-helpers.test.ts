@@ -320,6 +320,54 @@ describe("Lua normal summon field helpers", () => {
     expect(host.messages).toContain("lua spell trap set resolved 100");
   });
 
+  it("queues Lua monster-set triggers after MSet", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Set Monster", kind: "monster" },
+      { code: "200", name: "Monster Set Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 163, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_MSET)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          Debug.Message("lua monster set resolved " .. eg:GetFirst():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-monster-set-trigger.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const setResult = host.loadScript(
+      `
+      local monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("mset trigger result " .. Duel.MSet(monster, true, nil))
+      `,
+      "lua-monster-set-trigger-action.lua",
+    );
+    expect(setResult.ok, setResult.error).toBe(true);
+    expect(host.messages).toContain("mset trigger result 1");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["monsterSet"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1106 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "monsterSet", eventCode: 1106 });
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("lua monster set resolved 100");
+  });
+
   it("makes earlier Lua optional when triggers miss timing at SSet boundaries", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "SSet Boundary Source", kind: "monster" },
