@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   moveDuelCard,
@@ -146,7 +147,9 @@ describe("Lua effect trigger metadata helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(1);
     expect(getLuaRestoreLegalActions(restored, 1)).toHaveLength(0);
 
-    expect(applyLuaRestoreResponse(restored, restoredIfTrigger!).ok).toBe(true);
+    const restoredIfResult = applyLuaRestoreResponse(restored, restoredIfTrigger!);
+    expect(restoredIfResult.ok).toBe(true);
+    expect(restoredIfResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredIfResult.state.waitingFor!));
     expect(restored.host.messages).toContain("lua if optional resolved");
     const staleRestoredIfTrigger = applyLuaRestoreResponse(restored, restoredIfTrigger!);
     expect(staleRestoredIfTrigger.ok).toBe(false);
@@ -162,10 +165,14 @@ describe("Lua effect trigger metadata helpers", () => {
       return effect?.triggerTiming === "when";
     });
     expect(opponentWhenTrigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, opponentWhenTrigger!).ok).toBe(true);
+    const opponentWhenResult = applyLuaRestoreResponse(restored, opponentWhenTrigger!);
+    expect(opponentWhenResult.ok).toBe(true);
+    expect(opponentWhenResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, opponentWhenResult.state.waitingFor!));
     const opponentIfTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger");
     expect(opponentIfTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
-    expect(applyLuaRestoreResponse(restored, opponentIfTrigger!).ok).toBe(true);
+    const opponentIfResult = applyLuaRestoreResponse(restored, opponentIfTrigger!);
+    expect(opponentIfResult.ok).toBe(true);
+    expect(opponentIfResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, opponentIfResult.state.waitingFor!));
     expect(restored.host.messages).toContain("lua opponent when optional resolved");
     expect(restored.host.messages).toContain("lua opponent if optional resolved");
     expect(restored.host.messages).not.toContain("lua when optional resolved");
