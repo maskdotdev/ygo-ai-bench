@@ -117,6 +117,81 @@ describe("Lua deck and cost movement helpers", () => {
     expect(host.messages).toContain("discard trigger resolved 200");
   });
 
+  it("makes Lua optional when discard triggers miss timing after later event boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Discard Boundary Starter", kind: "monster" },
+      { code: "200", name: "Discard Boundary Target", kind: "monster" },
+      { code: "300", name: "When Discard Watcher", kind: "monster" },
+      { code: "400", name: "If Discard Watcher", kind: "monster" },
+      { code: "500", name: "Damage Boundary Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 185, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300", "400", "500"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local damage_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local discard=Effect.CreateEffect(starter)
+      discard:SetType(EFFECT_TYPE_IGNITION)
+      discard:SetRange(LOCATION_HAND)
+      discard:SetOperation(function(e,tp)
+        Duel.SendtoGrave(target, REASON_DISCARD+REASON_COST)
+        Duel.Damage(1, 100, REASON_EFFECT)
+      end)
+      starter:RegisterEffect(discard)
+
+      local when_effect=Effect.CreateEffect(when_watcher)
+      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      when_effect:SetCode(EVENT_DISCARD)
+      when_effect:SetRange(LOCATION_HAND)
+      when_effect:SetOperation(function(e,tp)
+        Debug.Message("when discard resolved")
+      end)
+      when_watcher:RegisterEffect(when_effect)
+
+      local if_effect=Effect.CreateEffect(if_watcher)
+      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      if_effect:SetCode(EVENT_DISCARD)
+      if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      if_effect:SetRange(LOCATION_HAND)
+      if_effect:SetOperation(function(e,tp)
+        Debug.Message("if discard resolved")
+      end)
+      if_watcher:RegisterEffect(if_effect)
+
+      local damage_effect=Effect.CreateEffect(damage_watcher)
+      damage_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      damage_effect:SetCode(EVENT_DAMAGE)
+      damage_effect:SetRange(LOCATION_HAND)
+      damage_effect:SetOperation(function(e,tp)
+        Debug.Message("damage boundary resolved")
+      end)
+      damage_watcher:RegisterEffect(damage_effect)
+      `,
+      "discard-later-boundary-missed-timing.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1018");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1018", "lua-4-1111"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "discarded", eventCode: 1018 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
+    );
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
+  });
+
   it("makes earlier Lua optional when triggers miss timing at draw boundaries", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Draw Boundary Source", kind: "monster" },
