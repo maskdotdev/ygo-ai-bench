@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -28,21 +28,30 @@ describe("duel chain turn reset", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === source!.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
 
     const firstActivation = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "repeat-next-turn");
     expect(firstActivation).toBeTruthy();
-    expect(applyResponse(session, firstActivation!).ok).toBe(true);
+    applyAndAssert(session, firstActivation!);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "repeat-next-turn")).toBe(false);
 
     const playerEnd = getDuelLegalActions(session, 0).find((action) => action.type === "endTurn");
     expect(playerEnd).toBeTruthy();
-    expect(applyResponse(session, playerEnd!).ok).toBe(true);
+    applyAndAssert(session, playerEnd!);
     const opponentEnd = getDuelLegalActions(session, 1).find((action) => action.type === "endTurn");
     expect(opponentEnd).toBeTruthy();
-    expect(applyResponse(session, opponentEnd!).ok).toBe(true);
+    applyAndAssert(session, opponentEnd!);
 
     expect(queryPublicState(session).turn).toBe(3);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "repeat-next-turn")).toBe(true);
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
