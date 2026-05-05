@@ -206,6 +206,7 @@ describe("Lua open fast priority restore", () => {
     expect(chainQuickResult.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
     expect(chainQuickResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(chainQuickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(chainQuickResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(chainQuickResult.legalActions);
 
     const staleChainQuick = applyLuaRestoreResponse(restored, chainQuick!);
     expect(staleChainQuick.ok).toBe(false);
@@ -221,6 +222,7 @@ describe("Lua open fast priority restore", () => {
     expect(turnChainQuickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(turnChainQuickResult.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(turnChainQuickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(turnChainQuickResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(turnChainQuickResult.legalActions);
 
     const staleTurnChainQuick = applyLuaRestoreResponse(restored, turnChainQuick!);
     expect(staleTurnChainQuick.ok).toBe(false);
