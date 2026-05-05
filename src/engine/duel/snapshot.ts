@@ -777,7 +777,7 @@ function assertSnapshotPrompt(prompt: unknown): asserts prompt is DuelPromptStat
 
 function assertSnapshotBattleWindow(window: unknown, cardUids: ReadonlySet<string>): void {
   if (!isRecord(window)) throw new Error("Malformed duel snapshot: state.battleWindow must be an object");
-  if (typeof window.id !== "number") throw new Error("Malformed duel snapshot: state.battleWindow.id must be a number");
+  assertSnapshotNonNegativeInteger(window.id, "state.battleWindow.id");
   if (!duelSnapshotBattleWindowKinds.has(window.kind)) throw new Error("Malformed duel snapshot: state.battleWindow.kind must be a battle window kind");
   if (!duelSnapshotBattleSteps.has(window.step)) throw new Error("Malformed duel snapshot: state.battleWindow.step must be a battle step");
   if (!snapshotBattleWindowKindMatchesStep(window.kind, window.step)) throw new Error("Malformed duel snapshot: state.battleWindow.kind must match step");
