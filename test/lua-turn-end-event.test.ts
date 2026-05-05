@@ -40,22 +40,14 @@ describe("Lua turn-end events", () => {
 
     const endTurn = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
     expect(endTurn).toBeDefined();
-    const endTurnResponse = applyResponse(session, endTurn!);
-    expect(endTurnResponse.ok).toBe(true);
-    expect(endTurnResponse.legalActions).toEqual(getDuelLegalActions(session, endTurnResponse.state.waitingFor!));
-    expect(endTurnResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, endTurnResponse.state.waitingFor!));
-    expect(endTurnResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(endTurnResponse.legalActions);
+    applyAndAssert(session, endTurn!);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["turnEnded"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "turnEnded", eventCode: 1210 });
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "turnEnded", eventCode: 1210 })]));
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const triggerResponse = applyResponse(session, trigger!);
-    expect(triggerResponse.ok).toBe(true);
-    expect(triggerResponse.legalActions).toEqual(getDuelLegalActions(session, triggerResponse.state.waitingFor!));
-    expect(triggerResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, triggerResponse.state.waitingFor!));
-    expect(triggerResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResponse.legalActions);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("turn end resolved 0/1");
   });
 
@@ -92,11 +84,7 @@ describe("Lua turn-end events", () => {
 
     const endTurn = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
     expect(endTurn).toBeDefined();
-    const endTurnResponse = applyResponse(session, endTurn!);
-    expect(endTurnResponse.ok).toBe(true);
-    expect(endTurnResponse.legalActions).toEqual(getDuelLegalActions(session, endTurnResponse.state.waitingFor!));
-    expect(endTurnResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, endTurnResponse.state.waitingFor!));
-    expect(endTurnResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(endTurnResponse.legalActions);
+    applyAndAssert(session, endTurn!);
     expect(session.state.turnPlayer).toBe(1);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["turnEnded"]);
 
@@ -111,11 +99,25 @@ describe("Lua turn-end events", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
-    expect(triggerResult.ok).toBe(true);
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored turn end 0/1");
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: Parameters<typeof applyLuaRestoreResponse>[0], action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
