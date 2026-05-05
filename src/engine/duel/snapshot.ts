@@ -214,9 +214,8 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   for (const field of ["chainPasses", "attackPasses", "damagePasses"] as const) {
     assertSnapshotPlayerPassArray(state[field], `state.${field}`);
   }
-  for (const field of ["lastDiceResults", "lastCoinResults"] as const) {
-    assertSnapshotNumberArray(state[field], `state.${field}`);
-  }
+  assertSnapshotDiceResults(state.lastDiceResults);
+  assertSnapshotCoinResults(state.lastCoinResults);
   for (const field of ["usedCountKeys", "attacksDeclared", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
     assertSnapshotStringArray(state[field], `state.${field}`);
   }
@@ -294,6 +293,20 @@ function assertSnapshotNumberArray(values: unknown, path: string): void {
   if (!Array.isArray(values)) throw new Error(`Malformed duel snapshot: ${path} must be an array`);
   for (const [index, value] of values.entries()) {
     if (typeof value !== "number") throw new Error(`Malformed duel snapshot: ${path}.${index} must be a number`);
+  }
+}
+
+function assertSnapshotDiceResults(values: unknown): void {
+  assertSnapshotNumberArray(values, "state.lastDiceResults");
+  for (const [index, value] of (values as number[]).entries()) {
+    if (!Number.isInteger(value) || value < 1 || value > 6) throw new Error(`Malformed duel snapshot: state.lastDiceResults.${index} must be a die result`);
+  }
+}
+
+function assertSnapshotCoinResults(values: unknown): void {
+  assertSnapshotNumberArray(values, "state.lastCoinResults");
+  for (const [index, value] of (values as number[]).entries()) {
+    if (value !== 0 && value !== 1) throw new Error(`Malformed duel snapshot: state.lastCoinResults.${index} must be a coin result`);
   }
 }
 
