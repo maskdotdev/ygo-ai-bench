@@ -124,7 +124,7 @@ Deliverables:
 - Broaden missed timing coverage for "when optional" triggers after multi-step effects.
 - Handle simultaneous events and SEGOC ordering consistently.
 - Revisit fast effect response player selection after every action and chain resolution.
-- Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today. Lua-created predicate limits currently fail closed with explicit missing chain-limit registry diagnostics, with suppressed raw chain-response actions pinned to the unsafe window; the remaining parity work is to rebuild or serialize those Lua predicates without re-running costs or target selection.
+- Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today. Lua-created predicate limits currently fail closed by hiding every Lua restore legal-action surface and reporting explicit missing chain-limit registry diagnostics, with suppressed raw chain-response actions pinned to the unsafe window; the remaining parity work is to rebuild or serialize those Lua predicates without re-running costs or target selection.
 
 Implementation files likely touched:
 
