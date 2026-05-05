@@ -49,11 +49,7 @@ describe("Lua predraw events", () => {
 
     const end = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
     expect(end).toBeDefined();
-    const endResponse = applyResponse(session, end!);
-    expect(endResponse.ok).toBe(true);
-    expect(endResponse.legalActions).toEqual(getDuelLegalActions(session, endResponse.state.waitingFor!));
-    expect(endResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, endResponse.state.waitingFor!));
-    expect(endResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(endResponse.legalActions);
+    applyAndAssert(session, end!);
 
     expect(session.state.turnPlayer).toBe(1);
     expect(session.state.cards.filter((card) => card.controller === 1 && card.location === "hand")).toHaveLength(2);
@@ -67,7 +63,7 @@ describe("Lua predraw events", () => {
     ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1113, eventPlayer: 1, eventValue: 1 });
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
@@ -80,11 +76,7 @@ describe("Lua predraw events", () => {
 
     const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const triggerResponse = applyResponse(session, trigger!);
-    expect(triggerResponse.ok).toBe(true);
-    expect(triggerResponse.legalActions).toEqual(getDuelLegalActions(session, triggerResponse.state.waitingFor!));
-    expect(triggerResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, triggerResponse.state.waitingFor!));
-    expect(triggerResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResponse.legalActions);
+    applyAndAssert(session, trigger!);
     drainChain(session);
     expect(host.messages).toContain("predraw resolved 1/1/1/2");
   });
@@ -95,12 +87,17 @@ function drainChain(session: ReturnType<typeof createDuel>): void {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
-    const result = applyResponse(session, pass!);
-    expect(result.ok).toBe(true);
-    expect(result.legalActions).toEqual(getDuelLegalActions(session, result.state.waitingFor!));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    applyAndAssert(session, pass!);
   }
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const result = applyResponse(session, action);
+  expect(result.ok, result.error).toBe(true);
+  expect(result.legalActions).toEqual(getDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  return result;
 }
 
 function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
