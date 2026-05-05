@@ -195,6 +195,7 @@ describe("Lua stale chain responses", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const restoredPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(restoredPass).toBeDefined();
@@ -277,6 +278,7 @@ describe("Lua stale chain responses", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const restoredQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
     expect(restoredQuick).toBeDefined();
@@ -368,6 +370,7 @@ describe("Lua stale chain responses", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredPass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(restoredPass).toBeDefined();
