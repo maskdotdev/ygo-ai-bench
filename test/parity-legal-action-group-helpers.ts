@@ -117,6 +117,15 @@ export const chainPassGroup = (player: 0 | 1, count = 1, windowId?: number) => (
   actions: [{ type: "passChain" as const, player, ...(windowId === undefined ? {} : { windowId }), windowKind: "chainResponse" as const, count }],
 });
 
+export const triggerActivationGroup = (player: 0 | 1, effectId: string, triggerBucket: "turnMandatory" | "turnOptional" | "opponentMandatory" | "opponentOptional", count = 1, windowId?: number) => ({
+  player,
+  label: "Trigger Activations",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "triggerBucket" as const,
+  count,
+  actions: [{ type: "activateTrigger" as const, player, effectId, triggerBucket, ...(windowId === undefined ? {} : { windowId }), windowKind: "triggerBucket" as const, count }],
+});
+
 export const absentEffectGroup = (player: 0 | 1, effectId: string, windowId?: number) => ({
   player,
   label: "Effects",
