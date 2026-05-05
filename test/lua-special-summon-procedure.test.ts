@@ -147,6 +147,8 @@ describe("Lua special summon procedures", () => {
     expect(staleRestoredResult.ok).toBe(false);
     expect(staleRestoredResult.error).toContain("Response is not currently legal");
     expect(staleRestoredResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleRestoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleRestoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
     expect(applyResponse(session, action!).ok).toBe(true);
 
