@@ -3,6 +3,7 @@ import { pushDuelLog } from "#duel/card-state.js";
 import { canMoveDuelCardToLocation, detachDuelOverlayMaterials, moveDuelCard } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { locationsFromMask, readCardUid } from "#lua/api-utils.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import { markLuaOperationTimingBoundary, type LuaDuelMoveApiHostState } from "#lua/duel-api/move.js";
@@ -81,7 +82,7 @@ function pushRemoveOverlayCard(L: unknown, session: DuelSession, hostState: LuaD
   const reason = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : duelReason.cost;
   const holders = overlayHolders(session, player, selfLocations, opponentLocations);
   markLuaOperationTimingBoundary(session, hostState);
-  const detached = detachOverlayRange(session, holders, min, max, player, reason);
+  const detached = detachOverlayRange(session, holders, min, max, player, reason, hostState);
   setOperatedUids(hostState, detached);
   if (hostState.activeContext && detached.length > 0) hostState.activeOperationMoved = true;
   lua.lua_pushinteger(L, detached.length);
@@ -111,7 +112,7 @@ function overlayHoldersForPlayer(session: DuelSession, player: PlayerId, locatio
   return session.state.cards.filter((card) => card.controller === player && locations.includes(card.location) && card.overlayUids.length > 0);
 }
 
-function detachOverlayRange(session: DuelSession, holders: DuelCardInstance[], min: number, max: number, player: PlayerId, reason: number): string[] {
+function detachOverlayRange(session: DuelSession, holders: DuelCardInstance[], min: number, max: number, player: PlayerId, reason: number, hostState: LuaDuelMoveApiHostState): string[] {
   const available = countOverlayMaterials(holders);
   const count = Math.min(Math.max(min, 0), Math.max(max, 0), available);
   if (count < min) return [];
@@ -120,7 +121,8 @@ function detachOverlayRange(session: DuelSession, holders: DuelCardInstance[], m
   for (const holder of holders) {
     if (remaining <= 0) break;
     const holderCount = Math.min(holder.overlayUids.length, remaining);
-    const materials = detachDuelOverlayMaterials(session.state, holder.uid, holderCount, player, reason);
+    const reasonPlayer = hostState.activeContext?.player ?? player;
+    const materials = detachDuelOverlayMaterials(session.state, holder.uid, holderCount, player, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason, reasonPlayer));
     detached.push(...materials.map((material) => material.uid));
     remaining -= holderCount;
   }

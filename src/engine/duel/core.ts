@@ -463,8 +463,8 @@ export function moveDuelCardWithRedirects(state: DuelState, uid: string, to: Due
   return moveCoreDuelCardWithRedirects(state, uid, to, controller, reason, reasonPlayer, coreMovementHandlers);
 }
 
-export function detachDuelOverlayMaterials(state: DuelState, uid: string, count: number, controller?: PlayerId, reason: number = duelReason.cost): DuelCardInstance[] {
-  return detachCoreDuelOverlayMaterials(state, uid, count, controller, reason, coreMovementHandlers);
+export function detachDuelOverlayMaterials(state: DuelState, uid: string, count: number, controller?: PlayerId, reason: number = duelReason.cost, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance[] {
+  return detachCoreDuelOverlayMaterials(state, uid, count, controller, reason, coreMovementHandlers, reasonPlayer, payload);
 }
 
 export function raiseDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {

@@ -11,6 +11,7 @@ import {
 } from "#duel/continuous-effects.js";
 import { duelReason } from "#duel/reasons.js";
 import { createRng } from "#engine/rng.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import {
   applyDestroyPrevention,
   applyDestroyReplacement,
@@ -152,6 +153,8 @@ export function detachCoreDuelOverlayMaterials(
   controller: PlayerId | undefined,
   reason: number,
   handlers: CoreMovementHandlers,
+  reasonPlayer?: PlayerId,
+  payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
 ): DuelCardInstance[] {
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
@@ -162,7 +165,9 @@ export function detachCoreDuelOverlayMaterials(
   card.overlayUids = card.overlayUids.slice(detachCount);
   const detached: DuelCardInstance[] = [];
   for (const materialUid of detachedUids) {
-    const material = moveDuelCard(state, materialUid, "graveyard", controller ?? card.controller, reason);
+    const material = moveDuelCard(state, materialUid, "graveyard", controller ?? card.controller, reason, reasonPlayer);
+    if (payload.eventReasonCardUid !== undefined) material.reasonCardUid = payload.eventReasonCardUid;
+    if (payload.eventReasonEffectId !== undefined) material.reasonEffectId = payload.eventReasonEffectId;
     pushDuelLog(state, "detachOverlay", material.controller, material.name, `Detached from ${card.name}`);
     handlers.collectTrigger(state, "moved", material);
     handlers.collectTrigger(state, "sentToGraveyard", material);

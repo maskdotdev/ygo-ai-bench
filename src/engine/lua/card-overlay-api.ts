@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { detachDuelOverlayMaterials } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { readCardUid } from "#lua/api-utils.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary } from "#lua/duel-api/move.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
@@ -34,7 +35,7 @@ function pushRemoveOverlayCard<EffectRecord extends LuaCardApiEffectRecord>(L: u
   const max = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min;
   const reason = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : duelReason.cost;
   markLuaOperationTimingBoundary(session, hostState);
-  const detached = card ? detachOverlayRange(session, card, min, max, player, reason) : [];
+  const detached = card ? detachOverlayRange(session, card, min, max, player, reason, hostState) : [];
   setOperatedUids(hostState, detached.map((material) => material.uid));
   if (hostState.activeContext && detached.length > 0) hostState.activeOperationMoved = true;
   lua.lua_pushinteger(L, detached.length);
@@ -48,11 +49,12 @@ function pushCheckRemoveOverlayCard(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function detachOverlayRange(session: DuelSession, card: DuelCardInstance, min: number, max: number, player: PlayerId, reason: number): DuelCardInstance[] {
+function detachOverlayRange<EffectRecord extends LuaCardApiEffectRecord>(session: DuelSession, card: DuelCardInstance, min: number, max: number, player: PlayerId, reason: number, hostState: LuaCardApiState<EffectRecord>): DuelCardInstance[] {
   const count = Math.min(Math.max(min, 0), Math.max(max, 0), card.overlayUids.length);
   if (count < min) return [];
   try {
-    return detachDuelOverlayMaterials(session.state, card.uid, count, player, reason);
+    const reasonPlayer = hostState.activeContext?.player ?? player;
+    return detachDuelOverlayMaterials(session.state, card.uid, count, player, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason, reasonPlayer));
   } catch {
     return [];
   }

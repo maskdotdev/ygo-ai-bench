@@ -268,8 +268,13 @@ describe("Lua overlay and pendulum movement helpers", () => {
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1012");
     expect(pendingEffectIds).toContain("lua-4-1202");
+    const source = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
+    expect(session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventName: "detachedMaterial", eventCode: 1202, eventCardUid: material!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }),
+    );
     expect(session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "sentToHand", eventCode: 1012 }), expect.objectContaining({ eventName: "detachedMaterial", eventCode: 1202 })]),
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToHand", eventCode: 1012 }), expect.objectContaining({ eventName: "detachedMaterial", eventCode: 1202, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 })]),
     );
   });
 
