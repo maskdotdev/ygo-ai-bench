@@ -30,7 +30,7 @@ describe("duel battle timing", () => {
       windowId: restored.state.actionWindowId,
       windowKind: "battle",
     });
-    expect(battleWindowGroups(restored, 1)).toEqual([
+    expect(groupedActionSummary(restored, 1)).toEqual([
       { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["passDamage"] },
     ]);
     const stalePassResult = applyResponse(restored, staleRestoredPass!);
@@ -97,7 +97,7 @@ describe("duel battle timing", () => {
     const replayActions = getDuelLegalActions(restored, 0);
     expect(replayActions.some((action) => action.type === "cancelAttack" && action.attackerUid === attacker!.uid)).toBe(true);
     expect(replayActions.some((action) => action.type === "replayAttack" && action.attackerUid === attacker!.uid && action.targetUid === undefined)).toBe(true);
-    expect(battleWindowGroups(restored, 0)).toEqual([
+    expect(groupedActionSummary(restored, 0)).toEqual([
       { label: "Attacks", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["cancelAttack", "replayAttack"] },
     ]);
 
@@ -147,7 +147,7 @@ describe("duel battle timing", () => {
     expect(restored.state.battleWindow).toEqual(session.state.battleWindow);
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "restore-attack-negator");
     expect(action).toBeTruthy();
-    expect(battleWindowGroups(restored, 0)).toEqual([
+    expect(groupedActionSummary(restored, 0)).toEqual([
       { label: "Effects", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["activateEffect"] },
       { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["passAttack"] },
     ]);
@@ -426,6 +426,10 @@ describe("duel battle timing", () => {
     expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     const trigger = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-after-damage-trigger");
     expect(trigger).toBeTruthy();
+    expect(groupedActionSummary(restored, 0)).toEqual([
+      { label: "Trigger Activations", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", actionTypes: ["activateTrigger"] },
+      { label: "Trigger Declines", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", actionTypes: ["declineTrigger"] },
+    ]);
     const triggerResult = applyResponse(restored, trigger!);
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, triggerResult.state.waitingFor!));
@@ -616,7 +620,7 @@ function legalEffectIds(session: ReturnType<typeof createDuel>, player: 0 | 1): 
     .map((action) => action.effectId);
 }
 
-function battleWindowGroups(session: ReturnType<typeof createDuel>, player: 0 | 1) {
+function groupedActionSummary(session: ReturnType<typeof createDuel>, player: 0 | 1) {
   return getGroupedDuelLegalActions(session, player).map((group) => ({
     label: group.label,
     windowId: group.windowId,
