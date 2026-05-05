@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   queryPublicState,
@@ -38,6 +39,9 @@ describe("duel action legality", () => {
 
     expect(result.ok).toBe(false);
     expect(result.error).toBe("Response is not currently legal");
+    expect(result.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(session.state.actionWindowId).toBe(0);
     expect(session.state.cards.find((card) => card.code === "100")?.location).toBe("hand");
   });
@@ -54,6 +58,9 @@ describe("duel action legality", () => {
 
     expect(result.ok).toBe(false);
     expect(result.error).toBe("Response is not currently legal");
+    expect(result.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(session.state.actionWindowId).toBe(0);
     expect(session.state.cards.find((card) => card.code === "100")?.location).toBe("hand");
   });
@@ -92,6 +99,9 @@ describe("duel action legality", () => {
 
     expect(result.ok).toBe(false);
     expect(result.error).toBe("Response is not currently legal");
+    expect(result.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(session.state.actionWindowId).toBe(0);
     expect(session.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("extraDeck");
   });
