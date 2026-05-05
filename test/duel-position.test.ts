@@ -34,7 +34,7 @@ describe("duel position changes", () => {
     expect(monster).toBeTruthy();
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === monster!.uid);
     expect(setAction).toBeTruthy();
-    const setResult = applyResponse(session, setAction!);
+    const setResult = applyAndAssert(session, setAction!);
 
     expect(setResult.ok).toBe(true);
     expect(setResult.state.cards.find((card) => card.uid === monster!.uid)?.position).toBe("faceDownDefense");
@@ -44,13 +44,13 @@ describe("duel position changes", () => {
 
     const endTurn = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
     expect(endTurn).toBeTruthy();
-    expect(applyResponse(session, endTurn!).ok).toBe(true);
+    applyAndAssert(session, endTurn!);
     const opponentEndTurn = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn");
     expect(opponentEndTurn).toBeTruthy();
-    expect(applyResponse(session, opponentEndTurn!).ok).toBe(true);
+    applyAndAssert(session, opponentEndTurn!);
     const flipAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === monster!.uid);
     expect(flipAction).toBeTruthy();
-    const flipResult = applyResponse(session, flipAction!);
+    const flipResult = applyAndAssert(session, flipAction!);
 
     expect(flipResult.ok).toBe(true);
     expect(flipResult.state.cards.find((card) => card.uid === monster!.uid)?.position).toBe("faceUpAttack");
@@ -101,7 +101,7 @@ describe("duel position changes", () => {
     expect(state.pendingTriggers[0]).toMatchObject({ eventName: "flipSummoned", eventCardUid: monster!.uid });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "flip-trigger");
     expect(trigger).toBeTruthy();
-    const result = applyResponse(session, trigger!);
+    const result = applyAndAssert(session, trigger!);
 
     expect(result.ok).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Flip summoned Normal Test Monster")).toBe(true);
@@ -145,7 +145,7 @@ describe("duel position changes", () => {
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummoned"]);
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("lua flip summon success resolved 100");
   });
 
@@ -182,12 +182,12 @@ describe("duel position changes", () => {
 
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === monster!.uid);
     expect(setAction).toBeTruthy();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
 
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["monsterSet"]);
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("lua monster set resolved 100");
   });
 
@@ -252,36 +252,20 @@ describe("duel position changes", () => {
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === set!.uid);
     expect(setAction).toBeTruthy();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
-    const playerEndResult = applyResponse(restored, getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn")!);
-    expect(playerEndResult.ok).toBe(true);
-    expect(playerEndResult.legalActions).toEqual(getDuelLegalActions(restored, playerEndResult.state.waitingFor!));
-    expect(playerEndResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, playerEndResult.state.waitingFor!));
-    expect(playerEndResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(playerEndResult.legalActions);
-    const opponentEndResult = applyResponse(restored, getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn")!);
-    expect(opponentEndResult.ok).toBe(true);
-    expect(opponentEndResult.legalActions).toEqual(getDuelLegalActions(restored, opponentEndResult.state.waitingFor!));
-    expect(opponentEndResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, opponentEndResult.state.waitingFor!));
-    expect(opponentEndResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(opponentEndResult.legalActions);
+    applyAndAssert(restored, getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn")!);
+    applyAndAssert(restored, getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn")!);
 
     const changePosition = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "changePosition" && candidate.uid === summoned!.uid && candidate.position === "faceUpDefense");
     expect(changePosition).toBeTruthy();
-    const changeResult = applyResponse(restored, changePosition!);
-    expect(changeResult.ok).toBe(true);
-    expect(changeResult.legalActions).toEqual(getDuelLegalActions(restored, changeResult.state.waitingFor!));
-    expect(changeResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, changeResult.state.waitingFor!));
-    expect(changeResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(changeResult.legalActions);
+    applyAndAssert(restored, changePosition!);
     expect(restored.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ position: "faceUpDefense", faceUp: true });
 
     const flipSummon = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === set!.uid);
     expect(flipSummon).toBeTruthy();
-    const flipResult = applyResponse(restored, flipSummon!);
-    expect(flipResult.ok).toBe(true);
-    expect(flipResult.legalActions).toEqual(getDuelLegalActions(restored, flipResult.state.waitingFor!));
-    expect(flipResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, flipResult.state.waitingFor!));
-    expect(flipResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(flipResult.legalActions);
+    applyAndAssert(restored, flipSummon!);
     expect(restored.state.cards.find((card) => card.uid === set!.uid)).toMatchObject({ position: "faceUpAttack", faceUp: true, summonType: "flip" });
   });
 
@@ -301,7 +285,7 @@ describe("duel position changes", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePosition" && candidate.uid === monster!.uid && candidate.position === "faceUpDefense");
     expect(action).toBeTruthy();
-    const result = applyResponse(session, action!);
+    const result = applyAndAssert(session, action!);
 
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === monster!.uid)?.position).toBe("faceUpDefense");
@@ -344,9 +328,18 @@ describe("duel position changes", () => {
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "position-trigger");
     expect(trigger).toBeTruthy();
-    const result = applyResponse(session, trigger!);
+    const result = applyAndAssert(session, trigger!);
 
     expect(result.ok).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Position changed Normal Test Monster")).toBe(true);
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
