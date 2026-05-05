@@ -27,9 +27,9 @@ describe("Lua chain event helpers", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_ADJUST)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp,eg)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
           local tc=eg:GetFirst()
-          Debug.Message("adjust resolved " .. tostring(tc and tc:GetCode()))
+          Debug.Message("adjust resolved " .. tostring(tc and tc:GetCode()) .. "/" .. tostring(r) .. "/" .. tostring(rp))
         end)
         c:RegisterEffect(e)
       end
@@ -51,13 +51,13 @@ describe("Lua chain event helpers", () => {
     expect(adjustResult.ok, adjustResult.error).toBe(true);
     expect(host.messages).toContain("adjust queued");
     expect(session.state.pendingTriggers).toHaveLength(1);
-    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "adjust" }));
+    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "adjust", eventReason: 0x40, eventReasonPlayer: 0 }));
     expect(session.state.log).toContainEqual(expect.objectContaining({ action: "adjust", detail: "Instant adjust" }));
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(action).toBeDefined();
     expect(applyResponse(session, action!).ok).toBe(true);
-    expect(host.messages).toContain("adjust resolved 200");
+    expect(host.messages).toContain("adjust resolved 200/64/0");
   });
 
   it("makes earlier Lua optional when triggers miss timing at adjust boundaries", () => {
@@ -226,7 +226,7 @@ describe("Lua chain event helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("readjust event true");
-    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "adjust" }));
+    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "adjust", eventReason: 0x40, eventReasonPlayer: 0 }));
     expect(session.state.log).toContainEqual(expect.objectContaining({ action: "adjust", detail: "Readjust" }));
   });
 
