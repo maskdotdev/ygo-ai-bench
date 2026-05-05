@@ -101,4 +101,105 @@ describe("Lua open fast priority restore", () => {
     expect(applyLuaRestoreResponse(restored, finalPass!).ok).toBe(true);
     expect(restored.host.messages).toEqual(["restored open fast source resolved", "restored open fast quick resolved"]);
   });
+
+  it("opens restored fast effects after restored trigger chains resolve", () => {
+    const cards: DuelCardData[] = [
+      { code: "19100", name: "Lua Restored Trigger Fast Summon", kind: "monster" },
+      { code: "19200", name: "Lua Restored Trigger Fast Trigger", kind: "monster" },
+      { code: "19300", name: "Lua Restored Trigger Fast Quick", kind: "monster" },
+      { code: "19400", name: "Lua Restored Trigger Fast Chain Quick", kind: "monster" },
+      { code: "19500", name: "Lua Restored Trigger Fast Filler", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c19200.lua") {
+          return `
+          c19200={}
+          function c19200.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_F)
+            e:SetCode(EVENT_SUMMON_SUCCESS)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("restored trigger fast trigger resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c19300.lua") {
+          return `
+          c19300={}
+          function c19300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()==0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restored trigger fast quick resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c19400.lua") {
+          return `
+          c19400={}
+          function c19400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restored trigger fast chain quick resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 99, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["19100", "19200", "19300"] }, 1: { main: ["19400", "19500", "19500"] } });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(19200, source).ok).toBe(true);
+    expect(host.loadCardScript(19300, source).ok).toBe(true);
+    expect(host.loadCardScript(19400, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "19100");
+    expect(summonSource).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summonSource!.uid);
+    expect(summon).toBeDefined();
+    const summoned = applyResponse(session, summon!);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(summoned.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
+    expect(summoned.state.pendingTriggers.map((trigger) => trigger.effectId)).toHaveLength(1);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
+    expect(trigger).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnMandatory" });
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+
+    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const opened = applyLuaRestoreResponse(restored, pass!);
+    expect(opened.ok, opened.error).toBe(true);
+    expect(opened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(opened.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
+
+    const quick = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid.includes("19300"));
+    expect(quick).toMatchObject({ player: 0, windowKind: "open" });
+    const quickResult = applyLuaRestoreResponse(restored, quick!);
+    expect(quickResult.ok, quickResult.error).toBe(true);
+    expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const finalPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(finalPass).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, finalPass!).ok).toBe(true);
+    expect(restored.host.messages).toEqual(["restored trigger fast trigger resolved", "restored trigger fast quick resolved"]);
+  });
 });
