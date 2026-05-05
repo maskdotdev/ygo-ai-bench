@@ -44,6 +44,7 @@ describe("Lua chain helpers", () => {
         e:SetType(EFFECT_TYPE_QUICK_O)
         e:SetRange(LOCATION_HAND)
         e:SetCondition(function(e,c)
+          if Duel.GetCurrentChain()~=1 then return false end
           local te,tp,loc,tc,tg=Duel.GetChainInfo(1, CHAININFO_TRIGGERING_EFFECT, CHAININFO_TRIGGERING_PLAYER, CHAININFO_TRIGGERING_LOCATION, CHAININFO_TRIGGERING_CARD, CHAININFO_TARGET_CARDS)
           local ok,handler=pcall(function() return te:GetHandler() end)
           Debug.Message("handler ok " .. tostring(ok) .. "/" .. tostring(handler ~= nil))
@@ -82,7 +83,9 @@ describe("Lua chain helpers", () => {
     expect(opened.ok).toBe(true);
     const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quickAction).toBeDefined();
-    applyResponse(session, quickAction!);
+    const quickResult = applyResponse(session, quickAction!);
+    expect(quickResult.ok, quickResult.error).toBe(true);
+    passChainIfAvailable(session);
     passChainIfAvailable(session);
     passChainIfAvailable(session);
     expect(host.messages).toContain("chain constants 1/3/8/13/30");
@@ -291,6 +294,8 @@ describe("Lua chain helpers", () => {
     expect(allowed).toMatchObject({ windowId: queryPublicState(session).actionWindowId, windowKind: "chainResponse" });
     expect(getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect")).toBeUndefined();
     expect(applyResponse(session, allowed!).ok).toBe(true);
+    passChainIfAvailable(session);
+    passChainIfAvailable(session);
     expect(host.messages).toContain("allowed quick resolved");
     expect(host.messages).toContain("persistent source resolved");
     expect(host.messages).not.toContain("chain back resolved");
@@ -399,6 +404,8 @@ describe("Lua chain helpers", () => {
     const replacement = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(replacement).toBeDefined();
     expect(applyResponse(session, replacement!).ok).toBe(true);
+    passChainIfAvailable(session);
+    passChainIfAvailable(session);
     expect(host.messages).toContain("changed chain operation 0");
     expect(host.messages).not.toContain("original chain operation");
   });

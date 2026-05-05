@@ -211,7 +211,16 @@ describe("duel chains", () => {
 
     const response = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "quick-response");
     expect(response).toBeTruthy();
-    const resolved = applyResponse(session, response!);
+    const chained = applyResponse(session, response!);
+
+    expect(chained.ok).toBe(true);
+    expect(chained.state.chain).toHaveLength(2);
+    expect(chained.state.waitingFor).toBe(1);
+    expect(chained.state.log.some((entry) => entry.detail === "Original operation resolved")).toBe(false);
+
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeTruthy();
+    const resolved = applyResponse(session, pass!);
     const quickLog = resolved.state.log.find((entry) => entry.detail === "Quick response resolved");
     const originalLog = resolved.state.log.find((entry) => entry.detail === "Original operation resolved");
 
@@ -274,7 +283,16 @@ describe("duel chains", () => {
 
     const response = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "target-response");
     expect(response).toBeTruthy();
-    const resolved = applyResponse(session, response!);
+    const chained = applyResponse(session, response!);
+
+    expect(chained.ok).toBe(true);
+    expect(chained.state.chain).toHaveLength(2);
+    expect(chained.state.waitingFor).toBe(1);
+    expect(chained.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("hand");
+
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeTruthy();
+    const resolved = applyResponse(session, pass!);
 
     expect(resolved.ok).toBe(true);
     expect(resolved.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("graveyard");
@@ -325,7 +343,16 @@ describe("duel chains", () => {
 
     const response = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "negating-response");
     expect(response).toBeTruthy();
-    const resolved = applyResponse(session, response!);
+    const chained = applyResponse(session, response!);
+
+    expect(chained.ok).toBe(true);
+    expect(chained.state.chain).toHaveLength(2);
+    expect(chained.state.waitingFor).toBe(1);
+    expect(chained.state.cards.find((card) => card.uid === originalSource!.uid)?.location).toBe("hand");
+
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeTruthy();
+    const resolved = applyResponse(session, pass!);
 
     expect(resolved.ok).toBe(true);
     expect(resolved.state.chain).toHaveLength(0);
@@ -508,6 +535,81 @@ describe("duel chains", () => {
     expect(resolved.state.log.filter((entry) => entry.detail === "Opponent quick resolved")).toHaveLength(1);
   });
 
+  it("returns chain response priority to the last activating player after higher chain links", () => {
+    const session = createDuel({ seed: 333, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const starterSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const playerQuickA = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const playerQuickB = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const opponentQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(starterSource).toBeTruthy();
+    expect(playerQuickA).toBeTruthy();
+    expect(playerQuickB).toBeTruthy();
+    expect(opponentQuick).toBeTruthy();
+
+    registerEffect(session, {
+      id: "priority-starter",
+      sourceUid: starterSource!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Priority starter resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "player-quick-a",
+      sourceUid: playerQuickA!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Player quick A resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "player-quick-b",
+      sourceUid: playerQuickB!.uid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Player quick B resolved");
+      },
+    });
+    registerEffect(session, {
+      id: "opponent-quick",
+      sourceUid: opponentQuick!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      oncePerTurn: true,
+      operation(ctx) {
+        ctx.log("Opponent quick resolved");
+      },
+    });
+
+    const starter = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "priority-starter");
+    expect(starter).toBeTruthy();
+    expect(applyResponse(session, starter!).state.waitingFor).toBe(1);
+    const opponent = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "opponent-quick");
+    expect(opponent).toBeTruthy();
+    expect(applyResponse(session, opponent!).state.waitingFor).toBe(0);
+    const playerA = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "player-quick-a");
+    expect(playerA).toBeTruthy();
+    const afterPlayerA = applyResponse(session, playerA!);
+
+    expect(afterPlayerA.ok).toBe(true);
+    expect(afterPlayerA.state.chain).toHaveLength(3);
+    expect(afterPlayerA.state.waitingFor).toBe(0);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "player-quick-b")).toBe(true);
+  });
+
   it("rejects stale chain pass responses after the chain resolves", () => {
     const session = createDuel({ seed: 96, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -613,11 +715,19 @@ describe("duel chains", () => {
     });
     const quick = getDuelLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-stale-pass-quick");
     expect(quick).toBeTruthy();
-    expect(applyResponse(restored, quick!).ok).toBe(true);
+    const quickResult = applyResponse(restored, quick!);
+    expect(quickResult.ok).toBe(true);
+    expect(restored.state.chain).toHaveLength(2);
+    expect(restored.state.waitingFor).toBe(1);
     const replay = applyResponse(restored, stalePass!);
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(restored.state.chain).toHaveLength(2);
+
+    const currentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(currentPass).toBeTruthy();
+    expect(applyResponse(restored, currentPass!).ok).toBe(true);
     expect(restored.state.chain).toHaveLength(0);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass source resolved")).toHaveLength(1);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass quick resolved")).toHaveLength(1);

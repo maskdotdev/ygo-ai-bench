@@ -282,6 +282,6 @@ function otherPlayer(player: PlayerId): PlayerId {
 
 function nextChainResponsePlayer(state: DuelState, activatingPlayer: PlayerId, firstResponder: PlayerId, handlers: DuelActivationHandlers): PlayerId | undefined {
   if (handlers.hasChainResponses(state, firstResponder)) return firstResponder;
-  if (state.chain.length === 1 && handlers.hasChainResponses(state, activatingPlayer)) return activatingPlayer;
+  if (handlers.hasChainResponses(state, activatingPlayer)) return activatingPlayer;
   return undefined;
 }
