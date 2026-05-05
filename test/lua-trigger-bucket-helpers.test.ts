@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -176,6 +176,16 @@ describe("Lua trigger bucket helpers", () => {
 
     expect(summoned.ok).toBe(true);
     expect(summoned.state.pendingTriggers.map((trigger) => summoned.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["9200", "9300", "9400"]);
+    expect(queryPublicState(session).triggerOrderPrompt).toEqual({
+      id: `${session.state.actionWindowId}:turnOptional:0`,
+      type: "orderTriggers",
+      player: 0,
+      triggerBucket: "turnOptional",
+      triggerIds: [
+        summoned.state.pendingTriggers[0]!.id,
+        summoned.state.pendingTriggers[1]!.id,
+      ],
+    });
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([summoned.state.pendingTriggers[0]?.effectId, summoned.state.pendingTriggers[1]?.effectId]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
 
@@ -184,6 +194,7 @@ describe("Lua trigger bucket helpers", () => {
     const afterFirstDecline = applyResponse(session, firstDecline!);
     expect(afterFirstDecline.ok).toBe(true);
     expect(afterFirstDecline.state.pendingTriggers.map((trigger) => afterFirstDecline.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["9300", "9400"]);
+    expect(queryPublicState(session).triggerOrderPrompt).toBeUndefined();
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([afterFirstDecline.state.pendingTriggers[0]?.effectId]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
 
@@ -262,6 +273,16 @@ describe("Lua trigger bucket helpers", () => {
 
     expect(summoned.ok).toBe(true);
     expect(summoned.state.pendingTriggers.map((trigger) => summoned.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["10200", "10300", "10400"]);
+    expect(queryPublicState(session).triggerOrderPrompt).toEqual({
+      id: `${session.state.actionWindowId}:turnOptional:0`,
+      type: "orderTriggers",
+      player: 0,
+      triggerBucket: "turnOptional",
+      triggerIds: [
+        summoned.state.pendingTriggers[0]!.id,
+        summoned.state.pendingTriggers[1]!.id,
+      ],
+    });
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([summoned.state.pendingTriggers[0]?.effectId, summoned.state.pendingTriggers[1]?.effectId]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
 
@@ -270,6 +291,7 @@ describe("Lua trigger bucket helpers", () => {
     const afterFirstActivation = applyResponse(session, firstActivation!);
     expect(afterFirstActivation.ok).toBe(true);
     expect(afterFirstActivation.state.pendingTriggers.map((trigger) => afterFirstActivation.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["10300", "10400"]);
+    expect(queryPublicState(session).triggerOrderPrompt).toBeUndefined();
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([afterFirstActivation.state.pendingTriggers[0]?.effectId]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
 
