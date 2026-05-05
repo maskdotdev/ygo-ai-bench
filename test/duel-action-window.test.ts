@@ -31,6 +31,17 @@ function expectLegalActionsMatchPublicWindow(session: ReturnType<typeof setupOne
   }
 }
 
+function expectResultActionsMatchResultState(result: ReturnType<typeof applyResponse>): void {
+  for (const action of result.legalActions) {
+    expect(action.windowId).toBe(result.state.actionWindowId);
+    expect(action.windowKind).toBe(result.state.windowKind);
+  }
+  for (const group of result.legalActionGroups) {
+    expect(group.windowId).toBe(result.state.actionWindowId);
+    expect(group.windowKind).toBe(result.state.windowKind);
+  }
+}
+
 describe("duel action windows", () => {
   it("copies stamped action payloads away from the source action list", () => {
     const actions: DuelAction[] = [{ type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["a", "b"], label: "Fusion" }];
@@ -86,6 +97,9 @@ describe("duel action windows", () => {
     expect(result.ok).toBe(false);
     expect(result.error).toContain("Response is not currently legal");
     expect(session.state.actionWindowId).toBe(0);
+    expect(result.state.actionWindowId).toBe(0);
+    expect(result.state.windowKind).toBe("open");
+    expectResultActionsMatchResultState(result);
   });
 
   it("rejects responses stamped with the wrong window kind", () => {
@@ -102,6 +116,9 @@ describe("duel action windows", () => {
     expect(result.error).toContain("Response is not currently legal");
     expect(session.state.actionWindowId).toBe(0);
     expect(session.state.prompt).toBeDefined();
+    expect(result.state.actionWindowId).toBe(0);
+    expect(result.state.windowKind).toBe("prompt");
+    expectResultActionsMatchResultState(result);
   });
 
   it("rejects responses with partial window metadata", () => {
@@ -118,6 +135,9 @@ describe("duel action windows", () => {
     expect(result.error).toContain("Response is not currently legal");
     expect(session.state.actionWindowId).toBe(0);
     expect(session.state.prompt).toBeDefined();
+    expect(result.state.actionWindowId).toBe(0);
+    expect(result.state.windowKind).toBe("prompt");
+    expectResultActionsMatchResultState(result);
   });
 
   it("rejects responses with malformed window metadata", () => {
@@ -136,6 +156,12 @@ describe("duel action windows", () => {
     expect(unknownKind.error).toContain("Response is not currently legal");
     expect(session.state.actionWindowId).toBe(0);
     expect(session.state.cards.find((card) => card.uid === summon!.uid)?.location).toBe("hand");
+    expect(result.state.actionWindowId).toBe(0);
+    expect(result.state.windowKind).toBe("open");
+    expectResultActionsMatchResultState(result);
+    expect(unknownKind.state.actionWindowId).toBe(0);
+    expect(unknownKind.state.windowKind).toBe("open");
+    expectResultActionsMatchResultState(unknownKind);
   });
 
   it("restores actionWindowId after failed response rollback", () => {
@@ -171,6 +197,9 @@ describe("duel action windows", () => {
     expect(result.error).toContain("window rollback failed");
     expect(session.state.actionWindowId).toBe(0);
     expect(getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "window-rollback-failure")?.windowId).toBe(0);
+    expect(result.state.actionWindowId).toBe(0);
+    expect(result.state.windowKind).toBe("open");
+    expectResultActionsMatchResultState(result);
   });
 
   it("preserves actionWindowId through snapshots and rejects stale pre-snapshot actions", () => {
