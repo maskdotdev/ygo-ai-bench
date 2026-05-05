@@ -106,6 +106,7 @@ describe("Lua summon-negated events", () => {
     expect(restored.session.state.eventHistory.map((event) => event.eventName)).not.toContain("normalSummoned");
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("300"))).toBe(false);
 
     const negatedTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("400"));
@@ -260,6 +261,7 @@ function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: st
   expect(restored.session.state.pendingTriggers).toEqual(fixture.session.state.pendingTriggers);
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+  expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
   const publicState = queryPublicState(restored.session);

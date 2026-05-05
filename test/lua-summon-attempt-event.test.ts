@@ -62,6 +62,7 @@ describe("Lua summon-attempt events", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     assertRestoredAttemptTrigger(restored);
     expect(restored.host.messages).toContain("normal attempt 100");
   });
@@ -120,6 +121,7 @@ describe("Lua summon-attempt events", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     assertRestoredAttemptTrigger(restored);
     expect(restored.host.messages).toContain("special attempt 100");
   });
@@ -183,6 +185,7 @@ describe("Lua summon-attempt events", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     assertRestoredAttemptTrigger(restored);
     expect(restored.host.messages).toContain("flip attempt 100");
   });
