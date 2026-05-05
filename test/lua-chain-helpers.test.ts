@@ -161,13 +161,13 @@ describe("Lua chain helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const pendulumAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "pendulumSummon" && candidate.summonUids.includes(source!.uid));
     expect(pendulumAction).toBeDefined();
-    expect(applyResponse(session, { ...pendulumAction!, summonUids: [source!.uid] }).ok).toBe(true);
+    applyAndAssert(session, { ...pendulumAction!, summonUids: [source!.uid] });
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    applyAndAssert(session, sourceAction!);
     const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quickAction).toBeDefined();
-    expect(applyResponse(session, quickAction!).ok).toBe(true);
+    applyAndAssert(session, quickAction!);
     passChainIfAvailable(session);
     passChainIfAvailable(session);
     expect(host.messages).toContain("pendulum chain summon info 2/1241513984/true/true");
