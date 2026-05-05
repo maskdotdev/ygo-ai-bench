@@ -116,8 +116,15 @@ describe("Lua field operation helpers", () => {
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1014");
     expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1014", "lua-4-1102"]));
+    const source = session.state.cards.find((card) => card.code === "100");
+    const summoned = session.state.cards.find((card) => card.code === "500");
+    expect(source).toBeDefined();
+    expect(summoned).toBeDefined();
+    expect(session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: summoned!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }),
+    );
     expect(session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014 }), expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102 })]),
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014 }), expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 })]),
     );
   });
 

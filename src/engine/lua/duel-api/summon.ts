@@ -31,6 +31,7 @@ import { sameStringMembers } from "#duel/string-list-match.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -342,7 +343,8 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
   const summonedUids: string[] = [];
   for (const card of pendulumSummonCandidates(session, player, lowScale, highScale).slice(0, zoneCount)) {
     try {
-      const summoned = specialSummonDuelCard(session.state, card.uid, player);
+      const reasonPlayer = hostState.activeContext?.player ?? player;
+      const summoned = specialSummonDuelCard(session.state, card.uid, player, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer));
       applySummonPosition(summoned, "faceUpAttack");
       summoned.summonType = "pendulum";
       summonedUids.push(card.uid);
@@ -369,7 +371,8 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
   }
   try {
     markLuaOperationTimingBoundary(session, hostState);
-    const summoned = specialSummonDuelCard(session.state, uid, targetPlayer);
+    const reasonPlayer = hostState.activeContext?.player ?? targetPlayer;
+    const summoned = specialSummonDuelCard(session.state, uid, targetPlayer, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer));
     if (requestedPosition) applySummonPosition(summoned, requestedPosition);
     applyMonsterZoneMask(session, summoned, targetPlayer, zoneMask);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
