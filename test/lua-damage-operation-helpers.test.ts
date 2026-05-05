@@ -96,6 +96,32 @@ describe("Lua damage operation helpers", () => {
     passBattleResponses(session);
     expect(session.state.attackCostPaid).toBe(0);
   });
+
+  it("keeps attack cost status from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Ended Cost Attacker", kind: "monster", attack: 1000 }];
+    const session = createDuel({ seed: 208, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.AttackCostPaid()
+      Duel.Win(0,WIN_REASON_EXODIA)
+      Duel.AttackCostPaid(2)
+      Debug.Message("attack cost ended " .. Duel.IsAttackCostPaid())
+      `,
+      "ended-attack-cost-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["attack cost ended 0"]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.attackCostPaid).toBe(0);
+  });
 });
 
 function passBattleResponses(session: ReturnType<typeof createDuel>): void {

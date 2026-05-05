@@ -78,6 +78,10 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetBattleDamage"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const player = readOptionalPlayer(state, 1) ?? session.state.turnPlayer;
     const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     lua.lua_pushinteger(state, changeDuelBattleDamage(session.state, player, value));
@@ -87,6 +91,7 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushCalculateDamage(state, session));
   lua.lua_setfield(L, -2, to_luastring("CalculateDamage"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const status = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 1;
     setDuelAttackCostPaid(session.state, status);
     return 0;
@@ -104,6 +109,10 @@ function currentBattle(session: DuelSession): DuelSession["state"]["currentAttac
 }
 
 function pushCalculateDamage(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const attacker = readBattleCard(L, session, 1);
   const defender = readBattleCard(L, session, 2);
   if (!attacker || attacker.location !== "monsterZone") {
