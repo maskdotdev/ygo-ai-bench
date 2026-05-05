@@ -43,6 +43,10 @@ describe("parity fixture metadata", () => {
     expect(missingDirectAttackRawCoverage()).toEqual([]);
   });
 
+  it("requires targeted-attack groups to be backed by raw targeted attack expectations", () => {
+    expect(missingTargetedAttackRawCoverage()).toEqual([]);
+  });
+
   it("requires UI-facing grouped absence expectations to track raw absent legal-action expectations", () => {
     expect(missingAbsentLegalActionGroupCoverage()).toEqual([]);
   });
@@ -129,6 +133,22 @@ describe("parity fixture metadata", () => {
         ...lines.slice(0, 4),
         '  legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-card", directAttack: true, windowId: 1, windowKind: "open", count: 1 }],',
         '  legalActionGroups: [directAttackGroup(0, "p0-card", 1, 1)],',
+        ...lines.slice(4),
+      ]),
+    ).toEqual([]);
+    expect(
+      missingTargetedAttackRawCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        '  legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-card", windowId: 1, windowKind: "open", count: 1 }],',
+        '  legalActionGroups: [targetedAttackGroup(0, "p0-card", "p1-card", 1, 1)],',
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:2"]);
+    expect(
+      missingTargetedAttackRawCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        '  legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-card", targetUid: "p1-card", windowId: 1, windowKind: "open", count: 1 }],',
+        '  legalActionGroups: [targetedAttackGroup(0, "p0-card", "p1-card", 1, 1)],',
         ...lines.slice(4),
       ]),
     ).toEqual([]);
@@ -281,6 +301,10 @@ function missingDirectAttackRawCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingDirectAttackRawCoverageInLines(file, readFixtureLines(file)));
 }
 
+function missingTargetedAttackRawCoverage(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingTargetedAttackRawCoverageInLines(file, readFixtureLines(file)));
+}
+
 function missingAbsentLegalActionGroupCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingLegalActionGroupsInLines(file, readFixtureLines(file), "absentLegalActions:", "absentLegalActionGroups:"));
 }
@@ -410,6 +434,18 @@ function missingDirectAttackRawCoverageInLines(file: string, lines: string[]): s
     if (rawDirectAttack === null) missingRawDirectAttacks.push(`${file}:${index + 1}`);
   });
   return missingRawDirectAttacks;
+}
+
+function missingTargetedAttackRawCoverageInLines(file: string, lines: string[]): string[] {
+  const missingRawTargetedAttacks: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    if (!block.includes("targetedAttackGroup(")) return;
+    const rawTargetedAttack = block.match(/\{[^{}]*type:\s*["']declareAttack["'][^{}]*targetUid:\s*["'][^"']+["'][^{}]*\}/);
+    if (rawTargetedAttack === null) missingRawTargetedAttacks.push(`${file}:${index + 1}`);
+  });
+  return missingRawTargetedAttacks;
 }
 
 function missingLegalActionCountsInLines(file: string, lines: string[]): string[] {
