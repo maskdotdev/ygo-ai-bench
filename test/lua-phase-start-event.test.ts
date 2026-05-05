@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData, DuelPhase } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua phase-start events", () => {
   it("queues Battle Start triggers with the EDOPro battle-start phase mask", () => {
@@ -101,5 +102,73 @@ describe("Lua phase-start events", () => {
       expect.objectContaining({ eventName: "phaseChanged" }),
       expect.objectContaining({ eventName: "phaseEnd", eventCode: 0x1200 }),
     ]);
+  });
+
+  it("applies restored Lua phase-start triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Phase Start Watcher", kind: "monster" },
+      { code: "200", name: "Restore Phase End Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_PHASE_START+PHASE_END)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Debug.Message("restored phase start " .. Duel.GetCurrentPhase())
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c200.lua") {
+          return `
+          c200={}
+          function c200.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_PHASE+PHASE_END)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Debug.Message("restored phase end " .. Duel.GetCurrentPhase())
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 202, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    for (const phase of ["battle", "main2", "end"] satisfies DuelPhase[]) {
+      const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === phase);
+      expect(action).toBeDefined();
+      expect(applyResponse(session, action!).ok).toBe(true);
+    }
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["phaseStartEnd", "phaseEnd"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.phase).toBe("end");
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["phaseStartEnd", "phaseEnd"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x2200 });
+
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored phase start 512");
   });
 });
