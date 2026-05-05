@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { moveDuelCard } from "#duel/card-state.js";
+import type { DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("battle action restore", () => {
@@ -53,6 +54,43 @@ describe("battle action restore", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   });
+
+  it("returns restored battle quick chains to the battle response player", () => {
+    const session = createBattleSession(["100", "300"], ["400", "500"]);
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnQuickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(turnQuickSource).toBeTruthy();
+    expect(opponentQuickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, battleQuickEffect("restore-battle-turn-quick", turnQuickSource!.uid, 0, "Restored battle turn quick resolved"));
+    registerEffect(session, chainOnlyBattleQuickEffect("restore-battle-opponent-chain-quick", opponentQuickSource!.uid, 1, "Restored battle opponent chain quick resolved"));
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-battle-turn-quick");
+    expect(quick).toBeDefined();
+    expect(applyResponse(session, quick!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-battle-turn-quick": restoreBattleQuickEffect("Restored battle turn quick resolved"),
+      "restore-battle-opponent-chain-quick": restoreChainOnlyBattleQuickEffect("Restored battle opponent chain quick resolved"),
+    });
+    const result = applyResponse(restored, pass!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "attackNegationResponse", responsePlayer: 1 } });
+    expect(restored.state.chain).toHaveLength(0);
+    expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passAttack", player: 1, windowKind: "battle" })]));
+    expect(getDuelLegalActions(restored, 0)).toEqual([]);
+  });
 });
 
 function createBattleSession(playerDeck: string[], opponentDeck: string[]) {
@@ -63,4 +101,46 @@ function createBattleSession(playerDeck: string[], opponentDeck: string[]) {
   });
   startDuel(session);
   return session;
+}
+
+function battleQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
+  return {
+    id,
+    registryKey: id,
+    sourceUid,
+    controller,
+    event: "quick",
+    range: ["hand"],
+    oncePerTurn: true,
+    operation(ctx) {
+      ctx.log(detail);
+    },
+  };
+}
+
+function chainOnlyBattleQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
+  return {
+    ...battleQuickEffect(id, sourceUid, controller, detail),
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
+    },
+  };
+}
+
+function restoreBattleQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...effect,
+    operation(ctx) {
+      ctx.log(detail);
+    },
+  });
+}
+
+function restoreChainOnlyBattleQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...restoreBattleQuickEffect(detail)(effect),
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
+    },
+  });
 }
