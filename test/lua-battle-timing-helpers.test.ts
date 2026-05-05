@@ -230,6 +230,7 @@ describe("Lua battle timing helpers", () => {
     expect(actionResult.ok).toBe(true);
     expect(actionResult.legalActions).toEqual(getDuelLegalActions(restored.session, actionResult.state.waitingFor!));
     expect(actionResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, actionResult.state.waitingFor!));
+    expect(actionResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(actionResult.legalActions);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passChain");
@@ -238,6 +239,7 @@ describe("Lua battle timing helpers", () => {
     expect(passResult.ok).toBe(true);
     expect(passResult.legalActions).toEqual(getDuelLegalActions(restored.session, passResult.state.waitingFor!));
     expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
+    expect(passResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(passResult.legalActions);
 
     expect(restored.session.state.battleDamage[1]).toBe(700);
     expect(restored.session.state.pendingBattle?.battleDamageOverrides).toEqual({ 1: 700 });
@@ -250,6 +252,7 @@ describe("Lua battle timing helpers", () => {
     expect(stalePassResult.ok).toBe(true);
     expect(stalePassResult.legalActions).toEqual(getDuelLegalActions(restored.session, stalePassResult.state.waitingFor!));
     expect(stalePassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, stalePassResult.state.waitingFor!));
+    expect(stalePassResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePassResult.legalActions);
     const replay = applyLuaRestoreResponse(restored, staleDamagePass!);
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
@@ -257,6 +260,7 @@ describe("Lua battle timing helpers", () => {
     if (currentPlayer === undefined) throw new Error("Expected restored damage window replay to keep waiting for a player");
     expect(replay.legalActions).toEqual(getDuelLegalActions(restored.session, currentPlayer));
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, currentPlayer));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
   });
 
   it("queues Lua battle timing triggers before and after damage calculation", () => {
@@ -452,6 +456,7 @@ describe("Lua battle timing helpers", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     const staleTriggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(staleTriggerResult.ok).toBe(false);
     expect(staleTriggerResult.error).toContain("Response is not currently legal");
@@ -530,6 +535,7 @@ describe("Lua battle timing helpers", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
 
     expect(restored.host.messages).toEqual(["restored battled trigger true/false"]);
     expect(restored.session.state.chain).toEqual([]);
@@ -592,6 +598,7 @@ describe("Lua battle timing helpers", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.host.messages).toEqual(["restored battle end trigger true/false"]);
   });
 
@@ -662,6 +669,7 @@ describe("Lua battle timing helpers", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
 
     expect(restored.host.messages).toEqual(["restored damage step end trigger true/false"]);
     expect(restored.session.state.chain).toEqual([]);
@@ -730,6 +738,7 @@ describe("Lua battle timing helpers", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
 
     expect(restored.host.messages).toEqual(["restored battle damage trigger 1/1800/32/0/6200"]);
     expect(restored.session.state.chain).toEqual([]);
