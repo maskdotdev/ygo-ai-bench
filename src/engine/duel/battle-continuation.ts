@@ -35,7 +35,7 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
       const reason = handlers.battleDamageReason(state, damagePlayer, battleCards);
       if (state.battleDamage[damagePlayer] > 0) handlers.collectEvent(state, "beforeBattleDamage", undefined, { eventPlayer: damagePlayer, eventValue: state.battleDamage[damagePlayer], eventReason: reason });
       const applied = handlers.damagePlayer(state, damagePlayer, state.battleDamage[damagePlayer], reason);
-      if (state.status === "ended") return applied;
+      if (duelHasEnded(state)) return applied;
       if (applied > 0) handlers.collectEvent(state, "battleDamageDealt", undefined, { eventPlayer: damagePlayer, eventValue: applied, eventReason: reason });
       for (const additionalPlayer of handlers.additionalBattleDamagePlayers(state, damagePlayer, battleCards)) {
         if (additionalPlayer === damagePlayer) continue;
@@ -43,6 +43,7 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
         const additionalReason = handlers.battleDamageReason(state, additionalPlayer, battleCards);
         if (state.battleDamage[additionalPlayer] > 0) handlers.collectEvent(state, "beforeBattleDamage", undefined, { eventPlayer: additionalPlayer, eventValue: state.battleDamage[additionalPlayer], eventReason: additionalReason });
         const additionalApplied = handlers.damagePlayer(state, additionalPlayer, state.battleDamage[additionalPlayer], additionalReason);
+        if (duelHasEnded(state)) return applied;
         if (additionalApplied > 0) handlers.collectEvent(state, "battleDamageDealt", undefined, { eventPlayer: additionalPlayer, eventValue: additionalApplied, eventReason: additionalReason });
       }
       return applied;
@@ -52,11 +53,15 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
     getDefenseValue: (card) => handlers.getDefenseValue(state, card),
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
   });
-  if (state.status === "ended") return;
+  if (duelHasEnded(state)) return;
   setWaitingForPendingTriggerBucket(state);
 }
 
 export function resolvePendingBattleIfReady(state: DuelState, handlers: BattleContinuationHandlers): void {
   if (!state.pendingBattle || state.chain.length || state.pendingTriggers.length) return;
   resolvePendingBattle(state, handlers);
+}
+
+function duelHasEnded(state: DuelState): boolean {
+  return (state as { status: string }).status === "ended";
 }

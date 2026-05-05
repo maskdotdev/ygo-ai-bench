@@ -91,6 +91,65 @@ describe("duel battle end state", () => {
     expect(state.pendingTriggers).toEqual([]);
     expect(state.battleWindow).toBeUndefined();
   });
+
+  it("does not reopen trigger windows after lethal additional battle damage", () => {
+    const localCards = [
+      ...cards,
+      { code: "930", name: "Shared Damage Attacker", kind: "monster" as const, attack: 1000 },
+      { code: "940", name: "Tall Defender", kind: "monster" as const, defense: 2000 },
+      { code: "950", name: "Additional Damage Watcher", kind: "monster" as const },
+    ];
+    const session = createDuel({ seed: 121, startingHandSize: 2, cardReader: createCardReader(localCards) });
+    loadDecks(session, {
+      0: { main: ["930"] },
+      1: { main: ["940", "950"] },
+    });
+    startDuel(session);
+    session.state.players[1].lifePoints = 1000;
+    const attacker = session.state.cards.find((card) => card.code === "930");
+    const defender = session.state.cards.find((card) => card.code === "940");
+    const watcher = session.state.cards.find((card) => card.code === "950");
+    expect(attacker).toBeTruthy();
+    expect(defender).toBeTruthy();
+    expect(watcher).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    const defendingCard = specialSummonDuelCard(session.state, defender!.uid, 1);
+    defendingCard.position = "faceUpDefense";
+    registerEffect(session, {
+      id: "also-battle-damage",
+      sourceUid: attacker!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 207,
+      range: ["monsterZone"],
+      operation() {},
+    });
+    registerEffect(session, {
+      id: "additional-battle-damage-watcher",
+      sourceUid: watcher!.uid,
+      controller: 1,
+      event: "trigger",
+      triggerEvent: "battleDamageDealt",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Additional battle damage watcher resolved");
+      },
+    });
+    const battle = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battle).toBeTruthy();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === defender!.uid);
+    expect(attack).toBeTruthy();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+
+    passAttackResponses(session);
+
+    const state = queryPublicState(session);
+    expect(state.status).toBe("ended");
+    expect(state.waitingFor).toBeUndefined();
+    expect(state.pendingTriggers).toEqual([]);
+    expect(state.battleWindow).toBeUndefined();
+  });
 });
 
 function passAttackResponses(session: ReturnType<typeof createDuel>): void {
