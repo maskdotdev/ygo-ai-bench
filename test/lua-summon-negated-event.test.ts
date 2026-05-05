@@ -114,6 +114,7 @@ describe("Lua summon-negated events", () => {
     expect(result.ok).toBe(true);
     expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("negated after attempt 100");
     expect(restored.host.messages.some((message) => message.startsWith("success should not resolve"))).toBe(false);
@@ -267,6 +268,7 @@ function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: st
   expect(result.ok).toBe(true);
   expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   const staleResult = applyLuaRestoreResponse(restored, trigger!);
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
@@ -284,5 +286,6 @@ function drainRestoredChain(restored: LuaSnapshotRestoreResult): void {
     expect(result.ok).toBe(true);
     expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
 }

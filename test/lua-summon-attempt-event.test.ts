@@ -197,10 +197,12 @@ function assertRestoredAttemptTrigger(restored: LuaSnapshotRestoreResult): void 
   expect(result.ok).toBe(true);
   expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   const staleResult = applyLuaRestoreResponse(restored, trigger!);
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
   expect(staleResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
   expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
   expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+  expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
 }
