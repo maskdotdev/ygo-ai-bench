@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, type LuaSnapshotRestoreResult, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, type LuaSnapshotRestoreResult, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua summon-negated events", () => {
   it("removes matching summon-success triggers when an attempt trigger negates the summon", () => {
@@ -105,11 +105,14 @@ describe("Lua summon-negated events", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(restored.session.state.eventHistory.map((event) => event.eventName)).not.toContain("normalSummoned");
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("300"))).toBe(false);
 
     const negatedTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("400"));
     expect(negatedTrigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, negatedTrigger!).ok).toBe(true);
+    const result = applyLuaRestoreResponse(restored, negatedTrigger!);
+    expect(result.ok).toBe(true);
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("negated after attempt 100");
     expect(restored.host.messages.some((message) => message.startsWith("success should not resolve"))).toBe(false);
@@ -254,9 +257,12 @@ function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: st
   expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
   expect(restored.session.state.pendingTriggers).toEqual(fixture.session.state.pendingTriggers);
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+  expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
-  expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+  const result = applyLuaRestoreResponse(restored, trigger!);
+  expect(result.ok).toBe(true);
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   drainRestoredChain(restored);
   expect(restored.host.messages).toContain(message);
 }
@@ -266,6 +272,8 @@ function drainRestoredChain(restored: LuaSnapshotRestoreResult): void {
     const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
     const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
+    const result = applyLuaRestoreResponse(restored, pass!);
+    expect(result.ok).toBe(true);
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   }
 }
