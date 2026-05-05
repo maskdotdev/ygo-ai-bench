@@ -341,7 +341,7 @@ describe("Lua random helpers", () => {
           coin:SetCode(EVENT_TOSS_COIN)
           coin:SetRange(LOCATION_HAND)
           coin:SetCondition(function(e,tp) return e:GetHandler():GetControler()==0 end)
-          coin:SetOperation(function(e,tp,eg,ep,ev) Debug.Message("coin trigger resolved " .. ep .. "/" .. ev .. "/" .. table.concat({Duel.GetCoinResult()}, ",")) end)
+          coin:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("coin trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp .. "/" .. table.concat({Duel.GetCoinResult()}, ",")) end)
           c:RegisterEffect(coin)
 
           local dice=Effect.CreateEffect(c)
@@ -349,7 +349,7 @@ describe("Lua random helpers", () => {
           dice:SetCode(EVENT_TOSS_DICE)
           dice:SetRange(LOCATION_HAND)
           dice:SetCondition(function(e,tp) return e:GetHandler():GetControler()==0 end)
-          dice:SetOperation(function(e,tp,eg,ep,ev) Debug.Message("dice trigger resolved " .. ep .. "/" .. ev .. "/" .. table.concat({Duel.GetDiceResult()}, ",")) end)
+          dice:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("dice trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp .. "/" .. table.concat({Duel.GetDiceResult()}, ",")) end)
           c:RegisterEffect(dice)
         end
         `;
@@ -369,11 +369,11 @@ describe("Lua random helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages[0]).toMatch(/^coin tossed [01],[01]$/);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossed"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 2 });
-    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "coinTossed", eventCode: 1151, eventPlayer: 0, eventValue: 2 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 2, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "coinTossed", eventCode: 1151, eventPlayer: 0, eventValue: 2, eventReason: 0x40, eventReasonPlayer: 0 });
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 2 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 2, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredCoinTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -382,11 +382,11 @@ describe("Lua random helpers", () => {
     expect(restoredCoinResult.ok).toBe(true);
     expect(restoredCoinResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredCoinResult.state.waitingFor!));
     expect(restoredCoinResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredCoinResult.state.waitingFor!));
-    expect(restored.host.messages[0]).toMatch(/^coin trigger resolved 0\/2\/[01],[01]$/);
+    expect(restored.host.messages[0]).toMatch(/^coin trigger resolved 0\/2\/64\/0\/[01],[01]$/);
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(coinTrigger).toBeDefined();
     expect(applyResponse(session, coinTrigger!).ok).toBe(true);
-    expect(host.messages[1]).toMatch(/^coin trigger resolved 0\/2\/[01],[01]$/);
+    expect(host.messages[1]).toMatch(/^coin trigger resolved 0\/2\/64\/0\/[01],[01]$/);
 
     const diceResult = host.loadScript(
       `
@@ -398,11 +398,11 @@ describe("Lua random helpers", () => {
     expect(diceResult.ok, diceResult.error).toBe(true);
     expect(host.messages[2]).toMatch(/^dice tossed [1-6],[1-6]$/);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["diceTossed"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1150, eventPlayer: 0, eventValue: 2 });
-    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "diceTossed", eventCode: 1150, eventPlayer: 0, eventValue: 2 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1150, eventPlayer: 0, eventValue: 2, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "diceTossed", eventCode: 1150, eventPlayer: 0, eventValue: 2, eventReason: 0x40, eventReasonPlayer: 0 });
     const restoredDice = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restoredDice.restoreComplete).toBe(true);
-    expect(restoredDice.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1150, eventPlayer: 0, eventValue: 2 });
+    expect(restoredDice.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1150, eventPlayer: 0, eventValue: 2, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restoredDice, 0)).toEqual(getDuelLegalActions(restoredDice.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredDice, 0)).toEqual(getGroupedDuelLegalActions(restoredDice.session, 0));
     const restoredDiceTrigger = getLuaRestoreLegalActions(restoredDice, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -411,11 +411,11 @@ describe("Lua random helpers", () => {
     expect(restoredDiceResult.ok).toBe(true);
     expect(restoredDiceResult.legalActions).toEqual(getDuelLegalActions(restoredDice.session, restoredDiceResult.state.waitingFor!));
     expect(restoredDiceResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredDice.session, restoredDiceResult.state.waitingFor!));
-    expect(restoredDice.host.messages[0]).toMatch(/^dice trigger resolved 0\/2\/[1-6],[1-6]$/);
+    expect(restoredDice.host.messages[0]).toMatch(/^dice trigger resolved 0\/2\/64\/0\/[1-6],[1-6]$/);
     const diceTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(diceTrigger).toBeDefined();
     expect(applyResponse(session, diceTrigger!).ok).toBe(true);
-    expect(host.messages[3]).toMatch(/^dice trigger resolved 0\/2\/[1-6],[1-6]$/);
+    expect(host.messages[3]).toMatch(/^dice trigger resolved 0\/2\/64\/0\/[1-6],[1-6]$/);
   });
 
   it("makes earlier Lua optional when triggers miss timing at dice toss boundaries", () => {
@@ -647,7 +647,7 @@ describe("Lua random helpers", () => {
       coin:SetType(EFFECT_TYPE_TRIGGER_O)
       coin:SetCode(EVENT_TOSS_COIN)
       coin:SetRange(LOCATION_HAND)
-      coin:SetOperation(function(e,tp,eg,ep,ev) Debug.Message("called coin trigger resolved " .. ep .. "/" .. ev .. "/" .. table.concat({Duel.GetCoinResult()}, ",")) end)
+      coin:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("called coin trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp .. "/" .. table.concat({Duel.GetCoinResult()}, ",")) end)
       watcher:RegisterEffect(coin)
 
       Debug.Message("coin called " .. tostring(Duel.CallCoin(0)))
@@ -659,12 +659,12 @@ describe("Lua random helpers", () => {
     expect(host.messages[0]).toMatch(/^coin called (true|false)$/);
     expect(session.state.lastCoinResults).toHaveLength(1);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossed"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 1 });
-    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "coinTossed", eventCode: 1151, eventPlayer: 0, eventValue: 1 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 1, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "coinTossed", eventCode: 1151, eventPlayer: 0, eventValue: 1, eventReason: 0x40, eventReasonPlayer: 0 });
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(coinTrigger).toBeDefined();
     expect(applyResponse(session, coinTrigger!).ok).toBe(true);
-    expect(host.messages[1]).toMatch(/^called coin trigger resolved 0\/1\/[01]$/);
+    expect(host.messages[1]).toMatch(/^called coin trigger resolved 0\/1\/64\/0\/[01]$/);
   });
 
   it("applies restored Lua called-coin triggers through restore responses", () => {
