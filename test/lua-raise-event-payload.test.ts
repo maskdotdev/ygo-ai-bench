@@ -300,8 +300,10 @@ describe("Lua raised event payloads", () => {
     expect(startAction).toBeDefined();
     expect(applyResponse(session, startAction!).ok).toBe(true);
     expect(host.messages).toContain("related condition 1/55/64/1/321");
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 55, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", relatedEffectId: 1 })]));
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 55, eventReason: 64, eventReasonPlayer: 1, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1, relatedEffectId: 1 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventReasonCardUid: starter!.uid, eventReasonEffectId: 1, relatedEffectId: 1 })]));
     const restored = restoreDuel(serializeDuel(session), createCardReader([
       { code: "100", name: "Raised Target", kind: "monster" },
       { code: "200", name: "Event Player Watcher", kind: "monster" },
@@ -351,8 +353,10 @@ describe("Lua raised event payloads", () => {
     expect(startAction).toBeDefined();
     expect(applyResponse(session, startAction!).ok).toBe(true);
     expect(host.messages).toContain("single related condition 1/44/64/1/987");
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToHand", eventCode: 1012, eventPlayer: 1, eventValue: 44, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToHand", relatedEffectId: 1 })]));
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToHand", eventCode: 1012, eventPlayer: 1, eventValue: 44, eventReason: 64, eventReasonPlayer: 1, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1, relatedEffectId: 1 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToHand", eventReasonCardUid: starter!.uid, eventReasonEffectId: 1, relatedEffectId: 1 })]));
 
     activateFirstTrigger(session);
     expect(host.messages).toContain("single related operation 1/44/64/1/987");
@@ -538,7 +542,9 @@ describe("Lua raised event payloads", () => {
     const startAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(startAction).toBeDefined();
     expect(applyResponse(session, startAction!).ok).toBe(true);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 66, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 66, eventReason: 64, eventReasonPlayer: 1, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1, relatedEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }]);
@@ -609,7 +615,9 @@ describe("Lua raised event payloads", () => {
     const startAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(startAction).toBeDefined();
     expect(applyResponse(session, startAction!).ok).toBe(true);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToHand", eventCode: 1012, eventPlayer: 1, eventValue: 33, eventReason: 64, eventReasonPlayer: 1, relatedEffectId: 1 });
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToHand", eventCode: 1012, eventPlayer: 1, eventValue: 33, eventReason: 64, eventReasonPlayer: 1, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1, relatedEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }]);
