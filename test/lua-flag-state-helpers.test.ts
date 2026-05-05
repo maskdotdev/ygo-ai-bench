@@ -100,7 +100,7 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    applyResponse(session, action!);
+    applyAndAssert(session, action!);
     passCurrentChain(session);
     passCurrentChain(session);
     expect(host.messages).toContain("duel flag register 1");
@@ -320,7 +320,7 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(host.messages).toContain("duel flag chain 1");
     expect(host.messages).toContain("card flag chain 1");
@@ -361,7 +361,7 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(session.state.flagEffects).toHaveLength(3);
 
     moveDuelCard(session.state, source!.uid, "monsterZone", 0);
@@ -375,7 +375,7 @@ describe("Lua flag state helpers", () => {
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    applyAndAssert(session, battle!);
 
     expect(session.state.flagEffects).toHaveLength(0);
   });
@@ -415,14 +415,14 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(host.messages).toContain("duel counted label 71");
     expect(host.messages).toContain("card counted label 81");
     expect(host.messages).toContain("nil count label 91");
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    applyAndAssert(session, battle!);
     expect(session.state.flagEffects.filter((flag) => flag.code === 933 || flag.code === 934)).toEqual([
       expect.objectContaining({ code: 933, resetCount: 1, value: 71 }),
       expect.objectContaining({ code: 934, resetCount: 1, value: 81 }),
@@ -431,7 +431,7 @@ describe("Lua flag state helpers", () => {
 
     const main2 = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "main2");
     expect(main2).toBeDefined();
-    expect(applyResponse(session, main2!).ok).toBe(true);
+    applyAndAssert(session, main2!);
     expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([935]);
   });
 
@@ -466,17 +466,17 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const playerEnd = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
     expect(playerEnd).toBeDefined();
-    expect(applyResponse(session, playerEnd!).ok).toBe(true);
+    applyAndAssert(session, playerEnd!);
     expect(session.state.turnPlayer).toBe(1);
     expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([936, 937]);
 
     const opponentEnd = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn");
     expect(opponentEnd).toBeDefined();
-    expect(applyResponse(session, opponentEnd!).ok).toBe(true);
+    applyAndAssert(session, opponentEnd!);
 
     expect(session.state.turnPlayer).toBe(0);
     expect(session.state.flagEffects).toHaveLength(0);
@@ -513,9 +513,9 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!);
     expect(session.state.turnPlayer).toBe(1);
     expect(session.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([
       expect.objectContaining({ code: 938, resetCount: 1, value: 72 }),
@@ -530,7 +530,7 @@ describe("Lua flag state helpers", () => {
 
     const restoredOpponentEnd = getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn");
     expect(getGroupedDuelLegalActions(restored, 1).flatMap((group) => group.actions)).toContainEqual(restoredOpponentEnd);
-    expect(applyResponse(restored, restoredOpponentEnd!).ok).toBe(true);
+    applyAndAssert(restored, restoredOpponentEnd!);
     expect(restored.state.turnPlayer).toBe(0);
     expect(restored.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([
       expect.objectContaining({ code: 938, resetCount: 1, value: 72 }),
@@ -539,7 +539,7 @@ describe("Lua flag state helpers", () => {
 
     const restoredPlayerEnd = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn");
     expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toContainEqual(restoredPlayerEnd);
-    expect(applyResponse(restored, restoredPlayerEnd!).ok).toBe(true);
+    applyAndAssert(restored, restoredPlayerEnd!);
     expect(restored.state.turnPlayer).toBe(1);
     expect(restored.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([]);
   });
@@ -575,12 +575,12 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([925, 926]);
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    applyAndAssert(session, battle!);
 
     expect(session.state.flagEffects).toHaveLength(0);
   });
@@ -622,7 +622,7 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(1);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([929, 930]);
 
     enterFlagBattleStep(session, attacker!.uid);
@@ -668,7 +668,7 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(1);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([927, 928]);
 
     enterFlagDamageStep(session, attacker!.uid);
@@ -719,7 +719,7 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(host.messages).toEqual(
       expect.arrayContaining([
@@ -775,7 +775,7 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(host.messages).toEqual(
       expect.arrayContaining([
@@ -833,7 +833,7 @@ describe("Lua flag state helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(host.messages).toEqual(
       expect.arrayContaining([
@@ -856,38 +856,49 @@ describe("Lua flag state helpers", () => {
 
 });
 
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
 function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
   const player = session.state.waitingFor ?? session.state.turnPlayer;
   const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
-  return Boolean(pass && applyResponse(session, pass).ok);
+  if (!pass) return false;
+  applyAndAssert(session, pass);
+  return true;
 }
 
 function enterFlagDamageStep(session: ReturnType<typeof createDuel>, attackerUid: string): void {
   enterFlagBattleStep(session, attackerUid);
   const defenderPass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack");
   expect(defenderPass).toBeDefined();
-  expect(applyResponse(session, defenderPass!).ok).toBe(true);
+  applyAndAssert(session, defenderPass!);
   const attackerPass = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passAttack");
   expect(attackerPass).toBeDefined();
-  expect(applyResponse(session, attackerPass!).ok).toBe(true);
+  applyAndAssert(session, attackerPass!);
 }
 
 function enterFlagBattleStep(session: ReturnType<typeof createDuel>, attackerUid: string): void {
   const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
   expect(battle).toBeDefined();
-  expect(applyResponse(session, battle!).ok).toBe(true);
+  applyAndAssert(session, battle!);
   const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attackerUid);
   expect(attack).toBeDefined();
-  expect(applyResponse(session, attack!).ok).toBe(true);
+  applyAndAssert(session, attack!);
 }
 
 function passFlagDamageWindow(session: ReturnType<typeof createDuel>): void {
   const firstPlayer = session.state.waitingFor ?? session.state.turnPlayer;
   const firstPass = getDuelLegalActions(session, firstPlayer).find((candidate) => candidate.type === "passDamage");
   expect(firstPass).toBeDefined();
-  expect(applyResponse(session, firstPass!).ok).toBe(true);
+  applyAndAssert(session, firstPass!);
   const secondPlayer = session.state.waitingFor ?? session.state.turnPlayer;
   const secondPass = getDuelLegalActions(session, secondPlayer).find((candidate) => candidate.type === "passDamage");
   expect(secondPass).toBeDefined();
-  expect(applyResponse(session, secondPass!).ok).toBe(true);
+  applyAndAssert(session, secondPass!);
 }
