@@ -146,14 +146,22 @@ describe("Lua release helpers", () => {
     expect(result.ok, result.error).toBe(true);
     const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === starter!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(host.messages).toContain("release event count 1");
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["released"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1017, eventCardUid: session.state.cards.find((card) => card.code === "200")?.uid });
     const trigger = getLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    const triggerResult = applyResponse(session, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getLegalActions(session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(host.messages).toContain("release trigger resolved 200");
   });
 
@@ -216,7 +224,11 @@ describe("Lua release helpers", () => {
 
     const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === starter!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["released"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1017, eventCardUid: target!.uid });
@@ -312,7 +324,11 @@ describe("Lua release helpers", () => {
 
     const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === starter!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1017");
