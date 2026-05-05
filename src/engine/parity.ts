@@ -248,6 +248,9 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   if (expected.pendingBattle !== undefined && Boolean(session.state.pendingBattle) !== expected.pendingBattle) fail(`Expected pendingBattle ${expected.pendingBattle}, got ${Boolean(session.state.pendingBattle)}`);
   if (expected.currentAttack !== undefined && Boolean(session.state.currentAttack) !== expected.currentAttack) fail(`Expected currentAttack ${expected.currentAttack}, got ${Boolean(session.state.currentAttack)}`);
   if (expected.prompt !== undefined && !matchesOptionalPartial(state.prompt, expected.prompt)) fail(`Expected prompt ${JSON.stringify(expected.prompt)}, got ${JSON.stringify(state.prompt)}`);
+  if (expected.triggerOrderPrompt !== undefined && !matchesOptionalPartial(queryPublicState(session).triggerOrderPrompt, expected.triggerOrderPrompt)) {
+    fail(`Expected triggerOrderPrompt ${JSON.stringify(expected.triggerOrderPrompt)}, got ${JSON.stringify(queryPublicState(session).triggerOrderPrompt)}`);
+  }
   assertPartialList("chainLimits", chainLimitMetadata(session.state.chainLimits), expected.chainLimits, fail);
   assertPlayerListForWindow("chainPasses", session.state.chainPasses, expected.chainPasses, fail);
   assertPlayerListForWindow("attackPasses", state.attackPasses, expected.attackPasses, fail);

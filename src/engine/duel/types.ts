@@ -351,6 +351,14 @@ export interface PendingTriggerBucketState {
   triggerIds: string[];
 }
 
+export interface TriggerOrderPromptState {
+  id: string;
+  type: "orderTriggers";
+  player: PlayerId;
+  triggerBucket: TriggerBucket;
+  triggerIds: string[];
+}
+
 export interface DuelEventRecord {
   eventName: DuelEventName;
   eventCode?: number;
@@ -533,6 +541,7 @@ export interface PublicDuelState {
   actionWindowId: number;
   windowKind?: DuelActionWindowKind;
   prompt?: DuelPromptState;
+  triggerOrderPrompt?: TriggerOrderPromptState;
   players: Record<PlayerId, DuelPlayerState>;
   cards: PublicDuelCard[];
   chain: PublicChainLink[];
@@ -660,6 +669,7 @@ interface ScriptedDuelWindowExpectationFields {
   pendingTriggerBuckets?: Array<Partial<PendingTriggerBucketState>>;
   eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid">>>;
   prompt?: Partial<DuelPromptState> | null;
+  triggerOrderPrompt?: Partial<TriggerOrderPromptState> | null;
   legalActionCounts?: Partial<Record<PlayerId, number>>;
   legalActionGroupCounts?: Partial<Record<PlayerId, number>>;
   legalActions?: ScriptedLegalActionExpectation[];

@@ -160,6 +160,16 @@ describe("duel trigger buckets", () => {
       "first-turn-mandatory-bucket",
       "second-turn-mandatory-bucket",
     ]);
+    expect(queryPublicState(session).triggerOrderPrompt).toEqual({
+      id: `${session.state.actionWindowId}:turnMandatory:0`,
+      type: "orderTriggers",
+      player: 0,
+      triggerBucket: "turnMandatory",
+      triggerIds: [
+        result.state.pendingTriggers[0]!.id,
+        result.state.pendingTriggers[1]!.id,
+      ],
+    });
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.triggerBucket)).toEqual([
       "turnMandatory",
       "turnMandatory",
@@ -172,6 +182,7 @@ describe("duel trigger buckets", () => {
 
     expect(afterFirst.ok).toBe(true);
     expect(afterFirst.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-turn-mandatory-bucket", "opponent-later-mandatory-bucket"]);
+    expect(queryPublicState(session).triggerOrderPrompt).toBeUndefined();
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-turn-mandatory-bucket"]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
   });
@@ -418,6 +429,16 @@ describe("duel trigger buckets", () => {
     });
 
     expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(queryPublicState(restored).triggerOrderPrompt).toEqual({
+      id: `${restored.state.actionWindowId}:turnOptional:0`,
+      type: "orderTriggers",
+      player: 0,
+      triggerBucket: "turnOptional",
+      triggerIds: [
+        restored.state.pendingTriggers[0]!.id,
+        restored.state.pendingTriggers[1]!.id,
+      ],
+    });
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([
       "first-restored-turn-optional",
       "second-restored-turn-optional",

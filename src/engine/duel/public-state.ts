@@ -2,10 +2,11 @@ import { copyDuelActivityCounts } from "#duel/activity.js";
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { shouldContinueTriggerSelection } from "#duel/effect-activation.js";
 import { pendingTriggerBucketsForState } from "#duel/trigger-buckets.js";
-import type { DuelCardInstance, DuelPromptState, DuelState, PublicChainLink, PublicDuelCard, PublicDuelState } from "#duel/types.js";
+import type { DuelCardInstance, DuelPromptState, DuelState, PublicChainLink, PublicDuelCard, PublicDuelState, TriggerOrderPromptState } from "#duel/types.js";
 
 export function queryPublicState({ state }: { state: DuelState }): PublicDuelState {
   const windowKind = currentPublicWindowKind(state);
+  const pendingTriggerBuckets = pendingTriggerBucketsForState(state);
   return {
     id: state.id,
     status: state.status,
@@ -18,6 +19,7 @@ export function queryPublicState({ state }: { state: DuelState }): PublicDuelSta
     actionWindowId: state.actionWindowId,
     ...(windowKind === undefined ? {} : { windowKind }),
     ...(state.prompt === undefined ? {} : { prompt: copyPrompt(state.prompt) }),
+    ...triggerOrderPromptState(state, pendingTriggerBuckets),
     players: {
       0: { ...state.players[0] },
       1: { ...state.players[1] },
@@ -25,7 +27,7 @@ export function queryPublicState({ state }: { state: DuelState }): PublicDuelSta
     cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
     chain: state.chain.map(copyPublicChainLink),
     pendingTriggers: state.pendingTriggers.map(copyPendingTrigger),
-    pendingTriggerBuckets: pendingTriggerBucketsForState(state),
+    pendingTriggerBuckets,
     activityCounts: copyDuelActivityCounts(state.activityCounts),
     attacksDeclared: [...state.attacksDeclared],
     attackCanceledUids: [...state.attackCanceledUids],
@@ -37,6 +39,21 @@ export function queryPublicState({ state }: { state: DuelState }): PublicDuelSta
     ...(state.battleWindow === undefined ? {} : { battleWindow: copyBattleWindowState(state.battleWindow) }),
     positionsChanged: [...state.positionsChanged],
     log: state.log.map((entry) => ({ ...entry })),
+  };
+}
+
+function triggerOrderPromptState(state: DuelState, buckets: PublicDuelState["pendingTriggerBuckets"]): { triggerOrderPrompt: TriggerOrderPromptState } | Record<string, never> {
+  if (state.prompt || !shouldContinueTriggerSelection(state)) return {};
+  const activeBucket = buckets[0];
+  if (!activeBucket || activeBucket.triggerIds.length < 2) return {};
+  return {
+    triggerOrderPrompt: {
+      id: `${state.actionWindowId}:${activeBucket.triggerBucket}:${activeBucket.player}`,
+      type: "orderTriggers",
+      player: activeBucket.player,
+      triggerBucket: activeBucket.triggerBucket,
+      triggerIds: [...activeBucket.triggerIds],
+    },
   };
 }
 
