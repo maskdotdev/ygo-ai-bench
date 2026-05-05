@@ -135,11 +135,7 @@ describe("Lua CheckEvent payloads", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const response = applyLuaRestoreResponse(restored, trigger!);
-    expect(response.ok).toBe(true);
-    expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
-    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
-    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+    applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored alias trigger 100/0/23/64/1");
   });
 
@@ -182,3 +178,12 @@ describe("Lua CheckEvent payloads", () => {
     expect(host.messages).toContain("check chaining true/100/0/1/912/0");
   });
 });
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
