@@ -69,4 +69,14 @@ describe("duel response matching", () => {
     expect(sameAction(option, { ...option })).toBe(true);
     expect(sameAction(yesNo, { ...yesNo })).toBe(true);
   });
+
+  it("requires trigger bucket responses to echo their trigger window stamp", () => {
+    const activate: DuelAction = { type: "activateTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "card", effectId: "effect", label: "Activate", windowId: 7, windowKind: "triggerBucket" };
+    const decline: DuelAction = { type: "declineTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "card", effectId: "effect", label: "Decline", windowId: 7, windowKind: "triggerBucket" };
+
+    expect(sameAction(activate, { type: "activateTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "card", effectId: "effect", label: "Activate" })).toBe(false);
+    expect(sameAction(decline, { type: "declineTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "card", effectId: "effect", label: "Decline" })).toBe(false);
+    expect(sameAction(activate, { ...activate })).toBe(true);
+    expect(sameAction(decline, { ...decline })).toBe(true);
+  });
 });

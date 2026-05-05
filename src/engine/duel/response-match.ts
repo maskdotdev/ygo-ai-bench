@@ -61,7 +61,9 @@ function requiresWindowStampEcho(action: DuelAction): boolean {
     action.type === "replayAttack" ||
     action.type === "cancelAttack" ||
     action.type === "selectOption" ||
-    action.type === "selectYesNo"
+    action.type === "selectYesNo" ||
+    action.type === "activateTrigger" ||
+    action.type === "declineTrigger"
   ) && hasWindowStamp(action);
 }
 
