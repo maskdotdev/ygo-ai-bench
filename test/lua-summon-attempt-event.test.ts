@@ -46,11 +46,7 @@ describe("Lua summon-attempt events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    const response = applyResponse(session, action!);
-    expect(response.ok).toBe(true);
-    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
-    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
-    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+    applyAndAssert(session, action!);
 
     const summoned = session.state.cards.find((card) => card.code === "100");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["normalSummoning"]);
@@ -174,11 +170,7 @@ describe("Lua summon-attempt events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
-    const response = applyResponse(session, action!);
-    expect(response.ok).toBe(true);
-    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
-    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
-    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+    applyAndAssert(session, action!);
 
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummoning"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid, eventCode: 1104 });
@@ -204,11 +196,7 @@ function assertRestoredAttemptTrigger(restored: LuaSnapshotRestoreResult): void 
   expect(trigger).toBeDefined();
   const publicState = queryPublicState(restored.session);
   expect(trigger).toMatchObject({ windowId: publicState.actionWindowId, windowKind: "triggerBucket" });
-  const result = applyLuaRestoreResponse(restored, trigger!);
-  expect(result.ok).toBe(true);
-  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
-  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
-  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  applyLuaRestoreAndAssert(restored, trigger!);
   const staleResult = applyLuaRestoreResponse(restored, trigger!);
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
@@ -216,4 +204,22 @@ function assertRestoredAttemptTrigger(restored: LuaSnapshotRestoreResult): void 
   expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
   expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const result = applyResponse(session, action);
+  expect(result.ok, result.error).toBe(true);
+  expect(result.legalActions).toEqual(getDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  return result;
+}
+
+function applyLuaRestoreAndAssert(restored: LuaSnapshotRestoreResult, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const result = applyLuaRestoreResponse(restored, action);
+  expect(result.ok, result.error).toBe(true);
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  return result;
 }
