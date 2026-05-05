@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   moveDuelCard,
@@ -109,7 +110,7 @@ describe("Lua effect callback metadata helpers", () => {
     expect(host.messages).toContain("cost check 0");
     expect(host.messages).toContain("target check 0");
     expect(host.messages).not.toContain("target activate 0");
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(host.messages).toContain("cost activate 1");
     expect(host.messages).toContain("target activate 1");
     expect(host.messages).toContain("operation target 200");
@@ -229,7 +230,7 @@ describe("Lua effect callback metadata helpers", () => {
     expect(host.registerInitialEffects()).toBe(3);
     const firstAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(firstAction).toBeDefined();
-    applyResponse(session, firstAction!);
+    applyAndAssert(session, firstAction!);
     passCurrentChain(session);
     passCurrentChain(session);
     expect(host.messages).toContain("used 100");
@@ -279,7 +280,7 @@ describe("Lua effect callback metadata helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    applyResponse(session, action!);
+    applyAndAssert(session, action!);
     passCurrentChain(session);
     passCurrentChain(session);
     expect(host.messages).toContain("target label 7");
@@ -370,7 +371,7 @@ describe("Lua effect callback metadata helpers", () => {
     const sourceUid = session.state.cards.find((card) => card.code === "100" && card.owner === 0)?.uid;
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sourceUid);
     expect(action).toBeDefined();
-    applyResponse(session, action!);
+    applyAndAssert(session, action!);
     passCurrentChain(session);
     passCurrentChain(session);
     expect(host.messages).toContain("operation info true/1/1/0/0");
@@ -436,7 +437,7 @@ describe("Lua effect callback metadata helpers", () => {
     expect(host.registerInitialEffects()).toBe(1);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    applyResponse(session, action!);
+    applyAndAssert(session, action!);
     passCurrentChain(session);
     passCurrentChain(session);
     expect(host.messages).toContain("manual target set 2/2");
@@ -493,8 +494,19 @@ describe("Lua effect callback metadata helpers", () => {
   });
 });
 
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
 function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
   const player = session.state.waitingFor ?? session.state.turnPlayer;
   const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
-  return Boolean(pass && applyResponse(session, pass).ok);
+  if (!pass) return false;
+  applyAndAssert(session, pass);
+  return true;
 }
