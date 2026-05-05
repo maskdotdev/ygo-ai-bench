@@ -65,6 +65,9 @@ describe("Lua chain negation lockout helpers", () => {
     const negator = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect");
     expect(negator).toBeDefined();
     expect(applyResponse(session, negator!).ok).toBe(true);
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    expect(applyResponse(session, pass!).ok).toBe(true);
 
     expect(host.messages).toEqual(["negatable false", "negated false", "protected source resolved"]);
   });

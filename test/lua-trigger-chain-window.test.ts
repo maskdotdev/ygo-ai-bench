@@ -64,7 +64,15 @@ describe("Lua trigger chain windows", () => {
 
     const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(quick).toBeDefined();
-    const resolved = applyResponse(session, quick!);
+    const chained = applyResponse(session, quick!);
+
+    expect(chained.ok).toBe(true);
+    expect(chained.state.chain).toHaveLength(2);
+    expect(chained.state.waitingFor).toBe(0);
+
+    const pass = getDuelLegalActions(session, 0).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyResponse(session, pass!);
 
     expect(resolved.ok).toBe(true);
     expect(resolved.state.chain).toHaveLength(0);

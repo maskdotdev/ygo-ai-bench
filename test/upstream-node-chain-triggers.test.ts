@@ -456,7 +456,15 @@ describe("Node upstream chain and trigger Lua effects", () => {
 
     const response = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(response).toBeTruthy();
-    const result = applyResponse(session, response!);
+    const chained = applyResponse(session, response!);
+
+    expect(chained.ok).toBe(true);
+    expect(chained.state.chain).toHaveLength(2);
+    expect(chained.state.waitingFor).toBe(1);
+
+    const pass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeTruthy();
+    const result = applyResponse(session, pass!);
 
     expect(result.ok).toBe(true);
     expect(result.state.chain).toHaveLength(0);
@@ -534,7 +542,16 @@ describe("Node upstream chain and trigger Lua effects", () => {
 
     const response = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(response).toBeTruthy();
-    const result = applyResponse(session, response!);
+    const chained = applyResponse(session, response!);
+
+    expect(chained.ok).toBe(true);
+    expect(chained.state.chain).toHaveLength(2);
+    expect(chained.state.waitingFor).toBe(1);
+    expect(chained.state.cards.find((card) => card.code === "500")?.location).toBe("hand");
+
+    const pass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeTruthy();
+    const result = applyResponse(session, pass!);
 
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.code === "500")?.location).toBe("graveyard");

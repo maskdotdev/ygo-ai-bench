@@ -116,7 +116,16 @@ describe("duel triggers", () => {
 
     const response = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "trigger-response");
     expect(response).toBeTruthy();
-    const resolved = applyResponse(session, response!);
+    const chained = applyResponse(session, response!);
+
+    expect(chained.ok).toBe(true);
+    expect(chained.state.chain).toHaveLength(2);
+    expect(chained.state.waitingFor).toBe(1);
+    expect(chained.state.log.some((entry) => entry.detail.includes("Trigger saw"))).toBe(false);
+
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeTruthy();
+    const resolved = applyResponse(session, pass!);
     const quickLog = resolved.state.log.find((entry) => entry.detail === "Quick response to trigger resolved");
     const triggerLog = resolved.state.log.find((entry) => entry.detail.includes("Trigger saw Normal Test Monster"));
 
@@ -261,7 +270,15 @@ describe("duel triggers", () => {
 
     const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "self-quick-response");
     expect(quick).toBeTruthy();
-    const resolved = applyResponse(session, quick!);
+    const chained = applyResponse(session, quick!);
+
+    expect(chained.ok).toBe(true);
+    expect(chained.state.chain).toHaveLength(2);
+    expect(chained.state.waitingFor).toBe(0);
+
+    const pass = getDuelLegalActions(session, 0).find((action) => action.type === "passChain");
+    expect(pass).toBeTruthy();
+    const resolved = applyResponse(session, pass!);
     const quickLog = resolved.state.log.find((entry) => entry.detail === "Self quick response resolved");
     const triggerLog = resolved.state.log.find((entry) => entry.detail === "Self chainable trigger resolved");
 
