@@ -41,7 +41,8 @@ describe("Lua Flip Summon restore helpers", () => {
     monster!.faceUp = false;
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const loaded = host.loadCardScript(300, source);
+    expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     flipSummonDuelCard(session.state, 0, monster!.uid);
@@ -49,7 +50,7 @@ describe("Lua Flip Summon restore helpers", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1101, eventCardUid: monster!.uid });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummoned"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1101, eventCardUid: monster!.uid });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -101,7 +102,8 @@ describe("Lua Flip Summon restore helpers", () => {
     monster!.faceUp = false;
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const loaded = host.loadCardScript(300, source);
+    expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     flipSummonDuelCard(session.state, 0, monster!.uid);
@@ -109,7 +111,7 @@ describe("Lua Flip Summon restore helpers", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1101, eventCardUid: monster!.uid });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummoned"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1101, eventCardUid: monster!.uid });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));

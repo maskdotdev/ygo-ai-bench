@@ -43,7 +43,8 @@ function runTossNegateRestore(eventCode: string, numericCode: number, eventName:
   startDuel(session);
 
   const host = createLuaScriptHost(session);
-  expect(host.loadCardScript(100, source).ok).toBe(true);
+  const loaded = host.loadCardScript(100, source);
+  expect(loaded.ok, loaded.error).toBe(true);
   expect(host.registerInitialEffects()).toBe(1);
   const raise = host.loadScript(
     `
@@ -59,7 +60,7 @@ function runTossNegateRestore(eventCode: string, numericCode: number, eventName:
   expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: numericCode, eventCardUid: watcher!.uid });
 
   const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-  expect(restored.restoreComplete).toBe(true);
+  expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual([eventName]);
   expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: numericCode, eventCardUid: watcher!.uid });
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -72,9 +73,18 @@ function runTossNegateRestore(eventCode: string, numericCode: number, eventName:
 
   const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(originalTrigger).toBeDefined();
-  expect(applyResponse(session, originalTrigger!).ok).toBe(true);
+  applyAndAssert(session, originalTrigger!);
   expect(host.messages).toContain(`${message} 100`);
   return { messages: restored.host.messages };
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
 }
 
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
