@@ -34,13 +34,14 @@ function scriptedRunResult(
   const legalActions = handlers.getLegalActions(session, player);
   const legalActionGroups = groupDuelLegalActions(legalActions);
   const divergenceGroup = legalActionGroups[0];
+  const state = queryPublicState(session);
   return {
     ok: failure === undefined,
     ...(failedStep === undefined ? {} : { failedStep }),
     ...(failure === undefined ? {} : { failure, error: failure, divergencePlayer: player, divergenceWindowId: session.state.actionWindowId }),
-    ...(failure === undefined || legalActions[0]?.windowKind === undefined ? {} : { divergenceWindowKind: legalActions[0].windowKind }),
+    ...(failure === undefined || state.windowKind === undefined ? {} : { divergenceWindowKind: state.windowKind }),
     ...(failure === undefined || divergenceGroup === undefined ? {} : { divergenceGroupKey: divergenceGroup.key, divergenceGroupLabel: divergenceGroup.label }),
-    state: queryPublicState(session),
+    state,
     legalActions,
     legalActionGroups,
   };

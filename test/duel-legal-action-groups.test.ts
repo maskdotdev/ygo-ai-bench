@@ -185,6 +185,8 @@ describe("duel legal action groups", () => {
     expect(wrongPlayer.ok).toBe(false);
     expect(wrongPlayer.failure).toBe("No legal response matched type=normalSummon player=1 code=300 location=hand");
     expect(wrongPlayer.divergencePlayer).toBe(1);
+    expect(wrongPlayer.divergenceWindowId).toBe(session.state.actionWindowId);
+    expect(wrongPlayer.divergenceWindowKind).toBe("open");
     expect(wrongPlayer.legalActions).toEqual(getDuelLegalActions(session, 1));
     expect(wrongPlayer.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
     expect(wrongPlayer.divergenceGroupKey).toBeUndefined();
