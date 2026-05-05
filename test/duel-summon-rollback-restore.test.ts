@@ -156,6 +156,7 @@ describe("duel summon rollback after restore", () => {
       expect(result.state.windowKind).toBe("open");
       expectOpenWindowActions(result.legalActions, restoredWindowId);
       expectOpenWindowGroups(result.legalActionGroups, restoredWindowId);
+      expect(result.legalActions).toEqual(getDuelLegalActions(session, 0));
       expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
       expect(session.state.cards.find((card) => card.uid === target.uid)?.location).toBe(testCase.target.location);
       expect(session.state.cards.find((card) => card.uid === first.uid)?.location).toBe(testCase.first.moveTo ?? testCase.first.location);
