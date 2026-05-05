@@ -14,6 +14,7 @@ describe("Lua field movement helpers", () => {
       { code: "400", name: "Field Filler D", kind: "monster" },
       { code: "500", name: "Field Filler E", kind: "monster" },
       { code: "600", name: "Moved Monster", kind: "monster" },
+      { code: "650", name: "Masked Monster", kind: "monster" },
       { code: "700", name: "Blocked Monster", kind: "monster" },
       { code: "750", name: "Occupied Pendulum Slot", kind: "spell", typeFlags: 0x1000002 },
       { code: "800", name: "Moved Pendulum Spell", kind: "spell", typeFlags: 0x1000002 },
@@ -22,9 +23,9 @@ describe("Lua field movement helpers", () => {
       { code: "850", name: "Blocked Pendulum Spell", kind: "spell", typeFlags: 0x1000002 },
       { code: "900", name: "Invalid Move", kind: "monster" },
     ];
-    const session = createDuel({ seed: 99, startingHandSize: 13, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 99, startingHandSize: 14, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500", "600", "700", "750", "800", "820", "830", "850", "900"] },
+      0: { main: ["100", "200", "300", "400", "500", "600", "650", "700", "750", "800", "820", "830", "850", "900"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -39,6 +40,7 @@ describe("Lua field movement helpers", () => {
     const result = host.loadScript(
       `
       local monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local masked_monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 650), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local blocked = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 700), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local field_spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 820), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -48,6 +50,8 @@ describe("Lua field movement helpers", () => {
       Debug.Message("move to opponent mzone " .. Duel.MoveToField(monster, 0, 1, LOCATION_MZONE, POS_FACEUP_ATTACK, true))
       Debug.Message("move mzone sequence " .. monster:GetSequence())
       Debug.Message("move field operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
+      Debug.Message("move masked mzone " .. Duel.MoveToField(masked_monster, 0, 1, LOCATION_MZONE, POS_FACEUP_DEFENSE, true, 4))
+      Debug.Message("move masked mzone sequence " .. masked_monster:GetSequence() .. "/" .. tostring(masked_monster:IsLocation(LOCATION_MMZONE)))
       Debug.Message("move blocked full " .. Duel.MoveToField(blocked, 0, 0, LOCATION_MZONE, POS_FACEUP_ATTACK, true))
       Debug.Message("move blocked operated " .. Duel.GetOperatedGroup():GetCount())
       Debug.Message("move to szone " .. Duel.MoveToField(spell, 0, 0, LOCATION_PZONE, POS_FACEDOWN_DEFENSE, true, 1))
@@ -69,6 +73,8 @@ describe("Lua field movement helpers", () => {
     expect(host.messages).toContain("move to opponent mzone 1");
     expect(host.messages).toContain("move mzone sequence 0");
     expect(host.messages).toContain("move field operated 1/600");
+    expect(host.messages).toContain("move masked mzone 1");
+    expect(host.messages).toContain("move masked mzone sequence 2/true");
     expect(host.messages).toContain("move blocked full 0");
     expect(host.messages).toContain("move blocked operated 0");
     expect(host.messages).toContain("move to szone 1");
@@ -83,6 +89,7 @@ describe("Lua field movement helpers", () => {
     expect(host.messages).toContain("move invalid dest 0");
     expect(host.messages).toContain("move invalid operated 0");
     expect(session.state.cards.find((card) => card.code === "600")).toMatchObject({ controller: 1, location: "monsterZone", position: "faceUpAttack", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "650")).toMatchObject({ controller: 1, location: "monsterZone", sequence: 2, position: "faceUpDefense", faceUp: true });
     expect(session.state.cards.find((card) => card.code === "700")).toMatchObject({ controller: 0, location: "hand" });
     expect(session.state.cards.find((card) => card.code === "750")).toMatchObject({ controller: 0, location: "spellTrapZone", sequence: 1 });
     expect(session.state.cards.find((card) => card.code === "800")).toMatchObject({ controller: 0, location: "spellTrapZone", position: "faceDownDefense", faceUp: false });
