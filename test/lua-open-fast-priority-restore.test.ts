@@ -80,6 +80,13 @@ describe("Lua open fast priority restore", () => {
     expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
 
+    const staleChainPass = applyLuaRestoreResponse(restored, chainPass!);
+    expect(staleChainPass.ok).toBe(false);
+    expect(staleChainPass.error).toContain("Response is not currently legal");
+    expect(staleChainPass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleChainPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleChainPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleChainPass.legalActions);
+
     const quick = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid.includes("18200"));
     expect(quick).toMatchObject({ player: 0, windowKind: "open" });
     const quickResult = applyLuaRestoreResponse(restored, quick!);
