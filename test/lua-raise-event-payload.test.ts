@@ -39,6 +39,13 @@ describe("Lua raised event payloads", () => {
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
 
+  function expectGroupedActionsToContainLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+    const groupedActions = getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions);
+    const legalActions = getLuaRestoreLegalActions(restored, player);
+    expect(groupedActions).toHaveLength(legalActions.length);
+    expect(groupedActions).toEqual(expect.arrayContaining(legalActions));
+  }
+
   it("makes earlier Lua optional when triggers miss timing at raised event boundaries", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Raised Boundary Source", kind: "monster" },
@@ -414,6 +421,7 @@ describe("Lua raised event payloads", () => {
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expectGroupedActionsToContainLegalActions(restored, 0);
 
     activateFirstRestoredTrigger(restored);
     expect(restored.host.messages).toContain("restored operation payload 1/99/64/1");
@@ -478,6 +486,7 @@ describe("Lua raised event payloads", () => {
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expectGroupedActionsToContainLegalActions(restored, 0);
 
     activateFirstRestoredTrigger(restored);
     expect(restored.host.messages).toContain("restored group operation 2/100/1/22");
@@ -554,6 +563,7 @@ describe("Lua raised event payloads", () => {
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
 
     activateFirstRestoredTrigger(restored);
     expect(restored.host.messages).toContain("restored related operation 1/66/64/1/654");
@@ -627,6 +637,7 @@ describe("Lua raised event payloads", () => {
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
 
     activateFirstRestoredTrigger(restored);
     expect(restored.host.messages).toContain("restored single related operation 1/33/64/1/765");

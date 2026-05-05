@@ -375,6 +375,7 @@ describe("Lua chain helpers", () => {
     expect(restored.chainLimitRegistryKeys).toEqual(expect.arrayContaining([expect.stringContaining("known:closure:response-player:1")]));
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect")).toBeUndefined();
 
     const allowed = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect");
