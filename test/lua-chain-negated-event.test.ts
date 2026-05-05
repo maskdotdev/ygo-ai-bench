@@ -83,15 +83,27 @@ describe("Lua chain-negated events", () => {
 
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const opened = applyResponse(session, sourceAction!);
+    expect(opened.ok).toBe(true);
+    expect(opened.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
     const negatorAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(negatorAction).toBeDefined();
-    expect(applyResponse(session, negatorAction!).ok).toBe(true);
+    const chained = applyResponse(session, negatorAction!);
+    expect(chained.ok).toBe(true);
+    expect(chained.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
     while (session.state.chain.length > 0) {
       const player = session.state.waitingFor ?? session.state.turnPlayer;
       const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
       expect(pass).toBeDefined();
-      expect(applyResponse(session, pass!).ok).toBe(true);
+      const passResult = applyResponse(session, pass!);
+      expect(passResult.ok).toBe(true);
+      expect(passResult.legalActions).toEqual(getDuelLegalActions(session, passResult.state.waitingFor!));
+      expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, passResult.state.waitingFor!));
+      expect(passResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(passResult.legalActions);
     }
 
     expect(host.messages).toContain("negate result true");
