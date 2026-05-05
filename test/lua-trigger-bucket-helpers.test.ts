@@ -411,5 +411,25 @@ describe("Lua trigger bucket helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(restored.host.messages).toEqual([]);
+
+    const secondEffectId = restored.session.state.pendingTriggers[0]?.effectId;
+    const secondActivation = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === secondEffectId);
+    expect(secondActivation).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnOptional" });
+    const afterSecondActivation = applyLuaRestoreResponse(restored, secondActivation!);
+    expect(afterSecondActivation.ok, afterSecondActivation.error).toBe(true);
+    expect(afterSecondActivation.state.chain.map((link) => link.effectId)).toEqual([firstEffectId, secondEffectId]);
+    expect(afterSecondActivation.state.pendingTriggers.map((trigger) => afterSecondActivation.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["11400"]);
+    expect(afterSecondActivation.state.waitingFor).toBe(1);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([afterSecondActivation.state.pendingTriggers[0]?.effectId, afterSecondActivation.state.pendingTriggers[0]?.effectId]);
+
+    const opponentDecline = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "declineTrigger");
+    expect(opponentDecline).toMatchObject({ player: 1, windowKind: "triggerBucket", triggerBucket: "opponentOptional" });
+    const resolved = applyLuaRestoreResponse(restored, opponentDecline!);
+    expect(resolved.ok, resolved.error).toBe(true);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(resolved.state.chain).toEqual([]);
+    expect(resolved.state.pendingTriggers).toEqual([]);
+    expect(restored.host.messages).toEqual(["restored second optional bucket", "restored first optional bucket"]);
   });
 });
