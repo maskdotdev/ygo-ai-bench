@@ -198,9 +198,10 @@ describe("duel snapshot persistence", () => {
 
     const publicState = queryPublicState(session);
     const serialized = serializeDuel(session);
+    publicState.triggerOrderPrompt!.triggerIds.push("public-mutation");
     const restored = restoreDuel(serialized, createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false });
 
-    expect(publicState.triggerOrderPrompt).toEqual({
+    expect(queryPublicState(session).triggerOrderPrompt).toEqual({
       id: `${session.state.actionWindowId}:turnOptional:0`,
       type: "orderTriggers",
       player: 0,
@@ -208,7 +209,7 @@ describe("duel snapshot persistence", () => {
       triggerIds: ["turn-optional-a", "turn-optional-b"],
     });
     expect("triggerOrderPrompt" in serialized.state).toBe(false);
-    expect(queryPublicState(restored).triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+    expect(queryPublicState(restored).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
   });
 
   it("rejects duplicate pending trigger ids on restore", () => {
