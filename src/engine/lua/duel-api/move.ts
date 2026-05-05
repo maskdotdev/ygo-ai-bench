@@ -2,7 +2,7 @@ import fengari from "fengari";
 import { recordSpecialSummonActivity } from "#duel/activity.js";
 import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-state.js";
 import { isControlChangePrevented } from "#duel/continuous-effects.js";
-import type { DuelEventPayload } from "#duel/event-history.js";
+import { eventCardReasonPayload, type DuelEventPayload } from "#duel/event-history.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import { createRng } from "#engine/rng.js";
 import {
@@ -229,6 +229,7 @@ function pushEquip(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHo
   beginLuaOperationMoveStep(session, hostState);
   try {
     moveDuelCard(session.state, equipUid, "spellTrapZone", player, duelReason.effect, hostState.activeContext?.player ?? player);
+    assignReasonCard(equipCard, hostState);
     equipCard.equippedToUid = target.uid;
     equipCard.position = "faceUpAttack";
     equipCard.faceUp = true;
@@ -810,9 +811,7 @@ function finishLuaOperationMoveStep(hostState: LuaDuelMoveApiHostState, moved: b
 }
 
 function collectLuaMoveEvent(session: DuelSession, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
-  const payload: DuelEventPayload = {};
-  if (eventCard?.reason !== undefined) payload.eventReason = eventCard.reason;
-  if (eventCard?.reasonPlayer !== undefined) payload.eventReasonPlayer = eventCard.reasonPlayer;
+  const payload: DuelEventPayload = eventCardReasonPayload(eventCard);
   collectDuelTriggerEffects(session.state, eventName, eventCard, payload);
 }
 

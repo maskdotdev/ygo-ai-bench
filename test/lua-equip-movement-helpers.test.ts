@@ -204,14 +204,16 @@ describe("Lua equip movement helpers", () => {
     expect(action).toBeDefined();
     expect(applyResponse(session, action!).ok).toBe(true);
     const equip = session.state.cards.find((card) => card.code === "500");
+    const starter = session.state.cards.find((card) => card.code === "900");
     expect(equip).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
+    expect(starter).toBeDefined();
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["equipped"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 2 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["equipped"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 2 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
