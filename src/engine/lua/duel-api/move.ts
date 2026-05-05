@@ -339,12 +339,14 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
   const requestedPosition = lua.lua_isnumber(L, 5) ? positionFromMask(lua.lua_tointeger(L, 5)) : undefined;
   const zoneMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : undefined;
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+  const requestedSequence =
+    targetPlayer !== undefined && destination && zoneMask !== undefined && zoneMask !== 0 ? firstFieldZoneMaskSequence(session, targetPlayer, destination, zoneMask, uid ?? "") : undefined;
   if (
     !uid ||
     !card ||
     targetPlayer === undefined ||
     !destination ||
-    !hasOpenFieldZone(session, targetPlayer, destination, zoneMask, uid) ||
+    !hasOpenFieldZone(session, targetPlayer, destination, zoneMask, uid, requestedSequence) ||
     !canMoveDuelCardToLocation(session.state, uid, destination, duelReason.effect)
   ) {
     setOperatedUids(hostState, []);
@@ -352,11 +354,12 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
     return 1;
   }
   const before = movementSnapshot(card);
+  const preservedSequences = requestedSequence === undefined ? undefined : fieldZoneSequenceSnapshot(session, targetPlayer, destination, uid);
   beginLuaOperationMoveStep(session, hostState);
   try {
     const moved = moveDuelCardWithRedirects(session.state, uid, destination, targetPlayer, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
     if (requestedPosition) applyLuaMovePosition(moved, requestedPosition);
-    applyFieldZoneMask(session, moved, targetPlayer, destination, zoneMask);
+    applyFieldZoneSequence(session, moved, destination, requestedSequence, preservedSequences);
     const changed = didMove(moved, before);
     setOperatedUids(hostState, changed ? [uid] : []);
     finishLuaOperationMoveStep(hostState, changed);
@@ -370,33 +373,47 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
   }
 }
 
-function hasOpenFieldZone(session: DuelSession, player: PlayerId, destination: "monsterZone" | "spellTrapZone", zoneMask: number | undefined, movingUid: string): boolean {
-  if (destination === "monsterZone") return hasOpenMonsterZone(session, player, zoneMask);
-  const sequence = firstSpellTrapZoneMaskSequence(session, player, zoneMask, movingUid);
-  if (zoneMask !== undefined && zoneMask !== 0) return sequence !== undefined;
-  return hasZoneSpace(session.state, player, destination);
-}
-
-function applyFieldZoneMask(
+function hasOpenFieldZone(
   session: DuelSession,
-  card: DuelCardInstance,
   player: PlayerId,
   destination: "monsterZone" | "spellTrapZone",
   zoneMask: number | undefined,
-): void {
-  if (destination === "monsterZone") {
-    applyMonsterZoneMask(session, card, player, zoneMask);
-    return;
-  }
-  const sequence = firstSpellTrapZoneMaskSequence(session, player, zoneMask, card.uid);
-  if (sequence !== undefined) card.sequence = sequence;
+  movingUid: string,
+  requestedSequence: number | undefined,
+): boolean {
+  if (destination === "monsterZone") return hasOpenMonsterZone(session, player, zoneMask);
+  if (zoneMask !== undefined && zoneMask !== 0) return requestedSequence !== undefined;
+  return hasZoneSpace(session.state, player, destination);
 }
 
-function firstSpellTrapZoneMaskSequence(session: DuelSession, player: PlayerId, zoneMask: number | undefined, movingUid: string): number | undefined {
+function fieldZoneSequenceSnapshot(session: DuelSession, player: PlayerId, destination: "monsterZone" | "spellTrapZone", movingUid: string): Map<string, number> {
+  return new Map(
+    session.state.cards
+      .filter((card) => card.controller === player && card.location === destination && card.uid !== movingUid)
+      .map((card) => [card.uid, card.sequence]),
+  );
+}
+
+function applyFieldZoneSequence(
+  session: DuelSession,
+  card: DuelCardInstance,
+  destination: "monsterZone" | "spellTrapZone",
+  requestedSequence: number | undefined,
+  preservedSequences: Map<string, number> | undefined,
+): void {
+  if (requestedSequence === undefined || !preservedSequences || card.location !== destination) return;
+  for (const [uid, sequence] of preservedSequences) {
+    const preserved = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (preserved) preserved.sequence = sequence;
+  }
+  card.sequence = requestedSequence;
+}
+
+function firstFieldZoneMaskSequence(session: DuelSession, player: PlayerId, destination: "monsterZone" | "spellTrapZone", zoneMask: number | undefined, movingUid: string): number | undefined {
   if (zoneMask === undefined || zoneMask === 0) return undefined;
   const occupied = new Set(
     session.state.cards
-      .filter((card) => card.controller === player && card.location === "spellTrapZone" && card.uid !== movingUid)
+      .filter((card) => card.controller === player && card.location === destination && card.uid !== movingUid)
       .map((card) => card.sequence),
   );
   for (let sequence = 0; sequence < 5; sequence += 1) {
