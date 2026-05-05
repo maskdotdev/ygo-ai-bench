@@ -404,7 +404,7 @@ function pushDrawlessOperation(L: unknown, readLuaError: (state: unknown) => str
     }
   }
   lua.lua_pop(L, 2);
-  if (session) session.state.options.startingHandSize = Math.max(0, session.state.options.startingHandSize - Math.max(...reductions));
+  if (session && session.state.status !== "ended") session.state.options.startingHandSize = Math.max(0, session.state.options.startingHandSize - Math.max(...reductions));
   return 0;
 }
 

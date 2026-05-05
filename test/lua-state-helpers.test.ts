@@ -237,6 +237,34 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("drawless adjusted 2/true");
   });
 
+  it("keeps drawless startup adjustments from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Ended Drawless", kind: "monster" }];
+    const session = createDuel({ seed: 153, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "100", "100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e = { reset=false, Reset=function(self) self.reset=true end }
+      aux.AddDrawless(c, 2)
+      Duel.Win(0,WIN_REASON_EXODIA)
+      aux.drawlessop(e)
+      Debug.Message("drawless ended " .. Duel.GetStartingHand(0) .. "/" .. tostring(e.reset))
+      `,
+      "ended-drawless-startup.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("drawless ended 3/true");
+    expect(session.state.status).toBe("ended");
+    expect(session.state.options.startingHandSize).toBe(3);
+  });
+
   it("lets Lua scripts register LP0 activation validity markers", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "LP0 Marker", kind: "trap" }];
     const session = createDuel({ seed: 168, startingHandSize: 1, cardReader: createCardReader(cards) });
