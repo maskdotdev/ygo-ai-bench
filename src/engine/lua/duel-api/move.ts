@@ -264,6 +264,7 @@ function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMove
     const previousController = card.controller;
     try {
       moveDuelCard(session.state, uid, card.location, targetPlayer, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+      assignReasonCard(card, hostState);
       resequence(session.state, previousController, card.location);
       pushDuelLog(session.state, "control", targetPlayer, card.name, `Took control from player ${previousController}`);
       collectLuaMoveEvent(session, "controlChanged", card);
@@ -289,6 +290,8 @@ function pushSwapControl(L: unknown, session: DuelSession, hostState: LuaDuelMov
     const right = session.state.cards.find((candidate) => candidate.uid === rightUids[index]);
     if (!left || !right || !canSwapControlPair(session.state, left, right)) continue;
     swapCardControl(session, left, right, hostState.activeContext?.player ?? session.state.turnPlayer);
+    assignReasonCard(left, hostState);
+    assignReasonCard(right, hostState);
     collectLuaMoveEvent(session, "controlChanged", left);
     collectLuaMoveEvent(session, "controlChanged", right);
     swapped.push(left.uid, right.uid);

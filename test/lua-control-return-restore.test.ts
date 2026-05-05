@@ -127,15 +127,17 @@ describe("Lua control and return restore helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
     expect(applyResponse(session, action!).ok).toBe(true);
+    const sourceCard = session.state.cards.find((card) => card.code === "100");
     expect(session.state.cards.find((card) => card.code === "600")).toMatchObject({ controller: 0, location: "monsterZone" });
+    expect(sourceCard).toBeDefined();
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["controlChanged"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: sourceCard!.uid, eventReasonEffectId: 2 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.cards.find((card) => card.code === "600")).toMatchObject({ controller: 0, location: "monsterZone" });
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["controlChanged"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: sourceCard!.uid, eventReasonEffectId: 2 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
