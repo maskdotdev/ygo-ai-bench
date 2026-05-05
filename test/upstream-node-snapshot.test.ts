@@ -209,6 +209,8 @@ describe("Node upstream snapshot restore", () => {
     const result = applyLuaRestoreResponse(restored, { type: "selectOption", player: 1, promptId: "incomplete-lua-prompt", option: 2, label: "Select option 2" });
     expect(result.ok).toBe(false);
     expect(result.error).toContain("Lua snapshot restore is incomplete: script c100.lua");
+    expect(result.state.actionWindowId).toBe(0);
+    expect(result.state.windowKind).toBe("prompt");
     expect(result.legalActions).toEqual([]);
     expect(result.legalActionGroups).toEqual([]);
     expect(restored.session.state.prompt?.id).toBe("incomplete-lua-prompt");
@@ -268,6 +270,8 @@ describe("Node upstream snapshot restore", () => {
     const result = applyLuaRestoreResponse(restored, trigger!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("Lua snapshot restore is incomplete: script c100.lua");
+    expect(result.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(result.state.windowKind).toBe("open");
     expect(result.legalActions).toEqual([]);
     expect(result.legalActionGroups).toEqual([]);
     expect(restored.host.messages).toEqual([]);
