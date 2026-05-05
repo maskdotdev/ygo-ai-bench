@@ -220,7 +220,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   for (const field of ["usedCountKeys", "attacksDeclared", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
     assertSnapshotStringArray(state[field], `state.${field}`);
   }
-  for (const field of ["usedCountKeys", "attacksDeclared", "attackCanceledUids", "positionsChanged"] as const) {
+  for (const field of ["usedCountKeys", "attacksDeclared", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
     assertSnapshotUniqueStringArray(state[field], `state.${field}`);
   }
   assertSnapshotChainLimits(state.chainLimits);
@@ -317,6 +317,7 @@ function assertSnapshotCardUidArray(values: unknown, path: string, cardUids: Rea
 
 function assertSnapshotBattlePairs(pairs: unknown, cardUids: ReadonlySet<string>): void {
   if (!Array.isArray(pairs)) throw new Error("Malformed duel snapshot: state.battlePairs must be an array");
+  const seen = new Set<string>();
   for (const [index, pair] of pairs.entries()) {
     const path = `state.battlePairs.${index}`;
     if (!isRecord(pair)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
@@ -324,6 +325,9 @@ function assertSnapshotBattlePairs(pairs: unknown, cardUids: ReadonlySet<string>
     if (typeof pair.targetUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.targetUid must be a string`);
     if (!cardUids.has(pair.attackerUid)) throw new Error(`Malformed duel snapshot: ${path}.attackerUid must reference a card`);
     if (!cardUids.has(pair.targetUid)) throw new Error(`Malformed duel snapshot: ${path}.targetUid must reference a card`);
+    const key = `${pair.attackerUid}:${pair.targetUid}`;
+    if (seen.has(key)) throw new Error(`Malformed duel snapshot: ${path} must be unique by attacker and target`);
+    seen.add(key);
   }
 }
 

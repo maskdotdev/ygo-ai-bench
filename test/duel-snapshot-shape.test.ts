@@ -297,15 +297,18 @@ describe("duel snapshot restore shape validation", () => {
     const badUsedCount = serializeDuel(session);
     const badAttack = serializeDuel(session);
     const badCanceled = serializeDuel(session);
+    const badAttackedTarget = serializeDuel(session);
     const badPosition = serializeDuel(session);
     badUsedCount.state.usedCountKeys = ["once", "once"];
     badAttack.state.attacksDeclared = [uid, uid];
     badCanceled.state.attackCanceledUids = [uid, uid];
+    badAttackedTarget.state.attackedTargetUids = [uid, uid];
     badPosition.state.positionsChanged = [uid, uid];
 
     expect(() => restoreDuel(badUsedCount, createCardReader(cards))).toThrow("Malformed duel snapshot: state.usedCountKeys must not contain duplicates");
     expect(() => restoreDuel(badAttack, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attacksDeclared must not contain duplicates");
     expect(() => restoreDuel(badCanceled, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackCanceledUids must not contain duplicates");
+    expect(() => restoreDuel(badAttackedTarget, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackedTargetUids must not contain duplicates");
     expect(() => restoreDuel(badPosition, createCardReader(cards))).toThrow("Malformed duel snapshot: state.positionsChanged must not contain duplicates");
   });
 
@@ -428,6 +431,24 @@ describe("duel snapshot restore shape validation", () => {
     badPair.state.battlePairs = [{ attackerUid: "attacker", targetUid: 7 as unknown as string }];
 
     expect(() => restoreDuel(badPair, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battlePairs.0.targetUid must be a string");
+  });
+
+  it("rejects duplicate battle pair snapshots before restore", () => {
+    const session = createDuel({ seed: 232, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const targetUid = serializeDuel(session).state.cards[1]!.uid;
+    const badPair = serializeDuel(session);
+    badPair.state.battlePairs = [
+      { attackerUid, targetUid },
+      { attackerUid, targetUid },
+    ];
+
+    expect(() => restoreDuel(badPair, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battlePairs.1 must be unique by attacker and target");
   });
 
   it("rejects missing battle card references before restore", () => {
