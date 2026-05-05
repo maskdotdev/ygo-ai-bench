@@ -6,7 +6,7 @@ export const directAttackGroup = (player: 0 | 1, attackerUid: string, count = 1,
   ...(windowId === undefined ? {} : { windowId }),
   windowKind: "open" as const,
   count,
-  actions: [{ type: "declareAttack" as const, player, attackerUid, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const, count }],
+  actions: [{ type: "declareAttack" as const, player, attackerUid, directAttack: true as const, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const, count }],
 });
 
 export const targetedAttackGroup = (player: 0 | 1, attackerUid: string, targetUid: string, count = 1, windowId?: number) => ({

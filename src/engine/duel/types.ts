@@ -487,7 +487,7 @@ export type DuelAction = (
   | { type: "passChain"; player: PlayerId; label: string }
   | { type: "passAttack"; player: PlayerId; label: string }
   | { type: "passDamage"; player: PlayerId; label: string }
-  | { type: "replayAttack"; player: PlayerId; attackerUid: string; targetUid?: string; label: string }
+  | { type: "replayAttack"; player: PlayerId; attackerUid: string; targetUid?: string; directAttack?: true; label: string }
   | { type: "cancelAttack"; player: PlayerId; attackerUid: string; label: string }
   | { type: "selectOption"; player: PlayerId; promptId: string; option: number; label: string }
   | { type: "selectYesNo"; player: PlayerId; promptId: string; yes: boolean; label: string }
@@ -495,7 +495,7 @@ export type DuelAction = (
   | { type: "declineTrigger"; player: PlayerId; triggerId: string; triggerBucket: TriggerBucket; uid: string; effectId: string; label: string }
   | { type: "flipSummon"; player: PlayerId; uid: string; label: string }
   | { type: "changePosition"; player: PlayerId; uid: string; position: CardPosition; label: string }
-  | { type: "declareAttack"; player: PlayerId; attackerUid: string; targetUid?: string; label: string }
+  | { type: "declareAttack"; player: PlayerId; attackerUid: string; targetUid?: string; directAttack?: true; label: string }
   | { type: "changePhase"; player: PlayerId; phase: DuelPhase; label: string }
   | { type: "endTurn"; player: PlayerId; label: string }
 ) & { windowId?: number; windowKind?: DuelActionWindowKind };

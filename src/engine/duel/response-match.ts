@@ -26,8 +26,10 @@ export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
   if (a.type === "changePosition" && response.type === "changePosition" && a.position !== response.position) return false;
   if (a.type === "declareAttack" && response.type === "declareAttack" && a.attackerUid !== response.attackerUid) return false;
   if (a.type === "declareAttack" && response.type === "declareAttack" && a.targetUid !== response.targetUid) return false;
+  if (a.type === "declareAttack" && response.type === "declareAttack" && response.directAttack !== undefined && a.directAttack !== response.directAttack) return false;
   if (a.type === "replayAttack" && response.type === "replayAttack" && a.attackerUid !== response.attackerUid) return false;
   if (a.type === "replayAttack" && response.type === "replayAttack" && a.targetUid !== response.targetUid) return false;
+  if (a.type === "replayAttack" && response.type === "replayAttack" && response.directAttack !== undefined && a.directAttack !== response.directAttack) return false;
   if (a.type === "cancelAttack" && response.type === "cancelAttack" && a.attackerUid !== response.attackerUid) return false;
   if (a.type === "changePhase" && response.type === "changePhase" && a.phase !== response.phase) return false;
   return true;

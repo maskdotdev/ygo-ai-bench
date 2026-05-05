@@ -140,7 +140,7 @@ export function replayAttackActions(
   const targets = getAttackTargets(state, player, canAttackTarget);
   return [
     { type: "cancelAttack", player, attackerUid: attacker.uid, label: `Cancel ${attacker.name}'s attack` },
-    ...(canDirectAttack(attacker, targets) ? [{ type: "replayAttack" as const, player, attackerUid: attacker.uid, label: `${attacker.name}: Attack directly` }] : []),
+    ...(canDirectAttack(attacker, targets) ? [{ type: "replayAttack" as const, player, attackerUid: attacker.uid, directAttack: true as const, label: `${attacker.name}: Attack directly` }] : []),
     ...targets.map((target) => ({ type: "replayAttack" as const, player, attackerUid: attacker.uid, targetUid: target.uid, label: `${attacker.name}: Attack ${target.name}` })),
   ];
 }
@@ -249,14 +249,14 @@ export function attackActions(
   const targets = getAttackTargets(state, player, canAttackTarget);
   for (const attacker of attackers) {
     if (targets.length === 0) {
-      actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, label: `${attacker.name}: Direct attack` });
+      actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, directAttack: true, label: `${attacker.name}: Direct attack` });
       continue;
     }
     for (const target of targets) {
       actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, targetUid: target.uid, label: `${attacker.name}: Attack ${target.name}` });
     }
     if (canDirectAttackThroughTargets(attacker)) {
-      actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, label: `${attacker.name}: Direct attack` });
+      actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, directAttack: true, label: `${attacker.name}: Direct attack` });
     }
   }
   return actions;

@@ -70,7 +70,7 @@ describe("EDOPro parity battle direct replay fixtures", () => {
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [
               { type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 },
-              { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 },
+              { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 16, windowKind: "battle", count: 1 },
             ],
             absentLegalActions: [{ type: "passDamage", player: 0, windowId: 16, windowKind: "battle" }],
             legalActionGroups: [
@@ -82,7 +82,7 @@ describe("EDOPro parity battle direct replay fixtures", () => {
                 count: 1,
                 actions: [
                   { type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 },
-                  { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 },
+                  { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 16, windowKind: "battle", count: 1 },
                 ],
               },
             ],
@@ -109,7 +109,7 @@ describe("EDOPro parity battle direct replay fixtures", () => {
             battleWindow: { kind: "replayDecision", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
-            legalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 }],
+            legalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 16, windowKind: "battle", count: 1 }],
             legalActionGroups: [
               {
                 player: 0,
@@ -117,7 +117,7 @@ describe("EDOPro parity battle direct replay fixtures", () => {
                 windowId: 16,
                 windowKind: "battle",
                 count: 1,
-                actions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 }],
+                actions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 16, windowKind: "battle", count: 1 }],
               },
             ],
           },
