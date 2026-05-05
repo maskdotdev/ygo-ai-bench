@@ -449,6 +449,7 @@ describe("Lua chain event helpers", () => {
     expect(trigger).toBeDefined();
     const response = applyLuaRestoreResponse(restored, trigger!);
     expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
     expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
     expect(restored.host.messages).toContain("chain end resolved");
   });

@@ -34,6 +34,7 @@ describe("Lua raised event payloads", () => {
     expect(trigger).toBeDefined();
     const result = applyLuaRestoreResponse(restored, trigger!);
     expect(result.ok, result.error).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   }
 

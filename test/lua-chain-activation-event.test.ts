@@ -99,6 +99,7 @@ function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAIN
   expect(trigger).toBeDefined();
   const result = applyLuaRestoreResponse(restored, trigger!);
   expect(result.ok).toBe(true);
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(restored.host.messages).toContain("watcher resolved 0");
   return queuedEvents;
