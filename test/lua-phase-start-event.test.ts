@@ -161,8 +161,10 @@ describe("Lua phase-start events", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(100, source).ok).toBe(true);
-    expect(host.loadCardScript(200, source).ok).toBe(true);
+    const phaseStartScript = host.loadCardScript(100, source);
+    const phaseEndScript = host.loadCardScript(200, source);
+    expect(phaseStartScript.ok, phaseStartScript.error).toBe(true);
+    expect(phaseEndScript.ok, phaseEndScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
 
     for (const phase of ["battle", "main2", "end"] satisfies DuelPhase[]) {
@@ -177,7 +179,7 @@ describe("Lua phase-start events", () => {
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["phaseStartEnd", "phaseEnd"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.phase).toBe("end");
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["phaseStartEnd", "phaseEnd"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x2200 });
