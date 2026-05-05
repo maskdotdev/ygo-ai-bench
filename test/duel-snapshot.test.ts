@@ -686,6 +686,10 @@ describe("duel snapshot persistence", () => {
 
     expect(result.ok).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Restored delayed trigger resolved")).toBe(true);
+    const staleTrigger = applyResponse(restored, action!);
+    expect(staleTrigger.ok).toBe(false);
+    expect(staleTrigger.error).toContain("Response is not currently legal");
+    expect(staleTrigger.state.actionWindowId).toBe(restored.state.actionWindowId);
   });
 
   it("prunes pending triggers whose non-registry effects cannot be restored", () => {
