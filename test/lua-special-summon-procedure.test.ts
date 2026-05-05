@@ -137,6 +137,7 @@ describe("Lua special summon procedures", () => {
     expect(restoredResult.ok).toBe(true);
     expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
+    expect(restoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredResult.legalActions);
     expect(restored.host.messages).toContain("procedure value 100");
     expect(restored.host.messages).toContain("blocked procedure value 200");
     expect(restored.host.messages).toContain("procedure operation cost 1");
@@ -150,6 +151,7 @@ describe("Lua special summon procedures", () => {
     expect(staleRestoredResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
     expect(staleRestoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleRestoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleRestoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleRestoredResult.legalActions);
 
     expect(applyResponse(session, action!).ok).toBe(true);
 
@@ -322,6 +324,7 @@ describe("Lua special summon procedures", () => {
     expect(restoredResult.ok).toBe(true);
     expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
+    expect(restoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredResult.legalActions);
     expect(restored.host.messages).toContain("extra procedure value true/64");
     expect(restored.host.messages).toContain("extra procedure operation 301");
     expect(restored.session.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
@@ -416,6 +419,7 @@ describe("Lua special summon procedures", () => {
     expect(restoredResult.ok).toBe(true);
     expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
+    expect(restoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredResult.legalActions);
     expect(restored.host.messages).toContain("material procedure selected 1/300");
     expect(restored.session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
@@ -604,6 +608,7 @@ describe("Lua special summon procedures", () => {
     expect(restoredResult.ok).toBe(true);
     expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
+    expect(restoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredResult.legalActions);
     expect(restored.host.messages).toContain("procedure release cost 1/1");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === blockedSource!.uid)).toMatchObject({ location: "hand" });
