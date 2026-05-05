@@ -29,7 +29,12 @@ function applyLifePointDefeat(state: DuelState, player: PlayerId): void {
   if (state.players[player].lifePoints > 0) return;
   if (isLifePointLossDefeatPrevented(state, player, createLifePointCheckContext(state))) return;
   state.status = "ended";
+  state.winner = state.players[otherPlayer(player)].lifePoints <= 0 ? "draw" : otherPlayer(player);
   clearEndedDuelPendingState(state);
+}
+
+function otherPlayer(player: PlayerId): PlayerId {
+  return player === 0 ? 1 : 0;
 }
 
 function createLifePointCheckContext(state: DuelState): ContinuousEffectContextFactory {

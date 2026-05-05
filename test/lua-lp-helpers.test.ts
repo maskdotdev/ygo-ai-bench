@@ -79,6 +79,7 @@ describe("Lua LP helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("damage 8000");
     expect(session.state.status).toBe("ended");
+    expect(session.state.winner).toBe(1);
     expect(session.state.prompt).toBeUndefined();
     expect(session.state.waitingFor).toBeUndefined();
   });

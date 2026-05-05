@@ -39,6 +39,7 @@ describe("duel battle end state", () => {
 
     const state = queryPublicState(session);
     expect(state.status).toBe("ended");
+    expect(state.winner).toBe(0);
     expect(state.waitingFor).toBeUndefined();
     expect(state.battleStep).toBeUndefined();
     expect(state.battleWindow).toBeUndefined();
@@ -87,6 +88,7 @@ describe("duel battle end state", () => {
 
     const state = queryPublicState(session);
     expect(state.status).toBe("ended");
+    expect(state.winner).toBe(0);
     expect(state.waitingFor).toBeUndefined();
     expect(state.pendingTriggers).toEqual([]);
     expect(state.battleWindow).toBeUndefined();
@@ -146,6 +148,7 @@ describe("duel battle end state", () => {
 
     const state = queryPublicState(session);
     expect(state.status).toBe("ended");
+    expect(state.winner).toBe(0);
     expect(state.waitingFor).toBeUndefined();
     expect(state.pendingTriggers).toEqual([]);
     expect(state.battleWindow).toBeUndefined();
