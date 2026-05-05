@@ -403,6 +403,27 @@ describe("duel snapshot battle restore shape validation", () => {
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.id must not exceed actionWindowId");
   });
 
+  it("rejects active battle windows outside awaiting status before restore", () => {
+    const session = createDuel({ seed: 192, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = serializeDuel(session).state.cards[0]!.uid;
+    const snapshot = serializeDuel(session);
+    putInBattlePhase(snapshot);
+    declareSnapshotAttack(attackerUid, snapshot);
+    snapshot.state.status = "resolving";
+    snapshot.state.currentAttack = { attackerUid };
+    snapshot.state.pendingBattle = { attackerUid };
+    snapshot.state.battleStep = "attack";
+    snapshot.state.waitingFor = 1;
+    snapshot.state.battleWindow = { id: 1, kind: "attackNegationResponse", step: "attack", attackerUid, responsePlayer: 1, attackNegated: false };
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: active battleWindow requires an awaiting duel");
+  });
+
   it("rejects pending battle snapshots that diverge from current attack before restore", () => {
     const session = createDuel({ seed: 183, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

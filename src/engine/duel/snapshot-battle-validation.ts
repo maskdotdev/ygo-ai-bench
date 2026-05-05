@@ -41,6 +41,7 @@ export function assertSnapshotBattleWindowContext(state: Record<string, unknown>
   if (isRecord(state.battleWindow) && state.battleWindow.attackNegated) throw new Error("Malformed duel snapshot: state.battleWindow.attackNegated cannot be pending");
   assertReplayDecisionWindowMatchesAttacker(state);
   if (state.battleStep !== undefined && isRecord(state.battleWindow) && state.battleStep !== state.battleWindow.step) throw new Error("Malformed duel snapshot: state.battleStep must match battleWindow.step");
+  if (battleWindowIsActivePendingWindow(state) && state.status !== "awaiting") throw new Error("Malformed duel snapshot: active battleWindow requires an awaiting duel");
   if (battleWindowIsActivePendingWindow(state) && isRecord(state.battleWindow) && state.waitingFor !== state.battleWindow.responsePlayer) throw new Error("Malformed duel snapshot: state.waitingFor must match battleWindow.responsePlayer");
   assertActiveBattleResponsePlayerHasNotPassed(state);
 }
