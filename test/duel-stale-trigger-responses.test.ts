@@ -30,11 +30,11 @@ describe("duel stale trigger responses", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const staleTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(staleTrigger).toBeTruthy();
 
-    expect(applyResponse(session, staleTrigger!).ok).toBe(true);
+    applyAndAssert(session, staleTrigger!);
     const replay = applyResponse(session, staleTrigger!);
 
     expect(replay.ok).toBe(false);
@@ -72,7 +72,7 @@ describe("duel stale trigger responses", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(trigger).toBeTruthy();
     if (!trigger || trigger.type !== "activateTrigger") throw new Error("Expected activate trigger action");
@@ -115,11 +115,11 @@ describe("duel stale trigger responses", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const staleDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger");
     expect(staleDecline).toBeTruthy();
 
-    expect(applyResponse(session, staleDecline!).ok).toBe(true);
+    applyAndAssert(session, staleDecline!);
     const replay = applyResponse(session, staleDecline!);
 
     expect(replay.ok).toBe(false);
@@ -158,7 +158,7 @@ describe("duel stale trigger responses", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const decline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger");
     expect(decline).toBeTruthy();
     if (!decline || decline.type !== "declineTrigger") throw new Error("Expected decline trigger action");
@@ -216,7 +216,7 @@ describe("duel stale trigger responses", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const staleFirst = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-stale-first-trigger");
     expect(staleFirst).toBeTruthy();
 
@@ -237,11 +237,7 @@ describe("duel stale trigger responses", () => {
     const second = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-stale-second-trigger");
     expect(second).toBeTruthy();
     expect(second).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket" });
-    const secondResult = applyResponse(restored, second!);
-    expect(secondResult.ok).toBe(true);
-    expect(secondResult.legalActions).toEqual(getDuelLegalActions(restored, secondResult.state.waitingFor!));
-    expect(secondResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, secondResult.state.waitingFor!));
-    expect(secondResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(secondResult.legalActions);
+    applyAndAssert(restored, second!);
     const replay = applyResponse(restored, staleFirst!);
 
     expect(replay.ok).toBe(false);
@@ -253,11 +249,7 @@ describe("duel stale trigger responses", () => {
     const declineFirst = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-stale-first-trigger");
     expect(declineFirst).toBeTruthy();
     expect(declineFirst).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket" });
-    const declineFirstResult = applyResponse(restored, declineFirst!);
-    expect(declineFirstResult.ok).toBe(true);
-    expect(declineFirstResult.legalActions).toEqual(getDuelLegalActions(restored, declineFirstResult.state.waitingFor!));
-    expect(declineFirstResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, declineFirstResult.state.waitingFor!));
-    expect(declineFirstResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(declineFirstResult.legalActions);
+    applyAndAssert(restored, declineFirst!);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale second trigger resolved")).toBe(true);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale first trigger resolved")).toBe(false);
   });
@@ -303,7 +295,7 @@ describe("duel stale trigger responses", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const staleDeclineFirst = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-stale-first-decline");
     expect(staleDeclineFirst).toBeTruthy();
 
@@ -324,11 +316,7 @@ describe("duel stale trigger responses", () => {
     const declineSecond = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-stale-second-decline");
     expect(declineSecond).toBeTruthy();
     expect(declineSecond).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket" });
-    const declineSecondResult = applyResponse(restored, declineSecond!);
-    expect(declineSecondResult.ok).toBe(true);
-    expect(declineSecondResult.legalActions).toEqual(getDuelLegalActions(restored, declineSecondResult.state.waitingFor!));
-    expect(declineSecondResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, declineSecondResult.state.waitingFor!));
-    expect(declineSecondResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(declineSecondResult.legalActions);
+    applyAndAssert(restored, declineSecond!);
     const replay = applyResponse(restored, staleDeclineFirst!);
 
     expect(replay.ok).toBe(false);
@@ -342,3 +330,12 @@ describe("duel stale trigger responses", () => {
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale first decline should not resolve")).toBe(false);
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
