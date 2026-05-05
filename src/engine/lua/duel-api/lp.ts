@@ -44,7 +44,7 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
     const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
     const applied = damageDuelPlayer(session.state, player, value, reason);
-    if (applied > 0) collectDuelTriggerEffects(session.state, "damageDealt", undefined, { eventPlayer: player, eventValue: applied, eventReason: reason });
+    if (applied > 0 && session.state.status !== "ended") collectDuelTriggerEffects(session.state, "damageDealt", undefined, { eventPlayer: player, eventValue: applied, eventReason: reason });
     lua.lua_pushinteger(state, applied);
     return 1;
   });

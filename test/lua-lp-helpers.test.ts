@@ -58,6 +58,31 @@ describe("Lua LP helpers", () => {
     expect(session.state.log).toContainEqual(expect.objectContaining({ action: "win", detail: "84" }));
   });
 
+  it("clears pending actors when LP loss ends the duel", () => {
+    const session = createDuel({ seed: 951, startingHandSize: 0 });
+    loadDecks(session, {
+      0: { main: [] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    session.state.prompt = { id: "stale-prompt", player: 0, type: "selectYesNo", description: 1, returnTo: 0 };
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("damage " .. Duel.Damage(0, 8000, REASON_EFFECT))
+      `,
+      "lp-loss-cleanup.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("damage 8000");
+    expect(session.state.status).toBe("ended");
+    expect(session.state.prompt).toBeUndefined();
+    expect(session.state.waitingFor).toBeUndefined();
+  });
+
   it("exposes EDOPro player constants to Lua scripts", () => {
     const session = createDuel({ seed: 950, startingHandSize: 0 });
     loadDecks(session, {

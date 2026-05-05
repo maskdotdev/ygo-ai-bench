@@ -98,6 +98,7 @@ describe("Lua lose-condition lockout helpers", () => {
 
     expect(session.state.status).toBe("ended");
     expect(session.state.winner).toBe(0);
+    expect(session.state.waitingFor).toBeUndefined();
   });
 
   it("prevents empty-deck turn draw defeat while a player is affected by cannot-lose-deck effects", () => {

@@ -149,5 +149,7 @@ function applyDeckDefeat(state: DuelState, player: PlayerId): void {
   if ((state.players[player].initialMainDeckSize ?? 0) <= state.options.startingHandSize) return;
   state.status = "ended";
   state.winner = otherPlayer(player);
+  delete state.prompt;
+  delete state.waitingFor;
   pushDuelLog(state, "win", state.winner, undefined, "deck");
 }

@@ -28,6 +28,8 @@ function applyLifePointDefeat(state: DuelState, player: PlayerId): void {
   if (state.players[player].lifePoints > 0) return;
   if (isLifePointLossDefeatPrevented(state, player, createLifePointCheckContext(state))) return;
   state.status = "ended";
+  delete state.prompt;
+  delete state.waitingFor;
 }
 
 function createLifePointCheckContext(state: DuelState): ContinuousEffectContextFactory {
