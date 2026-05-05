@@ -177,4 +177,68 @@ describe("Lua stale trigger responses", () => {
     expect(restored.session.state.pendingTriggers).toHaveLength(0);
     expect(restored.host.messages).toEqual([]);
   });
+
+  it("rejects stale restored Lua trigger activations after the trigger is consumed", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c21200.lua"),
+      `
+      c21200={}
+      function c21200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_SUCCESS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("restored stale activate trigger resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 21100, type: 1 }, { id: 21200, type: 1 }, { id: 21300, type: 1 }], []);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 108, startingHandSize: 2, cardReader: reader });
+    loadDecks(session, {
+      0: { main: ["21100", "21200"] },
+      1: { main: ["21300", "21300"] },
+    });
+    startDuel(session);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(21200, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "21100");
+    expect(summonSource).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summonSource!.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const staleTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
+    expect(staleTrigger).toBeDefined();
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete).toBe(true);
+    const restoredTrigger = getDuelLegalActions(restored.session, 0).find((action) => action.type === "activateTrigger");
+    expect(restoredTrigger).toBeDefined();
+    expect(restoredTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
+    const triggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    const replay = applyLuaRestoreResponse(restored, staleTrigger!);
+
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
+    expect(restored.session.state.pendingTriggers).toHaveLength(0);
+    expect(restored.host.messages).toEqual(["restored stale activate trigger resolved"]);
+  });
 });
