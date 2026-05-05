@@ -853,5 +853,28 @@ describe("duel trigger buckets", () => {
     expect(restored.state.waitingFor).toBe(0);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["available-restored-trigger"]);
     expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateTrigger" && action.effectId === "missing-restored-trigger")).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).map((group) => ({
+      label: group.label,
+      windowId: group.windowId,
+      windowKind: group.windowKind,
+      triggerBucket: group.triggerBucket,
+      effectIds: group.actions.map((action) => "effectId" in action ? action.effectId : undefined),
+    }))).toEqual([
+      {
+        label: "Trigger Activations",
+        windowId: queryPublicState(restored).actionWindowId,
+        windowKind: "triggerBucket",
+        triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: [restored.state.pendingTriggers[0]!.id] },
+        effectIds: ["available-restored-trigger"],
+      },
+      {
+        label: "Trigger Declines",
+        windowId: queryPublicState(restored).actionWindowId,
+        windowKind: "triggerBucket",
+        triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: [restored.state.pendingTriggers[0]!.id] },
+        effectIds: ["available-restored-trigger"],
+      },
+    ]);
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
   });
 });
