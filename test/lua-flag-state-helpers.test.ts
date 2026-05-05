@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -528,14 +528,18 @@ describe("Lua flag state helpers", () => {
       expect.objectContaining({ code: 939, resetCount: 1, value: 82 }),
     ]);
 
-    expect(applyResponse(restored, getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    const restoredOpponentEnd = getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn");
+    expect(getGroupedDuelLegalActions(restored, 1).flatMap((group) => group.actions)).toContainEqual(restoredOpponentEnd);
+    expect(applyResponse(restored, restoredOpponentEnd!).ok).toBe(true);
     expect(restored.state.turnPlayer).toBe(0);
     expect(restored.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([
       expect.objectContaining({ code: 938, resetCount: 1, value: 72 }),
       expect.objectContaining({ code: 939, resetCount: 1, value: 82 }),
     ]);
 
-    expect(applyResponse(restored, getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    const restoredPlayerEnd = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn");
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toContainEqual(restoredPlayerEnd);
+    expect(applyResponse(restored, restoredPlayerEnd!).ok).toBe(true);
     expect(restored.state.turnPlayer).toBe(1);
     expect(restored.state.flagEffects.filter((flag) => flag.code === 938 || flag.code === 939)).toEqual([]);
   });

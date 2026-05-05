@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, getLegalActions as getDuelLegalActions, restoreDuel, serializeDuel } from "#duel/core.js";
+import { applyResponse, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, restoreDuel, serializeDuel } from "#duel/core.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -277,11 +277,15 @@ describe("Lua effect reset", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.effects).toEqual([expect.objectContaining({ reset: { flags: 0x40000000 + 0x200 + 0x10000000, count: 1 } })]);
 
-    expect(applyResponse(restored.session, getDuelLegalActions(restored.session, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    const restoredOpponentEnd = getDuelLegalActions(restored.session, 1).find((candidate) => candidate.type === "endTurn");
+    expect(getGroupedDuelLegalActions(restored.session, 1).flatMap((group) => group.actions)).toContainEqual(restoredOpponentEnd);
+    expect(applyResponse(restored.session, restoredOpponentEnd!).ok).toBe(true);
     expect(restored.session.state.turnPlayer).toBe(0);
     expect(restored.session.state.effects).toEqual([expect.objectContaining({ reset: { flags: 0x40000000 + 0x200 + 0x10000000, count: 1 } })]);
 
-    expect(applyResponse(restored.session, getDuelLegalActions(restored.session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    const restoredPlayerEnd = getDuelLegalActions(restored.session, 0).find((candidate) => candidate.type === "endTurn");
+    expect(getGroupedDuelLegalActions(restored.session, 0).flatMap((group) => group.actions)).toContainEqual(restoredPlayerEnd);
+    expect(applyResponse(restored.session, restoredPlayerEnd!).ok).toBe(true);
     expect(restored.session.state.turnPlayer).toBe(1);
     expect(restored.session.state.effects).toHaveLength(0);
   });
