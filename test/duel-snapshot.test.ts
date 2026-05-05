@@ -51,7 +51,9 @@ describe("duel snapshot persistence", () => {
     expect(next).toMatchObject({ phase: "main2" });
     const nextResult = applyResponse(restored, next!);
     expect(nextResult.ok).toBe(true);
+    expect(nextResult.legalActions).toEqual(getDuelLegalActions(restored, nextResult.state.waitingFor!));
     expect(nextResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, nextResult.state.waitingFor!));
+    expect(nextResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(nextResult.legalActions);
     expect(restored.state.skippedPhases).toEqual([]);
   });
 
@@ -686,10 +688,17 @@ describe("duel snapshot persistence", () => {
 
     expect(result.ok).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Restored delayed trigger resolved")).toBe(true);
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     const staleTrigger = applyResponse(restored, action!);
     expect(staleTrigger.ok).toBe(false);
     expect(staleTrigger.error).toContain("Response is not currently legal");
     expect(staleTrigger.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
   });
 
   it("prunes pending triggers whose non-registry effects cannot be restored", () => {
