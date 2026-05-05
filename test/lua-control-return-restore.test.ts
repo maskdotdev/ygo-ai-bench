@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -71,7 +72,72 @@ describe("Lua control and return restore helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(restored.host.messages).toContain("restored to deck trigger 200");
+  });
+
+  it("applies restored Lua control-change triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Control Watcher", kind: "monster" },
+      { code: "600", name: "Restore Control Target", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c100.lua") return undefined;
+        return `
+        c100={}
+        function c100.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_TRIGGER_O)
+          e:SetCode(EVENT_CONTROL_CHANGED)
+          e:SetRange(LOCATION_HAND)
+          e:SetOperation(function(e,tp,eg)
+            Debug.Message("restored control trigger " .. eg:GetFirst():GetControler())
+          end)
+          c:RegisterEffect(e)
+
+          local move=Effect.CreateEffect(c)
+          move:SetType(EFFECT_TYPE_IGNITION)
+          move:SetRange(LOCATION_HAND)
+          move:SetOperation(function(e,tp)
+            local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, 0, LOCATION_MZONE, 1, 1, nil)
+            Duel.GetControl(target, 0, 0, 0, LOCATION_MZONE)
+          end)
+          c:RegisterEffect(move)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 184, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: ["600"] } });
+    startDuel(session);
+
+    const target = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "600");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(session.state.cards.find((card) => card.code === "600")).toMatchObject({ controller: 0, location: "monsterZone" });
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["controlChanged"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120 });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.cards.find((card) => card.code === "600")).toMatchObject({ controller: 0, location: "monsterZone" });
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["controlChanged"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120 });
+
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(restored.host.messages).toContain("restored control trigger 0");
   });
 });
