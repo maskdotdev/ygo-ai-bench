@@ -128,7 +128,7 @@ describe("Lua equip movement helpers", () => {
       e:SetType(EFFECT_TYPE_TRIGGER_O)
       e:SetCode(EVENT_EQUIP)
       e:SetRange(LOCATION_HAND)
-      e:SetOperation(function(e,tp) Debug.Message("equip trigger resolved " .. Duel.GetOperatedGroup():GetFirst():GetCode()) end)
+      e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("equip trigger resolved " .. Duel.GetOperatedGroup():GetFirst():GetCode() .. "/" .. r .. "/" .. rp) end)
       watcher:RegisterEffect(e)
       Debug.Message("equip trigger equip " .. tostring(Duel.Equip(0, equip, target)))
       `,
@@ -138,11 +138,11 @@ describe("Lua equip movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("equip trigger equip true");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["equipped"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: session.state.cards.find((card) => card.code === "500")?.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: session.state.cards.find((card) => card.code === "500")?.uid, eventReason: 0x40, eventReasonPlayer: 0 });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
-    expect(host.messages).toContain("equip trigger resolved 500");
+    expect(host.messages).toContain("equip trigger resolved 500/64/0");
   });
 
   it("applies restored Lua equip triggers through restore responses", () => {
@@ -178,8 +178,8 @@ describe("Lua equip movement helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_EQUIP)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
-              Debug.Message("restored equip trigger " .. eg:GetFirst():GetCode())
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              Debug.Message("restored equip trigger " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
             end)
             c:RegisterEffect(e)
           end
@@ -206,12 +206,12 @@ describe("Lua equip movement helpers", () => {
     const equip = session.state.cards.find((card) => card.code === "500");
     expect(equip).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["equipped"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid, eventReason: 0x40, eventReasonPlayer: 0 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["equipped"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
@@ -221,7 +221,7 @@ describe("Lua equip movement helpers", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(restored.host.messages).toContain("restored equip trigger 500");
+    expect(restored.host.messages).toContain("restored equip trigger 500/64/0");
   });
 
   it("makes Lua optional when equip triggers miss timing after later event boundaries", () => {

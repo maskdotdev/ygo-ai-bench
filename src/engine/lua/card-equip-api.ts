@@ -62,7 +62,7 @@ function pushEquipByEffectAndLimitRegister<EffectRecord extends LuaCardApiEffect
     equip.faceUp = true;
     if (code !== undefined) registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: equip.uid }, code, 0x1fe0000, 0, 0);
     pushDuelLog(session.state, "equip", player, equip.name, `Equipped to ${target.name}`);
-    collectDuelTriggerEffects(session.state, "equipped", equip);
+    collectDuelTriggerEffects(session.state, "equipped", equip, { eventReason: duelReason.effect, eventReasonPlayer: hostState.activeContext?.player ?? player });
     if (hostState.activeContext) hostState.activeOperationMoved = true;
     setOperatedUids(hostState, [equip.uid]);
     lua.lua_pushboolean(L, true);
