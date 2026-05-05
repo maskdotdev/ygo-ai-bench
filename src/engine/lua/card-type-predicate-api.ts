@@ -40,6 +40,7 @@ export function installCardTypePredicateApi(L: unknown, session: DuelSession): v
   pushBooleanGetter(L, "IsEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x21) === 0x21));
   pushBooleanGetter(L, "IsNonEffectMonster", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x20) === 0));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const card = readCard(state, session);
     const monsterType = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     if (card) card.data.typeFlags = 0x1 | monsterType;

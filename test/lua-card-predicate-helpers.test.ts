@@ -287,6 +287,35 @@ describe("Lua card predicate helpers", () => {
     expect(host.messages).toContain("virus exact true/false/false");
   });
 
+  it("keeps monster attribute helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Ended Type Probe", kind: "monster", typeFlags: 0x1 }];
+    const session = createDuel({ seed: 207, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const card = session.state.cards.find((candidate) => candidate.code === "100");
+    expect(card).toBeDefined();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      c:AddMonsterAttribute(TYPE_EFFECT)
+      Duel.Win(0,WIN_REASON_EXODIA)
+      c:AddMonsterAttribute(TYPE_TUNER)
+      Debug.Message("type kept " .. c:GetType() .. "/" .. tostring(c:IsType(TYPE_EFFECT)) .. "/" .. tostring(c:IsType(TYPE_TUNER)))
+      `,
+      "ended-monster-attribute-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["type kept 33/true/false"]);
+    expect(session.state.status).toBe("ended");
+    expect(card!.data.typeFlags).toBe(0x21);
+  });
+
   function expectAnimeArchetypePredicates(cases: { method: string; code: string; setcode: number; codeMatches?: boolean }[], seed: number): void {
     const cards: DuelCardData[] = [{ code: "9000", name: "Normal Spell", kind: "spell", typeFlags: 0x2 }];
     const main = ["9000"];
