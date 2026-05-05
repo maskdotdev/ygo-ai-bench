@@ -44,9 +44,10 @@ describe("Lua symbolic chain locations", () => {
         e:SetType(EFFECT_TYPE_QUICK_O)
         e:SetRange(LOCATION_HAND)
         e:SetCondition(function(e,c)
+          local tc=Duel.GetChainInfo(1, CHAININFO_TRIGGERING_CARD)
           local loc,sym,seq=Duel.GetChainInfo(1, CHAININFO_TRIGGERING_LOCATION, CHAININFO_TRIGGERING_LOCATION_SYMBOLIC, CHAININFO_TRIGGERING_SEQUENCE)
-          Debug.Message("symbolic chain location " .. loc .. "/" .. sym .. "/" .. seq .. "/" .. tostring(sym==LOCATION_EMZONE))
-          return sym==LOCATION_EMZONE
+          Debug.Message("symbolic chain location " .. loc .. "/" .. sym .. "/" .. seq .. "/" .. tostring(sym==LOCATION_EMZONE) .. "/" .. tostring(tc:IsLocation(LOCATION_MZONE)) .. "/" .. tostring(tc:IsLocation(LOCATION_MMZONE)))
+          return sym==LOCATION_EMZONE and tc:IsLocation(LOCATION_MZONE)
         end)
         e:SetOperation(function(e,c)
           Debug.Message("symbolic inspector resolved")
@@ -63,7 +64,7 @@ describe("Lua symbolic chain locations", () => {
     activateFirstEffect(session, 1);
     passChainIfAvailable(session);
     passChainIfAvailable(session);
-    expect(host.messages).toContain("symbolic chain location 4/4096/5/true");
+    expect(host.messages).toContain("symbolic chain location 4/4096/5/true/true/false");
     expect(host.messages).toContain("symbolic inspector resolved");
     expect(host.messages).toContain("symbolic source resolved");
   });
