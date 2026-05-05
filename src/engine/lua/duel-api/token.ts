@@ -6,6 +6,10 @@ const { lua, to_luastring } = fengari;
 
 export function installDuelTokenApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushnil(state);
+      return 1;
+    }
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const code = String(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0);
     const token = createToken(session, player, code);

@@ -229,6 +229,32 @@ describe("Lua deck and field helpers", () => {
     expect(session.state.cards.find((card) => card.code === "123456")).toMatchObject({ location: "monsterZone", controller: 0, summonType: "special" });
   });
 
+  it("keeps token creation from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "123456", name: "Generated Token", kind: "monster", attack: 500, defense: 500 }];
+    const session = createDuel({ seed: 158, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: [] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const beforeCount = session.state.cards.length;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Win(0, WIN_REASON_EXODIA)
+      local token = Duel.CreateToken(0, 123456)
+      Debug.Message("token nil " .. tostring(token == nil))
+      `,
+      "ended-token-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["token nil true"]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.cards).toHaveLength(beforeCount);
+  });
+
   it("lets Lua scripts query leave-field destinations", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Leaving Monster", kind: "monster", typeFlags: 0x21 },
