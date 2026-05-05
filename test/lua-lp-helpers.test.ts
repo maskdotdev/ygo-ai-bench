@@ -58,6 +58,34 @@ describe("Lua LP helpers", () => {
     expect(session.state.log).toContainEqual(expect.objectContaining({ action: "win", detail: "84" }));
   });
 
+  it("keeps LP helpers from mutating ended duels", () => {
+    const session = createDuel({ seed: 952, startingHandSize: 0 });
+    loadDecks(session, {
+      0: { main: [] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Debug.Message("damage " .. Duel.Damage(1, 500, REASON_EFFECT))
+      Debug.Message("recover " .. Duel.Recover(0, 500, REASON_EFFECT))
+      Duel.SetLP(1, 1234)
+      `,
+      "ended-lp-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["damage 0", "recover 0"]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.winner).toBe(0);
+    expect(session.state.players[0].lifePoints).toBe(8000);
+    expect(session.state.players[1].lifePoints).toBe(8000);
+    expect(session.state.log.filter((entry) => entry.action === "win")).toHaveLength(1);
+  });
+
   it("clears pending actors when LP loss ends the duel", () => {
     const session = createDuel({ seed: 951, startingHandSize: 0 });
     loadDecks(session, {
