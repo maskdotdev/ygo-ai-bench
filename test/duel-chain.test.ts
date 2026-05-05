@@ -717,6 +717,7 @@ describe("duel chains", () => {
     expect(quick).toBeTruthy();
     const quickResult = applyResponse(restored, quick!);
     expect(quickResult.ok).toBe(true);
+    expect(quickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, quickResult.state.waitingFor!));
     expect(restored.state.chain).toHaveLength(2);
     expect(restored.state.waitingFor).toBe(1);
     const replay = applyResponse(restored, stalePass!);
@@ -727,7 +728,9 @@ describe("duel chains", () => {
 
     const currentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(currentPass).toBeTruthy();
-    expect(applyResponse(restored, currentPass!).ok).toBe(true);
+    const currentPassResult = applyResponse(restored, currentPass!);
+    expect(currentPassResult.ok).toBe(true);
+    expect(currentPassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, currentPassResult.state.waitingFor!));
     expect(restored.state.chain).toHaveLength(0);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass source resolved")).toHaveLength(1);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass quick resolved")).toHaveLength(1);
@@ -907,7 +910,9 @@ describe("duel chains", () => {
     const pass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeTruthy();
     expect(pass).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse" });
-    expect(applyResponse(restored, pass!).ok).toBe(true);
+    const passResult = applyResponse(restored, pass!);
+    expect(passResult.ok).toBe(true);
+    expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, passResult.state.waitingFor!));
     const replay = applyResponse(restored, staleQuick!);
 
     expect(replay.ok).toBe(false);
