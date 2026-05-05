@@ -451,6 +451,7 @@ describe("Lua chain event helpers", () => {
     expect(response.ok).toBe(true);
     expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
     expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(restored.host.messages).toContain("chain end resolved");
   });
 
