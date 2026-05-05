@@ -138,6 +138,41 @@ describe("Lua LP helpers", () => {
     expect(session.state.pendingTriggers).toEqual([]);
   });
 
+  it("keeps deck discard helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Post-End Hand", kind: "monster" },
+      { code: "200", name: "Post-End Deck", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 955, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const handCard = session.state.cards.find((card) => card.location === "hand");
+    const deckCard = session.state.cards.find((card) => card.location === "deck");
+    expect(handCard).toBeDefined();
+    expect(deckCard).toBeDefined();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Debug.Message("discard deck " .. Duel.DiscardDeck(0, 1, REASON_EFFECT))
+      Debug.Message("discard hand " .. Duel.DiscardHand(0, aux.TRUE, 1, 1, REASON_EFFECT))
+      Debug.Message("operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "ended-discard-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["discard deck 0", "discard hand 0", "operated 0"]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.cards.find((card) => card.uid === handCard!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === deckCard!.uid)?.location).toBe("deck");
+    expect(session.state.pendingTriggers).toEqual([]);
+  });
+
   it("clears pending actors when LP loss ends the duel", () => {
     const session = createDuel({ seed: 951, startingHandSize: 0 });
     loadDecks(session, {
