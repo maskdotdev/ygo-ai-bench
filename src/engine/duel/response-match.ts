@@ -8,6 +8,7 @@ export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
   const response = b as DuelResponse;
   if (a.type !== response.type || a.player !== response.player) return false;
   if (hasMalformedWindowStamp(response) || hasPartialWindowStamp(response)) return false;
+  if (requiresWindowStampEcho(a) && !hasWindowStamp(response)) return false;
   if (hasWindowId(a) && hasWindowId(response) && a.windowId !== response.windowId) return false;
   if (hasWindowKind(a) && hasWindowKind(response) && a.windowKind !== response.windowKind) return false;
   if ("uid" in a && (!("uid" in response) || a.uid !== response.uid)) return false;
@@ -49,6 +50,14 @@ function hasWindowKind(value: unknown): value is { windowKind: DuelActionWindowK
 
 function hasPartialWindowStamp(value: unknown): boolean {
   return hasWindowIdKey(value) !== hasWindowKindKey(value);
+}
+
+function hasWindowStamp(value: unknown): boolean {
+  return hasWindowId(value) && hasWindowKind(value);
+}
+
+function requiresWindowStampEcho(action: DuelAction): boolean {
+  return (action.type === "replayAttack" || action.type === "cancelAttack") && hasWindowStamp(action);
 }
 
 function hasMalformedWindowStamp(value: unknown): boolean {

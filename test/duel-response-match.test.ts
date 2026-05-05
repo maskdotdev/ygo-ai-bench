@@ -49,4 +49,14 @@ describe("duel response matching", () => {
     expect(sameAction(direct, { ...direct, directAttack: true })).toBe(true);
     expect(sameAction(targeted, { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct replay", windowId: 4, windowKind: "battle" })).toBe(false);
   });
+
+  it("requires replay decision responses to echo their battle window stamp", () => {
+    const replay: DuelAction = { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Replay", windowId: 5, windowKind: "battle" };
+    const cancel: DuelAction = { type: "cancelAttack", player: 0, attackerUid: "attacker", label: "Cancel", windowId: 5, windowKind: "battle" };
+
+    expect(sameAction(replay, { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Replay" })).toBe(false);
+    expect(sameAction(cancel, { type: "cancelAttack", player: 0, attackerUid: "attacker", label: "Cancel" })).toBe(false);
+    expect(sameAction(replay, { ...replay })).toBe(true);
+    expect(sameAction(cancel, { ...cancel })).toBe(true);
+  });
 });
