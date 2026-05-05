@@ -432,4 +432,101 @@ describe("Lua trigger bucket helpers", () => {
     expect(resolved.state.pendingTriggers).toEqual([]);
     expect(restored.host.messages).toEqual(["restored second optional bucket", "restored first optional bucket"]);
   });
+
+  it("restores Lua cross-player trigger bucket priority through chain resolution", () => {
+    const cards: DuelCardData[] = [
+      { code: "12100", name: "Lua Restore Cross Bucket Summon", kind: "monster" },
+      { code: "12200", name: "Lua Restore Turn Optional", kind: "monster" },
+      { code: "12300", name: "Lua Restore Turn Mandatory", kind: "monster" },
+      { code: "12400", name: "Lua Restore Opponent Mandatory", kind: "monster" },
+      { code: "12500", name: "Lua Restore Opponent Optional", kind: "monster" },
+      { code: "12600", name: "Lua Restore Cross Bucket Filler", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c12200.lua") return luaSummonTriggerScript(12200, "EFFECT_TYPE_TRIGGER_O", "restored turn optional bucket");
+        if (name === "c12300.lua") return luaSummonTriggerScript(12300, "EFFECT_TYPE_TRIGGER_F", "restored turn mandatory bucket");
+        if (name === "c12400.lua") return luaSummonTriggerScript(12400, "EFFECT_TYPE_TRIGGER_F", "restored opponent mandatory bucket");
+        if (name === "c12500.lua") return luaSummonTriggerScript(12500, "EFFECT_TYPE_TRIGGER_O", "restored opponent optional bucket");
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 92, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["12100", "12200", "12300"] },
+      1: { main: ["12400", "12500", "12600"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(12200, source).ok).toBe(true);
+    expect(host.loadCardScript(12300, source).ok).toBe(true);
+    expect(host.loadCardScript(12400, source).ok).toBe(true);
+    expect(host.loadCardScript(12500, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(4);
+    const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "12100");
+    expect(summonSource).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
+    expect(summon).toBeDefined();
+    const summoned = applyResponse(session, summon!);
+    expect(summoned.ok).toBe(true);
+    expect(summoned.state.pendingTriggers.map((trigger) => summoned.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12300", "12400", "12200", "12500"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => restored.session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12300", "12400", "12200", "12500"]);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.type)).toEqual(["activateTrigger"]);
+
+    const turnMandatory = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
+    expect(turnMandatory).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnMandatory" });
+    const afterTurnMandatory = applyLuaRestoreResponse(restored, turnMandatory!);
+    expect(afterTurnMandatory.ok, afterTurnMandatory.error).toBe(true);
+    expect(afterTurnMandatory.state.chain).toHaveLength(1);
+    expect(afterTurnMandatory.state.pendingTriggers.map((trigger) => afterTurnMandatory.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12400", "12200", "12500"]);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.type)).toEqual(["activateTrigger"]);
+
+    const opponentMandatory = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger");
+    expect(opponentMandatory).toMatchObject({ player: 1, windowKind: "triggerBucket", triggerBucket: "opponentMandatory" });
+    const afterOpponentMandatory = applyLuaRestoreResponse(restored, opponentMandatory!);
+    expect(afterOpponentMandatory.ok, afterOpponentMandatory.error).toBe(true);
+    expect(afterOpponentMandatory.state.chain).toHaveLength(2);
+    expect(afterOpponentMandatory.state.pendingTriggers.map((trigger) => afterOpponentMandatory.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12200", "12500"]);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
+
+    const turnOptionalDecline = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "declineTrigger");
+    expect(turnOptionalDecline).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnOptional" });
+    const afterTurnOptional = applyLuaRestoreResponse(restored, turnOptionalDecline!);
+    expect(afterTurnOptional.ok, afterTurnOptional.error).toBe(true);
+    expect(afterTurnOptional.state.pendingTriggers.map((trigger) => afterTurnOptional.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12500"]);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
+
+    const opponentOptionalDecline = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "declineTrigger");
+    expect(opponentOptionalDecline).toMatchObject({ player: 1, windowKind: "triggerBucket", triggerBucket: "opponentOptional" });
+    const resolved = applyLuaRestoreResponse(restored, opponentOptionalDecline!);
+    expect(resolved.ok, resolved.error).toBe(true);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(resolved.state.chain).toEqual([]);
+    expect(resolved.state.pendingTriggers).toEqual([]);
+    expect(restored.host.messages).toEqual(["restored opponent mandatory bucket", "restored turn mandatory bucket"]);
+  });
 });
+
+function luaSummonTriggerScript(code: number, type: "EFFECT_TYPE_TRIGGER_F" | "EFFECT_TYPE_TRIGGER_O", message: string): string {
+  return `
+  c${code}={}
+  function c${code}.initial_effect(c)
+    local e=Effect.CreateEffect(c)
+    e:SetType(${type})
+    e:SetCode(EVENT_SUMMON_SUCCESS)
+    e:SetRange(LOCATION_HAND)
+    e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+      Debug.Message("${message}")
+    end)
+    c:RegisterEffect(e)
+  end
+  `;
+}
