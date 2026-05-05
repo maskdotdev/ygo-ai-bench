@@ -30,6 +30,7 @@ export function installCardStatusApi<EffectRecord extends LuaCardApiEffectRecord
 }
 
 function pushSetStatus(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const card = readCard(L, session);
   const mask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   if (!card || mask === 0) return 0;

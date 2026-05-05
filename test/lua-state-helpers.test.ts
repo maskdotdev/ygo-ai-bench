@@ -111,6 +111,37 @@ describe("Lua state helpers", () => {
     expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.cards.find((candidate) => candidate.uid === card!.uid)?.customStatusMask).toBe(0x20);
   });
 
+  it("keeps custom card status helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Ended Status Probe", kind: "monster" }];
+    const session = createDuel({ seed: 203, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const card = session.state.cards.find((candidate) => candidate.code === "100");
+    expect(card).toBeDefined();
+    moveDuelCard(session.state, card!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      c:SetStatus(STATUS_NO_LEVEL+STATUS_DESTROY_CONFIRMED,true)
+      Duel.Win(0,WIN_REASON_EXODIA)
+      c:SetStatus(STATUS_DESTROY_CONFIRMED,false)
+      Debug.Message("status kept " .. tostring(c:IsStatus(STATUS_NO_LEVEL)) .. "/" .. tostring(c:IsStatus(STATUS_DESTROY_CONFIRMED)))
+      `,
+      "ended-custom-status-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["status kept true/true"]);
+    expect(session.state.status).toBe("ended");
+    expect(card!.customStatusMask).toBe(0x20 | 0x1000);
+  });
+
   it("lets Lua scripts store card turn counters", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Turn Counter Probe", kind: "spell" }];
     const session = createDuel({ seed: 167, startingHandSize: 1, cardReader: createCardReader(cards) });
