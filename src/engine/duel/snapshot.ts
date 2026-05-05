@@ -204,7 +204,10 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   for (const field of ["id", "seed", "status", "phase"] as const) {
     if (typeof state[field] !== "string") throw new Error(`Malformed duel snapshot: state.${field} must be a string`);
   }
-  for (const field of ["actionWindowId", "turn", "randomCounter", "duelTypeFlags", "globalFlags", "attackCostPaid"] as const) {
+  for (const field of ["actionWindowId", "turn", "randomCounter"] as const) {
+    assertSnapshotNonNegativeInteger(state[field], `state.${field}`);
+  }
+  for (const field of ["duelTypeFlags", "globalFlags", "attackCostPaid"] as const) {
     if (typeof state[field] !== "number") throw new Error(`Malformed duel snapshot: state.${field} must be a number`);
   }
   if (state.turnPlayer !== 0 && state.turnPlayer !== 1) throw new Error("Malformed duel snapshot: state.turnPlayer must be a player id");
