@@ -82,8 +82,9 @@ describe("duel action windows", () => {
   });
 
   it("keeps trigger-bucket legal action stamps aligned with public state", () => {
-    const { session, summoned, turnFirst } = setupTriggerBucketFixture();
+    const { session, summoned, turnFirst, turnSecond } = setupTriggerBucketFixture();
     registerBucketTrigger(session, "window-kind-trigger-bucket", turnFirst, 0);
+    registerBucketTrigger(session, "window-kind-second-trigger-bucket", turnSecond, 0);
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeDefined();
@@ -92,7 +93,15 @@ describe("duel action windows", () => {
     expect(result.state.windowKind).toBe("triggerBucket");
     expectResultActionsMatchResultState(result);
 
-    expect(queryPublicState(session).windowKind).toBe("triggerBucket");
+    const publicState = queryPublicState(session);
+    expect(publicState.windowKind).toBe("triggerBucket");
+    expect(publicState.triggerOrderPrompt).toEqual({
+      id: `${publicState.actionWindowId}:turnOptional:0`,
+      type: "orderTriggers",
+      player: 0,
+      triggerBucket: "turnOptional",
+      triggerIds: session.state.pendingTriggers.slice(0, 2).map((trigger) => trigger.id),
+    });
     expectLegalActionsMatchPublicWindow(session, 0);
   });
 
