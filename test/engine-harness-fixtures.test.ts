@@ -4,7 +4,7 @@ import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 import { absentChainEffectGroup, absentNormalSummonGroup, chainEffectGroup, chainPassGroup, normalSummonGroup, triggerActivationGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
-describe("EDOPro compatibility harness scaffolding", () => {
+describe("EDOPro compatibility harness fixtures", () => {
   it("normalizes card database rows and banlist entries", () => {
     const cards = normalizeCdbRows(
       [

@@ -4,7 +4,7 @@ import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
-describe("EDOPro compatibility harness scaffolding", () => {
+describe("EDOPro compatibility harness diagnostics", () => {
   it("labels final fixture failures with the expectation source", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const result = runScriptedDuelFixture({
@@ -157,7 +157,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
     ]);
   });
 
-  it("executes smoke-test Lua scripts with EDOPro-style globals", () => {
+  it("executes Lua scripts with EDOPro-style globals", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
