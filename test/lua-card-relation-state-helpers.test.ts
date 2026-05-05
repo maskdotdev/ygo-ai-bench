@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -514,7 +514,7 @@ describe("Lua card relation state helpers", () => {
     const normalUid = session.state.cards.find((card) => card.code === "100" && card.owner === 0)?.uid;
     const normal = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === normalUid);
     expect(normal).toBeDefined();
-    expect(applyResponse(session, normal!).ok).toBe(true);
+    applyAndAssert(session, normal!);
 
     const host = createLuaScriptHost(session);
     const normalResult = host.loadScript(
@@ -544,7 +544,7 @@ describe("Lua card relation state helpers", () => {
 
     const fusion = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon");
     expect(fusion).toBeDefined();
-    expect(applyResponse(session, fusion!).ok).toBe(true);
+    applyAndAssert(session, fusion!);
     const fusionCard = session.state.cards.find((card) => card.code === "900");
     expect(fusionCard?.summonType).toBe("fusion");
 
@@ -637,7 +637,7 @@ describe("Lua card relation state helpers", () => {
 
     const phase = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase");
     expect(phase).toBeDefined();
-    expect(applyResponse(session, phase!).ok).toBe(true);
+    applyAndAssert(session, phase!);
     const phaseResult = host.loadScript(
       `
       Debug.Message("phase activity after change " .. tostring(Duel.CheckPhaseActivity()))
@@ -649,3 +649,12 @@ describe("Lua card relation state helpers", () => {
   });
 
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
