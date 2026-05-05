@@ -166,6 +166,7 @@ describe("Lua stale trigger responses", () => {
     expect(declineResult.ok).toBe(true);
     expect(declineResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(declineResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(declineResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(declineResult.legalActions);
     const replay = applyLuaRestoreResponse(restored, staleDecline!);
 
     expect(replay.ok).toBe(false);
