@@ -130,6 +130,7 @@ export function moveCoreDuelCardWithRedirects(
   reason: number,
   reasonPlayer: PlayerId | undefined,
   handlers: CoreMovementHandlers,
+  payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
 ): DuelCardInstance {
   const createContext = handlers.createContinuousContext(state);
   const redirectLocation = moveDestinationRedirectLocation(state, uid, to, createContext) ?? leaveFieldRedirectLocation(state, uid, to, createContext);
@@ -137,6 +138,8 @@ export function moveCoreDuelCardWithRedirects(
   const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
   requireCoreDuelMoveAllowed(state, uid, destination, moveReason, handlers);
   const card = moveDuelCard(state, uid, destination, controller, moveReason, reasonPlayer);
+  if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
   applyRedirectDeckSequence(state, card, redirectLocation);
   collectLeaveFieldTriggers(state, card, handlers);
   collectLeaveGraveyardTriggers(state, card, handlers);

@@ -112,7 +112,8 @@ function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: 
     if (!card || !canMoveDuelCardToLocation(session.state, uid, location, reason)) continue;
     const before = movementSnapshot(card);
     try {
-      const result = moveDuelCardWithRedirects(session.state, uid, location, card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+      const result = moveDuelCardWithRedirects(session.state, uid, location, card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
       assignReasonCard(result, hostState);
       if (requestedPosition) applyLuaMovePosition(result, requestedPosition);
       if (didMove(result, before)) moved.push(uid);
@@ -374,7 +375,8 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
   const preservedSequences = requestedSequence === undefined ? undefined : fieldZoneSequenceSnapshot(session, targetPlayer, destination, uid);
   beginLuaOperationMoveStep(session, hostState);
   try {
-    const moved = moveDuelCardWithRedirects(session.state, uid, destination, targetPlayer, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+    const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+    const moved = moveDuelCardWithRedirects(session.state, uid, destination, targetPlayer, duelReason.effect, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.effect, reasonPlayer));
     if (requestedPosition) applyLuaMovePosition(moved, requestedPosition);
     applyFieldZoneSequence(session, moved, destination, requestedSequence, preservedSequences);
     const changed = didMove(moved, before);
@@ -499,7 +501,8 @@ function pushReturnToField(L: unknown, session: DuelSession, hostState: LuaDuelM
   const preservedSequences = previousSequence === undefined ? undefined : shiftedFieldZoneSequenceSnapshot(session, controller, destination, uid, previousSequence);
   beginLuaOperationMoveStep(session, hostState);
   try {
-    const moved = moveDuelCardWithRedirects(session.state, uid, destination, controller, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+    const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+    const moved = moveDuelCardWithRedirects(session.state, uid, destination, controller, duelReason.effect, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.effect, reasonPlayer));
     applyLuaMovePosition(moved, requestedPosition ?? card.previousPosition ?? moved.position);
     applyFieldZoneSequence(session, moved, destination, previousSequence, preservedSequences);
     finishLuaOperationMoveStep(hostState, true);
@@ -535,7 +538,8 @@ function pushReturnToGrave(L: unknown, session: DuelSession, hostState: LuaDuelM
     if (!card || card.location !== "banished" || !canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.return)) continue;
     const before = movementSnapshot(card);
     try {
-      const result = moveDuelCardWithRedirects(session.state, uid, "graveyard", card.controller, duelReason.return, hostState.activeContext?.player ?? session.state.turnPlayer);
+      const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+      const result = moveDuelCardWithRedirects(session.state, uid, "graveyard", card.controller, duelReason.return, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.return, reasonPlayer));
       assignReasonCard(result, hostState);
       collectLuaMoveEvent(session, "returnedToGraveyard", result);
       if (didMove(result, before)) moved.push(uid);
@@ -608,7 +612,8 @@ function moveCardsToDeckBottom(L: unknown, session: DuelSession, hostState: LuaD
     if (!canMoveDuelCardToLocation(session.state, uid, "deck", reason)) continue;
     const before = movementSnapshot(card);
     try {
-      const result = moveDuelCardWithRedirects(session.state, uid, "deck", targetPlayer ?? card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+      const result = moveDuelCardWithRedirects(session.state, uid, "deck", targetPlayer ?? card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
       if (didMove(result, before)) moved.push(uid);
     } catch {
       // EDOPro-style helpers report successful movements only.
@@ -634,7 +639,8 @@ function moveCardsToDeckTop(L: unknown, session: DuelSession, hostState: LuaDuel
     if (!canMoveDuelCardToLocation(session.state, uid, "deck", reason)) continue;
     const before = movementSnapshot(card);
     try {
-      const result = moveDuelCardWithRedirects(session.state, uid, "deck", targetPlayer ?? card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+      const result = moveDuelCardWithRedirects(session.state, uid, "deck", targetPlayer ?? card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
       if (didMove(result, before)) {
         moveDeckCardToTop(session.state, result);
         moved.push(uid);
@@ -762,7 +768,7 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
     if (!card || !canMoveDuelCardToLocation(session.state, uid, location, reason)) continue;
     const before = movementSnapshot(card);
     try {
-      const result = moveDuelCardWithRedirects(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason, reasonPlayer);
+      const result = moveDuelCardWithRedirects(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
       assignReasonCard(result, hostState);
       if (didMove(result, before)) {
         applyDeckSequence(session, result, deckSequence);

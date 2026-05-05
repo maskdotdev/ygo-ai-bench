@@ -60,15 +60,17 @@ describe("Lua control and return restore helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
     expect(applyResponse(session, action!).ok).toBe(true);
+    const starter = session.state.cards.find((card) => card.code === "100");
     const moved = session.state.cards.find((card) => card.code === "200");
+    expect(starter).toBeDefined();
     expect(moved).toMatchObject({ location: "deck", controller: 0 });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToDeck"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1013, eventCardUid: moved!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1013, eventCardUid: moved!.uid, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToDeck"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1013, eventCardUid: moved!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1013, eventCardUid: moved!.uid, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
