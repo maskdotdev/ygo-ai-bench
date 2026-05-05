@@ -126,9 +126,25 @@ describe("duel response matching", () => {
     expect(sameAction(procedure, { ...procedure })).toBe(true);
   });
 
+  it("requires manual board action responses to echo their open window stamp", () => {
+    const setMonster: DuelAction = { type: "setMonster", player: 0, uid: "monster", label: "Set monster", windowId: 13, windowKind: "open" };
+    const setSpellTrap: DuelAction = { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell", windowId: 13, windowKind: "open" };
+    const flip: DuelAction = { type: "flipSummon", player: 0, uid: "monster", label: "Flip", windowId: 13, windowKind: "open" };
+    const position: DuelAction = { type: "changePosition", player: 0, uid: "monster", position: "faceUpDefense", label: "Defense", windowId: 13, windowKind: "open" };
+
+    expect(sameAction(setMonster, { type: "setMonster", player: 0, uid: "monster", label: "Set monster" })).toBe(false);
+    expect(sameAction(setSpellTrap, { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell" })).toBe(false);
+    expect(sameAction(flip, { type: "flipSummon", player: 0, uid: "monster", label: "Flip" })).toBe(false);
+    expect(sameAction(position, { type: "changePosition", player: 0, uid: "monster", position: "faceUpDefense", label: "Defense" })).toBe(false);
+    expect(sameAction(setMonster, { ...setMonster })).toBe(true);
+    expect(sameAction(setSpellTrap, { ...setSpellTrap })).toBe(true);
+    expect(sameAction(flip, { ...flip })).toBe(true);
+    expect(sameAction(position, { ...position })).toBe(true);
+  });
+
   it("requires turn-flow responses to echo their open window stamp", () => {
-    const phase: DuelAction = { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase", windowId: 13, windowKind: "open" };
-    const endTurn: DuelAction = { type: "endTurn", player: 0, label: "End Turn", windowId: 13, windowKind: "open" };
+    const phase: DuelAction = { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase", windowId: 14, windowKind: "open" };
+    const endTurn: DuelAction = { type: "endTurn", player: 0, label: "End Turn", windowId: 14, windowKind: "open" };
 
     expect(sameAction(phase, { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase" })).toBe(false);
     expect(sameAction(endTurn, { type: "endTurn", player: 0, label: "End Turn" })).toBe(false);
