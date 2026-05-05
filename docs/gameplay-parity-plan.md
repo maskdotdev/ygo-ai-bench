@@ -114,21 +114,27 @@ Acceptance gates:
 - New fixtures cover each newly discovered EDOPro battle edge before implementation changes land.
 - Legal actions expose only the responses valid for the active battle sub-window.
 
-## Phase 2: Chain And Timing Model
+## Phase 2: Chain And Timing Depth
 
-Once battle windows are explicit, the next slice is exact timing and trigger ordering.
+Once battle windows are explicit, the next slice is exact timing and trigger ordering. The initial trigger bucket foundation is already in place; remaining work should deepen event payload accuracy, fast-effect priority, missed timing coverage, and Lua predicate restore.
 
-Deliverables:
+Completed baseline:
 
-- Introduce an event/timing packet that records cause, previous location/state, current location/state, reason, reason player, chain context, and whether a trigger is "when" or "if".
-- Replace implicit flat-list trigger ordering with explicit serializable EDOPro-style buckets:
+- Trigger collection assigns explicit serializable EDOPro-style buckets:
   - turn player mandatory
   - non-turn player mandatory
   - turn player optional
   - non-turn player optional
-- Keep deriving ordering prompt state for buckets with multiple same-player triggers instead of relying on registration order, and drive UI ordering from that engine-owned prompt state.
+- Public state derives `triggerOrderPrompt` for active same-player buckets with multiple triggers.
+- Snapshot restore preserves pending trigger buckets and derived ordering prompt state.
+- Optional trigger declines and mandatory trigger handoff are restored without exposing later buckets early.
+- SEGOC fixtures pin turn-player mandatory before non-turn mandatory, and same-player mandatory before optional.
+- Lua-created trigger buckets, restored Lua trigger timing windows, and restored trigger-bucket chain windows have fixture coverage.
+
+Remaining deliverables:
+
+- Introduce a richer event/timing packet that records cause, previous location/state, current location/state, reason, reason player, chain context, and whether a trigger is "when" or "if".
 - Broaden missed timing coverage for "when optional" triggers after multi-step effects.
-- Handle simultaneous events and SEGOC ordering consistently.
 - Revisit fast effect response player selection after every action and chain resolution.
 - Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today, and Lua-created predicates now restore when they are known globals such as `aux.TRUE`/`aux.FALSE`, named card-table functions such as `s.chlimit`, single-card closures that block the captured card's own handler, or type-mask closures that allow the original chain player and block matching handler card types. Arbitrary Lua-created one-chain and until-chain-end predicate closures still fail closed by restoring deny-all raw guards without registry keys, hiding every Lua restore legal-action surface, and reporting explicit missing chain-limit registry diagnostics; the remaining parity work is to rebuild or serialize those broader Lua predicates without re-running costs or target selection.
 
@@ -150,7 +156,7 @@ Acceptance gates:
 - Mandatory triggers cannot be declined.
 - Optional triggers can be ordered or declined in legal bucket order.
 - Simultaneous trigger fixtures match EDOPro-observed chains.
-- Missed timing fixtures distinguish "when optional" from "if optional".
+- New missed timing fixtures distinguish "when optional" from "if optional" for each newly covered multi-step operation family.
 - Snapshot restore preserves pending trigger buckets and derived ordering prompt state.
 - Snapshot restore preserves or explicitly reports active chain-limit predicates so reconnects cannot silently expose illegal chain responses.
 - Existing trigger bucket tests and SEGOC fixtures should continue to assert explicit bucket state, grouped legal actions, and snapshot restore behavior.
@@ -305,10 +311,11 @@ Acceptance gates:
    - deepen damage-calculation modifier and replacement conflict fixtures
    - keep every new battle sub-window serializable and stale-response guarded
 
-3. Trigger bucket foundation:
-   - replace implicit flat-list bucket behavior with explicit serializable pending trigger buckets
-   - preserve current simple cases
-   - add SEGOC fixtures for mandatory/optional, turn/non-turn player ordering
+3. Chain and timing depth:
+   - add richer event/timing payload fixtures for previous/current state, reason player, chain context, and related effect data
+   - broaden optional `when` missed-timing fixtures by real operation family
+   - revisit fast-effect priority after chain resolution and battle sub-windows
+   - continue serializing Lua chain-limit predicate descriptors only where semantics are known
 
 ## Working Rules
 
