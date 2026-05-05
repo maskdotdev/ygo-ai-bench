@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentSummonGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Xyz material lock fixtures", () => {
   it("removes Xyz Summon actions when a selected material cannot be used as Xyz material", () => {
@@ -55,15 +56,7 @@ describe("EDOPro parity Xyz material lock fixtures", () => {
               },
             ],
             absentLegalActions: [{ type: "xyzSummon", player: 0, code: "900", location: "extraDeck", windowId: 0, windowKind: "open" }],
-            absentLegalActionGroups: [
-              {
-                player: 0,
-                label: "Summons",
-                windowId: 0,
-                windowKind: "open",
-                actions: [{ type: "xyzSummon", player: 0, code: "900", location: "extraDeck", windowId: 0, windowKind: "open" }],
-              },
-            ],
+            absentLegalActionGroups: [absentSummonGroup({ type: "xyzSummon", player: 0, code: "900", location: "extraDeck" }, 0)],
           },
           after: {
             source: "edopro",
