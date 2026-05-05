@@ -136,13 +136,14 @@ describe("Lua counter events", () => {
       Duel.Win(0,WIN_REASON_EXODIA)
       Debug.Message("add ended " .. tostring(target:AddCounter(99,1)))
       Debug.Message("remove ended " .. tostring(target:RemoveCounter(0,99,1,REASON_EFFECT)))
+      Debug.Message("duel remove ended " .. Duel.RemoveCounter(0,LOCATION_MZONE,0,99,1,REASON_EFFECT))
       Debug.Message("counter " .. target:GetCounter(99))
       `,
       "ended-counter-noop.lua",
     );
     expect(result.ok, result.error).toBe(true);
 
-    expect(host.messages).toEqual(["add ended false", "remove ended false", "counter 1"]);
+    expect(host.messages).toEqual(["add ended false", "remove ended false", "duel remove ended 0", "counter 1"]);
     expect(session.state.status).toBe("ended");
     expect(session.state.pendingTriggers).toEqual([]);
     expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("counterAdded");

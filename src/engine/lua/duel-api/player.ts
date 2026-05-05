@@ -196,6 +196,11 @@ function pushIsCanAddCounter(L: unknown, session: DuelSession): number {
 }
 
 function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState): number {
+  if (session.state.status === "ended") {
+    hostState.operatedUids?.splice(0, hostState.operatedUids.length);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const query = readCounterQuery(L, session);
   const removed = removeDuelCounters(session.state, query.player, query.selfLocations, query.opponentLocations, query.counterType, query.count);
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...removed);
