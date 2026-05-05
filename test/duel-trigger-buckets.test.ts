@@ -659,6 +659,18 @@ describe("duel trigger buckets", () => {
       { label: "Trigger Activations", windowId: queryPublicState(restoredOpponentBucket).actionWindowId, windowKind: "triggerBucket", effectIds: ["opponent-restored-later-optional"] },
       { label: "Trigger Declines", windowId: queryPublicState(restoredOpponentBucket).actionWindowId, windowKind: "triggerBucket", effectIds: ["opponent-restored-later-optional"] },
     ]);
+    expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpponentBucket, 1));
+    const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "opponent-restored-later-optional");
+    expect(opponentActivation).toBeTruthy();
+    const opponentActivated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
+    expect(restoredOpponentBucket.state.pendingTriggers).toEqual([]);
+    const staleOpponentActivation = applyResponse(restoredOpponentBucket, opponentActivation!);
+    expect(staleOpponentActivation.ok).toBe(false);
+    expect(staleOpponentActivation.error).toContain("Response is not currently legal");
+    expect(staleOpponentActivation.state.actionWindowId).toBe(restoredOpponentBucket.state.actionWindowId);
+    expect(staleOpponentActivation.legalActions).toEqual(getDuelLegalActions(restoredOpponentBucket, opponentActivated.state.waitingFor!));
+    expect(staleOpponentActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentBucket, opponentActivated.state.waitingFor!));
+    expect(staleOpponentActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleOpponentActivation.legalActions);
   });
 
   it("restores optional trigger decline actions and applies the restored decline", () => {
