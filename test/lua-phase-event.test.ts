@@ -182,4 +182,81 @@ describe("Lua phase events", () => {
     expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.host.messages).toContain("restored phase trigger 0/512");
   });
+
+  it("restores phase-trigger-created Lua chain windows before fast responses resolve", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Phase Chain Watcher", kind: "monster" },
+      { code: "200", name: "Restore Phase Chain Quick", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_PHASE+PHASE_END)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("restored phase chain trigger " .. Duel.GetCurrentPhase()) end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c200.lua") {
+          return `
+          c200={}
+          function c200.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restored phase chain quick") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 185, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: ["200"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    for (const phase of ["battle", "main2", "end"] satisfies DuelPhase[]) {
+      const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === phase);
+      expect(action).toBeDefined();
+      expect(applyResponse(session, action!).ok).toBe(true);
+    }
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    const opened = applyResponse(session, trigger!);
+    expect(opened.ok, opened.error).toBe(true);
+    expect(opened.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(session.state.chain.map((link) => link.effectId));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+
+    const quick = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(quick).toBeDefined();
+    const chained = applyLuaRestoreResponse(restored, quick!);
+    expect(chained.ok, chained.error).toBe(true);
+    expect(chained.legalActions).toEqual(getDuelLegalActions(restored.session, chained.state.waitingFor!));
+    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, chained.state.waitingFor!));
+    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
+    const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
+    expect(restored.host.messages).toEqual(["restored phase chain quick", "restored phase chain trigger 512"]);
+  });
 });
