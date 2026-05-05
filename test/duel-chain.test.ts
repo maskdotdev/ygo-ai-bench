@@ -655,6 +655,8 @@ describe("duel chains", () => {
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
     expect(replay.state.actionWindowId).toBe(session.state.actionWindowId);
+    expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(session.state.chain).toHaveLength(0);
     expect(session.state.log.filter((entry) => entry.detail === "Stale pass source resolved")).toHaveLength(1);
   });
@@ -789,6 +791,8 @@ describe("duel chains", () => {
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
     expect(replay.state.actionWindowId).toBe(session.state.actionWindowId);
+    expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(session.state.chain).toHaveLength(0);
     expect(session.state.log.filter((entry) => entry.detail === "Stale self quick resolved")).toHaveLength(0);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "stale-self-quick")).toBe(true);
