@@ -144,6 +144,7 @@ describe("Lua attack negation helpers", () => {
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
     const restoredTriggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
@@ -210,6 +211,7 @@ describe("Lua attack negation helpers", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     const negate = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
     const staleAttackPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passAttack");
     expect(negate).toBeDefined();
