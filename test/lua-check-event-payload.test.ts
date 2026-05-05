@@ -135,6 +135,7 @@ describe("Lua CheckEvent payloads", () => {
     expect(trigger).toBeDefined();
     const response = applyLuaRestoreResponse(restored, trigger!);
     expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
     expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
     expect(restored.host.messages).toContain("restored alias trigger 100/0/23/64/1");
   });

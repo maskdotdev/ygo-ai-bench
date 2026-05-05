@@ -230,6 +230,7 @@ describe("Lua deck and field helpers", () => {
     expect(trigger).toBeTruthy();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored confirm 1/2/100");
   });
@@ -286,6 +287,7 @@ describe("Lua deck and field helpers", () => {
     expect(trigger).toBeTruthy();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored tohand confirm 1/1/100");
   });
