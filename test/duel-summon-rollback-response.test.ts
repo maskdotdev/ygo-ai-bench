@@ -4,6 +4,7 @@ import {
   createDuel,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  queryPublicState,
   registerEffect,
   restoreDuel,
   serializeDuel,
@@ -31,10 +32,16 @@ describe("summon rollback responses", () => {
     expect(action).toBeTruthy();
     expect(action?.type).toBe("fusionSummon");
     if (!action || action.type !== "fusionSummon") throw new Error("Expected fusion summon action");
+    const restoredWindowId = queryPublicState(session).actionWindowId;
+    expect(action).toMatchObject({ windowId: restoredWindowId, windowKind: "open" });
     const result = applyResponse(session, action);
 
     expect(result.ok).toBe(false);
     expect(result.error).toContain("cannot move to graveyard");
+    expect(session.state.actionWindowId).toBe(restoredWindowId);
+    expect(result.state.actionWindowId).toBe(restoredWindowId);
+    expect(result.state.windowKind).toBe("open");
+    for (const legalAction of result.legalActions) expect(legalAction).toMatchObject({ windowId: restoredWindowId, windowKind: "open" });
     expect(session.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("extraDeck");
     expect(session.state.cards.find((card) => card.uid === firstMaterial!.uid)?.location).toBe("hand");
     expect(session.state.cards.find((card) => card.uid === blockedMaterial!.uid)?.location).toBe("hand");
