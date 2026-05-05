@@ -1,4 +1,5 @@
 import type { DuelAction, DuelLocation, ScriptedResponseSelector } from "#duel/types.js";
+import { sameStringMembers } from "#duel/string-list-match.js";
 
 export interface DuelActionSelectorCard {
   uid: string;
@@ -45,10 +46,10 @@ export function duelActionMatchesSelector(
   if (selector.windowKind !== undefined && action.windowKind !== selector.windowKind) return false;
   if (selector.uid && "uid" in action && action.uid !== selector.uid) return false;
   if (selector.tributeUids) {
-    if (action.type !== "tributeSummon" || !sameStringSet(action.tributeUids, selector.tributeUids)) return false;
+    if (action.type !== "tributeSummon" || !sameStringMembers(action.tributeUids, selector.tributeUids)) return false;
   }
   if (selector.materialUids) {
-    if (!isMaterialAction(action) || !sameStringSet(action.materialUids, selector.materialUids)) return false;
+    if (!isMaterialAction(action) || !sameStringMembers(action.materialUids, selector.materialUids)) return false;
   }
   if (selector.position) {
     if (action.type !== "changePosition" || action.position !== selector.position) return false;
@@ -97,11 +98,4 @@ export function duelActionMatchesSelector(
 
 function isMaterialAction(action: DuelAction): action is Extract<DuelAction, { materialUids: string[] }> {
   return action.type === "fusionSummon" || action.type === "synchroSummon" || action.type === "xyzSummon" || action.type === "linkSummon" || action.type === "ritualSummon";
-}
-
-function sameStringSet(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false;
-  const left = [...a].sort();
-  const right = [...b].sort();
-  return left.every((value, index) => value === right[index]);
 }

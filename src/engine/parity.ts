@@ -16,6 +16,7 @@ import {
   type CreateDuelOptions,
 } from "#duel/core.js";
 import { describeDuelActionSelector, duelActionMatchesSelector, selectDuelActionBySelector } from "#duel/action-selectors.js";
+import { sameStringMembers } from "#duel/string-list-match.js";
 import type { DuelChainLimitRestoreRegistry, DuelEffectRestoreRegistry } from "#duel/snapshot.js";
 import type {
   DuelAction,
@@ -637,12 +638,12 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "declineTrigger" && response.type === "declineTrigger" && (action.triggerId !== response.triggerId || action.triggerBucket !== response.triggerBucket)) return false;
   if (action.type === "selectOption" && response.type === "selectOption" && (action.promptId !== response.promptId || action.option !== response.option)) return false;
   if (action.type === "selectYesNo" && response.type === "selectYesNo" && (action.promptId !== response.promptId || action.yes !== response.yes)) return false;
-  if (action.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringSet(action.tributeUids, response.tributeUids)) return false;
-  if (action.type === "fusionSummon" && response.type === "fusionSummon" && !sameStringSet(action.materialUids, response.materialUids)) return false;
-  if (action.type === "synchroSummon" && response.type === "synchroSummon" && !sameStringSet(action.materialUids, response.materialUids)) return false;
-  if (action.type === "xyzSummon" && response.type === "xyzSummon" && !sameStringSet(action.materialUids, response.materialUids)) return false;
-  if (action.type === "linkSummon" && response.type === "linkSummon" && !sameStringSet(action.materialUids, response.materialUids)) return false;
-  if (action.type === "ritualSummon" && response.type === "ritualSummon" && !sameStringSet(action.materialUids, response.materialUids)) return false;
+  if (action.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringMembers(action.tributeUids, response.tributeUids)) return false;
+  if (action.type === "fusionSummon" && response.type === "fusionSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
+  if (action.type === "synchroSummon" && response.type === "synchroSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
+  if (action.type === "xyzSummon" && response.type === "xyzSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
+  if (action.type === "linkSummon" && response.type === "linkSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
+  if (action.type === "ritualSummon" && response.type === "ritualSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
   if (action.type === "changePosition" && response.type === "changePosition" && action.position !== response.position) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.targetUid !== response.targetUid) return false;
@@ -686,13 +687,6 @@ function describeGroupExpectation(expectation: ScriptedLegalActionGroupExpectati
     expectation.windowKind ? `windowKind=${expectation.windowKind}` : undefined,
   ].filter(Boolean);
   return detail.join(" ");
-}
-
-function sameStringSet(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false;
-  const left = [...a].sort();
-  const right = [...b].sort();
-  return left.every((value, index) => value === right[index]);
 }
 
 function countCodes(codes: string[]): Map<string, number> {

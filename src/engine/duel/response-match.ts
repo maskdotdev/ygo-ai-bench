@@ -1,4 +1,5 @@
 import type { DuelAction, DuelActionWindowKind, DuelResponse } from "#duel/types.js";
+import { sameStringMembers } from "#duel/string-list-match.js";
 
 const duelActionWindowKinds = new Set<DuelActionWindowKind>(["prompt", "chainResponse", "triggerBucket", "battle", "open"]);
 
@@ -16,12 +17,12 @@ export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
   if (a.type === "declineTrigger" && response.type === "declineTrigger" && (a.triggerId !== response.triggerId || a.triggerBucket !== response.triggerBucket)) return false;
   if (a.type === "selectOption" && response.type === "selectOption" && (a.promptId !== response.promptId || a.option !== response.option)) return false;
   if (a.type === "selectYesNo" && response.type === "selectYesNo" && (a.promptId !== response.promptId || a.yes !== response.yes)) return false;
-  if (a.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringSet(a.tributeUids, response.tributeUids)) return false;
-  if (a.type === "fusionSummon" && response.type === "fusionSummon" && !sameStringSet(a.materialUids, response.materialUids)) return false;
-  if (a.type === "synchroSummon" && response.type === "synchroSummon" && !sameStringSet(a.materialUids, response.materialUids)) return false;
-  if (a.type === "xyzSummon" && response.type === "xyzSummon" && !sameStringSet(a.materialUids, response.materialUids)) return false;
-  if (a.type === "linkSummon" && response.type === "linkSummon" && !sameStringSet(a.materialUids, response.materialUids)) return false;
-  if (a.type === "ritualSummon" && response.type === "ritualSummon" && !sameStringSet(a.materialUids, response.materialUids)) return false;
+  if (a.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringMembers(a.tributeUids, response.tributeUids)) return false;
+  if (a.type === "fusionSummon" && response.type === "fusionSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
+  if (a.type === "synchroSummon" && response.type === "synchroSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
+  if (a.type === "xyzSummon" && response.type === "xyzSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
+  if (a.type === "linkSummon" && response.type === "linkSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
+  if (a.type === "ritualSummon" && response.type === "ritualSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
   if (a.type === "changePosition" && response.type === "changePosition" && a.position !== response.position) return false;
   if (a.type === "declareAttack" && response.type === "declareAttack" && a.attackerUid !== response.attackerUid) return false;
   if (a.type === "declareAttack" && response.type === "declareAttack" && a.targetUid !== response.targetUid) return false;
@@ -58,12 +59,4 @@ function hasWindowIdKey(value: unknown): boolean {
 
 function hasWindowKindKey(value: unknown): boolean {
   return isRecord(value) && "windowKind" in value;
-}
-
-function sameStringSet(a: unknown, b: unknown): boolean {
-  if (!Array.isArray(a) || !Array.isArray(b)) return false;
-  if (a.length !== b.length) return false;
-  const left = [...a].sort();
-  const right = [...b].sort();
-  return left.every((value, index) => value === right[index]);
 }
