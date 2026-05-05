@@ -247,6 +247,48 @@ describe("duel snapshot persistence", () => {
     );
   });
 
+  it("rejects active battle windows with mismatched waiting player", () => {
+    const session = createDuel({ seed: 147, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.phase = "battle";
+    session.state.waitingFor = 1;
+    session.state.attacksDeclared = [attackerUid];
+    session.state.currentAttack = { attackerUid };
+    session.state.pendingBattle = { attackerUid };
+    session.state.battleStep = "damage";
+    session.state.battleWindow = { id: session.state.actionWindowId, kind: "startDamageStep", step: "damage", attackerUid, responsePlayer: 1, attackNegated: false };
+    const snapshot = serializeDuel(session);
+    snapshot.state.waitingFor = 0;
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.waitingFor must match battleWindow.responsePlayer");
+  });
+
+  it("rejects active battle windows whose response player already passed", () => {
+    const session = createDuel({ seed: 148, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const attackerUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.phase = "battle";
+    session.state.waitingFor = 1;
+    session.state.attacksDeclared = [attackerUid];
+    session.state.currentAttack = { attackerUid };
+    session.state.pendingBattle = { attackerUid };
+    session.state.battleStep = "damage";
+    session.state.battleWindow = { id: session.state.actionWindowId, kind: "startDamageStep", step: "damage", attackerUid, responsePlayer: 1, attackNegated: false };
+    const snapshot = serializeDuel(session);
+    snapshot.state.damagePasses = [1];
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.responsePlayer must not be included in damagePasses");
+  });
+
   it("copies prompt options out of public and serialized state", () => {
     const session = createDuel({ seed: 141, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
