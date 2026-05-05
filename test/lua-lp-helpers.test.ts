@@ -86,6 +86,30 @@ describe("Lua LP helpers", () => {
     expect(session.state.log.filter((entry) => entry.action === "win")).toHaveLength(1);
   });
 
+  it("keeps Duel.Win from replacing an ended duel result", () => {
+    const session = createDuel({ seed: 953, startingHandSize: 0 });
+    loadDecks(session, {
+      0: { main: [] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Duel.Win(1, WIN_REASON_DEUCE)
+      `,
+      "ended-win-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.winner).toBe(0);
+    expect(session.state.winReason).toBe(0x10);
+    expect(session.state.log.filter((entry) => entry.action === "win")).toHaveLength(1);
+  });
+
   it("clears pending actors when LP loss ends the duel", () => {
     const session = createDuel({ seed: 951, startingHandSize: 0 });
     loadDecks(session, {
