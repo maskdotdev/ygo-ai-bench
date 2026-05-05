@@ -492,9 +492,10 @@ function assertSnapshotFlagEffects(flags: unknown, cardUids: ReadonlySet<string>
     if (typeof flag.ownerId !== "string") throw new Error(`Malformed duel snapshot: ${path}.ownerId must be a string`);
     if (flag.ownerType === "player" && flag.ownerId !== "0" && flag.ownerId !== "1") throw new Error(`Malformed duel snapshot: ${path}.ownerId must be a player id`);
     if (flag.ownerType === "card" && !cardUids.has(flag.ownerId)) throw new Error(`Malformed duel snapshot: ${path}.ownerId must reference a card`);
-    for (const field of ["code", "reset", "property", "value", "turn"] as const) {
+    for (const field of ["code", "reset", "property", "value"] as const) {
       if (typeof flag[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
     }
+    assertSnapshotNonNegativeInteger(flag.turn, `${path}.turn`);
     if (flag.resetCount !== undefined) assertSnapshotNonNegativeInteger(flag.resetCount, `${path}.resetCount`);
   }
 }
@@ -504,7 +505,7 @@ function assertSnapshotLog(log: unknown): void {
   for (const [index, entry] of log.entries()) {
     const path = `state.log.${index}`;
     if (!isRecord(entry)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
-    if (typeof entry.step !== "number") throw new Error(`Malformed duel snapshot: ${path}.step must be a number`);
+    assertSnapshotPositiveInteger(entry.step, `${path}.step`);
     for (const field of ["action", "detail"] as const) {
       if (typeof entry[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
     }
@@ -694,6 +695,11 @@ function assertSnapshotCounterRecord(record: unknown, path: string): void {
 function assertSnapshotNonNegativeInteger(value: unknown, path: string): void {
   if (typeof value !== "number") throw new Error(`Malformed duel snapshot: ${path} must be a number`);
   if (!Number.isInteger(value) || value < 0) throw new Error(`Malformed duel snapshot: ${path} must be a non-negative integer`);
+}
+
+function assertSnapshotPositiveInteger(value: unknown, path: string): void {
+  if (typeof value !== "number") throw new Error(`Malformed duel snapshot: ${path} must be a number`);
+  if (!Number.isInteger(value) || value <= 0) throw new Error(`Malformed duel snapshot: ${path} must be a positive integer`);
 }
 
 function assertSnapshotPlayers(players: unknown): void {
