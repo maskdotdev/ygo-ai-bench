@@ -15,7 +15,7 @@ export interface DuelBattleCallbacks {
 }
 
 export type DuelAttackTargetPredicate = (card: DuelCardInstance) => boolean;
-export type DuelDirectAttackPredicate = (attacker: DuelCardInstance) => boolean;
+export type DuelDirectAttackPredicate = (attacker: DuelCardInstance, targets: DuelCardInstance[]) => boolean;
 
 export function canDuelCardAttack(state: DuelState, uid: string, extraAttacks = 0): boolean {
   const card = findCard(state, uid);
@@ -140,7 +140,7 @@ export function replayAttackActions(
   const targets = getAttackTargets(state, player, canAttackTarget);
   return [
     { type: "cancelAttack", player, attackerUid: attacker.uid, label: `Cancel ${attacker.name}'s attack` },
-    ...(targets.length === 0 && canDirectAttack(attacker) ? [{ type: "replayAttack" as const, player, attackerUid: attacker.uid, label: `${attacker.name}: Attack directly` }] : []),
+    ...(canDirectAttack(attacker, targets) ? [{ type: "replayAttack" as const, player, attackerUid: attacker.uid, label: `${attacker.name}: Attack directly` }] : []),
     ...targets.map((target) => ({ type: "replayAttack" as const, player, attackerUid: attacker.uid, targetUid: target.uid, label: `${attacker.name}: Attack ${target.name}` })),
   ];
 }
@@ -161,7 +161,7 @@ export function replayDuelAttack(
     if (!target || !targets.some((candidate) => candidate.uid === target.uid)) throw new Error("Replay attack target is not legal");
   } else if (targetUid !== undefined) {
     throw new Error("Replay direct attacks cannot have a target");
-  } else if (!canDirectAttack(attacker)) {
+  } else if (!canDirectAttack(attacker, targets)) {
     throw new Error(`${attacker.name} cannot replay as a direct attack`);
   }
   state.currentAttack = createBattleAttackState(attacker.uid, target?.uid, targets);

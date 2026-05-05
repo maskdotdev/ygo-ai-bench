@@ -153,7 +153,7 @@ export function replayCoreDuelAttack(state: DuelState, player: PlayerId, attacke
     attackerUid,
     targetUid,
     (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)),
-    (directAttacker) => canReplayDirectAttack(state, directAttacker, createContext),
+    (directAttacker, targets) => canReplayDirectAttack(state, directAttacker, targets, createContext),
   );
 }
 
@@ -165,7 +165,7 @@ export function coreReplayAttackActions(state: DuelState, player: PlayerId, hand
     state,
     player,
     (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)),
-    (directAttacker) => canReplayDirectAttack(state, directAttacker, createContext),
+    (directAttacker, targets) => canReplayDirectAttack(state, directAttacker, targets, createContext),
   );
 }
 
@@ -228,8 +228,11 @@ function hasSpentMonsterOnlyExtraAttack(state: DuelState, card: DuelCardInstance
   return (attackAllMonsterCount(state, card, createContext) > 0 || extraMonsterAttackCount(state, card, createContext) > 0) && state.attacksDeclared.includes(card.uid);
 }
 
-function canReplayDirectAttack(state: DuelState, attacker: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
-  return !isDirectAttackPrevented(state, attacker, createContext) && !hasMustAttackMonsterRestriction(state, attacker, createContext) && !hasOnlyAttackMonsterRestriction(state, attacker, createContext);
+function canReplayDirectAttack(state: DuelState, attacker: DuelCardInstance, targets: DuelCardInstance[], createContext: ContinuousEffectContextFactory): boolean {
+  return !isDirectAttackPrevented(state, attacker, createContext)
+    && !hasMustAttackMonsterRestriction(state, attacker, createContext)
+    && !hasOnlyAttackMonsterRestriction(state, attacker, createContext)
+    && (targets.length === 0 || canDirectAttackThroughTargets(state, attacker, createContext));
 }
 
 export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): boolean {
