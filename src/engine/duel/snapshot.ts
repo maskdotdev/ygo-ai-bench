@@ -322,12 +322,16 @@ function assertSnapshotBattlePairs(pairs: unknown, cardUids: ReadonlySet<string>
 
 function assertSnapshotPendingTriggers(triggers: unknown, cardUids: ReadonlySet<string>, turnPlayer: PlayerId): void {
   if (!Array.isArray(triggers)) throw new Error("Malformed duel snapshot: state.pendingTriggers must be an array");
+  const seenIds = new Set<string>();
   for (const [index, trigger] of triggers.entries()) {
     const path = `state.pendingTriggers.${index}`;
     if (!isRecord(trigger)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
     for (const field of ["id", "sourceUid", "effectId", "eventName"] as const) {
       if (typeof trigger[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
     }
+    const id = trigger.id as string;
+    if (seenIds.has(id)) throw new Error(`Malformed duel snapshot: ${path}.id must be unique`);
+    seenIds.add(id);
     assertSnapshotPlayerId(trigger.player, `${path}.player`);
     if (!duelSnapshotTriggerBuckets.has(trigger.triggerBucket)) throw new Error(`Malformed duel snapshot: ${path}.triggerBucket must be a trigger bucket`);
     if (!snapshotTriggerBucketMatchesPlayer(trigger.triggerBucket as TriggerBucket, trigger.player as PlayerId, turnPlayer)) throw new Error(`Malformed duel snapshot: ${path}.triggerBucket must match the trigger player`);

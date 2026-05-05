@@ -30,6 +30,7 @@ function assertSnapshotPromptWindow(state: Record<string, unknown>): void {
 function assertSnapshotTriggerWindow(state: Record<string, unknown>): void {
   const pendingTriggers = state.pendingTriggers as PendingTrigger[];
   if (state.prompt !== undefined || (state.chain as unknown[]).length > 0 || pendingTriggers.length === 0) return;
+  if (state.status !== "awaiting") throw new Error("Malformed duel snapshot: pending trigger window requires an awaiting duel");
   const activeBucket = pendingTriggerBuckets(pendingTriggers)[0];
   if (activeBucket && state.waitingFor !== activeBucket.player) throw new Error("Malformed duel snapshot: state.waitingFor must match active trigger bucket player");
 }

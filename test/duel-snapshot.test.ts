@@ -164,6 +164,41 @@ describe("duel snapshot persistence", () => {
     expect(queryPublicState(restored).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
   });
 
+  it("rejects duplicate pending trigger ids on restore", () => {
+    const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.pendingTriggers = [
+      { id: "duplicate-trigger", player: 0, sourceUid, effectId: "effect-a", eventName: "customEvent", triggerBucket: "turnOptional" },
+      { id: "duplicate-trigger", player: 0, sourceUid, effectId: "effect-b", eventName: "customEvent", triggerBucket: "turnOptional" },
+    ];
+
+    expect(() => restoreDuel(serializeDuel(session), createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false })).toThrow(
+      "Malformed duel snapshot: state.pendingTriggers.1.id must be unique",
+    );
+  });
+
+  it("rejects active pending trigger windows outside awaiting status", () => {
+    const session = createDuel({ seed: 145, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.pendingTriggers = [{ id: "pending-trigger", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional" }];
+    const snapshot = serializeDuel(session);
+    snapshot.state.status = "resolving";
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false })).toThrow(
+      "Malformed duel snapshot: pending trigger window requires an awaiting duel",
+    );
+  });
+
   it("copies prompt options out of public and serialized state", () => {
     const session = createDuel({ seed: 141, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
