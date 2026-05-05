@@ -16,6 +16,7 @@ describe("set action restore", () => {
     expect(monster).toBeTruthy();
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    expect(getGroupedDuelLegalActions(restored, 0)).toEqual(getGroupedDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === monster!.uid);
     expect(action).toBeDefined();
 
@@ -40,6 +41,7 @@ describe("set action restore", () => {
     expect(spell).toBeTruthy();
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    expect(getGroupedDuelLegalActions(restored, 0)).toEqual(getGroupedDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "setSpellTrap" && candidate.uid === spell!.uid);
     expect(action).toBeDefined();
 

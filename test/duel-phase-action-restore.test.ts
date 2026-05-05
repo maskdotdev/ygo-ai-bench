@@ -14,6 +14,7 @@ describe("phase action restore", () => {
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    expect(getGroupedDuelLegalActions(restored, 0)).toEqual(getGroupedDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(action).toBeDefined();
 
@@ -35,6 +36,7 @@ describe("phase action restore", () => {
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    expect(getGroupedDuelLegalActions(restored, 0)).toEqual(getGroupedDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn");
     expect(action).toBeDefined();
 
