@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -109,7 +109,9 @@ describe("Lua battle-start events", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("restored battle start trigger 0");
   });
@@ -129,6 +131,8 @@ function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScript
     const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
     const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
+    const passResult = applyLuaRestoreResponse(restored, pass!);
+    expect(passResult.ok).toBe(true);
+    expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
   }
 }
