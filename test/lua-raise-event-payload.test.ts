@@ -36,6 +36,7 @@ describe("Lua raised event payloads", () => {
     expect(result.ok, result.error).toBe(true);
     expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
 
   it("makes earlier Lua optional when triggers miss timing at raised event boundaries", () => {

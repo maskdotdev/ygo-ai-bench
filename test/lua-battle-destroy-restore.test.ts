@@ -82,6 +82,7 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   expect(triggerResult.ok).toBe(true);
   expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
   expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+  expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
   return { messages: restored.host.messages };
 }
 
