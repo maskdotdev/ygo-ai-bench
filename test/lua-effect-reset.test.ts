@@ -555,6 +555,16 @@ describe("Lua effect reset", () => {
       { code: "26110", name: "Lua Reset Count Field Source", kind: "monster" },
       { code: "26210", name: "Lua Reset Count Field Filler", kind: "monster" },
     ];
+    const script = `
+      c26110={}
+      function c26110.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND + LOCATION_MZONE)
+        e:SetReset(RESET_EVENT + RESET_TOFIELD, 2)
+        c:RegisterEffect(e)
+      end
+      `;
     const { session } = setupLuaChainFixture({
       seed: 137,
       startingHandSize: 1,
@@ -564,17 +574,8 @@ describe("Lua effect reset", () => {
         1: { main: ["26210"] },
       },
       expectedEffects: 1,
-      scriptName: "lua-effect-reset-to-field-count.lua",
-      script: `
-      c26110={}
-      function c26110.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_IGNITION)
-        e:SetRange(LOCATION_HAND + LOCATION_MZONE)
-        e:SetReset(RESET_EVENT + RESET_TOFIELD, 2)
-        c:RegisterEffect(e)
-      end
-      `,
+      scriptName: "c26110.lua",
+      script,
     });
     const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "26110");
     expect(source).toBeDefined();
@@ -582,6 +583,15 @@ describe("Lua effect reset", () => {
     moveDuelCard(session.state, source!.uid, "monsterZone", 0);
     expect(session.state.effects).toEqual([expect.objectContaining({ id: expect.any(String), reset: { flags: 0x1000 + 0x1000000, count: 1 } })]);
     expect(serializeDuel(session).state.effects[0]).toMatchObject({ reset: { flags: 0x1000 + 0x1000000, count: 1 } });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c26110.lua" ? script : undefined }, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.effects).toEqual([expect.objectContaining({ id: expect.any(String), reset: { flags: 0x1000 + 0x1000000, count: 1 } })]);
+    const restoredSource = restored.session.state.cards.find((card) => card.controller === 0 && card.code === "26110");
+    expect(restoredSource).toBeDefined();
+    moveDuelCard(restored.session.state, restoredSource!.uid, "hand", 0);
+    moveDuelCard(restored.session.state, restoredSource!.uid, "monsterZone", 0);
+    expect(restored.session.state.effects).toHaveLength(0);
 
     moveDuelCard(session.state, source!.uid, "hand", 0);
     moveDuelCard(session.state, source!.uid, "monsterZone", 0);
