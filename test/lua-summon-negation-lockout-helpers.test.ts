@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -48,12 +48,12 @@ describe("Lua summon negation lockout helpers", () => {
     expect(summoned).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     session.state.pendingTriggers = [];
 
     const negate = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("200"));
     expect(negate).toBeDefined();
-    expect(applyResponse(session, negate!).ok).toBe(true);
+    applyAndAssert(session, negate!);
 
     expect(host.messages).toEqual(["negated count 0"]);
     expect(session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "monsterZone" });
@@ -106,7 +106,7 @@ describe("Lua summon negation lockout helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const negate = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("200"));
     expect(negate).toBeDefined();
-    expect(applyResponse(session, negate!).ok).toBe(true);
+    applyAndAssert(session, negate!);
 
     expect(host.messages).toEqual(["special negate count 0"]);
     expect(session.state.cards.find((card) => card.uid === protectedCard!.uid)).toMatchObject({ location: "monsterZone" });
@@ -158,7 +158,7 @@ describe("Lua summon negation lockout helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const negate = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("200"));
     expect(negate).toBeDefined();
-    expect(applyResponse(session, negate!).ok).toBe(true);
+    applyAndAssert(session, negate!);
 
     expect(host.messages).toEqual(["sp negate count 0"]);
     expect(session.state.cards.find((card) => card.uid === protectedCard!.uid)).toMatchObject({ location: "monsterZone" });
@@ -210,7 +210,7 @@ describe("Lua summon negation lockout helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const negate = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("200"));
     expect(negate).toBeDefined();
-    expect(applyResponse(session, negate!).ok).toBe(true);
+    applyAndAssert(session, negate!);
 
     expect(host.messages).toEqual(["normal under sp negate count 1"]);
     expect(session.state.cards.find((card) => card.uid === normalCard!.uid)).toMatchObject({ location: "graveyard" });
@@ -262,7 +262,7 @@ describe("Lua summon negation lockout helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const negate = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("200"));
     expect(negate).toBeDefined();
-    expect(applyResponse(session, negate!).ok).toBe(true);
+    applyAndAssert(session, negate!);
 
     expect(host.messages).toEqual(["flip negate count 0"]);
     expect(session.state.cards.find((card) => card.uid === protectedCard!.uid)).toMatchObject({ location: "monsterZone" });
@@ -314,7 +314,7 @@ describe("Lua summon negation lockout helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const negate = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("200"));
     expect(negate).toBeDefined();
-    expect(applyResponse(session, negate!).ok).toBe(true);
+    applyAndAssert(session, negate!);
 
     expect(host.messages).toEqual(["special under flip negate count 1"]);
     expect(session.state.cards.find((card) => card.uid === specialCard!.uid)).toMatchObject({ location: "graveyard" });
@@ -376,10 +376,19 @@ describe("Lua summon negation lockout helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const negate = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("400"));
     expect(negate).toBeDefined();
-    expect(applyResponse(session, negate!).ok).toBe(true);
+    applyAndAssert(session, negate!);
 
     expect(host.messages).toEqual(["targeted summon negate protected 0", "targeted summon negate open 1"]);
     expect(session.state.cards.find((card) => card.uid === protectedCard!.uid)).toMatchObject({ location: "monsterZone" });
     expect(session.state.cards.find((card) => card.uid === openCard!.uid)).toMatchObject({ location: "graveyard" });
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
