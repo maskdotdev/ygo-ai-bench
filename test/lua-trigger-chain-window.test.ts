@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, getLegalActions as getDuelLegalActions } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createCardReader } from "#engine/data-loaders.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import type { DuelCardData } from "#duel/types.js";
 import { setupLuaChainFixture } from "./lua-chain-fixtures.js";
 
 describe("Lua trigger chain windows", () => {
@@ -163,6 +167,103 @@ describe("Lua trigger chain windows", () => {
     expect(resolved.state.chain).toHaveLength(0);
     expect(resolved.state.pendingTriggers).toHaveLength(0);
     expect(host.messages).toEqual(["lua second held trigger resolved", "lua first held trigger resolved"]);
+  });
+
+  it("restores trigger-created Lua chain windows before fast responses resolve", () => {
+    const cards: DuelCardData[] = [
+      { code: "15100", name: "Lua Restored Chain Window Summon", kind: "monster" },
+      { code: "15200", name: "Lua Restored First Trigger", kind: "monster" },
+      { code: "15300", name: "Lua Restored Second Trigger", kind: "monster" },
+      { code: "15400", name: "Lua Restored Opponent Quick", kind: "monster" },
+      { code: "15500", name: "Lua Restored Chain Filler", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c15200.lua") {
+          return `
+          c15200={}
+          function c15200.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_SUMMON_SUCCESS)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("restored first trigger resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c15300.lua") {
+          return `
+          c15300={}
+          function c15300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_SUMMON_SUCCESS)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("restored second trigger resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c15400.lua") {
+          return `
+          c15400={}
+          function c15400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restored opponent quick resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 95, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["15100", "15200", "15300"] }, 1: { main: ["15400", "15500", "15500"] } });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(15200, source).ok).toBe(true);
+    expect(host.loadCardScript(15300, source).ok).toBe(true);
+    expect(host.loadCardScript(15400, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "15100");
+    expect(summonSource).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
+    expect(firstTrigger).toBeDefined();
+    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+    const secondTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
+    expect(secondTrigger).toBeDefined();
+    const opened = applyResponse(session, secondTrigger!);
+    expect(opened.ok).toBe(true);
+    expect(opened.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(session.state.chain.map((link) => link.effectId));
+    expect(restored.session.state.pendingTriggers).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+
+    const quick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
+    expect(quick).toBeDefined();
+    const chained = applyLuaRestoreResponse(restored, quick!);
+    expect(chained.ok, chained.error).toBe(true);
+    expect(chained.legalActions).toEqual(getDuelLegalActions(restored.session, chained.state.waitingFor!));
+    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, chained.state.waitingFor!));
+    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
+    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
+    expect(restored.host.messages).toEqual(["restored opponent quick resolved", "restored second trigger resolved", "restored first trigger resolved"]);
   });
 
   it("keeps later optional Lua trigger bucket activations behind the open chain window", () => {
