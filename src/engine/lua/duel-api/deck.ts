@@ -11,6 +11,7 @@ import { duelReason } from "#duel/reasons.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { shuffle } from "#engine/rng.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
 
@@ -18,7 +19,7 @@ const { lua, to_luastring } = fengari;
 
 type LuaFilterArgs = { start: number; count: number };
 
-export interface LuaDuelDeckApiHostState {
+export interface LuaDuelDeckApiHostState extends LuaOperationTimingBoundaryHostState {
   messages: string[];
   operatedUids: string[];
 }
@@ -71,6 +72,7 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1;
     const drawUids = topDeckUids(session, player, count);
+    if (drawUids.length > 0) markLuaOperationTimingBoundary(session, hostState);
     const drawn = drawDuelCards(session.state, player, count, "Lua draw");
     setOperatedUids(hostState, drawUids.slice(0, drawn));
     lua.lua_pushinteger(state, drawn);
@@ -86,7 +88,7 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
     const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
-    const discarded = discardDeckCards(session, player, count, reason);
+    const discarded = discardDeckCards(session, hostState, player, count, reason);
     setOperatedUids(hostState, discarded);
     lua.lua_pushinteger(state, discarded.length);
     return 1;
@@ -98,7 +100,7 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
       lua.lua_pushinteger(state, 0);
       return 1;
     }
-    const discarded = discardHandCards(session, state);
+    const discarded = discardHandCards(session, hostState, state);
     setOperatedUids(hostState, discarded);
     lua.lua_pushinteger(state, discarded.length);
     return 1;
@@ -236,11 +238,12 @@ function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDue
   return 0;
 }
 
-function discardDeckCards(session: DuelSession, player: PlayerId, count: number, reason: number): string[] {
+function discardDeckCards(session: DuelSession, hostState: LuaDuelDeckApiHostState, player: PlayerId, count: number, reason: number): string[] {
   if (!canDuelPlayerDiscardDeck(session.state, player, 0)) return [];
   const discarded: string[] = [];
   for (const uid of topDeckUids(session, player, count)) {
     try {
+      if (discarded.length === 0) markLuaOperationTimingBoundary(session, hostState);
       sendDuelCardToGraveyard(session.state, uid, player, reason);
       discarded.push(uid);
     } catch {
@@ -250,7 +253,7 @@ function discardDeckCards(session: DuelSession, player: PlayerId, count: number,
   return discarded;
 }
 
-function discardHandCards(session: DuelSession, L: unknown): string[] {
+function discardHandCards(session: DuelSession, hostState: LuaDuelDeckApiHostState, L: unknown): string[] {
   const filterRef = readOptionalFunctionRef(L, 2);
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const min = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
@@ -266,6 +269,7 @@ function discardHandCards(session: DuelSession, L: unknown): string[] {
   const discarded: string[] = [];
   for (const uid of selected) {
     try {
+      if (discarded.length === 0) markLuaOperationTimingBoundary(session, hostState);
       sendDuelCardToGraveyard(session.state, uid, player, reason);
       discarded.push(uid);
     } catch {
