@@ -216,6 +216,9 @@ describe("duel chains", () => {
     expect(chained.ok).toBe(true);
     expect(chained.state.chain).toHaveLength(2);
     expect(chained.state.waitingFor).toBe(1);
+    expect(chained.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
     expect(chained.state.log.some((entry) => entry.detail === "Original operation resolved")).toBe(false);
 
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
