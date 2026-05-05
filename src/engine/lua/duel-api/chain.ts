@@ -100,7 +100,8 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
     else lua.lua_pushnil(L);
   }
   else if (info === 2 || info === 3) lua.lua_pushinteger(L, link.player);
-  else if (info === 4 || info === 5) lua.lua_pushinteger(L, locationMaskFromLocation(source?.location));
+  else if (info === 4) lua.lua_pushinteger(L, locationMaskFromLocation(source?.location));
+  else if (info === 5) lua.lua_pushinteger(L, symbolicLocationMask(source));
   else if (info === 6 || info === 7) lua.lua_pushinteger(L, link.activationSequence ?? source?.sequence ?? 0);
   else if (info === 8) pushGroupTable(L, link.targetUids ?? []);
   else if (info === 9 && link.targetPlayer !== undefined) lua.lua_pushinteger(L, link.targetPlayer);
@@ -148,6 +149,13 @@ function pushChainEvent(L: unknown, session: DuelSession, hostState: LuaDuelChai
 function pushRelatedEffectById(L: unknown, hostState: LuaDuelChainApiHostState, relatedEffectId: number | undefined): void {
   if (relatedEffectId !== undefined && Number.isFinite(relatedEffectId)) hostState.pushEffectTable(L, relatedEffectId);
   else lua.lua_pushnil(L);
+}
+
+function symbolicLocationMask(card: DuelCardInstance | undefined): number {
+  if (!card) return 0;
+  if (card.location === "spellTrapZone") return 0x400;
+  if (card.location === "monsterZone" && card.sequence !== undefined) return card.sequence >= 5 ? 0x1000 : 0x800;
+  return locationMaskFromLocation(card.location);
 }
 
 function pushChainMaterial(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
