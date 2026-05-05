@@ -47,6 +47,10 @@ describe("parity fixture metadata", () => {
     expect(missingTargetedAttackRawCoverage()).toEqual([]);
   });
 
+  it("requires attack groups to be backed by matching raw attack expectation counts", () => {
+    expect(missingAttackGroupRawCounts()).toEqual([]);
+  });
+
   it("requires UI-facing grouped absence expectations to track raw absent legal-action expectations", () => {
     expect(missingAbsentLegalActionGroupCoverage()).toEqual([]);
   });
@@ -149,6 +153,25 @@ describe("parity fixture metadata", () => {
         ...lines.slice(0, 4),
         '  legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-card", targetUid: "p1-card", windowId: 1, windowKind: "open", count: 1 }],',
         '  legalActionGroups: [targetedAttackGroup(0, "p0-card", "p1-card", 1, 1)],',
+        ...lines.slice(4),
+      ]),
+    ).toEqual([]);
+    expect(
+      missingAttackGroupRawCountsInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        '  legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-card", targetUid: "p1-card", windowId: 1, windowKind: "open", count: 1 }],',
+        '  legalActionGroups: [attackGroup([{ attackerUid: "p0-card", targetUid: "p1-card" }, { attackerUid: "p0-card", directAttack: true }], 1, 1)],',
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:2"]);
+    expect(
+      missingAttackGroupRawCountsInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  legalActions: [",
+        '    { type: "declareAttack", player: 0, attackerUid: "p0-card", targetUid: "p1-card", windowId: 1, windowKind: "open", count: 1 },',
+        '    { type: "declareAttack", player: 0, attackerUid: "p0-card", directAttack: true, windowId: 1, windowKind: "open", count: 1 },',
+        "  ],",
+        '  legalActionGroups: [attackGroup([{ attackerUid: "p0-card", targetUid: "p1-card" }, { attackerUid: "p0-card", directAttack: true }], 1, 1)],',
         ...lines.slice(4),
       ]),
     ).toEqual([]);
@@ -305,6 +328,10 @@ function missingTargetedAttackRawCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingTargetedAttackRawCoverageInLines(file, readFixtureLines(file)));
 }
 
+function missingAttackGroupRawCounts(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingAttackGroupRawCountsInLines(file, readFixtureLines(file)));
+}
+
 function missingAbsentLegalActionGroupCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingLegalActionGroupsInLines(file, readFixtureLines(file), "absentLegalActions:", "absentLegalActionGroups:"));
 }
@@ -446,6 +473,29 @@ function missingTargetedAttackRawCoverageInLines(file: string, lines: string[]):
     if (rawTargetedAttack === null) missingRawTargetedAttacks.push(`${file}:${index + 1}`);
   });
   return missingRawTargetedAttacks;
+}
+
+function missingAttackGroupRawCountsInLines(file: string, lines: string[]): string[] {
+  const missingRawAttackCounts: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    const groupedAttackCount = attackGroupChoiceCount(block);
+    if (groupedAttackCount === 0) return;
+    const rawAttackCount = rawDeclareAttackCount(block);
+    if (rawAttackCount < groupedAttackCount) missingRawAttackCounts.push(`${file}:${index + 1}`);
+  });
+  return missingRawAttackCounts;
+}
+
+function attackGroupChoiceCount(block: string): number {
+  const groups = [...block.matchAll(/attackGroup\(\[([\s\S]*?)\]\s*,/g)];
+  return groups.reduce((total, group) => total + occurrenceCount(group[1] ?? "", "attackerUid:"), 0);
+}
+
+function rawDeclareAttackCount(block: string): number {
+  const rawActions = block.split(/\n\s*(legalActionGroups|absentLegalActions|absentLegalActionGroups):/)[0] ?? block;
+  return (rawActions.match(/\{[^{}]*type:\s*["']declareAttack["'][^{}]*\}/g) ?? []).length;
 }
 
 function missingLegalActionCountsInLines(file: string, lines: string[]): string[] {
