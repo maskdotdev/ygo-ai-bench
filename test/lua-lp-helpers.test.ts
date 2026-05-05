@@ -549,7 +549,7 @@ describe("Lua LP helpers", () => {
             trigger:SetCode(EVENT_DAMAGE)
             trigger:SetRange(LOCATION_HAND)
             trigger:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
-              Debug.Message("damage trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. Duel.GetLP(1))
+              Debug.Message("damage trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp .. "/" .. Duel.GetLP(1))
             end)
             c:RegisterEffect(trigger)
           end
@@ -571,12 +571,12 @@ describe("Lua LP helpers", () => {
     expect(host.messages).toContain("burn applied 700");
     expect(session.state.players[1].lifePoints).toBe(7300);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["damageDealt"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40 });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "damageDealt", eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40 })]));
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "damageDealt", eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40, eventReasonPlayer: 0 })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
@@ -585,12 +585,12 @@ describe("Lua LP helpers", () => {
     expect(restoredTriggerResult.ok).toBe(true);
     expect(restoredTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
     expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
-    expect(restored.host.messages).toContain("damage trigger resolved 1/700/64/7300");
+    expect(restored.host.messages).toContain("damage trigger resolved 1/700/64/0/7300");
 
     const damageTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(damageTrigger).toBeDefined();
     expect(applyResponse(session, damageTrigger!).ok).toBe(true);
-    expect(host.messages).toContain("damage trigger resolved 1/700/64/7300");
+    expect(host.messages).toContain("damage trigger resolved 1/700/64/0/7300");
   });
 
   it("queues Lua recover triggers after Duel.Recover applies recovery", () => {
