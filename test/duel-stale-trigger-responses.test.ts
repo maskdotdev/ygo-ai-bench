@@ -225,7 +225,9 @@ describe("duel stale trigger responses", () => {
     const second = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-stale-second-trigger");
     expect(second).toBeTruthy();
     expect(second).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket" });
-    expect(applyResponse(restored, second!).ok).toBe(true);
+    const secondResult = applyResponse(restored, second!);
+    expect(secondResult.ok).toBe(true);
+    expect(secondResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, secondResult.state.waitingFor!));
     const replay = applyResponse(restored, staleFirst!);
 
     expect(replay.ok).toBe(false);
@@ -237,7 +239,9 @@ describe("duel stale trigger responses", () => {
     const declineFirst = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-stale-first-trigger");
     expect(declineFirst).toBeTruthy();
     expect(declineFirst).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket" });
-    expect(applyResponse(restored, declineFirst!).ok).toBe(true);
+    const declineFirstResult = applyResponse(restored, declineFirst!);
+    expect(declineFirstResult.ok).toBe(true);
+    expect(declineFirstResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, declineFirstResult.state.waitingFor!));
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale second trigger resolved")).toBe(true);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale first trigger resolved")).toBe(false);
   });
@@ -304,7 +308,9 @@ describe("duel stale trigger responses", () => {
     const declineSecond = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-stale-second-decline");
     expect(declineSecond).toBeTruthy();
     expect(declineSecond).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket" });
-    expect(applyResponse(restored, declineSecond!).ok).toBe(true);
+    const declineSecondResult = applyResponse(restored, declineSecond!);
+    expect(declineSecondResult.ok).toBe(true);
+    expect(declineSecondResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, declineSecondResult.state.waitingFor!));
     const replay = applyResponse(restored, staleDeclineFirst!);
 
     expect(replay.ok).toBe(false);
