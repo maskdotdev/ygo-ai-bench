@@ -107,6 +107,10 @@ describe("parity fixture metadata", () => {
     expect(missingPendingTriggerBucketCoverage()).toEqual([]);
   });
 
+  it("requires trigger legal-action groups to pin trigger bucket summaries", () => {
+    expect(missingTriggerGroupBucketCoverage()).toEqual([]);
+  });
+
   it("requires parity fixtures to exercise snapshot restore coverage", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
@@ -327,6 +331,35 @@ describe("parity fixture metadata", () => {
       ]),
     ).toEqual([]);
     expect(missingPendingTriggerBucketCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  pendingTriggers: [],", ...lines.slice(4)])).toEqual([]);
+    expect(
+      missingTriggerGroupBucketCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  legalActionGroups: [",
+        "    {",
+        '      label: "Trigger Activations",',
+        '      windowId: 1,',
+        '      windowKind: "triggerBucket",',
+        '      actions: [{ type: "activateTrigger", player: 0, triggerBucket: "turnOptional" }],',
+        "    },",
+        "  ],",
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:6"]);
+    expect(
+      missingTriggerGroupBucketCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  legalActionGroups: [",
+        "    {",
+        '      label: "Trigger Declines",',
+        '      windowId: 1,',
+        '      windowKind: "triggerBucket",',
+        '      triggerBucket: { player: 0, triggerBucket: "turnOptional" },',
+        '      actions: [{ type: "declineTrigger", player: 0, triggerBucket: "turnOptional" }],',
+        "    },",
+        "  ],",
+        ...lines.slice(4),
+      ]),
+    ).toEqual([]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "  it('one', () => {})", "});"])).toEqual([]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "});"])).toEqual(["fixture.ts: expected 1 scenario, found 0"]);
@@ -433,6 +466,10 @@ function missingTimingExpectationWindowIds(): string[] {
 
 function missingPendingTriggerBucketCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingPendingTriggerBucketCoverageInLines(file, readFixtureLines(file)));
+}
+
+function missingTriggerGroupBucketCoverage(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingTriggerGroupBucketCoverageInLines(file, readFixtureLines(file)));
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
@@ -621,6 +658,17 @@ function missingPendingTriggerBucketCoverageInLines(file: string, lines: string[
     if (!block.includes("pendingTriggerBuckets:")) missingBuckets.push(`${file}:${index + 1}`);
   });
   return missingBuckets;
+}
+
+function missingTriggerGroupBucketCoverageInLines(file: string, lines: string[]): string[] {
+  const missingBuckets: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/label:\s*["']Trigger (Activations|Declines)["']/.test(line)) return;
+    const groupBlock = expectationBlock(lines, index);
+    const header = groupBlock.split("actions:")[0] ?? "";
+    if (!/triggerBucket:\s*\{/.test(header)) missingBuckets.push(`${file}:${findBlockStart(lines, index) + 1}`);
+  });
+  return [...new Set(missingBuckets)];
 }
 
 function missingOpenLegalActionWindowIdsInLines(file: string, lines: string[]): string[] {
