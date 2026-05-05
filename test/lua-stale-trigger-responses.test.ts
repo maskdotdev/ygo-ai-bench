@@ -147,7 +147,8 @@ describe("Lua stale trigger responses", () => {
 
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(20200, workspace).ok).toBe(true);
+    const loaded = host.loadCardScript(20200, workspace);
+    expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "20100");
     expect(summonSource).toBeDefined();
@@ -158,7 +159,7 @@ describe("Lua stale trigger responses", () => {
     expect(staleDecline).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     const restoredDecline = getDuelLegalActions(restored.session, 0).find((action) => action.type === "declineTrigger");
     expect(restoredDecline).toBeDefined();
     expect(restoredDecline).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
@@ -207,7 +208,8 @@ describe("Lua stale trigger responses", () => {
 
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(21200, workspace).ok).toBe(true);
+    const loaded = host.loadCardScript(21200, workspace);
+    expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "21100");
     expect(summonSource).toBeDefined();
@@ -218,7 +220,7 @@ describe("Lua stale trigger responses", () => {
     expect(staleTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     const restoredTrigger = getDuelLegalActions(restored.session, 0).find((action) => action.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
     expect(restoredTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
@@ -237,7 +239,7 @@ describe("Lua stale trigger responses", () => {
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
   const response = applyResponse(session, action);
-  expect(response.ok).toBe(true);
+  expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
@@ -246,7 +248,7 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
 
 function applyLuaRestoreAndAssert(restored: Parameters<typeof applyLuaRestoreResponse>[0], action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const response = applyLuaRestoreResponse(restored, action);
-  expect(response.ok).toBe(true);
+  expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
