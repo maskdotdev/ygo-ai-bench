@@ -798,6 +798,8 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
     expect(restored.incompleteReasons).toEqual([`missing Lua chain-limit registry keys: ${restored.chainLimitRegistryKeys[0]}`]);
     expect(getDuelLegalActions(restored.session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
     const forgedAction = getDuelLegalActions(restored.session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
