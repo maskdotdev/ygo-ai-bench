@@ -164,6 +164,58 @@ describe("Lua summon negation lockout helpers", () => {
     expect(session.state.cards.find((card) => card.uid === protectedCard!.uid)).toMatchObject({ location: "monsterZone" });
   });
 
+  it("does not apply special-summon protection to Normal Summon negation", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Unprotected Normal Summon", kind: "monster", level: 4 },
+      { code: "200", name: "Summon Negator", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 226, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const normalCard = session.state.cards.find((card) => card.code === "100");
+    expect(normalCard).toBeDefined();
+    moveDuelCard(session.state, normalCard!.uid, "monsterZone", 0);
+    normalCard!.summonType = "normal";
+    normalCard!.summonPlayer = 0;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_CANNOT_DISABLE_SPSUMMON)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local g=Duel.GetMatchingGroup(aux.TRUE,tp,LOCATION_MZONE,0,nil)
+          Debug.Message("normal under sp negate count " .. Duel.NegateSummon(g:GetFirst()))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "sp-summon-negation-normal-gap.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const negate = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("200"));
+    expect(negate).toBeDefined();
+    expect(applyResponse(session, negate!).ok).toBe(true);
+
+    expect(host.messages).toEqual(["normal under sp negate count 1"]);
+    expect(session.state.cards.find((card) => card.uid === normalCard!.uid)).toMatchObject({ location: "graveyard" });
+  });
+
   it("prevents Lua summon negation on protected Flip Summons", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Protected Flip Summon", kind: "monster", level: 4 },
