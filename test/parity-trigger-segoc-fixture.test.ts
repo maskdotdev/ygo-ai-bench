@@ -119,6 +119,7 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
                 label: "Trigger Declines",
                 windowId: 2,
                 windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentMandatory" },
                 actions: [{ type: "declineTrigger", player: 1, effectId: "fixture-opponent-mandatory" }],
               },
             ],
