@@ -141,6 +141,10 @@ describe("duel battle timing", () => {
     expect(restored.state.battleWindow).toEqual(session.state.battleWindow);
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "restore-attack-negator");
     expect(action).toBeTruthy();
+    expect(battleWindowGroups(restored, 0)).toEqual([
+      { label: "Effects", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["activateEffect"] },
+      { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["passAttack"] },
+    ]);
     const negateResult = applyResponse(restored, action!);
     expect(negateResult.ok).toBe(true);
     expect(negateResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, negateResult.state.waitingFor!));
@@ -604,6 +608,15 @@ function legalEffectIds(session: ReturnType<typeof createDuel>, player: 0 | 1): 
   return getDuelLegalActions(session, player)
     .filter((action) => action.type === "activateEffect")
     .map((action) => action.effectId);
+}
+
+function battleWindowGroups(session: ReturnType<typeof createDuel>, player: 0 | 1) {
+  return getGroupedDuelLegalActions(session, player).map((group) => ({
+    label: group.label,
+    windowId: group.windowId,
+    windowKind: group.windowKind,
+    actionTypes: group.actions.map((action) => action.type),
+  }));
 }
 
 function passBattleWindow(session: ReturnType<typeof createDuel>): void {
