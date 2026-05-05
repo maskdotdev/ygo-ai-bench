@@ -161,7 +161,7 @@ function pushChainMaterial(L: unknown, session: DuelSession, hostState: LuaDuelC
 function pushSetChainLimit(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState, untilChainEnd: boolean): number {
   const filterRef = readOptionalFunctionRef(L, 1);
   if (filterRef === undefined) return 0;
-  const registryKey = luaChainLimitRegistryKey(hostState.activeContext, untilChainEnd, filterRef);
+  const registryKey = knownLuaChainLimitRegistryKey(L, hostState.activeContext, untilChainEnd) ?? luaChainLimitRegistryKey(hostState.activeContext, untilChainEnd, filterRef);
   addDuelChainLimit(session.state, {
     ...(registryKey === undefined ? {} : { registryKey }),
     untilChainEnd,
@@ -169,6 +169,27 @@ function pushSetChainLimit(L: unknown, session: DuelSession, hostState: LuaDuelC
     release: () => releaseOptionalFunctionRef(L, filterRef),
   });
   return 0;
+}
+
+function knownLuaChainLimitRegistryKey(L: unknown, ctx: DuelEffectContext | undefined, untilChainEnd: boolean): string | undefined {
+  if (!ctx?.source.code) return undefined;
+  const known = knownLuaChainLimitPredicate(L, 1);
+  return known ? `lua-chain-limit:${ctx.source.code}:${ctx.player}:${untilChainEnd ? "chain" : "link"}:known:${known}` : undefined;
+}
+
+function knownLuaChainLimitPredicate(L: unknown, index: number): string | undefined {
+  if (isGlobalTableFunction(L, index, "aux", "FALSE")) return "aux.FALSE";
+  if (isGlobalTableFunction(L, index, "aux", "TRUE")) return "aux.TRUE";
+  return undefined;
+}
+
+function isGlobalTableFunction(L: unknown, index: number, tableName: string, fieldName: string): boolean {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  lua.lua_getglobal(L, to_luastring(tableName));
+  lua.lua_getfield(L, -1, to_luastring(fieldName));
+  const matches = lua.lua_isfunction(L, -1) && lua.lua_rawequal(L, absoluteIndex, -1) !== 0;
+  lua.lua_pop(L, 2);
+  return matches;
 }
 
 function luaChainLimitRegistryKey(ctx: DuelEffectContext | undefined, untilChainEnd: boolean, filterRef: number): string | undefined {

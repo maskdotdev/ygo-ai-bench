@@ -85,10 +85,18 @@ function luaChainLimitRegistryKeys(snapshot: SerializedDuel): string[] {
 }
 
 function luaDenyChainLimitRegistry(keys: string[]): Record<string, (limit: ChainLimit) => ChainLimit> {
-  return Object.fromEntries(keys.map((key) => [key, (limit: ChainLimit): ChainLimit => {
+  return Object.fromEntries(keys.map((key) => [key, knownLuaChainLimitRestoreFactory(key) ?? ((limit: ChainLimit): ChainLimit => {
     const { registryKey: _registryKey, ...metadata } = limit;
     return { ...metadata, allows: () => false };
-  }]));
+  })]));
+}
+
+function knownLuaChainLimitRestoreFactory(key: string): ((limit: ChainLimit) => ChainLimit) | undefined {
+  const parts = key.split(":");
+  const knownPredicate = parts[4] === "known" ? parts[5] : undefined;
+  if (knownPredicate === "aux.FALSE") return (limit) => ({ ...limit, allows: () => false });
+  if (knownPredicate === "aux.TRUE") return (limit) => ({ ...limit, allows: () => true });
+  return undefined;
 }
 
 function luaRestoreIncompleteReasons(loadedScripts: LuaScriptLoadResult[], missingRegistryKeys: string[], missingChainLimitRegistryKeys: string[]): string[] {
@@ -107,7 +115,7 @@ function luaRegistryCardCodes(registryKeys: Set<string>, chainLimitRegistryKeys:
   const codes = new Set<string>();
   for (const key of [...registryKeys, ...chainLimitRegistryKeys]) {
     const [, code] = key.split(":");
-    if (code) codes.add(code);
+    if (code && /^\d+$/.test(code)) codes.add(code);
   }
   return codes;
 }
