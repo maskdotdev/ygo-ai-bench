@@ -374,6 +374,7 @@ describe("Lua random helpers", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 2 });
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredCoinTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredCoinTrigger).toBeDefined();
@@ -402,6 +403,7 @@ describe("Lua random helpers", () => {
     const restoredDice = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restoredDice.restoreComplete).toBe(true);
     expect(restoredDice.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1150, eventPlayer: 0, eventValue: 2 });
+    expect(getLuaRestoreLegalActions(restoredDice, 0)).toEqual(getDuelLegalActions(restoredDice.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredDice, 0)).toEqual(getGroupedDuelLegalActions(restoredDice.session, 0));
     const restoredDiceTrigger = getLuaRestoreLegalActions(restoredDice, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredDiceTrigger).toBeDefined();
@@ -706,6 +708,7 @@ describe("Lua random helpers", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["coinTossed"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 1 });
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
