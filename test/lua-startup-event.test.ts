@@ -65,13 +65,14 @@ describe("Lua startup events", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(100, source).ok).toBe(true);
+    const loaded = host.loadCardScript(100, source);
+    expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     expect(host.runStartupEffects()).toBe(1);
     expect(host.messages).toContain("restored startup op 0/true");
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.registeredEffects).toBe(1);
     expect(restored.session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "startup", eventCode: 1000 }));
     expect(restored.host.runStartupEffects()).toBe(0);
@@ -104,12 +105,13 @@ describe("Lua startup events", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(100, source).ok).toBe(true);
+    const loaded = host.loadCardScript(100, source);
+    expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     expect(host.messages).toEqual([]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.registeredEffects).toBe(1);
     expect(restored.host.runStartupEffects()).toBe(1);
     expect(restored.host.runStartupEffects()).toBe(0);

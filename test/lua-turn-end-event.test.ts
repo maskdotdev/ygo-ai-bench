@@ -79,7 +79,8 @@ describe("Lua turn-end events", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(100, source).ok).toBe(true);
+    const loaded = host.loadCardScript(100, source);
+    expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     const endTurn = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
@@ -89,7 +90,7 @@ describe("Lua turn-end events", () => {
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["turnEnded"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.turnPlayer).toBe(1);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["turnEnded"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1210 });
