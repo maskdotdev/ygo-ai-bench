@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { passBattleGroup } from "./parity-legal-action-group-helpers.js";
+import { absentOpenAttackGroup, passBattleGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle damage prevention fixtures", () => {
   it("applies player-scoped battle damage prevention", () => {
@@ -76,6 +76,8 @@ describe("EDOPro parity battle damage prevention fixtures", () => {
             battleDamage: { 0: 0, 1: 0 },
             attacksDeclared: ["p0-deck-100-0"],
             logIncludes: ["0", "Direct attack"],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
+            absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
           },
         }),
       ],
@@ -91,6 +93,8 @@ describe("EDOPro parity battle damage prevention fixtures", () => {
         battleDamage: { 0: 0, 1: 0 },
         attacksDeclared: ["p0-deck-100-0"],
         logIncludes: ["0", "Direct attack"],
+        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
+        absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
       },
     };
 
