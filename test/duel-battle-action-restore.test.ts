@@ -23,7 +23,9 @@ describe("battle action restore", () => {
     expect(restored.state.currentAttack).toMatchObject({ attackerUid: attacker!.uid });
     expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", responsePlayer: 1 });
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   });
 
   it("restores targeted attack legal actions and applies the restored action", () => {
@@ -47,7 +49,9 @@ describe("battle action restore", () => {
     expect(restored.state.currentAttack).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
     expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", responsePlayer: 1 });
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   });
 });
 

@@ -25,7 +25,9 @@ describe("set action restore", () => {
     expect(result.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
     expect(result.state.players[0].normalSummonAvailable).toBe(false);
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.state.log.some((entry) => entry.action === "setMonster" && entry.card === "Normal Test Monster")).toBe(true);
   });
 
@@ -49,7 +51,9 @@ describe("set action restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === spell!.uid)).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.state.log.some((entry) => entry.action === "set" && entry.card === "Test Spell")).toBe(true);
   });
 });
