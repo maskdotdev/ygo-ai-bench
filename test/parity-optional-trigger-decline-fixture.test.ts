@@ -54,6 +54,7 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
               { player: 0, effectId: "fixture-second-optional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
             legalActionCounts: { 0: 4, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
@@ -98,6 +99,7 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
+            triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
             legalActionCounts: { 0: 4, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-optional", count: 1 }],
@@ -121,6 +123,7 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-second-optional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: null,
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [

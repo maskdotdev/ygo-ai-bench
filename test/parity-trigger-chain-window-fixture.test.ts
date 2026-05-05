@@ -65,6 +65,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
               { player: 0, effectId: "fixture-second-held-trigger", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
             legalActionCounts: { 0: 4, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [

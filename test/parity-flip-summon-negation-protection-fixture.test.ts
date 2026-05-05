@@ -66,6 +66,7 @@ describe("EDOPro parity flip summon negation protection fixtures", () => {
               { player: 0, effectId: "fixture-protected-flip-success-watcher", eventName: "flipSummoned", eventCardUid: "p0-deck-100-0" },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-blocked-flip-summon-negator" }), {

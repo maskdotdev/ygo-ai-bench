@@ -111,6 +111,10 @@ describe("parity fixture metadata", () => {
     expect(missingTriggerGroupBucketCoverage()).toEqual([]);
   });
 
+  it("requires multi-trigger bucket expectations to pin trigger order prompt state", () => {
+    expect(missingTriggerOrderPromptCoverage()).toEqual([]);
+  });
+
   it("requires parity fixtures to exercise snapshot restore coverage", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
@@ -360,6 +364,37 @@ describe("parity fixture metadata", () => {
         ...lines.slice(4),
       ]),
     ).toEqual([]);
+    expect(
+      missingTriggerOrderPromptCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  pendingTriggers: [",
+        "    { player: 0, effectId: 'first' },",
+        "    { player: 0, effectId: 'second' },",
+        "  ],",
+        "  pendingTriggerBuckets: [{ player: 0, triggerBucket: 'turnOptional' }],",
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:2"]);
+    expect(
+      missingTriggerOrderPromptCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  pendingTriggers: [",
+        "    { player: 0, effectId: 'first' },",
+        "    { player: 0, effectId: 'second' },",
+        "  ],",
+        "  pendingTriggerBuckets: [{ player: 0, triggerBucket: 'turnOptional' }],",
+        "  triggerOrderPrompt: { type: 'orderTriggers', player: 0, triggerBucket: 'turnOptional' },",
+        ...lines.slice(4),
+      ]),
+    ).toEqual([]);
+    expect(
+      missingTriggerOrderPromptCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  pendingTriggers: [{ player: 0, effectId: 'only' }],",
+        "  pendingTriggerBuckets: [{ player: 0, triggerBucket: 'turnOptional' }],",
+        ...lines.slice(4),
+      ]),
+    ).toEqual([]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "  it('one', () => {})", "});"])).toEqual([]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "});"])).toEqual(["fixture.ts: expected 1 scenario, found 0"]);
@@ -470,6 +505,10 @@ function missingPendingTriggerBucketCoverage(): string[] {
 
 function missingTriggerGroupBucketCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingTriggerGroupBucketCoverageInLines(file, readFixtureLines(file)));
+}
+
+function missingTriggerOrderPromptCoverage(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingTriggerOrderPromptCoverageInLines(file, readFixtureLines(file)));
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
@@ -669,6 +708,37 @@ function missingTriggerGroupBucketCoverageInLines(file: string, lines: string[])
     if (!/triggerBucket:\s*\{/.test(header)) missingBuckets.push(`${file}:${findBlockStart(lines, index) + 1}`);
   });
   return [...new Set(missingBuckets)];
+}
+
+function missingTriggerOrderPromptCoverageInLines(file: string, lines: string[]): string[] {
+  const missingPrompts: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    if (!block.includes("pendingTriggers:") || !block.includes("pendingTriggerBuckets:")) return;
+    if (activePendingTriggerBucketSize(block) > 1 && !block.includes("triggerOrderPrompt:")) missingPrompts.push(`${file}:${index + 1}`);
+  });
+  return missingPrompts;
+}
+
+function activePendingTriggerBucketSize(block: string): number {
+  const triggerBuckets = block.match(/pendingTriggerBuckets:\s*\[([\s\S]*?)\]/);
+  if (!triggerBuckets) return 0;
+  const pendingTriggerText = block.match(/pendingTriggers:\s*\[([\s\S]*?)\]\s*,\s*pendingTriggerBuckets:/)?.[1] ?? "";
+  const activeBucket = triggerBuckets[1]?.match(/\{\s*player:\s*(\d+),\s*triggerBucket:\s*["']([^"']+)["']/);
+  if (!activeBucket) return 0;
+  const bucketCount = [...(triggerBuckets[1] ?? "").matchAll(/\{\s*player:\s*\d+,\s*triggerBucket:\s*["'][^"']+["']/g)].length;
+  return pendingTriggerCount(pendingTriggerText, Number(activeBucket[1]), activeBucket[2] ?? "", bucketCount);
+}
+
+function pendingTriggerCount(pendingTriggerText: string, player: number, triggerBucket: string, bucketCount: number): number {
+  const compact = pendingTriggerText.replace(/\s+/g, " ");
+  const bucketPattern = new RegExp(`\\{[^{}]*player:\\s*${player}\\b[^{}]*triggerBucket:\\s*["']${triggerBucket}["'][^{}]*\\}`, "g");
+  const explicitBucketCount = (compact.match(bucketPattern) ?? []).length;
+  if (explicitBucketCount > 0) return explicitBucketCount;
+  if (bucketCount > 1) return 0;
+  const playerPattern = new RegExp(`\\{[^{}]*player:\\s*${player}\\b[^{}]*\\}`, "g");
+  return (compact.match(playerPattern) ?? []).length;
 }
 
 function missingOpenLegalActionWindowIdsInLines(file: string, lines: string[]): string[] {
