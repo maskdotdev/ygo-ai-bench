@@ -820,4 +820,79 @@ describe("Node upstream snapshot restore", () => {
     expect(chainLimitOnlyRestored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
   });
 
+  it("reports Lua one-chain limit predicates that cannot be restored from snapshots", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return true end
+          Duel.SetChainLimit(function(te,rp,tp) return te:GetHandler():GetCode()==200 end)
+        end)
+        e:SetOperation(function(e,c) Debug.Message("one-chain limit source") end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(root, "script", "c200.lua"),
+      `
+      c200 = {}
+      c200.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c) return Duel.GetCurrentChain()>0 end)
+        e:SetOperation(function(e,c) Debug.Message("one-chain quick response") end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const session = createDuel({ seed: 6, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.loadCardScript(200, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
+
+    const snapshot = serializeDuel(session);
+    expect(snapshot.state.chainLimits).toEqual([
+      expect.objectContaining({ registryKey: expect.stringMatching(/^lua-chain-limit:100:0:link:/), untilChainEnd: false, expiresAtChainLength: 1 }),
+    ]);
+    const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
+
+    expect(restored.restoreComplete).toBe(false);
+    expect(restored.chainLimitRegistryKeys).toEqual(snapshot.state.chainLimits.map((limit) => limit.registryKey));
+    expect(restored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
+    expect(restored.incompleteReasons).toEqual([`missing Lua chain-limit registry keys: ${restored.chainLimitRegistryKeys[0]}`]);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
+    expect(applyLuaRestoreResponse(restored, { type: "passChain", player: 0, label: "Pass" })).toMatchObject({
+      ok: false,
+      legalActions: [],
+      legalActionGroups: [],
+    });
+  });
+
 });
