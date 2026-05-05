@@ -172,6 +172,7 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
   });
   lua.lua_setfield(L, -2, to_luastring("ConfirmExtratop"));
   lua.lua_pushcfunction(L, () => {
+    if (session.state.status === "ended") return 0;
     session.state.shuffleCheckDisabled = true;
     return 0;
   });

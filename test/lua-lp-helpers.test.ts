@@ -229,6 +229,7 @@ describe("Lua LP helpers", () => {
       Duel.SortDeckbottom(0, 0, 2)
       Debug.Message("sort operated " .. Duel.GetOperatedGroup():GetCount())
       Duel.ShuffleDeck(0)
+      Duel.DisableShuffleCheck()
       `,
       "ended-sort-shuffle-noop.lua",
     );
@@ -240,6 +241,7 @@ describe("Lua LP helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toEqual(["sort operated 0"]);
     expect(afterOrder).toEqual(beforeOrder);
+    expect(session.state.shuffleCheckDisabled).toBe(false);
     expect(session.state.pendingTriggers).toEqual([]);
   });
 
