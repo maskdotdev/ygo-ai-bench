@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import { setupLuaChainFixture } from "./lua-chain-fixtures.js";
 
 describe("Lua stale chain responses", () => {
@@ -195,9 +195,12 @@ describe("Lua stale chain responses", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const restoredPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(restoredPass).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredPass!).ok).toBe(true);
+    const restoredPassResult = applyLuaRestoreResponse(restored, restoredPass!);
+    expect(restoredPassResult.ok).toBe(true);
+    expect(restoredPassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredPassResult.state.waitingFor!));
 
     const replay = applyLuaRestoreResponse(restored, stalePass!);
 
@@ -272,9 +275,12 @@ describe("Lua stale chain responses", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const restoredQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
     expect(restoredQuick).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredQuick!).ok).toBe(true);
+    const restoredQuickResult = applyLuaRestoreResponse(restored, restoredQuick!);
+    expect(restoredQuickResult.ok).toBe(true);
+    expect(restoredQuickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredQuickResult.state.waitingFor!));
 
     const replay = applyLuaRestoreResponse(restored, stalePass!);
 
@@ -349,9 +355,12 @@ describe("Lua stale chain responses", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredPass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(restoredPass).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredPass!).ok).toBe(true);
+    const restoredPassResult = applyLuaRestoreResponse(restored, restoredPass!);
+    expect(restoredPassResult.ok).toBe(true);
+    expect(restoredPassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredPassResult.state.waitingFor!));
 
     const replay = applyLuaRestoreResponse(restored, staleQuick!);
 
