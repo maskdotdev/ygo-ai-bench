@@ -2,18 +2,19 @@ import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
 import { collectDuelTriggerEffects, raiseDuelEvent } from "#duel/core.js";
 import { createRng } from "#engine/rng.js";
+import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installDuelRandomApi(L: unknown, session: DuelSession): void {
-  lua.lua_pushcfunction(L, (state: unknown) => pushTossDice(state, session));
+export function installDuelRandomApi(L: unknown, session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): void {
+  lua.lua_pushcfunction(L, (state: unknown) => pushTossDice(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("TossDice"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetDiceResult(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetDiceResult"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSetDiceResult(state, session));
   lua.lua_setfield(L, -2, to_luastring("SetDiceResult"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushTossCoin(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushTossCoin(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("TossCoin"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetCoinResult(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetCoinResult"));
@@ -21,7 +22,7 @@ export function installDuelRandomApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("SetCoinResult"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAnnounceCoin(state));
   lua.lua_setfield(L, -2, to_luastring("AnnounceCoin"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushCallCoin(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCallCoin(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("CallCoin"));
   lua.lua_pushcfunction(L, pushCountHeads);
   lua.lua_setfield(L, -2, to_luastring("CountHeads"));
@@ -33,7 +34,7 @@ export function installDuelRandomApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("RockPaperScissors"));
 }
 
-function pushTossDice(L: unknown, session: DuelSession): number {
+function pushTossDice(L: unknown, session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): number {
   if (session.state.status === "ended") return 0;
   const player = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer;
   const count = Math.max(1, Math.trunc(lua.lua_isnumber(L, 2) ? lua.lua_tonumber(L, 2) : 1));
@@ -43,6 +44,7 @@ function pushTossDice(L: unknown, session: DuelSession): number {
   }
   session.state.lastDiceResults = results;
   pushDuelLog(session.state, "tossDice", player === 1 ? 1 : 0, undefined, results.join(","));
+  markLuaOperationTimingBoundary(session, hostState);
   collectDuelTriggerEffects(session.state, "diceTossed", undefined, { eventPlayer: normalizePlayer(player), eventValue: results.length });
   for (const result of results) lua.lua_pushinteger(L, result);
   return results.length;
@@ -65,7 +67,7 @@ function rollDie(session: DuelSession): number {
   return Math.floor(rng() * 6) + 1;
 }
 
-function pushTossCoin(L: unknown, session: DuelSession): number {
+function pushTossCoin(L: unknown, session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): number {
   if (session.state.status === "ended") return 0;
   const player = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer;
   const count = Math.max(1, Math.trunc(lua.lua_isnumber(L, 2) ? lua.lua_tonumber(L, 2) : 1));
@@ -73,6 +75,7 @@ function pushTossCoin(L: unknown, session: DuelSession): number {
   for (let index = 0; index < count; index += 1) results.push(tossCoin(session));
   session.state.lastCoinResults = results;
   pushDuelLog(session.state, "tossCoin", player === 1 ? 1 : 0, undefined, results.join(","));
+  markLuaOperationTimingBoundary(session, hostState);
   collectDuelTriggerEffects(session.state, "coinTossed", undefined, { eventPlayer: normalizePlayer(player), eventValue: results.length });
   for (const result of results) lua.lua_pushinteger(L, result);
   return results.length;
@@ -94,7 +97,7 @@ function pushAnnounceCoin(L: unknown): number {
   return 1;
 }
 
-function pushCallCoin(L: unknown, session: DuelSession): number {
+function pushCallCoin(L: unknown, session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): number {
   if (session.state.status === "ended") {
     lua.lua_pushboolean(L, false);
     return 1;
@@ -104,6 +107,7 @@ function pushCallCoin(L: unknown, session: DuelSession): number {
   const result = tossCoin(session);
   session.state.lastCoinResults = [result];
   pushDuelLog(session.state, "callCoin", player === 1 ? 1 : 0, undefined, `${call}/${result}`);
+  markLuaOperationTimingBoundary(session, hostState);
   collectDuelTriggerEffects(session.state, "coinTossed", undefined, { eventPlayer: normalizePlayer(player), eventValue: 1 });
   lua.lua_pushboolean(L, call === result);
   return 1;
