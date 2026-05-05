@@ -100,6 +100,7 @@ describe("EDOPro parity fixture event codes", () => {
                 eventCardUid: "p0-deck-500-3",
               },
             ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             eventHistory: [
               { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
               { eventName: "chaining", eventCardUid: "p0-deck-100-0" },

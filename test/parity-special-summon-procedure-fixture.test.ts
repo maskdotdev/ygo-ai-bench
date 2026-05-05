@@ -98,6 +98,7 @@ describe("EDOPro parity special summon procedure fixtures", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-special-success-watcher", eventName: "specialSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             locations: { monsterZone: ["100"], hand: ["200"] },
             cards: [{ uid: "p0-deck-100-0", code: "100", location: "monsterZone", faceUp: true }],
           },

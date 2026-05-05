@@ -83,6 +83,10 @@ describe("EDOPro parity missed timing fixtures", () => {
               { player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
               { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
             ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 0, triggerBucket: "turnOptional" },
+            ],
             legalActionCounts: { 0: 1, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-when", count: 1 }],
@@ -123,6 +127,7 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 0,
             chain: [{ player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" }],
             pendingTriggers: [{ player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [

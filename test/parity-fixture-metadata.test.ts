@@ -103,6 +103,10 @@ describe("parity fixture metadata", () => {
     expect(missingTimingExpectationWindowIds()).toEqual([]);
   });
 
+  it("requires non-empty pending trigger expectations to pin trigger bucket summaries", () => {
+    expect(missingPendingTriggerBucketCoverage()).toEqual([]);
+  });
+
   it("requires parity fixtures to exercise snapshot restore coverage", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
@@ -311,6 +315,18 @@ describe("parity fixture metadata", () => {
         ...lines.slice(4),
       ]),
     ).toEqual(["fixture.ts:2"]);
+    expect(missingPendingTriggerBucketCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  pendingTriggers: [{ player: 0, effectId: 'trigger' }],", ...lines.slice(4)])).toEqual([
+      "fixture.ts:2",
+    ]);
+    expect(
+      missingPendingTriggerBucketCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  pendingTriggers: [{ player: 0, effectId: 'trigger' }],",
+        "  pendingTriggerBuckets: [{ player: 0, triggerBucket: 'turnOptional' }],",
+        ...lines.slice(4),
+      ]),
+    ).toEqual([]);
+    expect(missingPendingTriggerBucketCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  pendingTriggers: [],", ...lines.slice(4)])).toEqual([]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "  it('one', () => {})", "});"])).toEqual([]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "});"])).toEqual(["fixture.ts: expected 1 scenario, found 0"]);
@@ -413,6 +429,10 @@ function missingNestedLegalActionGroupWindowKinds(): string[] {
 
 function missingTimingExpectationWindowIds(): string[] {
   return parityFixtureFiles().flatMap((file) => missingTimingExpectationWindowIdsInLines(file, readFixtureLines(file)));
+}
+
+function missingPendingTriggerBucketCoverage(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingPendingTriggerBucketCoverageInLines(file, readFixtureLines(file)));
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
@@ -590,6 +610,17 @@ function missingTimingExpectationWindowIdsInLines(file: string, lines: string[])
     if (!/\bwindowId:/.test(header)) missingWindowIds.push(`${file}:${index + 1}`);
   });
   return missingWindowIds;
+}
+
+function missingPendingTriggerBucketCoverageInLines(file: string, lines: string[]): string[] {
+  const missingBuckets: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    if (!block.includes("pendingTriggers:") || block.includes("pendingTriggers: []")) return;
+    if (!block.includes("pendingTriggerBuckets:")) missingBuckets.push(`${file}:${index + 1}`);
+  });
+  return missingBuckets;
 }
 
 function missingOpenLegalActionWindowIdsInLines(file: string, lines: string[]): string[] {

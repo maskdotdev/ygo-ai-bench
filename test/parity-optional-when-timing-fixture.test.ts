@@ -52,6 +52,7 @@ describe("EDOPro parity optional when timing fixtures", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-optional-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-2" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [

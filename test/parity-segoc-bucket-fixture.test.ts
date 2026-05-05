@@ -133,6 +133,10 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
               { player: 0, effectId: "fixture-turn-optional", triggerBucket: "turnOptional" },
               { player: 1, effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional" },
             ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
@@ -178,6 +182,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
             windowKind: "triggerBucket",
             waitingFor: 1,
             pendingTriggers: [{ player: 1, effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
             legalActionCounts: { 0: 0, 1: 2 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
             legalActions: [
