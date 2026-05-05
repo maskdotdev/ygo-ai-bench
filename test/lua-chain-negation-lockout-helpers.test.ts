@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -60,14 +60,26 @@ describe("Lua chain negation lockout helpers", () => {
     expect(source).toBeDefined();
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === source!.uid);
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const opened = applyResponse(session, sourceAction!);
+    expect(opened.ok).toBe(true);
+    expect(opened.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
 
     const negator = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect");
     expect(negator).toBeDefined();
-    expect(applyResponse(session, negator!).ok).toBe(true);
+    const chained = applyResponse(session, negator!);
+    expect(chained.ok).toBe(true);
+    expect(chained.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
-    expect(applyResponse(session, pass!).ok).toBe(true);
+    const resolved = applyResponse(session, pass!);
+    expect(resolved.ok).toBe(true);
+    expect(resolved.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
 
     expect(host.messages).toEqual(["negatable false", "negated false", "protected source resolved"]);
   });
