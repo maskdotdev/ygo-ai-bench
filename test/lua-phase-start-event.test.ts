@@ -174,6 +174,7 @@ describe("Lua phase-start events", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.host.messages).toContain("restored phase start 512");
     expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["phaseEnd"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x1200 });
@@ -186,6 +187,7 @@ describe("Lua phase-start events", () => {
     expect(phaseEndTriggerResult.ok).toBe(true);
     expect(phaseEndTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, phaseEndTriggerResult.state.waitingFor!));
     expect(phaseEndTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, phaseEndTriggerResult.state.waitingFor!));
+    expect(phaseEndTriggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(phaseEndTriggerResult.legalActions);
     expect(restored.host.messages).toContain("restored phase end 512");
   });
 });
