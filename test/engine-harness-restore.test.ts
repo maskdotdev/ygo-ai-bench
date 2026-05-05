@@ -565,6 +565,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
             },
           }),
           makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-allowed-quick" })),
+          makeScriptedStep(makeResponseSelector("passChain", 1)),
         ],
         expected: {
           source: "edopro",
