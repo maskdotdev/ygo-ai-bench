@@ -637,7 +637,10 @@ function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: st
     if (card[field] !== undefined) assertSnapshotEffectRelationIds(card[field], `${path}.${field}`);
   }
   for (const field of ["cardTargetUids", "summonMaterialUids"] as const) {
-    if (card[field] !== undefined) assertSnapshotStringArray(card[field], `${path}.${field}`);
+    if (card[field] !== undefined) {
+      assertSnapshotStringArray(card[field], `${path}.${field}`);
+      assertSnapshotUniqueStringArray(card[field], `${path}.${field}`);
+    }
   }
   if (card.counters !== undefined) assertSnapshotCounterRecord(card.counters, `${path}.counters`);
   if (card.assumedProperties !== undefined) assertSnapshotNumberRecord(card.assumedProperties, `${path}.assumedProperties`);
