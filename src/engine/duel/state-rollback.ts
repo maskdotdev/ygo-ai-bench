@@ -198,18 +198,26 @@ function copyEffect(effect: DuelEffectDefinition): DuelEffectDefinition {
 
 function copyChainLink(link: ChainLink): ChainLink {
   return {
-    ...link,
+    ...copyEventPayload(link),
     ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}),
-    ...(link.eventUids ? { eventUids: [...link.eventUids] } : {}),
   };
 }
 
 function copyPendingTrigger(trigger: PendingTrigger): PendingTrigger {
-  return { ...trigger, ...(trigger.eventUids ? { eventUids: [...trigger.eventUids] } : {}) };
+  return copyEventPayload(trigger);
 }
 
 function copyEventRecord(event: DuelEventRecord): DuelEventRecord {
-  return { ...event, ...(event.eventUids ? { eventUids: [...event.eventUids] } : {}) };
+  return copyEventPayload(event);
+}
+
+function copyEventPayload<T extends ChainLink | PendingTrigger | DuelEventRecord>(payload: T): T {
+  return {
+    ...payload,
+    ...(payload.eventUids ? { eventUids: [...payload.eventUids] } : {}),
+    ...(payload.eventPreviousState ? { eventPreviousState: { ...payload.eventPreviousState } } : {}),
+    ...(payload.eventCurrentState ? { eventCurrentState: { ...payload.eventCurrentState } } : {}),
+  };
 }
 
 function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {

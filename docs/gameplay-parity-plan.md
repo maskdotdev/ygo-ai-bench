@@ -130,10 +130,11 @@ Completed baseline:
 - Optional trigger declines and mandatory trigger handoff are restored without exposing later buckets early.
 - SEGOC fixtures pin turn-player mandatory before non-turn mandatory, and same-player mandatory before optional.
 - Lua-created trigger buckets, restored Lua trigger timing windows, and restored trigger-bucket chain windows have fixture coverage.
+- Event history, pending triggers, and chain links can carry serialized event-card previous/current state packets, with snapshot coverage for moved-card trigger payloads.
 
 Remaining deliverables:
 
-- Introduce a richer event/timing packet that records cause, previous location/state, current location/state, reason, reason player, chain context, and whether a trigger is "when" or "if".
+- Continue enriching the event/timing packet with broader cause metadata, chain context, and explicit "when" versus "if" trigger timing data.
 - Broaden missed timing coverage for "when optional" triggers after multi-step effects.
 - Revisit fast effect response player selection after every action and chain resolution.
 - Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today, and Lua-created predicates now restore when they are known globals such as `aux.TRUE`/`aux.FALSE`, named card-table functions such as `s.chlimit`, single-card closures that block the captured card's own handler, or type-mask closures that allow the original chain player and block matching handler card types. Arbitrary Lua-created one-chain and until-chain-end predicate closures still fail closed by restoring deny-all raw guards without registry keys, hiding every Lua restore legal-action surface, and reporting explicit missing chain-limit registry diagnostics; the remaining parity work is to rebuild or serialize those broader Lua predicates without re-running costs or target selection.

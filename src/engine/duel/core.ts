@@ -113,7 +113,7 @@ import {
 } from "#duel/core-movement.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { duelEventCode } from "#duel/event-codes.js";
-import { recordDuelEvent } from "#duel/event-history.js";
+import { eventCardStatePayload, recordDuelEvent } from "#duel/event-history.js";
 import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
@@ -140,6 +140,7 @@ import type {
   DuelCardInstance,
   DuelEffectContext,
   DuelEffectDefinition,
+  DuelEventCardState,
   DuelEventName,
   DuelLocation,
   DuelPhase,
@@ -475,6 +476,8 @@ interface DuelEventPayload {
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
   eventUids?: string[];
+  eventPreviousState?: DuelEventCardState;
+  eventCurrentState?: DuelEventCardState;
 }
 
 export function raiseDuelEventWithCode(state: DuelState, eventName: DuelEventName, eventCode: number, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): void {
@@ -819,6 +822,8 @@ function pushChainLink(
   eventReasonPlayer?: PlayerId,
   relatedEffectId?: number,
   eventUids?: string[],
+  eventPreviousState?: DuelEventCardState,
+  eventCurrentState?: DuelEventCardState,
 ): void {
   const source = findCard(state, sourceUid);
   state.chain.push({
@@ -835,6 +840,9 @@ function pushChainLink(
     ...(eventReasonPlayer === undefined ? {} : { eventReasonPlayer }),
     ...(relatedEffectId === undefined ? {} : { relatedEffectId }),
     ...(eventUids === undefined || eventUids.length === 0 ? {} : { eventUids: [...eventUids] }),
+    ...eventCardStatePayload(eventCard),
+    ...(eventPreviousState === undefined ? {} : { eventPreviousState: { ...eventPreviousState } }),
+    ...(eventCurrentState === undefined ? {} : { eventCurrentState: { ...eventCurrentState } }),
     ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
     ...(targetUids.length === 0 ? {} : { targetUids: [...targetUids] }),
     ...(targetPlayer === undefined ? {} : { targetPlayer }),

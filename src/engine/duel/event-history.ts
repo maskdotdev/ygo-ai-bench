@@ -1,4 +1,4 @@
-import type { DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEventCardState, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface DuelEventRecordPayload {
   eventPlayer?: PlayerId;
@@ -7,9 +7,37 @@ export interface DuelEventRecordPayload {
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
   eventUids?: string[];
+  eventPreviousState?: DuelEventCardState;
+  eventCurrentState?: DuelEventCardState;
 }
 
 export function recordDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, eventCode?: number, payload: DuelEventRecordPayload = {}): void {
-  state.eventHistory.push({ eventName, ...(eventCode === undefined ? {} : { eventCode }), ...payload, ...(eventCard ? { eventCardUid: eventCard.uid } : {}) });
+  state.eventHistory.push({
+    eventName,
+    ...(eventCode === undefined ? {} : { eventCode }),
+    ...eventCardStatePayload(eventCard),
+    ...payload,
+    ...(eventCard ? { eventCardUid: eventCard.uid } : {}),
+  });
   state.eventHistory = state.eventHistory.slice(-32);
+}
+
+export function eventCardStatePayload(eventCard?: DuelCardInstance): Pick<DuelEventRecordPayload, "eventPreviousState" | "eventCurrentState"> {
+  if (!eventCard) return {};
+  return {
+    eventPreviousState: {
+      controller: eventCard.previousController ?? eventCard.controller,
+      location: eventCard.previousLocation ?? eventCard.location,
+      sequence: eventCard.previousSequence ?? eventCard.sequence,
+      position: eventCard.previousPosition ?? eventCard.position,
+      faceUp: eventCard.previousFaceUp ?? eventCard.faceUp,
+    },
+    eventCurrentState: {
+      controller: eventCard.controller,
+      location: eventCard.location,
+      sequence: eventCard.sequence,
+      position: eventCard.position,
+      faceUp: eventCard.faceUp,
+    },
+  };
 }

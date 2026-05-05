@@ -6,6 +6,7 @@ import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from
 import type {
   DuelCardInstance,
   DuelEffectContext,
+  DuelEventCardState,
   DuelEventName,
   DuelLocation,
   DuelSession,
@@ -54,6 +55,8 @@ export interface DuelActivationHandlers {
     eventReasonPlayer?: PlayerId,
     relatedEffectId?: number,
     eventUids?: string[],
+    eventPreviousState?: DuelEventCardState,
+    eventCurrentState?: DuelEventCardState,
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
@@ -163,6 +166,8 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventReasonPlayer,
       trigger.relatedEffectId,
       trigger.eventUids,
+      trigger.eventPreviousState,
+      trigger.eventCurrentState,
     );
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
     markEffectUsed(session.state, effect);
@@ -220,8 +225,15 @@ function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][nu
     trigger.eventReasonPlayer === link.eventReasonPlayer &&
     trigger.relatedEffectId === link.relatedEffectId &&
     trigger.eventCardUid === link.eventCardUid &&
-    sameOptionalStringList(trigger.eventUids, link.eventUids)
+    sameOptionalStringList(trigger.eventUids, link.eventUids) &&
+    sameEventCardState(trigger.eventPreviousState, link.eventPreviousState) &&
+    sameEventCardState(trigger.eventCurrentState, link.eventCurrentState)
   );
+}
+
+function sameEventCardState(left: DuelEventCardState | undefined, right: DuelEventCardState | undefined): boolean {
+  if (left === undefined || right === undefined) return left === right;
+  return left.controller === right.controller && left.location === right.location && left.sequence === right.sequence && left.position === right.position && left.faceUp === right.faceUp;
 }
 
 function sameOptionalStringList(left: string[] | undefined, right: string[] | undefined): boolean {

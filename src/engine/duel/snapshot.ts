@@ -383,6 +383,17 @@ function assertSnapshotEventPayload(payload: Record<string, unknown>, path: stri
     assertSnapshotUniqueStringArray(payload.eventUids, `${path}.eventUids`);
     for (const [index, uid] of payload.eventUids.entries()) if (typeof uid !== "string" || !cardUids.has(uid)) throw new Error(`Malformed duel snapshot: ${path}.eventUids.${index} must reference a card`);
   }
+  if (payload.eventPreviousState !== undefined) assertSnapshotEventCardState(payload.eventPreviousState, `${path}.eventPreviousState`);
+  if (payload.eventCurrentState !== undefined) assertSnapshotEventCardState(payload.eventCurrentState, `${path}.eventCurrentState`);
+}
+
+function assertSnapshotEventCardState(value: unknown, path: string): void {
+  if (!isRecord(value)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+  assertSnapshotPlayerId(value.controller, `${path}.controller`);
+  if (!duelSnapshotLocations.has(value.location)) throw new Error(`Malformed duel snapshot: ${path}.location must be a location`);
+  assertSnapshotNonNegativeInteger(value.sequence, `${path}.sequence`);
+  if (!duelSnapshotPositions.has(value.position)) throw new Error(`Malformed duel snapshot: ${path}.position must be a card position`);
+  if (typeof value.faceUp !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.faceUp must be a boolean`);
 }
 
 function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): void {
@@ -881,27 +892,34 @@ function denyChainLimit(_effect: DuelEffectDefinition, _player: PlayerId, _chain
 
 function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][number] {
   return {
-    ...link,
+    ...copyEventPayload(link),
     ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
-    ...(link.eventUids === undefined ? {} : { eventUids: [...link.eventUids] }),
   };
 }
 
 function copyPublicChainLink(link: DuelState["chain"][number]): PublicChainLink {
   const { operationOverride: _operationOverride, ...publicLink } = link;
   return {
-    ...publicLink,
+    ...copyEventPayload(publicLink),
     ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
-    ...(link.eventUids === undefined ? {} : { eventUids: [...link.eventUids] }),
   };
 }
 
 function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): DuelState["pendingTriggers"][number] {
-  return { ...trigger, ...(trigger.eventUids === undefined ? {} : { eventUids: [...trigger.eventUids] }) };
+  return copyEventPayload(trigger);
 }
 
 function copyEventRecord(event: DuelState["eventHistory"][number]): DuelState["eventHistory"][number] {
-  return { ...event, ...(event.eventUids === undefined ? {} : { eventUids: [...event.eventUids] }) };
+  return copyEventPayload(event);
+}
+
+function copyEventPayload<T extends DuelState["chain"][number] | PublicChainLink | DuelState["pendingTriggers"][number] | DuelState["eventHistory"][number]>(payload: T): T {
+  return {
+    ...payload,
+    ...(payload.eventUids === undefined ? {} : { eventUids: [...payload.eventUids] }),
+    ...(payload.eventPreviousState === undefined ? {} : { eventPreviousState: { ...payload.eventPreviousState } }),
+    ...(payload.eventCurrentState === undefined ? {} : { eventCurrentState: { ...payload.eventCurrentState } }),
+  };
 }
 
 function copyCard(card: DuelCardInstance): DuelCardInstance {
