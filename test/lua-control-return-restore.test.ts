@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -74,6 +74,7 @@ describe("Lua control and return restore helpers", () => {
     expect(trigger).toBeDefined();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored to deck trigger 200");
   });
 
@@ -138,6 +139,7 @@ describe("Lua control and return restore helpers", () => {
     expect(trigger).toBeDefined();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored control trigger 0");
   });
 });

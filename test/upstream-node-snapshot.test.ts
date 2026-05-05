@@ -357,6 +357,7 @@ describe("Node upstream snapshot restore", () => {
     const result = applyLuaRestoreResponse(restored, getLuaRestoreLegalActions(restored, 1)[1]!);
 
     expect(result.ok).toBe(true);
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(restored.session.state.prompt).toBeUndefined();
     expect(restored.session.state.waitingFor).toBe(0);
     expect(restored.session.state.log.some((entry) => entry.action === "selectOption" && entry.detail === "Selected option 5")).toBe(true);
@@ -376,7 +377,9 @@ describe("Node upstream snapshot restore", () => {
     expect(staleYes).toBeDefined();
     const no = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "selectYesNo" && !candidate.yes);
     expect(no).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, no!).ok).toBe(true);
+    const noResult = applyLuaRestoreResponse(restored, no!);
+    expect(noResult.ok).toBe(true);
+    expect(noResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, noResult.state.waitingFor!));
     expect(restored.session.state.prompt).toBeUndefined();
     expect(restored.session.state.waitingFor).toBe(1);
     expect(restored.session.state.log.some((entry) => entry.action === "selectYesNo" && entry.detail === "Selected no")).toBe(true);

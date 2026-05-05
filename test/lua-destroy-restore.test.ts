@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -78,6 +78,7 @@ describe("Lua destroy restore helpers", () => {
     expect(trigger).toBeDefined();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored destroying trigger 200");
   });
 
@@ -152,6 +153,7 @@ describe("Lua destroy restore helpers", () => {
     expect(trigger).toBeDefined();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored destroyed trigger 200");
   });
 });
