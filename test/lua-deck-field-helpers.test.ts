@@ -366,10 +366,12 @@ describe("Lua deck and field helpers", () => {
       { code: "300", name: "Destination Spell Zone Card", kind: "spell" },
       { code: "400", name: "Leave Field Spell", kind: "spell", typeFlags: 0x80002 },
       { code: "500", name: "Leave Pendulum Scale", kind: "monster", typeFlags: 0x1000001, leftScale: 1, rightScale: 1 },
+      { code: "600", name: "Destination Main Monster", kind: "monster" },
+      { code: "700", name: "Destination Extra Monster", kind: "monster" },
     ];
-    const session = createDuel({ seed: 254, startingHandSize: 5, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 254, startingHandSize: 7, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500"] },
+      0: { main: ["100", "200", "300", "400", "500", "600", "700"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -379,6 +381,8 @@ describe("Lua deck and field helpers", () => {
     const spell = session.state.cards.find((card) => card.code === "300")!;
     const leaveField = session.state.cards.find((card) => card.code === "400")!;
     const leavePendulum = session.state.cards.find((card) => card.code === "500")!;
+    const mainMonster = session.state.cards.find((card) => card.code === "600")!;
+    const extraMonster = session.state.cards.find((card) => card.code === "700")!;
     moveDuelCard(session.state, field.uid, "spellTrapZone", 0).sequence = 4;
     moveDuelCard(session.state, pendulum.uid, "spellTrapZone", 0).sequence = 0;
     moveDuelCard(session.state, spell.uid, "spellTrapZone", 0).sequence = 2;
@@ -386,6 +390,8 @@ describe("Lua deck and field helpers", () => {
     moveDuelCard(session.state, leaveField.uid, "spellTrapZone", 0).sequence = 4;
     moveDuelCard(session.state, leavePendulum.uid, "monsterZone", 0);
     moveDuelCard(session.state, leavePendulum.uid, "spellTrapZone", 0).sequence = 1;
+    moveDuelCard(session.state, mainMonster.uid, "monsterZone", 0).sequence = 2;
+    moveDuelCard(session.state, extraMonster.uid, "monsterZone", 0).sequence = 5;
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -395,9 +401,13 @@ describe("Lua deck and field helpers", () => {
       local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_STZONE, 0, 1, 1, nil):GetFirst()
       local leave_field=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_FZONE, 0, 1, 1, nil):GetFirst()
       local leave_pendulum=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_PZONE, 0, 1, 1, nil):GetFirst()
+      local main_monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_MMZONE, 0, 1, 1, nil):GetFirst()
+      local extra_monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 700), 0, LOCATION_EMZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("destination field zone " .. field:GetDestination() .. "/" .. tostring(field:IsDestination(LOCATION_SZONE)) .. "/" .. tostring(field:IsDestination(LOCATION_FZONE)) .. "/" .. tostring(field:IsDestination(LOCATION_STZONE)) .. "/" .. tostring(field:IsDestination(LOCATION_PZONE)))
       Debug.Message("destination pendulum zone " .. pendulum:GetDestination() .. "/" .. tostring(pendulum:IsDestination(LOCATION_SZONE)) .. "/" .. tostring(pendulum:IsDestination(LOCATION_PZONE)) .. "/" .. tostring(pendulum:IsDestination(LOCATION_STZONE)) .. "/" .. tostring(pendulum:IsDestination(LOCATION_FZONE)))
       Debug.Message("destination spell zone " .. spell:GetDestination() .. "/" .. tostring(spell:IsDestination(LOCATION_SZONE)) .. "/" .. tostring(spell:IsDestination(LOCATION_STZONE)) .. "/" .. tostring(spell:IsDestination(LOCATION_FZONE)) .. "/" .. tostring(spell:IsDestination(LOCATION_PZONE)))
+      Debug.Message("destination main monster zone " .. main_monster:GetDestination() .. "/" .. tostring(main_monster:IsDestination(LOCATION_MZONE)) .. "/" .. tostring(main_monster:IsDestination(LOCATION_MMZONE)) .. "/" .. tostring(main_monster:IsDestination(LOCATION_EMZONE)))
+      Debug.Message("destination extra monster zone " .. extra_monster:GetDestination() .. "/" .. tostring(extra_monster:IsDestination(LOCATION_MZONE)) .. "/" .. tostring(extra_monster:IsDestination(LOCATION_EMZONE)) .. "/" .. tostring(extra_monster:IsDestination(LOCATION_MMZONE)))
       Debug.Message("leave field zone " .. leave_field:GetLeaveFieldDest() .. "/" .. tostring(leave_field:IsLeaveFieldDest(LOCATION_SZONE)) .. "/" .. tostring(leave_field:IsLeaveFieldDest(LOCATION_FZONE)) .. "/" .. tostring(leave_field:IsLeaveFieldDest(LOCATION_STZONE)) .. "/" .. tostring(leave_field:IsLeaveFieldDest(LOCATION_PZONE)))
       Debug.Message("leave pendulum zone " .. leave_pendulum:GetLeaveFieldDest() .. "/" .. tostring(leave_pendulum:IsLeaveFieldDest(LOCATION_SZONE)) .. "/" .. tostring(leave_pendulum:IsLeaveFieldDest(LOCATION_PZONE)) .. "/" .. tostring(leave_pendulum:IsLeaveFieldDest(LOCATION_STZONE)) .. "/" .. tostring(leave_pendulum:IsLeaveFieldDest(LOCATION_FZONE)))
       `,
@@ -408,6 +418,8 @@ describe("Lua deck and field helpers", () => {
     expect(host.messages).toContain("destination field zone 0/true/true/false/false");
     expect(host.messages).toContain("destination pendulum zone 0/true/true/false/false");
     expect(host.messages).toContain("destination spell zone 0/true/true/false/false");
+    expect(host.messages).toContain("destination main monster zone 0/true/true/false");
+    expect(host.messages).toContain("destination extra monster zone 0/true/true/false");
     expect(host.messages).toContain("leave field zone 8/true/true/false/false");
     expect(host.messages).toContain("leave pendulum zone 8/true/true/false/false");
   });
