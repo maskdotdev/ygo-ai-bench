@@ -186,6 +186,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number): string | undefi
   if (cardUid) return `closure:card-not-handler:${cardUid}`;
   const typeMask = capturedTypeMask(L, index);
   if (typeMask !== undefined) return `closure:type-mask-response-player:${typeMask}`;
+  const handlerCode = capturedHandlerCode(L, index);
+  if (handlerCode !== undefined) return `closure:handler-code:${handlerCode}`;
   const responsePlayer = capturedResponsePlayer(L, index);
   if (responsePlayer !== undefined) return `closure:response-player:${responsePlayer}`;
   const chainPlayer = capturedChainPlayer(L, index);
@@ -279,6 +281,15 @@ function isTypeMaskUpvalueName(name: string): boolean {
   return name === "typ" || name === "typeMask" || name === "type_mask";
 }
 
+function capturedHandlerCode(L: unknown, index: number): number | undefined {
+  const captured = capturedSingleNumberUpvalue(L, index, isHandlerCodeUpvalueName);
+  return captured !== undefined && captured > 0 ? captured : undefined;
+}
+
+function isHandlerCodeUpvalueName(name: string): boolean {
+  return name === "code" || name === "cardCode" || name === "card_code" || name === "handlerCode" || name === "handler_code";
+}
+
 function capturedResponsePlayer(L: unknown, index: number): PlayerId | undefined {
   const captured = capturedSinglePlayerUpvalue(L, index, isResponsePlayerUpvalueName);
   return captured === 0 || captured === 1 ? captured : undefined;
@@ -294,6 +305,10 @@ function capturedChainPlayer(L: unknown, index: number): PlayerId | undefined {
 }
 
 function capturedSinglePlayerUpvalue(L: unknown, index: number, matchesName: (name: string) => boolean): number | undefined {
+  return capturedSingleNumberUpvalue(L, index, matchesName);
+}
+
+function capturedSingleNumberUpvalue(L: unknown, index: number, matchesName: (name: string) => boolean): number | undefined {
   const absoluteIndex = lua.lua_absindex(L, index);
   const numbers: Array<{ name: string; value: number }> = [];
   for (let upvalueIndex = 1;; upvalueIndex += 1) {

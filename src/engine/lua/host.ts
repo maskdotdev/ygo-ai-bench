@@ -123,6 +123,8 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   if (capturedCard?.[1]) return { ...limit, allows: (effect) => effect.sourceUid !== capturedCard[1] };
   const typeMask = predicate?.match(/^closure:type-mask-response-player:(\d+)$/);
   if (typeMask?.[1]) return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || (sourceTypeFlags(hostState, effect.sourceUid) & Number(typeMask[1])) === 0 };
+  const handlerCode = predicate?.match(/^closure:handler-code:(\d+)$/);
+  if (handlerCode?.[1]) return { ...limit, allows: (effect) => sourceCode(hostState, effect.sourceUid) === handlerCode[1] };
   const responsePlayer = predicate?.match(/^closure:response-player:([01])$/);
   if (responsePlayer?.[1]) return { ...limit, allows: (_effect, player) => player === Number(responsePlayer[1]) };
   const chainPlayer = predicate?.match(/^closure:chain-player:([01])$/);
@@ -154,6 +156,10 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
 
 function sourceTypeFlags(hostState: LuaHostState, sourceUid: string): number {
   return hostState.session.state.cards.find((card) => card.uid === sourceUid)?.data.typeFlags ?? 0;
+}
+
+function sourceCode(hostState: LuaHostState, sourceUid: string): string | undefined {
+  return hostState.session.state.cards.find((card) => card.uid === sourceUid)?.code;
 }
 
 function pushLuaChainLimitEffect(L: unknown, hostState: LuaHostState, effectId: string): void {
