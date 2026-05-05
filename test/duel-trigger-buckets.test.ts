@@ -241,6 +241,99 @@ describe("duel trigger buckets", () => {
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateTrigger" && action.effectId === "second-payload-trigger")).toBe(false);
   });
 
+  it("restores chain windows without exposing later-payload trigger buckets until the chain resolves", () => {
+    const session = createDuel({ seed: 132, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const chainSourceUid = session.state.cards.find((card) => card.code === "300")!.uid;
+    const triggerSourceUid = session.state.cards.find((card) => card.code === "500")!.uid;
+    const eventCardUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    const withOperation = (effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition => ({
+      ...effect,
+      operation(ctx) {
+        ctx.log(`${effect.id} resolved`);
+      },
+    });
+    registerEffect(session, withOperation({
+      id: "restored-chain-first-payload",
+      registryKey: "restored-chain-first-payload",
+      sourceUid: chainSourceUid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+    }));
+    registerEffect(session, withOperation({
+      id: "restored-later-payload-trigger",
+      registryKey: "restored-later-payload-trigger",
+      sourceUid: triggerSourceUid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "customEvent",
+      range: ["hand"],
+    }));
+    session.state.chain = [
+      {
+        id: "restored-chain-payload-first",
+        player: 0,
+        sourceUid: chainSourceUid,
+        effectId: "restored-chain-first-payload",
+        eventName: "customEvent",
+        eventCode: 0x10000005,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventUids: [eventCardUid],
+        eventCardUid,
+      },
+    ];
+    session.state.pendingTriggers = [
+      {
+        id: "restored-second-payload",
+        player: 0,
+        sourceUid: triggerSourceUid,
+        effectId: "restored-later-payload-trigger",
+        eventName: "customEvent",
+        triggerBucket: "turnOptional",
+        eventCode: 0x10000005,
+        eventPlayer: 0,
+        eventValue: 2,
+        eventUids: [eventCardUid],
+        eventCardUid,
+      },
+    ];
+    session.state.waitingFor = 1;
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restored-chain-first-payload": withOperation,
+      "restored-later-payload-trigger": withOperation,
+    });
+    expect(queryPublicState(restored).windowKind).toBe("chainResponse");
+    expect(queryPublicState(restored).pendingTriggerBuckets).toEqual([
+      { triggerBucket: "turnOptional", player: 0, triggerIds: ["restored-second-payload"] },
+    ]);
+    expect(getDuelLegalActions(restored, 0)).toHaveLength(0);
+    expect(getDuelLegalActions(restored, 1).some((action) => action.type === "passChain")).toBe(true);
+
+    const opponentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(opponentPass).toBeTruthy();
+    const afterOpponentPass = applyResponse(restored, opponentPass!);
+    expect(afterOpponentPass.ok).toBe(true);
+    expect(queryPublicState(restored).windowKind).toBe("chainResponse");
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateTrigger" && action.effectId === "restored-later-payload-trigger")).toBe(false);
+
+    const turnPass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
+    expect(turnPass).toBeTruthy();
+    const result = applyResponse(restored, turnPass!);
+
+    expect(result.ok).toBe(true);
+    expect(queryPublicState(restored).windowKind).toBe("triggerBucket");
+    expect(restored.state.waitingFor).toBe(0);
+    expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restored-later-payload-trigger"]);
+    expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["restored-later-payload-trigger"]);
+  });
+
   it("continues trigger selection when only trigger timing differs", () => {
     const session = createDuel({ seed: 332, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
