@@ -325,6 +325,7 @@ function assertSnapshotPendingTriggers(triggers: unknown, cardUids: ReadonlySet<
     for (const field of ["id", "sourceUid", "effectId", "eventName"] as const) {
       if (typeof trigger[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
     }
+    if (!duelSnapshotDuelEvents.has(trigger.eventName)) throw new Error(`Malformed duel snapshot: ${path}.eventName must be a duel event`);
     const id = trigger.id as string;
     if (seenIds.has(id)) throw new Error(`Malformed duel snapshot: ${path}.id must be unique`);
     seenIds.add(id);
