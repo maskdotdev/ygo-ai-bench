@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -122,7 +122,7 @@ describe("Lua card counter and cost helpers", () => {
 
     const normal = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon");
     expect(normal).toBeDefined();
-    expect(applyResponse(session, normal!).ok).toBe(true);
+    applyAndAssert(session, normal!);
     const columnSpell = session.state.cards.find((card) => card.code === "200" && card.controller === 0);
     expect(columnSpell).toBeDefined();
     const movedColumnSpell = moveDuelCard(session.state, columnSpell!.uid, "spellTrapZone", 0);
@@ -636,7 +636,7 @@ describe("Lua card counter and cost helpers", () => {
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === set!.uid);
     expect(setAction).toBeDefined();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -674,7 +674,7 @@ describe("Lua card counter and cost helpers", () => {
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === set!.uid);
     expect(setAction).toBeDefined();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     const host = createLuaScriptHost(restored);
@@ -712,9 +712,9 @@ describe("Lua card counter and cost helpers", () => {
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === set!.uid);
     expect(setAction).toBeDefined();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -763,3 +763,12 @@ describe("Lua card counter and cost helpers", () => {
     expect(host.messages).toContain("summon code filter miss false");
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
