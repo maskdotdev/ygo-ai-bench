@@ -380,11 +380,7 @@ describe("Lua chain helpers", () => {
 
     const allowed = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect");
     expect(allowed).toBeDefined();
-    const result = applyLuaRestoreResponse(restored, allowed!);
-    expect(result.ok, result.error).toBe(true);
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    applyLuaRestoreAndAssert(restored, allowed!);
     expect(restored.host.messages).not.toContain("restore blocked quick resolved");
   });
 
@@ -463,12 +459,8 @@ describe("Lua chain helpers", () => {
     const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
 
-    const result = applyLuaRestoreResponse(restored, pass!);
-    expect(result.ok, result.error).toBe(true);
+    const result = applyLuaRestoreAndAssert(restored, pass!);
     expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open" })]));
     expect(getDuelLegalActions(restored.session, 1)).toEqual([]);
     expect(restored.host.messages).toContain("restore open priority source resolved");
@@ -966,4 +958,13 @@ function passChainIfAvailable(session: ReturnType<typeof createDuel>): boolean {
   if (player === undefined) return false;
   const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
   return Boolean(pass && applyResponse(session, pass).ok);
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
 }
