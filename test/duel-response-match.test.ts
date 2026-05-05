@@ -79,4 +79,14 @@ describe("duel response matching", () => {
     expect(sameAction(activate, { ...activate })).toBe(true);
     expect(sameAction(decline, { ...decline })).toBe(true);
   });
+
+  it("requires battle pass responses to echo their battle window stamp", () => {
+    const attackPass: DuelAction = { type: "passAttack", player: 1, label: "Pass attack", windowId: 8, windowKind: "battle" };
+    const damagePass: DuelAction = { type: "passDamage", player: 0, label: "Pass damage", windowId: 9, windowKind: "battle" };
+
+    expect(sameAction(attackPass, { type: "passAttack", player: 1, label: "Pass attack" })).toBe(false);
+    expect(sameAction(damagePass, { type: "passDamage", player: 0, label: "Pass damage" })).toBe(false);
+    expect(sameAction(attackPass, { ...attackPass })).toBe(true);
+    expect(sameAction(damagePass, { ...damagePass })).toBe(true);
+  });
 });
