@@ -232,4 +232,38 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
 
     expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
   });
+
+  it("does not match trigger expectations from the wrong bucket", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Fixture Summon", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Turn Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "wrong trigger bucket expectation fixture",
+      options: { seed: 48, startingHandSize: 2 },
+      decks: {
+        0: { main: ["100", "300"] },
+        1: { main: ["100", "300"] },
+      },
+      setup: {
+        effects: [
+          { id: "fixture-turn-mandatory", player: 0, code: "300", location: "hand", event: "trigger", triggerEvent: "normalSummoned", optional: false, range: ["hand"], logMessage: "Fixture turn mandatory resolved" },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
+          after: {
+            source: "edopro",
+            legalActions: [{ type: "activateTrigger", player: 0, windowKind: "triggerBucket", effectId: "fixture-turn-mandatory", triggerBucket: "turnOptional", count: 1 }],
+          },
+        }),
+      ],
+      expected: { source: "edopro" },
+    };
+
+    const result = runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures.some((failure) => failure.message.includes("Expected legal action"))).toBe(true);
+  });
 });

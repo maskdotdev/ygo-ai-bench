@@ -633,8 +633,8 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if ("uid" in action && "uid" in response && action.uid !== response.uid) return false;
   if (action.type === "activateEffect" && response.type === "activateEffect" && action.effectId !== response.effectId) return false;
   if (action.type === "specialSummonProcedure" && response.type === "specialSummonProcedure" && action.effectId !== response.effectId) return false;
-  if (action.type === "activateTrigger" && response.type === "activateTrigger" && action.triggerId !== response.triggerId) return false;
-  if (action.type === "declineTrigger" && response.type === "declineTrigger" && action.triggerId !== response.triggerId) return false;
+  if (action.type === "activateTrigger" && response.type === "activateTrigger" && (action.triggerId !== response.triggerId || action.triggerBucket !== response.triggerBucket)) return false;
+  if (action.type === "declineTrigger" && response.type === "declineTrigger" && (action.triggerId !== response.triggerId || action.triggerBucket !== response.triggerBucket)) return false;
   if (action.type === "selectOption" && response.type === "selectOption" && (action.promptId !== response.promptId || action.option !== response.option)) return false;
   if (action.type === "selectYesNo" && response.type === "selectYesNo" && (action.promptId !== response.promptId || action.yes !== response.yes)) return false;
   if (action.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringSet(action.tributeUids, response.tributeUids)) return false;
