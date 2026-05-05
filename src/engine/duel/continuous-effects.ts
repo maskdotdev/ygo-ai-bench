@@ -833,7 +833,7 @@ function isCannotMoveCodeForLocation(code: number | undefined, location: DuelLoc
 }
 
 function isSummonNegationCode(code: number | undefined, summonType: DuelSummonType): boolean {
-  if (code === 26) return summonType === "normal" || summonType === "tribute";
+  if (code === 26) return summonType !== "flip";
   if (code === 27) return summonType !== "normal" && summonType !== "tribute" && summonType !== "flip";
   if (code === 39) return summonType === "flip";
   return false;
