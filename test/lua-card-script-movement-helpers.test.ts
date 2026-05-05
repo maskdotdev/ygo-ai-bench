@@ -5,6 +5,7 @@ import {
   createDuel,
   detachDuelOverlayMaterials,
   destroyDuelCard,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   specialSummonDuelCard,
@@ -62,10 +63,10 @@ describe("Lua card script movement helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const moveAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === mover!.uid);
     expect(moveAction).toBeDefined();
-    expect(applyResponse(session, moveAction!).ok).toBe(true);
+    applyAndAssert(session, moveAction!);
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === record!.uid);
     expect(setAction).toBeDefined();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
 
     expect(session.state.cards.find((card) => card.uid === listed!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
     expect(session.state.cards.find((card) => card.uid === record!.uid)).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
@@ -97,7 +98,7 @@ describe("Lua card script movement helpers", () => {
 
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === gurifoh!.uid);
     expect(setAction).toBeDefined();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
     while (session.state.chain.length > 0) {
       expect(passCurrentChain(session)).toBe(true);
     }
@@ -136,7 +137,7 @@ describe("Lua card script movement helpers", () => {
 
     const summonAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sage!.uid);
     expect(summonAction).toBeDefined();
-    expect(applyResponse(session, summonAction!).ok).toBe(true);
+    applyAndAssert(session, summonAction!);
     while (session.state.chain.length > 0) {
       expect(passCurrentChain(session)).toBe(true);
     }
@@ -179,7 +180,7 @@ describe("Lua card script movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     while (session.state.chain.length > 0) {
       expect(passCurrentChain(session)).toBe(true);
     }
@@ -241,10 +242,10 @@ describe("Lua card script movement helpers", () => {
 
     const sendAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sender!.uid);
     expect(sendAction).toBeDefined();
-    expect(applyResponse(session, sendAction!).ok).toBe(true);
+    applyAndAssert(session, sendAction!);
     const triggerAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
     expect(triggerAction).toBeDefined();
-    expect(applyResponse(session, triggerAction!).ok).toBe(true);
+    applyAndAssert(session, triggerAction!);
 
     expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
     expect(session.state.cards.find((card) => card.uid === ritualSpell!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
@@ -277,7 +278,7 @@ describe("Lua card script movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     while (session.state.chain.length > 0) {
       expect(passCurrentChain(session)).toBe(true);
     }
@@ -320,7 +321,7 @@ describe("Lua card script movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid && session.state.effects.find((effect) => effect.id === candidate.effectId)?.category === 0x20088);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     while (session.state.chain.length > 0) {
       expect(passCurrentChain(session)).toBe(true);
     }
@@ -356,7 +357,7 @@ describe("Lua card script movement helpers", () => {
     specialSummonDuelCard(session.state, source!.uid, 0);
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
 
     expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
       location: "banished",
@@ -391,10 +392,10 @@ describe("Lua card script movement helpers", () => {
 
     const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === source!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
 
     expect(session.state.cards.find((card) => card.uid === trap!.uid)).toMatchObject({
       location: "spellTrapZone",
@@ -433,7 +434,7 @@ describe("Lua card script movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const probe = host.loadScript(
       `
@@ -477,10 +478,10 @@ describe("Lua card script movement helpers", () => {
 
     const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === source!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
 
     expect(session.state.cards.find((card) => card.uid === searched!.uid)).toMatchObject({
       location: "hand",
@@ -514,7 +515,7 @@ describe("Lua card script movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({
       location: "monsterZone",
@@ -558,7 +559,7 @@ describe("Lua card script movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === xyz!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({
       location: "graveyard",
@@ -600,7 +601,7 @@ describe("Lua card script movement helpers", () => {
     destroyDuelCard(session.state, xyz!.uid, 0);
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === xyz!.uid);
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
 
     expect(session.state.cards.find((card) => card.uid === recovered!.uid)).toMatchObject({
       location: "hand",
@@ -641,7 +642,7 @@ describe("Lua card script movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === trap!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(session.state.cards.find((card) => card.uid === trap!.uid)).toMatchObject({
       location: "monsterZone",
@@ -686,7 +687,7 @@ describe("Lua card script movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === trap!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(session.state.cards.find((card) => card.uid === trap!.uid)).toMatchObject({
       location: "banished",
@@ -738,7 +739,7 @@ describe("Lua card script movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === spell!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(session.state.cards.find((card) => card.uid === revived!.uid)).toMatchObject({
       location: "monsterZone",
@@ -800,10 +801,10 @@ describe("Lua card script movement helpers", () => {
 
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    applyAndAssert(session, sourceAction!);
     const hatsAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.uid === trap!.uid);
     expect(hatsAction).toBeDefined();
-    expect(applyResponse(session, hatsAction!).ok).toBe(true);
+    applyAndAssert(session, hatsAction!);
 
     expect(host.messages).not.toContain("opponent original operation");
     expect(session.state.cards.find((card) => card.uid === listedMonster!.uid)).toMatchObject({
@@ -819,8 +820,19 @@ describe("Lua card script movement helpers", () => {
 
 });
 
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
 function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
   const player = session.state.waitingFor ?? session.state.turnPlayer;
   const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
-  return Boolean(pass && applyResponse(session, pass).ok);
+  if (!pass) return false;
+  applyAndAssert(session, pass);
+  return true;
 }
