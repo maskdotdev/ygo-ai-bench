@@ -420,6 +420,69 @@ describe("Lua random helpers", () => {
     expect(host.messages[3]).toMatch(/^dice trigger resolved 0\/2\/64\/0\/[1-6],[1-6]$/);
   });
 
+  it("preserves active Lua source metadata on random events", () => {
+    const session = setupSession(174);
+    const source = {
+      readScript(name: string) {
+        if (name !== "c100.lua") return undefined;
+        return `
+        c100={}
+        function c100.initial_effect(c)
+          local toss=Effect.CreateEffect(c)
+          toss:SetType(EFFECT_TYPE_IGNITION)
+          toss:SetRange(LOCATION_HAND)
+          toss:SetOperation(function(e,tp)
+            local coin=Duel.TossCoin(tp,1)
+            local die=Duel.TossDice(tp,1)
+            Debug.Message("random source toss " .. coin .. "/" .. die)
+          end)
+          c:RegisterEffect(toss)
+
+          local coin_trigger=Effect.CreateEffect(c)
+          coin_trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+          coin_trigger:SetCode(EVENT_TOSS_COIN)
+          coin_trigger:SetRange(LOCATION_HAND)
+          coin_trigger:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("source coin trigger " .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp) end)
+          c:RegisterEffect(coin_trigger)
+
+          local dice_trigger=Effect.CreateEffect(c)
+          dice_trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+          dice_trigger:SetCode(EVENT_TOSS_DICE)
+          dice_trigger:SetRange(LOCATION_HAND)
+          dice_trigger:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("source dice trigger " .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp) end)
+          c:RegisterEffect(dice_trigger)
+        end
+        `;
+      },
+    };
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const sourceCard = session.state.cards.find((card) => card.code === "100");
+    expect(sourceCard).toBeDefined();
+    expect(host.messages[0]).toMatch(/^random source toss [01]\/[1-6]$/);
+    expect(session.state.pendingTriggers).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventCode: 1150, eventPlayer: 0, eventValue: 1, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: sourceCard!.uid, eventReasonEffectId: 1 })]),
+    );
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "coinTossed", eventCode: 1151, eventReasonCardUid: sourceCard!.uid, eventReasonEffectId: 1 }),
+        expect.objectContaining({ eventName: "diceTossed", eventCode: 1150, eventReasonCardUid: sourceCard!.uid, eventReasonEffectId: 1 }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+  });
+
   it("makes earlier Lua optional when triggers miss timing at dice toss boundaries", () => {
     const randomCards: DuelCardData[] = [
       { code: "100", name: "Dice Boundary Source", kind: "monster" },
