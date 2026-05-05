@@ -51,6 +51,10 @@ describe("parity fixture metadata", () => {
     expect(missingAttackGroupRawCounts()).toEqual([]);
   });
 
+  it("requires absent attack groups to be backed by matching raw absent attack expectation counts", () => {
+    expect(missingAbsentAttackGroupRawCounts()).toEqual([]);
+  });
+
   it("requires UI-facing grouped absence expectations to track raw absent legal-action expectations", () => {
     expect(missingAbsentLegalActionGroupCoverage()).toEqual([]);
   });
@@ -172,6 +176,25 @@ describe("parity fixture metadata", () => {
         '    { type: "declareAttack", player: 0, attackerUid: "p0-card", directAttack: true, windowId: 1, windowKind: "open", count: 1 },',
         "  ],",
         '  legalActionGroups: [attackGroup([{ attackerUid: "p0-card", targetUid: "p1-card" }, { attackerUid: "p0-card", directAttack: true }], 1, 1)],',
+        ...lines.slice(4),
+      ]),
+    ).toEqual([]);
+    expect(
+      missingAbsentAttackGroupRawCountsInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        '  absentLegalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-card", windowId: 1, windowKind: "battle" }],',
+        '  absentLegalActionGroups: [absentAttackGroup("p0-card", undefined, undefined, 1), absentOpenAttackGroup(0, "p1-card", 1)],',
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:2"]);
+    expect(
+      missingAbsentAttackGroupRawCountsInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  absentLegalActions: [",
+        '    { type: "replayAttack", player: 0, attackerUid: "p0-card", windowId: 1, windowKind: "battle" },',
+        '    { type: "declareAttack", player: 0, attackerUid: "p1-card", windowId: 1, windowKind: "open" },',
+        "  ],",
+        '  absentLegalActionGroups: [absentAttackGroup("p0-card", undefined, undefined, 1), absentOpenAttackGroup(0, "p1-card", 1)],',
         ...lines.slice(4),
       ]),
     ).toEqual([]);
@@ -330,6 +353,10 @@ function missingTargetedAttackRawCoverage(): string[] {
 
 function missingAttackGroupRawCounts(): string[] {
   return parityFixtureFiles().flatMap((file) => missingAttackGroupRawCountsInLines(file, readFixtureLines(file)));
+}
+
+function missingAbsentAttackGroupRawCounts(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingAbsentAttackGroupRawCountsInLines(file, readFixtureLines(file)));
 }
 
 function missingAbsentLegalActionGroupCoverage(): string[] {
@@ -496,6 +523,28 @@ function attackGroupChoiceCount(block: string): number {
 function rawDeclareAttackCount(block: string): number {
   const rawActions = block.split(/\n\s*(legalActionGroups|absentLegalActions|absentLegalActionGroups):/)[0] ?? block;
   return (rawActions.match(/\{[^{}]*type:\s*["']declareAttack["'][^{}]*\}/g) ?? []).length;
+}
+
+function missingAbsentAttackGroupRawCountsInLines(file: string, lines: string[]): string[] {
+  const missingRawAbsentAttackCounts: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    const groupedAbsentAttackCount = absentAttackGroupChoiceCount(block);
+    if (groupedAbsentAttackCount === 0) return;
+    const rawAbsentAttackCount = rawAbsentAttackActionCount(block);
+    if (rawAbsentAttackCount < groupedAbsentAttackCount) missingRawAbsentAttackCounts.push(`${file}:${index + 1}`);
+  });
+  return missingRawAbsentAttackCounts;
+}
+
+function absentAttackGroupChoiceCount(block: string): number {
+  return occurrenceCount(block, "absentAttackGroup(") + occurrenceCount(block, "absentOpenAttackGroup(");
+}
+
+function rawAbsentAttackActionCount(block: string): number {
+  const rawAbsentActions = block.split(/\n\s*absentLegalActionGroups:/)[0] ?? block;
+  return (rawAbsentActions.match(/\{[^{}]*type:\s*["'](declareAttack|replayAttack)["'][^{}]*\}/g) ?? []).length;
 }
 
 function missingLegalActionCountsInLines(file: string, lines: string[]): string[] {
