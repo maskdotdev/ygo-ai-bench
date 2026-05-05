@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, flipSummonDuelCard, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, flipSummonDuelCard, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -55,7 +55,9 @@ describe("Lua Flip Summon restore helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored flip alias 100/true");
 
     const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -112,7 +114,9 @@ describe("Lua Flip Summon restore helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored flip summon success 100/true/536870912");
 
     const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
