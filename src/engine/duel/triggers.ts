@@ -21,7 +21,7 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
   const eventIsLast = options.eventIsLast ?? true;
   for (const [index, effect] of state.effects.entries()) {
     if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
-    if (effect.triggerCode !== undefined && options.eventCode !== undefined && effect.triggerCode !== options.eventCode) continue;
+    if (effect.triggerCode !== undefined && options.eventCode !== undefined && !triggerCodeMatchesEvent(eventName, effect.triggerCode, options.eventCode)) continue;
     if (eventName === "customEvent" && effect.triggerCode !== options.eventCode) continue;
     if (effect.optional !== false && effect.triggerTiming === "when" && !eventIsLast) continue;
     if (!canUseEffectCount(state, effect)) continue;
@@ -39,6 +39,11 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
 
 function triggerPriority(state: DuelState, effect: DuelEffectDefinition): number {
   return triggerBucketPriority(triggerBucket(state, effect));
+}
+
+function triggerCodeMatchesEvent(eventName: DuelEventName, triggerCode: number, eventCode: number): boolean {
+  if (triggerCode === eventCode) return true;
+  return eventName === "battleDestroyed" && (triggerCode === 1139 || triggerCode === 1140) && (eventCode === 1139 || eventCode === 1140);
 }
 
 function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard: DuelCardInstance | undefined, options: DuelTriggerCollectOptions): PendingTrigger {
