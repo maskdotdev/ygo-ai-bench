@@ -82,6 +82,7 @@ describe("Lua destroy restore helpers", () => {
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.host.messages).toContain("restored destroying trigger 200");
   });
 
@@ -160,6 +161,7 @@ describe("Lua destroy restore helpers", () => {
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.host.messages).toContain("restored destroyed trigger 200");
   });
 
