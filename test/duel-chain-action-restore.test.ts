@@ -77,6 +77,9 @@ describe("chain action restore", () => {
     expect(resolved.state.chain).toHaveLength(0);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored quick original resolved")).toBe(true);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored quick quick resolved")).toBe(true);
+    expect(resolved.legalActions).toEqual(getDuelLegalActions(restored, resolved.state.waitingFor!));
+    expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, resolved.state.waitingFor!));
+    expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
   });
 
   it("restores self quick response groups after trigger activation", () => {
@@ -97,10 +100,18 @@ describe("chain action restore", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    const summonResponse = applyResponse(session, summon!);
+    expect(summonResponse.ok).toBe(true);
+    expect(summonResponse.legalActions).toEqual(getDuelLegalActions(session, summonResponse.state.waitingFor!));
+    expect(summonResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, summonResponse.state.waitingFor!));
+    expect(summonResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(summonResponse.legalActions);
     const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-self-trigger");
     expect(trigger).toBeTruthy();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    const triggerResponse = applyResponse(session, trigger!);
+    expect(triggerResponse.ok).toBe(true);
+    expect(triggerResponse.legalActions).toEqual(getDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResponse.legalActions);
     expect(queryPublicState(session)).toMatchObject({ windowKind: "chainResponse", waitingFor: 0 });
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
@@ -149,7 +160,12 @@ describe("chain action restore", () => {
 
     const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-source");
     expect(original).toBeTruthy();
-    expect(applyResponse(session, original!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const opened = applyResponse(session, original!);
+    expect(opened.ok).toBe(true);
+    expect(opened.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(opened.legalActions).toEqual(getDuelLegalActions(session, opened.state.waitingFor!));
+    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, opened.state.waitingFor!));
+    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
 
