@@ -778,6 +778,7 @@ describe("duel chains", () => {
     expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(0);
     const staleQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-stale-self-quick");
     expect(staleQuick).toBeTruthy();
+    expect(staleQuick).toMatchObject({ windowId: queryPublicState(session).actionWindowId, windowKind: "chainResponse" });
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
       "restore-stale-quick-source": (effect) => ({
@@ -795,6 +796,7 @@ describe("duel chains", () => {
     });
     const pass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeTruthy();
+    expect(pass).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse" });
     expect(applyResponse(restored, pass!).ok).toBe(true);
     const replay = applyResponse(restored, staleQuick!);
 
