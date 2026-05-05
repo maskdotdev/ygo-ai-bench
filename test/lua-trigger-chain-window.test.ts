@@ -547,6 +547,9 @@ describe("Lua trigger chain windows", () => {
     expect(staleActivation.ok).toBe(false);
     expect(staleActivation.error).toContain("Response is not currently legal");
     expect(staleActivation.state.actionWindowId).toBe(session.state.actionWindowId);
+    expect(staleActivation.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(staleActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(staleActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleActivation.legalActions);
     expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["13300"]);
 
     const secondActivation = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === opened.state.pendingTriggers[0]?.effectId);
@@ -653,6 +656,9 @@ describe("Lua trigger chain windows", () => {
     expect(staleDecline.ok).toBe(false);
     expect(staleDecline.error).toContain("Response is not currently legal");
     expect(staleDecline.state.actionWindowId).toBe(session.state.actionWindowId);
+    expect(staleDecline.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(staleDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(staleDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleDecline.legalActions);
     expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["14300", "14400"]);
 
     const secondDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === afterFirstDecline.state.pendingTriggers[0]?.effectId);
