@@ -160,6 +160,9 @@ describe("Lua effect trigger metadata helpers", () => {
     const staleRestoredIfTrigger = applyLuaRestoreResponse(restored, restoredIfTrigger!);
     expect(staleRestoredIfTrigger.ok).toBe(false);
     expect(staleRestoredIfTrigger.error).toContain("Response is not currently legal");
+    expect(staleRestoredIfTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleRestoredIfTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleRestoredIfTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleRestoredIfTrigger.legalActions);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const opponentTriggers = getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger");

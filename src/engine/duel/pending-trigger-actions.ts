@@ -7,6 +7,7 @@ export function getPendingTriggerActions(state: DuelState, player: PlayerId): Du
   const activeBucket = pendingTriggerBucketsForState(state)[0];
   if (!activeBucket || activeBucket.player !== player) return [];
   const actions: DuelAction[] = [];
+  const declines: DuelAction[] = [];
 
   for (const trigger of state.pendingTriggers.filter((candidate) => candidate.player === player)) {
     const effect = state.effects.find((candidate) => candidate.id === trigger.effectId && candidate.sourceUid === trigger.sourceUid);
@@ -15,10 +16,10 @@ export function getPendingTriggerActions(state: DuelState, player: PlayerId): Du
     const source = findCard(state, trigger.sourceUid);
     if (!source || !effect) continue;
     if (canUseEffectCount(state, effect)) actions.push({ type: "activateTrigger", player, triggerId: trigger.id, triggerBucket: trigger.triggerBucket, uid: source.uid, effectId: trigger.effectId, label: `${source.name}: ${trigger.effectId}` });
-    if (effect?.optional !== false) actions.push({ type: "declineTrigger", player, triggerId: trigger.id, triggerBucket: trigger.triggerBucket, uid: source.uid, effectId: trigger.effectId, label: `Decline ${source.name}: ${trigger.effectId}` });
+    if (effect?.optional !== false) declines.push({ type: "declineTrigger", player, triggerId: trigger.id, triggerBucket: trigger.triggerBucket, uid: source.uid, effectId: trigger.effectId, label: `Decline ${source.name}: ${trigger.effectId}` });
   }
 
-  return actions;
+  return [...actions, ...declines];
 }
 
 export function pruneSpentMandatoryPendingTriggers(state: DuelState): void {
