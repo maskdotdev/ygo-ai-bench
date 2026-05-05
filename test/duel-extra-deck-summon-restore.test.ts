@@ -26,7 +26,9 @@ describe("extra deck summon restore", () => {
     expect(result.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expectStaleRestoredResponseRejected(restored, action);
   });
 
   it("restores Synchro Summon legal actions and applies the restored action", () => {
@@ -54,7 +56,9 @@ describe("extra deck summon restore", () => {
     expect(result.state.cards.find((card) => card.uid === synchro!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expectStaleRestoredResponseRejected(restored, action);
   });
 
   it("restores Xyz Summon legal actions and applies the restored action", () => {
@@ -82,7 +86,9 @@ describe("extra deck summon restore", () => {
     expect(result.state.cards.find((card) => card.uid === xyz!.uid)).toMatchObject({ location: "monsterZone", overlayCount: 2, faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "overlay")).toBe(true);
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expectStaleRestoredResponseRejected(restored, action);
   });
 
   it("restores Link Summon legal actions and applies the restored action", () => {
@@ -110,9 +116,18 @@ describe("extra deck summon restore", () => {
     expect(result.state.cards.find((card) => card.uid === link!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expectStaleRestoredResponseRejected(restored, action);
   });
 });
+
+function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restoreDuel>, action: NonNullable<Parameters<typeof applyResponse>[1]>): void {
+  const staleResult = applyResponse(restored, action);
+  expect(staleResult.ok).toBe(false);
+  expect(staleResult.error).toContain("Response is not currently legal");
+  expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
+}
 
 function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSummon" | "xyzSummon" | "linkSummon", code: string, materialLocation: "graveyard" | "overlay"): void {
   const session = createDuel({ seed: 1, startingHandSize: 7, cardReader: createCardReader(cards) });
@@ -143,6 +158,7 @@ function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSu
   expect(result.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
   expect(materials.every((material) => result.state.cards.find((card) => card.uid === material.uid)?.location === materialLocation)).toBe(true);
   expect(result.state.waitingFor).toBeDefined();
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
   const staleResult = applyResponse(restored, action);
   expect(staleResult.ok).toBe(false);
