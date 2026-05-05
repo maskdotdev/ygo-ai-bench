@@ -41,9 +41,9 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("SetPossibleOperationInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, hostState.possibleOperationInfos));
   lua.lua_setfield(L, -2, to_luastring("GetPossibleOperationInfo"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushRaiseEvent(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushRaiseEvent(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RaiseEvent"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushRaiseSingleEvent(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushRaiseSingleEvent(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RaiseSingleEvent"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckEvent(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("CheckEvent"));
@@ -86,12 +86,13 @@ function pushReadjust(session: DuelSession): number {
   return 0;
 }
 
-function pushRaiseEvent(L: unknown, session: DuelSession): number {
+function pushRaiseEvent(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState): number {
   if (session.state.status === "ended") return 0;
   const eventName = triggerEventFromCode(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined);
   const eventCode = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
   const payload = readRaiseEventPayload(L);
   if (!eventName) return 0;
+  markLuaOperationTimingBoundary(session, hostState);
   const eventUids = readCardOrGroupUids(L, 1);
   for (const uid of eventUids) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
@@ -100,14 +101,17 @@ function pushRaiseEvent(L: unknown, session: DuelSession): number {
   return 0;
 }
 
-function pushRaiseSingleEvent(L: unknown, session: DuelSession): number {
+function pushRaiseSingleEvent(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState): number {
   if (session.state.status === "ended") return 0;
   const uid = readCardUid(L, 1);
   const eventCode = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
   const eventName = triggerEventFromCode(eventCode);
   const payload = readRaiseEventPayload(L);
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-  if (card && eventName) raiseOperationEvent(session, eventName, card, eventCode, { ...payload, eventUids: [card.uid] });
+  if (card && eventName) {
+    markLuaOperationTimingBoundary(session, hostState);
+    raiseOperationEvent(session, eventName, card, eventCode, { ...payload, eventUids: [card.uid] });
+  }
   return 0;
 }
 
