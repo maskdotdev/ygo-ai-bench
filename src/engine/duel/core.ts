@@ -113,7 +113,7 @@ import {
 } from "#duel/core-movement.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { duelEventCode } from "#duel/event-codes.js";
-import { eventCardReasonPayload, eventCardStatePayload, recordDuelEvent, relatedEffectPayload } from "#duel/event-history.js";
+import { eventCardReasonPayload, eventCardStatePayload, recordDuelEvent, relatedEffectPayload, type DuelEventPayload } from "#duel/event-history.js";
 import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
@@ -469,11 +469,6 @@ export function raiseDuelEvent(state: DuelState, eventName: DuelEventName, event
   collectTriggerEffects(state, eventName, eventCard);
 }
 
-type DuelEventPayload = Partial<Pick<DuelEffectContext, "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId" | "relatedEffectId" | "eventChainDepth" | "eventChainLinkId" | "eventUids">> & {
-  eventPreviousState?: DuelEventCardState;
-  eventCurrentState?: DuelEventCardState;
-};
-
 export function raiseDuelEventWithCode(state: DuelState, eventName: DuelEventName, eventCode: number, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): void {
   collectDuelTriggerEffects(state, eventName, eventCard, { eventCode, ...payload });
 }
@@ -704,7 +699,7 @@ function createReplacementEffectHandlers(state: DuelState): ReplacementEffectHan
   };
 }
 
-export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, options: DuelEventPayload & { eventIsLast?: boolean; eventCode?: number } = {}): void {
+export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, options: DuelEventPayload = {}): void {
   const eventCode = options.eventCode ?? duelEventCode(eventName);
   const triggerOptions = eventCode === undefined ? options : { ...options, eventCode };
   recordDuelEvent(state, eventName, eventCard, eventCode, {

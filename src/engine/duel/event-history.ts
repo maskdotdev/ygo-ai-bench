@@ -15,6 +15,11 @@ export interface DuelEventRecordPayload {
   eventCurrentState?: DuelEventCardState;
 }
 
+export type DuelEventPayload = DuelEventRecordPayload & {
+  eventIsLast?: boolean;
+  eventCode?: number;
+};
+
 export function recordDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, eventCode?: number, payload: DuelEventRecordPayload = {}): void {
   state.eventHistory.push({
     eventName,
