@@ -57,6 +57,7 @@ export interface DuelActivationHandlers {
     eventUids?: string[],
     eventPreviousState?: DuelEventCardState,
     eventCurrentState?: DuelEventCardState,
+    eventTriggerTiming?: ChainLink["eventTriggerTiming"],
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
@@ -168,6 +169,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventUids,
       trigger.eventPreviousState,
       trigger.eventCurrentState,
+      trigger.eventTriggerTiming,
     );
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
     markEffectUsed(session.state, effect);
@@ -225,6 +227,7 @@ function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][nu
     trigger.eventReasonPlayer === link.eventReasonPlayer &&
     trigger.relatedEffectId === link.relatedEffectId &&
     trigger.eventCardUid === link.eventCardUid &&
+    trigger.eventTriggerTiming === link.eventTriggerTiming &&
     sameOptionalStringList(trigger.eventUids, link.eventUids) &&
     sameEventCardState(trigger.eventPreviousState, link.eventPreviousState) &&
     sameEventCardState(trigger.eventCurrentState, link.eventCurrentState)

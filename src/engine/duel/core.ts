@@ -824,6 +824,7 @@ function pushChainLink(
   eventUids?: string[],
   eventPreviousState?: DuelEventCardState,
   eventCurrentState?: DuelEventCardState,
+  eventTriggerTiming?: ChainLink["eventTriggerTiming"],
 ): void {
   const source = findCard(state, sourceUid);
   state.chain.push({
@@ -843,6 +844,7 @@ function pushChainLink(
     ...eventCardStatePayload(eventCard),
     ...(eventPreviousState === undefined ? {} : { eventPreviousState: { ...eventPreviousState } }),
     ...(eventCurrentState === undefined ? {} : { eventCurrentState: { ...eventCurrentState } }),
+    ...(eventTriggerTiming === undefined ? {} : { eventTriggerTiming }),
     ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
     ...(targetUids.length === 0 ? {} : { targetUids: [...targetUids] }),
     ...(targetPlayer === undefined ? {} : { targetPlayer }),

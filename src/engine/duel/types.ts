@@ -325,6 +325,7 @@ export interface ChainLink {
   eventCardUid?: string;
   eventPreviousState?: DuelEventCardState;
   eventCurrentState?: DuelEventCardState;
+  eventTriggerTiming?: TriggerTiming;
   targetUids?: string[];
   targetPlayer?: PlayerId;
   targetParam?: number;
@@ -337,6 +338,7 @@ export interface ChainLink {
 export type PublicChainLink = Omit<ChainLink, "operationOverride">;
 
 export type TriggerBucket = "turnMandatory" | "opponentMandatory" | "turnOptional" | "opponentOptional";
+export type TriggerTiming = "if" | "when";
 
 export interface PendingTrigger {
   id: string;
@@ -355,6 +357,7 @@ export interface PendingTrigger {
   eventCardUid?: string;
   eventPreviousState?: DuelEventCardState;
   eventCurrentState?: DuelEventCardState;
+  eventTriggerTiming?: TriggerTiming;
 }
 
 export interface PendingTriggerBucketState {
@@ -678,8 +681,8 @@ interface ScriptedDuelWindowExpectationFields {
   chainPasses?: PlayerId[];
   attackPasses?: PlayerId[];
   damagePasses?: PlayerId[];
-  chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState">>>;
-  pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "triggerBucket" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState">>>;
+  chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState" | "eventTriggerTiming">>>;
+  pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "triggerBucket" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState" | "eventTriggerTiming">>>;
   pendingTriggerBuckets?: Array<Partial<PendingTriggerBucketState>>;
   eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState">>>;
   prompt?: Partial<DuelPromptState> | null;

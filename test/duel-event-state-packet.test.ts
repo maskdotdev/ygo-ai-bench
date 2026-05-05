@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 
@@ -8,9 +8,10 @@ describe("duel event state packets", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Moved Event Card", kind: "monster" },
       { code: "200", name: "Move Watcher", kind: "monster" },
+      { code: "300", name: "Chain Keeper", kind: "monster" },
     ];
     const session = createDuel({ seed: 261, startingHandSize: 2, cardReader: createCardReader(cards) });
-    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: ["300"] } });
     startDuel(session);
 
     const moved = session.state.cards.find((card) => card.code === "100");
@@ -27,6 +28,16 @@ describe("duel event state packets", () => {
       event: "trigger",
       triggerEvent: "sentToGraveyard",
       triggerTiming: "if",
+      range: ["hand"],
+      operation() {},
+    });
+    const chainKeeper = session.state.cards.find((card) => card.code === "300");
+    expect(chainKeeper).toBeDefined();
+    session.state.effects.push({
+      id: "keep-chain-open",
+      sourceUid: chainKeeper!.uid,
+      controller: 1,
+      event: "quick",
       range: ["hand"],
       operation() {},
     });
@@ -52,7 +63,7 @@ describe("duel event state packets", () => {
       expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent })]),
     );
     expect(session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent })]),
+      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
     );
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false });
@@ -60,7 +71,15 @@ describe("duel event state packets", () => {
       expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent })]),
     );
     expect(restored.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent })]),
+      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
+    );
+
+    const triggerAction = getLegalActions(session, 0).find((action) => action.type === "activateTrigger");
+    expect(triggerAction).toBeDefined();
+    const result = applyResponse(session, triggerAction!);
+    expect(result.ok, result.error).toBe(true);
+    expect(session.state.chain).toEqual(
+      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
     );
   });
 });

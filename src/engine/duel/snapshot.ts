@@ -376,6 +376,7 @@ function assertSnapshotEventPayload(payload: Record<string, unknown>, path: stri
   for (const field of ["eventPlayer", "eventReasonPlayer"] as const) {
     if (payload[field] !== undefined) assertSnapshotPlayerId(payload[field], `${path}.${field}`);
   }
+  if (payload.eventTriggerTiming !== undefined && payload.eventTriggerTiming !== "if" && payload.eventTriggerTiming !== "when") throw new Error(`Malformed duel snapshot: ${path}.eventTriggerTiming must be trigger timing`);
   if (payload.eventCardUid !== undefined && typeof payload.eventCardUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.eventCardUid must be a string`);
   if (payload.eventCardUid !== undefined && !cardUids.has(payload.eventCardUid)) throw new Error(`Malformed duel snapshot: ${path}.eventCardUid must reference a card`);
   if (payload.eventUids !== undefined) {
