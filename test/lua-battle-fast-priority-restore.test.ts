@@ -495,6 +495,12 @@ describe("Lua battle fast priority restore", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    const stalePass = applyLuaRestoreResponse(restored, pass!);
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toMatchObject({ player: 0, windowKind: "triggerBucket" });
@@ -505,6 +511,12 @@ describe("Lua battle fast priority restore", () => {
     expect(restored.session.state.pendingBattle).toBeUndefined();
     expect(restored.session.state.battleWindow).toBeUndefined();
     expect(restored.host.messages).toEqual(["restored cleanup pre battle damage 1/1800/32/0/6200"]);
+    const staleTrigger = applyLuaRestoreResponse(restored, trigger!);
+    expect(staleTrigger.ok).toBe(false);
+    expect(staleTrigger.error).toContain("Response is not currently legal");
+    expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, staleTrigger.state.waitingFor!));
+    expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleTrigger.state.waitingFor!));
+    expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
   });
 
   it("queues Lua counter battle-damage triggers after restored end-damage-step cleanup", () => {
