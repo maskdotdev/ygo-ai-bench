@@ -89,9 +89,30 @@ describe("duel snapshot restore shape validation", () => {
     startDuel(session);
     const snapshot = serializeDuel(session);
     snapshot.state.status = "ended";
+    snapshot.state.winner = 1;
     snapshot.state.waitingFor = 0;
 
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: ended duel must not include waitingFor");
+  });
+
+  it("rejects snapshots with inconsistent result fields before restore", () => {
+    const session = createDuel({ seed: 151, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const endedWithoutWinner = serializeDuel(session);
+    const activeWithWinner = serializeDuel(session);
+    const activeWithWinReason = serializeDuel(session);
+    endedWithoutWinner.state.status = "ended";
+    delete endedWithoutWinner.state.waitingFor;
+    activeWithWinner.state.winner = 0;
+    activeWithWinReason.state.winReason = 16;
+
+    expect(() => restoreDuel(endedWithoutWinner, createCardReader(cards))).toThrow("Malformed duel snapshot: ended duel requires winner");
+    expect(() => restoreDuel(activeWithWinner, createCardReader(cards))).toThrow("Malformed duel snapshot: active duel must not include winner");
+    expect(() => restoreDuel(activeWithWinReason, createCardReader(cards))).toThrow("Malformed duel snapshot: active duel must not include winReason");
   });
 
   it("rejects ended snapshots with battle bookkeeping before restore", () => {
@@ -194,6 +215,7 @@ describe("duel snapshot restore shape validation", () => {
     resolvingPrompt.state.status = "resolving";
     endedPrompt.state.prompt = { id: "ended-prompt", type: "selectYesNo", player: 0 };
     endedPrompt.state.status = "ended";
+    endedPrompt.state.winner = 1;
     delete endedPrompt.state.waitingFor;
 
     expect(() => restoreDuel(resolvingPrompt, createCardReader(cards))).toThrow("Malformed duel snapshot: pending prompt requires an awaiting duel");
@@ -333,6 +355,8 @@ describe("duel snapshot restore shape validation", () => {
     resolvingChain.state.status = "resolving";
     endedChain.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect" }];
     endedChain.state.status = "ended";
+    endedChain.state.winner = 1;
+    delete endedChain.state.waitingFor;
 
     expect(() => restoreDuel(resolvingChain, createCardReader(cards))).toThrow("Malformed duel snapshot: pending chain requires an awaiting duel");
     expect(() => restoreDuel(endedChain, createCardReader(cards))).toThrow("Malformed duel snapshot: pending chain requires an awaiting duel");
