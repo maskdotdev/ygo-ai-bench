@@ -268,6 +268,58 @@ describe("Lua summon negation lockout helpers", () => {
     expect(session.state.cards.find((card) => card.uid === protectedCard!.uid)).toMatchObject({ location: "monsterZone" });
   });
 
+  it("does not apply flip-summon protection to Special Summon negation", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Unprotected Special Summon", kind: "monster", level: 4 },
+      { code: "200", name: "Summon Negator", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 227, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const specialCard = session.state.cards.find((card) => card.code === "100");
+    expect(specialCard).toBeDefined();
+    moveDuelCard(session.state, specialCard!.uid, "monsterZone", 0);
+    specialCard!.summonType = "special";
+    specialCard!.summonPlayer = 0;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_CANNOT_DISABLE_FLIP_SUMMON)
+        e:SetRange(LOCATION_MZONE)
+        c:RegisterEffect(e)
+      end
+
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local g=Duel.GetMatchingGroup(aux.TRUE,tp,LOCATION_MZONE,0,nil)
+          Debug.Message("special under flip negate count " .. Duel.NegateSummon(g:GetFirst()))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "flip-summon-negation-special-gap.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const negate = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("200"));
+    expect(negate).toBeDefined();
+    expect(applyResponse(session, negate!).ok).toBe(true);
+
+    expect(host.messages).toEqual(["special under flip negate count 1"]);
+    expect(session.state.cards.find((card) => card.uid === specialCard!.uid)).toMatchObject({ location: "graveyard" });
+  });
+
   it("applies targeted field summon-negation protection only to selected summons", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Summon Protect Source", kind: "monster", level: 4 },
