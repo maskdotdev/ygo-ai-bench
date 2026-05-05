@@ -112,6 +112,32 @@ describe("Lua LP helpers", () => {
     expect(session.state.log.filter((entry) => entry.action === "win")).toHaveLength(1);
   });
 
+  it("keeps Duel.Draw from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Post-End Draw", kind: "monster" }];
+    const session = createDuel({ seed: 954, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Debug.Message("draw " .. Duel.Draw(0, 1, REASON_EFFECT))
+      `,
+      "ended-draw-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["draw 0"]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.winner).toBe(0);
+    expect(session.state.cards.find((card) => card.code === "100")?.location).toBe("deck");
+    expect(session.state.pendingTriggers).toEqual([]);
+  });
+
   it("clears pending actors when LP loss ends the duel", () => {
     const session = createDuel({ seed: 951, startingHandSize: 0 });
     loadDecks(session, {

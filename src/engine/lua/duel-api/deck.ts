@@ -63,6 +63,11 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
   });
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanDiscardHand"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      setOperatedUids(hostState, []);
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1;
     const drawUids = topDeckUids(session, player, count);
