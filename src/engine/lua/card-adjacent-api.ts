@@ -33,6 +33,10 @@ function pushSelectAdjacent(L: unknown, session: DuelSession): number {
 }
 
 function pushMoveAdjacent<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  if (session.state.status === "ended") {
+    hostState.operatedUids?.splice(0, hostState.operatedUids.length);
+    return 0;
+  }
   const card = readCard(L, session);
   const sequence = firstOpenAdjacentMonsterSequence(session.state, card);
   if (!card || sequence === undefined) return 0;
