@@ -83,18 +83,10 @@ describe("Lua chain-disabled events", () => {
 
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(sourceAction).toBeDefined();
-    const opened = applyResponse(session, sourceAction!);
-    expect(opened.ok).toBe(true);
-    expect(opened.legalActions).toEqual(getDuelLegalActions(session, 1));
-    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
-    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
+    applyAndAssert(session, sourceAction!);
     const disablerAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(disablerAction).toBeDefined();
-    const chained = applyResponse(session, disablerAction!);
-    expect(chained.ok).toBe(true);
-    expect(chained.legalActions).toEqual(getDuelLegalActions(session, 1));
-    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
-    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
+    applyAndAssert(session, disablerAction!);
     drainChain(session);
 
     expect(host.messages).toContain("disable result true");
@@ -124,12 +116,17 @@ function drainChain(session: ReturnType<typeof createDuel>): void {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
-    const result = applyResponse(session, pass!);
-    expect(result.ok).toBe(true);
-    expect(result.legalActions).toEqual(getDuelLegalActions(session, result.state.waitingFor!));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    applyAndAssert(session, pass!);
   }
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const result = applyResponse(session, action);
+  expect(result.ok, result.error).toBe(true);
+  expect(result.legalActions).toEqual(getDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  return result;
 }
 
 function drainRestoredChain(restored: LuaSnapshotRestoreResult): void {
