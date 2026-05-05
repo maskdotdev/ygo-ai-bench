@@ -36,6 +36,8 @@ export interface DuelActivationHandlers {
     eventReason?: number,
     eventReasonPlayer?: PlayerId,
     relatedEffectId?: number,
+    eventChainDepth?: number,
+    eventChainLinkId?: string,
     eventUids?: string[],
   ): DuelEffectContext;
   pushChainLink(
@@ -54,6 +56,8 @@ export interface DuelActivationHandlers {
     eventReason?: number,
     eventReasonPlayer?: PlayerId,
     relatedEffectId?: number,
+    eventChainDepth?: number,
+    eventChainLinkId?: string,
     eventUids?: string[],
     eventPreviousState?: DuelEventCardState,
     eventCurrentState?: DuelEventCardState,
@@ -146,6 +150,8 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventReason,
       trigger.eventReasonPlayer,
       trigger.relatedEffectId,
+      trigger.eventChainDepth,
+      trigger.eventChainLinkId,
       trigger.eventUids,
     );
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
@@ -166,6 +172,8 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventReason,
       trigger.eventReasonPlayer,
       trigger.relatedEffectId,
+      trigger.eventChainDepth,
+      trigger.eventChainLinkId,
       trigger.eventUids,
       trigger.eventPreviousState,
       trigger.eventCurrentState,
@@ -226,6 +234,8 @@ function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][nu
     trigger.eventReason === link.eventReason &&
     trigger.eventReasonPlayer === link.eventReasonPlayer &&
     trigger.relatedEffectId === link.relatedEffectId &&
+    trigger.eventChainDepth === link.eventChainDepth &&
+    trigger.eventChainLinkId === link.eventChainLinkId &&
     trigger.eventCardUid === link.eventCardUid &&
     trigger.eventTriggerTiming === link.eventTriggerTiming &&
     sameOptionalStringList(trigger.eventUids, link.eventUids) &&

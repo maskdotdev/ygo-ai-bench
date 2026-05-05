@@ -14,6 +14,8 @@ export interface DuelTriggerCollectOptions {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
   eventUids?: string[];
   eventPreviousState?: DuelEventCardState;
   eventCurrentState?: DuelEventCardState;
@@ -64,6 +66,8 @@ function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, so
     ...(options.eventReason === undefined ? {} : { eventReason: options.eventReason }),
     ...(options.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }),
     ...(options.relatedEffectId === undefined ? {} : { relatedEffectId: options.relatedEffectId }),
+    ...(options.eventChainDepth === undefined ? {} : { eventChainDepth: options.eventChainDepth }),
+    ...(options.eventChainLinkId === undefined ? {} : { eventChainLinkId: options.eventChainLinkId }),
     ...(options.eventUids === undefined || options.eventUids.length === 0 ? {} : { eventUids: [...options.eventUids] }),
     ...eventCardStatePayload(eventCard),
     ...(options.eventPreviousState === undefined ? {} : { eventPreviousState: { ...options.eventPreviousState } }),

@@ -6,6 +6,8 @@ export interface DuelEventRecordPayload {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
   eventUids?: string[];
   eventPreviousState?: DuelEventCardState;
   eventCurrentState?: DuelEventCardState;

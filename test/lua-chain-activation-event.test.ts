@@ -11,7 +11,9 @@ describe("Lua chain activation events", () => {
   });
 
   it("queues chaining triggers with the chain source as event card", () => {
-    expect(runChainEventFixture("EVENT_CHAINING")).toEqual([{ eventName: "chaining", eventCode: 1027, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 }]);
+    const events = runChainEventFixture("EVENT_CHAINING");
+    expect(events).toEqual([{ eventName: "chaining", eventCode: 1027, eventPlayer: 0, eventValue: 1, eventChainDepth: 1, eventChainLinkId: events[0]!.eventChainLinkId, eventReasonPlayer: 0 }]);
+    expect(events[0]!.eventChainLinkId).toMatch(/^chain-/);
   });
 });
 
@@ -82,6 +84,8 @@ function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAIN
     eventCode: trigger.eventCode,
     ...(trigger.eventPlayer === undefined ? {} : { eventPlayer: trigger.eventPlayer }),
     ...(trigger.eventValue === undefined ? {} : { eventValue: trigger.eventValue }),
+    ...(trigger.eventChainDepth === undefined ? {} : { eventChainDepth: trigger.eventChainDepth }),
+    ...(trigger.eventChainLinkId === undefined ? {} : { eventChainLinkId: trigger.eventChainLinkId }),
     ...(trigger.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: trigger.eventReasonPlayer }),
   }));
   expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining(queuedEvents[0] ?? {})]));

@@ -69,8 +69,10 @@ describe("Lua chain-solving events", () => {
 
     expect(host.messages).toContain("starter resolved");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainSolving"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1020, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainSolving", eventCode: 1020, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 })]));
+    const chainSolvingTrigger = session.state.pendingTriggers[0]!;
+    expect(chainSolvingTrigger).toMatchObject({ eventCode: 1020, eventPlayer: 0, eventValue: 1, eventChainDepth: 1, eventReasonPlayer: 0 });
+    expect(chainSolvingTrigger.eventChainLinkId).toMatch(/^chain-/);
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainSolving", eventCode: 1020, eventPlayer: 0, eventValue: 1, eventChainDepth: 1, eventChainLinkId: chainSolvingTrigger.eventChainLinkId, eventReasonPlayer: 0 })]));
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "chainSolved"]);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);

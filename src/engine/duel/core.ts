@@ -475,6 +475,8 @@ interface DuelEventPayload {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
   eventUids?: string[];
   eventPreviousState?: DuelEventCardState;
   eventCurrentState?: DuelEventCardState;
@@ -634,6 +636,8 @@ function createEffectContext(
   eventReason?: number,
   eventReasonPlayer?: PlayerId,
   relatedEffectId?: number,
+  eventChainDepth?: number,
+  eventChainLinkId?: string,
   eventUids?: string[],
 ): DuelEffectContext {
   const ctx: DuelEffectContext = {
@@ -649,6 +653,8 @@ function createEffectContext(
     ...(eventReason === undefined ? {} : { eventReason }),
     ...(eventReasonPlayer === undefined ? {} : { eventReasonPlayer }),
     ...(relatedEffectId === undefined ? {} : { relatedEffectId }),
+    ...(eventChainDepth === undefined ? {} : { eventChainDepth }),
+    ...(eventChainLinkId === undefined ? {} : { eventChainLinkId }),
     ...(eventUids === undefined || eventUids.length === 0 ? {} : { eventUids: [...eventUids] }),
     ...(eventCard === undefined ? {} : { eventCard }),
     ...(checkOnly ? { checkOnly } : {}),
@@ -711,6 +717,8 @@ export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEvent
     ...(options.eventReason === undefined ? {} : { eventReason: options.eventReason }),
     ...(options.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }),
     ...(options.relatedEffectId === undefined ? {} : { relatedEffectId: options.relatedEffectId }),
+    ...(options.eventChainDepth === undefined ? {} : { eventChainDepth: options.eventChainDepth }),
+    ...(options.eventChainLinkId === undefined ? {} : { eventChainLinkId: options.eventChainLinkId }),
     ...(options.eventUids === undefined || options.eventUids.length === 0 ? {} : { eventUids: [...options.eventUids] }),
   });
   collectTriggerEffectsRule(
@@ -791,6 +799,8 @@ function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source:
     payload.eventReason,
     payload.eventReasonPlayer,
     payload.relatedEffectId,
+    payload.eventChainDepth,
+    payload.eventChainLinkId,
     payload.eventUids,
   );
   if (effect.canActivate && !effect.canActivate(ctx)) return false;
@@ -821,14 +831,17 @@ function pushChainLink(
   eventReason?: number,
   eventReasonPlayer?: PlayerId,
   relatedEffectId?: number,
+  eventChainDepth?: number,
+  eventChainLinkId?: string,
   eventUids?: string[],
   eventPreviousState?: DuelEventCardState,
   eventCurrentState?: DuelEventCardState,
   eventTriggerTiming?: ChainLink["eventTriggerTiming"],
 ): void {
   const source = findCard(state, sourceUid);
+  const chainLinkId = `chain-${state.log.length + 1}`;
   state.chain.push({
-    id: `chain-${state.log.length + 1}`,
+    id: chainLinkId,
     player,
     sourceUid,
     effectId,
@@ -840,6 +853,8 @@ function pushChainLink(
     ...(eventReason === undefined ? {} : { eventReason }),
     ...(eventReasonPlayer === undefined ? {} : { eventReasonPlayer }),
     ...(relatedEffectId === undefined ? {} : { relatedEffectId }),
+    ...(eventChainDepth === undefined ? {} : { eventChainDepth }),
+    ...(eventChainLinkId === undefined ? {} : { eventChainLinkId }),
     ...(eventUids === undefined || eventUids.length === 0 ? {} : { eventUids: [...eventUids] }),
     ...eventCardStatePayload(eventCard),
     ...(eventPreviousState === undefined ? {} : { eventPreviousState: { ...eventPreviousState } }),
@@ -855,6 +870,8 @@ function pushChainLink(
     collectDuelTriggerEffects(state, "chaining", source, {
       eventPlayer: player,
       eventValue: state.chain.length,
+      eventChainDepth: state.chain.length,
+      eventChainLinkId: chainLinkId,
       eventReasonPlayer: player,
       ...relatedEffectPayload(effectId),
     });
@@ -900,7 +917,7 @@ function resolveChain(state: DuelState): void {
       if (!link) continue;
       if (link.negated) {
         pushDuelLog(state, "chainNegated", link.player, undefined, link.effectId);
-        const payload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
+        const payload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventChainDepth: state.chain.length + 1, eventChainLinkId: link.id, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
         collectDuelTriggerEffects(state, "chainNegated", undefined, payload);
         collectDuelTriggerEffects(state, "chainDisabled", undefined, payload);
         continue;
@@ -909,7 +926,7 @@ function resolveChain(state: DuelState): void {
       const source = findCard(state, link.sourceUid);
       if (!effect || !source) continue;
       const eventCard = link.eventCardUid === undefined ? undefined : findCard(state, link.eventCardUid);
-      const chainPayload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
+      const chainPayload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventChainDepth: state.chain.length + 1, eventChainLinkId: link.id, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
       collectDuelTriggerEffects(state, "chainSolving", source, chainPayload);
       const ctx = createEffectContext(
         state,
@@ -930,6 +947,8 @@ function resolveChain(state: DuelState): void {
         link.eventReason,
         link.eventReasonPlayer,
         link.relatedEffectId,
+        link.eventChainDepth,
+        link.eventChainLinkId,
         link.eventUids,
       );
       (link.operationOverride ?? effect.operation)(ctx);

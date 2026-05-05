@@ -373,6 +373,8 @@ function assertSnapshotEventPayload(payload: Record<string, unknown>, path: stri
   for (const field of ["eventCode", "eventValue", "eventReason", "relatedEffectId"] as const) {
     if (payload[field] !== undefined && typeof payload[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
   }
+  if (payload.eventChainDepth !== undefined) assertSnapshotNonNegativeInteger(payload.eventChainDepth, `${path}.eventChainDepth`);
+  if (payload.eventChainLinkId !== undefined && typeof payload.eventChainLinkId !== "string") throw new Error(`Malformed duel snapshot: ${path}.eventChainLinkId must be a string`);
   for (const field of ["eventPlayer", "eventReasonPlayer"] as const) {
     if (payload[field] !== undefined) assertSnapshotPlayerId(payload[field], `${path}.${field}`);
   }

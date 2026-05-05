@@ -292,6 +292,8 @@ export interface DuelEffectContext {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
   eventUids?: string[];
   checkOnly?: boolean;
   targetUids: string[];
@@ -321,6 +323,8 @@ export interface ChainLink {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
   eventUids?: string[];
   eventCardUid?: string;
   eventPreviousState?: DuelEventCardState;
@@ -353,6 +357,8 @@ export interface PendingTrigger {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
   eventUids?: string[];
   eventCardUid?: string;
   eventPreviousState?: DuelEventCardState;
@@ -382,6 +388,8 @@ export interface DuelEventRecord {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
   eventUids?: string[];
   eventCardUid?: string;
   eventPreviousState?: DuelEventCardState;
@@ -681,10 +689,10 @@ interface ScriptedDuelWindowExpectationFields {
   chainPasses?: PlayerId[];
   attackPasses?: PlayerId[];
   damagePasses?: PlayerId[];
-  chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState" | "eventTriggerTiming">>>;
-  pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "triggerBucket" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState" | "eventTriggerTiming">>>;
+  chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventChainDepth" | "eventChainLinkId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState" | "eventTriggerTiming">>>;
+  pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "triggerBucket" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventChainDepth" | "eventChainLinkId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState" | "eventTriggerTiming">>>;
   pendingTriggerBuckets?: Array<Partial<PendingTriggerBucketState>>;
-  eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState">>>;
+  eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "relatedEffectId" | "eventChainDepth" | "eventChainLinkId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState">>>;
   prompt?: Partial<DuelPromptState> | null;
   triggerOrderPrompt?: Partial<TriggerOrderPromptState> | null;
   legalActionCounts?: Partial<Record<PlayerId, number>>;
@@ -736,6 +744,8 @@ export interface ScriptedFixtureMove {
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
   relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
 }
 
 export interface ScriptedFixtureEffect {
