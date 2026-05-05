@@ -10,11 +10,12 @@ describe("Lua chain-solved events", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Chain Starter", kind: "monster" },
       { code: "200", name: "Chain Solved Watcher", kind: "monster" },
+      { code: "300", name: "Open Response", kind: "monster" },
     ];
     const session = createDuel({ seed: 182, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
       0: { main: ["100", "200"] },
-      1: { main: [] },
+      1: { main: ["300"] },
     });
     startDuel(session);
 
@@ -50,27 +51,64 @@ describe("Lua chain-solved events", () => {
       end
       `;
         }
+        if (name === "c300.lua") {
+          return `
+
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,tp)
+          return Duel.GetCurrentChain()>0
+        end)
+        e:SetOperation(function(e,tp)
+          Debug.Message("unexpected response")
+        end)
+        c:RegisterEffect(e)
+      end
+      `;
+        }
         return undefined;
       },
     };
     const host = createLuaScriptHost(session);
     const starterScript = host.loadCardScript(100, source);
     const watcherScript = host.loadCardScript(200, source);
+    const responseScript = host.loadCardScript(300, source);
     expect(starterScript.ok, starterScript.error).toBe(true);
     expect(watcherScript.ok, watcherScript.error).toBe(true);
-    expect(host.registerInitialEffects()).toBe(2);
+    expect(responseScript.ok, responseScript.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restoredChain, 1)).toEqual(getDuelLegalActions(restoredChain.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
+    const restoredPass = getLuaRestoreLegalActions(restoredChain, 1).find((candidate) => candidate.type === "passChain");
+    expect(restoredPass).toBeDefined();
+    applyLuaRestoreAndAssert(restoredChain, restoredPass!);
+    expect(restoredChain.host.messages).toContain("chain starter resolved");
+    expect(restoredChain.host.messages).not.toContain("unexpected response");
+    expect(restoredChain.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainSolved"]);
+
+    const pass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+    applyAndAssert(session, pass!);
     expect(host.messages).toContain("chain starter resolved");
+    expect(host.messages).not.toContain("unexpected response");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainSolved"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1022, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 });
     expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "chainSolved", eventCode: 1022, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-    expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }]);
+    expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }, { ok: true, name: "c300.lua" }]);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
@@ -78,6 +116,12 @@ describe("Lua chain-solved events", () => {
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     applyLuaRestoreAndAssert(restored, trigger!);
+    while (restored.session.state.chain.length > 0) {
+      const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+      const chainPass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
+      expect(chainPass).toBeDefined();
+      applyLuaRestoreAndAssert(restored, chainPass!);
+    }
     expect(restored.host.messages).toContain("chain solved resolved 0/0/1/0");
   });
 });
