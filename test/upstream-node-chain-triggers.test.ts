@@ -4,7 +4,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import { createCardReader, createUpstreamSourceConfig, normalizeCdbRows } from "#engine/data-loaders.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -453,6 +453,9 @@ describe("Node upstream chain and trigger Lua effects", () => {
     const opened = applyResponse(session, activation!);
     expect(opened.ok).toBe(true);
     expect(opened.state.chain).toHaveLength(1);
+    expect(opened.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
 
     const response = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(response).toBeTruthy();
@@ -461,6 +464,9 @@ describe("Node upstream chain and trigger Lua effects", () => {
     expect(chained.ok).toBe(true);
     expect(chained.state.chain).toHaveLength(2);
     expect(chained.state.waitingFor).toBe(1);
+    expect(chained.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
 
     const pass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeTruthy();
@@ -468,6 +474,9 @@ describe("Node upstream chain and trigger Lua effects", () => {
 
     expect(result.ok).toBe(true);
     expect(result.state.chain).toHaveLength(0);
+    expect(result.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.state.cards.find((card) => card.code === "100")?.location).toBe("hand");
     expect(host.messages).toContain("chain depth 1");
     expect(host.messages).toContain("lua negation resolved");
