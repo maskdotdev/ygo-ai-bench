@@ -91,6 +91,7 @@ function advanceDamageWindow(state: DuelState, lastDamageResponder: PlayerId, ha
   }
   if (kind === "afterDamageCalculation") {
     openDamageResponseWindow(state, lastDamageResponder, "endDamageStep");
+    collectBattleTimingEvent(state, handlers, "battleEnded");
     collectBattleTimingEvent(state, handlers, "damageStepEnded");
     return;
   }
@@ -118,7 +119,7 @@ function otherPlayer(player: PlayerId): PlayerId {
 function collectBattleTimingEvent(
   state: DuelState,
   handlers: BattleContinuationHandlers,
-  eventName: "battleStarted" | "battleConfirmed" | "beforeDamageCalculation" | "damageCalculating" | "afterDamageCalculation" | "damageStepEnded",
+  eventName: "battleStarted" | "battleConfirmed" | "beforeDamageCalculation" | "damageCalculating" | "battleEnded" | "afterDamageCalculation" | "damageStepEnded",
 ): void {
   const pendingCount = state.pendingTriggers.length;
   const responsePlayer = state.battleWindow?.responsePlayer;

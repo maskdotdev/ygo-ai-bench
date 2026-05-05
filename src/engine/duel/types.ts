@@ -84,6 +84,7 @@ export type DuelEventName =
   | "battleDestroyed"
   | "beforeDamageCalculation"
   | "damageCalculating"
+  | "battleEnded"
   | "afterDamageCalculation"
   | "beforeBattleDamage"
   | "battleDamageDealt"

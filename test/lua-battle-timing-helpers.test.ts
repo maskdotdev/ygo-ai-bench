@@ -259,10 +259,11 @@ describe("Lua battle timing helpers", () => {
       { code: "300", name: "Lua Battled Trigger", kind: "monster" },
       { code: "400", name: "Lua Damage Step End Trigger", kind: "monster" },
       { code: "500", name: "Lua Damage Calculating Trigger", kind: "monster" },
+      { code: "600", name: "Lua Battle End Trigger", kind: "monster" },
     ];
-    const session = createDuel({ seed: 49, startingHandSize: 5, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 49, startingHandSize: 6, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400", "500"] },
+      0: { main: ["100", "200", "300", "400", "500", "600"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -313,11 +314,21 @@ describe("Lua battle timing helpers", () => {
         e:SetOperation(function(e,tp) Debug.Message("lua damage calculating trigger resolved") end)
         c:RegisterEffect(e)
       end
+
+      c600={}
+      function c600.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_BATTLE_END)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp) Debug.Message("lua battle end trigger resolved") end)
+        c:RegisterEffect(e)
+      end
       `,
       "lua-battle-timing-triggers.lua",
     );
     expect(loaded.ok, loaded.error).toBe(true);
-    expect(host.registerInitialEffects()).toBe(4);
+    expect(host.registerInitialEffects()).toBe(5);
 
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)!).ok).toBe(true);
@@ -359,13 +370,18 @@ describe("Lua battle timing helpers", () => {
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
     expect(session.state.battleWindow?.kind).toBe("endDamageStep");
-    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["damageStepEnded"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1141 });
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleEnded", "damageStepEnded"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1137 });
+    expect(session.state.pendingTriggers[1]).toMatchObject({ eventCode: 1141 });
+    const battleEndTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(battleEndTrigger).toBeDefined();
+    expect(applyResponse(session, battleEndTrigger!).ok).toBe(true);
     const endTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(endTrigger).toBeDefined();
     expect(applyResponse(session, endTrigger!).ok).toBe(true);
     expect(passLuaBattleChain(session)).toBe(true);
     expect(host.messages).toContain("lua damage step end trigger resolved");
+    expect(host.messages).toContain("lua battle end trigger resolved");
   });
 
   it("applies restored Lua battle timing triggers through restore responses", () => {
