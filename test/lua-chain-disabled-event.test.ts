@@ -106,6 +106,7 @@ describe("Lua chain-disabled events", () => {
     expect(trigger).toBeDefined();
     const result = applyLuaRestoreResponse(restored, trigger!);
     expect(result.ok).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("chain disabled resolved 0/0/1/0");
@@ -128,6 +129,7 @@ function drainRestoredChain(restored: LuaSnapshotRestoreResult): void {
     expect(pass).toBeDefined();
     const result = applyLuaRestoreResponse(restored, pass!);
     expect(result.ok).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   }
 }
