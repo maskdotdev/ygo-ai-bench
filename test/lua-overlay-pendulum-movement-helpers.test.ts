@@ -449,6 +449,39 @@ describe("Lua overlay and pendulum movement helpers", () => {
     expect(session.state.cards.find((card) => card.uid === outOfScale!.uid)).toMatchObject({ location: "hand" });
   });
 
+  it("reports symbolic Pendulum zone summon locations", () => {
+    const cards: DuelCardData[] = [
+      { code: "301", name: "Lua Pendulum Scale Source", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1 },
+    ];
+    const session = createDuel({ seed: 253, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["301"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const pendulum = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "301");
+    expect(pendulum).toBeTruthy();
+    const moved = moveDuelCard(session.state, pendulum!.uid, "spellTrapZone", 0);
+    moved.sequence = 0;
+    moved.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local pendulum=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_PZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("pzone summon " .. Duel.SpecialSummon(pendulum, 0, 0, 0, false, false, POS_FACEUP_ATTACK))
+      Debug.Message("pzone summon location " .. pendulum:GetSummonLocation() .. "/" .. tostring(pendulum:IsSummonLocation(LOCATION_SZONE)) .. "/" .. tostring(pendulum:IsSummonLocation(LOCATION_PZONE)) .. "/" .. tostring(pendulum:IsSummonLocation(LOCATION_STZONE)) .. "/" .. tostring(pendulum:IsSummonLocation(LOCATION_FZONE)))
+      `,
+      "pendulum-zone-summon-location.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("pzone summon 1");
+    expect(host.messages).toContain("pzone summon location 8/true/true/false/false");
+    expect(session.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
+  });
+
   it("restores Lua pendulum summon eligibility for hand and face-up extra deck monsters", () => {
     const cards: DuelCardData[] = [
       { code: "101", name: "Restore Low Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1 },
