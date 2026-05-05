@@ -479,9 +479,8 @@ describe("Lua battle helpers", () => {
     applyAndAssert(session, battle!);
     const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid);
     expect(attack).toBeDefined();
-    const attackResult = applyAndAssert(session, attack!);
+    applyAndAssert(session, attack!);
 
-    expect(attackResult.ok).toBe(true);
     expect(session.state.pendingTriggers).toHaveLength(1);
     expect(session.state.players[1].lifePoints).toBe(8000);
     expect(session.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("monsterZone");
