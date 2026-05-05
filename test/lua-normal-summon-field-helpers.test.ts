@@ -321,6 +321,56 @@ describe("Lua normal summon field helpers", () => {
     expect(host.messages).toContain("lua spell trap set resolved 100");
   });
 
+  it("applies restored Lua spell/trap set triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Set Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "200", name: "Restore Set Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c200.lua") return undefined;
+        return `
+        c200={}
+        function c200.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_TRIGGER_O)
+          e:SetCode(EVENT_SSET)
+          e:SetRange(LOCATION_HAND)
+          e:SetOperation(function(e,tp,eg)
+            Debug.Message("restored spell trap set " .. eg:GetFirst():GetCode())
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 171, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const setResult = host.loadScript(
+      `
+      local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Duel.SSet(spell)
+      `,
+      "restore-spell-trap-set-trigger-action.lua",
+    );
+    expect(setResult.ok, setResult.error).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["spellTrapSet"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["spellTrapSet"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1107 });
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored spell trap set 100");
+  });
+
   it("queues Lua monster-set triggers after MSet", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Set Monster", kind: "monster" },
