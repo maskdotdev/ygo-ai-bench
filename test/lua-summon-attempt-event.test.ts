@@ -195,6 +195,7 @@ function assertRestoredAttemptTrigger(restored: LuaSnapshotRestoreResult): void 
   expect(trigger).toMatchObject({ windowId: publicState.actionWindowId, windowKind: "triggerBucket" });
   const result = applyLuaRestoreResponse(restored, trigger!);
   expect(result.ok).toBe(true);
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   const staleResult = applyLuaRestoreResponse(restored, trigger!);
   expect(staleResult.ok).toBe(false);
