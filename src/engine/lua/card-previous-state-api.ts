@@ -16,7 +16,7 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   lua.lua_setfield(L, -2, to_luastring("IsDestination"));
   pushNumberGetter(L, "GetDestination", session, (card) => leaveFieldDestinationMask(card));
   pushNumberGetter(L, "GetLeaveFieldDest", session, (card) => leaveFieldDestinationMask(card));
-  pushAnyNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => requested.some((value) => (leaveFieldDestinationMask(card) & value) !== 0));
+  pushAnyNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => isLeaveFieldDestination(card) && requested.some((value) => locationMatchesMask(card.location, card.sequence, value)));
   pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
   pushNumberGetter(L, "GetPreviousSequence", session, (card) => card?.previousSequence ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -157,8 +157,12 @@ function locationMaskFromLocation(location: DuelCardInstance["location"] | undef
 }
 
 function leaveFieldDestinationMask(card: DuelCardInstance | undefined): number {
-  if (!card || (card.previousLocation !== "monsterZone" && card.previousLocation !== "spellTrapZone")) return 0;
+  if (!isLeaveFieldDestination(card)) return 0;
   return locationMaskFromLocation(card.location);
+}
+
+function isLeaveFieldDestination(card: DuelCardInstance | undefined): card is DuelCardInstance {
+  return Boolean(card && (card.previousLocation === "monsterZone" || card.previousLocation === "spellTrapZone"));
 }
 
 function positionMaskFromPosition(position: CardPosition | undefined): number {

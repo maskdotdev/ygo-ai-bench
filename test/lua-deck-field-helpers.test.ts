@@ -260,10 +260,11 @@ describe("Lua deck and field helpers", () => {
       { code: "100", name: "Leaving Monster", kind: "monster", typeFlags: 0x21 },
       { code: "200", name: "Hand Card", kind: "monster", typeFlags: 0x21 },
       { code: "300", name: "Destination Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "400", name: "Leaving To Spell Zone", kind: "monster", typeFlags: 0x21 },
     ];
-    const session = createDuel({ seed: 181, startingHandSize: 3, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 181, startingHandSize: 4, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300"] },
+      0: { main: ["100", "200", "300", "400"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -272,6 +273,9 @@ describe("Lua deck and field helpers", () => {
     moveDuelCard(session.state, leaving.uid, "graveyard", 0);
     const spell = session.state.cards.find((card) => card.code === "300")!;
     moveDuelCard(session.state, spell.uid, "spellTrapZone", 0);
+    const leavingToSpellZone = session.state.cards.find((card) => card.code === "400")!;
+    moveDuelCard(session.state, leavingToSpellZone.uid, "monsterZone", 0);
+    moveDuelCard(session.state, leavingToSpellZone.uid, "spellTrapZone", 0);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -279,9 +283,11 @@ describe("Lua deck and field helpers", () => {
       local leaving=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_STZONE, 0, 1, 1, nil):GetFirst()
+      local field_to_spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_STZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("destination " .. leaving:GetDestination() .. "/" .. tostring(leaving:IsDestination(LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsDestination(LOCATION_HAND,LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsDestination({LOCATION_HAND,LOCATION_GRAVE})) .. "/" .. tostring(leaving:IsDestination(LOCATION_HAND)))
       Debug.Message("leave field dest " .. leaving:GetLeaveFieldDest() .. "/" .. tostring(leaving:IsLeaveFieldDest(LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsLeaveFieldDest(LOCATION_HAND,LOCATION_GRAVE)) .. "/" .. tostring(leaving:IsLeaveFieldDest({LOCATION_HAND,LOCATION_GRAVE})) .. "/" .. tostring(leaving:IsLeaveFieldDest(LOCATION_HAND)))
       Debug.Message("symbolic destination " .. tostring(spell:IsDestination(LOCATION_SZONE)) .. "/" .. tostring(spell:IsDestination(LOCATION_STZONE)) .. "/" .. tostring(spell:IsDestination(LOCATION_MZONE)))
+      Debug.Message("symbolic leave field dest " .. field_to_spell:GetLeaveFieldDest() .. "/" .. tostring(field_to_spell:IsLeaveFieldDest(LOCATION_SZONE)) .. "/" .. tostring(field_to_spell:IsLeaveFieldDest(LOCATION_STZONE)) .. "/" .. tostring(field_to_spell:IsLeaveFieldDest(LOCATION_MZONE)))
       Debug.Message("hand destination " .. hand:GetDestination())
       Debug.Message("hand leave field dest " .. hand:GetLeaveFieldDest() .. "/" .. tostring(hand:IsLeaveFieldDest(LOCATION_HAND)))
       `,
@@ -292,6 +298,7 @@ describe("Lua deck and field helpers", () => {
     expect(host.messages).toContain("destination 16/true/true/true/false");
     expect(host.messages).toContain("leave field dest 16/true/true/true/false");
     expect(host.messages).toContain("symbolic destination true/true/false");
+    expect(host.messages).toContain("symbolic leave field dest 8/true/true/false");
     expect(host.messages).toContain("hand destination 0");
     expect(host.messages).toContain("hand leave field dest 0/false");
   });
