@@ -694,10 +694,10 @@ describe("Lua chain helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    applyAndAssert(session, sourceAction!);
     const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quickAction).toBeDefined();
-    expect(applyResponse(session, quickAction!).ok).toBe(true);
+    applyAndAssert(session, quickAction!);
     passChainIfAvailable(session);
     passChainIfAvailable(session);
 
@@ -761,10 +761,10 @@ describe("Lua chain helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    applyAndAssert(session, sourceAction!);
     const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quickAction).toBeDefined();
-    expect(applyResponse(session, quickAction!).ok).toBe(true);
+    applyAndAssert(session, quickAction!);
     passChainIfAvailable(session);
     passChainIfAvailable(session);
 
