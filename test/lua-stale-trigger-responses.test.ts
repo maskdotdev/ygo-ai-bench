@@ -49,11 +49,11 @@ describe("Lua stale trigger responses", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const staleTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(staleTrigger).toBeDefined();
 
-    expect(applyResponse(session, staleTrigger!).ok).toBe(true);
+    applyAndAssert(session, staleTrigger!);
     const replay = applyResponse(session, staleTrigger!);
 
     expect(replay.ok).toBe(false);
@@ -98,11 +98,11 @@ describe("Lua stale trigger responses", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const staleDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger");
     expect(staleDecline).toBeDefined();
 
-    expect(applyResponse(session, staleDecline!).ok).toBe(true);
+    applyAndAssert(session, staleDecline!);
     const replay = applyResponse(session, staleDecline!);
 
     expect(replay.ok).toBe(false);
@@ -153,7 +153,7 @@ describe("Lua stale trigger responses", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const staleDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger");
     expect(staleDecline).toBeDefined();
 
@@ -162,11 +162,7 @@ describe("Lua stale trigger responses", () => {
     const restoredDecline = getDuelLegalActions(restored.session, 0).find((action) => action.type === "declineTrigger");
     expect(restoredDecline).toBeDefined();
     expect(restoredDecline).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
-    const declineResult = applyLuaRestoreResponse(restored, restoredDecline!);
-    expect(declineResult.ok).toBe(true);
-    expect(declineResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(declineResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(declineResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(declineResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredDecline!);
     const replay = applyLuaRestoreResponse(restored, staleDecline!);
 
     expect(replay.ok).toBe(false);
@@ -217,7 +213,7 @@ describe("Lua stale trigger responses", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const staleTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(staleTrigger).toBeDefined();
 
@@ -226,11 +222,7 @@ describe("Lua stale trigger responses", () => {
     const restoredTrigger = getDuelLegalActions(restored.session, 0).find((action) => action.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
     expect(restoredTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
-    const triggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
-    expect(triggerResult.ok).toBe(true);
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredTrigger!);
     const replay = applyLuaRestoreResponse(restored, staleTrigger!);
 
     expect(replay.ok).toBe(false);
@@ -242,3 +234,21 @@ describe("Lua stale trigger responses", () => {
     expect(restored.host.messages).toEqual(["restored stale activate trigger resolved"]);
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: Parameters<typeof applyLuaRestoreResponse>[0], action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
