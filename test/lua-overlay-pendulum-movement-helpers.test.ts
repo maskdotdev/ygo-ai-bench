@@ -426,6 +426,10 @@ describe("Lua overlay and pendulum movement helpers", () => {
       Debug.Message("pendulum summoned flags " .. tostring(Duel.GetOperatedGroup():IsExists(Card.IsPendulumSummoned, 1, nil)) .. "/" .. tostring(Duel.GetOperatedGroup():IsExists(Card.IsSpecialSummoned, 1, nil)))
       local first=Duel.GetOperatedGroup():GetFirst()
       Debug.Message("pendulum summon type " .. first:GetSummonType() .. "/" .. tostring(first:IsSummonType(SUMMON_TYPE_PENDULUM)) .. "/" .. tostring(first:IsSummonType(SUMMON_TYPE_SPECIAL)))
+      local hand_card=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local extra_card=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 302), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("pendulum summon locations " .. hand_card:GetSummonLocation() .. "/" .. tostring(hand_card:IsSummonLocation(LOCATION_HAND)) .. "/" .. tostring(hand_card:IsSummonLocation(LOCATION_EXTRA)))
+      Debug.Message("pendulum extra summon location " .. extra_card:GetSummonLocation() .. "/" .. tostring(extra_card:IsSummonLocation(LOCATION_EXTRA)) .. "/" .. tostring(extra_card:IsSummonLocation(LOCATION_HAND)))
       `,
       "pendulum-summon.lua",
     );
@@ -438,6 +442,8 @@ describe("Lua overlay and pendulum movement helpers", () => {
     expect(host.messages).toContain("pendulum after false");
     expect(host.messages).toContain("pendulum summoned flags true/true");
     expect(host.messages).toContain("pendulum summon type 1241513984/true/true");
+    expect(host.messages).toContain("pendulum summon locations 2/true/false");
+    expect(host.messages).toContain("pendulum extra summon location 64/true/false");
     expect(session.state.cards.find((card) => card.uid === handPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "pendulum" });
     expect(session.state.cards.find((card) => card.uid === extraPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "pendulum" });
     expect(session.state.cards.find((card) => card.uid === outOfScale!.uid)).toMatchObject({ location: "hand" });
