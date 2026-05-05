@@ -529,7 +529,9 @@ describe("duel battle timing", () => {
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
     expect(legalEffectIds(session, 0)).toContain("timing-301");
     expect(legalEffectIds(session, 0)).not.toContain("timing-400");
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-301")!).ok).toBe(true);
+    const startDamageQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-301");
+    expect(startDamageQuick).toMatchObject({ windowId: session.state.actionWindowId, windowKind: "battle" });
+    expect(applyResponse(session, startDamageQuick!).ok).toBe(true);
     expect(passCurrentChainIfPending(session)).toBe(true);
 
     expect(session.state.battleWindow?.kind).toBe("startDamageStep");
@@ -540,7 +542,9 @@ describe("duel battle timing", () => {
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
     expect(legalEffectIds(session, 0)).toContain("timing-302");
     expect(legalEffectIds(session, 0)).not.toContain("timing-400");
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-302")!).ok).toBe(true);
+    const beforeDamageQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-302");
+    expect(beforeDamageQuick).toMatchObject({ windowId: session.state.actionWindowId, windowKind: "battle" });
+    expect(applyResponse(session, beforeDamageQuick!).ok).toBe(true);
     expect(passCurrentChainIfPending(session)).toBe(true);
 
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
@@ -548,7 +552,9 @@ describe("duel battle timing", () => {
     expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
     expect(legalEffectIds(session, 0)).toEqual(["timing-400"]);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-400")!).ok).toBe(true);
+    const damageCalculationQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-400");
+    expect(damageCalculationQuick).toMatchObject({ windowId: session.state.actionWindowId, windowKind: "battle" });
+    expect(applyResponse(session, damageCalculationQuick!).ok).toBe(true);
     expect(passCurrentChainIfPending(session)).toBe(true);
 
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
@@ -557,7 +563,9 @@ describe("duel battle timing", () => {
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
     expect(legalEffectIds(session, 0)).toContain("timing-303");
     expect(legalEffectIds(session, 0)).not.toContain("timing-400");
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-303")!).ok).toBe(true);
+    const afterDamageQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-303");
+    expect(afterDamageQuick).toMatchObject({ windowId: session.state.actionWindowId, windowKind: "battle" });
+    expect(applyResponse(session, afterDamageQuick!).ok).toBe(true);
     expect(passCurrentChainIfPending(session)).toBe(true);
 
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
@@ -567,6 +575,8 @@ describe("duel battle timing", () => {
     expect(legalEffectIds(session, 0)).toContain("timing-304");
     expect(legalEffectIds(session, 0)).not.toContain("timing-400");
     expect(legalEffectIds(session, 0)).not.toContain("timing-500");
+    const endDamageQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "timing-304");
+    expect(endDamageQuick).toMatchObject({ windowId: session.state.actionWindowId, windowKind: "battle" });
   });
 });
 
