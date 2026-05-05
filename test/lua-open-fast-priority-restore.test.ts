@@ -157,9 +157,12 @@ describe("Lua open fast priority restore", () => {
     loadDecks(session, { 0: { main: ["18100", "18200"] }, 1: { main: ["18300", "18400"] } });
     startDuel(session);
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(18100, source).ok).toBe(true);
-    expect(host.loadCardScript(18200, source).ok).toBe(true);
-    expect(host.loadCardScript(18300, source).ok).toBe(true);
+    const sourceScript = host.loadCardScript(18100, source);
+    const openQuickScript = host.loadCardScript(18200, source);
+    const chainQuickScript = host.loadCardScript(18300, source);
+    expect(sourceScript.ok, sourceScript.error).toBe(true);
+    expect(openQuickScript.ok, openQuickScript.error).toBe(true);
+    expect(chainQuickScript.ok, chainQuickScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
 
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("18100"));
@@ -275,10 +278,14 @@ describe("Lua open fast priority restore", () => {
     loadDecks(session, { 0: { main: ["19100", "19200", "19300", "19600"] }, 1: { main: ["19400", "19500", "19500", "19500"] } });
     startDuel(session);
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(19200, source).ok).toBe(true);
-    expect(host.loadCardScript(19300, source).ok).toBe(true);
-    expect(host.loadCardScript(19400, source).ok).toBe(true);
-    expect(host.loadCardScript(19600, source).ok).toBe(true);
+    const triggerScript = host.loadCardScript(19200, source);
+    const openQuickScript = host.loadCardScript(19300, source);
+    const opponentChainQuickScript = host.loadCardScript(19400, source);
+    const turnChainQuickScript = host.loadCardScript(19600, source);
+    expect(triggerScript.ok, triggerScript.error).toBe(true);
+    expect(openQuickScript.ok, openQuickScript.error).toBe(true);
+    expect(opponentChainQuickScript.ok, opponentChainQuickScript.error).toBe(true);
+    expect(turnChainQuickScript.ok, turnChainQuickScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(4);
 
     const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "19100");
