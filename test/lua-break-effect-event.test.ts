@@ -37,8 +37,8 @@ describe("Lua break-effect events", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_BREAK_EFFECT)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp)
-          Debug.Message("break resolved " .. tp)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("break resolved " .. tp .. "/" .. r .. "/" .. rp)
         end)
         c:RegisterEffect(e)
       end
@@ -55,12 +55,12 @@ describe("Lua break-effect events", () => {
     expect(host.messages).toContain("before break");
     expect(host.messages).toContain("after break");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["breakEffect"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1050 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(session.state.eventHistory).toEqual([
       expect.objectContaining({ eventName: "chainActivating", eventCode: 1021 }),
       expect.objectContaining({ eventName: "chaining", eventCode: 1027 }),
       expect.objectContaining({ eventName: "chainSolving", eventCode: 1020 }),
-      expect.objectContaining({ eventName: "breakEffect", eventCode: 1050 }),
+      expect.objectContaining({ eventName: "breakEffect", eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0 }),
       expect.objectContaining({ eventName: "chainSolved", eventCode: 1022 }),
     ]);
   });
@@ -94,8 +94,8 @@ describe("Lua break-effect events", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_BREAK_EFFECT)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp)
-              Debug.Message("restored break trigger " .. tp)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              Debug.Message("restored break trigger " .. tp .. "/" .. r .. "/" .. rp)
             end)
             c:RegisterEffect(e)
           end
@@ -121,7 +121,7 @@ describe("Lua break-effect events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["breakEffect"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1050 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
@@ -132,7 +132,7 @@ describe("Lua break-effect events", () => {
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
-    expect(restored.host.messages).toContain("restored break trigger 0");
+    expect(restored.host.messages).toContain("restored break trigger 0/64/0");
   });
 
   it("makes earlier Lua optional when triggers miss timing at BreakEffect boundaries", () => {

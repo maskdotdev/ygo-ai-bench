@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
 import { collectDuelTriggerEffects, raiseDuelEvent, raiseDuelEventWithCode } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid } from "#lua/api-utils.js";
@@ -61,7 +62,7 @@ function pushBreakEffect(session: DuelSession, hostState: LuaDuelOperationApiHos
   if (session.state.status === "ended") return 0;
   markLuaOperationTimingBoundary(session, hostState);
   pushDuelLog(session.state, "breakEffect", session.state.turnPlayer, undefined, "Effect operation break");
-  raiseDuelEvent(session.state, "breakEffect");
+  collectDuelTriggerEffects(session.state, "breakEffect", undefined, { eventReason: duelReason.effect, eventReasonPlayer: hostState.activeContext?.player ?? session.state.turnPlayer });
   if (hostState.activeContext) hostState.activeOperationMoved = true;
   return 0;
 }
