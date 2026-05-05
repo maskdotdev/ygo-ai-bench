@@ -674,7 +674,9 @@ describe("Node upstream snapshot restore", () => {
     const forgedPass = applyResponse(restored.session, { type: "passChain", player: 1, label: "Pass" });
     expect(forgedPass.ok).toBe(false);
     expect(forgedPass.error).toContain("Response is not currently legal");
+    expect(forgedPass.legalActions).toEqual([]);
     expect(forgedPass.legalActionGroups).toEqual([]);
+    expect(forgedPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(forgedPass.legalActions);
     expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(["lua-1"]);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
