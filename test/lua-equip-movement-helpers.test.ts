@@ -189,6 +189,46 @@ describe("Lua equip movement helpers", () => {
     expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
   });
 
+  it("keeps effect equip helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Ended Equip Target", kind: "monster" },
+      { code: "500", name: "Ended Equip Card", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 205, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    const equip = session.state.cards.find((card) => card.code === "500");
+    expect(target).toBeTruthy();
+    expect(equip).toBeTruthy();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local equip = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e = Effect.CreateEffect(target)
+      Duel.Win(0,WIN_REASON_EXODIA)
+      Debug.Message("effect equip ended " .. tostring(target:EquipByEffectAndLimitRegister(e, 0, equip, 777001, true)))
+      Debug.Message("equip target ended " .. tostring(equip:GetEquipTarget()==nil))
+      Debug.Message("operated ended " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "ended-effect-equip-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["effect equip ended false", "equip target ended true", "operated ended 0"]);
+    expect(session.state.status).toBe("ended");
+    expect(equip).toMatchObject({ location: "hand", faceUp: false });
+    expect(equip!.equippedToUid).toBeUndefined();
+    expect(session.state.flagEffects).toEqual([]);
+    expect(session.state.log.map((entry) => entry.action)).not.toContain("equip");
+  });
+
   it("lets Lua scripts register Eyes Restrict equip limits", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Eyes Restrict Source", kind: "monster" },

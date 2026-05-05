@@ -38,6 +38,11 @@ export function installCardEquipApi<EffectRecord extends LuaCardApiEffectRecord>
 }
 
 function pushEquipByEffectAndLimitRegister<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
+  if (session.state.status === "ended") {
+    setOperatedUids(hostState, []);
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
   const target = readCard(L, session);
   const player = lua.lua_isnumber(L, 3) ? normalizePlayer(lua.lua_tointeger(L, 3)) : target?.controller ?? session.state.turnPlayer;
   const equipUid = readCardUid(L, 4);
