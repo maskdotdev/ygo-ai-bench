@@ -111,6 +111,7 @@ describe("Lua chain-negated events", () => {
     expect(trigger).toBeDefined();
     const result = applyLuaRestoreResponse(restored, trigger!);
     expect(result.ok).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
     while (restored.session.state.chain.length > 0) {
       const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
@@ -118,6 +119,7 @@ describe("Lua chain-negated events", () => {
       expect(pass).toBeDefined();
       const passResult = applyLuaRestoreResponse(restored, pass!);
       expect(passResult.ok).toBe(true);
+      expect(passResult.legalActions).toEqual(getDuelLegalActions(restored.session, passResult.state.waitingFor!));
       expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
     }
     expect(restored.host.messages).toContain("chain negated resolved 0/0/1/0");
