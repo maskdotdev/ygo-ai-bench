@@ -34,6 +34,14 @@ describe("duel response matching", () => {
     expect(duelActionMatchesSelector(action, { type: "xyzSummon", player: 0, materialUids: ["mat-a", "mat-a"] }, [])).toBe(false);
   });
 
+  it("matches direct attack selectors by explicit direct attack marker", () => {
+    const direct: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open" };
+    const unstamped: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Legacy untargeted", windowId: 3, windowKind: "open" };
+
+    expect(duelActionMatchesSelector(direct, { type: "declareAttack", player: 0, directAttack: true }, [])).toBe(true);
+    expect(duelActionMatchesSelector(unstamped, { type: "declareAttack", player: 0, directAttack: true }, [])).toBe(false);
+  });
+
   it("matches explicit direct attack responses only to direct attack actions", () => {
     const direct: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open" };
     const targeted: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Target", windowId: 3, windowKind: "open" };

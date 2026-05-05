@@ -65,7 +65,7 @@ export function duelActionMatchesSelector(
   }
   if (selector.directAttack !== undefined) {
     if (action.type !== "declareAttack" && action.type !== "replayAttack") return false;
-    if ((action.targetUid === undefined) !== selector.directAttack) return false;
+    if ((action.directAttack === true) !== selector.directAttack) return false;
   }
   if (selector.promptId) {
     if (!("promptId" in action) || action.promptId !== selector.promptId) return false;
