@@ -55,7 +55,7 @@ describe("Lua equip movement helpers", () => {
     expect(session.state.effects.filter((effectRecord) => effectRecord.sourceUid === equip!.uid)).toHaveLength(2);
     const actions = getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "activateEffect" && candidate.uid === equip!.uid);
     expect(actions).toHaveLength(1);
-    expect(applyResponse(session, actions[0]!).ok).toBe(true);
+    applyAndAssert(session, actions[0]!);
     while (session.state.chain.length > 0) {
       expect(passCurrentChain(session)).toBe(true);
     }
@@ -141,7 +141,7 @@ describe("Lua equip movement helpers", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: session.state.cards.find((card) => card.code === "500")?.uid, eventReason: 0x40, eventReasonPlayer: 0 });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("equip trigger resolved 500/64/0");
   });
 
@@ -202,7 +202,7 @@ describe("Lua equip movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("900"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     const equip = session.state.cards.find((card) => card.code === "500");
     const starter = session.state.cards.find((card) => card.code === "900");
     expect(equip).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
@@ -298,7 +298,7 @@ describe("Lua equip movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("500"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1121");
@@ -432,7 +432,7 @@ describe("Lua equip movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1012");
@@ -660,14 +660,14 @@ describe("Lua equip movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(host.messages).toContain("remove count 1");
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "banished" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["banished"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1011, eventCardUid: session.state.cards.find((card) => card.code === "200")?.uid });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("remove trigger resolved 200");
   });
 
@@ -735,7 +735,7 @@ describe("Lua equip movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1011");
@@ -921,8 +921,19 @@ describe("Lua equip movement helpers", () => {
 
 });
 
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
 function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
   const player = session.state.waitingFor ?? session.state.turnPlayer;
   const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
-  return Boolean(pass && applyResponse(session, pass).ok);
+  if (!pass) return false;
+  applyAndAssert(session, pass);
+  return true;
 }
