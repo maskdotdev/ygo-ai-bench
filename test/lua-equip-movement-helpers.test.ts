@@ -7,6 +7,7 @@ import {
   destroyDuelCard,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  serializeDuel,
   specialSummonDuelCard,
   startDuel,
   xyzSummonDuelCard,
@@ -15,6 +16,7 @@ import { getCards, moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua equip movement helpers", () => {
   it("registers Lua equip spell procedures", () => {
@@ -140,6 +142,80 @@ describe("Lua equip movement helpers", () => {
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
     expect(host.messages).toContain("equip trigger resolved 500");
+  });
+
+  it("applies restored Lua equip triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Equip Target", kind: "monster" },
+      { code: "500", name: "Restore Equip Spell", kind: "spell", typeFlags: 0x40002 },
+      { code: "700", name: "Restore Equip Watcher", kind: "monster" },
+      { code: "900", name: "Restore Equip Starter", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c900.lua") {
+          return `
+          c900={}
+          function c900.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+              local equip=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+              Duel.Equip(0, equip, target)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c700.lua") {
+          return `
+          c700={}
+          function c700.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_EQUIP)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp,eg)
+              Debug.Message("restored equip trigger " .. eg:GetFirst():GetCode())
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 65, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "500", "700", "900"] }, 1: { main: [] } });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(900, source).ok).toBe(true);
+    expect(host.loadCardScript(700, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("900"));
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    const equip = session.state.cards.find((card) => card.code === "500");
+    expect(equip).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["equipped"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["equipped"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid });
+
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored equip trigger 500");
   });
 
   it("makes Lua optional when equip triggers miss timing after later event boundaries", () => {
