@@ -114,7 +114,8 @@ describe("Lua CheckEvent payloads", () => {
       },
     };
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(200, source).ok).toBe(true);
+    const loaded = host.loadCardScript(200, source);
+    expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     const result = host.loadScript(
@@ -128,7 +129,7 @@ describe("Lua CheckEvent payloads", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "leftField", eventCode: 1019, eventPlayer: 0, eventValue: 23, eventReason: 64, eventReasonPlayer: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
@@ -164,7 +165,11 @@ describe("Lua CheckEvent payloads", () => {
 
     const startAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(startAction).toBeDefined();
-    expect(applyResponse(session, startAction!).ok).toBe(true);
+    const started = applyResponse(session, startAction!);
+    expect(started.ok, started.error).toBe(true);
+    expect(started.legalActions).toEqual(getDuelLegalActions(session, started.state.waitingFor!));
+    expect(started.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, started.state.waitingFor!));
+    expect(started.legalActionGroups.flatMap((group) => group.actions)).toEqual(started.legalActions);
 
     const check = host.loadScript(
       `
