@@ -227,7 +227,9 @@ describe("duel stale trigger responses", () => {
     expect(second).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket" });
     const secondResult = applyResponse(restored, second!);
     expect(secondResult.ok).toBe(true);
+    expect(secondResult.legalActions).toEqual(getDuelLegalActions(restored, secondResult.state.waitingFor!));
     expect(secondResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, secondResult.state.waitingFor!));
+    expect(secondResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(secondResult.legalActions);
     const replay = applyResponse(restored, staleFirst!);
 
     expect(replay.ok).toBe(false);
@@ -241,7 +243,9 @@ describe("duel stale trigger responses", () => {
     expect(declineFirst).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket" });
     const declineFirstResult = applyResponse(restored, declineFirst!);
     expect(declineFirstResult.ok).toBe(true);
+    expect(declineFirstResult.legalActions).toEqual(getDuelLegalActions(restored, declineFirstResult.state.waitingFor!));
     expect(declineFirstResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, declineFirstResult.state.waitingFor!));
+    expect(declineFirstResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(declineFirstResult.legalActions);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale second trigger resolved")).toBe(true);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale first trigger resolved")).toBe(false);
   });
@@ -310,7 +314,9 @@ describe("duel stale trigger responses", () => {
     expect(declineSecond).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket" });
     const declineSecondResult = applyResponse(restored, declineSecond!);
     expect(declineSecondResult.ok).toBe(true);
+    expect(declineSecondResult.legalActions).toEqual(getDuelLegalActions(restored, declineSecondResult.state.waitingFor!));
     expect(declineSecondResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, declineSecondResult.state.waitingFor!));
+    expect(declineSecondResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(declineSecondResult.legalActions);
     const replay = applyResponse(restored, staleDeclineFirst!);
 
     expect(replay.ok).toBe(false);

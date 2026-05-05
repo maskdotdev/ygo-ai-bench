@@ -618,7 +618,9 @@ describe("duel trigger buckets", () => {
     expect(activateFirst).toBeTruthy();
     const firstResult = applyResponse(restored, activateFirst!);
     expect(firstResult.ok).toBe(true);
+    expect(firstResult.legalActions).toEqual(getDuelLegalActions(restored, firstResult.state.waitingFor!));
     expect(firstResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, firstResult.state.waitingFor!));
+    expect(firstResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(firstResult.legalActions);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
       "second-restored-turn-optional",
       "opponent-restored-later-optional",
@@ -638,7 +640,9 @@ describe("duel trigger buckets", () => {
     expect(activateSecond).toBeTruthy();
     const secondResult = applyResponse(restored, activateSecond!);
     expect(secondResult.ok).toBe(true);
+    expect(secondResult.legalActions).toEqual(getDuelLegalActions(restored, secondResult.state.waitingFor!));
     expect(secondResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, secondResult.state.waitingFor!));
+    expect(secondResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(secondResult.legalActions);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["opponent-restored-later-optional"]);
     expect(restored.state.waitingFor).toBe(1);
 
@@ -788,7 +792,9 @@ describe("duel trigger buckets", () => {
     expect(activation).toBeTruthy();
     const activated = applyResponse(restored, activation!);
     expect(activated.ok).toBe(true);
+    expect(activated.legalActions).toEqual(getDuelLegalActions(restored, activated.state.waitingFor!));
     expect(activated.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, activated.state.waitingFor!));
+    expect(activated.legalActionGroups.flatMap((group) => group.actions)).toEqual(activated.legalActions);
     expect(restored.state.pendingTriggers).toEqual([]);
     const staleActivation = applyResponse(restored, activation!);
     expect(staleActivation.ok).toBe(false);
