@@ -75,12 +75,8 @@ describe("Lua open fast priority restore", () => {
     expect(chainPass).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    const opened = applyLuaRestoreResponse(restored, chainPass!);
-    expect(opened.ok, opened.error).toBe(true);
+    const opened = applyLuaRestoreAndAssert(restored, chainPass!);
     expect(opened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
-    expect(opened.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
 
     const staleChainPass = applyLuaRestoreResponse(restored, chainPass!);
     expect(staleChainPass.ok).toBe(false);
@@ -93,12 +89,8 @@ describe("Lua open fast priority restore", () => {
     expect(quick).toMatchObject({ player: 0, windowKind: "open" });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    const quickResult = applyLuaRestoreResponse(restored, quick!);
-    expect(quickResult.ok, quickResult.error).toBe(true);
+    const quickResult = applyLuaRestoreAndAssert(restored, quick!);
     expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    expect(quickResult.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
-    expect(quickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
-    expect(quickResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(quickResult.legalActions);
 
     const staleQuick = applyLuaRestoreResponse(restored, quick!);
     expect(staleQuick.ok).toBe(false);
@@ -111,7 +103,7 @@ describe("Lua open fast priority restore", () => {
     expect(finalPass).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    expect(applyLuaRestoreResponse(restored, finalPass!).ok).toBe(true);
+    applyLuaRestoreAndAssert(restored, finalPass!);
     expect(restored.host.messages).toEqual(["restored open fast source resolved", "restored open fast quick resolved"]);
   });
 
@@ -205,22 +197,14 @@ describe("Lua open fast priority restore", () => {
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     const trigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(trigger).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnMandatory" });
-    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
-    expect(triggerResult.ok, triggerResult.error).toBe(true);
+    const triggerResult = applyLuaRestoreAndAssert(restored, trigger!);
     expect(triggerResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
 
     const chainQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid.includes("19400"));
     expect(chainQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
-    const chainQuickResult = applyLuaRestoreResponse(restored, chainQuick!);
-    expect(chainQuickResult.ok, chainQuickResult.error).toBe(true);
+    const chainQuickResult = applyLuaRestoreAndAssert(restored, chainQuick!);
     expect(chainQuickResult.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
-    expect(chainQuickResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(chainQuickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(chainQuickResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(chainQuickResult.legalActions);
 
     const staleChainQuick = applyLuaRestoreResponse(restored, chainQuick!);
     expect(staleChainQuick.ok).toBe(false);
@@ -231,17 +215,13 @@ describe("Lua open fast priority restore", () => {
 
     const turnChainQuick = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid.includes("19600"));
     expect(turnChainQuick).toMatchObject({ player: 0, windowKind: "chainResponse" });
-    const turnChainQuickResult = applyLuaRestoreResponse(restored, turnChainQuick!);
-    expect(turnChainQuickResult.ok, turnChainQuickResult.error).toBe(true);
+    const turnChainQuickResult = applyLuaRestoreAndAssert(restored, turnChainQuick!);
     expect(turnChainQuickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(turnChainQuickResult.state.chain.map((link) => link.sourceUid)).toEqual([
       expect.stringContaining("19200"),
       expect.stringContaining("19400"),
       expect.stringContaining("19600"),
     ]);
-    expect(turnChainQuickResult.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
-    expect(turnChainQuickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
-    expect(turnChainQuickResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(turnChainQuickResult.legalActions);
 
     const staleTurnChainQuick = applyLuaRestoreResponse(restored, turnChainQuick!);
     expect(staleTurnChainQuick.ok).toBe(false);
@@ -252,12 +232,8 @@ describe("Lua open fast priority restore", () => {
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
-    const opened = applyLuaRestoreResponse(restored, pass!);
-    expect(opened.ok, opened.error).toBe(true);
+    const opened = applyLuaRestoreAndAssert(restored, pass!);
     expect(opened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
-    expect(opened.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
 
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
@@ -268,12 +244,8 @@ describe("Lua open fast priority restore", () => {
 
     const quick = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid.includes("19300"));
     expect(quick).toMatchObject({ player: 0, windowKind: "open" });
-    const quickResult = applyLuaRestoreResponse(restored, quick!);
-    expect(quickResult.ok, quickResult.error).toBe(true);
+    const quickResult = applyLuaRestoreAndAssert(restored, quick!);
     expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    expect(quickResult.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
-    expect(quickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
-    expect(quickResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(quickResult.legalActions);
 
     const staleQuick = applyLuaRestoreResponse(restored, quick!);
     expect(staleQuick.ok).toBe(false);
@@ -284,12 +256,8 @@ describe("Lua open fast priority restore", () => {
 
     const finalPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(finalPass).toBeDefined();
-    const finalOpened = applyLuaRestoreResponse(restored, finalPass!);
-    expect(finalOpened.ok, finalOpened.error).toBe(true);
+    const finalOpened = applyLuaRestoreAndAssert(restored, finalPass!);
     expect(finalOpened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
-    expect(finalOpened.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(finalOpened.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(finalOpened.legalActionGroups.flatMap((group) => group.actions)).toEqual(finalOpened.legalActions);
 
     const staleFinalPass = applyLuaRestoreResponse(restored, finalPass!);
     expect(staleFinalPass.ok).toBe(false);
@@ -300,3 +268,12 @@ describe("Lua open fast priority restore", () => {
     expect(restored.host.messages).toEqual(["restored trigger fast turn chain quick resolved", "restored trigger fast chain quick resolved", "restored trigger fast trigger resolved", "restored trigger fast quick resolved"]);
   });
 });
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
