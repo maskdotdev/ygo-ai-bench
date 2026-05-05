@@ -34,6 +34,7 @@ export function installDuelRandomApi(L: unknown, session: DuelSession): void {
 }
 
 function pushTossDice(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const player = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer;
   const count = Math.max(1, Math.trunc(lua.lua_isnumber(L, 2) ? lua.lua_tonumber(L, 2) : 1));
   const results: number[] = [];
@@ -53,6 +54,7 @@ function pushGetDiceResult(L: unknown, session: DuelSession): number {
 }
 
 function pushSetDiceResult(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   session.state.lastDiceResults = readIntegerResults(L).map((result) => Math.min(6, Math.max(1, result)));
   return 0;
 }
@@ -64,6 +66,7 @@ function rollDie(session: DuelSession): number {
 }
 
 function pushTossCoin(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const player = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer;
   const count = Math.max(1, Math.trunc(lua.lua_isnumber(L, 2) ? lua.lua_tonumber(L, 2) : 1));
   const results: number[] = [];
@@ -81,6 +84,7 @@ function pushGetCoinResult(L: unknown, session: DuelSession): number {
 }
 
 function pushSetCoinResult(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   session.state.lastCoinResults = readIntegerResults(L).map((result) => result === 0 ? 0 : 1);
   return 0;
 }
@@ -91,6 +95,10 @@ function pushAnnounceCoin(L: unknown): number {
 }
 
 function pushCallCoin(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
   const player = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer;
   const call = announceCoin();
   const result = tossCoin(session);
@@ -142,6 +150,10 @@ function readIntegerResults(L: unknown): number[] {
 }
 
 function pushGetRandomNumber(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const first = lua.lua_isnumber(L, 1) ? Math.trunc(lua.lua_tonumber(L, 1)) : 0;
   const second = lua.lua_isnumber(L, 2) ? Math.trunc(lua.lua_tonumber(L, 2)) : first;
   const min = Math.min(first, second);
@@ -157,6 +169,10 @@ function randomInteger(session: DuelSession, min: number, max: number): number {
 }
 
 function pushRockPaperScissors(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushinteger(L, session.state.turnPlayer);
+    return 1;
+  }
   const winner: PlayerId = randomInteger(session, 0, 1) === 1 ? 1 : 0;
   pushDuelLog(session.state, "rockPaperScissors", winner, undefined, String(lua.lua_toboolean(L, 1)));
   lua.lua_pushinteger(L, winner);

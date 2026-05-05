@@ -197,6 +197,51 @@ describe("Lua random helpers", () => {
     expect(session.state.randomCounter).toBe(1);
   });
 
+  it("keeps random helpers from mutating ended duels", () => {
+    const session = setupSession(168);
+    session.state.lastCoinResults = [1, 0];
+    session.state.lastDiceResults = [2, 5];
+    session.state.randomCounter = 4;
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Win(0,WIN_REASON_EXODIA)
+      Debug.Message("coin returns " .. select("#", Duel.TossCoin(0,2)))
+      Debug.Message("dice returns " .. select("#", Duel.TossDice(0,2)))
+      Debug.Message("call ended " .. tostring(Duel.CallCoin(0)))
+      Duel.SetCoinResult(0,0,0)
+      Duel.SetDiceResult(6,6,6)
+      Debug.Message("coin result " .. table.concat({Duel.GetCoinResult()}, ","))
+      Debug.Message("dice result " .. table.concat({Duel.GetDiceResult()}, ","))
+      Debug.Message("random ended " .. Duel.GetRandomNumber(1,6))
+      Debug.Message("rps ended " .. Duel.RockPaperScissors())
+      `,
+      "ended-random-noop.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    expect(host.messages).toEqual([
+      "coin returns 0",
+      "dice returns 0",
+      "call ended false",
+      "coin result 1,0",
+      "dice result 2,5",
+      "random ended 0",
+      "rps ended 0",
+    ]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.randomCounter).toBe(4);
+    expect(session.state.lastCoinResults).toEqual([1, 0]);
+    expect(session.state.lastDiceResults).toEqual([2, 5]);
+    expect(session.state.pendingTriggers).toEqual([]);
+    expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("coinTossed");
+    expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("diceTossed");
+    expect(session.state.log.map((entry) => entry.action)).not.toContain("tossCoin");
+    expect(session.state.log.map((entry) => entry.action)).not.toContain("tossDice");
+    expect(session.state.log.map((entry) => entry.action)).not.toContain("callCoin");
+    expect(session.state.log.map((entry) => entry.action)).not.toContain("rockPaperScissors");
+  });
+
   it("preserves dice progression across snapshots", () => {
     const original = setupSession(153);
     const firstHost = createLuaScriptHost(original);
