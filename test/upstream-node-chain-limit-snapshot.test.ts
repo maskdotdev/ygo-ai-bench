@@ -658,6 +658,76 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
   });
 
+  it("keeps ambiguous response-player Lua chain-limit closures incomplete after snapshots", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "script", "c100.lua"),
+      `
+      c100 = {}
+      c100.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetTarget(c100.target)
+        e:SetOperation(function(e,c) Debug.Message("ambiguous response-player limit source") end)
+        c:RegisterEffect(e)
+      end
+      function c100.target(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return true end
+        Duel.SetChainLimit(c100.limit(1))
+      end
+      function c100.limit(rp)
+        return function(e,responsePlayer,tp)
+          return responsePlayer==rp
+        end
+      end
+      `,
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(root, "script", "c200.lua"),
+      `
+      c200 = {}
+      c200.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c) return Duel.GetCurrentChain()>0 end)
+        e:SetOperation(function(e,c) Debug.Message("ambiguous-response-player response") end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const session = createDuel({ seed: 14, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, workspace).ok).toBe(true);
+    expect(host.loadCardScript(200, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const snapshot = serializeDuel(session);
+    expect(snapshot.state.chainLimits[0]?.registryKey).toMatch(/^lua-chain-limit:100:0:link:\d+$/);
+    const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
+
+    expect(restored.restoreComplete).toBe(false);
+    expect(restored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+  });
+
   it("reports Lua one-chain limit predicates that cannot be restored from snapshots", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
     tempRoots.push(root);
