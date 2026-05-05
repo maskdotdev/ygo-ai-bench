@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, groupDuelLegalActions, loadDecks, registerEffect, restoreDuel, runScriptedDuelResponses, selectDuelActionBySelector, sendDuelCardToGraveyard, serializeDuel, startDuel } from "#duel/core.js";
+import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelAction, DuelEffectDefinition } from "#duel/types.js";
 
@@ -21,6 +22,23 @@ describe("duel legal action groups", () => {
     expect(groups.some((group) => group.label === "Summons")).toBe(true);
     expect(groups.some((group) => group.label === "Turn")).toBe(true);
     expect(getGroupedDuelLegalActions(session, 0)).toEqual(groups);
+  });
+
+  it("keeps flip summons with summon actions before manual position changes", () => {
+    const session = createDuel({ seed: 101, startingHandSize: 2 });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: ["300", "400"] },
+    });
+    startDuel(session);
+    const setMonster = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(setMonster).toBeDefined();
+    moveDuelCard(session.state, setMonster!.uid, "monsterZone", 0).position = "faceDownDefense";
+
+    const actions = getDuelLegalActions(session, 0);
+    const relevantActions = actions.filter((action) => action.type === "normalSummon" || action.type === "setMonster" || action.type === "flipSummon" || action.type === "changePosition");
+    expect(relevantActions.map((action) => action.type)).toEqual(["normalSummon", "setMonster", "flipSummon", "changePosition"]);
+    expect(getGroupedDuelLegalActions(session, 0).flatMap((group) => group.actions)).toEqual(actions);
   });
 
   it("groups trigger-bucket activations and declines separately", () => {
