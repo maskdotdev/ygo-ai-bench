@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
-import { declineDuelPendingTrigger } from "#duel/effect-activation.js";
+import { declineDuelPendingTrigger, shouldContinueTriggerSelection } from "#duel/effect-activation.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
@@ -174,6 +174,56 @@ describe("duel trigger buckets", () => {
     expect(afterFirst.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-turn-mandatory-bucket", "opponent-later-mandatory-bucket"]);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-turn-mandatory-bucket"]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+  });
+
+  it("stops trigger selection when remaining triggers belong to a different event payload", () => {
+    const session = createDuel({ seed: 32, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "300")!.uid;
+    const eventCardUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.chain = [
+      {
+        id: "chain-payload-first",
+        player: 0,
+        sourceUid,
+        effectId: "first-payload-trigger",
+        eventName: "customEvent",
+        eventCode: 0x10000005,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReason: 64,
+        eventReasonPlayer: 0,
+        relatedEffectId: 101,
+        eventUids: [eventCardUid],
+        eventCardUid,
+      },
+    ];
+    session.state.pendingTriggers = [
+      {
+        id: "second-payload",
+        player: 0,
+        sourceUid,
+        effectId: "second-payload-trigger",
+        eventName: "customEvent",
+        triggerBucket: "turnOptional",
+        eventCode: 0x10000005,
+        eventPlayer: 0,
+        eventValue: 2,
+        eventReason: 64,
+        eventReasonPlayer: 0,
+        relatedEffectId: 101,
+        eventUids: [eventCardUid],
+        eventCardUid,
+      },
+    ];
+    session.state.waitingFor = 0;
+
+    expect(shouldContinueTriggerSelection(session.state)).toBe(false);
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateTrigger" && action.effectId === "second-payload-trigger")).toBe(false);
   });
 
   it("declines optional trigger buckets without exposing later buckets early", () => {

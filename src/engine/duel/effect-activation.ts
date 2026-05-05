@@ -207,11 +207,26 @@ export function shouldContinueTriggerSelection(state: DuelState): boolean {
   if (state.pendingTriggers.length === 0) return false;
   const firstLink = state.chain[0];
   if (!firstLink) return true;
-  return state.pendingTriggers.every((trigger) => (
-    trigger.eventName === firstLink.eventName &&
-    trigger.eventCode === firstLink.eventCode &&
-    trigger.eventCardUid === firstLink.eventCardUid
-  ));
+  return state.pendingTriggers.every((trigger) => triggerEventPayloadMatchesLink(trigger, firstLink));
+}
+
+function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][number], link: ChainLink): boolean {
+  return (
+    trigger.eventName === link.eventName &&
+    trigger.eventCode === link.eventCode &&
+    trigger.eventPlayer === link.eventPlayer &&
+    trigger.eventValue === link.eventValue &&
+    trigger.eventReason === link.eventReason &&
+    trigger.eventReasonPlayer === link.eventReasonPlayer &&
+    trigger.relatedEffectId === link.relatedEffectId &&
+    trigger.eventCardUid === link.eventCardUid &&
+    sameOptionalStringList(trigger.eventUids, link.eventUids)
+  );
+}
+
+function sameOptionalStringList(left: string[] | undefined, right: string[] | undefined): boolean {
+  if (left === undefined || right === undefined) return left === right;
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: string, triggerBucket: TriggerBucket): DuelState["pendingTriggers"][number] {
