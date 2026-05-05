@@ -672,6 +672,16 @@ describe("duel snapshot persistence", () => {
     expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "snapshot-delayed-trigger");
     expect(action).toBeTruthy();
+    expect(getGroupedDuelLegalActions(restored, 0).map((group) => ({
+      label: group.label,
+      windowId: group.windowId,
+      windowKind: group.windowKind,
+      triggerBucket: group.triggerBucket,
+      actionTypes: group.actions.map((candidate) => candidate.type),
+    }))).toEqual([
+      { label: "Trigger Activations", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: [restored.state.pendingTriggers[0]!.id] }, actionTypes: ["activateTrigger"] },
+      { label: "Trigger Declines", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: [restored.state.pendingTriggers[0]!.id] }, actionTypes: ["declineTrigger"] },
+    ]);
     const result = applyResponse(restored, action!);
 
     expect(result.ok).toBe(true);
