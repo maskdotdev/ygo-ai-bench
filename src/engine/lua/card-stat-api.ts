@@ -3,6 +3,7 @@ import { collectDuelTriggerEffects } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import type { DuelCardInstance, DuelSession, DuelState } from "#duel/types.js";
 
@@ -301,7 +302,7 @@ function pushUpdateLevel(L: unknown, session: DuelSession, hostState: LuaOperati
 }
 
 function collectStatEvent(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, eventName: "levelChanged", card: DuelCardInstance): void {
-  collectDuelTriggerEffects(session.state, eventName, card, { eventReason: duelReason.effect, eventReasonPlayer: hostState.activeContext?.player ?? session.state.turnPlayer });
+  collectDuelTriggerEffects(session.state, eventName, card, luaEffectReasonPayload(hostState, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer));
 }
 
 function pushUpdateRank(L: unknown, session: DuelSession): number {

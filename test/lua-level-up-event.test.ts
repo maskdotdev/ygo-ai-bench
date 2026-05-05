@@ -55,11 +55,12 @@ describe("Lua level-up events", () => {
     expect(applyResponse(session, action!).ok).toBe(true);
 
     const source = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
     expect(host.messages).toContain("level delta 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["levelChanged"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid, eventCode: 1200, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid, eventCode: 1200, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "levelChanged", "chainSolved"]);
-    expect(session.state.eventHistory.find((event) => event.eventName === "levelChanged")).toMatchObject({ eventCode: 1200, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory.find((event) => event.eventName === "levelChanged")).toMatchObject({ eventCode: 1200, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
   });
 
   it("applies restored Lua level-change triggers through restore responses", () => {
@@ -121,7 +122,7 @@ describe("Lua level-up events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["levelChanged"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1200, eventCardUid: changed!.uid, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1200, eventCardUid: changed!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: changed!.uid, eventReasonEffectId: 1 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 

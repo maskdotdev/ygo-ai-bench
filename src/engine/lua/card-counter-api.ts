@@ -5,6 +5,7 @@ import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDu
 import { collectDuelTriggerEffects } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { readTableStringField } from "#lua/api-utils.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import type { DuelCardInstance, DuelEventName, DuelSession } from "#duel/types.js";
 
@@ -122,7 +123,7 @@ function totalCounters(card: DuelCardInstance): number {
 }
 
 function collectCounterEvent(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, eventName: DuelEventName, card: DuelCardInstance): void {
-  collectDuelTriggerEffects(session.state, eventName, card, { eventReason: duelReason.effect, eventReasonPlayer: hostState.activeContext?.player ?? session.state.turnPlayer });
+  collectDuelTriggerEffects(session.state, eventName, card, luaEffectReasonPayload(hostState, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer));
 }
 
 function canPlaceCounter(session: DuelSession, card: DuelCardInstance | undefined, count: number): boolean {
