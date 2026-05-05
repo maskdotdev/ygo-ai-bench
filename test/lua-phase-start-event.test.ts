@@ -187,11 +187,7 @@ describe("Lua phase-start events", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
-    expect(triggerResult.ok).toBe(true);
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored phase start 512");
     expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["phaseEnd"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x1200 });
@@ -201,11 +197,7 @@ describe("Lua phase-start events", () => {
 
     const phaseEndTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(phaseEndTrigger).toBeDefined();
-    const phaseEndTriggerResult = applyLuaRestoreResponse(restored, phaseEndTrigger!);
-    expect(phaseEndTriggerResult.ok).toBe(true);
-    expect(phaseEndTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, phaseEndTriggerResult.state.waitingFor!));
-    expect(phaseEndTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, phaseEndTriggerResult.state.waitingFor!));
-    expect(phaseEndTriggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(phaseEndTriggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, phaseEndTrigger!);
     expect(restored.host.messages).toContain("restored phase end 512");
   });
 });
@@ -215,4 +207,13 @@ function expectGroupedActionsToContainLegalActions(restored: ReturnType<typeof r
   const legalActions = getLuaRestoreLegalActions(restored, player);
   expect(groupedActions).toHaveLength(legalActions.length);
   expect(groupedActions).toEqual(expect.arrayContaining(legalActions));
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
 }
