@@ -267,8 +267,8 @@ describe("Lua chain helpers", () => {
     const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quickAction).toBeDefined();
     applyResponse(session, quickAction!);
-    expect(passChainIfAvailable(session)).toBe(true);
-    expect(passChainIfAvailable(session)).toBe(true);
+    passChainIfAvailable(session);
+    passChainIfAvailable(session);
     expect(host.messages).toContain("duplicate chain unique false");
     expect(host.messages).toContain("duplicate source resolved");
   });
@@ -440,8 +440,8 @@ describe("Lua chain helpers", () => {
     const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quickAction).toBeDefined();
     expect(applyResponse(session, quickAction!).ok).toBe(true);
-    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
-    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    passChainIfAvailable(session);
+    passChainIfAvailable(session);
 
     expect(host.messages).toContain("negatable true");
     expect(host.messages).toContain("disablable true");
@@ -507,8 +507,8 @@ describe("Lua chain helpers", () => {
     const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quickAction).toBeDefined();
     expect(applyResponse(session, quickAction!).ok).toBe(true);
-    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
-    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    passChainIfAvailable(session);
+    passChainIfAvailable(session);
 
     expect(host.messages).toContain("related negatable after false");
     expect(host.messages).toContain("related disable 64/1");

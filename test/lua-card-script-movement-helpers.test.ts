@@ -99,8 +99,7 @@ describe("Lua card script movement helpers", () => {
     expect(setAction).toBeDefined();
     expect(applyResponse(session, setAction!).ok).toBe(true);
     while (session.state.chain.length > 0) {
-      const player = session.state.waitingFor ?? session.state.turnPlayer;
-      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+      expect(passCurrentChain(session)).toBe(true);
     }
 
     expect(session.state.cards.find((card) => card.uid === gurifoh!.uid)).toMatchObject({ location: "graveyard", reason: 0x4080 });
@@ -139,8 +138,7 @@ describe("Lua card script movement helpers", () => {
     expect(summonAction).toBeDefined();
     expect(applyResponse(session, summonAction!).ok).toBe(true);
     while (session.state.chain.length > 0) {
-      const player = session.state.waitingFor ?? session.state.turnPlayer;
-      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+      expect(passCurrentChain(session)).toBe(true);
     }
 
     expect(session.state.cards.find((card) => card.uid === sage!.uid)).toMatchObject({ location: "graveyard", reason: 0x82 });
@@ -183,8 +181,7 @@ describe("Lua card script movement helpers", () => {
     expect(action).toBeDefined();
     expect(applyResponse(session, action!).ok).toBe(true);
     while (session.state.chain.length > 0) {
-      const player = session.state.waitingFor ?? session.state.turnPlayer;
-      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+      expect(passCurrentChain(session)).toBe(true);
     }
 
     expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
@@ -282,8 +279,7 @@ describe("Lua card script movement helpers", () => {
     expect(action).toBeDefined();
     expect(applyResponse(session, action!).ok).toBe(true);
     while (session.state.chain.length > 0) {
-      const player = session.state.waitingFor ?? session.state.turnPlayer;
-      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+      expect(passCurrentChain(session)).toBe(true);
     }
 
     expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
@@ -326,8 +322,7 @@ describe("Lua card script movement helpers", () => {
     expect(action).toBeDefined();
     expect(applyResponse(session, action!).ok).toBe(true);
     while (session.state.chain.length > 0) {
-      const player = session.state.waitingFor ?? session.state.turnPlayer;
-      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+      expect(passCurrentChain(session)).toBe(true);
     }
 
     expect(session.state.cards.find((card) => card.uid === searched!.uid)).toMatchObject({ location: "hand", reason: 0x40 });
@@ -823,3 +818,9 @@ describe("Lua card script movement helpers", () => {
   });
 
 });
+
+function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
+  const player = session.state.waitingFor ?? session.state.turnPlayer;
+  const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
+  return Boolean(pass && applyResponse(session, pass).ok);
+}

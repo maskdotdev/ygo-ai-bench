@@ -230,8 +230,8 @@ describe("Lua effect callback metadata helpers", () => {
     const firstAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(firstAction).toBeDefined();
     applyResponse(session, firstAction!);
-    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
-    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    passCurrentChain(session);
+    passCurrentChain(session);
     expect(host.messages).toContain("used 100");
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect")).toBe(false);
   });
@@ -280,8 +280,8 @@ describe("Lua effect callback metadata helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
     applyResponse(session, action!);
-    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
-    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    passCurrentChain(session);
+    passCurrentChain(session);
     expect(host.messages).toContain("target label 7");
     expect(host.messages).toContain("operation label 8");
     expect(host.messages).toContain("label object count 1");
@@ -371,8 +371,8 @@ describe("Lua effect callback metadata helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sourceUid);
     expect(action).toBeDefined();
     applyResponse(session, action!);
-    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
-    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    passCurrentChain(session);
+    passCurrentChain(session);
     expect(host.messages).toContain("operation info true/1/1/0/0");
     expect(host.messages).toContain("operation count 1");
     expect(host.messages).toContain("possible operation info true/0/0/1/2");
@@ -437,8 +437,8 @@ describe("Lua effect callback metadata helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
     applyResponse(session, action!);
-    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
-    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    passCurrentChain(session);
+    passCurrentChain(session);
     expect(host.messages).toContain("manual target set 2/2");
     expect(host.messages).toContain("manual target replaced 1/300");
     expect(host.messages).toContain("manual target clear alias 0/true");
@@ -492,3 +492,9 @@ describe("Lua effect callback metadata helpers", () => {
     expect(host.messages).toContain("welcome after false/true");
   });
 });
+
+function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
+  const player = session.state.waitingFor ?? session.state.turnPlayer;
+  const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
+  return Boolean(pass && applyResponse(session, pass).ok);
+}

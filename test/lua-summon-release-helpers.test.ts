@@ -212,8 +212,7 @@ describe("Lua summon and release helpers", () => {
     expect(action).toBeTruthy();
     expect(applyResponse(session, action!).ok).toBe(true);
     while (session.state.chain.length > 0) {
-      const player = session.state.waitingFor ?? session.state.turnPlayer;
-      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+      expect(passCurrentChain(session)).toBe(true);
     }
 
     expect(session.state.cards.find((card) => card.code === "70405001")).toMatchObject({
@@ -933,3 +932,9 @@ describe("Lua summon and release helpers", () => {
   });
 
 });
+
+function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
+  const player = session.state.waitingFor ?? session.state.turnPlayer;
+  const pass = getLegalActions(session, player).find((candidate) => candidate.type === "passChain");
+  return Boolean(pass && applyResponse(session, pass).ok);
+}

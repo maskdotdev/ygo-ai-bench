@@ -101,8 +101,8 @@ describe("Lua flag state helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
     applyResponse(session, action!);
-    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
-    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
+    passCurrentChain(session);
+    passCurrentChain(session);
     expect(host.messages).toContain("duel flag register 1");
     expect(host.messages).toContain("card flag register 1");
     expect(host.messages).toContain("duel has flag true/false/true");
@@ -851,6 +851,12 @@ describe("Lua flag state helpers", () => {
   });
 
 });
+
+function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
+  const player = session.state.waitingFor ?? session.state.turnPlayer;
+  const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
+  return Boolean(pass && applyResponse(session, pass).ok);
+}
 
 function enterFlagDamageStep(session: ReturnType<typeof createDuel>, attackerUid: string): void {
   enterFlagBattleStep(session, attackerUid);

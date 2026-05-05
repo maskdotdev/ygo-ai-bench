@@ -54,8 +54,7 @@ describe("Lua equip movement helpers", () => {
     expect(actions).toHaveLength(1);
     expect(applyResponse(session, actions[0]!).ok).toBe(true);
     while (session.state.chain.length > 0) {
-      const player = session.state.waitingFor ?? session.state.turnPlayer;
-      expect(applyResponse(session, { type: "passChain", player, label: "Pass" }).ok).toBe(true);
+      expect(passCurrentChain(session)).toBe(true);
     }
 
     expect(host.messages).toContain("equip procedure op 100");
@@ -587,3 +586,9 @@ describe("Lua equip movement helpers", () => {
   });
 
 });
+
+function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
+  const player = session.state.waitingFor ?? session.state.turnPlayer;
+  const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
+  return Boolean(pass && applyResponse(session, pass).ok);
+}
