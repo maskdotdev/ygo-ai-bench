@@ -263,6 +263,81 @@ describe("Lua summon and release helpers", () => {
     );
   });
 
+  it("makes Lua optional when pre-material triggers miss timing after later event boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Pre Material Later Boundary Source", kind: "monster" },
+      { code: "500", name: "When Pre Material Later Boundary", kind: "monster" },
+      { code: "600", name: "If Pre Material Later Boundary", kind: "monster" },
+      { code: "700", name: "Damage Boundary Watcher", kind: "monster" },
+      { code: "900", name: "Pre Material Later Boundary Fusion", kind: "extra", fusionMaterials: ["500", "600"] },
+    ];
+    const session = createDuel({ seed: 60, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "500", "600", "700"], extra: ["900"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local when_material=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local if_material=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local fusion=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      local materials=Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(500) or tc:IsCode(600) end, 0, LOCATION_HAND, 0, 2, 2, fusion)
+      local damage_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 700), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local e=Effect.CreateEffect(source)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp)
+        Duel.FusionSummon(fusion, materials)
+        Duel.Damage(1, 100, REASON_EFFECT)
+      end)
+      source:RegisterEffect(e)
+
+      local when_effect=Effect.CreateEffect(when_material)
+      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      when_effect:SetCode(EVENT_BE_PRE_MATERIAL)
+      when_effect:SetRange(LOCATION_HAND)
+      when_effect:SetOperation(function(e,tp)
+        Debug.Message("when pre material resolved")
+      end)
+      when_material:RegisterEffect(when_effect)
+
+      local if_effect=Effect.CreateEffect(if_material)
+      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      if_effect:SetCode(EVENT_BE_PRE_MATERIAL)
+      if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      if_effect:SetRange(LOCATION_HAND)
+      if_effect:SetOperation(function(e,tp)
+        Debug.Message("if pre material resolved")
+      end)
+      if_material:RegisterEffect(if_effect)
+
+      local damage_effect=Effect.CreateEffect(damage_watcher)
+      damage_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      damage_effect:SetCode(EVENT_DAMAGE)
+      damage_effect:SetRange(LOCATION_HAND)
+      damage_effect:SetOperation(function(e,tp)
+        Debug.Message("damage boundary resolved")
+      end)
+      damage_watcher:RegisterEffect(damage_effect)
+      `,
+      "pre-material-later-boundary-missed-timing.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1109");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1109", "lua-4-1111"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "preUsedAsMaterial", eventCode: 1109 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
+    );
+  });
+
   it("lets Lua ritual scripts summon with selected materials when card metadata has no recipe", () => {
     const cards: DuelCardData[] = [
       { code: "33599853", name: "Ritual of Light and Darkness", kind: "spell", typeFlags: 0x82 },
