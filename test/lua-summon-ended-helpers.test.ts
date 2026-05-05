@@ -94,4 +94,34 @@ describe("Lua ended summon helpers", () => {
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "hand" });
     expect(session.state.cards.find((card) => card.code === "900")).toMatchObject({ location: "extraDeck" });
   });
+
+  it("keeps material metadata helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Ended Material Target", kind: "monster" },
+      { code: "200", name: "Ended Material Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 226, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local material = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Duel.Win(0, WIN_REASON_EXODIA)
+      target:SetMaterial(Group.FromCards(material))
+      Debug.Message("ended material count " .. target:GetMaterialCount())
+      `,
+      "ended-set-material.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["ended material count 0"]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.cards.find((card) => card.code === "100")?.summonMaterialUids).toBeUndefined();
+  });
 });

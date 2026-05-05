@@ -41,6 +41,7 @@ export function installCardMaterialApi(L: unknown, session: DuelSession): void {
   pushMaterialPredicate(L, "IsCanBeLinkMaterial", session, "link");
   pushMaterialPredicate(L, "IsCanBeRitualMaterial", session, "ritual");
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const card = readCard(state, session);
     if (card) card.summonMaterialUids = readCardOrGroupUids(state, 2);
     return 0;
