@@ -184,6 +184,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number): string | undefi
   if (cardTableField) return cardTableField;
   const cardUid = singleCapturedCardUid(L, index);
   if (cardUid) return `closure:card-not-handler:${cardUid}`;
+  const typeMask = singleCapturedNumber(L, index);
+  if (typeMask !== undefined) return `closure:type-mask-response-player:${typeMask}`;
   return undefined;
 }
 
@@ -248,6 +250,25 @@ function singleCapturedCardUid(L: unknown, index: number): string | undefined {
     lua.lua_pop(L, 1);
   }
   return cardUids.length === 1 ? cardUids[0] : undefined;
+}
+
+function singleCapturedNumber(L: unknown, index: number): number | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  const numbers: number[] = [];
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) break;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    if (name !== "_ENV") {
+      if (!lua.lua_isnumber(L, -1)) {
+        lua.lua_pop(L, 1);
+        return undefined;
+      }
+      numbers.push(lua.lua_tointeger(L, -1));
+    }
+    lua.lua_pop(L, 1);
+  }
+  return numbers.length === 1 ? numbers[0] : undefined;
 }
 
 function luaChainLimitRegistryKey(ctx: DuelEffectContext | undefined, untilChainEnd: boolean, filterRef: number): string | undefined {

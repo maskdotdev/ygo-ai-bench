@@ -98,6 +98,7 @@ function knownLuaChainLimitRestoreFactory(key: string): ((limit: ChainLimit) => 
   if (knownPredicate === "aux.FALSE") return (limit) => ({ ...limit, allows: () => false });
   if (knownPredicate === "aux.TRUE") return (limit) => ({ ...limit, allows: () => true });
   if (knownPredicate?.startsWith("closure:card-not-handler:")) return (limit) => ({ ...limit, allows: () => false });
+  if (knownPredicate?.startsWith("closure:type-mask-response-player:")) return (limit) => ({ ...limit, allows: () => false });
   if (knownPredicate?.match(/^c\d+\.[A-Za-z_]\w*$/)) return (limit) => ({ ...limit, allows: () => false });
   return undefined;
 }
