@@ -40,14 +40,22 @@ describe("Lua turn-end events", () => {
 
     const endTurn = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
     expect(endTurn).toBeDefined();
-    expect(applyResponse(session, endTurn!).ok).toBe(true);
+    const endTurnResponse = applyResponse(session, endTurn!);
+    expect(endTurnResponse.ok).toBe(true);
+    expect(endTurnResponse.legalActions).toEqual(getDuelLegalActions(session, endTurnResponse.state.waitingFor!));
+    expect(endTurnResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, endTurnResponse.state.waitingFor!));
+    expect(endTurnResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(endTurnResponse.legalActions);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["turnEnded"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "turnEnded", eventCode: 1210 });
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "turnEnded", eventCode: 1210 })]));
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    const triggerResponse = applyResponse(session, trigger!);
+    expect(triggerResponse.ok).toBe(true);
+    expect(triggerResponse.legalActions).toEqual(getDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResponse.legalActions);
     expect(host.messages).toContain("turn end resolved 0/1");
   });
 
@@ -84,7 +92,11 @@ describe("Lua turn-end events", () => {
 
     const endTurn = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
     expect(endTurn).toBeDefined();
-    expect(applyResponse(session, endTurn!).ok).toBe(true);
+    const endTurnResponse = applyResponse(session, endTurn!);
+    expect(endTurnResponse.ok).toBe(true);
+    expect(endTurnResponse.legalActions).toEqual(getDuelLegalActions(session, endTurnResponse.state.waitingFor!));
+    expect(endTurnResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, endTurnResponse.state.waitingFor!));
+    expect(endTurnResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(endTurnResponse.legalActions);
     expect(session.state.turnPlayer).toBe(1);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["turnEnded"]);
 

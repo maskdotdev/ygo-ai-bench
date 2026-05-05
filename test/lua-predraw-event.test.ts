@@ -49,7 +49,11 @@ describe("Lua predraw events", () => {
 
     const end = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
     expect(end).toBeDefined();
-    expect(applyResponse(session, end!).ok).toBe(true);
+    const endResponse = applyResponse(session, end!);
+    expect(endResponse.ok).toBe(true);
+    expect(endResponse.legalActions).toEqual(getDuelLegalActions(session, endResponse.state.waitingFor!));
+    expect(endResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, endResponse.state.waitingFor!));
+    expect(endResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(endResponse.legalActions);
 
     expect(session.state.turnPlayer).toBe(1);
     expect(session.state.cards.filter((card) => card.controller === 1 && card.location === "hand")).toHaveLength(2);
@@ -80,7 +84,11 @@ describe("Lua predraw events", () => {
 
     const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    const triggerResponse = applyResponse(session, trigger!);
+    expect(triggerResponse.ok).toBe(true);
+    expect(triggerResponse.legalActions).toEqual(getDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResponse.legalActions);
     drainChain(session);
     expect(host.messages).toContain("predraw resolved 1/1/1/2");
   });
@@ -91,7 +99,11 @@ function drainChain(session: ReturnType<typeof createDuel>): void {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
-    expect(applyResponse(session, pass!).ok).toBe(true);
+    const result = applyResponse(session, pass!);
+    expect(result.ok).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(session, result.state.waitingFor!));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
 }
 
