@@ -653,11 +653,15 @@ describe("duel snapshot restore shape validation", () => {
     startDuel(session);
     const snapshot = serializeDuel(session);
     const badEventUid = serializeDuel(session);
+    const duplicateEventUids = serializeDuel(session);
+    const sourceUid = snapshot.state.cards[0]!.uid;
     snapshot.state.eventHistory = [{ eventName: "customEvent", eventCardUid: "missing" }];
     badEventUid.state.eventHistory = [{ eventName: "customEvent", eventUids: ["missing"] }];
+    duplicateEventUids.state.eventHistory = [{ eventName: "customEvent", eventUids: [sourceUid, sourceUid] }];
 
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventCardUid must reference a card");
     expect(() => restoreDuel(badEventUid, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventUids.0 must reference a card");
+    expect(() => restoreDuel(duplicateEventUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventUids must not contain duplicates");
   });
 
   it("rejects malformed chain snapshots before restore", () => {
