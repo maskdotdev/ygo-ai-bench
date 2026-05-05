@@ -89,4 +89,11 @@ describe("duel response matching", () => {
     expect(sameAction(attackPass, { ...attackPass })).toBe(true);
     expect(sameAction(damagePass, { ...damagePass })).toBe(true);
   });
+
+  it("requires chain pass responses to echo their chain window stamp", () => {
+    const pass: DuelAction = { type: "passChain", player: 1, label: "Pass chain", windowId: 10, windowKind: "chainResponse" };
+
+    expect(sameAction(pass, { type: "passChain", player: 1, label: "Pass chain" })).toBe(false);
+    expect(sameAction(pass, { ...pass })).toBe(true);
+  });
 });
