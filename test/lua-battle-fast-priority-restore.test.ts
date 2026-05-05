@@ -57,6 +57,7 @@ describe("Lua battle fast priority restore", () => {
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
     expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
@@ -91,6 +92,7 @@ describe("Lua battle fast priority restore", () => {
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
     expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
@@ -683,8 +685,10 @@ function setupRestoredBattleQuick(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_
   moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
 
   const host = createLuaScriptHost(session);
-  expect(host.loadCardScript(300, source).ok).toBe(true);
-  expect(host.loadCardScript(400, source).ok).toBe(true);
+  const quickScript = host.loadCardScript(300, source);
+  const chainQuickScript = host.loadCardScript(400, source);
+  expect(quickScript.ok, quickScript.error).toBe(true);
+  expect(chainQuickScript.ok, chainQuickScript.error).toBe(true);
   expect(host.registerInitialEffects()).toBe(2);
 
   const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
