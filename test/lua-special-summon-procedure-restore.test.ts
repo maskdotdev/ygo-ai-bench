@@ -92,6 +92,7 @@ describe("Lua special summon procedure restore", () => {
 
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(restored.host.messages).toContain("restored rollback release cost 0/1");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
@@ -150,6 +151,7 @@ describe("Lua special summon procedure restore", () => {
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("summon procedure is no longer in range");
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(restored.host.messages).toContain("restored source moved before summon 1/16");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
@@ -223,6 +225,7 @@ describe("Lua special summon procedure restore", () => {
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("cannot be Special Summoned");
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(restored.host.messages).toContain("restored procedure filled zone 1/0");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
@@ -312,6 +315,7 @@ describe("Lua special summon procedure restore", () => {
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("restored procedure material move count mismatch");
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(restored.host.messages).toContain("restored partial material moves 1/2");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
