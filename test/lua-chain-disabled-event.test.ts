@@ -83,10 +83,18 @@ describe("Lua chain-disabled events", () => {
 
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const opened = applyResponse(session, sourceAction!);
+    expect(opened.ok).toBe(true);
+    expect(opened.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
     const disablerAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(disablerAction).toBeDefined();
-    expect(applyResponse(session, disablerAction!).ok).toBe(true);
+    const chained = applyResponse(session, disablerAction!);
+    expect(chained.ok).toBe(true);
+    expect(chained.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
     drainChain(session);
 
     expect(host.messages).toContain("disable result true");
@@ -120,7 +128,11 @@ function drainChain(session: ReturnType<typeof createDuel>): void {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
-    expect(applyResponse(session, pass!).ok).toBe(true);
+    const result = applyResponse(session, pass!);
+    expect(result.ok).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(session, result.state.waitingFor!));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
 }
 
