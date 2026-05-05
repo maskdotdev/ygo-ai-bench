@@ -168,6 +168,83 @@ describe("Lua field operation helpers", () => {
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ position: "faceUpAttack", faceUp: true });
   });
 
+  it("makes Lua optional when position-change triggers miss timing after later event boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Position Boundary Source", kind: "monster" },
+      { code: "200", name: "Position Boundary Target", kind: "monster" },
+      { code: "300", name: "When Position Watcher", kind: "monster" },
+      { code: "400", name: "If Position Watcher", kind: "monster" },
+      { code: "500", name: "Damage Boundary Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 263, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300", "400", "500"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const target = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === "200");
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+    target!.position = "faceUpAttack";
+    target!.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local damage_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local e=Effect.CreateEffect(source)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp)
+        Duel.ChangePosition(target, POS_FACEUP_DEFENSE)
+        Duel.Damage(1, 100, REASON_EFFECT)
+      end)
+      source:RegisterEffect(e)
+
+      local when_effect=Effect.CreateEffect(when_watcher)
+      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      when_effect:SetCode(EVENT_CHANGE_POS)
+      when_effect:SetRange(LOCATION_HAND)
+      when_effect:SetOperation(function(e,tp)
+        Debug.Message("when position resolved")
+      end)
+      when_watcher:RegisterEffect(when_effect)
+
+      local if_effect=Effect.CreateEffect(if_watcher)
+      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      if_effect:SetCode(EVENT_CHANGE_POS)
+      if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      if_effect:SetRange(LOCATION_HAND)
+      if_effect:SetOperation(function(e,tp)
+        Debug.Message("if position resolved")
+      end)
+      if_watcher:RegisterEffect(if_effect)
+
+      local damage_effect=Effect.CreateEffect(damage_watcher)
+      damage_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      damage_effect:SetCode(EVENT_DAMAGE)
+      damage_effect:SetRange(LOCATION_HAND)
+      damage_effect:SetOperation(function(e,tp)
+        Debug.Message("damage boundary resolved")
+      end)
+      damage_watcher:RegisterEffect(damage_effect)
+      `,
+      "change-position-missed-timing.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1016");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1016", "lua-4-1111"]));
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "positionChanged", eventCode: 1016 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]));
+  });
+
   it("blocks Lua position changes for cards Summoned or Set this turn", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Same Turn Summoned", kind: "monster" },

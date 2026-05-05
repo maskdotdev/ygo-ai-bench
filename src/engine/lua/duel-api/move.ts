@@ -305,6 +305,7 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
     lua.lua_pushinteger(L, 0);
     return 1;
   }
+  beginLuaOperationMoveStep(session, hostState);
   const changed: string[] = [];
   for (const uid of uids) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
@@ -317,6 +318,7 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
     }
   }
   setOperatedUids(hostState, changed);
+  finishLuaOperationMoveStep(hostState, changed.length > 0);
   lua.lua_pushinteger(L, changed.length);
   return 1;
 }
@@ -330,8 +332,10 @@ function pushChangeToFaceupAttackOrFacedownDefense(L: unknown, session: DuelSess
     return 0;
   }
   try {
+    beginLuaOperationMoveStep(session, hostState);
     changeDuelCardPosition(session.state, card.controller, uid, nextPosition);
     setOperatedUids(hostState, [uid]);
+    finishLuaOperationMoveStep(hostState, true);
   } catch {
     setOperatedUids(hostState, []);
   }
