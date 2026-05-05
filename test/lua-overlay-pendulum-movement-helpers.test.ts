@@ -423,6 +423,7 @@ describe("Lua overlay and pendulum movement helpers", () => {
       Debug.Message("pendulum operated " .. Duel.GetOperatedGroup():GetCount())
       Debug.Message("pendulum field " .. Duel.GetFieldGroupCount(0, LOCATION_MZONE, 0))
       Debug.Message("pendulum after " .. tostring(Duel.IsPlayerCanPendulumSummon(0)))
+      Debug.Message("pendulum summoned flags " .. tostring(Duel.GetOperatedGroup():IsExists(Card.IsPendulumSummoned, 1, nil)) .. "/" .. tostring(Duel.GetOperatedGroup():IsExists(Card.IsSpecialSummoned, 1, nil)))
       `,
       "pendulum-summon.lua",
     );
@@ -433,8 +434,9 @@ describe("Lua overlay and pendulum movement helpers", () => {
     expect(host.messages).toContain("pendulum operated 2");
     expect(host.messages).toContain("pendulum field 2");
     expect(host.messages).toContain("pendulum after false");
-    expect(session.state.cards.find((card) => card.uid === handPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
-    expect(session.state.cards.find((card) => card.uid === extraPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
+    expect(host.messages).toContain("pendulum summoned flags true/true");
+    expect(session.state.cards.find((card) => card.uid === handPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "pendulum" });
+    expect(session.state.cards.find((card) => card.uid === extraPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "pendulum" });
     expect(session.state.cards.find((card) => card.uid === outOfScale!.uid)).toMatchObject({ location: "hand" });
   });
 
@@ -475,6 +477,7 @@ describe("Lua overlay and pendulum movement helpers", () => {
       Debug.Message("restored pendulum summon " .. Duel.PendulumSummon(0))
       Debug.Message("restored pendulum operated " .. Duel.GetOperatedGroup():GetCount())
       Debug.Message("restored pendulum after " .. tostring(Duel.IsPlayerCanPendulumSummon(0)))
+      Debug.Message("restored pendulum summoned flags " .. tostring(Duel.GetOperatedGroup():IsExists(Card.IsPendulumSummoned, 1, nil)) .. "/" .. tostring(Duel.GetOperatedGroup():IsExists(Card.IsSpecialSummoned, 1, nil)))
       `,
       "restored-pendulum-summon.lua",
     );
@@ -484,8 +487,9 @@ describe("Lua overlay and pendulum movement helpers", () => {
     expect(host.messages).toContain("restored pendulum summon 2");
     expect(host.messages).toContain("restored pendulum operated 2");
     expect(host.messages).toContain("restored pendulum after false");
-    expect(restored.state.cards.find((card) => card.uid === handPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
-    expect(restored.state.cards.find((card) => card.uid === extraPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
+    expect(host.messages).toContain("restored pendulum summoned flags true/true");
+    expect(restored.state.cards.find((card) => card.uid === handPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "pendulum" });
+    expect(restored.state.cards.find((card) => card.uid === extraPendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "pendulum" });
     expect(restored.state.cards.find((card) => card.uid === outOfScale!.uid)).toMatchObject({ location: "hand" });
   });
 

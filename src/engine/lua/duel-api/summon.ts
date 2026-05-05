@@ -328,6 +328,7 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
     try {
       const summoned = specialSummonDuelCard(session.state, card.uid, player);
       applySummonPosition(summoned, "faceUpAttack");
+      summoned.summonType = "pendulum";
       summonedUids.push(card.uid);
     } catch {
       // EDOPro-style helpers report successful summons only.
