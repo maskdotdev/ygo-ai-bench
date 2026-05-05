@@ -51,11 +51,12 @@ describe("Lua stale chain responses", () => {
     expect(source).toBeDefined();
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === source!.uid);
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(1);
+    const opened = applyAndAssert(session, sourceAction!);
+    expect(opened.state.waitingFor).toBe(1);
     const stalePass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(stalePass).toBeDefined();
 
-    expect(applyResponse(session, stalePass!).ok).toBe(true);
+    applyAndAssert(session, stalePass!);
     const replay = applyResponse(session, stalePass!);
 
     expect(replay.ok).toBe(false);
@@ -113,14 +114,13 @@ describe("Lua stale chain responses", () => {
     expect(source).toBeDefined();
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === source!.uid);
     expect(sourceAction).toBeDefined();
-    const opened = applyResponse(session, sourceAction!);
-    expect(opened.ok).toBe(true);
+    const opened = applyAndAssert(session, sourceAction!);
     expect(opened.state.waitingFor).toBe(0);
     const staleQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     const pass = getDuelLegalActions(session, 0).find((action) => action.type === "passChain");
     expect(staleQuick).toBeDefined();
     expect(pass).toBeDefined();
-    expect(applyResponse(session, pass!).ok).toBe(true);
+    applyAndAssert(session, pass!);
 
     const replay = applyResponse(session, staleQuick!);
 
@@ -184,19 +184,22 @@ describe("Lua stale chain responses", () => {
     });
     startDuel(session);
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(18100, source).ok).toBe(true);
-    expect(host.loadCardScript(18200, source).ok).toBe(true);
+    const sourceScript = host.loadCardScript(18100, source);
+    const quickScript = host.loadCardScript(18200, source);
+    expect(sourceScript.ok, sourceScript.error).toBe(true);
+    expect(quickScript.ok, quickScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const sourceCard = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "18100");
     expect(sourceCard).toBeDefined();
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === sourceCard!.uid);
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(1);
+    const opened = applyAndAssert(session, sourceAction!);
+    expect(opened.state.waitingFor).toBe(1);
     const stalePass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(stalePass).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
@@ -266,19 +269,22 @@ describe("Lua stale chain responses", () => {
     });
     startDuel(session);
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(20100, source).ok).toBe(true);
-    expect(host.loadCardScript(20200, source).ok).toBe(true);
+    const sourceScript = host.loadCardScript(20100, source);
+    const quickScript = host.loadCardScript(20200, source);
+    expect(sourceScript.ok, sourceScript.error).toBe(true);
+    expect(quickScript.ok, quickScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const sourceCard = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "20100");
     expect(sourceCard).toBeDefined();
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === sourceCard!.uid);
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(1);
+    const opened = applyAndAssert(session, sourceAction!);
+    expect(opened.state.waitingFor).toBe(1);
     const stalePass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(stalePass).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
@@ -363,19 +369,22 @@ describe("Lua stale chain responses", () => {
     });
     startDuel(session);
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(19100, source).ok).toBe(true);
-    expect(host.loadCardScript(19200, source).ok).toBe(true);
+    const sourceScript = host.loadCardScript(19100, source);
+    const quickScript = host.loadCardScript(19200, source);
+    expect(sourceScript.ok, sourceScript.error).toBe(true);
+    expect(quickScript.ok, quickScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const sourceCard = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "19100");
     expect(sourceCard).toBeDefined();
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === sourceCard!.uid);
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(0);
+    const opened = applyAndAssert(session, sourceAction!);
+    expect(opened.state.waitingFor).toBe(0);
     const staleQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && sourceAction!.type === "activateEffect" && action.effectId !== sourceAction!.effectId);
     expect(staleQuick).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -405,6 +414,15 @@ describe("Lua stale chain responses", () => {
     expect(restored.host.messages).toEqual(["restored stale quick source resolved"]);
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
 
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const response = applyLuaRestoreResponse(restored, action);
