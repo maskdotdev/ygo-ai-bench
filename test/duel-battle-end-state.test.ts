@@ -47,6 +47,7 @@ describe("duel battle end state", () => {
     expect(session.state.attackCostPaid).toBe(0);
     expect(state.attackPasses).toEqual([]);
     expect(state.damagePasses).toEqual([]);
+    expect(state.log).toContainEqual(expect.objectContaining({ action: "win", player: 0, detail: "lp" }));
   });
 
   it("records a draw when LP loss resolves with both players at zero", () => {
@@ -64,6 +65,7 @@ describe("duel battle end state", () => {
     expect(state.status).toBe("ended");
     expect(state.winner).toBe("draw");
     expect(state.waitingFor).toBeUndefined();
+    expect(state.log).toContainEqual(expect.objectContaining({ action: "win", detail: "lp" }));
   });
 
   it("does not reopen trigger windows after lethal battle damage", () => {

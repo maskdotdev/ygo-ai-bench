@@ -31,6 +31,7 @@ function applyLifePointDefeat(state: DuelState, player: PlayerId): void {
   state.status = "ended";
   state.winner = state.players[otherPlayer(player)].lifePoints <= 0 ? "draw" : otherPlayer(player);
   clearEndedDuelPendingState(state);
+  pushDuelLog(state, "win", state.winner === "draw" ? undefined : state.winner, undefined, "lp");
 }
 
 function otherPlayer(player: PlayerId): PlayerId {
