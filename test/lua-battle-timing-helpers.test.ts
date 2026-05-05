@@ -222,7 +222,7 @@ describe("Lua battle timing helpers", () => {
     expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
     expect(legalEffectCodes(session, 0)).toEqual(["300"]);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -436,7 +436,7 @@ describe("Lua battle timing helpers", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1134 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["beforeDamageCalculation"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1134 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -516,7 +516,7 @@ describe("Lua battle timing helpers", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1138 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["afterDamageCalculation"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1138 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -580,7 +580,7 @@ describe("Lua battle timing helpers", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1137 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleEnded"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1137 });
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -645,7 +645,7 @@ describe("Lua battle timing helpers", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1141 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["damageStepEnded"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1141 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -712,7 +712,7 @@ describe("Lua battle timing helpers", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDamageDealt"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
