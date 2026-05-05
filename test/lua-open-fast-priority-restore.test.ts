@@ -230,7 +230,12 @@ describe("Lua open fast priority restore", () => {
 
     const finalPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(finalPass).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, finalPass!).ok).toBe(true);
+    const finalOpened = applyLuaRestoreResponse(restored, finalPass!);
+    expect(finalOpened.ok, finalOpened.error).toBe(true);
+    expect(finalOpened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(finalOpened.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(finalOpened.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(finalOpened.legalActionGroups.flatMap((group) => group.actions)).toEqual(finalOpened.legalActions);
     expect(restored.host.messages).toEqual(["restored trigger fast chain quick resolved", "restored trigger fast trigger resolved", "restored trigger fast quick resolved"]);
   });
 });
