@@ -120,8 +120,8 @@ describe("Lua attack negation helpers", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_ATTACK_DISABLED)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp,eg,ep)
-          Debug.Message("attack disabled trigger " .. eg:GetFirst():GetCode() .. "/" .. ep)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("attack disabled trigger " .. eg:GetFirst():GetCode() .. "/" .. ep .. "/" .. r .. "/" .. rp)
         end)
         c:RegisterEffect(e)
       end
@@ -136,12 +136,12 @@ describe("Lua attack negation helpers", () => {
     const result = host.loadScript(`Debug.Message("negate disabled " .. tostring(Duel.NegateAttack()))`, "negate-disabled.lua");
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("negate disabled true");
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0 });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0 })]));
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0, eventReason: 0x40, eventReasonPlayer: 0 })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -150,12 +150,12 @@ describe("Lua attack negation helpers", () => {
     expect(restoredTriggerResult.ok).toBe(true);
     expect(restoredTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
     expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
-    expect(restored.host.messages).toContain("attack disabled trigger 100/0");
+    expect(restored.host.messages).toContain("attack disabled trigger 100/0/64/0");
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
-    expect(host.messages).toContain("attack disabled trigger 100/0");
+    expect(host.messages).toContain("attack disabled trigger 100/0/64/0");
   });
 
   it("applies restored Lua attack-window quick effects through restore responses", () => {

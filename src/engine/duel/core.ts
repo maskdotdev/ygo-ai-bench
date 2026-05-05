@@ -589,10 +589,10 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   declareCoreDuelAttack(state, player, attackerUid, targetUid, coreBattleHandlers);
 }
 
-export function negateDuelAttack(state: DuelState): boolean {
+export function negateDuelAttack(state: DuelState, reasonPlayer: PlayerId = state.turnPlayer): boolean {
   const attacker = state.currentAttack?.attackerUid === undefined ? undefined : findCard(state, state.currentAttack.attackerUid);
   const disabled = negateCoreDuelAttack(state);
-  if (disabled) collectDuelTriggerEffects(state, "attackDisabled", attacker, attacker === undefined ? {} : { eventPlayer: attacker.controller });
+  if (disabled) collectDuelTriggerEffects(state, "attackDisabled", attacker, attacker === undefined ? {} : { eventPlayer: attacker.controller, eventReason: duelReason.effect, eventReasonPlayer: reasonPlayer });
   return disabled;
 }
 
