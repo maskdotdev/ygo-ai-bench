@@ -66,6 +66,47 @@ describe("chain action restore", () => {
     expect(resolved.state.log.some((entry) => entry.detail === "Restored quick original resolved")).toBe(true);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored quick quick resolved")).toBe(true);
   });
+
+  it("restores self quick response groups after trigger activation", () => {
+    const session = createDuel({ seed: 3, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(summoned).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    expect(quickSource).toBeTruthy();
+    registerEffect(session, chainEffect("restore-self-trigger", triggerSource!.uid, 0, "trigger", "Restored self trigger resolved", "normalSummoned"));
+    registerEffect(session, chainEffect("restore-self-quick", quickSource!.uid, 0, "quick", "Restored self quick resolved"));
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeTruthy();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-self-trigger");
+    expect(trigger).toBeTruthy();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(queryPublicState(session)).toMatchObject({ windowKind: "chainResponse", waitingFor: 0 });
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-self-trigger": restoreChainEffect("Restored self trigger resolved"),
+      "restore-self-quick": restoreChainEffect("Restored self quick resolved"),
+    });
+    expect(queryPublicState(restored)).toMatchObject({ windowKind: "chainResponse", waitingFor: 0 });
+    expect(chainResponseGroups(restored, 0)).toEqual([
+      { label: "Effects", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["activateEffect"] },
+      { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["passChain"] },
+    ]);
+
+    const quick = getDuelLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-self-quick");
+    expect(quick).toBeDefined();
+    const chained = applyResponse(restored, quick!);
+    expect(chained.ok).toBe(true);
+    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, chained.state.waitingFor!));
+  });
 });
 
 function chainResponseGroups(session: ReturnType<typeof setupRestoredChainResponse>["restored"], player: 0 | 1) {
@@ -103,13 +144,14 @@ function setupRestoredChainResponse(kind: "pass" | "quick") {
   return { session, restored };
 }
 
-function chainEffect(id: string, sourceUid: string, controller: 0 | 1, event: "ignition" | "quick", detail: string): DuelEffectDefinition {
+function chainEffect(id: string, sourceUid: string, controller: 0 | 1, event: "ignition" | "quick" | "trigger", detail: string, triggerEvent?: "normalSummoned"): DuelEffectDefinition {
   return {
     id,
     registryKey: id,
     sourceUid,
     controller,
     event,
+    ...(triggerEvent === undefined ? {} : { triggerEvent }),
     range: ["hand"],
     operation(ctx) {
       ctx.log(detail);
