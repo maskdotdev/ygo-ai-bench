@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -20,6 +20,8 @@ describe("phase action restore", () => {
     const result = applyResponse(restored, action!);
     expect(result.ok).toBe(true);
     expect(result.state.phase).toBe("battle");
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.state.log.some((entry) => entry.action === "phase" && entry.detail === "Moved to battle")).toBe(true);
   });
 
@@ -41,6 +43,8 @@ describe("phase action restore", () => {
     expect(result.state.turnPlayer).toBe(1);
     expect(result.state.turn).toBe(2);
     expect(result.state.phase).toBe("main1");
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.state.log.some((entry) => entry.action === "turn" && entry.player === 1)).toBe(true);
   });
 });
