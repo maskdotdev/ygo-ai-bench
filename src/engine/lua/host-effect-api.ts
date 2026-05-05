@@ -482,7 +482,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
         ctx.log("Lua effect resolved without an operation");
         return;
       }
-      withLuaCallbackContext(hostState, ctx, luaEffect.id, () => {
+      withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => {
         lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.operationRef);
         const legacyArgs = secondParameterName(L, -1) === "c";
         const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
@@ -662,7 +662,7 @@ export function changeLuaChainOperation(L: unknown, hostState: LuaHostState, cha
   const source = link ? hostState.session.state.cards.find((card) => card.uid === link.sourceUid) : undefined;
   if (!link || !luaEffect || !source) return false;
   link.operationOverride = (ctx) => {
-    withLuaCallbackContext(hostState, ctx, luaEffect.id, () => {
+    withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => {
       lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, operationRef);
       const legacyArgs = secondParameterName(L, -1) === "c";
       const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, source, "operation", legacyArgs, ctx);
@@ -681,7 +681,7 @@ function chainLinkByLuaIndex(session: DuelSession, requestedIndex: number): Duel
 
 function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean, kind: LuaEffectCallbackKind, ctx?: DuelEffectContext): boolean {
   if (ref === undefined) return fallback;
-  return withLuaCallbackContext(hostState, ctx, luaEffect.id, () => {
+  return withLuaCallbackContext(hostState, ctx, luaEffect.id, kind, () => {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
     const legacyArgs = secondParameterName(L, -1) === "c";
     if (legacyArgs && ctx?.checkOnly && (kind === "cost" || kind === "target")) {
@@ -699,7 +699,7 @@ function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: Lu
 
 function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, ctx: DuelEffectContext, card: DuelCardInstance): boolean {
   if (luaEffect.targetRef === undefined) return true;
-  return withLuaCallbackContext(hostState, ctx, luaEffect.id, () => {
+  return withLuaCallbackContext(hostState, ctx, luaEffect.id, "target", () => {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.targetRef);
     pushLuaEffectTable(L, luaEffect.id, hostState);
     pushCardTable(L, card.uid);
@@ -711,18 +711,19 @@ function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, l
   });
 }
 
-function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectContext | undefined, luaEffectId: number | undefined, callback: () => T): T {
+function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectContext | undefined, luaEffectId: number | undefined, kind: LuaEffectCallbackKind, callback: () => T): T {
   const previousTargets = hostState.activeTargetUids;
   const previousLuaEffectId = hostState.activeLuaEffectId;
   const previousContext = hostState.activeContext;
   const previousTriggerStart = hostState.activeOperationTriggerStart;
   const previousOperationMoved = hostState.activeOperationMoved;
   const previousOperatedUids = [...hostState.operatedUids];
+  const operationTriggerStart = ctx ? luaOperationTriggerStart(hostState, ctx, kind) : previousTriggerStart;
   hostState.activeTargetUids = ctx?.targetUids;
   hostState.activeLuaEffectId = luaEffectId;
   hostState.activeContext = ctx;
-  hostState.activeOperationTriggerStart = ctx ? hostState.session.state.pendingTriggers.length : previousTriggerStart;
-  hostState.activeOperationMoved = false;
+  hostState.activeOperationTriggerStart = operationTriggerStart;
+  hostState.activeOperationMoved = kind === "operation" && operationTriggerStart !== undefined && operationTriggerStart < hostState.session.state.pendingTriggers.length;
   if (ctx?.eventUids) hostState.operatedUids.splice(0, hostState.operatedUids.length, ...ctx.eventUids);
   try {
     return callback();
@@ -734,4 +735,10 @@ function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectConte
     hostState.activeOperationMoved = previousOperationMoved;
     if (ctx?.eventUids) hostState.operatedUids.splice(0, hostState.operatedUids.length, ...previousOperatedUids);
   }
+}
+
+function luaOperationTriggerStart(hostState: LuaHostState, ctx: DuelEffectContext, kind: LuaEffectCallbackKind): number {
+  if (kind !== "operation" || ctx.chainLink?.id === undefined) return hostState.session.state.pendingTriggers.length;
+  const index = hostState.session.state.pendingTriggers.findIndex((trigger) => trigger.eventName === "becameTarget" && trigger.eventChainLinkId === ctx.chainLink?.id);
+  return index < 0 ? hostState.session.state.pendingTriggers.length : index;
 }

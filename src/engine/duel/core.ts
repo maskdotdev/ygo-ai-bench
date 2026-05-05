@@ -113,7 +113,7 @@ import {
 } from "#duel/core-movement.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { duelEventCode } from "#duel/event-codes.js";
-import { eventCardReasonPayload, eventCardStatePayload, recordDuelEvent } from "#duel/event-history.js";
+import { eventCardReasonPayload, eventCardStatePayload, recordDuelEvent, relatedEffectPayload } from "#duel/event-history.js";
 import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
@@ -883,17 +883,15 @@ function pushChainLink(
   }
   for (const targetUid of targetUids) {
     const target = findCard(state, targetUid);
-    if (target) collectTriggerEffects(state, "becameTarget", target);
+    if (target) {
+      const payload = { eventChainDepth: state.chain.length, eventChainLinkId: chainLinkId, eventReasonPlayer: player, ...relatedEffectPayload(effectId) };
+      collectDuelTriggerEffects(state, "becameTarget", target, payload);
+    }
   }
   markDuelPhaseActivity(state);
   state.chainPasses = [];
   markBattleWindowChainStarted(state);
   clearStaleChainLimits(state);
-}
-
-function relatedEffectPayload(effectId: string): Pick<DuelEventPayload, "relatedEffectId"> {
-  const relatedEffectId = Number(effectId.match(/^lua-(\d+)/)?.[1]);
-  return Number.isFinite(relatedEffectId) ? { relatedEffectId } : {};
 }
 
 function passChain(state: DuelState, player: PlayerId): void {

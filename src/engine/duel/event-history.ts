@@ -54,3 +54,8 @@ export function eventCardStatePayload(eventCard?: DuelCardInstance): Pick<DuelEv
     },
   };
 }
+
+export function relatedEffectPayload(effectId: string): Pick<DuelEventRecordPayload, "relatedEffectId"> {
+  const relatedEffectId = Number(effectId.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(relatedEffectId) ? { relatedEffectId } : {};
+}
