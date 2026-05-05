@@ -116,6 +116,24 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(promptWithTriggers, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt must not overlap pending triggers");
   });
 
+  it("rejects prompt snapshots outside awaiting status", () => {
+    const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const resolvingPrompt = serializeDuel(session);
+    const endedPrompt = serializeDuel(session);
+    resolvingPrompt.state.prompt = { id: "resolving-prompt", type: "selectYesNo", player: 0 };
+    resolvingPrompt.state.status = "resolving";
+    endedPrompt.state.prompt = { id: "ended-prompt", type: "selectYesNo", player: 0 };
+    endedPrompt.state.status = "ended";
+
+    expect(() => restoreDuel(resolvingPrompt, createCardReader(cards))).toThrow("Malformed duel snapshot: pending prompt requires an awaiting duel");
+    expect(() => restoreDuel(endedPrompt, createCardReader(cards))).toThrow("Malformed duel snapshot: pending prompt requires an awaiting duel");
+  });
+
   it("rejects malformed player and option snapshots before restore", () => {
     const session = createDuel({ seed: 145, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
