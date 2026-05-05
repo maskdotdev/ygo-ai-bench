@@ -30,6 +30,9 @@ describe("duel battle timing", () => {
       windowId: restored.state.actionWindowId,
       windowKind: "battle",
     });
+    expect(battleWindowGroups(restored, 1)).toEqual([
+      { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["passDamage"] },
+    ]);
     const stalePassResult = applyResponse(restored, staleRestoredPass!);
     expect(stalePassResult.ok).toBe(true);
     expect(stalePassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, stalePassResult.state.waitingFor!));
