@@ -110,7 +110,11 @@ describe("Lua raised event payloads", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const customEventCode = 0x10000000 + 9;
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
@@ -183,7 +187,11 @@ describe("Lua raised event payloads", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const customEventCode = 0x10000000 + 10;
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
