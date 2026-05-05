@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelCardData, DuelSession } from "#duel/types.js";
+import type { DuelCardData, DuelSession, PlayerId } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 function setupRestoredSameTurnLockout(seed: number): DuelSession {
@@ -68,8 +68,8 @@ describe("Lua position lockout helpers", () => {
 
   it("allows restored position changes after the turn cycles", () => {
     const restored = setupRestoredSameTurnLockout(202);
-    expect(applyResponse(restored, getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(applyResponse(restored, getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    applyRestoredEndTurn(restored, 0);
+    applyRestoredEndTurn(restored, 1);
 
     const host = createLuaScriptHost(restored);
     const result = host.loadScript(
@@ -105,8 +105,8 @@ describe("Lua position lockout helpers", () => {
 
   it("allows restored Lua turn-set operations after the turn cycles", () => {
     const restored = setupRestoredSameTurnLockout(205);
-    expect(applyResponse(restored, getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(applyResponse(restored, getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    applyRestoredEndTurn(restored, 0);
+    applyRestoredEndTurn(restored, 1);
 
     const host = createLuaScriptHost(restored);
     const result = host.loadScript(
@@ -255,8 +255,8 @@ describe("Lua position lockout helpers", () => {
 
   it("allows restored Rush position toggles after the turn cycles", () => {
     const restored = setupRestoredSameTurnLockout(203);
-    expect(applyResponse(restored, getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(applyResponse(restored, getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    applyRestoredEndTurn(restored, 0);
+    applyRestoredEndTurn(restored, 1);
 
     const host = createLuaScriptHost(restored);
     const result = host.loadScript(
@@ -275,3 +275,9 @@ describe("Lua position lockout helpers", () => {
     expect(host.messages).toEqual(["restored reset rush summoned 8/1", "restored reset rush set 1/1"]);
   });
 });
+
+function applyRestoredEndTurn(session: DuelSession, player: PlayerId): void {
+  const endTurn = getDuelLegalActions(session, player).find((candidate) => candidate.type === "endTurn");
+  expect(getGroupedDuelLegalActions(session, player).flatMap((group) => group.actions)).toContainEqual(endTurn);
+  expect(applyResponse(session, endTurn!).ok).toBe(true);
+}
