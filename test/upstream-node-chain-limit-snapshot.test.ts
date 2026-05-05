@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createCardReader, createUpstreamSourceConfig, normalizeCdbRows } from "#engine/data-loaders.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -100,6 +100,8 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(restored.session.state.chainLimits[0]).not.toHaveProperty("registryKey");
     expect(getDuelLegalActions(restored.session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
     expect(getDuelLegalActions(restored.session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
+    expect(getGroupedDuelLegalActions(restored.session, 1).flatMap((group) => group.actions).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
+    expect(getGroupedDuelLegalActions(restored.session, 1).flatMap((group) => group.actions).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
@@ -908,6 +910,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(restored.session.state.chainLimits[0]).toMatchObject({ untilChainEnd: false, expiresAtChainLength: 1 });
     expect(restored.session.state.chainLimits[0]).not.toHaveProperty("registryKey");
     expect(getDuelLegalActions(restored.session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
+    expect(getGroupedDuelLegalActions(restored.session, 1).flatMap((group) => group.actions).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
     expect(applyLuaRestoreResponse(restored, { type: "passChain", player: 0, label: "Pass" })).toMatchObject({
