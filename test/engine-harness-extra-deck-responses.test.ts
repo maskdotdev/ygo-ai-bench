@@ -68,4 +68,37 @@ describe("EDOPro compatibility harness extra deck responses", () => {
       expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
     }
   });
+
+  it("does not match duplicate material expectations against distinct material actions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Material A", kind: "monster" },
+      { code: "300", name: "Material B", kind: "monster" },
+      { code: "920", name: "Fixture Xyz", kind: "extra", xyzMaterials: ["100", "300"] },
+    ];
+    const materialUids = ["p0-deck-100-0", "p0-deck-300-1"];
+    const fixture: ScriptedDuelFixture = {
+      name: "duplicate material expectation fixture",
+      options: { seed: 4, startingHandSize: 2 },
+      decks: {
+        0: { main: ["100", "300"], extra: ["920"] },
+        1: { main: ["100", "300"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "100", from: "hand", to: "monsterZone" },
+          { player: 0, code: "300", from: "hand", to: "monsterZone" },
+        ],
+      },
+      responses: [],
+      expected: {
+        source: "edopro",
+        legalActions: [{ type: "xyzSummon", player: 0, code: "920", location: "extraDeck", materialUids: [materialUids[0]!, materialUids[0]!], count: 1 }],
+      },
+    };
+
+    const result = runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures.some((failure) => failure.message.includes("Expected legal action"))).toBe(true);
+  });
 });
