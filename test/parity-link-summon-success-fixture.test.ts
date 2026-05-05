@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { summonGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Link Summon success fixtures", () => {
   it("opens Link Summon actions, sends materials to Graveyard, and resolves success triggers", () => {
@@ -52,18 +53,11 @@ describe("EDOPro parity Link Summon success fixtures", () => {
               { type: "linkSummon", player: 0, code: "900", location: "extraDeck", materialUids: ["p0-deck-100-0", "p0-deck-200-1"], windowId: 0, windowKind: "open", count: 1 },
             ],
             legalActionGroups: [
-              {
-                player: 0,
-                label: "Summons",
-                windowId: 0,
-                windowKind: "open",
-                count: 1,
-                actions: [
-                  { type: "normalSummon", player: 0, code: "300", location: "hand", windowId: 0, windowKind: "open", count: 1 },
-                  { type: "setMonster", player: 0, code: "300", location: "hand", windowId: 0, windowKind: "open", count: 1 },
-                  { type: "linkSummon", player: 0, code: "900", location: "extraDeck", materialUids: ["p0-deck-100-0", "p0-deck-200-1"], windowId: 0, windowKind: "open", count: 1 },
-                ],
-              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "linkSummon", player: 0, code: "900", location: "extraDeck", materialUids: ["p0-deck-100-0", "p0-deck-200-1"] },
+              ], 1, 0),
               {
                 player: 0,
                 label: "Turn",
