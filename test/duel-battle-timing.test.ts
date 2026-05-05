@@ -39,6 +39,7 @@ describe("duel battle timing", () => {
     const replay = applyResponse(restored, staleRestoredPass!);
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.state.actionWindowId).toBe(restored.state.actionWindowId);
 
     while (restored.state.battleWindow) {
       const player = restored.state.battleWindow.responsePlayer;
