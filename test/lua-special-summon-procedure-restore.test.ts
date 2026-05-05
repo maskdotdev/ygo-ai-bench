@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua special summon procedure restore", () => {
   it("rolls back restored Lua procedure costs when release count falls short", () => {
@@ -86,11 +86,13 @@ describe("Lua special summon procedure restore", () => {
     expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c300.lua"]);
     expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
 
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(restored.host.messages).toContain("restored rollback release cost 0/1");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
@@ -141,12 +143,14 @@ describe("Lua special summon procedure restore", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
 
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("summon procedure is no longer in range");
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(restored.host.messages).toContain("restored source moved before summon 1/16");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.log.some((entry) => entry.action === "sendToGraveyard" && entry.card === "Self Moving Procedure Source")).toBe(false);
@@ -212,12 +216,14 @@ describe("Lua special summon procedure restore", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
 
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("cannot be Special Summoned");
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(restored.host.messages).toContain("restored procedure filled zone 1/0");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === filler!.uid)).toMatchObject({ location: "hand" });
@@ -299,12 +305,14 @@ describe("Lua special summon procedure restore", () => {
     expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c300.lua"]);
     expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
 
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("restored procedure material move count mismatch");
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(restored.host.messages).toContain("restored partial material moves 1/2");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === firstMaterial!.uid)).toMatchObject({ location: "hand" });
