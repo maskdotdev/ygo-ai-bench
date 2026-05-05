@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { detachDuelOverlayMaterials } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { readCardUid } from "#lua/api-utils.js";
+import { markLuaOperationTimingBoundary } from "#lua/duel-api/move.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
@@ -32,8 +33,10 @@ function pushRemoveOverlayCard<EffectRecord extends LuaCardApiEffectRecord>(L: u
   const min = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
   const max = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min;
   const reason = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : duelReason.cost;
+  markLuaOperationTimingBoundary(session, hostState);
   const detached = card ? detachOverlayRange(session, card, min, max, player, reason) : [];
   setOperatedUids(hostState, detached.map((material) => material.uid));
+  if (hostState.activeContext && detached.length > 0) hostState.activeOperationMoved = true;
   lua.lua_pushinteger(L, detached.length);
   return 1;
 }

@@ -21,5 +21,7 @@ export interface LuaCardApiState<EffectRecord extends LuaCardApiEffectRecord> {
   effects: Map<number, EffectRecord>;
   operatedUids?: string[];
   activeContext?: DuelEffectContext | undefined;
+  activeOperationTriggerStart?: number | undefined;
+  activeOperationMoved?: boolean;
   pushEffectTable: (state: unknown, id: number) => void;
 }
