@@ -61,6 +61,26 @@ export const absentAttackGroup = (attackerUid: string, targetUid?: string, direc
   ],
 });
 
+type ReplayAttackChoice = { attackerUid: string; targetUid?: string; directAttack?: true; cancel?: true };
+
+export const replayAttackGroup = (attacks: ReplayAttackChoice[], count = 1, windowId?: number) => ({
+  player: 0 as const,
+  label: "Attacks",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "battle" as const,
+  count,
+  actions: attacks.map(({ attackerUid, targetUid, directAttack, cancel }) => ({
+    type: cancel ? ("cancelAttack" as const) : ("replayAttack" as const),
+    player: 0 as const,
+    attackerUid,
+    ...(targetUid === undefined ? {} : { targetUid }),
+    ...(targetUid === undefined && directAttack ? { directAttack } : {}),
+    ...(windowId === undefined ? {} : { windowId }),
+    windowKind: "battle" as const,
+    count: 1,
+  })),
+});
+
 export const passBattleGroup = (player: 0 | 1, type: "passAttack" | "passDamage", count = 1, windowId?: number) => ({
   player,
   label: "Pass",

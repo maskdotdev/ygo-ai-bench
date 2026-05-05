@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup, passBattleGroup, passDamageGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentAttackGroup, passBattleGroup, passDamageGroup, replayAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro compatibility harness battle windows", () => {
   it("runs scripted battle-window fixtures against the TypeScript engine", () => {
@@ -381,7 +381,15 @@ describe("EDOPro compatibility harness battle windows", () => {
                 { type: "cancelAttack", player: 0, windowId: 16, windowKind: "battle", attackerUid: "p0-deck-100-0", count: 1 },
                 { type: "replayAttack", player: 0, windowId: 16, windowKind: "battle", attackerUid: "p0-deck-100-0", count: 1 },
               ],
+              legalActionGroups: [replayAttackGroup([{ attackerUid: "p0-deck-100-0", cancel: true }, { attackerUid: "p0-deck-100-0" }], 1, 16)],
               absentLegalActions: [{ type: "passDamage", player: 0 }],
+              absentLegalActionGroups: [
+                {
+                  player: 0,
+                  label: "Pass",
+                  actions: [{ type: "passDamage", player: 0 }],
+                },
+              ],
               logIncludes: ["Replay decision pending"],
             },
           }),
@@ -398,6 +406,7 @@ describe("EDOPro compatibility harness battle windows", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [{ type: "cancelAttack", player: 0, windowId: 16, windowKind: "battle", attackerUid: "p0-deck-100-0", count: 1 }],
+              legalActionGroups: [replayAttackGroup([{ attackerUid: "p0-deck-100-0", cancel: true }], 1, 16)],
             },
           }),
         ],
@@ -487,6 +496,17 @@ describe("EDOPro compatibility harness battle windows", () => {
                 { type: "replayAttack", player: 0, windowId: 16, windowKind: "battle", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2", count: 1 },
                 { type: "replayAttack", player: 0, windowId: 16, windowKind: "battle", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1", count: 1 },
               ],
+              legalActionGroups: [
+                replayAttackGroup(
+                  [
+                    { attackerUid: "p0-deck-100-0", cancel: true },
+                    { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2" },
+                    { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1" },
+                  ],
+                  1,
+                  16,
+                ),
+              ],
               logIncludes: ["Replay decision pending"],
             },
           }),
@@ -498,6 +518,7 @@ describe("EDOPro compatibility harness battle windows", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [{ type: "replayAttack", player: 0, windowId: 16, windowKind: "battle", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1", count: 1 }],
+              legalActionGroups: [replayAttackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-1" }], 1, 16)],
             },
             after: {
               source: "edopro",
@@ -511,6 +532,7 @@ describe("EDOPro compatibility harness battle windows", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [{ type: "passAttack", player: 1, count: 1 }],
+              legalActionGroups: [passBattleGroup(1, "passAttack", 1)],
               logIncludes: ["Replayed attack on Fixture Defender"],
             },
           }),
