@@ -20,7 +20,7 @@ function expectLuaRestoreGroupsMirrorActions(restored: ReturnType<typeof restore
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
   const response = applyResponse(session, action);
-  expect(response.ok).toBe(true);
+  expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
@@ -29,7 +29,7 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
 
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const response = applyLuaRestoreResponse(restored, action);
-  expect(response.ok).toBe(true);
+  expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
