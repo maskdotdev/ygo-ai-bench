@@ -107,7 +107,7 @@ describe("Lua chain-disabled events", () => {
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainDisabled", eventCode: 1025, eventPlayer: 0, eventValue: 1, eventReasonPlayer: 0 })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c200.lua", "c300.lua"]);
     expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
