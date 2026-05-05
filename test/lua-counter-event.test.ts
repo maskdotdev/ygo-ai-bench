@@ -136,6 +136,7 @@ describe("Lua counter events", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.host.messages).toContain("restored add counter trigger 200/64/0");
   });
 
@@ -417,6 +418,7 @@ describe("Lua counter events", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.host.messages).toContain("restored remove counter trigger 200/64/0");
   });
 

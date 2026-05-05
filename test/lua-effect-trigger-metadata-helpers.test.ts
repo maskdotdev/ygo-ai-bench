@@ -154,6 +154,7 @@ describe("Lua effect trigger metadata helpers", () => {
     expect(restoredIfResult.ok).toBe(true);
     expect(restoredIfResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredIfResult.state.waitingFor!));
     expect(restoredIfResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredIfResult.state.waitingFor!));
+    expectGroupedActionsToContainLegalActions(restoredIfResult);
     expect(restored.host.messages).toContain("lua if optional resolved");
     const staleRestoredIfTrigger = applyLuaRestoreResponse(restored, restoredIfTrigger!);
     expect(staleRestoredIfTrigger.ok).toBe(false);
@@ -175,6 +176,7 @@ describe("Lua effect trigger metadata helpers", () => {
     expect(opponentWhenResult.ok).toBe(true);
     expect(opponentWhenResult.legalActions).toEqual(getDuelLegalActions(restored.session, opponentWhenResult.state.waitingFor!));
     expect(opponentWhenResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, opponentWhenResult.state.waitingFor!));
+    expectGroupedActionsToContainLegalActions(opponentWhenResult);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const opponentIfTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger");
@@ -183,6 +185,7 @@ describe("Lua effect trigger metadata helpers", () => {
     expect(opponentIfResult.ok).toBe(true);
     expect(opponentIfResult.legalActions).toEqual(getDuelLegalActions(restored.session, opponentIfResult.state.waitingFor!));
     expect(opponentIfResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, opponentIfResult.state.waitingFor!));
+    expectGroupedActionsToContainLegalActions(opponentIfResult);
     expect(restored.host.messages).toContain("lua opponent when optional resolved");
     expect(restored.host.messages).toContain("lua opponent if optional resolved");
     expect(restored.host.messages).not.toContain("lua when optional resolved");
@@ -435,3 +438,9 @@ describe("Lua effect trigger metadata helpers", () => {
   });
 
 });
+
+function expectGroupedActionsToContainLegalActions(result: ReturnType<typeof applyLuaRestoreResponse>): void {
+  const groupedActions = result.legalActionGroups.flatMap((group) => group.actions);
+  expect(groupedActions).toHaveLength(result.legalActions.length);
+  expect(groupedActions).toEqual(expect.arrayContaining(result.legalActions));
+}
