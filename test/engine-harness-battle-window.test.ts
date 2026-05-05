@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentAttackGroup, passBattleGroup, passDamageGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro compatibility harness battle windows", () => {
   it("runs scripted battle-window fixtures against the TypeScript engine", () => {
@@ -41,7 +42,15 @@ describe("EDOPro compatibility harness battle windows", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [{ type: "passAttack", player: 1, windowId: 2, windowKind: "battle", count: 1 }],
+              legalActionGroups: [passBattleGroup(1, "passAttack", 1, 2)],
               absentLegalActions: [{ type: "passDamage", player: 1 }],
+              absentLegalActionGroups: [
+                {
+                  player: 1,
+                  label: "Pass",
+                  actions: [{ type: "passDamage", player: 1 }],
+                },
+              ],
             },
           }),
           makeScriptedStep(makeResponseSelector("passAttack", 1), {
@@ -62,6 +71,7 @@ describe("EDOPro compatibility harness battle windows", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [{ type: "passAttack", player: 1, windowId: 2, windowKind: "battle", count: 1 }],
+              legalActionGroups: [passBattleGroup(1, "passAttack", 1, 2)],
             },
           }),
           makeScriptedStep(makeResponseSelector("passAttack", 0)),
@@ -80,6 +90,7 @@ describe("EDOPro compatibility harness battle windows", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+              legalActionGroups: [passDamageGroup(1)],
             },
           }),
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -98,6 +109,7 @@ describe("EDOPro compatibility harness battle windows", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+              legalActionGroups: [passDamageGroup(1)],
             },
           }),
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -116,6 +128,7 @@ describe("EDOPro compatibility harness battle windows", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+              legalActionGroups: [passDamageGroup(1)],
             },
           }),
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -134,6 +147,7 @@ describe("EDOPro compatibility harness battle windows", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+              legalActionGroups: [passDamageGroup(1)],
             },
           }),
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -152,6 +166,7 @@ describe("EDOPro compatibility harness battle windows", () => {
               pendingBattle: true,
               currentAttack: true,
               legalActions: [{ type: "passDamage", player: 1, windowKind: "battle", count: 1 }],
+              legalActionGroups: [passDamageGroup(1)],
             },
           }),
           makeScriptedStep(makeResponseSelector("passDamage", 0)),
@@ -168,7 +183,9 @@ describe("EDOPro compatibility harness battle windows", () => {
           pendingTriggers: [],
           prompt: null,
           legalActions: [{ type: "changePhase", player: 0, phase: "main2", count: 1 }],
+          legalActionGroups: [turnGroup()],
           absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0" }],
+          absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0")],
           locations: { monsterZone: ["100"] },
           logIncludes: ["Direct attack"],
         },
