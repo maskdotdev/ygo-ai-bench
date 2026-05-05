@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -48,13 +48,13 @@ describe("Lua attack negation event sources", () => {
     expect(host.registerInitialEffects()).toBe(1);
     const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.targetUid === target!.uid);
     expect(attack).toBeDefined();
-    expect(applyResponse(session, attack!).ok).toBe(true);
+    applyAndAssert(session, attack!);
     const negate = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect");
     expect(negate).toBeDefined();
-    expect(applyResponse(session, negate!).ok).toBe(true);
+    applyAndAssert(session, negate!);
     const pass = getDuelLegalActions(session, session.state.waitingFor!).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
-    expect(applyResponse(session, pass!).ok).toBe(true);
+    applyAndAssert(session, pass!);
 
     expect(session.state.eventHistory).toEqual(
       expect.arrayContaining([
@@ -74,3 +74,12 @@ describe("Lua attack negation event sources", () => {
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
