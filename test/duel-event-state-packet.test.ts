@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, restoreDuel, sendDuelCardToGraveyard, serializeDuel, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -125,8 +125,7 @@ describe("duel event state packets", () => {
 
     const triggerAction = getLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(triggerAction).toBeDefined();
-    const result = applyResponse(session, triggerAction!);
-    expect(result.ok, result.error).toBe(true);
+    applyAndAssert(session, triggerAction!);
     expect(session.state.chain).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -144,3 +143,12 @@ describe("duel event state packets", () => {
     );
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
