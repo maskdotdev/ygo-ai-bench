@@ -585,6 +585,7 @@ describe("Lua LP helpers", () => {
     expect(restoredTriggerResult.ok).toBe(true);
     expect(restoredTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
     expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
+    expect(restoredTriggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredTriggerResult.legalActions);
     expect(restored.host.messages).toContain("damage trigger resolved 1/700/64/0/7300");
 
     const damageTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
@@ -931,6 +932,7 @@ describe("Lua LP helpers", () => {
     expect(restoredTriggerResult.ok).toBe(true);
     expect(restoredTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
     expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
+    expect(restoredTriggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredTriggerResult.legalActions);
     expect(restored.host.messages).toContain("draw trigger resolved 0/1/64/0/1/3");
 
     const drawTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");

@@ -150,6 +150,7 @@ describe("Lua attack negation helpers", () => {
     expect(restoredTriggerResult.ok).toBe(true);
     expect(restoredTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
     expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
+    expect(restoredTriggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredTriggerResult.legalActions);
     expect(restored.host.messages).toContain("attack disabled trigger 100/0/64/0");
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -218,18 +219,21 @@ describe("Lua attack negation helpers", () => {
     expect(result.ok).toBe(true);
     expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(["lua-1"]);
     const replayAttackPass = applyLuaRestoreResponse(restored, staleAttackPass!);
     expect(replayAttackPass.ok).toBe(false);
     expect(replayAttackPass.error).toContain("Response is not currently legal");
     expect(replayAttackPass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(replayAttackPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(replayAttackPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(replayAttackPass.legalActions);
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     const passResult = applyLuaRestoreResponse(restored, pass!);
     expect(passResult.ok).toBe(true);
     expect(passResult.legalActions).toEqual(getDuelLegalActions(restored.session, passResult.state.waitingFor!));
     expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
+    expect(passResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(passResult.legalActions);
     expect(restored.host.messages).toEqual(["restored attack negate true"]);
     expect(restored.session.state.currentAttack).toBeUndefined();
     expect(restored.session.state.pendingBattle).toBeUndefined();
