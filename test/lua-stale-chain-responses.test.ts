@@ -201,6 +201,7 @@ describe("Lua stale chain responses", () => {
     expect(restoredPass).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "chainResponse" });
     const restoredPassResult = applyLuaRestoreResponse(restored, restoredPass!);
     expect(restoredPassResult.ok).toBe(true);
+    expect(restoredPassResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredPassResult.state.waitingFor!));
     expect(restoredPassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredPassResult.state.waitingFor!));
 
     const replay = applyLuaRestoreResponse(restored, stalePass!);
@@ -284,6 +285,7 @@ describe("Lua stale chain responses", () => {
     expect(restoredQuickResult.ok).toBe(true);
     expect(restoredQuickResult.state.chain).toHaveLength(2);
     expect(restoredQuickResult.state.waitingFor).toBe(1);
+    expect(restoredQuickResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredQuickResult.state.waitingFor!));
     expect(restoredQuickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredQuickResult.state.waitingFor!));
 
     const replay = applyLuaRestoreResponse(restored, stalePass!);
@@ -298,6 +300,7 @@ describe("Lua stale chain responses", () => {
     expect(currentPass).toBeDefined();
     const currentPassResult = applyLuaRestoreResponse(restored, currentPass!);
     expect(currentPassResult.ok).toBe(true);
+    expect(currentPassResult.legalActions).toEqual(getDuelLegalActions(restored.session, currentPassResult.state.waitingFor!));
     expect(currentPassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, currentPassResult.state.waitingFor!));
     expect(restored.host.messages).toEqual(["restored quick stale pass response resolved", "restored quick stale pass source resolved"]);
     expect(restored.session.state.chain).toHaveLength(0);
@@ -371,6 +374,7 @@ describe("Lua stale chain responses", () => {
     expect(restoredPass).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "chainResponse" });
     const restoredPassResult = applyLuaRestoreResponse(restored, restoredPass!);
     expect(restoredPassResult.ok).toBe(true);
+    expect(restoredPassResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredPassResult.state.waitingFor!));
     expect(restoredPassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredPassResult.state.waitingFor!));
 
     const replay = applyLuaRestoreResponse(restored, staleQuick!);
