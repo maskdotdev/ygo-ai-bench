@@ -82,7 +82,7 @@ describe("Lua special summon procedure restore", () => {
     expect(host.registerInitialEffects()).toBe(2);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c300.lua"]);
     expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -141,7 +141,7 @@ describe("Lua special summon procedure restore", () => {
     expect(host.registerInitialEffects()).toBe(1);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
@@ -215,7 +215,7 @@ describe("Lua special summon procedure restore", () => {
     expect(host.registerInitialEffects()).toBe(1);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
@@ -304,7 +304,7 @@ describe("Lua special summon procedure restore", () => {
     expect(host.registerInitialEffects()).toBe(2);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c100.lua", "c300.lua"]);
     expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));

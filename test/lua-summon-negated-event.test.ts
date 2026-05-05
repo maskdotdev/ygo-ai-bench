@@ -101,7 +101,7 @@ describe("Lua summon-negated events", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("300"))).toBe(false);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), scriptSource, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(restored.session.state.eventHistory.map((event) => event.eventName)).not.toContain("normalSummoned");
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -251,7 +251,7 @@ function activateNegator(fixture: { session: ReturnType<typeof createDuel> }): v
 
 function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: string): void {
   const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.scriptSource, createCardReader(fixture.cards));
-  expect(restored.restoreComplete).toBe(true);
+  expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c200.lua", "c300.lua"]);
   expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
   expect(restored.session.state.pendingTriggers).toEqual(fixture.session.state.pendingTriggers);
