@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, restoreDuel, serializeDuel, sendDuelCardToGraveyard, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, sendDuelCardToGraveyard, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { stampDuelActions } from "#duel/prompt-response.js";
 import type { DuelAction } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
+import { registerBucketTrigger, setupTriggerBucketFixture } from "./duel-trigger-fixtures.js";
 
 function setupOneCardDuel(seed: number) {
   const session = createDuel({ seed, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -13,6 +14,16 @@ function setupOneCardDuel(seed: number) {
   });
   startDuel(session);
   return session;
+}
+
+function expectLegalActionsMatchPublicWindow(session: ReturnType<typeof setupOneCardDuel>, player: 0 | 1): void {
+  const publicState = queryPublicState(session);
+  const actions = getDuelLegalActions(session, player);
+  expect(publicState.actionWindowId).toBe(session.state.actionWindowId);
+  for (const action of actions) {
+    expect(action.windowId).toBe(publicState.actionWindowId);
+    expect(action.windowKind).toBe(publicState.windowKind);
+  }
 }
 
 describe("duel action windows", () => {
@@ -32,9 +43,11 @@ describe("duel action windows", () => {
   it("increments actionWindowId after successful responses", () => {
     const session = setupOneCardDuel(109);
     expect(session.state.actionWindowId).toBe(0);
+    expectLegalActionsMatchPublicWindow(session, 0);
 
     session.state.prompt = { id: "window-success", type: "selectYesNo", player: 0 };
     session.state.waitingFor = 0;
+    expectLegalActionsMatchPublicWindow(session, 0);
     const yes = getDuelLegalActions(session, 0).find((action) => action.type === "selectYesNo" && action.yes);
     expect(yes).toBeDefined();
     expect(yes?.windowId).toBe(0);
@@ -42,9 +55,22 @@ describe("duel action windows", () => {
     expect(applyResponse(session, yes!).ok).toBe(true);
 
     expect(session.state.actionWindowId).toBe(1);
+    expectLegalActionsMatchPublicWindow(session, 0);
     const nextAction = getDuelLegalActions(session, 0)[0];
     expect(nextAction?.windowId).toBe(1);
     expect(nextAction?.windowKind).toBe("open");
+  });
+
+  it("keeps trigger-bucket legal action stamps aligned with public state", () => {
+    const { session, summoned, turnFirst } = setupTriggerBucketFixture();
+    registerBucketTrigger(session, "window-kind-trigger-bucket", turnFirst, 0);
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+
+    expect(queryPublicState(session).windowKind).toBe("triggerBucket");
+    expectLegalActionsMatchPublicWindow(session, 0);
   });
 
   it("does not increment actionWindowId after illegal responses", () => {
@@ -256,6 +282,8 @@ describe("duel action windows", () => {
     expect(starterAction).toBeDefined();
     expect(applyResponse(session, starterAction!).ok).toBe(true);
 
+    expect(queryPublicState(session).windowKind).toBe("chainResponse");
+    expectLegalActionsMatchPublicWindow(session, 1);
     const responses = getDuelLegalActions(session, 1);
     expect(responses.filter((action) => action.type === "activateEffect" || action.type === "passChain").map((action) => action.windowKind)).toEqual(["chainResponse", "chainResponse"]);
   });
@@ -276,5 +304,6 @@ describe("duel action windows", () => {
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passAttack");
     expect(pass).toBeDefined();
     expect(pass?.windowKind).toBe("battle");
+    expectLegalActionsMatchPublicWindow(session, 1);
   });
 });
