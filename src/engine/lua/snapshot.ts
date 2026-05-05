@@ -3,7 +3,7 @@ import { applyResponse, getGroupedDuelLegalActions, getLegalActions, queryPublic
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
-import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
+import type { ApplyDuelResponseResult, ChainLimit, DuelAction, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
 
 export interface LuaSnapshotRestoreResult {
   session: DuelSession;
@@ -23,10 +23,10 @@ export function restoreDuelWithLuaScripts(
   source: LuaScriptSource,
   cardReader: DuelCardReader = fallbackCardReader,
 ): LuaSnapshotRestoreResult {
-  const session = restoreDuel(snapshot, cardReader, {}, {}, { pruneUnrestoredPendingTriggers: false });
+  const chainLimitRegistryKeys = luaChainLimitRegistryKeys(snapshot);
+  const session = restoreDuel(snapshot, cardReader, {}, luaDenyChainLimitRegistry(chainLimitRegistryKeys), { pruneUnrestoredPendingTriggers: false });
   const host = createLuaScriptHost(session);
   const registryKeys = luaRegistryKeys(snapshot);
-  const chainLimitRegistryKeys = luaChainLimitRegistryKeys(snapshot);
   const loadedScripts = [...luaRegistryCardCodes(registryKeys, chainLimitRegistryKeys)].map((code) => host.loadCardScript(code, source));
   const registeredEffects = loadedScripts.every((result) => result.ok) ? host.registerInitialEffects() : 0;
   const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys, snapshot.state.effects);
@@ -82,6 +82,13 @@ function luaRegistryKeys(snapshot: SerializedDuel): Set<string> {
 
 function luaChainLimitRegistryKeys(snapshot: SerializedDuel): string[] {
   return snapshot.state.chainLimits.map((limit) => limit.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua-chain-limit:")));
+}
+
+function luaDenyChainLimitRegistry(keys: string[]): Record<string, (limit: ChainLimit) => ChainLimit> {
+  return Object.fromEntries(keys.map((key) => [key, (limit: ChainLimit): ChainLimit => {
+    const { registryKey: _registryKey, ...metadata } = limit;
+    return { ...metadata, allows: () => false };
+  }]));
 }
 
 function luaRestoreIncompleteReasons(loadedScripts: LuaScriptLoadResult[], missingRegistryKeys: string[], missingChainLimitRegistryKeys: string[]): string[] {
