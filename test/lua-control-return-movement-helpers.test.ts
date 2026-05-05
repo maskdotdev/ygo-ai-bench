@@ -213,14 +213,14 @@ describe("Lua control and return movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(host.messages).toContain("to hand event count 1");
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand", controller: 1 });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHand"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1012, eventCardUid: session.state.cards.find((card) => card.code === "200")?.uid });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("to hand trigger resolved 200");
   });
 
@@ -279,7 +279,7 @@ describe("Lua control and return movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand", controller: 1 });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHand"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1012, eventCardUid: target!.uid });
@@ -372,7 +372,7 @@ describe("Lua control and return movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1012");
@@ -426,11 +426,11 @@ describe("Lua control and return movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(host.messages).toContain("reason move count 1");
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("reason trigger 0/1/1");
   });
 
@@ -477,14 +477,14 @@ describe("Lua control and return movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(host.messages).toContain("to deck event count 1");
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "deck", controller: 0 });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToDeck"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1013, eventCardUid: session.state.cards.find((card) => card.code === "200")?.uid });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("to deck trigger resolved 200");
   });
 
@@ -555,7 +555,7 @@ describe("Lua control and return movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1013");
@@ -700,7 +700,7 @@ describe("Lua control and return movement helpers", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120, eventReason: 0x40, eventReasonPlayer: 0 });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("control trigger resolved 0/64/0");
   });
 
@@ -774,7 +774,7 @@ describe("Lua control and return movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1120");
@@ -923,7 +923,7 @@ describe("Lua control and return movement helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1120");
@@ -936,3 +936,12 @@ describe("Lua control and return movement helpers", () => {
   });
 
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
