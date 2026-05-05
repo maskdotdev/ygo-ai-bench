@@ -94,6 +94,24 @@ describe("duel legal action groups", () => {
     expect(actions.map((action) => action.type === "activateTrigger" || action.type === "declineTrigger" ? action.triggerId : undefined)).toEqual(["trigger-a", "trigger-b", "trigger-c"]);
   });
 
+  it("preserves legal action order for multi-trigger optional buckets", () => {
+    const actions: DuelAction[] = [
+      { type: "activateTrigger", player: 0, triggerId: "trigger-a", triggerBucket: "turnOptional", uid: "card-a", effectId: "effect-a", label: "A", windowId: 7, windowKind: "triggerBucket" },
+      { type: "activateTrigger", player: 0, triggerId: "trigger-b", triggerBucket: "turnOptional", uid: "card-b", effectId: "effect-b", label: "B", windowId: 7, windowKind: "triggerBucket" },
+      { type: "declineTrigger", player: 0, triggerId: "trigger-a", triggerBucket: "turnOptional", uid: "card-a", effectId: "effect-a", label: "Decline A", windowId: 7, windowKind: "triggerBucket" },
+      { type: "declineTrigger", player: 0, triggerId: "trigger-b", triggerBucket: "turnOptional", uid: "card-b", effectId: "effect-b", label: "Decline B", windowId: 7, windowKind: "triggerBucket" },
+    ];
+
+    const groups = groupDuelLegalActions(actions);
+
+    expect(groups.map((group) => group.label)).toEqual(["Trigger Activations", "Trigger Declines"]);
+    expect(groups.map((group) => group.triggerBucket)).toEqual([
+      { triggerBucket: "turnOptional", player: 0, triggerIds: ["trigger-a", "trigger-b"] },
+      { triggerBucket: "turnOptional", player: 0, triggerIds: ["trigger-a", "trigger-b"] },
+    ]);
+    expect(groups.flatMap((group) => group.actions)).toEqual(actions);
+  });
+
   it("keeps different trigger buckets in separate groups", () => {
     const actions: DuelAction[] = [
       { type: "activateTrigger", player: 0, triggerId: "trigger-a", triggerBucket: "turnMandatory", uid: "card-a", effectId: "effect-a", label: "A", windowId: 7, windowKind: "triggerBucket" },
