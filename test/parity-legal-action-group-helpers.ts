@@ -146,6 +146,7 @@ export const absentEffectGroup = (player: 0 | 1, effectId: string, windowId?: nu
   player,
   label: "Effects",
   ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "battle" as const,
   actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), windowKind: "battle" as const }],
 });
 
@@ -153,6 +154,7 @@ export const absentChainEffectGroup = (player: 0 | 1, effectId: string, windowId
   player,
   label: "Effects",
   ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "chainResponse" as const,
   actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), windowKind: "chainResponse" as const }],
 });
 

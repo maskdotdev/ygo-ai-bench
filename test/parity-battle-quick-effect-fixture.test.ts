@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup, effectGroup, passDamageGroup } from "./parity-legal-action-group-helpers.js";
+import { absentAttackGroup, absentEffectGroup, effectGroup, passDamageGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle quick-effect fixtures", () => {
   it("offers damage-step quick effects and resumes the battle window after resolution", () => {
@@ -87,7 +87,7 @@ describe("EDOPro parity battle quick-effect fixtures", () => {
             legalActionGroupCounts: { 0: 0, 1: 1 },
             legalActions: [{ type: "passDamage", player: 1, windowId: 6, windowKind: "battle", count: 1 }],
             legalActionGroups: [passDamageGroup(1, 1, 6)],
-            absentLegalActionGroups: [{ player: 0, label: "Effects", windowId: 6, windowKind: "battle", actions: [{ type: "activateEffect", player: 0, windowId: 6, windowKind: "battle", effectId: "fixture-damage-step-quick" }] }],
+            absentLegalActionGroups: [absentEffectGroup(0, "fixture-damage-step-quick", 6)],
             logIncludes: ["Fixture damage-step quick resolved"],
           },
         }),
