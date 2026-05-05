@@ -62,6 +62,7 @@ function pushBreakEffect(session: DuelSession, hostState: LuaDuelOperationApiHos
   markLuaOperationTimingBoundary(session, hostState);
   pushDuelLog(session.state, "breakEffect", session.state.turnPlayer, undefined, "Effect operation break");
   raiseDuelEvent(session.state, "breakEffect");
+  if (hostState.activeContext) hostState.activeOperationMoved = true;
   return 0;
 }
 
@@ -76,6 +77,7 @@ function pushAdjustInstantly(L: unknown, session: DuelSession, hostState: LuaDue
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   markLuaOperationTimingBoundary(session, hostState);
   raiseDuelEvent(session.state, "adjust", card);
+  if (hostState.activeContext) hostState.activeOperationMoved = true;
   pushDuelLog(session.state, "adjust", card?.controller ?? session.state.turnPlayer, card?.name, "Instant adjust");
   return 0;
 }
@@ -84,6 +86,7 @@ function pushReadjust(session: DuelSession, hostState: LuaDuelOperationApiHostSt
   if (session.state.status === "ended") return 0;
   markLuaOperationTimingBoundary(session, hostState);
   raiseDuelEvent(session.state, "adjust");
+  if (hostState.activeContext) hostState.activeOperationMoved = true;
   pushDuelLog(session.state, "adjust", session.state.turnPlayer, undefined, "Readjust");
   return 0;
 }
@@ -100,6 +103,7 @@ function pushRaiseEvent(L: unknown, session: DuelSession, hostState: LuaDuelOper
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (card) raiseOperationEvent(session, eventName, card, eventCode, { ...payload, eventUids });
   }
+  if (eventUids.length > 0 && hostState.activeContext) hostState.activeOperationMoved = true;
   return 0;
 }
 
@@ -113,6 +117,7 @@ function pushRaiseSingleEvent(L: unknown, session: DuelSession, hostState: LuaDu
   if (card && eventName) {
     markLuaOperationTimingBoundary(session, hostState);
     raiseOperationEvent(session, eventName, card, eventCode, { ...payload, eventUids: [card.uid] });
+    if (hostState.activeContext) hostState.activeOperationMoved = true;
   }
   return 0;
 }

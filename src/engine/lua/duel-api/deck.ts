@@ -74,6 +74,7 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
     const drawUids = topDeckUids(session, player, count);
     if (drawUids.length > 0) markLuaOperationTimingBoundary(session, hostState);
     const drawn = drawDuelCards(session.state, player, count, "Lua draw");
+    if (drawn > 0 && hostState.activeContext) hostState.activeOperationMoved = true;
     setOperatedUids(hostState, drawUids.slice(0, drawn));
     lua.lua_pushinteger(state, drawn);
     return 1;

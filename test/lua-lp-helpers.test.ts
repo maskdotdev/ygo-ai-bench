@@ -248,6 +248,78 @@ describe("Lua LP helpers", () => {
     expect(session.state.players[1].lifePoints).toBe(7500);
   });
 
+  it("makes Lua optional when damage triggers miss timing after later event boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Damage Later Boundary Source", kind: "monster" },
+      { code: "300", name: "When Damage Watcher", kind: "monster" },
+      { code: "400", name: "If Damage Watcher", kind: "monster" },
+      { code: "500", name: "Dice Boundary Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 959, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "300", "400", "500"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local dice_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local e=Effect.CreateEffect(source)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp)
+        Duel.Damage(1, 500, REASON_EFFECT)
+        Duel.TossDice(0, 1)
+      end)
+      source:RegisterEffect(e)
+
+      local when_effect=Effect.CreateEffect(when_watcher)
+      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      when_effect:SetCode(EVENT_DAMAGE)
+      when_effect:SetRange(LOCATION_HAND)
+      when_effect:SetOperation(function(e,tp)
+        Debug.Message("when damage resolved")
+      end)
+      when_watcher:RegisterEffect(when_effect)
+
+      local if_effect=Effect.CreateEffect(if_watcher)
+      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      if_effect:SetCode(EVENT_DAMAGE)
+      if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      if_effect:SetRange(LOCATION_HAND)
+      if_effect:SetOperation(function(e,tp)
+        Debug.Message("if damage resolved")
+      end)
+      if_watcher:RegisterEffect(if_effect)
+
+      local dice_effect=Effect.CreateEffect(dice_watcher)
+      dice_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      dice_effect:SetCode(EVENT_TOSS_DICE)
+      dice_effect:SetRange(LOCATION_HAND)
+      dice_effect:SetOperation(function(e,tp)
+        Debug.Message("dice boundary resolved")
+      end)
+      dice_watcher:RegisterEffect(dice_effect)
+      `,
+      "damage-later-boundary-missed-timing.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1111");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1111", "lua-4-1150"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 }), expect.objectContaining({ eventName: "diceTossed", eventCode: 1150 })]),
+    );
+  });
+
   it("keeps deck and grave swap from mutating ended duels", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Post-End Deck", kind: "monster" },

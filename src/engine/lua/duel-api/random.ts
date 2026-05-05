@@ -46,6 +46,7 @@ function pushTossDice(L: unknown, session: DuelSession, hostState: LuaOperationT
   pushDuelLog(session.state, "tossDice", player === 1 ? 1 : 0, undefined, results.join(","));
   markLuaOperationTimingBoundary(session, hostState);
   collectDuelTriggerEffects(session.state, "diceTossed", undefined, { eventPlayer: normalizePlayer(player), eventValue: results.length });
+  if (hostState.activeContext) hostState.activeOperationMoved = true;
   for (const result of results) lua.lua_pushinteger(L, result);
   return results.length;
 }
@@ -77,6 +78,7 @@ function pushTossCoin(L: unknown, session: DuelSession, hostState: LuaOperationT
   pushDuelLog(session.state, "tossCoin", player === 1 ? 1 : 0, undefined, results.join(","));
   markLuaOperationTimingBoundary(session, hostState);
   collectDuelTriggerEffects(session.state, "coinTossed", undefined, { eventPlayer: normalizePlayer(player), eventValue: results.length });
+  if (hostState.activeContext) hostState.activeOperationMoved = true;
   for (const result of results) lua.lua_pushinteger(L, result);
   return results.length;
 }
@@ -109,6 +111,7 @@ function pushCallCoin(L: unknown, session: DuelSession, hostState: LuaOperationT
   pushDuelLog(session.state, "callCoin", player === 1 ? 1 : 0, undefined, `${call}/${result}`);
   markLuaOperationTimingBoundary(session, hostState);
   collectDuelTriggerEffects(session.state, "coinTossed", undefined, { eventPlayer: normalizePlayer(player), eventValue: 1 });
+  if (hostState.activeContext) hostState.activeOperationMoved = true;
   lua.lua_pushboolean(L, call === result);
   return 1;
 }

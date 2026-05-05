@@ -40,6 +40,7 @@ export function installDuelLpApi(L: unknown, session: DuelSession, hostState: Lu
       if (value > 0) {
         markLuaOperationTimingBoundary(session, hostState);
         collectDuelTriggerEffects(session.state, "lifePointCostPaid", undefined, { eventPlayer: player, eventValue: value });
+        if (hostState.activeContext) hostState.activeOperationMoved = true;
       }
     }
     return 0;
@@ -53,6 +54,7 @@ export function installDuelLpApi(L: unknown, session: DuelSession, hostState: Lu
     if (applied > 0 && session.state.status !== "ended") {
       markLuaOperationTimingBoundary(session, hostState);
       collectDuelTriggerEffects(session.state, "damageDealt", undefined, { eventPlayer: player, eventValue: applied, eventReason: reason });
+      if (hostState.activeContext) hostState.activeOperationMoved = true;
     }
     lua.lua_pushinteger(state, applied);
     return 1;
@@ -65,6 +67,7 @@ export function installDuelLpApi(L: unknown, session: DuelSession, hostState: Lu
     if (applied > 0) {
       markLuaOperationTimingBoundary(session, hostState);
       collectDuelTriggerEffects(session.state, "recoveredLifePoints", undefined, { eventPlayer: player, eventValue: applied });
+      if (hostState.activeContext) hostState.activeOperationMoved = true;
     }
     lua.lua_pushinteger(state, applied);
     return 1;
