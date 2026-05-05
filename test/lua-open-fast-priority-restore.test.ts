@@ -6,6 +6,86 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua open fast priority restore", () => {
+  it("alternates live fast-effect response priority after open quick effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "20100", name: "Lua Live Open Fast Starter", kind: "monster" },
+      { code: "20200", name: "Lua Live Turn Chain Fast", kind: "monster" },
+      { code: "20300", name: "Lua Live Opponent Chain Fast", kind: "monster" },
+      { code: "20400", name: "Lua Live Fast Filler", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c20100.lua") {
+          return `
+          c20100={}
+          function c20100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()==0 end)
+            e:SetOperation(function(e,tp) Debug.Message("live open fast starter resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c20200.lua") {
+          return `
+          c20200={}
+          function c20200.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCountLimit(1)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+            e:SetOperation(function(e,tp) Debug.Message("live turn chain fast resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c20300.lua") {
+          return `
+          c20300={}
+          function c20300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCountLimit(1)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+            e:SetOperation(function(e,tp) Debug.Message("live opponent chain fast resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 100, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["20100", "20200"] }, 1: { main: ["20300", "20400"] } });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(20100, source).ok).toBe(true);
+    expect(host.loadCardScript(20200, source).ok).toBe(true);
+    expect(host.loadCardScript(20300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const starter = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("20100"));
+    expect(starter).toMatchObject({ player: 0, windowKind: "open" });
+    const opened = applyAndAssert(session, starter!);
+    expect(opened.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(getDuelLegalActions(session, 0)).toEqual([]);
+
+    const opponentQuick = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid.includes("20300"));
+    expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    const opponentChained = applyAndAssert(session, opponentQuick!);
+    expect(opponentChained.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+
+    const turnQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("20200"));
+    expect(turnQuick).toMatchObject({ player: 0, windowKind: "chainResponse" });
+    const turnChained = applyAndAssert(session, turnQuick!);
+    expect(turnChained.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(host.messages).toEqual(["live turn chain fast resolved", "live opponent chain fast resolved", "live open fast starter resolved"]);
+  });
+
   it("activates restored open fast effects and rejects stale restored open actions", () => {
     const cards: DuelCardData[] = [
       { code: "18100", name: "Lua Restored Open Fast Source", kind: "monster" },
