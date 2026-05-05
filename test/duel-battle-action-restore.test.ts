@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { cards } from "./full-duel-engine-fixtures.js";
@@ -22,6 +22,7 @@ describe("battle action restore", () => {
     expect(restored.state.currentAttack).toMatchObject({ attackerUid: attacker!.uid });
     expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", responsePlayer: 1 });
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
   });
 
   it("restores targeted attack legal actions and applies the restored action", () => {
@@ -44,6 +45,7 @@ describe("battle action restore", () => {
     expect(restored.state.currentAttack).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
     expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", responsePlayer: 1 });
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
   });
 });
 
