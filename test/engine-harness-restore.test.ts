@@ -261,7 +261,21 @@ describe("EDOPro compatibility harness snapshot restore", () => {
             { type: "selectOption", player: 1, promptId: "fixture-option-prompt", option: 2, windowKind: "prompt", count: 1 },
             { type: "selectOption", player: 1, promptId: "fixture-option-prompt", option: 4, windowKind: "prompt", count: 1 },
           ],
+          legalActionGroups: [
+            {
+              player: 1,
+              label: "Prompt",
+              windowKind: "prompt",
+              actions: [
+                { type: "selectOption", player: 1, promptId: "fixture-option-prompt", option: 2, count: 1 },
+                { type: "selectOption", player: 1, promptId: "fixture-option-prompt", option: 4, count: 1 },
+              ],
+            },
+          ],
           absentLegalActions: [{ type: "selectOption", player: 0, promptId: "fixture-option-prompt" }],
+          absentLegalActionGroups: [
+            { player: 0, label: "Prompt", windowKind: "prompt", actions: [{ type: "selectOption", player: 0, promptId: "fixture-option-prompt" }] },
+          ],
         },
         responses: [
           makeScriptedStep(makeResponseSelector("selectOption", 1, { promptId: "fixture-option-prompt", option: 4 }), {
@@ -270,6 +284,9 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               source: "edopro",
               waitingFor: 0,
               absentLegalActions: [{ type: "selectOption", player: 1, promptId: "fixture-option-prompt" }],
+              absentLegalActionGroups: [
+                { player: 1, label: "Prompt", windowKind: "prompt", actions: [{ type: "selectOption", player: 1, promptId: "fixture-option-prompt" }] },
+              ],
               logIncludes: ["Selected option 4"],
             },
           }),
@@ -308,7 +325,21 @@ describe("EDOPro compatibility harness snapshot restore", () => {
             { type: "selectYesNo", player: 0, promptId: "fixture-yes-no-prompt", yes: true, windowKind: "prompt", count: 1 },
             { type: "selectYesNo", player: 0, promptId: "fixture-yes-no-prompt", yes: false, windowKind: "prompt", count: 1 },
           ],
+          legalActionGroups: [
+            {
+              player: 0,
+              label: "Prompt",
+              windowKind: "prompt",
+              actions: [
+                { type: "selectYesNo", player: 0, promptId: "fixture-yes-no-prompt", yes: true, count: 1 },
+                { type: "selectYesNo", player: 0, promptId: "fixture-yes-no-prompt", yes: false, count: 1 },
+              ],
+            },
+          ],
           absentLegalActions: [{ type: "selectYesNo", player: 1, promptId: "fixture-yes-no-prompt" }],
+          absentLegalActionGroups: [
+            { player: 1, label: "Prompt", windowKind: "prompt", actions: [{ type: "selectYesNo", player: 1, promptId: "fixture-yes-no-prompt" }] },
+          ],
         },
         responses: [
           makeScriptedStep(makeResponseSelector("selectYesNo", 0, { promptId: "fixture-yes-no-prompt", yes: true }), {
@@ -317,6 +348,9 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               source: "edopro",
               waitingFor: 1,
               absentLegalActions: [{ type: "selectYesNo", player: 0, promptId: "fixture-yes-no-prompt" }],
+              absentLegalActionGroups: [
+                { player: 0, label: "Prompt", windowKind: "prompt", actions: [{ type: "selectYesNo", player: 0, promptId: "fixture-yes-no-prompt" }] },
+              ],
               logIncludes: ["Selected yes"],
             },
           }),
@@ -377,6 +411,10 @@ describe("EDOPro compatibility harness snapshot restore", () => {
                 { type: "activateTrigger", player: 0, windowKind: "triggerBucket", effectId: "fixture-normal-summon-trigger", triggerBucket: "turnOptional", count: 1 },
                 { type: "declineTrigger", player: 0, windowKind: "triggerBucket", effectId: "fixture-normal-summon-trigger", triggerBucket: "turnOptional", count: 1 },
               ],
+              legalActionGroups: [
+                { player: 0, label: "Trigger Activations", windowKind: "triggerBucket", actions: [{ type: "activateTrigger", player: 0, effectId: "fixture-normal-summon-trigger", triggerBucket: "turnOptional", count: 1 }] },
+                { player: 0, label: "Trigger Declines", windowKind: "triggerBucket", actions: [{ type: "declineTrigger", player: 0, effectId: "fixture-normal-summon-trigger", triggerBucket: "turnOptional", count: 1 }] },
+              ],
             },
           }),
         ],
@@ -397,6 +435,10 @@ describe("EDOPro compatibility harness snapshot restore", () => {
           legalActions: [
             { type: "activateTrigger", player: 0, windowKind: "triggerBucket", effectId: "fixture-normal-summon-trigger", triggerBucket: "turnOptional", count: 1 },
             { type: "declineTrigger", player: 0, windowKind: "triggerBucket", effectId: "fixture-normal-summon-trigger", triggerBucket: "turnOptional", count: 1 },
+          ],
+          legalActionGroups: [
+            { player: 0, label: "Trigger Activations", windowKind: "triggerBucket", actions: [{ type: "activateTrigger", player: 0, effectId: "fixture-normal-summon-trigger", triggerBucket: "turnOptional", count: 1 }] },
+            { player: 0, label: "Trigger Declines", windowKind: "triggerBucket", actions: [{ type: "declineTrigger", player: 0, effectId: "fixture-normal-summon-trigger", triggerBucket: "turnOptional", count: 1 }] },
           ],
         },
       },
@@ -426,12 +468,18 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               source: "edopro",
               positionsChanged: [],
               legalActions: [{ type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", count: 1 }],
+              legalActionGroups: [
+                { player: 0, label: "Actions", windowKind: "open", actions: [{ type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", count: 1 }] },
+              ],
               cards: [{ uid: "p0-deck-100-0", location: "monsterZone", position: "faceUpAttack" }],
             },
             after: {
               source: "edopro",
               positionsChanged: ["p0-deck-100-0"],
               absentLegalActions: [{ type: "changePosition", player: 0, code: "100", location: "monsterZone" }],
+              absentLegalActionGroups: [
+                { player: 0, label: "Actions", windowKind: "open", actions: [{ type: "changePosition", player: 0, code: "100", location: "monsterZone" }] },
+              ],
               cards: [{ uid: "p0-deck-100-0", location: "monsterZone", position: "faceUpDefense" }],
               log: [
                 { action: "draw", player: 0, card: "Card 100" },
@@ -511,6 +559,9 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               chainLimits: [{ registryKey: "fixture-chain-limit:chain limit snapshot fixture:fixture-limit-source:p0-deck-100-0", untilChainEnd: true }],
               chain: [{ player: 0, effectId: "fixture-limit-source" }],
               legalActions: [{ type: "activateEffect", player: 1, effectId: "fixture-allowed-quick", windowKind: "chainResponse", count: 1 }],
+              legalActionGroups: [
+                { player: 1, label: "Effects", windowKind: "chainResponse", actions: [{ type: "activateEffect", player: 1, effectId: "fixture-allowed-quick", count: 1 }] },
+              ],
             },
           }),
           makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-allowed-quick" })),
@@ -567,6 +618,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               shuffleCheckDisabled: false,
               chainLimits: [],
               legalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", count: 1 }],
+              legalActionGroups: [{ player: 0, label: "Summons", windowKind: "open", actions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", count: 1 }] }],
               locations: { hand: ["100"] },
               locationCounts: { monsterZone: { "100": 0 } },
               cards: [{ uid: "p0-deck-100-0", location: "hand", controller: 0 }],
@@ -600,7 +652,9 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               shuffleCheckDisabled: false,
               chainLimits: [],
               absentLegalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand" }],
+              absentLegalActionGroups: [{ player: 0, label: "Summons", windowKind: "open", actions: [{ type: "normalSummon", player: 0, code: "100", location: "hand" }] }],
               legalActions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+              legalActionGroups: [turnGroup(1)],
               locations: { monsterZone: ["100"] },
               locationCounts: { hand: { "100": 0 }, monsterZone: { "100": 1 } },
               cards: [{ uid: "p0-deck-100-0", location: "monsterZone", controller: 0, position: "faceUpAttack" }],
