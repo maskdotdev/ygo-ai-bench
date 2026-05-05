@@ -3,6 +3,7 @@ import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, load
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua custom events", () => {
   it("matches raised EVENT_CUSTOM codes by their full numeric event code", () => {
@@ -58,5 +59,62 @@ describe("Lua custom events", () => {
     expect(applyResponse(session, trigger!).ok).toBe(true);
     expect(host.messages).toContain("custom check true/false");
     expect(host.messages).toContain("custom trigger 100");
+  });
+
+  it("applies restored Lua custom-event triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Custom Target", kind: "monster" },
+      { code: "200", name: "Restore Custom Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c200.lua") return undefined;
+        return `
+        c200={}
+        function c200.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_TRIGGER_O)
+          e:SetCode(EVENT_CUSTOM+7)
+          e:SetRange(LOCATION_HAND)
+          e:SetOperation(function(e,tp,eg)
+            Debug.Message("restored custom trigger " .. eg:GetFirst():GetCode())
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 204, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const raised = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      Duel.RaiseEvent(target,EVENT_CUSTOM+7,nil,REASON_EFFECT,0,0,0)
+      `,
+      "custom-event-restore-raise.lua",
+    );
+    expect(raised.ok, raised.error).toBe(true);
+
+    const eventCode = 0x10000000 + 7;
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    expect(session.state.pendingTriggers).toHaveLength(1);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "customEvent", eventCode, eventCardUid: target!.uid });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers).toHaveLength(1);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "customEvent", eventCode, eventCardUid: target!.uid });
+
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored custom trigger 100");
   });
 });
