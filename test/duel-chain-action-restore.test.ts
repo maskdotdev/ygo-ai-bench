@@ -13,6 +13,10 @@ describe("chain action restore", () => {
     const pass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     expect(pass).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse" });
+    expect(chainResponseGroups(restored, 1)).toEqual([
+      { label: "Effects", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["activateEffect"] },
+      { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["passChain"] },
+    ]);
 
     const result = applyResponse(restored, pass!);
     expect(result.ok).toBe(true);
