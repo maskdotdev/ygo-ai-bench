@@ -220,6 +220,14 @@ describe("Lua open fast priority restore", () => {
     const quickResult = applyLuaRestoreResponse(restored, quick!);
     expect(quickResult.ok, quickResult.error).toBe(true);
     expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+
+    const staleQuick = applyLuaRestoreResponse(restored, quick!);
+    expect(staleQuick.ok).toBe(false);
+    expect(staleQuick.error).toContain("Response is not currently legal");
+    expect(staleQuick.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleQuick.legalActions);
+
     const finalPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(finalPass).toBeDefined();
     expect(applyLuaRestoreResponse(restored, finalPass!).ok).toBe(true);
