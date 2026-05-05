@@ -93,9 +93,7 @@ describe("Lua special summon procedure restore", () => {
 
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    assertFailedRestoreSurface(restored, result);
     expect(restored.host.messages).toContain("restored rollback release cost 0/1");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
@@ -154,9 +152,7 @@ describe("Lua special summon procedure restore", () => {
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("summon procedure is no longer in range");
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    assertFailedRestoreSurface(restored, result);
     expect(restored.host.messages).toContain("restored source moved before summon 1/16");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.log.some((entry) => entry.action === "sendToGraveyard" && entry.card === "Self Moving Procedure Source")).toBe(false);
@@ -230,9 +226,7 @@ describe("Lua special summon procedure restore", () => {
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("cannot be Special Summoned");
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    assertFailedRestoreSurface(restored, result);
     expect(restored.host.messages).toContain("restored procedure filled zone 1/0");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === filler!.uid)).toMatchObject({ location: "hand" });
@@ -322,9 +316,7 @@ describe("Lua special summon procedure restore", () => {
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("restored procedure material move count mismatch");
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    assertFailedRestoreSurface(restored, result);
     expect(restored.host.messages).toContain("restored partial material moves 1/2");
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === firstMaterial!.uid)).toMatchObject({ location: "hand" });
@@ -332,3 +324,9 @@ describe("Lua special summon procedure restore", () => {
     expect(restored.session.state.log.some((entry) => entry.action === "sendToGraveyard" && entry.card === "First Partial Material")).toBe(false);
   });
 });
+
+function assertFailedRestoreSurface(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: ReturnType<typeof applyLuaRestoreResponse>): void {
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+}
