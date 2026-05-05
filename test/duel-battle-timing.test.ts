@@ -16,9 +16,9 @@ describe("duel battle timing", () => {
     const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
     expect(attacker).toBeTruthy();
     specialSummonDuelCard(session.state, attacker!.uid, 0);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!).ok).toBe(true);
     expect(session.state.battleWindow).toMatchObject({ kind: "startDamageStep", attackerUid: attacker!.uid, responsePlayer: 1 });
 
@@ -80,9 +80,9 @@ describe("duel battle timing", () => {
       },
     });
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === target!.uid)!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "remove-target-before-replay-restore")!).ok).toBe(true);
     expect(passCurrentChainIfPending(session)).toBe(true);
     while (session.state.battleWindow?.kind !== "replayDecision") {
@@ -137,9 +137,9 @@ describe("duel battle timing", () => {
       range: ["hand"],
     }));
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!);
     expect(session.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", attackerUid: attacker!.uid, responsePlayer: 0 });
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
@@ -189,7 +189,7 @@ describe("duel battle timing", () => {
       reset: { flags: 0x40000000 | 0x10 },
     }));
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
       "restore-battle-step-reset": restoreBattleStepReset,
     });
@@ -218,7 +218,7 @@ describe("duel battle timing", () => {
     specialSummonDuelCard(session.state, attacker!.uid, 0);
     session.state.flagEffects.push({ ownerType: "player", ownerId: "0", code: 609, reset: 0x40000000 | 0x10, property: 0, value: 1, turn: session.state.turn });
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([609]);
 
@@ -272,7 +272,7 @@ describe("duel battle timing", () => {
       { ownerType: "player", ownerId: "1", code: 613, reset: battleStepOpponentTurnReset, property: 0, value: 1, turn: session.state.turn },
     );
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
       "turn-player-opponent-turn-battle-step-reset": restoreResetEffect,
       "non-turn-player-opponent-turn-battle-step-reset": restoreResetEffect,
@@ -327,8 +327,8 @@ describe("duel battle timing", () => {
       reset: { flags: 0x40000000 | 0x40 },
     }));
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!);
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
       "restore-damage-step-reset": restoreResetEffect,
       "restore-damage-calc-reset": restoreResetEffect,
@@ -363,8 +363,8 @@ describe("duel battle timing", () => {
       { ownerType: "player", ownerId: "0", code: 611, reset: 0x40000000 | 0x40, property: 0, value: 1, turn: session.state.turn },
     );
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!);
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([610, 611]);
 
@@ -409,8 +409,8 @@ describe("duel battle timing", () => {
       range: ["hand"],
     }));
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!);
     for (const expectedKind of ["attackNegationResponse", "attackNegationResponse", "startDamageStep", "startDamageStep", "beforeDamageCalculation", "beforeDamageCalculation", "duringDamageCalculation", "duringDamageCalculation"] as const) {
       expect(session.state.battleWindow?.kind).toBe(expectedKind);
       const player = session.state.battleWindow!.responsePlayer;
@@ -469,8 +469,8 @@ describe("duel battle timing", () => {
       range: ["hand"],
     }));
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!);
     for (const expectedKind of [
       "attackNegationResponse",
       "attackNegationResponse",
@@ -558,9 +558,9 @@ describe("duel battle timing", () => {
       });
     }
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!);
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!).ok).toBe(true);
 
     expect(session.state.battleWindow?.kind).toBe("startDamageStep");
@@ -641,26 +641,33 @@ function expectResultLegalActions(session: ReturnType<typeof createDuel>, result
   expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }
 
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const result = applyResponse(session, action);
+  expect(result.ok).toBe(true);
+  expectResultLegalActions(session, result);
+  return result;
+}
+
 function passBattleWindow(session: ReturnType<typeof createDuel>): void {
   const firstPlayer = session.state.waitingFor ?? session.state.turnPlayer;
   const firstPass = getDuelLegalActions(session, firstPlayer).find((action) => action.type === "passAttack");
   expect(firstPass).toBeTruthy();
-  expect(applyResponse(session, firstPass!).ok).toBe(true);
+  applyAndAssert(session, firstPass!);
   const secondPlayer = session.state.waitingFor ?? session.state.turnPlayer;
   const secondPass = getDuelLegalActions(session, secondPlayer).find((action) => action.type === "passAttack");
   expect(secondPass).toBeTruthy();
-  expect(applyResponse(session, secondPass!).ok).toBe(true);
+  applyAndAssert(session, secondPass!);
 }
 
 function passDamageWindow(session: ReturnType<typeof createDuel>): void {
   const firstPlayer = session.state.waitingFor ?? session.state.turnPlayer;
   const firstPass = getDuelLegalActions(session, firstPlayer).find((action) => action.type === "passDamage");
   expect(firstPass).toBeTruthy();
-  expect(applyResponse(session, firstPass!).ok).toBe(true);
+  applyAndAssert(session, firstPass!);
   const secondPlayer = session.state.waitingFor ?? session.state.turnPlayer;
   const secondPass = getDuelLegalActions(session, secondPlayer).find((action) => action.type === "passDamage");
   expect(secondPass).toBeTruthy();
-  expect(applyResponse(session, secondPass!).ok).toBe(true);
+  applyAndAssert(session, secondPass!);
 }
 
 function passCurrentChainIfPending(session: ReturnType<typeof createDuel>): boolean {
@@ -668,5 +675,6 @@ function passCurrentChainIfPending(session: ReturnType<typeof createDuel>): bool
   const player = session.state.waitingFor ?? session.state.turnPlayer;
   const pass = getDuelLegalActions(session, player).find((action) => action.type === "passChain");
   expect(pass).toBeTruthy();
-  return applyResponse(session, pass!).ok;
+  applyAndAssert(session, pass!);
+  return true;
 }
