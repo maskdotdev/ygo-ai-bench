@@ -18,7 +18,7 @@ The engine already has useful surfaces to build on:
 - Battle state exists across `currentAttack`, `pendingBattle`, `battleStep`, `attackPasses`, `damagePasses`, and battle damage overrides.
 - Legal actions are routed through `getLegalActions()` and `applyResponse()`, with pending prompts, chain links, pending triggers, and pending battle windows already serialized; grouped chain-response actions preserve UI-facing window IDs/kinds, and restored prompt response actions are pinned to public prompt window IDs/kinds with stale restored prompt choices rejected after resolution.
 - The current battle implementation covers attack declaration, simple attack response windows, damage and damage calculation passes, damage override effects, attack negation, target/attacker leaving before damage, and basic battle destruction. Battle fixtures now pin explicit `battleWindow` state, matching `waitingFor` response players, window IDs, grouped legal actions, battle-window quick-effect action stamps, snapshot restore, stale restored pass rejection, and restored Lua battle trigger windows with stale replay rejection.
-- Trigger collection now assigns explicit turn-player/opponent mandatory/optional buckets, exposes active trigger buckets through public state and snapshots, and derives `triggerOrderPrompt` state for active same-bucket trigger ordering. SEGOC, same-bucket ordering, trigger-order restore, Lua-created trigger buckets, registry-backed Lua trigger timing restore, Lua chain-limit response-window coverage, restored Lua trigger-timing response windows with stale replay rejection, restored engine/Lua trigger-bucket response windows, restored engine/Lua chain-response pass and quick-effect windows, and cross-player missed timing have fixture coverage. It still needs broader missed timing coverage, exact fast effect windows, and UI consumption of engine-owned ordering prompts.
+- Trigger collection now assigns explicit turn-player/opponent mandatory/optional buckets, exposes active trigger buckets through public state and snapshots, and derives `triggerOrderPrompt` state for active same-bucket trigger ordering. SEGOC, same-bucket ordering, trigger-order restore, Lua-created trigger buckets, registry-backed Lua trigger timing restore, Lua chain-limit response-window coverage, restored known/named/single-card Lua chain-limit predicates, restored Lua trigger-timing response windows with stale replay rejection, restored engine/Lua trigger-bucket response windows, restored engine/Lua chain-response pass and quick-effect windows, and cross-player missed timing have fixture coverage. It still needs broader missed timing coverage, exact fast effect windows, arbitrary Lua chain-limit closure restore, and UI consumption of engine-owned ordering prompts.
 - Summon helpers exist for Normal, Tribute, Flip, Fusion, Synchro, Xyz, Link, Ritual, Pendulum, and summon procedures, with restored core summon, Lua summon procedure, summon-attempt trigger, summon-negated trigger, Pendulum Summon, full-zone Extra Deck material, and failed material/release rollback actions pinned to public window IDs/kinds; failed restored rollback groups are stamped for UI consumption, and stale restored core summon, procedure, attempt-trigger, negated-trigger, Pendulum Summon, and Extra Deck summon responses are rejected after the window advances. The helpers are still simplified compared with EDOPro procedure helpers.
 - Lua API coverage is broad enough for smoke probing, but should continue to be driven by failing real card scripts and fixture needs.
 
@@ -124,7 +124,7 @@ Deliverables:
 - Broaden missed timing coverage for "when optional" triggers after multi-step effects.
 - Handle simultaneous events and SEGOC ordering consistently.
 - Revisit fast effect response player selection after every action and chain resolution.
-- Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today. Lua-created one-chain and until-chain-end predicate limits currently fail closed by restoring deny-all raw guards without registry keys, hiding every Lua restore legal-action surface, and reporting explicit missing chain-limit registry diagnostics; the remaining parity work is to rebuild or serialize those Lua predicates without re-running costs or target selection.
+- Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today, and Lua-created predicates now restore when they are known globals such as `aux.TRUE`/`aux.FALSE`, named card-table functions such as `s.chlimit`, or single-card closures that block the captured card's own handler. Arbitrary Lua-created one-chain and until-chain-end predicate closures still fail closed by restoring deny-all raw guards without registry keys, hiding every Lua restore legal-action surface, and reporting explicit missing chain-limit registry diagnostics; the remaining parity work is to rebuild or serialize those broader Lua predicates without re-running costs or target selection.
 
 Implementation files likely touched:
 
@@ -236,7 +236,7 @@ Deliverables:
   - Pendulum
   - Ritual and Fusion helpers
 - Improve label object and group behavior, operation info, hints, selection prompts, field IDs, and query helpers.
-- Rebuild transient Lua callback state needed for active chain-limit predicates during snapshot restore, or replace the current Lua function-ref representation with a serializable predicate descriptor when the upstream script shape permits it.
+- Continue replacing transient Lua function-ref chain-limit predicates with serializable descriptors when the upstream script shape permits it; known globals, named card-table predicates, and single-card handler-exclusion closures are covered, while broader numeric-mask and arbitrary closure predicates still need descriptor work.
 - Add battle helper APIs after Phase 1 so they map to real battle sub-windows.
 
 Implementation files likely touched:
@@ -252,7 +252,7 @@ Acceptance gates:
 - Each new API has a small unit test plus at least one real-script or fixture motivation.
 - Deck probes report fewer missing APIs without masking semantic failures.
 - Lua prompt/selection APIs round-trip through browser-safe serialized prompts.
-- Lua `Duel.SetChainLimit*` restore should keep the existing fail-closed missing-registry diagnostics and deny-all raw restore guards until predicate restoration can preserve legal actions after reconnect.
+- Lua `Duel.SetChainLimit*` restore should keep fail-closed missing-registry diagnostics and deny-all raw restore guards for predicate shapes that do not yet have a serializable descriptor, so reconnects never expose illegal chain responses.
 
 ## Phase 6: App-Facing Gameplay
 
