@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua raised event payloads", () => {
@@ -27,6 +27,14 @@ describe("Lua raised event payloads", () => {
       const passResult = applyResponse(session, pass);
       expect(passResult.ok, passResult.error).toBe(true);
     }
+  }
+
+  function activateFirstRestoredTrigger(restored: ReturnType<typeof restoreDuelWithLuaScripts>) {
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    const result = applyLuaRestoreResponse(restored, trigger!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   }
 
   it("preserves Duel.RaiseEvent callback payloads through trigger checks and resolution", () => {
@@ -251,8 +259,9 @@ describe("Lua raised event payloads", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
-    activateFirstTrigger(restored.session);
+    activateFirstRestoredTrigger(restored);
     expect(restored.host.messages).toContain("restored operation payload 1/99/64/1");
   });
 
@@ -314,8 +323,9 @@ describe("Lua raised event payloads", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
-    activateFirstTrigger(restored.session);
+    activateFirstRestoredTrigger(restored);
     expect(restored.host.messages).toContain("restored group operation 2/100/1/22");
     expect(restored.host.messages).toContain("restored group chain 2/100/1/22");
     expect(restored.host.messages).toContain("restored group check true/2/1/22");
@@ -387,8 +397,9 @@ describe("Lua raised event payloads", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
-    activateFirstTrigger(restored.session);
+    activateFirstRestoredTrigger(restored);
     expect(restored.host.messages).toContain("restored related operation 1/66/64/1/654");
     expect(restored.host.messages).toContain("restored related chain event 100/1/66/64/1/654");
   });
@@ -457,8 +468,9 @@ describe("Lua raised event payloads", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
-    activateFirstTrigger(restored.session);
+    activateFirstRestoredTrigger(restored);
     expect(restored.host.messages).toContain("restored single related operation 1/33/64/1/765");
   });
 });
