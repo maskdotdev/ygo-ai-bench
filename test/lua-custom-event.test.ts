@@ -56,7 +56,11 @@ describe("Lua custom events", () => {
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    const response = applyResponse(session, trigger!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(host.messages).toContain("custom check true/false");
     expect(host.messages).toContain("custom trigger 100");
   });
