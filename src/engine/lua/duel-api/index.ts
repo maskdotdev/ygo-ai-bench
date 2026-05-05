@@ -46,7 +46,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   lua.lua_newtable(L);
   installDuelTurnApi(L, session);
   installDuelPromptApi(L, session, hostState);
-  installDuelBattleApi(L, session);
+  installDuelBattleApi(L, session, hostState);
   installDuelChainApi(L, session, hostState);
   installDuelActivityApi(L, session);
   installDuelLpApi(L, session, hostState);

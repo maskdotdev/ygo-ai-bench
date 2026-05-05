@@ -4,12 +4,17 @@ import { recordBattledPair } from "#duel/battle.js";
 import { clearBattleWindowState, openBattleWindowState } from "#duel/battle-window-state.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { pushGroupTable } from "#lua/group-api.js";
-import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installDuelBattleApi(L: unknown, session: DuelSession): void {
+export interface LuaDuelBattleApiHostState {
+  activeContext?: DuelEffectContext | undefined;
+}
+
+export function installDuelBattleApi(L: unknown, session: DuelSession, hostState: LuaDuelBattleApiHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const attackerUid = currentBattle(session)?.attackerUid;
     if (!attackerUid) {
@@ -71,7 +76,9 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
       lua.lua_pushboolean(state, false);
       return 1;
     }
-    lua.lua_pushboolean(state, negateDuelAttack(session.state));
+    const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+    const payload = luaEffectReasonPayload(hostState, 0x40, reasonPlayer);
+    lua.lua_pushboolean(state, negateDuelAttack(session.state, reasonPlayer, payload));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("NegateAttack"));
