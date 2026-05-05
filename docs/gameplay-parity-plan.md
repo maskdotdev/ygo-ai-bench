@@ -18,7 +18,7 @@ The engine already has useful surfaces to build on:
 - Battle state exists across `currentAttack`, `pendingBattle`, `battleStep`, `attackPasses`, `damagePasses`, and battle damage overrides.
 - Legal actions are routed through `getLegalActions()` and `applyResponse()`, with pending prompts, chain links, pending triggers, and pending battle windows already serialized.
 - The current battle implementation covers attack declaration, simple attack response windows, damage and damage calculation passes, damage override effects, attack negation, target/attacker leaving before damage, and basic battle destruction.
-- Trigger collection now assigns explicit turn-player/opponent mandatory/optional buckets, exposes active trigger buckets through public state and snapshots, and has SEGOC fixture coverage for bucket order. It still needs richer same-bucket ordering prompts, broader missed timing coverage, and exact fast effect windows.
+- Trigger collection now assigns explicit turn-player/opponent mandatory/optional buckets, exposes active trigger buckets through public state and snapshots, and derives `triggerOrderPrompt` state for active same-bucket trigger ordering. SEGOC, same-bucket ordering, trigger-order restore, Lua-created trigger buckets, and cross-player missed timing have fixture coverage. It still needs broader missed timing coverage, exact fast effect windows, and UI consumption of engine-owned ordering prompts.
 - Summon helpers exist for Normal, Tribute, Flip, Fusion, Synchro, Xyz, Link, Ritual, and summon procedures, but they are simplified compared with EDOPro procedure helpers.
 - Lua API coverage is broad enough for smoke probing, but should continue to be driven by failing real card scripts and fixture needs.
 
@@ -120,8 +120,8 @@ Deliverables:
   - non-turn player mandatory
   - turn player optional
   - non-turn player optional
-- Add ordering prompts for buckets with multiple same-player triggers instead of relying on registration order.
-- Track missed timing for "when optional" triggers after multi-step effects.
+- Keep deriving ordering prompt state for buckets with multiple same-player triggers instead of relying on registration order, and drive UI ordering from that engine-owned prompt state.
+- Broaden missed timing coverage for "when optional" triggers after multi-step effects.
 - Handle simultaneous events and SEGOC ordering consistently.
 - Revisit fast effect response player selection after every action and chain resolution.
 - Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today. Lua-created predicate limits currently fail closed with explicit missing chain-limit registry diagnostics; the remaining parity work is to rebuild or serialize those Lua predicates without re-running costs or target selection.
@@ -145,7 +145,7 @@ Acceptance gates:
 - Optional triggers can be ordered or declined in legal bucket order.
 - Simultaneous trigger fixtures match EDOPro-observed chains.
 - Missed timing fixtures distinguish "when optional" from "if optional".
-- Snapshot restore preserves pending trigger buckets and ordering prompts.
+- Snapshot restore preserves pending trigger buckets and derived ordering prompt state.
 - Snapshot restore preserves or explicitly reports active chain-limit predicates so reconnects cannot silently expose illegal chain responses.
 - Existing trigger bucket tests and SEGOC fixtures should continue to assert explicit bucket state, grouped legal actions, and snapshot restore behavior.
 
