@@ -245,6 +245,44 @@ describe("Lua LP helpers", () => {
     expect(session.state.pendingTriggers).toEqual([]);
   });
 
+  it("keeps deck top and bottom movement helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Post-End Move A", kind: "monster" },
+      { code: "200", name: "Post-End Move B", kind: "monster" },
+      { code: "300", name: "Post-End Move C", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 958, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const beforeOrder = session.state.cards
+      .filter((card) => card.location === "deck")
+      .sort((left, right) => left.sequence - right.sequence)
+      .map((card) => card.code);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Debug.Message("top " .. Duel.MoveToDeckTop(2, 0))
+      Debug.Message("bottom " .. Duel.MoveToDeckBottom(1, 0))
+      Debug.Message("operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "ended-deck-top-bottom-noop.lua",
+    );
+
+    const afterOrder = session.state.cards
+      .filter((card) => card.location === "deck")
+      .sort((left, right) => left.sequence - right.sequence)
+      .map((card) => card.code);
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["top 0", "bottom 0", "operated 0"]);
+    expect(afterOrder).toEqual(beforeOrder);
+    expect(session.state.pendingTriggers).toEqual([]);
+  });
+
   it("clears pending actors when LP loss ends the duel", () => {
     const session = createDuel({ seed: 951, startingHandSize: 0 });
     loadDecks(session, {

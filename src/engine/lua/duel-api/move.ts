@@ -451,6 +451,11 @@ function pushReturnToGrave(L: unknown, session: DuelSession, hostState: LuaDuelM
 }
 
 function pushMoveToDeckBottom(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  if (session.state.status === "ended") {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const moved = lua.lua_isnumber(L, 1) ? moveDecktopCardsToBottom(L, session) : moveCardsToDeckBottom(L, session, hostState);
   setOperatedUids(hostState, moved);
   lua.lua_pushinteger(L, moved.length);
@@ -458,6 +463,11 @@ function pushMoveToDeckBottom(L: unknown, session: DuelSession, hostState: LuaDu
 }
 
 function pushMoveToDeckTop(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  if (session.state.status === "ended") {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const moved = lua.lua_isnumber(L, 1) ? moveDecktopCardsToTop(L, session) : moveCardsToDeckTop(L, session, hostState);
   setOperatedUids(hostState, moved);
   lua.lua_pushinteger(L, moved.length);
