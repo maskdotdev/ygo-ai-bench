@@ -337,8 +337,16 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
   const targetPlayer = readOptionalPlayer(L, 3);
   const destination = readFieldDestination(L, 4);
   const requestedPosition = lua.lua_isnumber(L, 5) ? positionFromMask(lua.lua_tointeger(L, 5)) : undefined;
+  const zoneMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : undefined;
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-  if (!uid || !card || targetPlayer === undefined || !destination || !hasZoneSpace(session.state, targetPlayer, destination) || !canMoveDuelCardToLocation(session.state, uid, destination, duelReason.effect)) {
+  if (
+    !uid ||
+    !card ||
+    targetPlayer === undefined ||
+    !destination ||
+    !hasOpenFieldZone(session, targetPlayer, destination, zoneMask, uid) ||
+    !canMoveDuelCardToLocation(session.state, uid, destination, duelReason.effect)
+  ) {
     setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
     return 1;
@@ -348,6 +356,7 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
   try {
     const moved = moveDuelCardWithRedirects(session.state, uid, destination, targetPlayer, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
     if (requestedPosition) applyLuaMovePosition(moved, requestedPosition);
+    applyFieldZoneMask(session, moved, targetPlayer, destination, zoneMask);
     const changed = didMove(moved, before);
     setOperatedUids(hostState, changed ? [uid] : []);
     finishLuaOperationMoveStep(hostState, changed);
@@ -359,6 +368,41 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
     lua.lua_pushinteger(L, 0);
     return 1;
   }
+}
+
+function hasOpenFieldZone(session: DuelSession, player: PlayerId, destination: "monsterZone" | "spellTrapZone", zoneMask: number | undefined, movingUid: string): boolean {
+  if (destination === "monsterZone") return hasOpenMonsterZone(session, player, zoneMask);
+  const sequence = firstSpellTrapZoneMaskSequence(session, player, zoneMask, movingUid);
+  if (zoneMask !== undefined && zoneMask !== 0) return sequence !== undefined;
+  return hasZoneSpace(session.state, player, destination);
+}
+
+function applyFieldZoneMask(
+  session: DuelSession,
+  card: DuelCardInstance,
+  player: PlayerId,
+  destination: "monsterZone" | "spellTrapZone",
+  zoneMask: number | undefined,
+): void {
+  if (destination === "monsterZone") {
+    applyMonsterZoneMask(session, card, player, zoneMask);
+    return;
+  }
+  const sequence = firstSpellTrapZoneMaskSequence(session, player, zoneMask, card.uid);
+  if (sequence !== undefined) card.sequence = sequence;
+}
+
+function firstSpellTrapZoneMaskSequence(session: DuelSession, player: PlayerId, zoneMask: number | undefined, movingUid: string): number | undefined {
+  if (zoneMask === undefined || zoneMask === 0) return undefined;
+  const occupied = new Set(
+    session.state.cards
+      .filter((card) => card.controller === player && card.location === "spellTrapZone" && card.uid !== movingUid)
+      .map((card) => card.sequence),
+  );
+  for (let sequence = 0; sequence < 5; sequence += 1) {
+    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) return sequence;
+  }
+  return undefined;
 }
 
 function pushActivateFieldSpell(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {

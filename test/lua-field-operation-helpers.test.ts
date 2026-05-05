@@ -479,7 +479,7 @@ describe("Lua field operation helpers", () => {
       { code: "500", name: "Field Filler E", kind: "monster" },
       { code: "600", name: "Moved Monster", kind: "monster" },
       { code: "700", name: "Blocked Monster", kind: "monster" },
-      { code: "800", name: "Moved Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "800", name: "Moved Pendulum Spell", kind: "spell", typeFlags: 0x1000002 },
       { code: "900", name: "Invalid Move", kind: "monster" },
     ];
     const session = createDuel({ seed: 99, startingHandSize: 9, cardReader: createCardReader(cards) });
@@ -501,10 +501,12 @@ describe("Lua field operation helpers", () => {
       local spell = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 800), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local invalid = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("move to opponent mzone " .. Duel.MoveToField(monster, 0, 1, LOCATION_MZONE, POS_FACEUP_ATTACK, true))
+      Debug.Message("move mzone sequence " .. monster:GetSequence())
       Debug.Message("move field operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("move blocked full " .. Duel.MoveToField(blocked, 0, 0, LOCATION_MZONE, POS_FACEUP_ATTACK, true))
       Debug.Message("move blocked operated " .. Duel.GetOperatedGroup():GetCount())
-      Debug.Message("move to szone " .. Duel.MoveToField(spell, 0, 0, LOCATION_SZONE, POS_FACEDOWN_DEFENSE, true))
+      Debug.Message("move to szone " .. Duel.MoveToField(spell, 0, 0, LOCATION_PZONE, POS_FACEDOWN_DEFENSE, true, 2))
+      Debug.Message("move szone sequence " .. spell:GetSequence() .. "/" .. tostring(spell:IsLocation(LOCATION_PZONE)))
       Debug.Message("move szone operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("move invalid dest " .. Duel.MoveToField(invalid, 0, 0, LOCATION_GRAVE, POS_FACEUP_ATTACK, true))
       Debug.Message("move invalid operated " .. Duel.GetOperatedGroup():GetCount())
@@ -514,10 +516,12 @@ describe("Lua field operation helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("move to opponent mzone 1");
+    expect(host.messages).toContain("move mzone sequence 0");
     expect(host.messages).toContain("move field operated 1/600");
     expect(host.messages).toContain("move blocked full 0");
     expect(host.messages).toContain("move blocked operated 0");
     expect(host.messages).toContain("move to szone 1");
+    expect(host.messages).toContain("move szone sequence 1/true");
     expect(host.messages).toContain("move szone operated 1/800");
     expect(host.messages).toContain("move invalid dest 0");
     expect(host.messages).toContain("move invalid operated 0");
