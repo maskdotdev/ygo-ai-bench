@@ -4,6 +4,7 @@ import {
   createDuel,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  queryPublicState,
   registerEffect,
   restoreDuel,
   serializeDuel,
@@ -13,6 +14,10 @@ import { moveDuelCard } from "#duel/card-state.js";
 import type { DuelAction, DuelLocation } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards, findPublicCard } from "./full-duel-engine-fixtures.js";
+
+function expectOpenWindowActions(actions: DuelAction[], windowId: number): void {
+  for (const action of actions) expect(action).toMatchObject({ windowId, windowKind: "open" });
+}
 
 type RestoredFailedMoveCase = {
   name: string;
@@ -134,11 +139,17 @@ describe("duel summon rollback after restore", () => {
       const { session, target, first, blocked } = setupRestoredFailedMoveCase(testCase);
       const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === testCase.actionType && candidate.uid === target.uid);
       expect(action).toBeTruthy();
+      const restoredWindowId = queryPublicState(session).actionWindowId;
+      expect(action).toMatchObject({ windowId: restoredWindowId, windowKind: "open" });
 
       const result = applyResponse(session, action!);
 
       expect(result.ok).toBe(false);
       expect(result.error).toContain(testCase.block.error);
+      expect(session.state.actionWindowId).toBe(restoredWindowId);
+      expect(result.state.actionWindowId).toBe(restoredWindowId);
+      expect(result.state.windowKind).toBe("open");
+      expectOpenWindowActions(result.legalActions, restoredWindowId);
       expect(session.state.cards.find((card) => card.uid === target.uid)?.location).toBe(testCase.target.location);
       expect(session.state.cards.find((card) => card.uid === first.uid)?.location).toBe(testCase.first.moveTo ?? testCase.first.location);
       expect(session.state.cards.find((card) => card.uid === blocked.uid)?.location).toBe(testCase.blocked.moveTo ?? testCase.blocked.location);
