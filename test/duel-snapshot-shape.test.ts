@@ -286,6 +286,29 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badDamagePasses, createCardReader(cards))).toThrow("Malformed duel snapshot: state.damagePasses must not contain duplicate players");
   });
 
+  it("rejects duplicate set-like snapshot string collections before restore", () => {
+    const session = createDuel({ seed: 230, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const uid = serializeDuel(session).state.cards[0]!.uid;
+    const badUsedCount = serializeDuel(session);
+    const badAttack = serializeDuel(session);
+    const badCanceled = serializeDuel(session);
+    const badPosition = serializeDuel(session);
+    badUsedCount.state.usedCountKeys = ["once", "once"];
+    badAttack.state.attacksDeclared = [uid, uid];
+    badCanceled.state.attackCanceledUids = [uid, uid];
+    badPosition.state.positionsChanged = [uid, uid];
+
+    expect(() => restoreDuel(badUsedCount, createCardReader(cards))).toThrow("Malformed duel snapshot: state.usedCountKeys must not contain duplicates");
+    expect(() => restoreDuel(badAttack, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attacksDeclared must not contain duplicates");
+    expect(() => restoreDuel(badCanceled, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackCanceledUids must not contain duplicates");
+    expect(() => restoreDuel(badPosition, createCardReader(cards))).toThrow("Malformed duel snapshot: state.positionsChanged must not contain duplicates");
+  });
+
   it("rejects pass snapshots without their pending window before restore", () => {
     const session = createDuel({ seed: 173, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

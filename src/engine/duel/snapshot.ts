@@ -220,6 +220,9 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   for (const field of ["usedCountKeys", "attacksDeclared", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
     assertSnapshotStringArray(state[field], `state.${field}`);
   }
+  for (const field of ["usedCountKeys", "attacksDeclared", "attackCanceledUids", "positionsChanged"] as const) {
+    assertSnapshotUniqueStringArray(state[field], `state.${field}`);
+  }
   assertSnapshotChainLimits(state.chainLimits);
   assertSnapshotSkippedPhases(state.skippedPhases);
   assertSnapshotLog(state.log);
@@ -299,6 +302,10 @@ function assertSnapshotStringArray(values: unknown, path: string): void {
   for (const [index, value] of values.entries()) {
     if (typeof value !== "string") throw new Error(`Malformed duel snapshot: ${path}.${index} must be a string`);
   }
+}
+
+function assertSnapshotUniqueStringArray(values: unknown, path: string): void {
+  if (new Set(values as string[]).size !== (values as string[]).length) throw new Error(`Malformed duel snapshot: ${path} must not contain duplicates`);
 }
 
 function assertSnapshotCardUidArray(values: unknown, path: string, cardUids: ReadonlySet<string>): void {
