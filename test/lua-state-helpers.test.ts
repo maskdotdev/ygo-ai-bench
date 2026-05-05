@@ -325,6 +325,31 @@ describe("Lua state helpers", () => {
     expect(session.state.skippedPhases).toEqual([]);
   });
 
+  it("keeps Lua phase skips from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Ended Phase Source", kind: "monster" }];
+    const session = createDuel({ seed: 152, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Win(0,WIN_REASON_EXODIA)
+      Duel.SkipPhase(0, PHASE_BATTLE, RESET_PHASE + PHASE_END, 1)
+      Debug.Message("ended skips " .. #Duel.GetMatchingGroup(aux.TRUE,0,LOCATION_HAND,0,nil))
+      `,
+      "ended-skip-phase.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("ended skips 1");
+    expect(session.state.status).toBe("ended");
+    expect(session.state.skippedPhases).toEqual([]);
+  });
+
   it("lets Lua scripts query whether the turn player can enter battle phase", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Battle Phase Probe", kind: "monster" }];
     const session = createDuel({ seed: 151, startingHandSize: 1, cardReader: createCardReader(cards) });
