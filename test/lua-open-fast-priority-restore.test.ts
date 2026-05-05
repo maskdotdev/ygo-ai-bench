@@ -220,6 +220,11 @@ describe("Lua open fast priority restore", () => {
     const turnChainQuickResult = applyLuaRestoreResponse(restored, turnChainQuick!);
     expect(turnChainQuickResult.ok, turnChainQuickResult.error).toBe(true);
     expect(turnChainQuickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(turnChainQuickResult.state.chain.map((link) => link.sourceUid)).toEqual([
+      expect.stringContaining("19200"),
+      expect.stringContaining("19400"),
+      expect.stringContaining("19600"),
+    ]);
     expect(turnChainQuickResult.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(turnChainQuickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(turnChainQuickResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(turnChainQuickResult.legalActions);
