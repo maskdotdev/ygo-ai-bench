@@ -58,35 +58,35 @@ describe("Lua battle timing helpers", () => {
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    applyAndAssert(session, battle!);
     const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined);
     expect(attack).toBeDefined();
-    expect(applyResponse(session, attack!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
+    applyAndAssert(session, attack!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passAttack")!);
     expect(session.state.battleStep).toBe("damage");
 
     expect(legalEffectCodes(session, 1)).toEqual([]);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!);
     expect(legalEffectCodes(session, 0)).toEqual(["300"]);
-    expect(applyResponse(session, activateEffectByCode(session, 0, "300")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+    applyAndAssert(session, activateEffectByCode(session, 0, "300")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!);
     expect(host.messages).toContain("lua damage step quick 32/true/false/false");
     expect(session.state.battleStep).toBe("damage");
 
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!);
     expect(session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!);
     expect(session.state.battleStep).toBe("damageCalculation");
     expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
 
     expect(legalEffectCodes(session, 1)).toEqual([]);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!);
     expect(legalEffectCodes(session, 0)).toEqual(["400"]);
-    expect(applyResponse(session, activateEffectByCode(session, 0, "400")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+    applyAndAssert(session, activateEffectByCode(session, 0, "400")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!);
     expect(host.messages).toContain("lua damage calculation quick 64/true/true/true");
 
     passBattleResponses(session);
