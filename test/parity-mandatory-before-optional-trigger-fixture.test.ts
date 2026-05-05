@@ -54,6 +54,10 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
               { player: 0, effectId: "fixture-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
               { player: 0, effectId: "fixture-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
             ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 0, triggerBucket: "turnOptional" },
+            ],
             legalActionCounts: { 0: 1, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-first", count: 1 }],
@@ -92,6 +96,7 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
             waitingFor: 0,
             chain: [{ player: 0, effectId: "fixture-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
             pendingTriggers: [{ player: 0, effectId: "fixture-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [

@@ -56,6 +56,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
               { player: 0, effectId: "fixture-first-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
               { player: 0, effectId: "fixture-second-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
             ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [
@@ -123,6 +124,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
             waitingFor: 0,
             chain: [{ player: 0, effectId: "fixture-second-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
             pendingTriggers: [{ player: 0, effectId: "fixture-first-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
             legalActionCounts: { 0: 1, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-first-mandatory", count: 1 }],
