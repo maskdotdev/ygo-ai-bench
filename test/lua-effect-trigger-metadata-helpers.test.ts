@@ -140,12 +140,16 @@ describe("Lua effect trigger metadata helpers", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), scriptSource, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
+    const restoredIfTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
+    expect(restoredIfTrigger).toBeDefined();
+    expect(restoredIfTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
     expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(1);
     expect(getLuaRestoreLegalActions(restored, 1)).toHaveLength(0);
 
-    expect(applyLuaRestoreResponse(restored, ifTrigger!).ok).toBe(true);
+    expect(applyLuaRestoreResponse(restored, restoredIfTrigger!).ok).toBe(true);
     expect(restored.host.messages).toContain("lua if optional resolved");
     const opponentTriggers = getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger");
+    expect(opponentTriggers.every((action) => action.windowId === queryPublicState(restored.session).actionWindowId && action.windowKind === "triggerBucket")).toBe(true);
     expect(opponentTriggers.map((action) => action.uid)).toEqual([
       restored.session.state.cards.find((card) => card.controller === 1 && card.location === "graveyard" && card.code === "500")?.uid,
       restored.session.state.cards.find((card) => card.controller === 1 && card.location === "graveyard" && card.code === "500")?.uid,
@@ -157,6 +161,7 @@ describe("Lua effect trigger metadata helpers", () => {
     expect(opponentWhenTrigger).toBeDefined();
     expect(applyLuaRestoreResponse(restored, opponentWhenTrigger!).ok).toBe(true);
     const opponentIfTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger");
+    expect(opponentIfTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
     expect(applyLuaRestoreResponse(restored, opponentIfTrigger!).ok).toBe(true);
     expect(restored.host.messages).toContain("lua opponent when optional resolved");
     expect(restored.host.messages).toContain("lua opponent if optional resolved");
