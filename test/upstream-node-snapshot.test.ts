@@ -112,7 +112,9 @@ describe("Node upstream snapshot restore", () => {
     expect(battle).toBeDefined();
     const result = applyLuaRestoreResponse(restored, battle!);
     expect(result.ok).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 
     expect(restored.session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "phaseBattle", eventCode: 0x1008 }));
     expect(restored.session.state.pendingTriggers).toEqual([]);
@@ -328,6 +330,7 @@ describe("Node upstream snapshot restore", () => {
     expect(replay.error).toContain("Response is not currently legal");
     expect(replay.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.host.messages.filter((message) => message === "restored ignition")).toHaveLength(1);
   });
 
@@ -357,7 +360,9 @@ describe("Node upstream snapshot restore", () => {
     const result = applyLuaRestoreResponse(restored, getLuaRestoreLegalActions(restored, 1)[1]!);
 
     expect(result.ok).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(restored.session.state.prompt).toBeUndefined();
     expect(restored.session.state.waitingFor).toBe(0);
     expect(restored.session.state.log.some((entry) => entry.action === "selectOption" && entry.detail === "Selected option 5")).toBe(true);
@@ -366,6 +371,7 @@ describe("Node upstream snapshot restore", () => {
     expect(staleOptionResult.error).toContain("Response is not currently legal");
     expect(staleOptionResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleOptionResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleOptionResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleOptionResult.legalActions);
 
     restored.session.state.prompt = { id: "lua-restore-yes-no", type: "selectYesNo", player: 0, description: 101, returnTo: 1 };
     restored.session.state.waitingFor = 0;
@@ -379,7 +385,9 @@ describe("Node upstream snapshot restore", () => {
     expect(no).toBeDefined();
     const noResult = applyLuaRestoreResponse(restored, no!);
     expect(noResult.ok).toBe(true);
+    expect(noResult.legalActions).toEqual(getDuelLegalActions(restored.session, noResult.state.waitingFor!));
     expect(noResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, noResult.state.waitingFor!));
+    expect(noResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(noResult.legalActions);
     expect(restored.session.state.prompt).toBeUndefined();
     expect(restored.session.state.waitingFor).toBe(1);
     expect(restored.session.state.log.some((entry) => entry.action === "selectYesNo" && entry.detail === "Selected no")).toBe(true);
@@ -388,6 +396,7 @@ describe("Node upstream snapshot restore", () => {
     expect(staleYesResult.error).toContain("Response is not currently legal");
     expect(staleYesResult.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(staleYesResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleYesResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleYesResult.legalActions);
   });
 
   it("preserves spent Lua count limits across snapshot restore", () => {

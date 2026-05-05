@@ -724,7 +724,9 @@ describe("duel chains", () => {
     expect(quick).toBeTruthy();
     const quickResult = applyResponse(restored, quick!);
     expect(quickResult.ok).toBe(true);
+    expect(quickResult.legalActions).toEqual(getDuelLegalActions(restored, quickResult.state.waitingFor!));
     expect(quickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, quickResult.state.waitingFor!));
+    expect(quickResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(quickResult.legalActions);
     expect(restored.state.chain).toHaveLength(2);
     expect(restored.state.waitingFor).toBe(1);
     const replay = applyResponse(restored, stalePass!);
@@ -741,7 +743,9 @@ describe("duel chains", () => {
     expect(currentPass).toBeTruthy();
     const currentPassResult = applyResponse(restored, currentPass!);
     expect(currentPassResult.ok).toBe(true);
+    expect(currentPassResult.legalActions).toEqual(getDuelLegalActions(restored, currentPassResult.state.waitingFor!));
     expect(currentPassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, currentPassResult.state.waitingFor!));
+    expect(currentPassResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(currentPassResult.legalActions);
     expect(restored.state.chain).toHaveLength(0);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass source resolved")).toHaveLength(1);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass quick resolved")).toHaveLength(1);
@@ -927,7 +931,9 @@ describe("duel chains", () => {
     expect(pass).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse" });
     const passResult = applyResponse(restored, pass!);
     expect(passResult.ok).toBe(true);
+    expect(passResult.legalActions).toEqual(getDuelLegalActions(restored, passResult.state.waitingFor!));
     expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, passResult.state.waitingFor!));
+    expect(passResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(passResult.legalActions);
     const replay = applyResponse(restored, staleQuick!);
 
     expect(replay.ok).toBe(false);

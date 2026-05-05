@@ -204,6 +204,7 @@ describe("duel legal action groups", () => {
     expect(wrongPlayer.divergenceWindowKind).toBe("open");
     expect(wrongPlayer.legalActions).toEqual(getDuelLegalActions(session, 1));
     expect(wrongPlayer.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(wrongPlayer.legalActionGroups.flatMap((group) => group.actions)).toEqual(wrongPlayer.legalActions);
     expect(wrongPlayer.divergenceGroupKey).toBeUndefined();
     expect(wrongPlayer.divergenceGroupLabel).toBeUndefined();
   });
