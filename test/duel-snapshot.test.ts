@@ -5,6 +5,7 @@ import {
   addDuelChainLimit,
   createDuel,
   fusionSummonDuelCard,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   queryPublicState,
@@ -48,7 +49,9 @@ describe("duel snapshot persistence", () => {
 
     expect(restored.state.skippedPhases).toEqual([{ player: 0, phase: "battle", remaining: 1 }]);
     expect(next).toMatchObject({ phase: "main2" });
-    expect(applyResponse(restored, next!).ok).toBe(true);
+    const nextResult = applyResponse(restored, next!);
+    expect(nextResult.ok).toBe(true);
+    expect(nextResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, nextResult.state.waitingFor!));
     expect(restored.state.skippedPhases).toEqual([]);
   });
 

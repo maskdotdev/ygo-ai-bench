@@ -4,6 +4,7 @@ import {
   canMoveDuelCardToLocation,
   canSpecialSummonDuelCard,
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   queryPublicState,
@@ -165,10 +166,14 @@ describe("duel pendulum summons", () => {
 
     const playerEnd = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn");
     expect(playerEnd).toBeDefined();
-    expect(applyResponse(restored, playerEnd!).ok).toBe(true);
+    const playerEndResult = applyResponse(restored, playerEnd!);
+    expect(playerEndResult.ok).toBe(true);
+    expect(playerEndResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, playerEndResult.state.waitingFor!));
     const opponentEnd = getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn");
     expect(opponentEnd).toBeDefined();
-    expect(applyResponse(restored, opponentEnd!).ok).toBe(true);
+    const opponentEndResult = applyResponse(restored, opponentEnd!);
+    expect(opponentEndResult.ok).toBe(true);
+    expect(opponentEndResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, opponentEndResult.state.waitingFor!));
 
     expect(restored.state.players[0].pendulumSummonAvailable).toBe(true);
     expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "pendulumSummon")).toBe(true);

@@ -248,7 +248,9 @@ describe("duel action windows", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     const battlePhase = getDuelLegalActions(restored, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
     expect(battlePhase).toBeDefined();
-    expect(applyResponse(restored, battlePhase!).ok).toBe(true);
+    const battleResult = applyResponse(restored, battlePhase!);
+    expect(battleResult.ok).toBe(true);
+    expect(battleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, battleResult.state.waitingFor!));
     expect(restored.state.actionWindowId).toBe(1);
 
     const replay = applyResponse(restored, staleSummon!);
@@ -287,7 +289,9 @@ describe("duel action windows", () => {
     expect(staleCancel?.windowId).toBe(5);
     expect(staleCancel?.windowKind).toBe("battle");
 
-    expect(applyResponse(restored, replayAttack!).ok).toBe(true);
+    const replayResult = applyResponse(restored, replayAttack!);
+    expect(replayResult.ok).toBe(true);
+    expect(replayResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, replayResult.state.waitingFor!));
     expect(restored.state.actionWindowId).toBe(6);
     const staleReplay = applyResponse(restored, staleCancel!);
 
