@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData, DuelPhase } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -168,14 +168,18 @@ describe("Lua phase-start events", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored phase start 512");
     expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["phaseEnd"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x1200 });
 
     const phaseEndTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(phaseEndTrigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, phaseEndTrigger!).ok).toBe(true);
+    const phaseEndTriggerResult = applyLuaRestoreResponse(restored, phaseEndTrigger!);
+    expect(phaseEndTriggerResult.ok).toBe(true);
+    expect(phaseEndTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, phaseEndTriggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored phase end 512");
   });
 });
