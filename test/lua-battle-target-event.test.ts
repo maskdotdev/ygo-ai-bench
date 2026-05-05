@@ -99,7 +99,8 @@ describe("Lua battle-target events", () => {
     moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const loaded = host.loadCardScript(300, source);
+    expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
@@ -111,7 +112,7 @@ describe("Lua battle-target events", () => {
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleTargeted"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleTargeted"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1131, eventCardUid: target!.uid });
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));

@@ -94,7 +94,8 @@ describe("Lua pre-battle-damage events", () => {
     moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(200, source).ok).toBe(true);
+    const loaded = host.loadCardScript(200, source);
+    expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
@@ -106,7 +107,7 @@ describe("Lua pre-battle-damage events", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1136, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.players[1].lifePoints).toBe(6200);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["beforeBattleDamage"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1136, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 });
