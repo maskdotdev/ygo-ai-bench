@@ -4,6 +4,7 @@ import {
   canDuelPlayerDiscardHand,
   canDuelPlayerDraw,
   drawDuelCards,
+  raiseDuelEventWithCode,
   sendDuelCardToGraveyard,
 } from "#duel/core.js";
 import { getCards, moveDuelCard } from "#duel/card-state.js";
@@ -147,30 +148,30 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
   lua.lua_setfield(L, -2, to_luastring("GoatConfirm"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const confirmed = readCardOrGroupUids(state, 2)
-      .map((uid) => session.state.cards.find((card) => card.uid === uid)?.code)
-      .filter((code): code is string => Boolean(code));
+    const confirmedUids = readCardOrGroupUids(state, 2);
+    const confirmed = confirmedCodes(session, confirmedUids);
     hostState.messages.push(`confirmed ${player}: ${confirmed.join(",")}`);
+    collectConfirmedEvent(session, confirmedUids, player);
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ConfirmCards"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    const confirmed = topDeckUids(session, player, count)
-      .map((uid) => session.state.cards.find((card) => card.uid === uid)?.code)
-      .filter((code): code is string => Boolean(code));
+    const confirmedUids = topDeckUids(session, player, count);
+    const confirmed = confirmedCodes(session, confirmedUids);
     hostState.messages.push(`confirmed decktop ${player}: ${confirmed.join(",")}`);
+    collectConfirmedEvent(session, confirmedUids, player);
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ConfirmDecktop"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const count = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1);
-    const confirmed = extraDeckSegmentUids(session, player, count)
-      .map((uid) => session.state.cards.find((card) => card.uid === uid)?.code)
-      .filter((code): code is string => Boolean(code));
+    const confirmedUids = extraDeckSegmentUids(session, player, count);
+    const confirmed = confirmedCodes(session, confirmedUids);
     hostState.messages.push(`confirmed extratop ${player}: ${confirmed.join(",")}`);
+    collectConfirmedEvent(session, confirmedUids, player);
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ConfirmExtratop"));
@@ -220,10 +221,18 @@ function pushGoatConfirm(L: unknown, session: DuelSession, hostState: LuaDuelDec
 }
 
 function confirmUids(session: DuelSession, hostState: LuaDuelDeckApiHostState, player: PlayerId, uids: string[]): void {
-  const confirmed = uids
-    .map((uid) => session.state.cards.find((card) => card.uid === uid)?.code)
-    .filter((code): code is string => Boolean(code));
+  const confirmed = confirmedCodes(session, uids);
   hostState.messages.push(`confirmed ${player}: ${confirmed.join(",")}`);
+  collectConfirmedEvent(session, uids, player);
+}
+
+function confirmedCodes(session: DuelSession, uids: string[]): string[] {
+  return uids.map((uid) => session.state.cards.find((card) => card.uid === uid)?.code).filter((code): code is string => Boolean(code));
+}
+
+function collectConfirmedEvent(session: DuelSession, uids: string[], player: PlayerId): void {
+  const eventUids = uids.filter((uid) => session.state.cards.some((card) => card.uid === uid));
+  if (eventUids.length > 0) raiseDuelEventWithCode(session.state, "confirmed", 1211, undefined, { eventPlayer: player, eventValue: eventUids.length, eventUids });
 }
 
 function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDuelDeckApiHostState, edge: "top" | "bottom"): number {

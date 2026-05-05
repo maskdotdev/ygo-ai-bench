@@ -60,6 +60,7 @@ export type DuelEventName =
   | "lifePointCostPaid"
   | "detachedMaterial"
   | "returnedToGraveyard"
+  | "confirmed"
   | "levelChanged"
   | "counterAdded"
   | "counterRemoved"

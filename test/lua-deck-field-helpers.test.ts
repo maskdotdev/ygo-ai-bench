@@ -71,6 +71,59 @@ describe("Lua deck and field helpers", () => {
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "hand" && expectedTop.includes(card.code))).toHaveLength(2);
   });
 
+  it("queues Lua confirm triggers with confirmed card payloads", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Confirmed A", kind: "monster" },
+      { code: "200", name: "Confirmed B", kind: "monster" },
+      { code: "300", name: "Confirm Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 164, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+    const watcher = session.state.cards.find((card) => card.code === "300");
+    expect(watcher).toBeTruthy();
+    moveDuelCard(session.state, watcher!.uid, "hand", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_CONFIRM)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev)
+          Debug.Message("confirm resolved " .. ep .. "/" .. ev .. "/" .. eg:GetFirst():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-confirm-trigger.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const result = host.loadScript(
+      `
+      local top = Duel.GetDecktopGroup(0, 2)
+      Duel.ConfirmCards(1, top)
+      Debug.Message("confirm trigger requested")
+      `,
+      "lua-confirm-trigger-action.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("confirm trigger requested");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["confirmed"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1211, eventPlayer: 1, eventValue: 2 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "confirmed", eventCode: 1211, eventPlayer: 1, eventValue: 2 });
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("confirm resolved 1/2/100");
+  });
+
   it("lets Lua scripts shuffle a player's hand", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Hand A", kind: "monster" },
