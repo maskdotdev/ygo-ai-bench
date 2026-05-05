@@ -473,15 +473,18 @@ function pushReturnToField(L: unknown, session: DuelSession, hostState: LuaDuelM
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   const destination = card?.previousLocation === "monsterZone" || card?.previousLocation === "spellTrapZone" ? card.previousLocation : undefined;
   const controller = card?.previousController;
+  const previousSequence = previousFieldSequence(card);
   if (!uid || !card || !destination || controller === undefined || !hasZoneSpace(session.state, controller, destination) || !canMoveDuelCardToLocation(session.state, uid, destination, duelReason.effect)) {
     setOperatedUids(hostState, []);
     lua.lua_pushboolean(L, false);
     return 1;
   }
+  const preservedSequences = previousSequence === undefined ? undefined : shiftedFieldZoneSequenceSnapshot(session, controller, destination, uid, previousSequence);
   beginLuaOperationMoveStep(session, hostState);
   try {
     const moved = moveDuelCardWithRedirects(session.state, uid, destination, controller, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
     applyLuaMovePosition(moved, requestedPosition ?? card.previousPosition ?? moved.position);
+    applyFieldZoneSequence(session, moved, destination, previousSequence, preservedSequences);
     finishLuaOperationMoveStep(hostState, true);
     setOperatedUids(hostState, [uid]);
     lua.lua_pushboolean(L, true);
@@ -492,6 +495,19 @@ function pushReturnToField(L: unknown, session: DuelSession, hostState: LuaDuelM
     lua.lua_pushboolean(L, false);
     return 1;
   }
+}
+
+function previousFieldSequence(card: DuelCardInstance | undefined): number | undefined {
+  const sequence = card?.previousSequence;
+  return sequence !== undefined && sequence >= 0 && sequence < 5 ? sequence : undefined;
+}
+
+function shiftedFieldZoneSequenceSnapshot(session: DuelSession, player: PlayerId, destination: "monsterZone" | "spellTrapZone", movingUid: string, openedSequence: number): Map<string, number> {
+  return new Map(
+    session.state.cards
+      .filter((card) => card.controller === player && card.location === destination && card.uid !== movingUid)
+      .map((card) => [card.uid, card.sequence >= openedSequence ? card.sequence + 1 : card.sequence]),
+  );
 }
 
 function pushReturnToGrave(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {

@@ -544,22 +544,29 @@ describe("Lua field operation helpers", () => {
 
   it("lets Lua scripts return cards to their previous field zones", () => {
     const cards: DuelCardData[] = [
+      { code: "50", name: "Return Filler A", kind: "monster" },
+      { code: "60", name: "Return Filler B", kind: "monster" },
       { code: "100", name: "Return Monster", kind: "monster" },
       { code: "200", name: "Return Override", kind: "monster" },
       { code: "300", name: "No Previous Field", kind: "monster" },
     ];
-    const session = createDuel({ seed: 100, startingHandSize: 3, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 100, startingHandSize: 5, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300"] },
+      0: { main: ["50", "100", "60", "200", "300"] },
       1: { main: [] },
     });
     startDuel(session);
 
-    const first = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === "100");
+    for (const code of ["50", "100", "60"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+    }
+    const first = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "monsterZone" && candidate.code === "100");
     const second = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === "200");
     expect(first).toBeDefined();
     expect(second).toBeDefined();
-    moveDuelCard(session.state, first!.uid, "monsterZone", 0).position = "faceUpDefense";
+    first!.position = "faceUpAttack";
+    first!.faceUp = true;
     moveDuelCard(session.state, first!.uid, "banished", 0);
     moveDuelCard(session.state, second!.uid, "monsterZone", 0).position = "faceUpAttack";
     moveDuelCard(session.state, second!.uid, "banished", 0);
@@ -571,6 +578,7 @@ describe("Lua field operation helpers", () => {
       local second = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_REMOVED, 0, 1, 1, nil):GetFirst()
       local invalid = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("return field first " .. tostring(Duel.ReturnToField(first)))
+      Debug.Message("return sequence first " .. first:GetSequence())
       Debug.Message("return operated first " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("return field second " .. tostring(Duel.ReturnToField(second, POS_FACEUP_DEFENSE)))
       Debug.Message("return operated second " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
@@ -582,13 +590,15 @@ describe("Lua field operation helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("return field first true");
+    expect(host.messages).toContain("return sequence first 1");
     expect(host.messages).toContain("return operated first 1/100");
     expect(host.messages).toContain("return field second true");
     expect(host.messages).toContain("return operated second 1/200");
     expect(host.messages).toContain("return invalid false");
     expect(host.messages).toContain("return operated invalid 0");
-    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ controller: 0, location: "monsterZone", position: "faceUpDefense", faceUp: true });
-    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ controller: 0, location: "monsterZone", position: "faceUpDefense", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ controller: 0, location: "monsterZone", sequence: 1, position: "faceUpAttack", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "60")).toMatchObject({ controller: 0, location: "monsterZone", sequence: 3 });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ controller: 0, location: "monsterZone", sequence: 2, position: "faceUpDefense", faceUp: true });
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ controller: 0, location: "hand" });
   });
 
