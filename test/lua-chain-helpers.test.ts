@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -288,6 +288,8 @@ describe("Lua chain helpers", () => {
     expect(applyResponse(session, sourceAction!).ok).toBe(true);
     const allowed = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(allowed).toBeDefined();
+    expect(allowed).toMatchObject({ windowId: queryPublicState(session).actionWindowId, windowKind: "chainResponse" });
+    expect(getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect")).toBeUndefined();
     expect(applyResponse(session, allowed!).ok).toBe(true);
     expect(host.messages).toContain("allowed quick resolved");
     expect(host.messages).toContain("persistent source resolved");
