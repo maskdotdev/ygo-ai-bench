@@ -820,10 +820,10 @@ describe("Lua chain helpers", () => {
     expect(host.registerInitialEffects()).toBe(1);
     const normal = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon");
     expect(normal).toBeDefined();
-    expect(applyResponse(session, normal!).ok).toBe(true);
+    applyAndAssert(session, normal!);
     const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
 
     expect(host.messages).toContain("condition args 1/1/0/0/true/16/0/100");
     expect(host.messages).toContain("target args 1/400/100");
@@ -890,10 +890,10 @@ describe("Lua chain helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    applyAndAssert(session, sourceAction!);
     const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
 
     expect(host.messages).toContain("reason condition 1/1/0/1/0/0");
     expect(host.messages).toContain("source reason effect true/100");
