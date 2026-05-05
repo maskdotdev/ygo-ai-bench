@@ -1,7 +1,7 @@
 import { copyDuelActivityCounts } from "#duel/activity.js";
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
-import { duelEventNames } from "#duel/event-names.js";
+import { isDuelEventName } from "#duel/event-names.js";
 import { assertSnapshotPendingWindowConsistency } from "#duel/snapshot-window-validation.js";
 import { pendingTriggerBuckets, pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type {
@@ -323,7 +323,7 @@ function assertSnapshotPendingTriggers(triggers: unknown, cardUids: ReadonlySet<
     for (const field of ["id", "sourceUid", "effectId", "eventName"] as const) {
       if (typeof trigger[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
     }
-    if (!duelEventNames.has(trigger.eventName)) throw new Error(`Malformed duel snapshot: ${path}.eventName must be a duel event`);
+    if (!isDuelEventName(trigger.eventName)) throw new Error(`Malformed duel snapshot: ${path}.eventName must be a duel event`);
     const id = trigger.id as string;
     if (seenIds.has(id)) throw new Error(`Malformed duel snapshot: ${path}.id must be unique`);
     seenIds.add(id);
@@ -364,7 +364,7 @@ function assertSnapshotEventHistory(events: unknown, cardUids: ReadonlySet<strin
     const path = `state.eventHistory.${index}`;
     if (!isRecord(event)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
     if (typeof event.eventName !== "string") throw new Error(`Malformed duel snapshot: ${path}.eventName must be a string`);
-    if (!duelEventNames.has(event.eventName)) throw new Error(`Malformed duel snapshot: ${path}.eventName must be a duel event`);
+    if (!isDuelEventName(event.eventName)) throw new Error(`Malformed duel snapshot: ${path}.eventName must be a duel event`);
     assertSnapshotEventPayload(event, path, cardUids);
   }
 }
@@ -559,7 +559,7 @@ function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>):
       if (effect[field] !== undefined && typeof effect[field] !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a boolean`);
     }
     if (effect.triggerEvent !== undefined && typeof effect.triggerEvent !== "string") throw new Error(`Malformed duel snapshot: ${path}.triggerEvent must be a string`);
-    if (effect.triggerEvent !== undefined && !duelEventNames.has(effect.triggerEvent)) throw new Error(`Malformed duel snapshot: ${path}.triggerEvent must be a duel event`);
+    if (effect.triggerEvent !== undefined && !isDuelEventName(effect.triggerEvent)) throw new Error(`Malformed duel snapshot: ${path}.triggerEvent must be a duel event`);
     if (effect.triggerTiming !== undefined && effect.triggerTiming !== "if" && effect.triggerTiming !== "when") throw new Error(`Malformed duel snapshot: ${path}.triggerTiming must be trigger timing`);
     if (effect.reset !== undefined) assertSnapshotEffectReset(effect.reset, `${path}.reset`);
     if (effect.targetRange !== undefined) assertSnapshotNumberTuple(effect.targetRange, `${path}.targetRange`);
