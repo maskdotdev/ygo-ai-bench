@@ -170,6 +170,7 @@ describe("Lua phase-start events", () => {
     expect(trigger).toBeDefined();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored phase start 512");
     expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["phaseEnd"]);
@@ -179,6 +180,7 @@ describe("Lua phase-start events", () => {
     expect(phaseEndTrigger).toBeDefined();
     const phaseEndTriggerResult = applyLuaRestoreResponse(restored, phaseEndTrigger!);
     expect(phaseEndTriggerResult.ok).toBe(true);
+    expect(phaseEndTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, phaseEndTriggerResult.state.waitingFor!));
     expect(phaseEndTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, phaseEndTriggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored phase end 512");
   });

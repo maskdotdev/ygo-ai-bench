@@ -369,6 +369,7 @@ describe("Lua normal summon field helpers", () => {
     expect(trigger).toBeTruthy();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored spell trap set 100");
   });
@@ -469,6 +470,7 @@ describe("Lua normal summon field helpers", () => {
     expect(trigger).toBeTruthy();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored monster set 100");
   });
