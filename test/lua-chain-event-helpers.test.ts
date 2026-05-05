@@ -459,7 +459,11 @@ describe("Lua chain event helpers", () => {
     expect(starter).toBeDefined();
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === starter!.uid);
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const starterResponse = applyResponse(session, action!);
+    expect(starterResponse.ok).toBe(true);
+    expect(starterResponse.legalActions).toEqual(getDuelLegalActions(session, starterResponse.state.waitingFor!));
+    expect(starterResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, starterResponse.state.waitingFor!));
+    expect(starterResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(starterResponse.legalActions);
 
     expect(host.messages).toContain("starter resolved");
     expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "chainEnded", eventCode: 1026 }));
@@ -514,7 +518,11 @@ describe("Lua chain event helpers", () => {
     expect(host.registerInitialEffects()).toBe(1);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(host.messages).toContain("before break");
     expect(host.messages).toContain("after break");
     const breakLog = session.state.log.find((entry) => entry.action === "breakEffect");
@@ -561,7 +569,11 @@ describe("Lua chain event helpers", () => {
     expect(host.registerInitialEffects()).toBe(1);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(host.messages).toContain("chain relation before true");
     expect(host.messages).toContain("chain relation after false");
   });
