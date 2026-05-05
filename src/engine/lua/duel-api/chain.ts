@@ -5,7 +5,7 @@ import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
-const { lua, to_luastring } = fengari;
+const { lua, to_luastring, to_jsstring } = fengari;
 
 export interface LuaDuelChainApiHostState {
   pushEffectTable: (state: unknown, id: number) => void;
@@ -182,6 +182,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number): string | undefi
   if (isGlobalTableFunction(L, index, "aux", "TRUE")) return "aux.TRUE";
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
   if (cardTableField) return cardTableField;
+  const cardUid = singleCapturedCardUid(L, index);
+  if (cardUid) return `closure:card-not-handler:${cardUid}`;
   return undefined;
 }
 
@@ -226,6 +228,26 @@ function matchingTableFunctionField(L: unknown, tableIndex: number, functionInde
     }
   }
   return undefined;
+}
+
+function singleCapturedCardUid(L: unknown, index: number): string | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  const cardUids: string[] = [];
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) break;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    if (name !== "_ENV") {
+      const cardUid = readCardUid(L, -1);
+      if (!cardUid) {
+        lua.lua_pop(L, 1);
+        return undefined;
+      }
+      cardUids.push(cardUid);
+    }
+    lua.lua_pop(L, 1);
+  }
+  return cardUids.length === 1 ? cardUids[0] : undefined;
 }
 
 function luaChainLimitRegistryKey(ctx: DuelEffectContext | undefined, untilChainEnd: boolean, filterRef: number): string | undefined {

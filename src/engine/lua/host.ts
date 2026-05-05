@@ -116,9 +116,11 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
 
 function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: string, limit: ChainLimit): ChainLimit | undefined {
   const parts = key.split(":");
-  const predicate = parts[4] === "known" ? parts[5] : undefined;
+  const predicate = parts[4] === "known" ? parts.slice(5).join(":") : undefined;
   if (predicate === "aux.FALSE") return { ...limit, allows: () => false };
   if (predicate === "aux.TRUE") return { ...limit, allows: () => true };
+  const capturedCard = predicate?.match(/^closure:card-not-handler:(.+)$/);
+  if (capturedCard?.[1]) return { ...limit, allows: (effect) => effect.sourceUid !== capturedCard[1] };
   const field = predicate?.match(/^(c\d+)\.([A-Za-z_]\w*)$/);
   if (!field) return undefined;
   const [, tableName, fieldName] = field;

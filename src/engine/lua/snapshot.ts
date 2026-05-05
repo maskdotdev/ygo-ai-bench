@@ -94,9 +94,10 @@ function luaDenyChainLimitRegistry(keys: string[]): Record<string, (limit: Chain
 
 function knownLuaChainLimitRestoreFactory(key: string): ((limit: ChainLimit) => ChainLimit) | undefined {
   const parts = key.split(":");
-  const knownPredicate = parts[4] === "known" ? parts[5] : undefined;
+  const knownPredicate = parts[4] === "known" ? parts.slice(5).join(":") : undefined;
   if (knownPredicate === "aux.FALSE") return (limit) => ({ ...limit, allows: () => false });
   if (knownPredicate === "aux.TRUE") return (limit) => ({ ...limit, allows: () => true });
+  if (knownPredicate?.startsWith("closure:card-not-handler:")) return (limit) => ({ ...limit, allows: () => false });
   if (knownPredicate?.match(/^c\d+\.[A-Za-z_]\w*$/)) return (limit) => ({ ...limit, allows: () => false });
   return undefined;
 }
