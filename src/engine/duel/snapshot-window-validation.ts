@@ -15,6 +15,7 @@ export function assertSnapshotPendingWindowConsistency(state: Record<string, unk
 function assertSnapshotAwaitingPlayer(state: Record<string, unknown>): void {
   if (state.status === "awaiting" && state.waitingFor === undefined) throw new Error("Malformed duel snapshot: awaiting duel requires waitingFor");
   if (state.status === "ended" && state.waitingFor !== undefined) throw new Error("Malformed duel snapshot: ended duel must not include waitingFor");
+  if (state.status === "ended" && Array.isArray(state.chainLimits) && state.chainLimits.length > 0) throw new Error("Malformed duel snapshot: ended duel must not include chain limits");
   if (state.status === "ended" && state.attackCostPaid !== 0) throw new Error("Malformed duel snapshot: ended duel must not include attackCostPaid");
   if (state.status === "ended" && isRecord(state.battleDamage) && ((state.battleDamage[0] as number) !== 0 || (state.battleDamage[1] as number) !== 0)) {
     throw new Error("Malformed duel snapshot: ended duel must not include battle damage");

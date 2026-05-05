@@ -116,6 +116,22 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(attackCost, createCardReader(cards))).toThrow("Malformed duel snapshot: ended duel must not include attackCostPaid");
   });
 
+  it("rejects ended snapshots with chain limits before restore", () => {
+    const session = createDuel({ seed: 151, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    snapshot.state.status = "ended";
+    snapshot.state.winner = 0;
+    snapshot.state.chainLimits = [{ registryKey: "ended-chain-limit", untilChainEnd: true }];
+    delete snapshot.state.waitingFor;
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: ended duel must not include chain limits");
+  });
+
   it("rejects malformed optional prompt snapshots before restore", () => {
     const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
