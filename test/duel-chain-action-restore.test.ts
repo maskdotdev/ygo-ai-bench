@@ -36,14 +36,23 @@ describe("chain action restore", () => {
 
     const result = applyResponse(restored, quick!);
     expect(result.ok).toBe(true);
-    expect(result.state.chain).toHaveLength(0);
-    expect(result.state.log.some((entry) => entry.detail === "Restored quick original resolved")).toBe(true);
-    expect(result.state.log.some((entry) => entry.detail === "Restored quick quick resolved")).toBe(true);
+    expect(result.state.chain).toHaveLength(2);
+    expect(result.state.waitingFor).toBe(1);
+    expect(result.state.log.some((entry) => entry.detail === "Restored quick original resolved")).toBe(false);
+    expect(result.state.log.some((entry) => entry.detail === "Restored quick quick resolved")).toBe(false);
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     const staleResult = applyResponse(restored, quick!);
     expect(staleResult.ok).toBe(false);
     expect(staleResult.error).toContain("Response is not currently legal");
     expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
+
+    const pass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyResponse(restored, pass!);
+    expect(resolved.ok).toBe(true);
+    expect(resolved.state.chain).toHaveLength(0);
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored quick original resolved")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored quick quick resolved")).toBe(true);
   });
 });
 
