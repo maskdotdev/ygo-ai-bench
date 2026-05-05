@@ -66,7 +66,9 @@ describe("pendulum restore", () => {
     expect(result.ok).toBe(true);
     expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", summonType: "pendulum", faceUp: true });
     expect(restored.state.players[0].pendulumSummonAvailable).toBe(false);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     const staleResult = applyResponse(restored, action);
     expect(staleResult.ok).toBe(false);
     expect(staleResult.error).toContain("Response is not currently legal");

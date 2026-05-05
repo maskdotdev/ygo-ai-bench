@@ -37,7 +37,9 @@ describe("core summon restore", () => {
     expect(result.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(result.state.players[0].normalSummonAvailable).toBe(false);
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expectStaleRestoredResponseRejected(restored, action!);
   });
 
@@ -68,7 +70,9 @@ describe("core summon restore", () => {
     expect(result.state.cards.find((card) => card.uid === tributeMonster!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(result.state.players[0].normalSummonAvailable).toBe(false);
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expectStaleRestoredResponseRejected(restored, action);
   });
 
@@ -94,7 +98,9 @@ describe("core summon restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack", faceUp: true });
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expectStaleRestoredResponseRejected(restored, action!);
   });
 
@@ -120,7 +126,9 @@ describe("core summon restore", () => {
     expect(result.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expectStaleRestoredResponseRejected(restored, action);
   });
 });
