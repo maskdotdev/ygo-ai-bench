@@ -207,4 +207,35 @@ describe("Lua field movement helpers", () => {
     expect(host.messages).toContain("return fzone operated 1");
     expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ controller: 0, location: "spellTrapZone", sequence: 0, position: "faceUpAttack", faceUp: true });
   });
+
+  it("lets Lua scripts return regular spell/trap cards to previous spell/trap zones", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Returned Trap", kind: "trap", typeFlags: 0x4 }];
+    const session = createDuel({ seed: 103, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const trap = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === "100");
+    moveDuelCard(session.state, trap!.uid, "spellTrapZone", 0);
+    moveDuelCard(session.state, trap!.uid, "banished", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local trap = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_REMOVED, 0, 1, 1, nil):GetFirst()
+      Debug.Message("return stzone " .. tostring(Duel.ReturnToField(trap, POS_FACEDOWN_DEFENSE)))
+      Debug.Message("return stzone location " .. trap:GetSequence() .. "/" .. tostring(trap:IsLocation(LOCATION_STZONE)) .. "/" .. tostring(trap:IsLocation(LOCATION_FZONE)) .. "/" .. tostring(trap:IsLocation(LOCATION_PZONE)))
+      Debug.Message("return stzone operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "return-trap-to-field.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("return stzone true");
+    expect(host.messages).toContain("return stzone location 0/true/false/false");
+    expect(host.messages).toContain("return stzone operated 1");
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ controller: 0, location: "spellTrapZone", sequence: 0, position: "faceDownDefense", faceUp: false });
+  });
 });
