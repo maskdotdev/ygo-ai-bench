@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createCardReader, createUpstreamSourceConfig, normalizeCdbRows } from "#engine/data-loaders.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -161,6 +161,7 @@ describe("Lua stale trigger responses", () => {
     expect(restored.restoreComplete).toBe(true);
     const restoredDecline = getDuelLegalActions(restored.session, 0).find((action) => action.type === "declineTrigger");
     expect(restoredDecline).toBeDefined();
+    expect(restoredDecline).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
     expect(applyLuaRestoreResponse(restored, restoredDecline!).ok).toBe(true);
     const replay = applyLuaRestoreResponse(restored, staleDecline!);
 
