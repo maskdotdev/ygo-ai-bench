@@ -275,6 +275,9 @@ function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: st
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
   expect(staleResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored.session, staleResult.state.waitingFor!));
+  expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleResult.state.waitingFor!));
+  expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
   drainRestoredChain(restored);
   expect(restored.host.messages).toContain(message);
 }
