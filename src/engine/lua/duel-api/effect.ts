@@ -14,6 +14,10 @@ export interface LuaDuelEffectApiHostState {
 
 export function installDuelEffectApi(L: unknown, session: DuelSession, hostState: LuaDuelEffectApiHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushboolean(state, false);
+      return 1;
+    }
     const effectId = readTableNumberField(state, 1, "__effect_id");
     const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0);
     lua.lua_pushboolean(state, effectId !== undefined && hostState.registerEffect(state, effectId, player));
@@ -30,6 +34,10 @@ export function installDuelEffectApi(L: unknown, session: DuelSession, hostState
   lua.lua_pushcfunction(L, (state: unknown) => pushReasonEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetReasonEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushinteger(state, 0);
+      return 1;
+    }
     const receiverUid = readCardUid(state, 1);
     const sourceUid = readCardUid(state, 2);
     const reset = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
@@ -44,6 +52,10 @@ function normalizePlayer(value: number): PlayerId {
 }
 
 function pushActivateResult(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
   const effectId = readTableNumberField(L, 1, "__effect_id");
   const duelEffectId = effectId === undefined ? undefined : `lua-${effectId}`;
   const effect = session.state.effects.find((candidate) => candidate.id === duelEffectId);

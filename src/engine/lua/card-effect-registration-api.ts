@@ -13,6 +13,7 @@ export function installCardEffectRegistrationApi<EffectRecord extends LuaCardApi
   toDuelEffect: (card: DuelCardInstance, luaEffect: EffectRecord, state: unknown) => DuelEffectDefinition,
 ): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const cardUid = readTableStringField(state, 1, "__duel_uid");
     const effectId = readTableNumberField(state, 2, "__effect_id");
     const card = cardUid ? session.state.cards.find((candidate) => candidate.uid === cardUid) : undefined;

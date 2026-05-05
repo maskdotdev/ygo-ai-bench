@@ -302,6 +302,7 @@ function cloneLuaEffectRecord(hostState: LuaHostState, effect: LuaEffectRecord):
 }
 
 export function majesticCopyLuaEffects(L: unknown, hostState: LuaHostState, receiverUid: string, sourceUid: string, reset?: number): number {
+  if (hostState.session.state.status === "ended") return 0;
   const receiver = hostState.session.state.cards.find((card) => card.uid === receiverUid);
   if (!receiver) return 0;
   let count = 0;
@@ -335,6 +336,7 @@ function luaEffectRegistryKey(card: DuelCardInstance, effect: LuaEffectRecord): 
 }
 
 export function registerLuaEffect(L: unknown, hostState: LuaHostState, id: number, player: PlayerId): boolean {
+  if (hostState.session.state.status === "ended") return false;
   const luaEffect = hostState.effects.get(id);
   const source =
     luaEffect?.sourceUid === undefined
