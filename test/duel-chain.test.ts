@@ -728,6 +728,8 @@ describe("duel chains", () => {
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
     expect(replay.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(replay.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
     expect(restored.state.chain).toHaveLength(2);
 
     const currentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
@@ -924,6 +926,9 @@ describe("duel chains", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(replay.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(restored.state.chain).toHaveLength(0);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale quick source resolved")).toHaveLength(1);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale self quick resolved")).toBe(false);
