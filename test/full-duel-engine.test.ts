@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   queryPublicState,
@@ -45,12 +46,14 @@ describe("full duel engine API", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(queryPublicState(restored).prompt).toEqual({ id: "prompt-1", type: "selectOption", player: 1, options: [0, 2], returnTo: 0 });
     expect(getDuelLegalActions(restored, 0)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 0)).toEqual([]);
 
     const options = getDuelLegalActions(restored, 1);
     expect(options).toEqual([
       { type: "selectOption", player: 1, promptId: "prompt-1", option: 0, label: "Select option 0", windowId: 0, windowKind: "prompt" },
       { type: "selectOption", player: 1, promptId: "prompt-1", option: 2, label: "Select option 2", windowId: 0, windowKind: "prompt" },
     ]);
+    expect(getGroupedDuelLegalActions(restored, 1).flatMap((group) => group.actions)).toEqual(options);
     const optionResult = applyResponse(restored, options[1]!);
     expect(optionResult.ok).toBe(true);
     expect(optionResult.state.prompt).toBeUndefined();
@@ -61,6 +64,7 @@ describe("full duel engine API", () => {
     restored.state.waitingFor = 0;
     const no = getDuelLegalActions(restored, 0).find((action) => action.type === "selectYesNo" && !action.yes);
     expect(no).toEqual({ type: "selectYesNo", player: 0, promptId: "prompt-2", yes: false, label: "No", windowId: 1, windowKind: "prompt" });
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toContainEqual(no);
     const yesNoResult = applyResponse(restored, no!);
     expect(yesNoResult.ok).toBe(true);
     expect(yesNoResult.state.log.some((entry) => entry.action === "selectYesNo" && entry.detail === "Selected no")).toBe(true);
