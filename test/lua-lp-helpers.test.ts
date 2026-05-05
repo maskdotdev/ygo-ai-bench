@@ -584,11 +584,7 @@ describe("Lua LP helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
-    const restoredTriggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
-    expect(restoredTriggerResult.ok).toBe(true);
-    expect(restoredTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
-    expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
-    expect(restoredTriggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredTriggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredTrigger!);
     expect(restored.host.messages).toContain("damage trigger resolved 1/700/64/0/7300");
 
     const damageTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
@@ -938,11 +934,7 @@ describe("Lua LP helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
-    const restoredTriggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
-    expect(restoredTriggerResult.ok).toBe(true);
-    expect(restoredTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
-    expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
-    expect(restoredTriggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredTriggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredTrigger!);
     expect(restored.host.messages).toContain("draw trigger resolved 0/1/64/0/1/3");
 
     const drawTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
@@ -954,9 +946,18 @@ describe("Lua LP helpers", () => {
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
   const response = applyResponse(session, action);
-  expect(response.ok).toBe(true);
+  expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
 }
