@@ -624,8 +624,8 @@ describe("Lua LP helpers", () => {
       trigger:SetType(EFFECT_TYPE_TRIGGER_O)
       trigger:SetCode(EVENT_RECOVER)
       trigger:SetRange(LOCATION_HAND)
-      trigger:SetOperation(function(e,tp,eg,ep,ev)
-        Debug.Message("recover trigger resolved " .. ep .. "/" .. ev .. "/" .. Duel.GetLP(0))
+      trigger:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+        Debug.Message("recover trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp .. "/" .. Duel.GetLP(0))
       end)
       watcher:RegisterEffect(trigger)
       `,
@@ -639,13 +639,13 @@ describe("Lua LP helpers", () => {
     expect(host.messages).toContain("recover applied 900");
     expect(session.state.players[0].lifePoints).toBe(7400);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["recoveredLifePoints"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1112, eventPlayer: 0, eventValue: 900 });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112, eventPlayer: 0, eventValue: 900 })]));
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1112, eventPlayer: 0, eventValue: 900, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112, eventPlayer: 0, eventValue: 900, eventReason: 0x40, eventReasonPlayer: 0 })]));
 
     const recoverTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(recoverTrigger).toBeDefined();
     expect(applyResponse(session, recoverTrigger!).ok).toBe(true);
-    expect(host.messages).toContain("recover trigger resolved 0/900/7400");
+    expect(host.messages).toContain("recover trigger resolved 0/900/64/0/7400");
   });
 
   it("makes Lua optional when recover triggers miss timing after later event boundaries", () => {
@@ -752,8 +752,8 @@ describe("Lua LP helpers", () => {
       trigger:SetType(EFFECT_TYPE_TRIGGER_O)
       trigger:SetCode(EVENT_PAY_LPCOST)
       trigger:SetRange(LOCATION_HAND)
-      trigger:SetOperation(function(e,tp,eg,ep,ev)
-        Debug.Message("cost trigger resolved " .. ep .. "/" .. ev .. "/" .. Duel.GetLP(0))
+      trigger:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+        Debug.Message("cost trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp .. "/" .. Duel.GetLP(0))
       end)
       watcher:RegisterEffect(trigger)
       `,
@@ -767,13 +767,13 @@ describe("Lua LP helpers", () => {
     expect(host.messages).toContain("cost paid 7400");
     expect(session.state.players[0].lifePoints).toBe(7400);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["lifePointCostPaid"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1201, eventPlayer: 0, eventValue: 600 });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 0, eventValue: 600 })]));
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1201, eventPlayer: 0, eventValue: 600, eventReason: 0x80, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 0, eventValue: 600, eventReason: 0x80, eventReasonPlayer: 0 })]));
 
     const costTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(costTrigger).toBeDefined();
     expect(applyResponse(session, costTrigger!).ok).toBe(true);
-    expect(host.messages).toContain("cost trigger resolved 0/600/7400");
+    expect(host.messages).toContain("cost trigger resolved 0/600/128/0/7400");
   });
 
   it("makes Lua optional when LP-cost triggers miss timing after later event boundaries", () => {
