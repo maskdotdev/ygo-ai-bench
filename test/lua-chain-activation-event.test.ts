@@ -7,7 +7,7 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 describe("Lua chain activation events", () => {
   it("queues chain-activating triggers with the chain source as event card", () => {
-    expect(runChainEventFixture("EVENT_CHAIN_ACTIVATING")).toEqual([{ eventName: "chainActivating", eventCode: 1021 }]);
+    expect(runChainEventFixture("EVENT_CHAIN_ACTIVATING")).toEqual([{ eventName: "chainActivating", eventCode: 1021, eventReasonPlayer: 0 }]);
   });
 
   it("queues chaining triggers with the chain source as event card", () => {
@@ -101,6 +101,7 @@ function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAIN
   expect(result.ok).toBe(true);
   expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   expect(restored.host.messages).toContain("watcher resolved 0");
   return queuedEvents;
 }

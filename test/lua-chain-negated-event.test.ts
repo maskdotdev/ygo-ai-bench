@@ -113,6 +113,7 @@ describe("Lua chain-negated events", () => {
     expect(result.ok).toBe(true);
     expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     while (restored.session.state.chain.length > 0) {
       const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
       const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
@@ -121,6 +122,7 @@ describe("Lua chain-negated events", () => {
       expect(passResult.ok).toBe(true);
       expect(passResult.legalActions).toEqual(getDuelLegalActions(restored.session, passResult.state.waitingFor!));
       expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
+      expect(passResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(passResult.legalActions);
     }
     expect(restored.host.messages).toContain("chain negated resolved 0/0/1/0");
   });

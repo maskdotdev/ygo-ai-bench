@@ -80,6 +80,7 @@ describe("Lua chain-solved events", () => {
     expect(result.ok).toBe(true);
     expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(restored.host.messages).toContain("chain solved resolved 0/0/1/0");
   });
 });
