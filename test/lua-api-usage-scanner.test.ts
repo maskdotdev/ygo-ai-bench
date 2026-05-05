@@ -7,6 +7,12 @@ import { describe, expect, it } from "vitest";
 const scannerPath = path.resolve("tools/scan-lua-api-usage.mjs");
 
 describe("Lua API usage scanner", () => {
+  it("rejects local fallback stub scripts", () => {
+    const stubs = fallbackScripts().filter((file) => fs.readFileSync(file, "utf8").includes("local-fallback-stub"));
+
+    expect(stubs).toEqual([]);
+  });
+
   it("requires provisional fallback scripts to have direct test coverage", () => {
     const uncovered = provisionalFallbackScripts().filter((file) => {
       const code = path.basename(file, ".lua").replace(/^c/, "");
@@ -87,11 +93,14 @@ describe("Lua API usage scanner", () => {
 });
 
 function provisionalFallbackScripts(): string[] {
+  return fallbackScripts().filter((file) => fs.readFileSync(file, "utf8").includes("local-fallback-provisional"));
+}
+
+function fallbackScripts(): string[] {
   return fs
     .readdirSync("local-card-scripts/fallbacks/official")
     .filter((file) => file.endsWith(".lua"))
-    .map((file) => path.join("local-card-scripts/fallbacks/official", file))
-    .filter((file) => fs.readFileSync(file, "utf8").includes("local-fallback-provisional"));
+    .map((file) => path.join("local-card-scripts/fallbacks/official", file));
 }
 
 function testFiles(): string[] {
