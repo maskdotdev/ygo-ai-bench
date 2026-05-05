@@ -48,6 +48,7 @@ const eventCodes: Partial<Record<DuelEventName, number>> = {
   battleStarted: 1132,
   battleConfirmed: 1133,
   beforeDamageCalculation: 1134,
+  damageCalculating: 1135,
   beforeBattleDamage: 1136,
   afterDamageCalculation: 1138,
   battleDestroyed: 1140,

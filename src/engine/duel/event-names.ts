@@ -76,6 +76,7 @@ const duelEventNameRecord: Record<DuelEventName, true> = {
   attackDisabled: true,
   battleDestroyed: true,
   beforeDamageCalculation: true,
+  damageCalculating: true,
   afterDamageCalculation: true,
   beforeBattleDamage: true,
   battleDamageDealt: true,
