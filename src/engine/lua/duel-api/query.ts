@@ -10,7 +10,7 @@ import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-read
 import { pushGroupTable } from "#lua/group-api.js";
 import { findSubGroupSelection, findSumGreaterSelection, findSumSelection } from "#lua/group-selection-utils.js";
 import { uniqueUids } from "#lua/group-uid-utils.js";
-import { locationMatchesMask, locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import { locationMatchesCardMask, locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord } from "#lua/host-types.js";
 
@@ -615,7 +615,7 @@ function createEnvironmentCheckContext(session: DuelSession): ContinuousEffectCo
 
 function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: number): string[] {
   return session.state.cards
-    .filter((card) => card.controller === player && locationMatchesMask(card.location, card.sequence, locationMask))
+    .filter((card) => card.controller === player && locationMatchesCardMask(card, locationMask))
     .sort((a, b) => a.sequence - b.sequence)
     .map((card) => card.uid);
 }

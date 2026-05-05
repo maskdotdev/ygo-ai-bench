@@ -95,9 +95,11 @@ export function locationMatchesMask(location: DuelLocation | undefined, sequence
 
 export function locationMatchesCardMask(card: DuelCardInstance | undefined, mask: number, location = card?.location, sequence = card?.sequence): boolean {
   if (!card || !location) return false;
-  if (locationMatchesMask(location, sequence, mask)) return true;
+  const symbolicBits = 0x100 | 0x200 | 0x400 | 0x800 | 0x1000;
   const symbolic = symbolicLocationMask(card, location, sequence);
-  return symbolic !== 0 && (mask & symbolic) !== 0;
+  if (symbolic !== 0 && (mask & symbolicBits & symbolic) !== 0) return true;
+  const rawMask = mask & ~symbolicBits;
+  return rawMask !== 0 && locationMatchesMask(location, sequence, rawMask);
 }
 
 export function symbolicLocationMask(card: DuelCardInstance | undefined, location = card?.location, sequence = card?.sequence): number {

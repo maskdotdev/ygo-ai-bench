@@ -410,6 +410,42 @@ describe("Lua zone query helpers", () => {
     expect(host.messages).toContain("symbolic group counts 1/1/1/3");
   });
 
+  it("filters field and Pendulum zones symbolically in Lua field groups", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Field Zone Card", kind: "spell", typeFlags: 0x80002 },
+      { code: "200", name: "Pendulum Zone Card", kind: "monster", typeFlags: 0x1000001, leftScale: 1, rightScale: 1 },
+      { code: "300", name: "Spell Trap Zone Card", kind: "spell" },
+      { code: "400", name: "Other Spell Trap Zone Card", kind: "trap" },
+    ];
+    const session = createDuel({ seed: 251, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    for (const [code, sequence] of [["100", 4], ["200", 0], ["300", 2], ["400", 3]] as const) {
+      const card = session.state.cards.find((candidate) => candidate.code === code);
+      expect(card).toBeDefined();
+      moveDuelCard(session.state, card!.uid, "spellTrapZone", 0).sequence = sequence;
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("symbolic special zone counts " .. Duel.GetMatchingGroupCount(nil,0,LOCATION_FZONE,0,nil) .. "/" .. Duel.GetMatchingGroupCount(nil,0,LOCATION_PZONE,0,nil) .. "/" .. Duel.GetMatchingGroupCount(nil,0,LOCATION_STZONE,0,nil))
+      Debug.Message("symbolic field group counts " .. Duel.GetFieldGroupCount(0,LOCATION_FZONE,0) .. "/" .. Duel.GetFieldGroupCount(0,LOCATION_PZONE,0) .. "/" .. Duel.GetFieldGroupCount(0,LOCATION_STZONE,0) .. "/" .. Duel.GetFieldGroupCount(0,LOCATION_SZONE,0))
+      Debug.Message("symbolic selected codes " .. Duel.GetFieldGroup(0,LOCATION_FZONE,0):GetFirst():GetCode() .. "/" .. Duel.GetFieldGroup(0,LOCATION_PZONE,0):GetFirst():GetCode() .. "/" .. Duel.GetMatchingGroup(aux.TRUE,0,LOCATION_STZONE,0,nil):GetCount())
+      `,
+      "symbolic-field-pendulum-groups.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("symbolic special zone counts 1/1/2");
+    expect(host.messages).toContain("symbolic field group counts 1/1/2/4");
+    expect(host.messages).toContain("symbolic selected codes 100/200/2");
+  });
+
   it("lets Lua scripts check pendulum zone availability", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Pendulum Zone Left", kind: "spell" },
