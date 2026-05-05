@@ -82,8 +82,8 @@ describe("Lua chain helpers", () => {
     const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quickAction).toBeDefined();
     applyResponse(session, quickAction!);
-    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
-    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    passChainIfAvailable(session);
+    passChainIfAvailable(session);
     expect(host.messages).toContain("chain constants 1/3/8/13/30");
     expect(host.messages).toContain("chain solving window false");
     expect(host.messages).toContain("chain info 0/2/100/1/100");
@@ -267,8 +267,8 @@ describe("Lua chain helpers", () => {
     const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quickAction).toBeDefined();
     applyResponse(session, quickAction!);
-    applyResponse(session, { type: "passChain", player: 0, label: "Pass" });
-    applyResponse(session, { type: "passChain", player: 1, label: "Pass" });
+    expect(passChainIfAvailable(session)).toBe(true);
+    expect(passChainIfAvailable(session)).toBe(true);
     expect(host.messages).toContain("duplicate chain unique false");
     expect(host.messages).toContain("duplicate source resolved");
   });
@@ -980,3 +980,10 @@ describe("Lua chain helpers", () => {
   });
 
 });
+
+function passChainIfAvailable(session: ReturnType<typeof createDuel>): boolean {
+  const player = session.state.waitingFor;
+  if (player === undefined) return false;
+  const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
+  return Boolean(pass && applyResponse(session, pass).ok);
+}

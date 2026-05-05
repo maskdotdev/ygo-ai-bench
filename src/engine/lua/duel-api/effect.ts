@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { applyResponse } from "#duel/core.js";
+import { applyResponse, getLegalActions } from "#duel/core.js";
 import { readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import type { DuelEffectContext, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -63,13 +63,8 @@ function pushActivateResult(L: unknown, session: DuelSession): number {
     lua.lua_pushboolean(L, false);
     return 1;
   }
-  const result = applyResponse(session, {
-    type: "activateEffect",
-    player: effect.controller,
-    uid: effect.sourceUid,
-    effectId: effect.id,
-    label: `Activate ${effect.id}`,
-  });
+  const action = getLegalActions(session, effect.controller).find((candidate) => candidate.type === "activateEffect" && candidate.uid === effect.sourceUid && candidate.effectId === effect.id);
+  const result = action ? applyResponse(session, action) : { ok: false };
   lua.lua_pushboolean(L, result.ok);
   return 1;
 }

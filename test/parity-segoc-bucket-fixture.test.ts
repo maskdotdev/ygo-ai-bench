@@ -254,11 +254,29 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
           after: {
             source: "edopro",
-            legalActions: [{ type: "activateTrigger", player: 0, windowKind: "triggerBucket", effectId: "fixture-turn-mandatory", triggerBucket: "turnOptional", count: 1 }],
+            note: "EDOPro keeps mandatory turn-player triggers in the turn mandatory bucket, so this intentionally wrong optional-bucket expectation must fail",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-turn-mandatory", triggerBucket: "turnOptional", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-turn-mandatory", triggerBucket: "turnOptional", count: 1 }],
+              },
+            ],
           },
         }),
       ],
-      expected: { source: "edopro" },
+      expected: {
+        source: "edopro",
+        note: "EDOPro would leave the wrong-bucket expectation unresolved and report the fixture mismatch",
+      },
     };
 
     const result = runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) });

@@ -69,9 +69,9 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   handlers.executePhaseEffects?.("end");
   pruneResetEffectsAfterPhase(state, "end");
   pruneDuelFlagEffectsAfterPhase(state, "end");
-  handlers.collectEvent("turnEnded");
   state.turn += 1;
   state.turnPlayer = otherPlayer(player);
+  handlers.collectEvent("turnEnded");
   state.phase = "draw";
   state.phaseActivity = false;
   handlers.collectEvent("phaseStartDraw", phaseStartEventCode("draw"));

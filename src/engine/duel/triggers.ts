@@ -43,6 +43,7 @@ function triggerPriority(state: DuelState, effect: DuelEffectDefinition): number
 
 function triggerCodeMatchesEvent(eventName: DuelEventName, triggerCode: number, eventCode: number): boolean {
   if (triggerCode === eventCode) return true;
+  if (eventName === "flipSummoned" && triggerCode === 1001 && eventCode === 1101) return true;
   return eventName === "battleDestroyed" && (triggerCode === 1139 || triggerCode === 1140) && (eventCode === 1139 || eventCode === 1140);
 }
 

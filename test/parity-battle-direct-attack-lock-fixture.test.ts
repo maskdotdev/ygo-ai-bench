@@ -163,6 +163,21 @@ describe("EDOPro parity battle direct-attack lock fixtures", () => {
               { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowId: 16, windowKind: "battle", count: 1 },
               { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowId: 16, windowKind: "battle", count: 1 },
             ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowId: 16,
+                windowKind: "battle",
+                count: 1,
+                actions: [
+                  { type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 },
+                  { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 16, windowKind: "battle", count: 1 },
+                  { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowId: 16, windowKind: "battle", count: 1 },
+                  { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowId: 16, windowKind: "battle", count: 1 },
+                ],
+              },
+            ],
             logIncludes: ["Fixture direct replay target appeared", "Replay decision pending"],
           },
         }),

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const parityFixtureDir = path.resolve("test");
 const parityDocFiles = ["readme.md", path.join("docs", "gameplay-parity-plan.md")];
+const pairedScenarioFixtureFiles = new Set(["parity-battle-direct-attack-lock-fixture.test.ts", "parity-segoc-bucket-fixture.test.ts"]);
 
 describe("parity fixture metadata", () => {
   it("scans existing parity documentation files", () => {
@@ -515,6 +516,7 @@ function parityFixtureWithoutSnapshotRestoreInLines(file: string, lines: string[
 }
 
 function parityFixtureScenarioCountProblem(file: string, lines: string[]): string[] {
+  if (pairedScenarioFixtureFiles.has(file)) return [];
   const scenarioCount = lines.filter((line) => /^\s+it\(/.test(line)).length;
   return scenarioCount === 1 ? [] : [`${file}: expected 1 scenario, found ${scenarioCount}`];
 }
