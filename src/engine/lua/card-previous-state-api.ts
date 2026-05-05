@@ -10,8 +10,7 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    const locationMask = locationMaskFromLocation(card?.location);
-    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => (locationMask & value) !== 0)));
+    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => locationMatchesMask(card.location, card.sequence, value))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDestination"));
