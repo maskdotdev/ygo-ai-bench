@@ -95,8 +95,8 @@ describe("Lua control and return restore helpers", () => {
           e:SetType(EFFECT_TYPE_TRIGGER_O)
           e:SetCode(EVENT_CONTROL_CHANGED)
           e:SetRange(LOCATION_HAND)
-          e:SetOperation(function(e,tp,eg)
-            Debug.Message("restored control trigger " .. eg:GetFirst():GetControler())
+          e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+            Debug.Message("restored control trigger " .. eg:GetFirst():GetControler() .. "/" .. r .. "/" .. rp)
           end)
           c:RegisterEffect(e)
 
@@ -129,13 +129,13 @@ describe("Lua control and return restore helpers", () => {
     expect(applyResponse(session, action!).ok).toBe(true);
     expect(session.state.cards.find((card) => card.code === "600")).toMatchObject({ controller: 0, location: "monsterZone" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["controlChanged"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120, eventReason: 0x40, eventReasonPlayer: 0 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.cards.find((card) => card.code === "600")).toMatchObject({ controller: 0, location: "monsterZone" });
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["controlChanged"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120, eventReason: 0x40, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
@@ -146,6 +146,6 @@ describe("Lua control and return restore helpers", () => {
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
-    expect(restored.host.messages).toContain("restored control trigger 0");
+    expect(restored.host.messages).toContain("restored control trigger 0/64/0");
   });
 });

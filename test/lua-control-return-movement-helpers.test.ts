@@ -685,7 +685,7 @@ describe("Lua control and return movement helpers", () => {
       e:SetType(EFFECT_TYPE_TRIGGER_O)
       e:SetCode(EVENT_CONTROL_CHANGED)
       e:SetRange(LOCATION_HAND)
-      e:SetOperation(function(e,tp) Debug.Message("control trigger resolved " .. Duel.GetOperatedGroup():GetFirst():GetControler()) end)
+      e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("control trigger resolved " .. Duel.GetOperatedGroup():GetFirst():GetControler() .. "/" .. r .. "/" .. rp) end)
       watcher:RegisterEffect(e)
       Debug.Message("control trigger take " .. Duel.GetControl(target, 0, 0, 0, LOCATION_MZONE))
       `,
@@ -695,11 +695,11 @@ describe("Lua control and return movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("control trigger take 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["controlChanged"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1120, eventReason: 0x40, eventReasonPlayer: 0 });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(applyResponse(session, trigger!).ok).toBe(true);
-    expect(host.messages).toContain("control trigger resolved 0");
+    expect(host.messages).toContain("control trigger resolved 0/64/0");
   });
 
   it("makes Lua optional when control-change triggers miss timing after later event boundaries", () => {

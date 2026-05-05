@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { recordSpecialSummonActivity } from "#duel/activity.js";
 import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-state.js";
 import { isControlChangePrevented } from "#duel/continuous-effects.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import { createRng } from "#engine/rng.js";
 import {
@@ -11,9 +12,9 @@ import {
   canPlayerSpecialSummon,
   changeDuelCardPosition,
   destroyDuelCard,
+  collectDuelTriggerEffects,
   moveDuelCard,
   moveDuelCardWithRedirects,
-  raiseDuelEvent,
   sendDuelCardToGraveyard,
   specialSummonDuelCard,
 } from "#duel/core.js";
@@ -809,7 +810,10 @@ function finishLuaOperationMoveStep(hostState: LuaDuelMoveApiHostState, moved: b
 }
 
 function collectLuaMoveEvent(session: DuelSession, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
-  raiseDuelEvent(session.state, eventName, eventCard);
+  const payload: DuelEventPayload = {};
+  if (eventCard?.reason !== undefined) payload.eventReason = eventCard.reason;
+  if (eventCard?.reasonPlayer !== undefined) payload.eventReasonPlayer = eventCard.reasonPlayer;
+  collectDuelTriggerEffects(session.state, eventName, eventCard, payload);
 }
 
 function specialSummonExplicitExtraDeckCard(

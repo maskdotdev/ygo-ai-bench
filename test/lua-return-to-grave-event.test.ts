@@ -38,8 +38,8 @@ describe("Lua return-to-grave events", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_RETURN_TO_GRAVE)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp,eg)
-          Debug.Message("return trigger " .. eg:GetFirst():GetCode())
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("return trigger " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
         end)
         c:RegisterEffect(e)
       end
@@ -58,7 +58,7 @@ describe("Lua return-to-grave events", () => {
     expect(host.messages).toContain("return count 1");
     expect(target).toMatchObject({ location: "graveyard", reason: 0x20000 });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["returnedToGraveyard"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1203, eventCardUid: target!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1203, eventCardUid: target!.uid, eventReason: 0x20000, eventReasonPlayer: 0 });
     expect(session.state.eventHistory).toEqual([
       expect.objectContaining({ eventName: "chainActivating", eventCode: 1021 }),
       expect.objectContaining({ eventName: "chaining", eventCode: 1027 }),
@@ -66,7 +66,7 @@ describe("Lua return-to-grave events", () => {
       expect.objectContaining({ eventName: "moved", eventCode: 1030 }),
       expect.objectContaining({ eventName: "banished", eventCode: 1011 }),
       expect.objectContaining({ eventName: "moved", eventCode: 1030 }),
-      expect.objectContaining({ eventName: "returnedToGraveyard", eventCode: 1203 }),
+      expect.objectContaining({ eventName: "returnedToGraveyard", eventCode: 1203, eventReason: 0x20000, eventReasonPlayer: 0 }),
       expect.objectContaining({ eventName: "chainSolved", eventCode: 1022 }),
     ]);
   });
@@ -103,8 +103,8 @@ describe("Lua return-to-grave events", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_RETURN_TO_GRAVE)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
-              Debug.Message("restored return trigger " .. eg:GetFirst():GetCode())
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              Debug.Message("restored return trigger " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
             end)
             c:RegisterEffect(e)
           end
@@ -133,7 +133,7 @@ describe("Lua return-to-grave events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["returnedToGraveyard"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1203, eventCardUid: target!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1203, eventCardUid: target!.uid, eventReason: 0x20000, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
@@ -144,7 +144,7 @@ describe("Lua return-to-grave events", () => {
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
-    expect(restored.host.messages).toContain("restored return trigger 200");
+    expect(restored.host.messages).toContain("restored return trigger 200/131072/0");
   });
 
   it("makes Lua optional when return-to-grave triggers miss timing after later event boundaries", () => {
