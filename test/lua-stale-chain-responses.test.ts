@@ -400,6 +400,15 @@ describe("Lua stale chain responses", () => {
     expect(restoredPassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredPassResult.state.waitingFor!));
     expect(restoredPassResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredPassResult.legalActions);
 
+    const staleRestoredPass = applyLuaRestoreResponse(restored, restoredPass!);
+
+    expect(staleRestoredPass.ok).toBe(false);
+    expect(staleRestoredPass.error).toContain("Response is not currently legal");
+    expect(staleRestoredPass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleRestoredPass.legalActions).toEqual(getDuelLegalActions(restored.session, restoredPassResult.state.waitingFor!));
+    expect(staleRestoredPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredPassResult.state.waitingFor!));
+    expect(staleRestoredPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleRestoredPass.legalActions);
+
     const replay = applyLuaRestoreResponse(restored, staleQuick!);
 
     expect(replay.ok).toBe(false);
