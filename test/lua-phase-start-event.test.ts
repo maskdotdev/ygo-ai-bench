@@ -170,5 +170,12 @@ describe("Lua phase-start events", () => {
     expect(trigger).toBeDefined();
     expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
     expect(restored.host.messages).toContain("restored phase start 512");
+    expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["phaseEnd"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x1200 });
+
+    const phaseEndTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(phaseEndTrigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, phaseEndTrigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored phase end 512");
   });
 });
