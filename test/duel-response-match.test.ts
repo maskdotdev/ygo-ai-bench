@@ -52,7 +52,9 @@ describe("duel response matching", () => {
     const targeted: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Target", windowId: 3, windowKind: "open" };
 
     expect(sameAction(direct, { ...direct, directAttack: true })).toBe(true);
+    expect(sameAction(direct, { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Direct", windowId: 3, windowKind: "open", directAttack: true })).toBe(true);
     expect(sameAction(direct, { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Direct", windowId: 3, windowKind: "open" })).toBe(false);
+    expect(sameAction(direct, { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Direct", directAttack: true })).toBe(false);
     expect(sameAction(targeted, { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open" })).toBe(false);
   });
 

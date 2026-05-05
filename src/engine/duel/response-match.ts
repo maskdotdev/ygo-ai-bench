@@ -78,6 +78,7 @@ function requiresWindowStampEcho(action: DuelAction): boolean {
     action.type === "setSpellTrap" ||
     action.type === "flipSummon" ||
     action.type === "changePosition" ||
+    action.type === "declareAttack" ||
     action.type === "changePhase" ||
     action.type === "endTurn"
   ) && hasWindowStamp(action);

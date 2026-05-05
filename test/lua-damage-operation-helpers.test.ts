@@ -75,7 +75,9 @@ describe("Lua damage operation helpers", () => {
     session.state.phase = "battle";
 
     const host = createLuaScriptHost(session);
-    expect(applyResponse(session, { type: "declareAttack", player: 0, attackerUid: attacker!.uid, targetUid: target!.uid, label: "Attack" }).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === target!.uid);
+    expect(attack).toBeDefined();
+    expect(applyResponse(session, attack!).ok).toBe(true);
     const result = host.loadScript(
       `
       Debug.Message("attack cost initial " .. Duel.IsAttackCostPaid())
