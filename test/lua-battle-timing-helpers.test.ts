@@ -797,8 +797,7 @@ function passBattleResponses(session: ReturnType<typeof createDuel>): void {
     const passType = session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === passType);
     expect(pass).toBeDefined();
-    const result = applyResponse(session, pass!);
-    expect(result.ok, result.error).toBe(true);
+    applyAndAssert(session, pass!);
   }
 }
 
@@ -808,8 +807,7 @@ function passBattleUntilTrigger(session: ReturnType<typeof createDuel>): void {
     const passType = session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === passType);
     expect(pass).toBeDefined();
-    const result = applyResponse(session, pass!);
-    expect(result.ok, result.error).toBe(true);
+    applyAndAssert(session, pass!);
   }
 }
 
@@ -818,7 +816,16 @@ function passLuaBattleChain(session: ReturnType<typeof createDuel>): boolean {
   const player = session.state.waitingFor ?? session.state.turnPlayer;
   const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
   expect(pass).toBeDefined();
-  return applyResponse(session, pass!).ok;
+  return applyAndAssert(session, pass!).ok;
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
 }
 
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
