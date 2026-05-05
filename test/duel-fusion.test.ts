@@ -3,6 +3,7 @@ import {
   applyResponse,
   createDuel,
   fusionSummonDuelCard,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   queryPublicState,
@@ -29,7 +30,7 @@ describe("duel fusion summons", () => {
     expect(action).toBeTruthy();
     expect(action?.type).toBe("fusionSummon");
     if (!action || action.type !== "fusionSummon") throw new Error("Expected fusion summon action");
-    const result = applyResponse(session, action);
+    const result = applyAndAssert(session, action);
 
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("monsterZone");
@@ -67,7 +68,7 @@ describe("duel fusion summons", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
     expect(action).toBeTruthy();
-    const fusionResult = applyResponse(session, action!);
+    const fusionResult = applyAndAssert(session, action!);
 
     expect(fusionResult.ok).toBe(true);
     expect(fusionResult.state.cards.find((card) => card.uid === fieldMaterial!.uid)?.location).toBe("graveyard");
@@ -76,7 +77,7 @@ describe("duel fusion summons", () => {
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "fusion-special-trigger");
     expect(trigger).toBeTruthy();
-    const result = applyResponse(session, trigger!);
+    const result = applyAndAssert(session, trigger!);
 
     expect(result.ok).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Fusion special summoned Fusion Test Monster")).toBe(true);
@@ -109,13 +110,13 @@ describe("duel fusion summons", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
     expect(action).toBeTruthy();
-    const result = applyResponse(session, action!);
+    const result = applyAndAssert(session, action!);
 
     expect(result.ok).toBe(true);
     expect(result.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "usedAsMaterial", eventCardUid: material!.uid }));
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "fusion-material-used-trigger");
     expect(trigger).toBeTruthy();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(session.state.log.some((entry) => entry.detail === "Fusion material used 100")).toBe(true);
   });
 
@@ -146,14 +147,14 @@ describe("duel fusion summons", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
     expect(action).toBeTruthy();
-    const result = applyResponse(session, action!);
+    const result = applyAndAssert(session, action!);
 
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === material!.uid)?.location).toBe("graveyard");
     expect(result.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "preUsedAsMaterial", eventCardUid: material!.uid }));
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "fusion-pre-material-trigger");
     expect(trigger).toBeTruthy();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(session.state.log.some((entry) => entry.detail === "Fusion material pre-used 100")).toBe(true);
   });
 
@@ -367,3 +368,12 @@ describe("duel fusion summons", () => {
     expect(session.state.cards.find((card) => card.uid === secondMaterial!.uid)?.location).toBe("graveyard");
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
