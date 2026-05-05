@@ -293,6 +293,7 @@ function pushUpdateLevel(L: unknown, session: DuelSession, hostState: LuaOperati
   if (delta !== 0) {
     markLuaOperationTimingBoundary(session, hostState);
     collectStatEvent(session, "levelChanged", card);
+    if (hostState.activeContext) hostState.activeOperationMoved = true;
   }
   lua.lua_pushinteger(L, delta);
   return 1;

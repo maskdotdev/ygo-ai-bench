@@ -58,6 +58,7 @@ function pushAddCounter(L: unknown, session: DuelSession, hostState: LuaOperatio
   if (added && card) {
     markLuaOperationTimingBoundary(session, hostState);
     collectCounterEvent(session, "counterAdded", card);
+    if (hostState.activeContext) hostState.activeOperationMoved = true;
   }
   lua.lua_pushboolean(L, added);
   return 1;
@@ -78,6 +79,7 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaOpera
   if (removed && card) {
     markLuaOperationTimingBoundary(session, hostState);
     collectCounterEvent(session, "counterRemoved", card);
+    if (hostState.activeContext) hostState.activeOperationMoved = true;
   }
   lua.lua_pushboolean(L, removed);
   return 1;
