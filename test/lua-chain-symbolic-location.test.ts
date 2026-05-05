@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -216,12 +216,22 @@ describe("Lua symbolic chain locations", () => {
 function activateFirstEffect(session: ReturnType<typeof createDuel>, player: 0 | 1, uid?: string): void {
   const action = getDuelLegalActions(session, player).find((candidate) => candidate.type === "activateEffect" && (uid === undefined || candidate.uid === uid));
   expect(action).toBeDefined();
-  expect(applyResponse(session, action!).ok).toBe(true);
+  const response = applyResponse(session, action!);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 }
 
 function passChainIfAvailable(session: ReturnType<typeof createDuel>): boolean {
   const player = session.state.waitingFor;
   if (player === undefined) return false;
   const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
-  return Boolean(pass && applyResponse(session, pass).ok);
+  if (!pass) return false;
+  const response = applyResponse(session, pass);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return true;
 }
