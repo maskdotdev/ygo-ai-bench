@@ -47,6 +47,7 @@ describe("duel response matching", () => {
     const targeted: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Target", windowId: 3, windowKind: "open" };
 
     expect(sameAction(direct, { ...direct, directAttack: true })).toBe(true);
+    expect(sameAction(direct, { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Direct", windowId: 3, windowKind: "open" })).toBe(false);
     expect(sameAction(targeted, { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open" })).toBe(false);
   });
 
@@ -55,6 +56,7 @@ describe("duel response matching", () => {
     const targeted: DuelAction = { type: "replayAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Replay target", windowId: 4, windowKind: "battle" };
 
     expect(sameAction(direct, { ...direct, directAttack: true })).toBe(true);
+    expect(sameAction(direct, { type: "replayAttack", player: 0, attackerUid: "attacker", label: "Direct replay", windowId: 4, windowKind: "battle" })).toBe(false);
     expect(sameAction(targeted, { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct replay", windowId: 4, windowKind: "battle" })).toBe(false);
   });
 

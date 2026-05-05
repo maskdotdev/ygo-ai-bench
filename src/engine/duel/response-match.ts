@@ -27,10 +27,10 @@ export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
   if (a.type === "changePosition" && response.type === "changePosition" && a.position !== response.position) return false;
   if (a.type === "declareAttack" && response.type === "declareAttack" && a.attackerUid !== response.attackerUid) return false;
   if (a.type === "declareAttack" && response.type === "declareAttack" && a.targetUid !== response.targetUid) return false;
-  if (a.type === "declareAttack" && response.type === "declareAttack" && response.directAttack !== undefined && a.directAttack !== response.directAttack) return false;
+  if (a.type === "declareAttack" && response.type === "declareAttack" && !sameDirectAttackIntent(a, response)) return false;
   if (a.type === "replayAttack" && response.type === "replayAttack" && a.attackerUid !== response.attackerUid) return false;
   if (a.type === "replayAttack" && response.type === "replayAttack" && a.targetUid !== response.targetUid) return false;
-  if (a.type === "replayAttack" && response.type === "replayAttack" && response.directAttack !== undefined && a.directAttack !== response.directAttack) return false;
+  if (a.type === "replayAttack" && response.type === "replayAttack" && !sameDirectAttackIntent(a, response)) return false;
   if (a.type === "cancelAttack" && response.type === "cancelAttack" && a.attackerUid !== response.attackerUid) return false;
   if (a.type === "changePhase" && response.type === "changePhase" && a.phase !== response.phase) return false;
   return true;
@@ -38,6 +38,11 @@ export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function sameDirectAttackIntent(action: Extract<DuelAction, { type: "declareAttack" | "replayAttack" }>, response: Extract<DuelResponse, { type: "declareAttack" | "replayAttack" }>): boolean {
+  if (action.directAttack === true) return response.directAttack === true;
+  return response.directAttack !== true;
 }
 
 function hasWindowId(value: unknown): value is { windowId: number } {
