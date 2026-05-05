@@ -463,6 +463,9 @@ describe("Lua battle timing helpers", () => {
     const staleTriggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(staleTriggerResult.ok).toBe(false);
     expect(staleTriggerResult.error).toContain("Response is not currently legal");
+    expect(staleTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, staleTriggerResult.state.waitingFor!));
+    expect(staleTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleTriggerResult.state.waitingFor!));
+    expect(staleTriggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTriggerResult.legalActions);
 
     expect(restored.host.messages).toEqual(["restored pre damage trigger true/false"]);
     expect(restored.session.state.chain).toEqual([]);
