@@ -87,6 +87,17 @@ describe("Lua chain-disabled events", () => {
     const disablerAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(disablerAction).toBeDefined();
     applyAndAssert(session, disablerAction!);
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restoredChain, 1)).toEqual(getDuelLegalActions(restoredChain.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
+    drainRestoredChain(restoredChain);
+    expect(restoredChain.host.messages).toContain("disable result true");
+    expect(restoredChain.host.messages).not.toContain("disabled source resolved");
+    expect(restoredChain.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainDisabled"]);
+
     drainChain(session);
 
     expect(host.messages).toContain("disable result true");
