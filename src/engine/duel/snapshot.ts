@@ -696,6 +696,7 @@ function assertSnapshotActivityCount(count: unknown, path: string): void {
   if (!isRecord(count)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
   for (const field of ["summon", "normalSummon", "specialSummon", "flipSummon", "attack"] as const) {
     if (typeof count[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
+    if (!Number.isInteger(count[field]) || count[field] < 0) throw new Error(`Malformed duel snapshot: ${path}.${field} must be a non-negative integer`);
   }
 }
 
