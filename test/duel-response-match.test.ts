@@ -4,6 +4,69 @@ import { sameAction } from "#duel/response-match.js";
 import type { DuelAction } from "#duel/types.js";
 
 describe("duel response matching", () => {
+  const stampedActionExamples: DuelAction[] = [
+    { type: "normalSummon", player: 0, uid: "normal", label: "Normal", windowId: 20, windowKind: "open" },
+    { type: "tributeSummon", player: 0, uid: "tribute", tributeUids: ["mat-a"], label: "Tribute", windowId: 20, windowKind: "open" },
+    { type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["mat-a", "mat-b"], label: "Fusion", windowId: 20, windowKind: "open" },
+    { type: "synchroSummon", player: 0, uid: "synchro", materialUids: ["mat-a", "mat-b"], label: "Synchro", windowId: 20, windowKind: "open" },
+    { type: "xyzSummon", player: 0, uid: "xyz", materialUids: ["mat-a", "mat-b"], label: "Xyz", windowId: 20, windowKind: "open" },
+    { type: "linkSummon", player: 0, uid: "link", materialUids: ["mat-a", "mat-b"], label: "Link", windowId: 20, windowKind: "open" },
+    { type: "ritualSummon", player: 0, uid: "ritual", materialUids: ["mat-a", "mat-b"], label: "Ritual", windowId: 20, windowKind: "open" },
+    { type: "setMonster", player: 0, uid: "monster", label: "Set monster", windowId: 20, windowKind: "open" },
+    { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell", windowId: 20, windowKind: "open" },
+    { type: "activateEffect", player: 0, uid: "effect-source", effectId: "effect", label: "Effect", windowId: 20, windowKind: "chainResponse" },
+    { type: "specialSummonProcedure", player: 0, uid: "procedure", effectId: "procedure-effect", label: "Procedure", windowId: 20, windowKind: "open" },
+    { type: "passChain", player: 0, label: "Pass chain", windowId: 20, windowKind: "chainResponse" },
+    { type: "passAttack", player: 0, label: "Pass attack", windowId: 20, windowKind: "battle" },
+    { type: "passDamage", player: 0, label: "Pass damage", windowId: 20, windowKind: "battle" },
+    { type: "replayAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Replay", windowId: 20, windowKind: "battle" },
+    { type: "cancelAttack", player: 0, attackerUid: "attacker", label: "Cancel", windowId: 20, windowKind: "battle" },
+    { type: "selectOption", player: 0, promptId: "prompt", option: 1, label: "One", windowId: 20, windowKind: "prompt" },
+    { type: "selectYesNo", player: 0, promptId: "prompt", yes: true, label: "Yes", windowId: 20, windowKind: "prompt" },
+    { type: "activateTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "trigger-source", effectId: "trigger-effect", label: "Activate", windowId: 20, windowKind: "triggerBucket" },
+    { type: "declineTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "trigger-source", effectId: "trigger-effect", label: "Decline", windowId: 20, windowKind: "triggerBucket" },
+    { type: "flipSummon", player: 0, uid: "flip", label: "Flip", windowId: 20, windowKind: "open" },
+    { type: "changePosition", player: 0, uid: "position", position: "faceUpDefense", label: "Defense", windowId: 20, windowKind: "open" },
+    { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 20, windowKind: "open" },
+    { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase", windowId: 20, windowKind: "open" },
+    { type: "endTurn", player: 0, label: "End Turn", windowId: 20, windowKind: "open" },
+  ];
+
+  it("requires every stamped legal action type to echo its window stamp", () => {
+    expect(stampedActionExamples.map((action) => action.type)).toEqual([
+      "normalSummon",
+      "tributeSummon",
+      "fusionSummon",
+      "synchroSummon",
+      "xyzSummon",
+      "linkSummon",
+      "ritualSummon",
+      "setMonster",
+      "setSpellTrap",
+      "activateEffect",
+      "specialSummonProcedure",
+      "passChain",
+      "passAttack",
+      "passDamage",
+      "replayAttack",
+      "cancelAttack",
+      "selectOption",
+      "selectYesNo",
+      "activateTrigger",
+      "declineTrigger",
+      "flipSummon",
+      "changePosition",
+      "declareAttack",
+      "changePhase",
+      "endTurn",
+    ]);
+    for (const action of stampedActionExamples) {
+      const { windowId: _windowId, windowKind: _windowKind, ...unstamped } = action;
+      expect(sameAction(action, unstamped)).toBe(false);
+      expect(sameAction(action, { ...action })).toBe(true);
+    }
+  });
+
   it("matches unordered summon material responses without accepting duplicates", () => {
     const action: DuelAction = {
       type: "fusionSummon",
