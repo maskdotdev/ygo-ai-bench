@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua normal summon field helpers", () => {
   it("lets Lua scripts normal summon and set monsters", () => {
@@ -366,6 +367,56 @@ describe("Lua normal summon field helpers", () => {
     expect(trigger).toBeTruthy();
     expect(applyResponse(session, trigger!).ok).toBe(true);
     expect(host.messages).toContain("lua monster set resolved 100");
+  });
+
+  it("applies restored Lua monster-set triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Set Monster", kind: "monster" },
+      { code: "200", name: "Restore Monster Set Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c200.lua") return undefined;
+        return `
+        c200={}
+        function c200.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_TRIGGER_O)
+          e:SetCode(EVENT_MSET)
+          e:SetRange(LOCATION_HAND)
+          e:SetOperation(function(e,tp,eg)
+            Debug.Message("restored monster set " .. eg:GetFirst():GetCode())
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 170, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const setResult = host.loadScript(
+      `
+      local monster = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Duel.MSet(monster, true, nil)
+      `,
+      "restore-monster-set-trigger-action.lua",
+    );
+    expect(setResult.ok, setResult.error).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["monsterSet"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["monsterSet"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1106 });
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored monster set 100");
   });
 
   it("makes earlier Lua optional when triggers miss timing at SSet boundaries", () => {
