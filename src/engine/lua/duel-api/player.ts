@@ -13,6 +13,7 @@ import { canAddDuelCardCounter, canRemoveDuelCounters, getDuelCardCounter, remov
 import { getDuelFlagEffectCount } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
@@ -210,7 +211,7 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelP
   for (const uid of removed) {
     const card = findCard(session.state, uid);
     if (!card) continue;
-    collectDuelTriggerEffects(session.state, "counterRemoved", card, { eventReason: query.reason, eventReasonPlayer: reasonPlayer });
+    collectDuelTriggerEffects(session.state, "counterRemoved", card, luaEffectReasonPayload(hostState, query.reason, reasonPlayer));
   }
   if (removed.length > 0 && hostState.activeContext) hostState.activeOperationMoved = true;
   lua.lua_pushinteger(L, removed.length > 0 ? query.count : 0);

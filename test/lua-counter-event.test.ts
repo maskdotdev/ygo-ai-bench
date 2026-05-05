@@ -343,11 +343,13 @@ describe("Lua counter events", () => {
     expect(action).toBeDefined();
     expect(applyResponse(session, action!).ok).toBe(true);
 
+    const source = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
     expect(host.messages).toContain("remove counter 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["counterRemoved"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: target!.uid, eventCode: 0x20000 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: target!.uid, eventCode: 0x20000, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "counterRemoved", "chainSolved"]);
-    expect(session.state.eventHistory.find((event) => event.eventName === "counterRemoved")).toMatchObject({ eventCode: 0x20000 });
+    expect(session.state.eventHistory.find((event) => event.eventName === "counterRemoved")).toMatchObject({ eventCode: 0x20000, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
   });
 
   it("applies restored Lua remove-counter triggers through restore responses", () => {
@@ -412,7 +414,7 @@ describe("Lua counter events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["counterRemoved"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x20000, eventCardUid: target!.uid, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x20000, eventCardUid: target!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: session.state.cards.find((card) => card.code === "100")?.uid, eventReasonEffectId: 1 });
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
