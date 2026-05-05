@@ -225,7 +225,7 @@ describe("Lua chain helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    applyAndAssert(session, sourceAction!);
     expect(host.messages).toContain("limit source resolved");
     expect(host.messages).not.toContain("blocked quick resolved");
   });
@@ -287,12 +287,12 @@ describe("Lua chain helpers", () => {
     const sourceUid = session.state.cards.find((card) => card.code === "100" && card.owner === 0)?.uid;
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sourceUid);
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    applyAndAssert(session, sourceAction!);
     const allowed = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(allowed).toBeDefined();
     expect(allowed).toMatchObject({ windowId: queryPublicState(session).actionWindowId, windowKind: "chainResponse" });
     expect(getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect")).toBeUndefined();
-    expect(applyResponse(session, allowed!).ok).toBe(true);
+    applyAndAssert(session, allowed!);
     passChainIfAvailable(session);
     passChainIfAvailable(session);
     expect(host.messages).toContain("allowed quick resolved");
