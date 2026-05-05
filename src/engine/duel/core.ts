@@ -84,7 +84,6 @@ import {
   isDrawPrevented,
   isDeckDiscardPrevented,
   isDeckLossDefeatPrevented,
-  isChainLinkNegationPrevented,
   isEffectActivationPrevented,
   isMaterialUsePrevented,
   isFlipSummonPrevented,
@@ -99,6 +98,8 @@ import {
   isSpecialSummonPrevented,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
+import { canNegateDuelChainLink, negateDuelChainLink } from "#duel/chain-negation.js";
+export { canNegateDuelChainLink, negateDuelChainLink } from "#duel/chain-negation.js";
 import {
   changeDuelBattleDamageWithPrevention as changeDuelBattleDamageWithPreventionRule,
   reflectedDuelBattleDamagePlayer as reflectedDuelBattleDamagePlayerRule,
@@ -971,23 +972,6 @@ function resolveChain(state: DuelState): void {
   if (state.pendingTriggers.length === 0) collectTriggerEffects(state, "chainEnded");
   setWaitingForPendingTriggerBucket(state);
   continueAttackResponseWindow(state, battleContinuationHandlers);
-}
-
-export function negateDuelChainLink(state: DuelState, chainLinkId: string, player: PlayerId, cardName: string): boolean {
-  const link = state.chain.find((candidate) => candidate.id === chainLinkId);
-  if (!link || !canNegateDuelChainLink(state, chainLinkId)) return false;
-  link.negated = true;
-  link.disableReason = duelReason.effect;
-  link.disablePlayer = player;
-  pushDuelLog(state, "negate", player, cardName, link.effectId);
-  return true;
-}
-
-export function canNegateDuelChainLink(state: DuelState, chainLinkId: string): boolean {
-  const link = state.chain.find((candidate) => candidate.id === chainLinkId);
-  if (!link || link.negated) return false;
-  const source = findCard(state, link.sourceUid);
-  return !source || !isChainLinkNegationPrevented(state, source, createContinuousEffectContext(state));
 }
 
 function otherPlayer(player: PlayerId): PlayerId {
