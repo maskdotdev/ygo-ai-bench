@@ -700,6 +700,11 @@ describe("duel trigger buckets", () => {
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-restored-decline-optional"]);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-restored-decline-optional"]);
     expect(restored.state.log.some((entry) => entry.detail === "first-restored-decline-optional resolved")).toBe(false);
+    const staleDecline = applyResponse(restored, decline!);
+    expect(staleDecline.ok).toBe(false);
+    expect(staleDecline.error).toContain("Response is not currently legal");
+    expect(staleDecline.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-restored-decline-optional"]);
   });
 
   it("restores mandatory bucket handoff without adding decline actions", () => {
