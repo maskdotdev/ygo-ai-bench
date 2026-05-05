@@ -631,6 +631,9 @@ describe("duel trigger buckets", () => {
     expect(staleActivation.ok).toBe(false);
     expect(staleActivation.error).toContain("Response is not currently legal");
     expect(staleActivation.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleActivation.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleActivation.legalActions);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
       "second-restored-turn-optional",
       "opponent-restored-later-optional",
