@@ -77,4 +77,43 @@ describe("Lua startup events", () => {
     expect(restored.host.runStartupEffects()).toBe(0);
     expect(restored.host.messages).not.toContain("restored startup op 0/true");
   });
+
+  it("runs unspent startup effects after Lua snapshot restore", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Unspent Startup Source", kind: "monster" }];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c100.lua") return undefined;
+        return `
+        c100={}
+        function c100.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+          e:SetCode(EVENT_STARTUP)
+          e:SetRange(LOCATION_HAND)
+          e:SetCountLimit(1)
+          e:SetOperation(function(e,tp)
+            Debug.Message("unspent restored startup " .. tp .. "/" .. tostring(Duel.CheckEvent(EVENT_STARTUP)))
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 205, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(host.messages).toEqual([]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.registeredEffects).toBe(1);
+    expect(restored.host.runStartupEffects()).toBe(1);
+    expect(restored.host.runStartupEffects()).toBe(0);
+    expect(restored.host.messages).toEqual(["unspent restored startup 0/true"]);
+    expect(restored.session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "startup", eventCode: 1000 }));
+  });
 });
