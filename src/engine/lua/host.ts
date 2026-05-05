@@ -11,7 +11,7 @@ import { scriptFilenameForCard } from "#engine/data-loaders.js";
 import { installTypeCompatibilityApi } from "#lua/type-compatibility-api.js";
 import { installTracebackHandler, loadLuaScriptFile, readLuaError, registerLuaInitialEffectsDetailed, runLuaCardScript } from "#lua/host-script-api.js";
 import { installEffectApi, installGetIdCompatibilityApi, pushLuaEffectTable, majesticCopyLuaEffects, changeLuaChainOperation, registerLuaEffect, toDuelEffect } from "#lua/host-effect-api.js";
-import type { DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "#duel/types.js";
+import type { ChainLimit, DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaHostState, LuaScriptHost, LuaScriptSource } from "#lua/host-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -96,6 +96,9 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     runStartupEffects() {
       return runLuaStartupEffects(session);
     },
+    restoreChainLimit(key, limit) {
+      return restoreKnownLuaChainLimit(L, hostState, key, limit);
+    },
     getGlobalString(name) {
       lua.lua_getglobal(L, to_luastring(name));
       const value = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) : undefined;
@@ -109,6 +112,42 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
       return value;
     },
   };
+}
+
+function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: string, limit: ChainLimit): ChainLimit | undefined {
+  const parts = key.split(":");
+  const predicate = parts[4] === "known" ? parts[5] : undefined;
+  if (predicate === "aux.FALSE") return { ...limit, allows: () => false };
+  if (predicate === "aux.TRUE") return { ...limit, allows: () => true };
+  const field = predicate?.match(/^(c\d+)\.([A-Za-z_]\w*)$/);
+  if (!field) return undefined;
+  const [, tableName, fieldName] = field;
+  if (!tableName || !fieldName) return undefined;
+  return {
+    ...limit,
+    allows(effect, player, chainPlayer) {
+      lua.lua_getglobal(L, to_luastring(tableName));
+      lua.lua_getfield(L, -1, to_luastring(fieldName));
+      if (!lua.lua_isfunction(L, -1)) {
+        lua.lua_pop(L, 2);
+        return false;
+      }
+      pushLuaChainLimitEffect(L, hostState, effect.id);
+      lua.lua_pushinteger(L, player);
+      lua.lua_pushinteger(L, chainPlayer);
+      const status = lua.lua_pcall(L, 3, 1, 0);
+      if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+      const result = lua.lua_toboolean(L, -1);
+      lua.lua_pop(L, 2);
+      return Boolean(result);
+    },
+  };
+}
+
+function pushLuaChainLimitEffect(L: unknown, hostState: LuaHostState, effectId: string): void {
+  const id = Number(effectId.match(/^lua-(\d+)/)?.[1]);
+  if (Number.isFinite(id)) pushLuaEffectTable(L, id, hostState);
+  else lua.lua_pushnil(L);
 }
 
 function runLuaStartupEffects(session: DuelSession): number {

@@ -1,4 +1,4 @@
-import type { DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
+import type { ChainLimit, DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaDuelOperationInfo } from "#lua/duel-api/operation.js";
 
 export interface LuaScriptLoadResult {
@@ -14,6 +14,7 @@ export interface LuaScriptHost {
   registerInitialEffects(): number;
   registerInitialEffectsDetailed(): LuaInitialEffectRegistrationResult[];
   runStartupEffects(): number;
+  restoreChainLimit(key: string, limit: ChainLimit): ChainLimit | undefined;
   getGlobalString(name: string): string | undefined;
   getGlobalNumber(name: string): number | undefined;
 }

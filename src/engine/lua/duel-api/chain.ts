@@ -180,6 +180,8 @@ function knownLuaChainLimitRegistryKey(L: unknown, ctx: DuelEffectContext | unde
 function knownLuaChainLimitPredicate(L: unknown, index: number): string | undefined {
   if (isGlobalTableFunction(L, index, "aux", "FALSE")) return "aux.FALSE";
   if (isGlobalTableFunction(L, index, "aux", "TRUE")) return "aux.TRUE";
+  const cardTableField = matchingGlobalCardTableFunctionField(L, index);
+  if (cardTableField) return cardTableField;
   return undefined;
 }
 
@@ -190,6 +192,40 @@ function isGlobalTableFunction(L: unknown, index: number, tableName: string, fie
   const matches = lua.lua_isfunction(L, -1) && lua.lua_rawequal(L, absoluteIndex, -1) !== 0;
   lua.lua_pop(L, 2);
   return matches;
+}
+
+function matchingGlobalCardTableFunctionField(L: unknown, index: number): string | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  lua.lua_pushglobaltable(L);
+  lua.lua_pushnil(L);
+  while (lua.lua_next(L, -2) !== 0) {
+    const globalName = lua.lua_isstring(L, -2) ? lua.lua_tojsstring(L, -2) : undefined;
+    if (globalName?.match(/^c\d+$/) && lua.lua_istable(L, -1)) {
+      const fieldName = matchingTableFunctionField(L, -1, absoluteIndex);
+      if (fieldName) {
+        lua.lua_pop(L, 3);
+        return `${globalName}.${fieldName}`;
+      }
+    }
+    lua.lua_pop(L, 1);
+  }
+  lua.lua_pop(L, 1);
+  return undefined;
+}
+
+function matchingTableFunctionField(L: unknown, tableIndex: number, functionIndex: number): string | undefined {
+  const absoluteTableIndex = lua.lua_absindex(L, tableIndex);
+  lua.lua_pushnil(L);
+  while (lua.lua_next(L, absoluteTableIndex) !== 0) {
+    const fieldName = lua.lua_isstring(L, -2) ? lua.lua_tojsstring(L, -2) : undefined;
+    const matches = fieldName !== undefined && lua.lua_isfunction(L, -1) && lua.lua_rawequal(L, functionIndex, -1) !== 0;
+    lua.lua_pop(L, 1);
+    if (matches) {
+      lua.lua_pop(L, 1);
+      return fieldName;
+    }
+  }
+  return undefined;
 }
 
 function luaChainLimitRegistryKey(ctx: DuelEffectContext | undefined, untilChainEnd: boolean, filterRef: number): string | undefined {

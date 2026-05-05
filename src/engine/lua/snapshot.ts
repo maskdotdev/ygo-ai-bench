@@ -29,6 +29,7 @@ export function restoreDuelWithLuaScripts(
   const registryKeys = luaRegistryKeys(snapshot);
   const loadedScripts = [...luaRegistryCardCodes(registryKeys, chainLimitRegistryKeys)].map((code) => host.loadCardScript(code, source));
   const registeredEffects = loadedScripts.every((result) => result.ok) ? host.registerInitialEffects() : 0;
+  restoreKnownLuaChainLimits(session, host, chainLimitRegistryKeys);
   const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys, snapshot.state.effects);
   prunePendingTriggersWithoutEffects(session.state);
   const missingRegistryKeys = [...registryKeys].filter((key) => !restoredRegistryKeys.includes(key));
@@ -96,7 +97,20 @@ function knownLuaChainLimitRestoreFactory(key: string): ((limit: ChainLimit) => 
   const knownPredicate = parts[4] === "known" ? parts[5] : undefined;
   if (knownPredicate === "aux.FALSE") return (limit) => ({ ...limit, allows: () => false });
   if (knownPredicate === "aux.TRUE") return (limit) => ({ ...limit, allows: () => true });
+  if (knownPredicate?.match(/^c\d+\.[A-Za-z_]\w*$/)) return (limit) => ({ ...limit, allows: () => false });
   return undefined;
+}
+
+function restoreKnownLuaChainLimits(session: DuelSession, host: LuaScriptHost, keys: string[]): void {
+  if (keys.length === 0) return;
+  const keySet = new Set(keys);
+  session.state.chainLimits = session.state.chainLimits.map((limit) => {
+    if (!limit.registryKey || !keySet.has(limit.registryKey)) return limit;
+    const restored = host.restoreChainLimit(limit.registryKey, limit);
+    if (restored) return restored;
+    const { registryKey: _registryKey, ...metadata } = limit;
+    return { ...metadata, allows: () => false };
+  });
 }
 
 function luaRestoreIncompleteReasons(loadedScripts: LuaScriptLoadResult[], missingRegistryKeys: string[], missingChainLimitRegistryKeys: string[]): string[] {
