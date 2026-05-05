@@ -33,6 +33,7 @@ describe("chain action restore", () => {
     expect(getGroupedDuelLegalActions(restored, 1)).toEqual(getGroupedDuelLegalActions(session, 1));
     const pass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    expect(pass).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse" });
 
     const result = applyResponse(restored, pass!);
     expect(result.ok).toBe(true);
@@ -41,6 +42,10 @@ describe("chain action restore", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.state.log.some((entry) => entry.detail === "Restored pass original resolved")).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Restored pass quick resolved")).toBe(false);
+    const staleResult = applyResponse(restored, pass!);
+    expect(staleResult.ok).toBe(false);
+    expect(staleResult.error).toContain("Response is not currently legal");
+    expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
   });
 });
 
