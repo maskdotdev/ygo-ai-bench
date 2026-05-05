@@ -342,6 +342,76 @@ describe("Lua counter events", () => {
     expect(session.state.eventHistory.find((event) => event.eventName === "counterRemoved")).toMatchObject({ eventCode: 0x20000 });
   });
 
+  it("applies restored Lua remove-counter triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Counter Remover", kind: "monster" },
+      { code: "200", name: "Restore Counter Holder", kind: "monster" },
+      { code: "300", name: "Restore Remove Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Duel.RemoveCounter(tp,LOCATION_MZONE,0,99,1,REASON_EFFECT)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c300.lua") {
+          return `
+          c300={}
+          function c300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_REMOVE_COUNTER)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp,eg)
+              Debug.Message("restored remove counter trigger " .. eg:GetFirst():GetCode())
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 207, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+    expect(addDuelCardCounter(target!, 99, 1)).toBe(true);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["counterRemoved"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["counterRemoved"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 0x20000, eventCardUid: target!.uid });
+
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored remove counter trigger 200");
+  });
+
   it("makes earlier Lua optional when triggers miss timing at counter removal boundaries", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Counter Boundary Source", kind: "monster" },
