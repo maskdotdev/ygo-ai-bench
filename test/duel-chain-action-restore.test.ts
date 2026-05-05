@@ -10,6 +10,7 @@ describe("chain action restore", () => {
     expect(restored.state.chain).toEqual(session.state.chain);
     expect(getDuelLegalActions(restored, 1)).toEqual(getDuelLegalActions(session, 1));
     expect(getGroupedDuelLegalActions(restored, 1)).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(getGroupedDuelLegalActions(restored, 1).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 1));
     const pass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     expect(pass).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse" });
@@ -39,6 +40,7 @@ describe("chain action restore", () => {
   it("restores chain response quick actions and rejects stale restored quick actions", () => {
     const { session, restored } = setupRestoredChainResponse("quick");
     expect(restored.state.chain).toEqual(session.state.chain);
+    expect(getGroupedDuelLegalActions(restored, 1).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 1));
     const quick = getDuelLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-quick-response");
     expect(quick).toBeDefined();
     expect(quick).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse" });
@@ -106,6 +108,7 @@ describe("chain action restore", () => {
       "restore-self-quick": restoreChainEffect("Restored self quick resolved"),
     });
     expect(queryPublicState(restored)).toMatchObject({ windowKind: "chainResponse", waitingFor: 0 });
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
     expect(chainResponseGroups(restored, 0)).toEqual([
       { label: "Effects", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["activateEffect"] },
       { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["passChain"] },
@@ -163,6 +166,7 @@ describe("chain action restore", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-open-priority-turn-quick", windowKind: "open" })]));
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
     expect(getDuelLegalActions(restored, 1)).toEqual([]);
   });
 });
