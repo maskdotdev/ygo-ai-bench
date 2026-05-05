@@ -14,6 +14,10 @@ afterEach(() => {
   for (const root of tempRoots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
+function expectLuaRestoreGroupsMirrorActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe("Node upstream chain-limit snapshot restore", () => {
   it("reports Lua chain-limit predicates that cannot be restored from snapshots", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
@@ -185,6 +189,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey: "lua-chain-limit:100:0:link:known:aux.TRUE", untilChainEnd: false, expiresAtChainLength: 1 });
+    expectLuaRestoreGroupsMirrorActions(restored, 1);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
     expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
@@ -274,6 +279,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey: "lua-chain-limit:100:0:chain:known:closure:handler-code:200", untilChainEnd: true });
     const restoredActions = getLuaRestoreLegalActions(restored, 1);
+    expectLuaRestoreGroupsMirrorActions(restored, 1);
     expect(restoredActions.some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
     expect(restoredActions.some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
     const restoredAction = restoredActions.find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
@@ -349,6 +355,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
 
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expectLuaRestoreGroupsMirrorActions(restored, 1);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
     expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
@@ -440,6 +447,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
 
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expectLuaRestoreGroupsMirrorActions(restored, 1);
     expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
@@ -531,6 +539,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
 
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expectLuaRestoreGroupsMirrorActions(restored, 1);
     expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
@@ -604,6 +613,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
 
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expectLuaRestoreGroupsMirrorActions(restored, 1);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
     expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
@@ -694,6 +704,8 @@ describe("Node upstream chain-limit snapshot restore", () => {
 
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expectLuaRestoreGroupsMirrorActions(restored, 0);
+    expectLuaRestoreGroupsMirrorActions(restored, 1);
     expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
     expect(restoredAction).toBeDefined();
