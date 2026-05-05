@@ -479,7 +479,7 @@ function assertSnapshotFlagEffects(flags: unknown, cardUids: ReadonlySet<string>
     for (const field of ["code", "reset", "property", "value", "turn"] as const) {
       if (typeof flag[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
     }
-    if (flag.resetCount !== undefined && typeof flag.resetCount !== "number") throw new Error(`Malformed duel snapshot: ${path}.resetCount must be a number`);
+    if (flag.resetCount !== undefined) assertSnapshotNonNegativeInteger(flag.resetCount, `${path}.resetCount`);
   }
 }
 
@@ -582,7 +582,7 @@ function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>):
 function assertSnapshotEffectReset(reset: unknown, path: string): void {
   if (!isRecord(reset)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
   if (typeof reset.flags !== "number") throw new Error(`Malformed duel snapshot: ${path}.flags must be a number`);
-  if (reset.count !== undefined && typeof reset.count !== "number") throw new Error(`Malformed duel snapshot: ${path}.count must be a number`);
+  if (reset.count !== undefined) assertSnapshotNonNegativeInteger(reset.count, `${path}.count`);
 }
 
 function assertSnapshotNumberTuple(tuple: unknown, path: string): void {
