@@ -121,7 +121,7 @@ describe("Lua deck and field helpers", () => {
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("confirm resolved 1/2/100");
   });
 
@@ -174,7 +174,7 @@ describe("Lua deck and field helpers", () => {
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("tohand confirm resolved 1/1/100");
   });
 
@@ -867,6 +867,15 @@ function handCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): strin
     .filter((card) => card.controller === player && card.location === "hand")
     .sort((a, b) => a.sequence - b.sequence)
     .map((card) => card.code);
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
 }
 
 function deckCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
