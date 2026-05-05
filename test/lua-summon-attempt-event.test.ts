@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, type LuaSnapshotRestoreResult, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua summon-attempt events", () => {
   it("queues normal-summon attempt triggers before normal-summon success triggers", () => {
@@ -62,11 +62,7 @@ describe("Lua summon-attempt events", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
-    expect(trigger).toBeDefined();
-    const result = applyLuaRestoreResponse(restored, trigger!);
-    expect(result.ok).toBe(true);
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    assertRestoredAttemptTrigger(restored);
     expect(restored.host.messages).toContain("normal attempt 100");
   });
 
@@ -124,11 +120,7 @@ describe("Lua summon-attempt events", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
-    expect(trigger).toBeDefined();
-    const result = applyLuaRestoreResponse(restored, trigger!);
-    expect(result.ok).toBe(true);
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    assertRestoredAttemptTrigger(restored);
     expect(restored.host.messages).toContain("special attempt 100");
   });
 
@@ -191,11 +183,21 @@ describe("Lua summon-attempt events", () => {
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
-    expect(trigger).toBeDefined();
-    const result = applyLuaRestoreResponse(restored, trigger!);
-    expect(result.ok).toBe(true);
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    assertRestoredAttemptTrigger(restored);
     expect(restored.host.messages).toContain("flip attempt 100");
   });
 });
+
+function assertRestoredAttemptTrigger(restored: LuaSnapshotRestoreResult): void {
+  const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+  expect(trigger).toBeDefined();
+  const publicState = queryPublicState(restored.session);
+  expect(trigger).toMatchObject({ windowId: publicState.actionWindowId, windowKind: "triggerBucket" });
+  const result = applyLuaRestoreResponse(restored, trigger!);
+  expect(result.ok).toBe(true);
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+  const staleResult = applyLuaRestoreResponse(restored, trigger!);
+  expect(staleResult.ok).toBe(false);
+  expect(staleResult.error).toContain("Response is not currently legal");
+  expect(staleResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+}
