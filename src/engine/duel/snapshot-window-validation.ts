@@ -24,6 +24,8 @@ function chainWindowIsActive(state: Record<string, unknown>): boolean {
 
 function assertSnapshotPromptWindow(state: Record<string, unknown>): void {
   if (!isRecord(state.prompt)) return;
+  if ((state.chain as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.prompt must not overlap a pending chain");
+  if ((state.pendingTriggers as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.prompt must not overlap pending triggers");
   if (state.waitingFor !== state.prompt.player) throw new Error("Malformed duel snapshot: state.waitingFor must match prompt.player");
 }
 

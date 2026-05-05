@@ -96,6 +96,26 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badWaitingFor, createCardReader(cards))).toThrow("Malformed duel snapshot: state.waitingFor must match prompt.player");
   });
 
+  it("rejects prompt snapshots that overlap hidden timing windows", () => {
+    const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    const promptWithChain = serializeDuel(session);
+    const promptWithTriggers = serializeDuel(session);
+    promptWithChain.state.prompt = { id: "prompt-chain", type: "selectYesNo", player: 0 };
+    promptWithChain.state.chain = [{ id: "chain-1", player: 0, sourceUid, effectId: "effect" }];
+    promptWithTriggers.state.prompt = { id: "prompt-triggers", type: "selectYesNo", player: 0 };
+    promptWithTriggers.state.pendingTriggers = [{ id: "trigger-1", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional" }];
+    promptWithTriggers.state.pendingTriggerBuckets = [{ triggerBucket: "turnOptional", player: 0, triggerIds: ["trigger-1"] }];
+
+    expect(() => restoreDuel(promptWithChain, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt must not overlap a pending chain");
+    expect(() => restoreDuel(promptWithTriggers, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt must not overlap pending triggers");
+  });
+
   it("rejects malformed player and option snapshots before restore", () => {
     const session = createDuel({ seed: 145, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
