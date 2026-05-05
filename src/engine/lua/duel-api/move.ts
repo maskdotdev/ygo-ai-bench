@@ -630,6 +630,7 @@ function shuffleCards(session: DuelSession, cards: DuelCardInstance[]): DuelCard
 }
 
 function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0): string[] {
+  if (session.state.status === "ended") return [];
   const reason = readMoveReason(L, 2, extraReason);
   const reasonPlayer = readOptionalPlayer(L, 4) ?? hostState.activeContext?.player ?? session.state.turnPlayer;
   const moved: string[] = [];
@@ -651,6 +652,7 @@ function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMov
 }
 
 function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: LuaDuelMoveApiHostState, location: DuelLocation, reasonIndex: number): string[] {
+  if (session.state.status === "ended") return [];
   const reason = readMoveReason(L, reasonIndex, 0);
   const deckSequence = location === "deck" && lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : undefined;
   const reasonPlayer = readOptionalPlayer(L, reasonIndex + 1) ?? hostState.activeContext?.player ?? session.state.turnPlayer;

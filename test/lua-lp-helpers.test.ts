@@ -283,6 +283,42 @@ describe("Lua LP helpers", () => {
     expect(session.state.pendingTriggers).toEqual([]);
   });
 
+  it("keeps generic movement helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Post-End Grave Target", kind: "monster" },
+      { code: "200", name: "Post-End Hand Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 959, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const handCard = session.state.cards.find((card) => card.location === "hand");
+    const deckCard = session.state.cards.find((card) => card.location === "deck");
+    expect(handCard).toBeDefined();
+    expect(deckCard).toBeDefined();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local hand_card=Duel.SelectMatchingCard(0, aux.TRUE, 0, LOCATION_HAND, 0, 1, 1, nil)
+      local deck_card=Duel.GetDecktopGroup(0, 1)
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Debug.Message("grave " .. Duel.SendtoGrave(hand_card, REASON_EFFECT))
+      Debug.Message("hand " .. Duel.SendtoHand(deck_card, 0, REASON_EFFECT))
+      Debug.Message("operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "ended-generic-move-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["grave 0", "hand 0", "operated 0"]);
+    expect(session.state.cards.find((card) => card.uid === handCard!.uid)?.location).toBe("hand");
+    expect(session.state.cards.find((card) => card.uid === deckCard!.uid)?.location).toBe("deck");
+    expect(session.state.pendingTriggers).toEqual([]);
+  });
+
   it("clears pending actors when LP loss ends the duel", () => {
     const session = createDuel({ seed: 951, startingHandSize: 0 });
     loadDecks(session, {
