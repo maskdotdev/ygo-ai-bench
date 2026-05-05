@@ -14,6 +14,7 @@ import { getDuelFlagEffectCount } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
+import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
 import { readMinTributeRequirement, withLuaMinTributeOverride } from "#lua/tribute-metadata-api.js";
@@ -25,7 +26,7 @@ const cardAdvanceCode = 52112003;
 const luaSummonTypeNormal = 0x10000000;
 const luaSummonTypeTribute = 0x11000000;
 
-export interface LuaDuelPlayerApiHostState {
+export interface LuaDuelPlayerApiHostState extends LuaOperationTimingBoundaryHostState {
   pushEffectTable: (state: unknown, id: number) => void;
   operatedUids?: string[];
 }
@@ -204,6 +205,7 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelP
   const query = readCounterQuery(L, session);
   const removed = removeDuelCounters(session.state, query.player, query.selfLocations, query.opponentLocations, query.counterType, query.count);
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...removed);
+  if (removed.length > 0) markLuaOperationTimingBoundary(session, hostState);
   for (const uid of removed) {
     const card = findCard(session.state, uid);
     if (!card) continue;
