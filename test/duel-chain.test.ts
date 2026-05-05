@@ -724,6 +724,7 @@ describe("duel chains", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(restored.state.chain).toHaveLength(2);
 
     const currentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
