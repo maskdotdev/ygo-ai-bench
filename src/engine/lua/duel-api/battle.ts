@@ -67,6 +67,10 @@ export function installDuelBattleApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("ForceAttack"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      lua.lua_pushboolean(state, false);
+      return 1;
+    }
     lua.lua_pushboolean(state, negateDuelAttack(session.state));
     return 1;
   });
@@ -129,6 +133,7 @@ function pushCalculateDamage(L: unknown, session: DuelSession): number {
 }
 
 function changeAttackTarget(session: DuelSession, targetUid: string | undefined): boolean {
+  if (session.state.status === "ended") return false;
   const attack = session.state.currentAttack;
   const pending = session.state.pendingBattle;
   if (!attack || !pending) return false;
@@ -147,6 +152,7 @@ function changeAttackTarget(session: DuelSession, targetUid: string | undefined)
 }
 
 function changeAttacker(session: DuelSession, attackerUid: string | undefined): boolean {
+  if (session.state.status === "ended") return false;
   const attack = session.state.currentAttack;
   const pending = session.state.pendingBattle;
   if (!attack || !pending || !attackerUid) return false;
@@ -163,6 +169,7 @@ function changeAttacker(session: DuelSession, attackerUid: string | undefined): 
 }
 
 function chainAttack(session: DuelSession, targetUid: string | undefined): boolean {
+  if (session.state.status === "ended") return false;
   const attack = session.state.currentAttack ?? session.state.pendingBattle;
   if (!attack) return false;
   const attacker = session.state.cards.find((card) => card.uid === attack.attackerUid);
@@ -189,6 +196,7 @@ function chainAttack(session: DuelSession, targetUid: string | undefined): boole
 }
 
 function forceAttack(session: DuelSession, attackerUid: string | undefined, targetUid: string | undefined): boolean {
+  if (session.state.status === "ended") return false;
   if (!attackerUid || !targetUid) return false;
   const attacker = session.state.cards.find((card) => card.uid === attackerUid);
   const target = session.state.cards.find((card) => card.uid === targetUid);
