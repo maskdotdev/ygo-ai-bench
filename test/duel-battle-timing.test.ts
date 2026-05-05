@@ -497,6 +497,10 @@ describe("duel battle timing", () => {
     expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     const trigger = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-end-damage-trigger");
     expect(trigger).toBeTruthy();
+    expect(groupedActionSummary(restored, 0)).toEqual([
+      { label: "Trigger Activations", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", actionTypes: ["activateTrigger"] },
+      { label: "Trigger Declines", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", actionTypes: ["declineTrigger"] },
+    ]);
     const triggerResult = applyResponse(restored, trigger!);
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, triggerResult.state.waitingFor!));
