@@ -273,6 +273,89 @@ describe("Lua overlay and pendulum movement helpers", () => {
     );
   });
 
+  it("makes Lua optional when detach-material triggers miss timing after later event boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Detach Later Boundary Source", kind: "monster" },
+      { code: "300", name: "When Detach Watcher", kind: "monster" },
+      { code: "400", name: "If Detach Watcher", kind: "monster" },
+      { code: "500", name: "Detach Later Boundary Material", kind: "monster" },
+      { code: "600", name: "Damage Boundary Watcher", kind: "monster" },
+      { code: "920", name: "Detach Later Boundary Xyz", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 203, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "300", "400", "500", "600"], extra: ["920"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const xyz = session.state.cards.find((card) => card.code === "920");
+    const material = session.state.cards.find((card) => card.code === "500");
+    expect(xyz).toBeDefined();
+    expect(material).toBeDefined();
+    moveDuelCard(session.state, xyz!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, material!.uid, "overlay", 0);
+    xyz!.overlayUids.push(material!.uid);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local xyz=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 920), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local damage_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local e=Effect.CreateEffect(source)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp)
+        xyz:RemoveOverlayCard(tp, 1, 1, REASON_EFFECT)
+        Duel.Damage(1, 100, REASON_EFFECT)
+      end)
+      source:RegisterEffect(e)
+
+      local when_effect=Effect.CreateEffect(when_watcher)
+      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      when_effect:SetCode(EVENT_DETACH_MATERIAL)
+      when_effect:SetRange(LOCATION_HAND)
+      when_effect:SetOperation(function(e,tp)
+        Debug.Message("when detach resolved")
+      end)
+      when_watcher:RegisterEffect(when_effect)
+
+      local if_effect=Effect.CreateEffect(if_watcher)
+      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      if_effect:SetCode(EVENT_DETACH_MATERIAL)
+      if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      if_effect:SetRange(LOCATION_HAND)
+      if_effect:SetOperation(function(e,tp)
+        Debug.Message("if detach resolved")
+      end)
+      if_watcher:RegisterEffect(if_effect)
+
+      local damage_effect=Effect.CreateEffect(damage_watcher)
+      damage_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      damage_effect:SetCode(EVENT_DAMAGE)
+      damage_effect:SetRange(LOCATION_HAND)
+      damage_effect:SetOperation(function(e,tp)
+        Debug.Message("damage boundary resolved")
+      end)
+      damage_watcher:RegisterEffect(damage_effect)
+      `,
+      "overlay-detach-later-boundary-missed-timing.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1202");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1202", "lua-4-1111"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "detachedMaterial", eventCode: 1202 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
+    );
+  });
+
   it("lets Lua scripts attach Xyz overlay materials", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Attach Material A", kind: "monster" },
