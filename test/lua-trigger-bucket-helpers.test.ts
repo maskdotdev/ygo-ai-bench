@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -187,6 +187,9 @@ describe("Lua trigger bucket helpers", () => {
       ],
     });
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([summoned.state.pendingTriggers[0]?.effectId, summoned.state.pendingTriggers[1]?.effectId]);
+    expect(getGroupedDuelLegalActions(session, 0).filter((group) => group.label === "Trigger Declines").map((group) => group.triggerBucket)).toEqual([
+      { triggerBucket: "turnOptional", player: 0, triggerIds: queryPublicState(session).triggerOrderPrompt!.triggerIds },
+    ]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
 
     const firstDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === summoned.state.pendingTriggers[0]?.effectId);
@@ -284,6 +287,9 @@ describe("Lua trigger bucket helpers", () => {
       ],
     });
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([summoned.state.pendingTriggers[0]?.effectId, summoned.state.pendingTriggers[1]?.effectId]);
+    expect(getGroupedDuelLegalActions(session, 0).filter((group) => group.label === "Trigger Activations").map((group) => group.triggerBucket)).toEqual([
+      { triggerBucket: "turnOptional", player: 0, triggerIds: queryPublicState(session).triggerOrderPrompt!.triggerIds },
+    ]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
 
     const firstActivation = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === summoned.state.pendingTriggers[0]?.effectId);
