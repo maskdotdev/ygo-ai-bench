@@ -58,7 +58,11 @@ describe("Lua equip restore helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     const removed = session.state.cards.find((card) => card.code === "200");
     expect(removed).toMatchObject({ location: "banished" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["banished"]);
