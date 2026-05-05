@@ -60,6 +60,7 @@ describe("Lua stale chain responses", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.state.actionWindowId).toBe(session.state.actionWindowId);
     expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
@@ -125,6 +126,7 @@ describe("Lua stale chain responses", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.state.actionWindowId).toBe(session.state.actionWindowId);
     expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
