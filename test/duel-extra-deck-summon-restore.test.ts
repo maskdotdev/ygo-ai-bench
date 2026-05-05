@@ -28,6 +28,7 @@ describe("extra deck summon restore", () => {
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expectStaleRestoredResponseRejected(restored, action);
   });
 
@@ -58,6 +59,7 @@ describe("extra deck summon restore", () => {
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expectStaleRestoredResponseRejected(restored, action);
   });
 
@@ -88,6 +90,7 @@ describe("extra deck summon restore", () => {
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expectStaleRestoredResponseRejected(restored, action);
   });
 
@@ -118,6 +121,7 @@ describe("extra deck summon restore", () => {
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expectStaleRestoredResponseRejected(restored, action);
   });
 });
@@ -160,6 +164,7 @@ function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSu
   expect(result.state.waitingFor).toBeDefined();
   expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   const staleResult = applyResponse(restored, action);
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
