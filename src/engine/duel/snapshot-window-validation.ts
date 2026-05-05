@@ -4,11 +4,16 @@ import type { PendingTrigger, PlayerId } from "#duel/types.js";
 
 export function assertSnapshotPendingWindowConsistency(state: Record<string, unknown>): void {
   assertSnapshotPassWindows(state);
+  assertSnapshotAwaitingPlayer(state);
   assertSnapshotBattlePassWindows(state);
   assertSnapshotBattleStateConsistency(state);
   assertSnapshotPromptWindow(state);
   assertSnapshotTriggerWindow(state);
   assertSnapshotBattleWindowContext(state);
+}
+
+function assertSnapshotAwaitingPlayer(state: Record<string, unknown>): void {
+  if (state.status === "awaiting" && state.waitingFor === undefined) throw new Error("Malformed duel snapshot: awaiting duel requires waitingFor");
 }
 
 function assertSnapshotPassWindows(state: Record<string, unknown>): void {

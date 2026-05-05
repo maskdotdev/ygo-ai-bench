@@ -67,6 +67,19 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badPhase, createCardReader(cards))).toThrow("Malformed duel snapshot: state.phase must be a duel phase");
   });
 
+  it("rejects awaiting snapshots without a waiting player before restore", () => {
+    const session = createDuel({ seed: 149, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    delete snapshot.state.waitingFor;
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: awaiting duel requires waitingFor");
+  });
+
   it("rejects malformed optional prompt snapshots before restore", () => {
     const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
