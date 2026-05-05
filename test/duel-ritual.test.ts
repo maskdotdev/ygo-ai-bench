@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   queryPublicState,
@@ -293,6 +294,7 @@ describe("duel ritual summons", () => {
     expect(secondMaterial).toBeTruthy();
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    expect(getGroupedDuelLegalActions(restored, 0)).toEqual(getGroupedDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
     expect(action).toMatchObject({ type: "ritualSummon", materialUids: [firstMaterial!.uid, secondMaterial!.uid] });
     if (!action || action.type !== "ritualSummon") throw new Error("Expected restored full-zone Ritual Summon action");
