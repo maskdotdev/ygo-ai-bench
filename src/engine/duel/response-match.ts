@@ -57,7 +57,12 @@ function hasWindowStamp(value: unknown): boolean {
 }
 
 function requiresWindowStampEcho(action: DuelAction): boolean {
-  return (action.type === "replayAttack" || action.type === "cancelAttack") && hasWindowStamp(action);
+  return (
+    action.type === "replayAttack" ||
+    action.type === "cancelAttack" ||
+    action.type === "selectOption" ||
+    action.type === "selectYesNo"
+  ) && hasWindowStamp(action);
 }
 
 function hasMalformedWindowStamp(value: unknown): boolean {

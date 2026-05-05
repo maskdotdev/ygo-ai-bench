@@ -59,4 +59,14 @@ describe("duel response matching", () => {
     expect(sameAction(replay, { ...replay })).toBe(true);
     expect(sameAction(cancel, { ...cancel })).toBe(true);
   });
+
+  it("requires prompt responses to echo their prompt window stamp", () => {
+    const option: DuelAction = { type: "selectOption", player: 0, promptId: "prompt", option: 2, label: "Two", windowId: 6, windowKind: "prompt" };
+    const yesNo: DuelAction = { type: "selectYesNo", player: 0, promptId: "prompt", yes: false, label: "No", windowId: 6, windowKind: "prompt" };
+
+    expect(sameAction(option, { type: "selectOption", player: 0, promptId: "prompt", option: 2, label: "Two" })).toBe(false);
+    expect(sameAction(yesNo, { type: "selectYesNo", player: 0, promptId: "prompt", yes: false, label: "No" })).toBe(false);
+    expect(sameAction(option, { ...option })).toBe(true);
+    expect(sameAction(yesNo, { ...yesNo })).toBe(true);
+  });
 });
