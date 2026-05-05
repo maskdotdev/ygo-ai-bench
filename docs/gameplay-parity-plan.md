@@ -17,7 +17,7 @@ The engine already has useful surfaces to build on:
 
 - Battle state exists across `currentAttack`, `pendingBattle`, `battleStep`, `attackPasses`, `damagePasses`, and battle damage overrides.
 - Legal actions are routed through `getLegalActions()` and `applyResponse()`, with pending prompts, chain links, pending triggers, and pending battle windows already serialized; grouped chain-response actions preserve UI-facing window IDs/kinds, and restored prompt response actions are pinned to public prompt window IDs/kinds with stale restored prompt choices rejected after resolution.
-- The current battle implementation covers attack declaration, simple attack response windows, damage and damage calculation passes, damage override effects, attack negation, target/attacker leaving before damage, and basic battle destruction. Battle fixtures now pin explicit `battleWindow` state, matching `waitingFor` response players, window IDs, grouped legal actions, battle-window quick-effect action stamps, snapshot restore, stale restored pass rejection, and restored Lua battle trigger windows with stale replay rejection.
+- The current battle implementation covers attack declaration, explicit `BattleWindowState` sub-windows, replay decisions, damage and damage-calculation passes, damage override effects, attack negation, target/attacker leaving before damage, target-count replay, end-of-damage-step windows, and basic battle destruction. Battle fixtures now pin explicit `battleWindow` state, matching `waitingFor` response players, window IDs, grouped legal actions, battle-window quick-effect action stamps, damage-step/damage-calculation fast-effect timing, snapshot restore, stale restored pass rejection, and restored Lua battle trigger windows with stale replay rejection.
 - Trigger collection now assigns explicit turn-player/opponent mandatory/optional buckets, exposes active trigger buckets through public state and snapshots, and derives `triggerOrderPrompt` state for active same-bucket trigger ordering. SEGOC, same-bucket ordering, trigger-order restore, Lua-created trigger buckets, registry-backed Lua trigger timing restore, Lua chain-limit response-window coverage, restored known/named/single-card/type-mask Lua chain-limit predicates, restored Lua trigger-timing response windows with stale replay rejection, restored engine/Lua trigger-bucket response windows, restored engine/Lua chain-response pass and quick-effect windows, and cross-player missed timing have fixture coverage. It still needs broader missed timing coverage, exact fast effect windows, arbitrary Lua chain-limit closure restore, and UI consumption of engine-owned ordering prompts.
 - Summon helpers exist for Normal, Tribute, Flip, Fusion, Synchro, Xyz, Link, Ritual, Pendulum, and summon procedures, with restored core summon, Lua summon procedure, summon-attempt trigger, summon-negated trigger, Pendulum Summon, full-zone Extra Deck material, and failed material/release rollback actions pinned to public window IDs/kinds; failed restored rollback groups are stamped for UI consumption, and stale restored core summon, procedure, attempt-trigger, negated-trigger, Pendulum Summon, and Extra Deck summon responses are rejected after the window advances. The helpers are still simplified compared with EDOPro procedure helpers.
 - Lua API coverage is broad enough for smoke probing, but should continue to be driven by failing real card scripts and fixture needs.
@@ -65,13 +65,13 @@ Acceptance gates:
 - A fixture can snapshot/restore mid-chain, mid-trigger-bucket, and mid-battle-window.
 - Fixture expectations can distinguish "matches observed EDOPro" from "known parity backlog" through `source`, and backlog expectations can carry a `note` that points to the missing EDOPro behavior.
 
-## Phase 1: Battle Pipeline Refactor
+## Phase 1: Battle Pipeline Depth
 
-Battle timing is the highest-priority missing feature because it touches fast effects, Lua APIs, legal actions, UI prompts, serialization, and many real cards.
+Battle timing remains high priority because it touches fast effects, Lua APIs, legal actions, UI prompts, serialization, and many real cards. The initial pipeline refactor is already in place; remaining work should focus on exact EDOPro edge cases and real-card failures.
 
-Deliverables:
+Completed baseline:
 
-- Replace the coarse `battleStep` string with a serializable `BattleWindowState` model that can represent:
+- A serializable `BattleWindowState` model represents:
   - attack declaration
   - attack target confirmation
   - attack negation response timing
@@ -81,12 +81,18 @@ Deliverables:
   - during damage calculation
   - after damage calculation
   - end of damage step
-- Keep compatibility helpers for existing `battleStep` users until tests and UI are migrated.
-- Model attack target loss and target set changes as replay candidates instead of always skipping resolution.
-- Separate "attack was negated" from "attack stopped because battle cannot continue".
-- Gate quick effects by battle sub-window instead of only broad damage-step flags.
-- Preserve all battle window state in `serializeDuel()` and `restoreDuel()`.
-- Add fixture observations for the EDOPro timing points before changing broad behavior.
+- Attack target loss and target set changes are represented as replay candidates.
+- Attack negation is tracked separately from battle continuation failures.
+- Quick effects are gated by battle sub-window, including damage-step-only and damage-calculation-only windows.
+- Battle window state is preserved through `serializeDuel()` and `restoreDuel()`.
+- Fixture observations cover direct attack, monster attack, attack negation, target leaving, target count changing with replay, damage calculation modifiers, after-damage triggers, end-of-damage-step triggers, and snapshot restore mid-window.
+
+Remaining deliverables:
+
+- Expand battle timing coverage from fixture-local effects to more real Project Ignis scripts that use battle helper APIs.
+- Deepen "during damage calculation" edge behavior for modifiers, replacement effects, and response priority where EDOPro distinguishes sub-steps beyond the current window kinds.
+- Add fixtures for battle destruction replacement conflicts and simultaneous post-battle triggers when multiple cards are destroyed or redirected.
+- Keep compatibility helpers for existing `battleStep` users until UI and script consumers fully migrate to `battleWindow`.
 
 Implementation files likely touched:
 
@@ -105,7 +111,7 @@ Implementation files likely touched:
 Acceptance gates:
 
 - Existing battle tests still pass.
-- New fixtures cover direct attack, monster attack, attack negation, target leaving, target count changing with replay, damage calculation modifier, after damage calculation trigger, end of damage step trigger, and snapshot restore mid-window.
+- New fixtures cover each newly discovered EDOPro battle edge before implementation changes land.
 - Legal actions expose only the responses valid for the active battle sub-window.
 
 ## Phase 2: Chain And Timing Model
@@ -294,18 +300,12 @@ Acceptance gates:
    - add EDOPro-observed expectation metadata with `source` and `note`
    - keep CI network-free
 
-2. Battle window type migration:
-   - add a serializable `BattleWindowState`
-   - adapt current attack/damage pass logic to the new shape
-   - keep existing behavior passing
-   - add snapshot tests for each current battle sub-window
+2. Battle pipeline depth:
+   - add real-script battle helper fixtures for cards that depend on exact Battle Step/Damage Step timing
+   - deepen damage-calculation modifier and replacement conflict fixtures
+   - keep every new battle sub-window serializable and stale-response guarded
 
-3. Replay and post-damage timing:
-   - add replay decision state and legal actions
-   - split damage calculation from after-damage and end-of-damage-step windows
-   - add fixtures for target leaving, target count changing, damage calculation modifier, battle destruction trigger timing
-
-4. Trigger bucket foundation:
+3. Trigger bucket foundation:
    - replace implicit flat-list bucket behavior with explicit serializable pending trigger buckets
    - preserve current simple cases
    - add SEGOC fixtures for mandatory/optional, turn/non-turn player ordering
