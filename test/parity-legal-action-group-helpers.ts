@@ -117,6 +117,22 @@ export const chainPassGroup = (player: 0 | 1, count = 1, windowId?: number) => (
   actions: [{ type: "passChain" as const, player, ...(windowId === undefined ? {} : { windowId }), windowKind: "chainResponse" as const, count }],
 });
 
+export const normalSummonGroup = (player: 0 | 1, code: string, location: "hand", count = 1, windowId?: number) => ({
+  player,
+  label: "Summons",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "open" as const,
+  actions: [{ type: "normalSummon" as const, player, code, location, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const, count }],
+});
+
+export const absentNormalSummonGroup = (player: 0 | 1, code: string, location: "hand", windowId?: number) => ({
+  player,
+  label: "Summons",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "open" as const,
+  actions: [{ type: "normalSummon" as const, player, code, location, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const }],
+});
+
 export const triggerActivationGroup = (player: 0 | 1, effectId: string, triggerBucket: "turnMandatory" | "turnOptional" | "opponentMandatory" | "opponentOptional", count = 1, windowId?: number) => ({
   player,
   label: "Trigger Activations",

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
-import { passBattleGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentNormalSummonGroup, normalSummonGroup, passBattleGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro compatibility harness snapshot restore", () => {
   it("snapshot-restores after scripted fixture responses", () => {
@@ -618,7 +618,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               shuffleCheckDisabled: false,
               chainLimits: [],
               legalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", count: 1 }],
-              legalActionGroups: [{ player: 0, label: "Summons", windowKind: "open", actions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", count: 1 }] }],
+              legalActionGroups: [normalSummonGroup(0, "100", "hand")],
               locations: { hand: ["100"] },
               locationCounts: { monsterZone: { "100": 0 } },
               cards: [{ uid: "p0-deck-100-0", location: "hand", controller: 0 }],
@@ -652,7 +652,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               shuffleCheckDisabled: false,
               chainLimits: [],
               absentLegalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand" }],
-              absentLegalActionGroups: [{ player: 0, label: "Summons", windowKind: "open", actions: [{ type: "normalSummon", player: 0, code: "100", location: "hand" }] }],
+              absentLegalActionGroups: [absentNormalSummonGroup(0, "100", "hand")],
               legalActions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
               legalActionGroups: [turnGroup(1)],
               locations: { monsterZone: ["100"] },

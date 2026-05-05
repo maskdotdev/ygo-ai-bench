@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader, normalizeCdbRows, parseBanlistConf, scriptFilenameForCard, upstreamBanlistPath, upstreamDatabasePath, upstreamScriptPath } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentChainEffectGroup, chainEffectGroup, chainPassGroup, triggerActivationGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, absentNormalSummonGroup, chainEffectGroup, chainPassGroup, normalSummonGroup, triggerActivationGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro compatibility harness scaffolding", () => {
   it("normalizes card database rows and banlist entries", () => {
@@ -53,7 +53,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           legalActionCounts: { 0: 6, 1: 0 },
           legalActionGroupCounts: { 0: 2, 1: 0 },
           legalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", count: 1 }],
-          legalActionGroups: [{ player: 0, label: "Summons", windowKind: "open", actions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", count: 1 }] }],
+          legalActionGroups: [normalSummonGroup(0, "100", "hand")],
         },
         responses: [
           makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
@@ -67,7 +67,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
               legalActionCounts: { 0: 2 },
               legalActionGroupCounts: { 0: 1 },
               absentLegalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand" }],
-              absentLegalActionGroups: [{ player: 0, label: "Summons", windowKind: "open", actions: [{ type: "normalSummon", player: 0, code: "100", location: "hand" }] }],
+              absentLegalActionGroups: [absentNormalSummonGroup(0, "100", "hand")],
               legalActions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
               legalActionGroups: [turnGroup(1)],
               logCount: 6,
@@ -111,7 +111,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
               legalActionCounts: { 0: 6, 1: 0 },
               legalActionGroupCounts: { 0: 2, 1: 0 },
               legalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", windowId: 0, windowKind: "open", count: 1 }],
-              legalActionGroups: [{ player: 0, label: "Summons", windowId: 0, windowKind: "open", actions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", windowId: 0, windowKind: "open", count: 1 }] }],
+              legalActionGroups: [normalSummonGroup(0, "100", "hand", 1, 0)],
             },
             after: {
               source: "edopro",
@@ -121,7 +121,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
               phase: "main1",
               locations: { monsterZone: ["100"] },
               absentLegalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", windowId: 1, windowKind: "open" }],
-              absentLegalActionGroups: [{ player: 0, label: "Summons", windowId: 1, windowKind: "open", actions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", windowId: 1, windowKind: "open" }] }],
+              absentLegalActionGroups: [absentNormalSummonGroup(0, "100", "hand", 1)],
               legalActionCounts: { 0: 2 },
               legalActionGroupCounts: { 0: 1 },
             },
