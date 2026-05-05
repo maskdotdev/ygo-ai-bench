@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -73,7 +73,7 @@ describe("Lua draw lockout helpers", () => {
 
     const end = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn");
     expect(end).toBeDefined();
-    expect(applyResponse(session, end!).ok).toBe(true);
+    applyAndAssert(session, end!);
 
     expect(session.state.turnPlayer).toBe(1);
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "deck" });
@@ -81,3 +81,12 @@ describe("Lua draw lockout helpers", () => {
     expect(session.state.log.some((entry) => entry.action === "draw" && entry.card === "Blocked Turn Draw")).toBe(false);
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
