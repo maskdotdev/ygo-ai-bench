@@ -205,6 +205,44 @@ describe("Lua LP helpers", () => {
     expect(session.state.pendingTriggers).toEqual([]);
   });
 
+  it("keeps deck shuffle and sort helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Post-End First", kind: "monster" },
+      { code: "200", name: "Post-End Second", kind: "monster" },
+      { code: "300", name: "Post-End Third", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 957, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const beforeOrder = session.state.cards
+      .filter((card) => card.location === "deck")
+      .sort((left, right) => left.sequence - right.sequence)
+      .map((card) => card.code);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Duel.SortDeckbottom(0, 0, 2)
+      Debug.Message("sort operated " .. Duel.GetOperatedGroup():GetCount())
+      Duel.ShuffleDeck(0)
+      `,
+      "ended-sort-shuffle-noop.lua",
+    );
+
+    const afterOrder = session.state.cards
+      .filter((card) => card.location === "deck")
+      .sort((left, right) => left.sequence - right.sequence)
+      .map((card) => card.code);
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["sort operated 0"]);
+    expect(afterOrder).toEqual(beforeOrder);
+    expect(session.state.pendingTriggers).toEqual([]);
+  });
+
   it("clears pending actors when LP loss ends the duel", () => {
     const session = createDuel({ seed: 951, startingHandSize: 0 });
     loadDecks(session, {

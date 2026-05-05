@@ -177,18 +177,21 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
   });
   lua.lua_setfield(L, -2, to_luastring("DisableShuffleCheck"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     shuffleDeck(session, player);
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ShuffleDeck"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     shuffleHand(session, player);
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ShuffleHand"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     shuffleExtra(session, player);
     return 0;
@@ -220,6 +223,10 @@ function confirmUids(session: DuelSession, hostState: LuaDuelDeckApiHostState, p
 }
 
 function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDuelDeckApiHostState, edge: "top" | "bottom"): number {
+  if (session.state.status === "ended") {
+    setOperatedUids(hostState, []);
+    return 0;
+  }
   const deckPlayer = normalizePlayer(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const count = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
   const sorted = deckSegmentUids(session, deckPlayer, count, edge);
