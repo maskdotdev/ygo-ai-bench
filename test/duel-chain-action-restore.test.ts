@@ -37,6 +37,8 @@ describe("chain action restore", () => {
     const result = applyResponse(restored, pass!);
     expect(result.ok).toBe(true);
     expect(result.state.chain).toHaveLength(0);
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.state.log.some((entry) => entry.detail === "Restored pass original resolved")).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Restored pass quick resolved")).toBe(false);
   });
