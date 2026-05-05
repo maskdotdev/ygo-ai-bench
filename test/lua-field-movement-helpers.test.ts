@@ -137,4 +137,43 @@ describe("Lua field movement helpers", () => {
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ controller: 0, location: "monsterZone", sequence: 2, position: "faceUpDefense", faceUp: true });
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ controller: 0, location: "hand" });
   });
+
+  it("lets Lua scripts return Pendulum cards to previous spell/trap field zones", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Pendulum Filler A", kind: "spell", typeFlags: 0x1000002 },
+      { code: "200", name: "Returned Pendulum", kind: "spell", typeFlags: 0x1000002 },
+      { code: "300", name: "Pendulum Filler B", kind: "spell", typeFlags: 0x1000002 },
+    ];
+    const session = createDuel({ seed: 101, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    for (const code of ["100", "200", "300"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "spellTrapZone", 0);
+    }
+    const returned = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.location === "spellTrapZone" && candidate.code === "200");
+    moveDuelCard(session.state, returned!.uid, "banished", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local returned = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_REMOVED, 0, 1, 1, nil):GetFirst()
+      Debug.Message("return pendulum " .. tostring(Duel.ReturnToField(returned, POS_FACEUP)))
+      Debug.Message("return pendulum sequence " .. returned:GetSequence() .. "/" .. tostring(returned:IsLocation(LOCATION_PZONE)))
+      Debug.Message("return pendulum operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "return-pendulum-to-field.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("return pendulum true");
+    expect(host.messages).toContain("return pendulum sequence 1/true");
+    expect(host.messages).toContain("return pendulum operated 1");
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ controller: 0, location: "spellTrapZone", sequence: 1, position: "faceUpAttack", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ controller: 0, location: "spellTrapZone", sequence: 3 });
+  });
 });
