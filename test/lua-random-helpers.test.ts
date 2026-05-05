@@ -379,15 +379,11 @@ describe("Lua random helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredCoinTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredCoinTrigger).toBeDefined();
-    const restoredCoinResult = applyLuaRestoreResponse(restored, restoredCoinTrigger!);
-    expect(restoredCoinResult.ok).toBe(true);
-    expect(restoredCoinResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredCoinResult.state.waitingFor!));
-    expect(restoredCoinResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredCoinResult.state.waitingFor!));
-    expect(restoredCoinResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredCoinResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredCoinTrigger!);
     expect(restored.host.messages[0]).toMatch(/^coin trigger resolved 0\/2\/64\/0\/[01],[01]$/);
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(coinTrigger).toBeDefined();
-    expect(applyResponse(session, coinTrigger!).ok).toBe(true);
+    applyAndAssert(session, coinTrigger!);
     expect(host.messages[1]).toMatch(/^coin trigger resolved 0\/2\/64\/0\/[01],[01]$/);
 
     const diceResult = host.loadScript(
@@ -410,15 +406,11 @@ describe("Lua random helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restoredDice, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredDice, 0));
     const restoredDiceTrigger = getLuaRestoreLegalActions(restoredDice, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredDiceTrigger).toBeDefined();
-    const restoredDiceResult = applyLuaRestoreResponse(restoredDice, restoredDiceTrigger!);
-    expect(restoredDiceResult.ok).toBe(true);
-    expect(restoredDiceResult.legalActions).toEqual(getDuelLegalActions(restoredDice.session, restoredDiceResult.state.waitingFor!));
-    expect(restoredDiceResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredDice.session, restoredDiceResult.state.waitingFor!));
-    expect(restoredDiceResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredDiceResult.legalActions);
+    applyLuaRestoreAndAssert(restoredDice, restoredDiceTrigger!);
     expect(restoredDice.host.messages[0]).toMatch(/^dice trigger resolved 0\/2\/64\/0\/[1-6],[1-6]$/);
     const diceTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(diceTrigger).toBeDefined();
-    expect(applyResponse(session, diceTrigger!).ok).toBe(true);
+    applyAndAssert(session, diceTrigger!);
     expect(host.messages[3]).toMatch(/^dice trigger resolved 0\/2\/64\/0\/[1-6],[1-6]$/);
   });
 
@@ -463,7 +455,7 @@ describe("Lua random helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const sourceCard = session.state.cards.find((card) => card.code === "100");
     expect(sourceCard).toBeDefined();
@@ -550,7 +542,7 @@ describe("Lua random helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1014");
@@ -623,7 +615,7 @@ describe("Lua random helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1150");
@@ -695,7 +687,7 @@ describe("Lua random helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1151");
@@ -731,7 +723,7 @@ describe("Lua random helpers", () => {
     expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "coinTossed", eventCode: 1151, eventPlayer: 0, eventValue: 1, eventReason: 0x40, eventReasonPlayer: 0 });
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(coinTrigger).toBeDefined();
-    expect(applyResponse(session, coinTrigger!).ok).toBe(true);
+    applyAndAssert(session, coinTrigger!);
     expect(host.messages[1]).toMatch(/^called coin trigger resolved 0\/1\/64\/0\/[01]$/);
   });
 
@@ -781,11 +773,7 @@ describe("Lua random helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
-    const restoredResult = applyLuaRestoreResponse(restored, restoredTrigger!);
-    expect(restoredResult.ok).toBe(true);
-    expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
-    expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
-    expect(restoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredTrigger!);
     expect(restored.host.messages[0]).toMatch(/^restored called coin trigger 0\/1\/[01]$/);
   });
 
@@ -822,7 +810,7 @@ describe("Lua random helpers", () => {
     expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "coinTossNegated", eventCode: 1152 });
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(coinTrigger).toBeDefined();
-    expect(applyResponse(session, coinTrigger!).ok).toBe(true);
+    applyAndAssert(session, coinTrigger!);
     expect(host.messages).toContain("coin negate trigger 100");
 
     const diceResult = host.loadScript(
@@ -838,7 +826,7 @@ describe("Lua random helpers", () => {
     expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "diceTossNegated", eventCode: 1153 });
     const diceTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(diceTrigger).toBeDefined();
-    expect(applyResponse(session, diceTrigger!).ok).toBe(true);
+    applyAndAssert(session, diceTrigger!);
     expect(host.messages).toContain("dice negate trigger 100");
   });
 
@@ -984,4 +972,22 @@ function rockPaperScissorsMessages(session: DuelSession): string[] {
   );
   expect(result.ok, result.error).toBe(true);
   return host.messages;
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
 }
