@@ -14,6 +14,7 @@ export function assertSnapshotPendingWindowConsistency(state: Record<string, unk
 
 function assertSnapshotAwaitingPlayer(state: Record<string, unknown>): void {
   if (state.status === "awaiting" && state.waitingFor === undefined) throw new Error("Malformed duel snapshot: awaiting duel requires waitingFor");
+  if (state.status === "ended" && state.waitingFor !== undefined) throw new Error("Malformed duel snapshot: ended duel must not include waitingFor");
 }
 
 function assertSnapshotPassWindows(state: Record<string, unknown>): void {

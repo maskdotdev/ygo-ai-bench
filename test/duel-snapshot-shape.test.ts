@@ -80,6 +80,20 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: awaiting duel requires waitingFor");
   });
 
+  it("rejects ended snapshots with a waiting player before restore", () => {
+    const session = createDuel({ seed: 150, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    snapshot.state.status = "ended";
+    snapshot.state.waitingFor = 0;
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: ended duel must not include waitingFor");
+  });
+
   it("rejects malformed optional prompt snapshots before restore", () => {
     const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -142,6 +156,7 @@ describe("duel snapshot restore shape validation", () => {
     resolvingPrompt.state.status = "resolving";
     endedPrompt.state.prompt = { id: "ended-prompt", type: "selectYesNo", player: 0 };
     endedPrompt.state.status = "ended";
+    delete endedPrompt.state.waitingFor;
 
     expect(() => restoreDuel(resolvingPrompt, createCardReader(cards))).toThrow("Malformed duel snapshot: pending prompt requires an awaiting duel");
     expect(() => restoreDuel(endedPrompt, createCardReader(cards))).toThrow("Malformed duel snapshot: pending prompt requires an awaiting duel");
