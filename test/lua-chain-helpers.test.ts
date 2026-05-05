@@ -575,10 +575,10 @@ describe("Lua chain helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(sourceAction).toBeDefined();
-    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    applyAndAssert(session, sourceAction!);
     const replacement = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(replacement).toBeDefined();
-    expect(applyResponse(session, replacement!).ok).toBe(true);
+    applyAndAssert(session, replacement!);
     passChainIfAvailable(session);
     passChainIfAvailable(session);
     expect(host.messages).toContain("changed chain operation 0");
