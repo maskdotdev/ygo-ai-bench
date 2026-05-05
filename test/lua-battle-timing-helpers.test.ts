@@ -529,6 +529,60 @@ describe("Lua battle timing helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passDamage")).toMatchObject({ windowId: restored.session.state.actionWindowId, windowKind: "battle" });
   });
 
+  it("applies restored Lua battle-end triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Restore Battle-End Attacker", kind: "monster", attack: 1800 },
+      { code: "300", name: "Lua Restore Battle-End Trigger", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c300.lua") return undefined;
+        return `
+        c300={}
+        function c300.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_TRIGGER_O)
+          e:SetCode(EVENT_BATTLE_END)
+          e:SetRange(LOCATION_HAND)
+          e:SetOperation(function(e,tp)
+            Debug.Message("restored battle end trigger " .. tostring(Duel.IsDamageStep()) .. "/" .. tostring(Duel.IsEndStep()))
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 57, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)!).ok).toBe(true);
+    passBattleUntilTrigger(session);
+    expect(session.state.battleWindow?.kind).toBe("endDamageStep");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleEnded"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1137 });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleEnded"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1137 });
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(restored.host.messages).toEqual(["restored battle end trigger true/false"]);
+  });
+
   it("applies restored Lua damage-step-end triggers through restore responses", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Lua Restore End-Step Attacker", kind: "monster", attack: 1800 },
@@ -737,6 +791,17 @@ function activateEffectByCode(session: ReturnType<typeof createDuel>, player: 0 
 
 function passBattleResponses(session: ReturnType<typeof createDuel>): void {
   while (session.state.pendingBattle) {
+    const player = session.state.waitingFor ?? session.state.turnPlayer;
+    const passType = session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
+    const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === passType);
+    expect(pass).toBeDefined();
+    const result = applyResponse(session, pass!);
+    expect(result.ok, result.error).toBe(true);
+  }
+}
+
+function passBattleUntilTrigger(session: ReturnType<typeof createDuel>): void {
+  while (session.state.pendingBattle && session.state.pendingTriggers.length === 0) {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
     const passType = session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === passType);
