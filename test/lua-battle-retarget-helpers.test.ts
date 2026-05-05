@@ -376,6 +376,69 @@ describe("Lua battle retarget helpers", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === target!.uid)).toBe(true);
   });
 
+  it("applies restored Lua ChainAttack quick effects through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Restore Chain Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Lua Restore Chain Target", kind: "monster", attack: 1000 },
+      { code: "300", name: "Lua Restore Chain Probe", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c300.lua") return undefined;
+        return `
+        c300={}
+        function c300.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_QUICK_O)
+          e:SetRange(LOCATION_HAND)
+          e:SetCondition(function(e,tp) return Duel.GetAttacker()~=nil end)
+          e:SetOperation(function(e,tp)
+            Debug.Message("restored chain attack " .. tostring(Duel.ChainAttack()))
+            Debug.Message("restored chain cleared " .. tostring(Duel.GetAttacker()==nil))
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 58, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "300"] }, 1: { main: ["200", "200"] } });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    expect(attacker).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    const quick = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(quick).toMatchObject({ player: 0, windowKind: "battle" });
+    applyLuaRestoreAndAssert(restored, quick!);
+    const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+    applyLuaRestoreAndAssert(restored, pass!);
+
+    expect(restored.host.messages).toEqual(["restored chain attack true", "restored chain cleared true"]);
+    expect(restored.session.state.pendingBattle).toBeUndefined();
+    expect(restored.session.state.currentAttack).toBeUndefined();
+    expect(restored.session.state.attacksDeclared).not.toContain(attacker!.uid);
+    expect(getDuelLegalActions(restored.session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === target!.uid)).toBe(true);
+  });
+
   it("lets Lua scripts chain attack a supplied target", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Lua Chain Target Attacker", kind: "monster", attack: 1800 },
