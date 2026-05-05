@@ -180,6 +180,37 @@ describe("duel snapshot persistence", () => {
     expect(queryPublicState(restored).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
   });
 
+  it("derives trigger order prompt state from restored pending trigger buckets", () => {
+    const session = createDuel({ seed: 146, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.status = "awaiting";
+    session.state.waitingFor = 0;
+    session.state.pendingTriggers = [
+      { id: "turn-optional-a", player: 0, sourceUid, effectId: "effect-a", eventName: "customEvent", triggerBucket: "turnOptional" },
+      { id: "turn-optional-b", player: 0, sourceUid, effectId: "effect-b", eventName: "customEvent", triggerBucket: "turnOptional" },
+      { id: "opponent-optional", player: 1, sourceUid, effectId: "effect-c", eventName: "customEvent", triggerBucket: "opponentOptional" },
+    ];
+
+    const publicState = queryPublicState(session);
+    const serialized = serializeDuel(session);
+    const restored = restoreDuel(serialized, createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false });
+
+    expect(publicState.triggerOrderPrompt).toEqual({
+      id: `${session.state.actionWindowId}:turnOptional:0`,
+      type: "orderTriggers",
+      player: 0,
+      triggerBucket: "turnOptional",
+      triggerIds: ["turn-optional-a", "turn-optional-b"],
+    });
+    expect("triggerOrderPrompt" in serialized.state).toBe(false);
+    expect(queryPublicState(restored).triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  });
+
   it("rejects duplicate pending trigger ids on restore", () => {
     const session = createDuel({ seed: 144, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
