@@ -1,10 +1,11 @@
 import fengari from "fengari";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
-import { moveDuelCard } from "#duel/core.js";
+import { collectDuelTriggerEffects, moveDuelCard } from "#duel/core.js";
 import { registerDuelFlagEffect } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { readCardUid, readTableNumberField, readTableStringField } from "#lua/api-utils.js";
 import { matchingLuaEffects } from "#lua/card-effect-query-api.js";
+import { markLuaOperationTimingBoundary } from "#lua/duel-api/move.js";
 import { pushCardTable } from "#lua/card-table-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
@@ -54,12 +55,15 @@ function pushEquipByEffectAndLimitRegister<EffectRecord extends LuaCardApiEffect
     return 1;
   }
   try {
+    markLuaOperationTimingBoundary(session, hostState);
     moveDuelCard(session.state, equip.uid, "spellTrapZone", player, duelReason.effect, player);
     equip.equippedToUid = target.uid;
     equip.position = "faceUpAttack";
     equip.faceUp = true;
     if (code !== undefined) registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: equip.uid }, code, 0x1fe0000, 0, 0);
     pushDuelLog(session.state, "equip", player, equip.name, `Equipped to ${target.name}`);
+    collectDuelTriggerEffects(session.state, "equipped", equip);
+    if (hostState.activeContext) hostState.activeOperationMoved = true;
     setOperatedUids(hostState, [equip.uid]);
     lua.lua_pushboolean(L, true);
     return 1;

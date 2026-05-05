@@ -188,6 +188,95 @@ describe("Lua equip movement helpers", () => {
     expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
   });
 
+  it("queues effect-limit equip triggers and makes earlier optional when triggers miss timing", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Effect Equip Boundary Source", kind: "monster" },
+      { code: "200", name: "Effect Equip Boundary Target", kind: "monster" },
+      { code: "300", name: "When To Hand Watcher", kind: "monster" },
+      { code: "400", name: "If To Hand Watcher", kind: "monster" },
+      { code: "500", name: "Effect Equip Boundary Card", kind: "monster" },
+      { code: "600", name: "Effect Equip Watcher", kind: "monster" },
+      { code: "700", name: "Effect Equip Monster", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 254, startingHandSize: 7, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500", "600", "700"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const target = session.state.cards.find((card) => card.code === "200");
+    const monster = session.state.cards.find((card) => card.code === "700");
+    expect(target).toBeDefined();
+    expect(monster).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "graveyard", 0);
+    moveDuelCard(session.state, monster!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local equip=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local equip_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 700), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+
+      local e=Effect.CreateEffect(source)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp)
+        Duel.SendtoHand(target, tp, REASON_EFFECT)
+        monster:EquipByEffectAndLimitRegister(e, tp, equip, 777002, true)
+      end)
+      source:RegisterEffect(e)
+
+      local when_effect=Effect.CreateEffect(when_watcher)
+      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      when_effect:SetCode(EVENT_TO_HAND)
+      when_effect:SetRange(LOCATION_HAND)
+      when_effect:SetOperation(function(e,tp)
+        Debug.Message("when to hand resolved")
+      end)
+      when_watcher:RegisterEffect(when_effect)
+
+      local if_effect=Effect.CreateEffect(if_watcher)
+      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      if_effect:SetCode(EVENT_TO_HAND)
+      if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      if_effect:SetRange(LOCATION_HAND)
+      if_effect:SetOperation(function(e,tp)
+        Debug.Message("if to hand resolved")
+      end)
+      if_watcher:RegisterEffect(if_effect)
+
+      local equip_effect=Effect.CreateEffect(equip_watcher)
+      equip_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      equip_effect:SetCode(EVENT_EQUIP)
+      equip_effect:SetRange(LOCATION_HAND)
+      equip_effect:SetOperation(function(e,tp)
+        Debug.Message("effect equip boundary resolved")
+      end)
+      equip_watcher:RegisterEffect(equip_effect)
+      `,
+      "effect-equip-missed-timing.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1012");
+    expect(pendingEffectIds).toContain("lua-4-1121");
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToHand", eventCode: 1012 }), expect.objectContaining({ eventName: "equipped", eventCode: 1121 })]),
+    );
+    expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ location: "spellTrapZone", equippedToUid: monster!.uid, faceUp: true });
+  });
+
   it("keeps effect equip helpers from mutating ended duels", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Ended Equip Target", kind: "monster" },
