@@ -79,6 +79,7 @@ describe("EDOPro parity Xyz Summon success fixtures", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-xyz-success-watcher", eventName: "specialSummoned", eventCardUid: "p0-extraDeck-900-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             locations: { monsterZone: ["900"], overlay: ["100", "200"], hand: ["300"] },
             cards: [
               { uid: "p0-extraDeck-900-0", code: "900", location: "monsterZone", position: "faceUpAttack", faceUp: true, overlayCount: 2 },

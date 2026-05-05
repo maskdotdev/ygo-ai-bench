@@ -87,6 +87,7 @@ describe("EDOPro parity Pendulum Summon success fixtures", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-pendulum-success-watcher", eventName: "specialSummoned", eventCardUid: "p0-deck-300-2" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], hand: ["400", "500"] },
             cards: [{ uid: "p0-deck-300-2", code: "300", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
           },
