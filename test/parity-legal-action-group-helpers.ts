@@ -99,6 +99,24 @@ export const effectGroup = (player: 0 | 1, effectId: string, count = 1, windowId
   actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), windowKind: "battle" as const, count }],
 });
 
+export const chainEffectGroup = (player: 0 | 1, effectId: string, count = 1, windowId?: number) => ({
+  player,
+  label: "Effects",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "chainResponse" as const,
+  count,
+  actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), windowKind: "chainResponse" as const, count }],
+});
+
+export const chainPassGroup = (player: 0 | 1, count = 1, windowId?: number) => ({
+  player,
+  label: "Pass",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "chainResponse" as const,
+  count,
+  actions: [{ type: "passChain" as const, player, ...(windowId === undefined ? {} : { windowId }), windowKind: "chainResponse" as const, count }],
+});
+
 export const absentEffectGroup = (player: 0 | 1, effectId: string, windowId?: number) => ({
   player,
   label: "Effects",

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader, normalizeCdbRows, parseBanlistConf, scriptFilenameForCard, upstreamBanlistPath, upstreamDatabasePath, upstreamScriptPath } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { turnGroup } from "./parity-legal-action-group-helpers.js";
+import { chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro compatibility harness scaffolding", () => {
   it("normalizes card database rows and banlist entries", () => {
@@ -250,6 +250,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
                 { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "fixture-self-fast-quick", count: 1 },
                 { type: "passChain", player: 0, windowId: 2, windowKind: "chainResponse", count: 1 },
               ],
+              legalActionGroups: [chainEffectGroup(0, "fixture-self-fast-quick", 1, 2), chainPassGroup(0, 1, 2)],
               absentLegalActions: [{ type: "activateEffect", player: 1 }],
             },
           }),
@@ -260,6 +261,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
               windowId: 2,
               waitingFor: 0,
               legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "fixture-self-fast-quick", count: 1 }],
+              legalActionGroups: [chainEffectGroup(0, "fixture-self-fast-quick", 1, 2)],
             },
           }),
         ],
@@ -274,6 +276,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           locations: { monsterZone: ["100"], hand: ["300", "500"] },
           logIncludes: ["Fixture self fast quick resolved", "Fixture trigger resolved"],
           legalActions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+          legalActionGroups: [turnGroup(3)],
         },
       },
       { cardReader: createCardReader(cards) },
@@ -341,6 +344,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
                 { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "fixture-opponent-fast-quick", count: 1 },
                 { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
               ],
+              legalActionGroups: [chainEffectGroup(1, "fixture-opponent-fast-quick", 1, 2), chainPassGroup(1, 1, 2)],
               absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-turn-fast-quick" }],
             },
           }),
@@ -351,6 +355,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
               windowId: 2,
               waitingFor: 1,
               legalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "fixture-opponent-fast-quick", count: 1 }],
+              legalActionGroups: [chainEffectGroup(1, "fixture-opponent-fast-quick", 1, 2)],
             },
             after: {
               source: "edopro",
@@ -364,6 +369,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
                 { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-turn-fast-quick", count: 1 },
                 { type: "passChain", player: 0, windowId: 3, windowKind: "chainResponse", count: 1 },
               ],
+              legalActionGroups: [chainEffectGroup(0, "fixture-turn-fast-quick", 1, 3), chainPassGroup(0, 1, 3)],
             },
           }),
           makeScriptedStep(makeResponseSelector("passChain", 0)),
@@ -380,6 +386,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
           locations: { monsterZone: ["100"], hand: ["300", "500"] },
           logIncludes: ["Fixture opponent fast quick resolved", "Fixture trigger resolved"],
           legalActions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+          legalActionGroups: [turnGroup(5)],
         },
       },
       { cardReader: createCardReader(cards) },
