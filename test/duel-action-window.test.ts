@@ -68,7 +68,11 @@ describe("duel action windows", () => {
     expect(yes).toBeDefined();
     expect(yes?.windowId).toBe(0);
     expect(yes?.windowKind).toBe("prompt");
-    expect(applyResponse(session, yes!).ok).toBe(true);
+    const result = applyResponse(session, yes!);
+    expect(result.ok).toBe(true);
+    expect(result.state.actionWindowId).toBe(1);
+    expect(result.state.windowKind).toBe("open");
+    expectResultActionsMatchResultState(result);
 
     expect(session.state.actionWindowId).toBe(1);
     expectLegalActionsMatchPublicWindow(session, 0);
@@ -83,7 +87,10 @@ describe("duel action windows", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    const result = applyResponse(session, summon!);
+    expect(result.ok).toBe(true);
+    expect(result.state.windowKind).toBe("triggerBucket");
+    expectResultActionsMatchResultState(result);
 
     expect(queryPublicState(session).windowKind).toBe("triggerBucket");
     expectLegalActionsMatchPublicWindow(session, 0);
@@ -314,7 +321,10 @@ describe("duel action windows", () => {
 
     const starterAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "window-kind-chain-starter");
     expect(starterAction).toBeDefined();
-    expect(applyResponse(session, starterAction!).ok).toBe(true);
+    const result = applyResponse(session, starterAction!);
+    expect(result.ok).toBe(true);
+    expect(result.state.windowKind).toBe("chainResponse");
+    expectResultActionsMatchResultState(result);
 
     expect(queryPublicState(session).windowKind).toBe("chainResponse");
     expectLegalActionsMatchPublicWindow(session, 1);
@@ -333,7 +343,10 @@ describe("duel action windows", () => {
     expect(applyResponse(session, battlePhase!).ok).toBe(true);
     const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid);
     expect(attack).toBeDefined();
-    expect(applyResponse(session, attack!).ok).toBe(true);
+    const result = applyResponse(session, attack!);
+    expect(result.ok).toBe(true);
+    expect(result.state.windowKind).toBe("battle");
+    expectResultActionsMatchResultState(result);
 
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passAttack");
     expect(pass).toBeDefined();
