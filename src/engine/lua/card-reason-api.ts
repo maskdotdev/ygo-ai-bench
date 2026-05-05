@@ -86,6 +86,7 @@ function pushPlayerMatcher(L: unknown, fieldName: string, session: DuelSession, 
 }
 
 function pushSetTurnCounter(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const card = readCard(L, session, 1);
   if (card) card.turnCounter = lua.lua_isnumber(L, 2) ? Math.max(0, lua.lua_tointeger(L, 2)) : 0;
   return 0;
