@@ -103,6 +103,10 @@ describe("parity fixture metadata", () => {
     expect(missingTimingExpectationWindowIds()).toEqual([]);
   });
 
+  it("requires battle-state expectations to pin battle window state", () => {
+    expect(missingBattleWindowCoverage()).toEqual([]);
+  });
+
   it("requires non-empty pending trigger expectations to pin trigger bucket summaries", () => {
     expect(missingPendingTriggerBucketCoverage()).toEqual([]);
   });
@@ -323,6 +327,17 @@ describe("parity fixture metadata", () => {
         ...lines.slice(4),
       ]),
     ).toEqual(["fixture.ts:2"]);
+    expect(missingBattleWindowCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  pendingBattle: true,", ...lines.slice(4)])).toEqual(["fixture.ts:2"]);
+    expect(missingBattleWindowCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  currentAttack: false,", ...lines.slice(4)])).toEqual(["fixture.ts:2"]);
+    expect(
+      missingBattleWindowCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        "  pendingBattle: true,",
+        '  battleWindow: { kind: "attackNegationResponse" },',
+        ...lines.slice(4),
+      ]),
+    ).toEqual([]);
+    expect(missingBattleWindowCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  pendingBattle: false,", "  battleWindow: null,", ...lines.slice(4)])).toEqual([]);
     expect(missingPendingTriggerBucketCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  pendingTriggers: [{ player: 0, effectId: 'trigger' }],", ...lines.slice(4)])).toEqual([
       "fixture.ts:2",
     ]);
@@ -497,6 +512,10 @@ function missingNestedLegalActionGroupWindowKinds(): string[] {
 
 function missingTimingExpectationWindowIds(): string[] {
   return parityFixtureFiles().flatMap((file) => missingTimingExpectationWindowIdsInLines(file, readFixtureLines(file)));
+}
+
+function missingBattleWindowCoverage(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingBattleWindowCoverageInLines(file, readFixtureLines(file)));
 }
 
 function missingPendingTriggerBucketCoverage(): string[] {
@@ -686,6 +705,17 @@ function missingTimingExpectationWindowIdsInLines(file: string, lines: string[])
     if (!/\bwindowId:/.test(header)) missingWindowIds.push(`${file}:${index + 1}`);
   });
   return missingWindowIds;
+}
+
+function missingBattleWindowCoverageInLines(file: string, lines: string[]): string[] {
+  const missingWindows: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    if (!/\b(pendingBattle|currentAttack):/.test(block)) return;
+    if (!/\bbattleWindow:/.test(block)) missingWindows.push(`${file}:${index + 1}`);
+  });
+  return missingWindows;
 }
 
 function missingPendingTriggerBucketCoverageInLines(file: string, lines: string[]): string[] {
