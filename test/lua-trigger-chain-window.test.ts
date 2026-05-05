@@ -54,13 +54,11 @@ describe("Lua trigger chain windows", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
 
     const trigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const opened = applyResponse(session, trigger!);
-
-    expect(opened.ok).toBe(true);
+    const opened = applyAndAssert(session, trigger!);
     expect(opened.state.chain).toHaveLength(1);
     expect(opened.state.waitingFor).toBe(0);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
@@ -68,17 +66,13 @@ describe("Lua trigger chain windows", () => {
 
     const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(quick).toBeDefined();
-    const chained = applyResponse(session, quick!);
-
-    expect(chained.ok).toBe(true);
+    const chained = applyAndAssert(session, quick!);
     expect(chained.state.chain).toHaveLength(2);
     expect(chained.state.waitingFor).toBe(0);
 
     const pass = getDuelLegalActions(session, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
-    const resolved = applyResponse(session, pass!);
-
-    expect(resolved.ok).toBe(true);
+    const resolved = applyAndAssert(session, pass!);
     expect(resolved.state.chain).toHaveLength(0);
     expect(host.messages).toEqual(["lua self quick resolved", "lua self trigger resolved"]);
   });
@@ -142,14 +136,12 @@ describe("Lua trigger chain windows", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12200", "12300"]);
 
     const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
     expect(firstTrigger).toBeDefined();
-    const opened = applyResponse(session, firstTrigger!);
-
-    expect(opened.ok).toBe(true);
+    const opened = applyAndAssert(session, firstTrigger!);
     expect(opened.state.chain).toHaveLength(1);
     expect(opened.state.waitingFor).toBe(0);
     expect(opened.state.pendingTriggers.map((trigger) => opened.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12300"]);
@@ -158,12 +150,10 @@ describe("Lua trigger chain windows", () => {
 
     const secondTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === opened.state.pendingTriggers[0]?.effectId);
     expect(secondTrigger).toBeDefined();
-    expect(applyResponse(session, secondTrigger!).ok).toBe(true);
+    applyAndAssert(session, secondTrigger!);
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
-    const resolved = applyResponse(session, pass!);
-
-    expect(resolved.ok).toBe(true);
+    const resolved = applyAndAssert(session, pass!);
     expect(resolved.state.chain).toHaveLength(0);
     expect(resolved.state.pendingTriggers).toHaveLength(0);
     expect(host.messages).toEqual(["lua second held trigger resolved", "lua first held trigger resolved"]);
@@ -234,14 +224,13 @@ describe("Lua trigger chain windows", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
     expect(firstTrigger).toBeDefined();
-    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+    applyAndAssert(session, firstTrigger!);
     const secondTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
     expect(secondTrigger).toBeDefined();
-    const opened = applyResponse(session, secondTrigger!);
-    expect(opened.ok).toBe(true);
+    const opened = applyAndAssert(session, secondTrigger!);
     expect(opened.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
@@ -255,14 +244,10 @@ describe("Lua trigger chain windows", () => {
 
     const quick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
     expect(quick).toBeDefined();
-    const chained = applyLuaRestoreResponse(restored, quick!);
-    expect(chained.ok, chained.error).toBe(true);
-    expect(chained.legalActions).toEqual(getDuelLegalActions(restored.session, chained.state.waitingFor!));
-    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, chained.state.waitingFor!));
-    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
+    applyLuaRestoreAndAssert(restored, quick!);
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
+    applyLuaRestoreAndAssert(restored, pass!);
     expect(restored.host.messages).toEqual(["restored opponent quick resolved", "restored second trigger resolved", "restored first trigger resolved"]);
   });
 
@@ -316,14 +301,14 @@ describe("Lua trigger chain windows", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["16200", "16300"]);
     expect(session.state.pendingTriggers.map((trigger) => trigger.player)).toEqual([0, 1]);
 
     const firstEffectId = session.state.pendingTriggers[0]?.effectId;
     const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === firstEffectId);
     expect(firstTrigger).toBeDefined();
-    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+    applyAndAssert(session, firstTrigger!);
     expect(session.state.chain.map((link) => link.effectId)).toEqual([firstEffectId]);
     expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["16300"]);
 
@@ -339,8 +324,7 @@ describe("Lua trigger chain windows", () => {
 
     const secondTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.effectId === restored.session.state.pendingTriggers[0]?.effectId);
     expect(secondTrigger).toBeDefined();
-    const resolved = applyLuaRestoreResponse(restored, secondTrigger!);
-    expect(resolved.ok, resolved.error).toBe(true);
+    applyLuaRestoreAndAssert(restored, secondTrigger!);
     expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.host.messages).toEqual(["restored opponent mandatory resolved", "restored turn mandatory resolved"]);
@@ -426,10 +410,10 @@ describe("Lua trigger chain windows", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
     expect(firstTrigger).toBeDefined();
-    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+    applyAndAssert(session, firstTrigger!);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -441,8 +425,7 @@ describe("Lua trigger chain windows", () => {
 
     const opponentTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.effectId === restored.session.state.pendingTriggers[0]?.effectId);
     expect(opponentTrigger).toBeDefined();
-    const chained = applyLuaRestoreResponse(restored, opponentTrigger!);
-    expect(chained.ok, chained.error).toBe(true);
+    applyLuaRestoreAndAssert(restored, opponentTrigger!);
     expect(restored.session.state.waitingFor).toBe(1);
     expect(getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual([opponentChainQuickId]);
     expect(getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId)).toMatchObject({ windowKind: "chainResponse" });
@@ -450,14 +433,12 @@ describe("Lua trigger chain windows", () => {
 
     const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
     expect(opponentQuick).toBeDefined();
-    const quickChained = applyLuaRestoreResponse(restored, opponentQuick!);
-    expect(quickChained.ok, quickChained.error).toBe(true);
+    applyLuaRestoreAndAssert(restored, opponentQuick!);
     expect(restored.session.state.waitingFor).toBe(1);
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
-    const opponentPassed = applyLuaRestoreResponse(restored, pass!);
-    expect(opponentPassed.ok, opponentPassed.error).toBe(true);
+    const opponentPassed = applyLuaRestoreAndAssert(restored, pass!);
     expect(opponentPassed.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(opponentPassed.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(opponentPassed.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
@@ -526,7 +507,7 @@ describe("Lua trigger chain windows", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["13200", "13300"]);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([
       session.state.pendingTriggers[0]?.effectId,
@@ -535,9 +516,7 @@ describe("Lua trigger chain windows", () => {
 
     const firstActivation = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
     expect(firstActivation).toBeDefined();
-    const opened = applyResponse(session, firstActivation!);
-
-    expect(opened.ok).toBe(true);
+    const opened = applyAndAssert(session, firstActivation!);
     expect(opened.state.chain).toHaveLength(1);
     expect(opened.state.waitingFor).toBe(0);
     expect(opened.state.pendingTriggers.map((trigger) => opened.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["13300"]);
@@ -554,12 +533,10 @@ describe("Lua trigger chain windows", () => {
 
     const secondActivation = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === opened.state.pendingTriggers[0]?.effectId);
     expect(secondActivation).toBeDefined();
-    expect(applyResponse(session, secondActivation!).ok).toBe(true);
+    applyAndAssert(session, secondActivation!);
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
-    const resolved = applyResponse(session, pass!);
-
-    expect(resolved.ok).toBe(true);
+    const resolved = applyAndAssert(session, pass!);
     expect(resolved.state.chain).toHaveLength(0);
     expect(resolved.state.pendingTriggers).toHaveLength(0);
     expect(host.messages).toEqual(["lua second optional window resolved", "lua first optional window resolved"]);
@@ -636,7 +613,7 @@ describe("Lua trigger chain windows", () => {
     expect(summonSource).toBeDefined();
     const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
     expect(summon).toBeDefined();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["14200", "14300", "14400"]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
@@ -646,9 +623,7 @@ describe("Lua trigger chain windows", () => {
 
     const firstDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
     expect(firstDecline).toBeDefined();
-    const afterFirstDecline = applyResponse(session, firstDecline!);
-
-    expect(afterFirstDecline.ok).toBe(true);
+    const afterFirstDecline = applyAndAssert(session, firstDecline!);
     expect(afterFirstDecline.state.pendingTriggers.map((trigger) => afterFirstDecline.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["14300", "14400"]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([afterFirstDecline.state.pendingTriggers[0]?.effectId]);
@@ -663,9 +638,7 @@ describe("Lua trigger chain windows", () => {
 
     const secondDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === afterFirstDecline.state.pendingTriggers[0]?.effectId);
     expect(secondDecline).toBeDefined();
-    const afterSecondDecline = applyResponse(session, secondDecline!);
-
-    expect(afterSecondDecline.ok).toBe(true);
+    const afterSecondDecline = applyAndAssert(session, secondDecline!);
     expect(afterSecondDecline.state.pendingTriggers.map((trigger) => afterSecondDecline.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["14400"]);
     expect(afterSecondDecline.state.waitingFor).toBe(1);
     expect(getDuelLegalActions(session, 0)).toHaveLength(0);
@@ -681,4 +654,22 @@ function effectIdForSourceCode(session: ReturnType<typeof createDuel>, code: str
   });
   expect(effect).toBeDefined();
   return effect!.id;
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: Parameters<typeof applyLuaRestoreResponse>[0], action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
 }
