@@ -5,11 +5,12 @@ import { collectDuelTriggerEffects, damageDuelPlayer, recoverDuelPlayer, setDuel
 import { clearEndedDuelPendingState } from "#duel/end-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
+import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import type { DuelSession, DuelWinner, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installDuelLpApi(L: unknown, session: DuelSession): void {
+export function installDuelLpApi(L: unknown, session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     lua.lua_pushinteger(state, session.state.players[player].lifePoints);
@@ -36,7 +37,10 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
     const value = Math.max(0, lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0);
     if (session.state.players[player].lifePoints > value) {
       setDuelPlayerLifePoints(session.state, player, session.state.players[player].lifePoints - value);
-      if (value > 0) collectDuelTriggerEffects(session.state, "lifePointCostPaid", undefined, { eventPlayer: player, eventValue: value });
+      if (value > 0) {
+        markLuaOperationTimingBoundary(session, hostState);
+        collectDuelTriggerEffects(session.state, "lifePointCostPaid", undefined, { eventPlayer: player, eventValue: value });
+      }
     }
     return 0;
   });
@@ -46,7 +50,10 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
     const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
     const applied = damageDuelPlayer(session.state, player, value, reason);
-    if (applied > 0 && session.state.status !== "ended") collectDuelTriggerEffects(session.state, "damageDealt", undefined, { eventPlayer: player, eventValue: applied, eventReason: reason });
+    if (applied > 0 && session.state.status !== "ended") {
+      markLuaOperationTimingBoundary(session, hostState);
+      collectDuelTriggerEffects(session.state, "damageDealt", undefined, { eventPlayer: player, eventValue: applied, eventReason: reason });
+    }
     lua.lua_pushinteger(state, applied);
     return 1;
   });
@@ -55,7 +62,10 @@ export function installDuelLpApi(L: unknown, session: DuelSession): void {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const applied = recoverDuelPlayer(session.state, player, value);
-    if (applied > 0) collectDuelTriggerEffects(session.state, "recoveredLifePoints", undefined, { eventPlayer: player, eventValue: applied });
+    if (applied > 0) {
+      markLuaOperationTimingBoundary(session, hostState);
+      collectDuelTriggerEffects(session.state, "recoveredLifePoints", undefined, { eventPlayer: player, eventValue: applied });
+    }
     lua.lua_pushinteger(state, applied);
     return 1;
   });
