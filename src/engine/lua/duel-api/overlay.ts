@@ -25,6 +25,10 @@ export function removeOverlayReference(state: DuelState, uid: string): void {
 }
 
 function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  if (session.state.status === "ended") {
+    setOperatedUids(hostState, []);
+    return 0;
+  }
   const targetUid = readCardUid(L, 1);
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
   if (!target || (target.location !== "monsterZone" && target.location !== "extraDeck")) {
@@ -64,6 +68,11 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
 }
 
 function pushRemoveOverlayCard(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  if (session.state.status === "ended") {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
   const selfLocations = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const opponentLocations = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;

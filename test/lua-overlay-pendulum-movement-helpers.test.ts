@@ -228,6 +228,44 @@ describe("Lua overlay and pendulum movement helpers", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("overlay");
   });
 
+  it("keeps overlay helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Ended Overlay Material", kind: "monster" },
+      { code: "920", name: "Ended Overlay Xyz", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 311, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"], extra: ["920"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const xyz = session.state.cards.find((card) => card.code === "920");
+    const material = session.state.cards.find((card) => card.code === "100");
+    expect(xyz).toBeDefined();
+    expect(material).toBeDefined();
+    moveDuelCard(session.state, xyz!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local xyz = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 920), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local material = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Duel.Overlay(xyz, material)
+      Debug.Message("attach operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("detach " .. Duel.RemoveOverlayCard(0, LOCATION_MZONE, 0, 1, 1, REASON_COST))
+      Debug.Message("detach operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "ended-overlay-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["attach operated 0", "detach 0", "detach operated 0"]);
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([]);
+    expect(session.state.cards.find((card) => card.uid === material!.uid)?.location).toBe("hand");
+    expect(session.state.pendingTriggers).toEqual([]);
+  });
+
   it("lets Lua effects pay Xyz overlay detach costs before resolving", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Detach Material A", kind: "monster" },
