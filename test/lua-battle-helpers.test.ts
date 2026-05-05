@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -37,7 +37,7 @@ describe("Lua battle helpers", () => {
     );
     expect(before.ok, before.error).toBe(true);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
     const during = host.loadScript(
       `
       local attacker = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
@@ -48,7 +48,7 @@ describe("Lua battle helpers", () => {
     );
     expect(during.ok, during.error).toBe(true);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!);
     const after = host.loadScript(
       `
       local attacker = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
@@ -93,11 +93,11 @@ describe("Lua battle helpers", () => {
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!);
     passBattleResponses(session);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!);
     passBattleResponses(session);
 
     expect(session.state.attacksDeclared.filter((uid) => uid === attacker!.uid)).toHaveLength(2);
@@ -134,8 +134,8 @@ describe("Lua battle helpers", () => {
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid)!);
     passBattleResponses(session);
 
     expect(session.state.battleDamage[1]).toBe(2000);
@@ -172,8 +172,8 @@ describe("Lua battle helpers", () => {
     expect(updated.ok, updated.error).toBe(true);
     expect(host.messages).toContain("attack update battle 700/2500");
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!);
     passBattleResponses(session);
 
     expect(session.state.battleDamage[1]).toBe(1500);
@@ -210,8 +210,8 @@ describe("Lua battle helpers", () => {
     expect(updated.ok, updated.error).toBe(true);
     expect(host.messages).toContain("defense update battle 500/1500");
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!);
     passBattleResponses(session);
 
     expect(session.state.battleDamage[0]).toBe(300);
@@ -259,12 +259,12 @@ describe("Lua battle helpers", () => {
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === firstTarget!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === firstTarget!.uid)!);
     passBattleResponses(session);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === secondTarget!.uid)).toBe(true);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === secondTarget!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === secondTarget!.uid)!);
     passBattleResponses(session);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)).toBe(false);
   });
@@ -310,12 +310,12 @@ describe("Lua battle helpers", () => {
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === firstTarget!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === firstTarget!.uid)!);
     passBattleResponses(session);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === secondTarget!.uid)).toBe(true);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === secondTarget!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === secondTarget!.uid)!);
     passBattleResponses(session);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)).toBe(false);
   });
@@ -348,13 +348,13 @@ describe("Lua battle helpers", () => {
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === firstTarget!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === firstTarget!.uid)!);
     passBattleResponses(session);
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === attacker!.uid);
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(session.state.cards.find((card) => card.uid === firstTarget!.uid)).toMatchObject({ location: "graveyard", reason: 0x21 });
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === secondTarget!.uid)).toBe(true);
   });
@@ -476,10 +476,10 @@ describe("Lua battle helpers", () => {
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    applyAndAssert(session, battle!);
     const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid);
     expect(attack).toBeDefined();
-    const attackResult = applyResponse(session, attack!);
+    const attackResult = applyAndAssert(session, attack!);
 
     expect(attackResult.ok).toBe(true);
     expect(session.state.pendingTriggers).toHaveLength(1);
@@ -489,7 +489,7 @@ describe("Lua battle helpers", () => {
 
     const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
 
     expect(host.messages).toContain("negate window damage 0");
     expect(host.messages).toContain("negate window result true");
@@ -559,17 +559,17 @@ describe("Lua battle helpers", () => {
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!);
     passBattleResponses(session);
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateTrigger")).toBe(false);
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     const secondTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(secondTrigger).toBeDefined();
-    expect(applyResponse(session, secondTrigger!).ok).toBe(true);
+    applyAndAssert(session, secondTrigger!);
     expect(host.messages).toEqual(["aux bdogcon attacker resolved", "aux bdocon attacker resolved"]);
   });
 
@@ -613,11 +613,11 @@ describe("Lua battle helpers", () => {
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
-    expect(applyResponse(session, activateEffectByCode(session, 0, "300")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!);
+    applyAndAssert(session, activateEffectByCode(session, 0, "300")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!);
 
     expect(host.messages).toEqual(["battle monster self 100", "battle monster opponent 200"]);
   });
@@ -659,11 +659,11 @@ describe("Lua battle helpers", () => {
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!).ok).toBe(true);
-    expect(applyResponse(session, activateEffectByCode(session, 0, "300")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!);
+    applyAndAssert(session, activateEffectByCode(session, 0, "300")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!);
 
     expect(host.messages).toEqual(["direct battle monster self 100", "direct battle monster opponent nil true"]);
   });
@@ -676,13 +676,21 @@ function activateEffectByCode(session: ReturnType<typeof createDuel>, player: 0 
   );
 }
 
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
 function passBattleResponses(session: ReturnType<typeof createDuel>): void {
   while (session.state.pendingBattle) {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
     const passType = session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === passType);
     expect(pass).toBeDefined();
-    const result = applyResponse(session, pass!);
-    expect(result.ok, result.error).toBe(true);
+    applyAndAssert(session, pass!);
   }
 }
