@@ -18,6 +18,24 @@ function expectLuaRestoreGroupsMirrorActions(restored: ReturnType<typeof restore
   expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
 describe("Node upstream chain-limit snapshot restore", () => {
   it("reports Lua chain-limit predicates that cannot be restored from snapshots", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
@@ -88,7 +106,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(3);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
 
@@ -177,7 +195,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
 
     const snapshot = serializeDuel(session);
@@ -192,7 +210,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expectLuaRestoreGroupsMirrorActions(restored, 1);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 
   it("restores captured handler-code Lua chain-limit predicates from snapshots", () => {
@@ -265,7 +283,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(3);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
 
@@ -284,7 +302,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(restoredActions.some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
     const restoredAction = restoredActions.find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 
   it("restores named Lua chain-limit predicates from snapshots", () => {
@@ -344,7 +362,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
 
     const snapshot = serializeDuel(session);
@@ -358,7 +376,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expectLuaRestoreGroupsMirrorActions(restored, 1);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 
   it("restores single-card Lua chain-limit closures from snapshots", () => {
@@ -437,7 +455,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(3);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
 
@@ -451,7 +469,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 
   it("restores type-mask Lua chain-limit closures from snapshots", () => {
@@ -529,7 +547,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(3);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
 
@@ -543,7 +561,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 
   it("restores chain-player Lua chain-limit closures from snapshots", () => {
@@ -605,7 +623,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const snapshot = serializeDuel(session);
     expect(snapshot.state.chainLimits[0]?.registryKey).toContain(":known:closure:chain-player:0");
@@ -616,7 +634,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expectLuaRestoreGroupsMirrorActions(restored, 1);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 
   it("restores response-player Lua chain-limit closures from snapshots", () => {
@@ -694,7 +712,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(3);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(true);
 
@@ -709,7 +727,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
     expect(restoredAction).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
+    applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 
   it("keeps ambiguous numeric Lua chain-limit closures incomplete after snapshots", () => {
@@ -771,7 +789,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const snapshot = serializeDuel(session);
     expect(snapshot.state.chainLimits[0]?.registryKey).toMatch(/^lua-chain-limit:100:0:link:\d+$/);
@@ -842,7 +860,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const snapshot = serializeDuel(session);
     expect(snapshot.state.chainLimits[0]?.registryKey).toMatch(/^lua-chain-limit:100:0:link:\d+$/);
@@ -907,7 +925,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
 
     const snapshot = serializeDuel(session);
