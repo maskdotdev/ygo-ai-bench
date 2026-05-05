@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua battle retarget helpers", () => {
@@ -64,6 +65,74 @@ describe("Lua battle retarget helpers", () => {
     expect(session.state.cards.find((card) => card.uid === originalTarget!.uid)?.location).toBe("monsterZone");
     expect(session.state.cards.find((card) => card.uid === newTarget!.uid)?.location).toBe("graveyard");
     expect(session.state.players[1].lifePoints).toBe(6700);
+  });
+
+  it("applies restored Lua attack retarget quick effects through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Lua Restore Retarget Attacker", kind: "monster", attack: 1800 },
+      { code: "200", name: "Lua Restore Original Target", kind: "monster", attack: 1000 },
+      { code: "250", name: "Lua Restore New Target", kind: "monster", attack: 500 },
+      { code: "300", name: "Lua Restore Retarget Probe", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c300.lua") return undefined;
+        return `
+        c300={}
+        function c300.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_QUICK_O)
+          e:SetRange(LOCATION_HAND)
+          e:SetCondition(function(e,tp) return Duel.GetAttacker()~=nil end)
+          e:SetOperation(function(e,tp)
+            local target=Duel.GetFieldCard(1,LOCATION_MZONE,1)
+            Debug.Message("restored change target " .. tostring(Duel.ChangeAttackTarget(target)))
+            Debug.Message("restored target " .. Duel.GetAttackTarget():GetCode())
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 56, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "300"] }, 1: { main: ["200", "250"] } });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const originalTarget = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "200");
+    const newTarget = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "250");
+    expect(attacker).toBeDefined();
+    expect(originalTarget).toBeDefined();
+    expect(newTarget).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, originalTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, newTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === originalTarget!.uid)!);
+    expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect")).toBe(false);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passAttack")!);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    const quick = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(quick).toMatchObject({ player: 0, windowKind: "battle" });
+    const quickResult = applyLuaRestoreAndAssert(restored, quick!);
+    expect(quickResult.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+    applyLuaRestoreAndAssert(restored, pass!);
+
+    expect(restored.host.messages).toEqual(["restored change target true", "restored target 250"]);
+    expect(restored.session.state.currentAttack?.targetUid).toBe(newTarget!.uid);
+    expect(restored.session.state.pendingBattle?.targetUid).toBe(newTarget!.uid);
   });
 
   it("lets Lua scripts change the current attacker", () => {
@@ -320,6 +389,15 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
   expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
 }
