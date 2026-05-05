@@ -494,8 +494,8 @@ describe("Lua summon and release helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("selected ritual 1");
-    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "specialSummoned", eventCode: 1102 });
-    expect(session.state.pendingTriggers[0]).toMatchObject({ effectId: "lua-ritual-event-code", eventName: "specialSummoned", eventCode: 1102 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "specialSummoned", eventCode: 1102, eventReason: 0x100810, eventReasonPlayer: 0 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ effectId: "lua-ritual-event-code", eventName: "specialSummoned", eventCode: 1102, eventReason: 0x100810, eventReasonPlayer: 0 });
   });
 
   it("makes earlier Lua optional when triggers miss timing at ritual summon boundaries", () => {

@@ -291,8 +291,8 @@ describe("Lua normal summon field helpers", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_SSET)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp,eg)
-          Debug.Message("lua spell trap set resolved " .. eg:GetFirst():GetCode())
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("lua spell trap set resolved " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
         end)
         c:RegisterEffect(e)
       end
@@ -312,13 +312,13 @@ describe("Lua normal summon field helpers", () => {
     expect(setResult.ok, setResult.error).toBe(true);
     expect(host.messages).toContain("sset trigger result 1");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["spellTrapSet"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1107 });
-    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "spellTrapSet", eventCode: 1107 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1107, eventReason: 0x400, eventReasonPlayer: 0 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "spellTrapSet", eventCode: 1107, eventReason: 0x400, eventReasonPlayer: 0 });
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();
     expect(applyResponse(session, trigger!).ok).toBe(true);
-    expect(host.messages).toContain("lua spell trap set resolved 100");
+    expect(host.messages).toContain("lua spell trap set resolved 100/1024/0");
   });
 
   it("applies restored Lua spell/trap set triggers through restore responses", () => {
@@ -336,8 +336,8 @@ describe("Lua normal summon field helpers", () => {
           e:SetType(EFFECT_TYPE_TRIGGER_O)
           e:SetCode(EVENT_SSET)
           e:SetRange(LOCATION_HAND)
-          e:SetOperation(function(e,tp,eg)
-            Debug.Message("restored spell trap set " .. eg:GetFirst():GetCode())
+          e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+            Debug.Message("restored spell trap set " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
           end)
           c:RegisterEffect(e)
         end
@@ -364,7 +364,7 @@ describe("Lua normal summon field helpers", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["spellTrapSet"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1107 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1107, eventReason: 0x400, eventReasonPlayer: 0 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -374,7 +374,7 @@ describe("Lua normal summon field helpers", () => {
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
-    expect(restored.host.messages).toContain("restored spell trap set 100");
+    expect(restored.host.messages).toContain("restored spell trap set 100/1024/0");
   });
 
   it("queues Lua monster-set triggers after MSet", () => {

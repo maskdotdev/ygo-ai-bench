@@ -24,6 +24,7 @@ import {
   xyzSummonDuelCard,
 } from "#duel/core.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeSetDuelCard } from "#duel/summon.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
@@ -181,7 +182,7 @@ function setLuaMonsterWithTributes(session: DuelSession, target: DuelCardInstanc
       tributeUids,
       (uid, controller, moveReason) => ({ card: sendDuelCardToGraveyard(session.state, uid, controller, moveReason) }),
       (uid) => canMoveDuelCardToLocation(session.state, uid, "graveyard", reason),
-      (eventName, eventCard) => collectDuelTriggerEffects(session.state, eventName, eventCard),
+      (eventName, eventCard) => collectLuaSummonEvent(session, eventName, eventCard),
     );
     return { ok: true };
   } catch {
@@ -193,13 +194,13 @@ function setLuaSpellTrap(session: DuelSession, hostState: LuaDuelSummonApiHostSt
   if (!canLuaSetSpellTrap(session, target)) return { ok: false };
   markLuaOperationTimingBoundary(session, hostState);
   if (target.location === "hand") {
-    setCoreSpellTrap(session.state, target.controller, target.uid, (eventName, eventCard) => collectDuelTriggerEffects(session.state, eventName, eventCard));
+    setCoreSpellTrap(session.state, target.controller, target.uid, (eventName, eventCard) => collectLuaSummonEvent(session, eventName, eventCard));
   } else {
     moveDuelCard(session.state, target.uid, "spellTrapZone", target.controller, duelReason.rule, session.state.turnPlayer);
     target.position = "faceDown";
     target.faceUp = false;
     pushDuelLog(session.state, "set", target.controller, target.name, `Set from ${target.previousLocation}`);
-    collectDuelTriggerEffects(session.state, "spellTrapSet", target);
+    collectLuaSummonEvent(session, "spellTrapSet", target);
   }
   return { ok: true };
 }
@@ -286,7 +287,14 @@ function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelS
   recordSpecialSummonActivity(session.state, target.controller, target);
   pushDuelLog(session.state, "ritualSummon", target.controller, target.name, `Ritual Summoned with ${materialUids.length} material(s)`);
   markLuaOperationTimingBoundary(session, hostState);
-  collectDuelTriggerEffects(session.state, "specialSummoned", target);
+  collectLuaSummonEvent(session, "specialSummoned", target);
+}
+
+function collectLuaSummonEvent(session: DuelSession, eventName: Parameters<typeof collectDuelTriggerEffects>[1], eventCard?: DuelCardInstance): void {
+  const payload: DuelEventPayload = {};
+  if (eventCard?.reason !== undefined) payload.eventReason = eventCard.reason;
+  if (eventCard?.reasonPlayer !== undefined) payload.eventReasonPlayer = eventCard.reasonPlayer;
+  collectDuelTriggerEffects(session.state, eventName, eventCard, payload);
 }
 
 function pushRitualMaterial(L: unknown, session: DuelSession): number {
