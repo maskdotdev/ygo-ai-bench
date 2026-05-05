@@ -368,10 +368,10 @@ describe("Lua battle fast priority restore", () => {
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    applyAndAssert(session, battle!);
     const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined);
     expect(attack).toBeDefined();
-    expect(applyResponse(session, attack!).ok).toBe(true);
+    applyAndAssert(session, attack!);
     passBattleResponse(session, 1, "passAttack");
     passBattleResponse(session, 0, "passAttack");
     passBattleResponse(session, 1, "passDamage");
@@ -412,11 +412,7 @@ describe("Lua battle fast priority restore", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toMatchObject({ player: 0, windowKind: "triggerBucket" });
-    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
-    expect(triggerResult.ok, triggerResult.error).toBe(true);
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    const triggerResult = applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toEqual(["restored cleanup battle damage 1/1800/32/6200"]);
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.pendingBattle).toBeUndefined();
@@ -465,10 +461,10 @@ describe("Lua battle fast priority restore", () => {
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    applyAndAssert(session, battle!);
     const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined);
     expect(attack).toBeDefined();
-    expect(applyResponse(session, attack!).ok).toBe(true);
+    applyAndAssert(session, attack!);
     passBattleResponse(session, 1, "passAttack");
     passBattleResponse(session, 0, "passAttack");
     passBattleResponse(session, 1, "passDamage");
@@ -565,10 +561,10 @@ describe("Lua battle fast priority restore", () => {
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    applyAndAssert(session, battle!);
     const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === defender!.uid);
     expect(attack).toBeDefined();
-    expect(applyResponse(session, attack!).ok).toBe(true);
+    applyAndAssert(session, attack!);
     passBattleResponse(session, 1, "passAttack");
     passBattleResponse(session, 0, "passAttack");
     passBattleResponse(session, 1, "passDamage");
@@ -682,10 +678,10 @@ function setupRestoredBattleQuick(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_
 
   const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
   expect(battle).toBeDefined();
-  expect(applyResponse(session, battle!).ok).toBe(true);
+  applyAndAssert(session, battle!);
   const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined);
   expect(attack).toBeDefined();
-  expect(applyResponse(session, attack!).ok).toBe(true);
+  applyAndAssert(session, attack!);
   passBattleResponse(session, 1, "passAttack");
   passBattleResponse(session, 0, "passAttack");
   expect(session.state.battleWindow?.kind).toBe("startDamageStep");
@@ -695,14 +691,30 @@ function setupRestoredBattleQuick(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_
 function activateTurnQuick(fixture: ReturnType<typeof setupRestoredBattleQuick>): void {
   const quick = getDuelLegalActions(fixture.session, 0).find((candidate) => candidate.type === "activateEffect");
   expect(quick).toBeDefined();
-  const result = applyResponse(fixture.session, quick!);
-  expect(result.ok, result.error).toBe(true);
+  const result = applyAndAssert(fixture.session, quick!);
   expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
 }
 
 function passBattleResponse(session: ReturnType<typeof createDuel>, player: 0 | 1, type: "passAttack" | "passDamage"): void {
   const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === type);
   expect(pass).toBeDefined();
-  const result = applyResponse(session, pass!);
-  expect(result.ok, result.error).toBe(true);
+  applyAndAssert(session, pass!);
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
 }
