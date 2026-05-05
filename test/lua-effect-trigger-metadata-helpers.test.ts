@@ -148,6 +148,9 @@ describe("Lua effect trigger metadata helpers", () => {
 
     expect(applyLuaRestoreResponse(restored, restoredIfTrigger!).ok).toBe(true);
     expect(restored.host.messages).toContain("lua if optional resolved");
+    const staleRestoredIfTrigger = applyLuaRestoreResponse(restored, restoredIfTrigger!);
+    expect(staleRestoredIfTrigger.ok).toBe(false);
+    expect(staleRestoredIfTrigger.error).toContain("Response is not currently legal");
     const opponentTriggers = getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger");
     expect(opponentTriggers.every((action) => action.windowId === queryPublicState(restored.session).actionWindowId && action.windowKind === "triggerBucket")).toBe(true);
     expect(opponentTriggers.map((action) => action.uid)).toEqual([
