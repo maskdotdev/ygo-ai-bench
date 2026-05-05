@@ -804,6 +804,7 @@ function assertSnapshotBattle(battle: unknown, path: string, cardUids: ReadonlyS
   if (battle.replayTargetCount !== undefined) assertSnapshotNonNegativeInteger(battle.replayTargetCount, `${path}.replayTargetCount`);
   if (battle.replayTargetUids !== undefined) {
     assertSnapshotStringArray(battle.replayTargetUids, `${path}.replayTargetUids`);
+    assertSnapshotUniqueStringArray(battle.replayTargetUids, `${path}.replayTargetUids`);
     assertSnapshotCardUidArray(battle.replayTargetUids, `${path}.replayTargetUids`, cardUids);
   }
   if (battle.battleDamageOverrides === undefined) return;
