@@ -719,6 +719,9 @@ describe("duel trigger buckets", () => {
     expect(staleDecline.ok).toBe(false);
     expect(staleDecline.error).toContain("Response is not currently legal");
     expect(staleDecline.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleDecline.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleDecline.legalActions);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-restored-decline-optional"]);
   });
 
