@@ -768,6 +768,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(restored.restoreComplete).toBe(false);
     expect(restored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
   });
 
   it("keeps ambiguous response-player Lua chain-limit closures incomplete after snapshots", () => {
@@ -838,6 +839,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(restored.restoreComplete).toBe(false);
     expect(restored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
   });
 
   it("reports Lua one-chain limit predicates that cannot be restored from snapshots", () => {
