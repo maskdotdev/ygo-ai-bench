@@ -634,7 +634,7 @@ function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: st
     if (card[field] !== undefined && typeof card[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
   }
   for (const field of ["effectRelationIds"] as const) {
-    if (card[field] !== undefined) assertSnapshotNumberArray(card[field], `${path}.${field}`);
+    if (card[field] !== undefined) assertSnapshotEffectRelationIds(card[field], `${path}.${field}`);
   }
   for (const field of ["cardTargetUids", "summonMaterialUids"] as const) {
     if (card[field] !== undefined) assertSnapshotStringArray(card[field], `${path}.${field}`);
@@ -689,6 +689,16 @@ function assertSnapshotCounterRecord(record: unknown, path: string): void {
   for (const [key, value] of Object.entries(record)) {
     if (!/^\d+$/.test(key)) throw new Error(`Malformed duel snapshot: ${path} must use numeric keys`);
     assertSnapshotNonNegativeInteger(value, `${path}.${key}`);
+  }
+}
+
+function assertSnapshotEffectRelationIds(values: unknown, path: string): void {
+  if (!Array.isArray(values)) throw new Error(`Malformed duel snapshot: ${path} must be an array`);
+  const seen = new Set<number>();
+  for (const [index, value] of values.entries()) {
+    assertSnapshotNonNegativeInteger(value, `${path}.${index}`);
+    if (seen.has(value as number)) throw new Error(`Malformed duel snapshot: ${path} must not contain duplicates`);
+    seen.add(value as number);
   }
 }
 
