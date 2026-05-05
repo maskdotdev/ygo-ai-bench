@@ -62,6 +62,7 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   });
   lua.lua_setfield(L, -2, to_luastring("CheckSummonedCount"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
     const player = readOptionalPlayer(state, 1) ?? session.state.turnPlayer;
     if (session.state.players[player].normalSummonAvailable) recordNormalSummonActivity(session.state, player);
     session.state.players[player].normalSummonAvailable = false;
@@ -81,7 +82,7 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("PendulumSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonStep(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummonStep"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonComplete(state, hostState));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonComplete(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummonComplete"));
   lua.lua_pushcfunction(L, (state: unknown) => pushNegateSummon(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("NegateSummon"));
@@ -98,6 +99,7 @@ function pushSummonHelper(L: unknown, fieldName: string, session: DuelSession, h
 }
 
 function pushSummonOrSetResult(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
   const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
   const targetUid = readFirstCardOrGroupUid(L, 2);
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
@@ -133,6 +135,7 @@ function selectSummonOrSetAction(
 }
 
 function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState, type: "normalSummon" | "setMonster" | "setSpellTrap"): number {
+  if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
   const targetUid = readFirstCardOrGroupUid(L, type === "setSpellTrap" && lua.lua_isnumber(L, 1) ? 2 : 1);
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
   if (!target) {
@@ -202,6 +205,7 @@ function basicSummonLabel(type: "normalSummon" | "setMonster" | "setSpellTrap", 
 }
 
 function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState, summonType: LuaSummonType): number {
+  if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
   const playerFirst = lua.lua_isnumber(L, 1) && readCardUid(L, 2) !== undefined;
   const player = playerFirst ? readOptionalPlayer(L, 1) ?? session.state.turnPlayer : undefined;
   const targetUid = readCardUid(L, playerFirst ? 2 : 1);
@@ -284,6 +288,7 @@ function pushRitualMaterial(L: unknown, session: DuelSession): number {
 }
 
 function pushReleaseRitualMaterial(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
   const reason = duelReason.release | duelReason.material | duelReason.ritual;
   const moved: string[] = [];
   for (const uid of readCardOrGroupUids(L, 1)) {
@@ -302,6 +307,7 @@ function pushReleaseRitualMaterial(L: unknown, session: DuelSession, hostState: 
 }
 
 function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
   const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
   const zoneCount = availableMonsterZoneCount(session, player, []);
   const scales = pendulumScales(session, player);
@@ -328,6 +334,7 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
 }
 
 function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  if (session.state.status === "ended") return pushEmptyBooleanResult(L, hostState);
   const uid = readCardUid(L, 1);
   const target = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   const targetPlayer = readOptionalPlayer(L, 4) ?? target?.controller;
@@ -351,7 +358,11 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
   }
 }
 
-function pushSpecialSummonComplete(L: unknown, hostState: LuaDuelSummonApiHostState): number {
+function pushSpecialSummonComplete(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  if (session.state.status === "ended") {
+    hostState.pendingSpecialSummonUids = [];
+    return pushEmptyIntegerResult(L, hostState);
+  }
   const completed = hostState.pendingSpecialSummonUids ?? [];
   setOperatedUids(hostState, completed);
   hostState.pendingSpecialSummonUids = [];
@@ -360,6 +371,7 @@ function pushSpecialSummonComplete(L: unknown, hostState: LuaDuelSummonApiHostSt
 }
 
 function pushNegateSummon(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
+  if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
   const negated: string[] = [];
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
@@ -535,4 +547,16 @@ function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, 
 
 function setOperatedUids(hostState: LuaDuelSummonApiHostState, uids: string[]): void {
   hostState.operatedUids.splice(0, hostState.operatedUids.length, ...uids);
+}
+
+function pushEmptyIntegerResult(L: unknown, hostState: LuaDuelSummonApiHostState): number {
+  setOperatedUids(hostState, []);
+  lua.lua_pushinteger(L, 0);
+  return 1;
+}
+
+function pushEmptyBooleanResult(L: unknown, hostState: LuaDuelSummonApiHostState): number {
+  setOperatedUids(hostState, []);
+  lua.lua_pushboolean(L, false);
+  return 1;
 }
