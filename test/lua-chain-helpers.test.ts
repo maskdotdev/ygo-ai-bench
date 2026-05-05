@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua chain helpers", () => {
   it("lets Lua quick effects inspect pending chain info", () => {
@@ -299,6 +300,91 @@ describe("Lua chain helpers", () => {
     expect(host.messages).toContain("allowed quick resolved");
     expect(host.messages).toContain("persistent source resolved");
     expect(host.messages).not.toContain("chain back resolved");
+  });
+
+  it("restores Lua response-player chain limits with legal response groups", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Limit Source", kind: "monster" },
+      { code: "400", name: "Restore Allowed Quick", kind: "monster" },
+      { code: "500", name: "Restore Blocked Quick", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetTarget(function(e,tp)
+              local responsePlayer=1
+              Duel.SetChainLimitTillChainEnd(function(te,rp,cp) return rp==responsePlayer end)
+              return true
+            end)
+            e:SetOperation(function(e,tp) Debug.Message("restore limit source resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c400.lua") {
+          return `
+          c400={}
+          function c400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restore allowed quick resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c500.lua") {
+          return `
+          c500={}
+          function c500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restore blocked quick resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 54, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "500"] }, 1: { main: ["400"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(400, source).ok).toBe(true);
+    expect(host.loadCardScript(500, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.chainLimitRegistryKeys).toEqual(expect.arrayContaining([expect.stringContaining("known:closure:response-player:1")]));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect")).toBeUndefined();
+
+    const allowed = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(allowed).toBeDefined();
+    const result = applyLuaRestoreResponse(restored, allowed!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    expect(restored.host.messages).not.toContain("restore blocked quick resolved");
   });
 
   it("detects duplicate card codes in the current Lua chain", () => {
