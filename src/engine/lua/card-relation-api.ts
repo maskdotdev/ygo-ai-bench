@@ -51,6 +51,7 @@ export function installCardRelationApi<EffectRecord extends LuaCardApiEffectReco
 }
 
 function pushCreateEffectRelation(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const card = readCard(L, session);
   const effectId = readTableNumberField(L, 2, "__effect_id");
   if (card && effectId !== undefined) {
@@ -61,6 +62,7 @@ function pushCreateEffectRelation(L: unknown, session: DuelSession): number {
 }
 
 function pushReleaseEffectRelation(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const card = readCard(L, session);
   const effectId = readTableNumberField(L, 2, "__effect_id");
   if (card && effectId !== undefined) card.effectRelationIds = (card.effectRelationIds ?? []).filter((id) => id !== effectId);
@@ -68,6 +70,10 @@ function pushReleaseEffectRelation(L: unknown, session: DuelSession): number {
 }
 
 function pushSetCardTarget(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
   const card = readCard(L, session, 1);
   const target = readCard(L, session, 2);
   lua.lua_pushboolean(L, setCardTarget(card, target));
@@ -75,6 +81,7 @@ function pushSetCardTarget(L: unknown, session: DuelSession): number {
 }
 
 function pushCancelCardTarget(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const card = readCard(L, session, 1);
   const target = readCard(L, session, 2);
   if (card && target) card.cardTargetUids = (card.cardTargetUids ?? []).filter((uid) => uid !== target.uid);
@@ -133,6 +140,10 @@ function pushIsHasCardTarget(L: unknown, session: DuelSession): number {
 }
 
 function pushCreateRelation(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
   const card = readCard(L, session, 1);
   const target = readCard(L, session, 2);
   lua.lua_pushboolean(L, setCardTarget(card, target));
@@ -191,6 +202,7 @@ function pushIsRelateToBattle(L: unknown, session: DuelSession): number {
 }
 
 function pushCancelToGrave(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const card = readCard(L, session);
   if (card) card.cancelToGrave = lua.lua_isnoneornil(L, 2) ? true : lua.lua_toboolean(L, 2);
   return 0;

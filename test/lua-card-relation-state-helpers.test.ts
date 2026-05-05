@@ -224,6 +224,61 @@ describe("Lua card relation state helpers", () => {
     expect(session.state.cards.find((card) => card.code === "100")?.cardTargetUids).toHaveLength(1);
   });
 
+  it("keeps card relation helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Ended Relation Source", kind: "monster" },
+      { code: "200", name: "Ended Relation Target A", kind: "monster" },
+      { code: "300", name: "Ended Relation Target B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 232, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const first = session.state.cards.find((card) => card.code === "200");
+    const second = session.state.cards.find((card) => card.code === "300");
+    expect(source).toBeDefined();
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local first=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,200),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local second=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,300),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local e=Effect.CreateEffect(source)
+      source:CreateEffectRelation(e)
+      source:SetCardTarget(first)
+      source:CancelToGrave()
+      Duel.Win(0,WIN_REASON_EXODIA)
+      source:ReleaseEffectRelation(e)
+      source:CancelCardTarget(first)
+      source:CancelToGrave(false)
+      Debug.Message("set ended " .. tostring(source:SetCardTarget(second)))
+      Debug.Message("relation ended " .. tostring(source:CreateRelation(second,RESET_EVENT+RESETS_STANDARD)))
+      Debug.Message("effect kept " .. tostring(source:IsRelateToEffect(e)))
+      Debug.Message("targets kept " .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)) .. "/" .. source:GetCardTargetCount())
+      `,
+      "ended-card-relation-noop.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    expect(host.messages).toEqual([
+      "set ended false",
+      "relation ended false",
+      "effect kept true",
+      "targets kept true/false/1",
+    ]);
+    expect(session.state.status).toBe("ended");
+    expect(source!.effectRelationIds).toHaveLength(1);
+    expect(source!.cardTargetUids).toEqual([first!.uid]);
+    expect(source!.cancelToGrave).toBe(true);
+    expect(source!.cardTargetUids).not.toContain(second!.uid);
+  });
+
   it("checks Rush trait change availability from current and original traits", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Rush Trait Source", kind: "monster", race: 0x2, attribute: 0x10 }];
     const session = createDuel({ seed: 31, startingHandSize: 1, cardReader: createCardReader(cards) });
