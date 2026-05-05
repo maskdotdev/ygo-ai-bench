@@ -74,6 +74,13 @@ function requiresWindowStampEcho(action: DuelAction): boolean {
     action.type === "passChain" ||
     action.type === "activateEffect" ||
     action.type === "specialSummonProcedure" ||
+    action.type === "normalSummon" ||
+    action.type === "tributeSummon" ||
+    action.type === "fusionSummon" ||
+    action.type === "synchroSummon" ||
+    action.type === "xyzSummon" ||
+    action.type === "linkSummon" ||
+    action.type === "ritualSummon" ||
     action.type === "setMonster" ||
     action.type === "setSpellTrap" ||
     action.type === "flipSummon" ||

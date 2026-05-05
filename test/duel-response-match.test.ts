@@ -128,11 +128,24 @@ describe("duel response matching", () => {
     expect(sameAction(procedure, { ...procedure })).toBe(true);
   });
 
+  it("requires summon responses to echo their open window stamp", () => {
+    const normal: DuelAction = { type: "normalSummon", player: 0, uid: "monster", label: "Normal", windowId: 13, windowKind: "open" };
+    const tribute: DuelAction = { type: "tributeSummon", player: 0, uid: "monster", tributeUids: ["tribute"], label: "Tribute", windowId: 13, windowKind: "open" };
+    const fusion: DuelAction = { type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["mat-a", "mat-b"], label: "Fusion", windowId: 13, windowKind: "open" };
+
+    expect(sameAction(normal, { type: "normalSummon", player: 0, uid: "monster", label: "Normal" })).toBe(false);
+    expect(sameAction(tribute, { type: "tributeSummon", player: 0, uid: "monster", tributeUids: ["tribute"], label: "Tribute" })).toBe(false);
+    expect(sameAction(fusion, { type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["mat-b", "mat-a"], label: "Fusion" })).toBe(false);
+    expect(sameAction(normal, { ...normal })).toBe(true);
+    expect(sameAction(tribute, { ...tribute })).toBe(true);
+    expect(sameAction(fusion, { ...fusion, materialUids: ["mat-b", "mat-a"] })).toBe(true);
+  });
+
   it("requires manual board action responses to echo their open window stamp", () => {
-    const setMonster: DuelAction = { type: "setMonster", player: 0, uid: "monster", label: "Set monster", windowId: 13, windowKind: "open" };
-    const setSpellTrap: DuelAction = { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell", windowId: 13, windowKind: "open" };
-    const flip: DuelAction = { type: "flipSummon", player: 0, uid: "monster", label: "Flip", windowId: 13, windowKind: "open" };
-    const position: DuelAction = { type: "changePosition", player: 0, uid: "monster", position: "faceUpDefense", label: "Defense", windowId: 13, windowKind: "open" };
+    const setMonster: DuelAction = { type: "setMonster", player: 0, uid: "monster", label: "Set monster", windowId: 14, windowKind: "open" };
+    const setSpellTrap: DuelAction = { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell", windowId: 14, windowKind: "open" };
+    const flip: DuelAction = { type: "flipSummon", player: 0, uid: "monster", label: "Flip", windowId: 14, windowKind: "open" };
+    const position: DuelAction = { type: "changePosition", player: 0, uid: "monster", position: "faceUpDefense", label: "Defense", windowId: 14, windowKind: "open" };
 
     expect(sameAction(setMonster, { type: "setMonster", player: 0, uid: "monster", label: "Set monster" })).toBe(false);
     expect(sameAction(setSpellTrap, { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell" })).toBe(false);
@@ -145,8 +158,8 @@ describe("duel response matching", () => {
   });
 
   it("requires turn-flow responses to echo their open window stamp", () => {
-    const phase: DuelAction = { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase", windowId: 14, windowKind: "open" };
-    const endTurn: DuelAction = { type: "endTurn", player: 0, label: "End Turn", windowId: 14, windowKind: "open" };
+    const phase: DuelAction = { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase", windowId: 15, windowKind: "open" };
+    const endTurn: DuelAction = { type: "endTurn", player: 0, label: "End Turn", windowId: 15, windowKind: "open" };
 
     expect(sameAction(phase, { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase" })).toBe(false);
     expect(sameAction(endTurn, { type: "endTurn", player: 0, label: "End Turn" })).toBe(false);

@@ -58,7 +58,7 @@ describe("duel action legality", () => {
     expect(session.state.cards.find((card) => card.code === "100")?.location).toBe("hand");
   });
 
-  it("dispatches the canonical legal response payload", () => {
+  it("dispatches the canonical stamped legal response payload", () => {
     const session = createDuel({ seed: 2, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
       0: { main: ["100"] },
@@ -68,7 +68,10 @@ describe("duel action legality", () => {
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon");
     expect(summon).toBeDefined();
 
-    const result = applyResponse(session, { type: "normalSummon", player: 0, uid: summon!.uid, label: "Forged label" });
+    const stale = applyResponse(session, { type: "normalSummon", player: 0, uid: summon!.uid, label: "Forged label" });
+    expect(stale.ok).toBe(false);
+
+    const result = applyResponse(session, summon!);
 
     expect(result.ok).toBe(true);
     expect(session.state.cards.find((card) => card.uid === summon!.uid)?.location).toBe("monsterZone");
