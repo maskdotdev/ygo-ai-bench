@@ -54,8 +54,10 @@ describe("Lua summon material restore helpers", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(100, source).ok).toBe(true);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const materialScript = host.loadCardScript(100, source);
+    const starterScript = host.loadCardScript(300, source);
+    expect(materialScript.ok, materialScript.error).toBe(true);
+    expect(starterScript.ok, starterScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
 
     const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("300"));
@@ -67,7 +69,7 @@ describe("Lua summon material restore helpers", () => {
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "usedAsMaterial", eventCode: 1108, eventCardUid: material!.uid }));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("usedAsMaterial");
     expect(restored.session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "usedAsMaterial", eventCode: 1108, eventCardUid: material!.uid }));
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));

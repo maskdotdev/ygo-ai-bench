@@ -59,7 +59,8 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   target!.faceUp = true;
 
   const host = createLuaScriptHost(session);
-  expect(host.loadCardScript(300, source).ok).toBe(true);
+  const loaded = host.loadCardScript(300, source);
+  expect(loaded.ok, loaded.error).toBe(true);
   expect(host.registerInitialEffects()).toBe(1);
   applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
   applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!);
@@ -70,7 +71,7 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1140, eventCardUid: target!.uid });
 
   const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-  expect(restored.restoreComplete).toBe(true);
+  expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDestroyed"]);
   expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1140, eventCardUid: target!.uid });
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
