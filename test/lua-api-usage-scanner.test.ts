@@ -7,14 +7,20 @@ import { describe, expect, it } from "vitest";
 const scannerPath = path.resolve("tools/scan-lua-api-usage.mjs");
 
 describe("Lua API usage scanner", () => {
-  it("keeps local provisional fallback scripts on Group:GetCount checks", () => {
-    const provisionalScripts = fs
-      .readdirSync("local-card-scripts/fallbacks/official")
-      .filter((file) => file.endsWith(".lua"))
-      .map((file) => path.join("local-card-scripts/fallbacks/official", file))
-      .filter((file) => fs.readFileSync(file, "utf8").includes("local-fallback-provisional"));
+  it("requires provisional fallback scripts to have direct test coverage", () => {
+    const uncovered = provisionalFallbackScripts().filter((file) => {
+      const code = path.basename(file, ".lua").replace(/^c/, "");
+      return !testFiles().some((testFile) => {
+        const source = fs.readFileSync(testFile, "utf8");
+        return source.includes(`c${code}.lua`) || source.includes(code);
+      });
+    });
 
-    const groupLengthChecks = provisionalScripts.flatMap((file) => {
+    expect(uncovered).toEqual([]);
+  });
+
+  it("keeps local provisional fallback scripts on Group:GetCount checks", () => {
+    const groupLengthChecks = provisionalFallbackScripts().flatMap((file) => {
       const source = fs.readFileSync(file, "utf8");
       const matches = source.match(/#[a-z][a-z0-9_]*(?=\s*[<>=~])/gi) ?? [];
       return matches.map((match) => `${file}: ${match}`);
@@ -79,3 +85,18 @@ describe("Lua API usage scanner", () => {
     expect(result.stderr).toContain("Missing value for --scripts");
   });
 });
+
+function provisionalFallbackScripts(): string[] {
+  return fs
+    .readdirSync("local-card-scripts/fallbacks/official")
+    .filter((file) => file.endsWith(".lua"))
+    .map((file) => path.join("local-card-scripts/fallbacks/official", file))
+    .filter((file) => fs.readFileSync(file, "utf8").includes("local-fallback-provisional"));
+}
+
+function testFiles(): string[] {
+  return fs
+    .readdirSync("test")
+    .filter((file) => file.endsWith(".test.ts") && file !== "lua-api-usage-scanner.test.ts")
+    .map((file) => path.join("test", file));
+}
