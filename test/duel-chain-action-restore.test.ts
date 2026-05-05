@@ -126,6 +126,45 @@ describe("chain action restore", () => {
     expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(staleQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleQuick.legalActions);
   });
+
+  it("returns restored chain resolution to turn-player open fast-effect priority", () => {
+    const session = createDuel({ seed: 4, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnQuickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(source).toBeTruthy();
+    expect(turnQuickSource).toBeTruthy();
+    expect(opponentQuickSource).toBeTruthy();
+    registerEffect(session, chainEffect("restore-open-priority-source", source!.uid, 0, "ignition", "Restored open priority source resolved"));
+    registerEffect(session, openOnlyQuickEffect("restore-open-priority-turn-quick", turnQuickSource!.uid, 0, "Restored turn open quick resolved"));
+    registerEffect(session, chainOnlyQuickEffect("restore-open-priority-opponent-chain-quick", opponentQuickSource!.uid, 1, "Restored opponent chain quick resolved"));
+
+    const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-source");
+    expect(original).toBeTruthy();
+    expect(applyResponse(session, original!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-open-priority-source": restoreChainEffect("Restored open priority source resolved"),
+      "restore-open-priority-turn-quick": restoreOpenOnlyQuickEffect("Restored turn open quick resolved"),
+      "restore-open-priority-opponent-chain-quick": restoreChainOnlyQuickEffect("Restored opponent chain quick resolved"),
+    });
+    const result = applyResponse(restored, pass!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-open-priority-turn-quick", windowKind: "open" })]));
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+  });
 });
 
 function chainResponseGroups(session: ReturnType<typeof setupRestoredChainResponse>["restored"], player: 0 | 1) {
@@ -183,6 +222,42 @@ function restoreChainEffect(detail: string): (effect: Omit<DuelEffectDefinition,
     ...effect,
     operation(ctx) {
       ctx.log(detail);
+    },
+  });
+}
+
+function openOnlyQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
+  return {
+    ...chainEffect(id, sourceUid, controller, "quick", detail),
+    canActivate(ctx) {
+      return ctx.duel.chain.length === 0;
+    },
+  };
+}
+
+function chainOnlyQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
+  return {
+    ...chainEffect(id, sourceUid, controller, "quick", detail),
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
+    },
+  };
+}
+
+function restoreOpenOnlyQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...restoreChainEffect(detail)(effect),
+    canActivate(ctx) {
+      return ctx.duel.chain.length === 0;
+    },
+  });
+}
+
+function restoreChainOnlyQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...restoreChainEffect(detail)(effect),
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
     },
   });
 }
