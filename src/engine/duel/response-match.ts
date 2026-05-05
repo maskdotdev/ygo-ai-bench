@@ -62,5 +62,8 @@ function hasWindowKindKey(value: unknown): boolean {
 
 function sameStringSet(a: unknown, b: unknown): boolean {
   if (!Array.isArray(a) || !Array.isArray(b)) return false;
-  return a.length === b.length && a.every((value) => b.includes(value));
+  if (a.length !== b.length) return false;
+  const left = [...a].sort();
+  const right = [...b].sort();
+  return left.every((value, index) => value === right[index]);
 }

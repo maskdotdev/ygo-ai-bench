@@ -100,5 +100,8 @@ function isMaterialAction(action: DuelAction): action is Extract<DuelAction, { m
 }
 
 function sameStringSet(a: string[], b: string[]): boolean {
-  return a.length === b.length && a.every((value) => b.includes(value));
+  if (a.length !== b.length) return false;
+  const left = [...a].sort();
+  const right = [...b].sort();
+  return left.every((value, index) => value === right[index]);
 }
