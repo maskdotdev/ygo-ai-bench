@@ -123,6 +123,7 @@ describe("Lua battle-target events", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("restored battle target trigger 200");
   });
@@ -146,5 +147,6 @@ function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScript
     expect(passResult.ok).toBe(true);
     expect(passResult.legalActions).toEqual(getDuelLegalActions(restored.session, passResult.state.waitingFor!));
     expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
+    expect(passResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(passResult.legalActions);
   }
 }
