@@ -346,6 +346,7 @@ describe("duel snapshot battle restore shape validation", () => {
     declareSnapshotAttack(attackerUid, snapshot);
     snapshot.state.status = "ended";
     snapshot.state.winner = 1;
+    delete snapshot.state.waitingFor;
     snapshot.state.currentAttack = { attackerUid };
     snapshot.state.pendingBattle = { attackerUid };
 

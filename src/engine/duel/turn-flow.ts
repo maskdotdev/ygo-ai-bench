@@ -2,6 +2,7 @@ import { resetDuelActivityCounts } from "#duel/activity.js";
 import { clearBattleWindowState } from "#duel/battle-window-state.js";
 import { getCards, moveDuelCard, pushDuelLog } from "#duel/card-state.js";
 import { pruneResetEffectsAfterPhase } from "#duel/effect-reset.js";
+import { clearEndedDuelPendingState } from "#duel/end-state.js";
 import { pruneDuelFlagEffectsAfterPhase } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { phaseEventCode, phaseStartEventCode } from "#duel/event-codes.js";
@@ -149,7 +150,6 @@ function applyDeckDefeat(state: DuelState, player: PlayerId): void {
   if ((state.players[player].initialMainDeckSize ?? 0) <= state.options.startingHandSize) return;
   state.status = "ended";
   state.winner = otherPlayer(player);
-  delete state.prompt;
-  delete state.waitingFor;
+  clearEndedDuelPendingState(state);
   pushDuelLog(state, "win", state.winner, undefined, "deck");
 }

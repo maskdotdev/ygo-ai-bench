@@ -1,5 +1,6 @@
 import { moveDuelCard, pushDuelLog } from "#duel/card-state.js";
 import { isLifePointLossDefeatPrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import { clearEndedDuelPendingState } from "#duel/end-state.js";
 import { duelReason } from "#duel/reasons.js";
 import type { DuelState, PlayerId } from "#duel/types.js";
 
@@ -28,8 +29,7 @@ function applyLifePointDefeat(state: DuelState, player: PlayerId): void {
   if (state.players[player].lifePoints > 0) return;
   if (isLifePointLossDefeatPrevented(state, player, createLifePointCheckContext(state))) return;
   state.status = "ended";
-  delete state.prompt;
-  delete state.waitingFor;
+  clearEndedDuelPendingState(state);
 }
 
 function createLifePointCheckContext(state: DuelState): ContinuousEffectContextFactory {
