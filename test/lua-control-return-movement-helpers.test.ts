@@ -5,6 +5,7 @@ import {
   createDuel,
   detachDuelOverlayMaterials,
   destroyDuelCard,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   serializeDuel,
@@ -290,7 +291,9 @@ describe("Lua control and return movement helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored to hand trigger 200");
   });
 
