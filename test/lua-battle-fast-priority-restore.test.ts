@@ -319,6 +319,13 @@ describe("Lua battle fast priority restore", () => {
     expect(restored.session.state.players[1].lifePoints).toBe(6200);
     expect(restored.session.state.pendingBattle).toBeUndefined();
     expect(restored.session.state.battleWindow).toBeUndefined();
+
+    const stalePass = applyLuaRestoreResponse(restored, pass!);
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
     expect(restored.host.messages).toEqual([]);
   });
 
