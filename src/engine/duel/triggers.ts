@@ -1,6 +1,6 @@
 import { findCard, moveDuelCard } from "#duel/card-state.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
-import { eventCardStatePayload } from "#duel/event-history.js";
+import { eventCardReasonPayload, eventCardStatePayload } from "#duel/event-history.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventCardState, DuelEventName, DuelState, PendingTrigger, PlayerId, TriggerBucket } from "#duel/types.js";
 
@@ -13,6 +13,8 @@ export interface DuelTriggerCollectOptions {
   eventValue?: number;
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
+  eventReasonCardUid?: string;
+  eventReasonEffectId?: number;
   relatedEffectId?: number;
   eventChainDepth?: number;
   eventChainLinkId?: string;
@@ -65,6 +67,9 @@ function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, so
     ...(options.eventValue === undefined ? {} : { eventValue: options.eventValue }),
     ...(options.eventReason === undefined ? {} : { eventReason: options.eventReason }),
     ...(options.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }),
+    ...eventCardReasonPayload(eventCard),
+    ...(options.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: options.eventReasonCardUid }),
+    ...(options.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: options.eventReasonEffectId }),
     ...(options.relatedEffectId === undefined ? {} : { relatedEffectId: options.relatedEffectId }),
     ...(options.eventChainDepth === undefined ? {} : { eventChainDepth: options.eventChainDepth }),
     ...(options.eventChainLinkId === undefined ? {} : { eventChainLinkId: options.eventChainLinkId }),

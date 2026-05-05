@@ -35,6 +35,8 @@ export interface DuelActivationHandlers {
     eventValue?: number,
     eventReason?: number,
     eventReasonPlayer?: PlayerId,
+    eventReasonCardUid?: string,
+    eventReasonEffectId?: number,
     relatedEffectId?: number,
     eventChainDepth?: number,
     eventChainLinkId?: string,
@@ -55,6 +57,8 @@ export interface DuelActivationHandlers {
     eventValue?: number,
     eventReason?: number,
     eventReasonPlayer?: PlayerId,
+    eventReasonCardUid?: string,
+    eventReasonEffectId?: number,
     relatedEffectId?: number,
     eventChainDepth?: number,
     eventChainLinkId?: string,
@@ -149,6 +153,8 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventValue,
       trigger.eventReason,
       trigger.eventReasonPlayer,
+      trigger.eventReasonCardUid,
+      trigger.eventReasonEffectId,
       trigger.relatedEffectId,
       trigger.eventChainDepth,
       trigger.eventChainLinkId,
@@ -171,6 +177,8 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventValue,
       trigger.eventReason,
       trigger.eventReasonPlayer,
+      trigger.eventReasonCardUid,
+      trigger.eventReasonEffectId,
       trigger.relatedEffectId,
       trigger.eventChainDepth,
       trigger.eventChainLinkId,
@@ -233,6 +241,8 @@ function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][nu
     trigger.eventValue === link.eventValue &&
     trigger.eventReason === link.eventReason &&
     trigger.eventReasonPlayer === link.eventReasonPlayer &&
+    trigger.eventReasonCardUid === link.eventReasonCardUid &&
+    trigger.eventReasonEffectId === link.eventReasonEffectId &&
     trigger.relatedEffectId === link.relatedEffectId &&
     trigger.eventChainDepth === link.eventChainDepth &&
     trigger.eventChainLinkId === link.eventChainLinkId &&

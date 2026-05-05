@@ -16,10 +16,14 @@ describe("duel event state packets", () => {
 
     const moved = session.state.cards.find((card) => card.code === "100");
     const watcher = session.state.cards.find((card) => card.code === "200");
+    const reasonSource = session.state.cards.find((card) => card.code === "300");
     expect(moved).toBeDefined();
     expect(watcher).toBeDefined();
+    expect(reasonSource).toBeDefined();
     const previousSequence = moved!.sequence;
     const previousPosition = moved!.position;
+    moved!.reasonCardUid = reasonSource!.uid;
+    moved!.reasonEffectId = 3001;
 
     session.state.effects.push({
       id: "watch-sent",
@@ -31,11 +35,9 @@ describe("duel event state packets", () => {
       range: ["hand"],
       operation() {},
     });
-    const chainKeeper = session.state.cards.find((card) => card.code === "300");
-    expect(chainKeeper).toBeDefined();
     session.state.effects.push({
       id: "keep-chain-open",
-      sourceUid: chainKeeper!.uid,
+      sourceUid: reasonSource!.uid,
       controller: 1,
       event: "quick",
       range: ["hand"],
@@ -60,18 +62,18 @@ describe("duel event state packets", () => {
     };
 
     expect(session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent })]),
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: moved!.uid, eventReasonCardUid: reasonSource!.uid, eventReasonEffectId: 3001, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent })]),
     );
     expect(session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
+      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventReasonCardUid: reasonSource!.uid, eventReasonEffectId: 3001, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
     );
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false });
     expect(restored.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent })]),
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: moved!.uid, eventReasonCardUid: reasonSource!.uid, eventReasonEffectId: 3001, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent })]),
     );
     expect(restored.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
+      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventReasonCardUid: reasonSource!.uid, eventReasonEffectId: 3001, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
     );
 
     const triggerAction = getLegalActions(session, 0).find((action) => action.type === "activateTrigger");
@@ -79,7 +81,7 @@ describe("duel event state packets", () => {
     const result = applyResponse(session, triggerAction!);
     expect(result.ok, result.error).toBe(true);
     expect(session.state.chain).toEqual(
-      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
+      expect.arrayContaining([expect.objectContaining({ effectId: "watch-sent", eventCardUid: moved!.uid, eventReasonCardUid: reasonSource!.uid, eventReasonEffectId: 3001, eventPreviousState: expectedPrevious, eventCurrentState: expectedCurrent, eventTriggerTiming: "if" })]),
     );
   });
 });

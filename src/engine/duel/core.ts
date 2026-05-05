@@ -113,7 +113,7 @@ import {
 } from "#duel/core-movement.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { duelEventCode } from "#duel/event-codes.js";
-import { eventCardStatePayload, recordDuelEvent } from "#duel/event-history.js";
+import { eventCardReasonPayload, eventCardStatePayload, recordDuelEvent } from "#duel/event-history.js";
 import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
@@ -469,18 +469,10 @@ export function raiseDuelEvent(state: DuelState, eventName: DuelEventName, event
   collectTriggerEffects(state, eventName, eventCard);
 }
 
-interface DuelEventPayload {
-  eventPlayer?: PlayerId;
-  eventValue?: number;
-  eventReason?: number;
-  eventReasonPlayer?: PlayerId;
-  relatedEffectId?: number;
-  eventChainDepth?: number;
-  eventChainLinkId?: string;
-  eventUids?: string[];
+type DuelEventPayload = Partial<Pick<DuelEffectContext, "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId" | "relatedEffectId" | "eventChainDepth" | "eventChainLinkId" | "eventUids">> & {
   eventPreviousState?: DuelEventCardState;
   eventCurrentState?: DuelEventCardState;
-}
+};
 
 export function raiseDuelEventWithCode(state: DuelState, eventName: DuelEventName, eventCode: number, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): void {
   collectDuelTriggerEffects(state, eventName, eventCard, { eventCode, ...payload });
@@ -635,6 +627,8 @@ function createEffectContext(
   eventValue?: number,
   eventReason?: number,
   eventReasonPlayer?: PlayerId,
+  eventReasonCardUid?: string,
+  eventReasonEffectId?: number,
   relatedEffectId?: number,
   eventChainDepth?: number,
   eventChainLinkId?: string,
@@ -652,6 +646,8 @@ function createEffectContext(
     ...(eventValue === undefined ? {} : { eventValue }),
     ...(eventReason === undefined ? {} : { eventReason }),
     ...(eventReasonPlayer === undefined ? {} : { eventReasonPlayer }),
+    ...(eventReasonCardUid === undefined ? {} : { eventReasonCardUid }),
+    ...(eventReasonEffectId === undefined ? {} : { eventReasonEffectId }),
     ...(relatedEffectId === undefined ? {} : { relatedEffectId }),
     ...(eventChainDepth === undefined ? {} : { eventChainDepth }),
     ...(eventChainLinkId === undefined ? {} : { eventChainLinkId }),
@@ -716,6 +712,9 @@ export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEvent
     ...(options.eventValue === undefined ? {} : { eventValue: options.eventValue }),
     ...(options.eventReason === undefined ? {} : { eventReason: options.eventReason }),
     ...(options.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }),
+    ...eventCardReasonPayload(eventCard),
+    ...(options.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: options.eventReasonCardUid }),
+    ...(options.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: options.eventReasonEffectId }),
     ...(options.relatedEffectId === undefined ? {} : { relatedEffectId: options.relatedEffectId }),
     ...(options.eventChainDepth === undefined ? {} : { eventChainDepth: options.eventChainDepth }),
     ...(options.eventChainLinkId === undefined ? {} : { eventChainLinkId: options.eventChainLinkId }),
@@ -798,6 +797,8 @@ function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source:
     payload.eventValue,
     payload.eventReason,
     payload.eventReasonPlayer,
+    payload.eventReasonCardUid,
+    payload.eventReasonEffectId,
     payload.relatedEffectId,
     payload.eventChainDepth,
     payload.eventChainLinkId,
@@ -830,6 +831,8 @@ function pushChainLink(
   eventValue?: number,
   eventReason?: number,
   eventReasonPlayer?: PlayerId,
+  eventReasonCardUid?: string,
+  eventReasonEffectId?: number,
   relatedEffectId?: number,
   eventChainDepth?: number,
   eventChainLinkId?: string,
@@ -852,6 +855,8 @@ function pushChainLink(
     ...(eventValue === undefined ? {} : { eventValue }),
     ...(eventReason === undefined ? {} : { eventReason }),
     ...(eventReasonPlayer === undefined ? {} : { eventReasonPlayer }),
+    ...(eventReasonCardUid === undefined ? {} : { eventReasonCardUid }),
+    ...(eventReasonEffectId === undefined ? {} : { eventReasonEffectId }),
     ...(relatedEffectId === undefined ? {} : { relatedEffectId }),
     ...(eventChainDepth === undefined ? {} : { eventChainDepth }),
     ...(eventChainLinkId === undefined ? {} : { eventChainLinkId }),
@@ -946,6 +951,8 @@ function resolveChain(state: DuelState): void {
         link.eventValue,
         link.eventReason,
         link.eventReasonPlayer,
+        link.eventReasonCardUid,
+        link.eventReasonEffectId,
         link.relatedEffectId,
         link.eventChainDepth,
         link.eventChainLinkId,

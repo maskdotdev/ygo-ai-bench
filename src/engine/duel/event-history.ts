@@ -5,6 +5,8 @@ export interface DuelEventRecordPayload {
   eventValue?: number;
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
+  eventReasonCardUid?: string;
+  eventReasonEffectId?: number;
   relatedEffectId?: number;
   eventChainDepth?: number;
   eventChainLinkId?: string;
@@ -17,11 +19,20 @@ export function recordDuelEvent(state: DuelState, eventName: DuelEventName, even
   state.eventHistory.push({
     eventName,
     ...(eventCode === undefined ? {} : { eventCode }),
+    ...eventCardReasonPayload(eventCard),
     ...eventCardStatePayload(eventCard),
     ...payload,
     ...(eventCard ? { eventCardUid: eventCard.uid } : {}),
   });
   state.eventHistory = state.eventHistory.slice(-32);
+}
+
+export function eventCardReasonPayload(eventCard?: DuelCardInstance): Pick<DuelEventRecordPayload, "eventReasonCardUid" | "eventReasonEffectId"> {
+  if (!eventCard) return {};
+  return {
+    ...(eventCard.reasonCardUid === undefined ? {} : { eventReasonCardUid: eventCard.reasonCardUid }),
+    ...(eventCard.reasonEffectId === undefined ? {} : { eventReasonEffectId: eventCard.reasonEffectId }),
+  };
 }
 
 export function eventCardStatePayload(eventCard?: DuelCardInstance): Pick<DuelEventRecordPayload, "eventPreviousState" | "eventCurrentState"> {

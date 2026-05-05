@@ -370,7 +370,7 @@ function assertSnapshotEventHistory(events: unknown, cardUids: ReadonlySet<strin
 }
 
 function assertSnapshotEventPayload(payload: Record<string, unknown>, path: string, cardUids: ReadonlySet<string>): void {
-  for (const field of ["eventCode", "eventValue", "eventReason", "relatedEffectId"] as const) {
+  for (const field of ["eventCode", "eventValue", "eventReason", "eventReasonEffectId", "relatedEffectId"] as const) {
     if (payload[field] !== undefined && typeof payload[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
   }
   if (payload.eventChainDepth !== undefined) assertSnapshotNonNegativeInteger(payload.eventChainDepth, `${path}.eventChainDepth`);
@@ -381,6 +381,8 @@ function assertSnapshotEventPayload(payload: Record<string, unknown>, path: stri
   if (payload.eventTriggerTiming !== undefined && payload.eventTriggerTiming !== "if" && payload.eventTriggerTiming !== "when") throw new Error(`Malformed duel snapshot: ${path}.eventTriggerTiming must be trigger timing`);
   if (payload.eventCardUid !== undefined && typeof payload.eventCardUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.eventCardUid must be a string`);
   if (payload.eventCardUid !== undefined && !cardUids.has(payload.eventCardUid)) throw new Error(`Malformed duel snapshot: ${path}.eventCardUid must reference a card`);
+  if (payload.eventReasonCardUid !== undefined && typeof payload.eventReasonCardUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.eventReasonCardUid must be a string`);
+  if (payload.eventReasonCardUid !== undefined && !cardUids.has(payload.eventReasonCardUid)) throw new Error(`Malformed duel snapshot: ${path}.eventReasonCardUid must reference a card`);
   if (payload.eventUids !== undefined) {
     if (!Array.isArray(payload.eventUids)) throw new Error(`Malformed duel snapshot: ${path}.eventUids must be an array`);
     assertSnapshotUniqueStringArray(payload.eventUids, `${path}.eventUids`);
