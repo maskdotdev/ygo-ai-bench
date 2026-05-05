@@ -49,9 +49,9 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
   lua.lua_setfield(L, -2, to_luastring("CheckEvent"));
   lua.lua_pushcfunction(L, () => pushBreakEffect(session, hostState));
   lua.lua_setfield(L, -2, to_luastring("BreakEffect"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushAdjustInstantly(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAdjustInstantly(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("AdjustInstantly"));
-  lua.lua_pushcfunction(L, () => pushReadjust(session));
+  lua.lua_pushcfunction(L, () => pushReadjust(session, hostState));
   lua.lua_setfield(L, -2, to_luastring("Readjust"));
   lua.lua_pushcfunction(L, () => pushAssumeReset(session));
   lua.lua_setfield(L, -2, to_luastring("AssumeReset"));
@@ -70,17 +70,19 @@ function pushAssumeReset(session: DuelSession): number {
   return 0;
 }
 
-function pushAdjustInstantly(L: unknown, session: DuelSession): number {
+function pushAdjustInstantly(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState): number {
   if (session.state.status === "ended") return 0;
   const uid = readCardUid(L, 1);
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+  markLuaOperationTimingBoundary(session, hostState);
   raiseDuelEvent(session.state, "adjust", card);
   pushDuelLog(session.state, "adjust", card?.controller ?? session.state.turnPlayer, card?.name, "Instant adjust");
   return 0;
 }
 
-function pushReadjust(session: DuelSession): number {
+function pushReadjust(session: DuelSession, hostState: LuaDuelOperationApiHostState): number {
   if (session.state.status === "ended") return 0;
+  markLuaOperationTimingBoundary(session, hostState);
   raiseDuelEvent(session.state, "adjust");
   pushDuelLog(session.state, "adjust", session.state.turnPlayer, undefined, "Readjust");
   return 0;
