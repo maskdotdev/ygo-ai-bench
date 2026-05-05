@@ -513,7 +513,22 @@ function assertPartialList<T extends object>(name: string, actual: T[], expected
 
 function matchesPartial<T extends object>(actual: T | undefined, expected: Partial<T>): boolean {
   if (actual === undefined) return false;
-  return Object.entries(expected).every(([key, value]) => (actual as Record<string, unknown>)[key] === value);
+  return Object.entries(expected).every(([key, value]) => matchesPartialValue((actual as Record<string, unknown>)[key], value));
+}
+
+function matchesPartialValue(actual: unknown, expected: unknown): boolean {
+  if (Array.isArray(expected)) {
+    return Array.isArray(actual) && actual.length === expected.length && expected.every((value, index) => matchesPartialValue(actual[index], value));
+  }
+  if (isRecord(expected)) {
+    if (!isRecord(actual)) return false;
+    return Object.entries(expected).every(([key, value]) => matchesPartialValue(actual[key], value));
+  }
+  return actual === expected;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function applyFixtureEffects(
