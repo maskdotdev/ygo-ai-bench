@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua level-up events", () => {
   it("queues level-change triggers when Lua updates a monster level", () => {
@@ -59,6 +60,73 @@ describe("Lua level-up events", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: source!.uid, eventCode: 1200 });
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "levelChanged", "chainSolved"]);
     expect(session.state.eventHistory.find((event) => event.eventName === "levelChanged")).toMatchObject({ eventCode: 1200 });
+  });
+
+  it("applies restored Lua level-change triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Level Source", kind: "monster", level: 4 },
+      { code: "200", name: "Restore Level Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              e:GetHandler():UpdateLevel(1)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c200.lua") {
+          return `
+          c200={}
+          function c200.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_LEVEL_UP)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp,eg)
+              Debug.Message("restored level trigger " .. eg:GetFirst():GetCode())
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 201, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const changed = session.state.cards.find((card) => card.code === "100");
+    expect(changed).toBeDefined();
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["levelChanged"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["levelChanged"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1200, eventCardUid: changed!.uid });
+
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored level trigger 100");
   });
 
   it("makes earlier Lua optional when triggers miss timing at level-change boundaries", () => {
