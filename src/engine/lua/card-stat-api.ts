@@ -2,11 +2,12 @@ import fengari from "fengari";
 import { collectDuelTriggerEffects } from "#duel/core.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
+import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import type { DuelCardInstance, DuelSession, DuelState } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installCardStatApi(L: unknown, session: DuelSession): void {
+export function installCardStatApi(L: unknown, session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushAssumeProperty(state, session));
   lua.lua_setfield(L, -2, to_luastring("AssumeProperty"));
   pushNumberGetter(L, "GetType", session, (card) => cardTypeFlags(card));
@@ -52,7 +53,7 @@ export function installCardStatApi(L: unknown, session: DuelSession): void {
   pushNumberMatcher(L, "IsOriginalDefenseBelow", session, (card, requested) => hasDefense(card) && (card.data.defense ?? 0) <= requested);
   pushNumberGetter(L, "GetLevel", session, (card) => currentLevel(card, session.state));
   pushNumberGetter(L, "Level", session, (card) => currentLevel(card, session.state));
-  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLevel(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLevel(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateLevel"));
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
   pushNumberGetter(L, "GetLeftScale", session, (card) => currentLeftScale(card));
@@ -274,7 +275,7 @@ function pushUpdateDefense(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function pushUpdateLevel(L: unknown, session: DuelSession): number {
+function pushUpdateLevel(L: unknown, session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): number {
   if (session.state.status === "ended") {
     lua.lua_pushinteger(L, 0);
     return 1;
@@ -289,7 +290,10 @@ function pushUpdateLevel(L: unknown, session: DuelSession): number {
   if (before + amount <= 0) amount = -(before - 1);
   card.levelModifier = (card.levelModifier ?? 0) + amount;
   const delta = currentLevel(card) - before;
-  if (delta !== 0) collectStatEvent(session, "levelChanged", card);
+  if (delta !== 0) {
+    markLuaOperationTimingBoundary(session, hostState);
+    collectStatEvent(session, "levelChanged", card);
+  }
   lua.lua_pushinteger(L, delta);
   return 1;
 }
