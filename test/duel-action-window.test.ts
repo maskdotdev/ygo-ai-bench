@@ -235,6 +235,7 @@ describe("duel action windows", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(restored.state.actionWindowId).toBe(1);
   });
 
@@ -257,6 +258,7 @@ describe("duel action windows", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(restored.state.actionWindowId).toBe(1);
   });
 
