@@ -53,14 +53,22 @@ describe("Lua move events", () => {
     expect(result.ok, result.error).toBe(true);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(host.messages).toContain("move event count 1");
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand", controller: 1 });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["moved"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1030, eventCardUid: target!.uid });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    const triggerResult = applyResponse(session, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(host.messages).toContain("move trigger resolved 200");
   });
 
@@ -121,7 +129,11 @@ describe("Lua move events", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["moved"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
