@@ -105,8 +105,8 @@ describe("Lua CheckEvent payloads", () => {
           e:SetType(EFFECT_TYPE_TRIGGER_O)
           e:SetCode(EVENT_LEAVE_FIELD_P)
           e:SetRange(LOCATION_HAND)
-          e:SetOperation(function(e,tp,eg)
-            Debug.Message("restored alias trigger " .. eg:GetFirst():GetCode())
+          e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+            Debug.Message("restored alias trigger " .. eg:GetFirst():GetCode() .. "/" .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp)
           end)
           c:RegisterEffect(e)
         end
@@ -120,12 +120,12 @@ describe("Lua CheckEvent payloads", () => {
     const result = host.loadScript(
       `
       local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      Duel.RaiseEvent(target, EVENT_LEAVE_FIELD_P, nil, REASON_EFFECT, 0, 0, 0)
+      Duel.RaiseEvent(target, EVENT_LEAVE_FIELD_P, nil, REASON_EFFECT, 1, 0, 23)
       `,
       "queue-restored-alias-event.lua",
     );
     expect(result.ok, result.error).toBe(true);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "leftField", eventCode: 1019 });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "leftField", eventCode: 1019, eventPlayer: 0, eventValue: 23, eventReason: 64, eventReasonPlayer: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
@@ -136,7 +136,7 @@ describe("Lua CheckEvent payloads", () => {
     const response = applyLuaRestoreResponse(restored, trigger!);
     expect(response.ok).toBe(true);
     expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
-    expect(restored.host.messages).toContain("restored alias trigger 100");
+    expect(restored.host.messages).toContain("restored alias trigger 100/0/23/64/1");
   });
 
   it("returns EVENT_CHAINING payloads from the active chain window", () => {
