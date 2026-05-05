@@ -58,16 +58,12 @@ describe("Lua Flip Summon restore helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
-    expect(triggerResult.ok).toBe(true);
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored flip alias 100/true");
 
     const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(originalTrigger).toBeDefined();
-    expect(applyResponse(session, originalTrigger!).ok).toBe(true);
+    applyAndAssert(session, originalTrigger!);
     expect(host.messages).toContain("restored flip alias 100/true");
   });
 
@@ -122,16 +118,30 @@ describe("Lua Flip Summon restore helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
-    expect(triggerResult.ok).toBe(true);
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored flip summon success 100/true/536870912");
 
     const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(originalTrigger).toBeDefined();
-    expect(applyResponse(session, originalTrigger!).ok).toBe(true);
+    applyAndAssert(session, originalTrigger!);
     expect(host.messages).toContain("restored flip summon success 100/true/536870912");
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
