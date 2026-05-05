@@ -23,7 +23,7 @@ function setupRestoredSameTurnLockout(seed: number): DuelSession {
   specialSummonDuelCard(session.state, summoned!.uid, 0);
   const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === set!.uid);
   expect(setAction).toBeDefined();
-  expect(applyResponse(session, setAction!).ok).toBe(true);
+  applyAndAssert(session, setAction!);
 
   return restoreDuel(serializeDuel(session), createCardReader(cards));
 }
@@ -134,8 +134,8 @@ describe("Lua position lockout helpers", () => {
     const monster = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
     expect(monster).toBeDefined();
     specialSummonDuelCard(session.state, monster!.uid, 0);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!);
     registerEffect(session, {
       id: "cannot-turn-set",
       sourceUid: monster!.uid,
@@ -173,8 +173,8 @@ describe("Lua position lockout helpers", () => {
     const monster = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
     expect(monster).toBeDefined();
     specialSummonDuelCard(session.state, monster!.uid, 0);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!);
     registerEffect(session, {
       id: "cannot-change-position-by-effect",
       sourceUid: monster!.uid,
@@ -200,7 +200,7 @@ describe("Lua position lockout helpers", () => {
     expect(host.messages).toEqual(["effect position predicate false", "effect position operation 0"]);
     const manualAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePosition" && candidate.uid === monster!.uid && candidate.position === "faceUpDefense");
     expect(manualAction).toBeDefined();
-    expect(applyResponse(session, manualAction!).ok).toBe(true);
+    applyAndAssert(session, manualAction!);
     expect(session.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ position: "faceUpDefense", faceUp: true });
   });
 
@@ -217,8 +217,8 @@ describe("Lua position lockout helpers", () => {
     for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
       specialSummonDuelCard(session.state, card.uid, 0);
     }
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!);
 
     const host = createLuaScriptHost(session);
     const setup = host.loadScript(
@@ -279,5 +279,14 @@ describe("Lua position lockout helpers", () => {
 function applyRestoredEndTurn(session: DuelSession, player: PlayerId): void {
   const endTurn = getDuelLegalActions(session, player).find((candidate) => candidate.type === "endTurn");
   expect(getGroupedDuelLegalActions(session, player).flatMap((group) => group.actions)).toContainEqual(endTurn);
-  expect(applyResponse(session, endTurn!).ok).toBe(true);
+  applyAndAssert(session, endTurn!);
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
 }
