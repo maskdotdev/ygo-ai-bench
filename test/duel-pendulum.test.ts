@@ -7,6 +7,8 @@ import {
   getLegalActions as getDuelLegalActions,
   loadDecks,
   queryPublicState,
+  restoreDuel,
+  serializeDuel,
   specialSummonDuelCard,
   startDuel,
 } from "#duel/core.js";
@@ -118,6 +120,58 @@ describe("duel pendulum summons", () => {
     expect(result.legalActions.some((candidate) => candidate.type === "pendulumSummon")).toBe(false);
     expect(session.state.cards.find((card) => card.uid === firstPendulum!.uid)).toMatchObject({ location: "monsterZone", summonType: "pendulum" });
     expect(session.state.cards.find((card) => card.uid === secondPendulum!.uid)).toMatchObject({ location: "hand" });
+  });
+
+  it("restores consumed Pendulum Summon availability on the player's next turn", () => {
+    const pendulumCards: DuelCardData[] = [
+      { code: "101", name: "Low Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1 },
+      { code: "102", name: "High Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 8, rightScale: 8 },
+      { code: "301", name: "First Pendulum", kind: "monster", typeFlags: 0x1000001, level: 4 },
+      { code: "302", name: "Second Pendulum", kind: "monster", typeFlags: 0x1000001, level: 5 },
+      { code: "303", name: "Next Turn Draw", kind: "monster", level: 4 },
+      { code: "304", name: "Second Next Turn Draw", kind: "monster", level: 4 },
+      { code: "305", name: "Third Next Turn Draw", kind: "monster", level: 4 },
+      { code: "401", name: "Opponent Draw One", kind: "monster", level: 4 },
+      { code: "402", name: "Opponent Draw Two", kind: "monster", level: 4 },
+    ];
+    const cardReader = createCardReader(pendulumCards);
+    const session = createDuel({ seed: 43, startingHandSize: 4, cardReader });
+    loadDecks(session, {
+      0: { main: ["101", "102", "301", "302", "303", "304", "305"] },
+      1: { main: ["401", "402"] },
+    });
+    startDuel(session);
+
+    const lowScale = session.state.cards.find((card) => card.code === "101");
+    const highScale = session.state.cards.find((card) => card.code === "102");
+    const firstPendulum = session.state.cards.find((card) => card.code === "301");
+    expect(lowScale).toBeTruthy();
+    expect(highScale).toBeTruthy();
+    expect(firstPendulum).toBeTruthy();
+    moveDuelCard(session.state, lowScale!.uid, "spellTrapZone", 0).sequence = 0;
+    moveDuelCard(session.state, highScale!.uid, "spellTrapZone", 0).sequence = 1;
+    if (firstPendulum!.location !== "hand") moveDuelCard(session.state, firstPendulum!.uid, "hand", 0);
+    const secondPendulum = session.state.cards.find((card) => card.code === "302");
+    expect(secondPendulum).toBeTruthy();
+    if (secondPendulum!.location !== "hand") moveDuelCard(session.state, secondPendulum!.uid, "hand", 0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "pendulumSummon");
+    if (!action || action.type !== "pendulumSummon") throw new Error("Expected Pendulum Summon action");
+    expect(applyResponse(session, { ...action, summonUids: [firstPendulum!.uid] }).ok).toBe(true);
+
+    const restored = restoreDuel(serializeDuel(session), cardReader);
+    expect(restored.state.players[0].pendulumSummonAvailable).toBe(false);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "pendulumSummon")).toBe(false);
+
+    const playerEnd = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn");
+    expect(playerEnd).toBeDefined();
+    expect(applyResponse(restored, playerEnd!).ok).toBe(true);
+    const opponentEnd = getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "endTurn");
+    expect(opponentEnd).toBeDefined();
+    expect(applyResponse(restored, opponentEnd!).ok).toBe(true);
+
+    expect(restored.state.players[0].pendulumSummonAvailable).toBe(true);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "pendulumSummon")).toBe(true);
   });
 
   it("hides normal summon actions when the monster zone is full", () => {
