@@ -355,6 +355,7 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   }
   try {
+    markLuaOperationTimingBoundary(session, hostState);
     const summoned = specialSummonDuelCard(session.state, uid, targetPlayer);
     if (requestedPosition) applySummonPosition(summoned, requestedPosition);
     applyMonsterZoneMask(session, summoned, targetPlayer, zoneMask);
