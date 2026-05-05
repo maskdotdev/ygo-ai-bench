@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -260,9 +260,15 @@ function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: st
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
+  const publicState = queryPublicState(restored.session);
+  expect(trigger).toMatchObject({ windowId: publicState.actionWindowId, windowKind: "triggerBucket" });
   const result = applyLuaRestoreResponse(restored, trigger!);
   expect(result.ok).toBe(true);
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+  const staleResult = applyLuaRestoreResponse(restored, trigger!);
+  expect(staleResult.ok).toBe(false);
+  expect(staleResult.error).toContain("Response is not currently legal");
+  expect(staleResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
   drainRestoredChain(restored);
   expect(restored.host.messages).toContain(message);
 }
