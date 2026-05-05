@@ -448,6 +448,101 @@ describe("EDOPro compatibility harness snapshot restore", () => {
     expect(result).toEqual({ ok: true, failures: [] });
   });
 
+  it("snapshot-restores scripted same-bucket trigger ordering prompts", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "trigger order prompt snapshot fixture",
+        options: { seed: 15, startingHandSize: 3 },
+        decks: {
+          0: { main: ["100", "200", "300"] },
+          1: { main: ["100", "100", "100"] },
+        },
+        setup: {
+          effects: [
+            {
+              id: "fixture-first-trigger",
+              player: 0,
+              code: "200",
+              location: "hand",
+              event: "trigger",
+              triggerEvent: "normalSummoned",
+              range: ["hand"],
+              logMessage: "Fixture first trigger resolved",
+            },
+            {
+              id: "fixture-second-trigger",
+              player: 0,
+              code: "300",
+              location: "hand",
+              event: "trigger",
+              triggerEvent: "normalSummoned",
+              range: ["hand"],
+              logMessage: "Fixture second trigger resolved",
+            },
+          ],
+        },
+        responses: [
+          makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
+            snapshotRestore: "after",
+            after: {
+              source: "edopro",
+              windowId: 1,
+              windowKind: "triggerBucket",
+              waitingFor: 0,
+              triggerOrderPrompt: {
+                id: "1:turnOptional:0",
+                type: "orderTriggers",
+                player: 0,
+                triggerBucket: "turnOptional",
+              },
+              pendingTriggers: [
+                { id: "trigger-9-1", player: 0, effectId: "fixture-first-trigger", triggerBucket: "turnOptional" },
+                { id: "trigger-9-2", player: 0, effectId: "fixture-second-trigger", triggerBucket: "turnOptional" },
+              ],
+              pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional", triggerIds: ["trigger-9-1", "trigger-9-2"] }],
+              legalActionCounts: { 0: 4, 1: 0 },
+              legalActionGroupCounts: { 0: 2, 1: 0 },
+              legalActions: [
+                { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-trigger", triggerBucket: "turnOptional", count: 1 },
+                { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-trigger", triggerBucket: "turnOptional", count: 1 },
+              ],
+              legalActionGroups: [
+                { player: 0, label: "Trigger Activations", windowId: 1, windowKind: "triggerBucket", actions: [{ type: "activateTrigger", player: 0, triggerBucket: "turnOptional", count: 2 }] },
+                { player: 0, label: "Trigger Declines", windowId: 1, windowKind: "triggerBucket", actions: [{ type: "declineTrigger", player: 0, triggerBucket: "turnOptional", count: 2 }] },
+              ],
+            },
+          }),
+          makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-first-trigger" }), {
+            snapshotRestore: "after",
+            after: {
+              source: "edopro",
+              windowId: 2,
+              windowKind: "triggerBucket",
+              waitingFor: 0,
+              triggerOrderPrompt: null,
+              pendingTriggers: [{ id: "trigger-9-2", player: 0, effectId: "fixture-second-trigger", triggerBucket: "turnOptional" }],
+              pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional", triggerIds: ["trigger-9-2"] }],
+              chain: [{ player: 0, effectId: "fixture-first-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+              legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-trigger", triggerBucket: "turnOptional", count: 1 }],
+            },
+          }),
+        ],
+        expected: {
+          source: "edopro",
+          windowId: 2,
+          windowKind: "triggerBucket",
+          waitingFor: 0,
+          triggerOrderPrompt: null,
+          pendingTriggers: [{ id: "trigger-9-2", player: 0, effectId: "fixture-second-trigger", triggerBucket: "turnOptional" }],
+        },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result).toEqual({ ok: true, failures: [] });
+  });
+
   it("snapshot-restores scripted position-change markers", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const result = runScriptedDuelFixture(

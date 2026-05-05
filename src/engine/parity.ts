@@ -137,6 +137,7 @@ function assertSnapshotRestore(
   assertSnapshotJsonEqual("prompt", session.state.prompt, restored.state.prompt, fixture, context, failures);
   assertSnapshotJsonEqual("pendingTriggers", session.state.pendingTriggers, restored.state.pendingTriggers, fixture, context, failures);
   assertSnapshotJsonEqual("pendingTriggerBuckets", queryPublicState(session).pendingTriggerBuckets, queryPublicState(restored).pendingTriggerBuckets, fixture, context, failures);
+  assertSnapshotJsonEqual("triggerOrderPrompt", queryPublicState(session).triggerOrderPrompt, queryPublicState(restored).triggerOrderPrompt, fixture, context, failures);
   assertSnapshotJsonEqual("eventHistory", session.state.eventHistory, restored.state.eventHistory, fixture, context, failures);
   assertSnapshotJsonEqual("chainLimits", chainLimitMetadata(session.state.chainLimits), chainLimitMetadata(restored.state.chainLimits), fixture, context, failures);
   assertSnapshotJsonEqual("chainPasses", session.state.chainPasses, restored.state.chainPasses, fixture, context, failures);
