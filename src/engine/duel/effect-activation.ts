@@ -247,7 +247,6 @@ function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][nu
     trigger.eventChainDepth === link.eventChainDepth &&
     trigger.eventChainLinkId === link.eventChainLinkId &&
     trigger.eventCardUid === link.eventCardUid &&
-    trigger.eventTriggerTiming === link.eventTriggerTiming &&
     sameOptionalStringList(trigger.eventUids, link.eventUids) &&
     sameEventCardState(trigger.eventPreviousState, link.eventPreviousState) &&
     sameEventCardState(trigger.eventCurrentState, link.eventCurrentState)

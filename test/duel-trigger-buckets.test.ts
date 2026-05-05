@@ -241,6 +241,60 @@ describe("duel trigger buckets", () => {
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateTrigger" && action.effectId === "second-payload-trigger")).toBe(false);
   });
 
+  it("continues trigger selection when only trigger timing differs", () => {
+    const session = createDuel({ seed: 332, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const eventCardUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    const whenSourceUid = session.state.cards.find((card) => card.code === "300")!.uid;
+    const ifSourceUid = session.state.cards.find((card) => card.code === "500")!.uid;
+    session.state.chain = [
+      {
+        id: "chain-trigger-timing",
+        player: 0,
+        sourceUid: whenSourceUid,
+        effectId: "when-trigger",
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid,
+        eventTriggerTiming: "when",
+      },
+    ];
+    session.state.pendingTriggers = [
+      {
+        id: "if-trigger",
+        player: 0,
+        sourceUid: ifSourceUid,
+        effectId: "if-trigger",
+        eventName: "sentToGraveyard",
+        triggerBucket: "turnOptional",
+        eventCode: 1014,
+        eventCardUid,
+        eventTriggerTiming: "if",
+      },
+    ];
+    registerEffect(session, {
+      id: "if-trigger",
+      sourceUid: ifSourceUid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "sentToGraveyard",
+      triggerTiming: "if",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("if-trigger resolved");
+      },
+    });
+    session.state.waitingFor = 0;
+
+    expect(shouldContinueTriggerSelection(session.state)).toBe(true);
+    expect(queryPublicState(session).windowKind).toBe("triggerBucket");
+    expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateTrigger" && action.effectId === "if-trigger")).toBe(true);
+  });
+
   it("declines optional trigger buckets without exposing later buckets early", () => {
     const { session, summoned, turnFirst, turnSecond, opponent } = setupTriggerBucketFixture();
 
