@@ -611,6 +611,37 @@ describe("duel snapshot persistence", () => {
     expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "activateTrigger")).toBe(false);
   });
 
+  it("preserves chain response player when pruning unrestored held triggers", () => {
+    const session = createDuel({ seed: 146, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    registerEffect(session, {
+      id: "active-chain-link",
+      registryKey: "active-chain-link",
+      sourceUid,
+      controller: 0,
+      event: "quick",
+      range: ["hand"],
+      operation() {},
+    });
+    session.state.chain = [{ id: "chain-1", player: 0, sourceUid, effectId: "active-chain-link" }];
+    session.state.pendingTriggers = [{ id: "held-trigger", player: 0, sourceUid, effectId: "unrestored-held-trigger", eventName: "customEvent", triggerBucket: "turnOptional" }];
+    session.state.waitingFor = 1;
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "active-chain-link": (effect) => ({ ...effect, operation() {} }),
+    });
+
+    expect(restored.state.pendingTriggers).toEqual([]);
+    expect(restored.state.chain).toEqual(session.state.chain);
+    expect(restored.state.waitingFor).toBe(1);
+    expect(getDuelLegalActions(restored, 1).some((candidate) => candidate.type === "passChain")).toBe(true);
+  });
+
   it("keeps reset-pruned effects gone across snapshots", () => {
     const session = createDuel({ seed: 121, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

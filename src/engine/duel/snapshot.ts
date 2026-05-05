@@ -825,6 +825,7 @@ export function prunePendingTriggersWithoutEffects(state: DuelState): void {
   const beforeCount = state.pendingTriggers.length;
   state.pendingTriggers = state.pendingTriggers.filter((trigger) => state.effects.some((effect) => effect.id === trigger.effectId && effect.sourceUid === trigger.sourceUid));
   if (state.pendingTriggers.length === beforeCount) return;
+  if (state.prompt !== undefined || state.chain.length > 0) return;
   setWaitingForPendingTriggerBucket(state);
 }
 
