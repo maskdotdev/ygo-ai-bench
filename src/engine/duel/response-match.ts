@@ -66,7 +66,8 @@ function requiresWindowStampEcho(action: DuelAction): boolean {
     action.type === "declineTrigger" ||
     action.type === "passAttack" ||
     action.type === "passDamage" ||
-    action.type === "passChain"
+    action.type === "passChain" ||
+    action.type === "activateEffect"
   ) && hasWindowStamp(action);
 }
 

@@ -96,4 +96,11 @@ describe("duel response matching", () => {
     expect(sameAction(pass, { type: "passChain", player: 1, label: "Pass chain" })).toBe(false);
     expect(sameAction(pass, { ...pass })).toBe(true);
   });
+
+  it("requires effect activation responses to echo their action window stamp", () => {
+    const effect: DuelAction = { type: "activateEffect", player: 0, uid: "card", effectId: "effect", label: "Effect", windowId: 11, windowKind: "chainResponse" };
+
+    expect(sameAction(effect, { type: "activateEffect", player: 0, uid: "card", effectId: "effect", label: "Effect" })).toBe(false);
+    expect(sameAction(effect, { ...effect })).toBe(true);
+  });
 });
