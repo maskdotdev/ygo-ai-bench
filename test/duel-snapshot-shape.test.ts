@@ -687,6 +687,25 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badActivity, createCardReader(cards))).toThrow("Malformed duel snapshot: state.activityHistory.0.activity must be a number");
   });
 
+  it("rejects impossible skipped phase snapshots before restore", () => {
+    const session = createDuel({ seed: 231, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const duplicate = serializeDuel(session);
+    const zeroRemaining = serializeDuel(session);
+    duplicate.state.skippedPhases = [
+      { player: 0, phase: "battle", remaining: 1 },
+      { player: 0, phase: "battle", remaining: 2 },
+    ];
+    zeroRemaining.state.skippedPhases = [{ player: 1, phase: "main2", remaining: 0 }];
+
+    expect(() => restoreDuel(duplicate, createCardReader(cards))).toThrow("Malformed duel snapshot: state.skippedPhases.1 must be unique by player and phase");
+    expect(() => restoreDuel(zeroRemaining, createCardReader(cards))).toThrow("Malformed duel snapshot: state.skippedPhases.0.remaining must be positive");
+  });
+
   it("rejects missing activity history card references before restore", () => {
     const session = createDuel({ seed: 171, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

@@ -437,12 +437,17 @@ function assertSnapshotChainLimits(limits: unknown): void {
 
 function assertSnapshotSkippedPhases(skips: unknown): void {
   if (!Array.isArray(skips)) throw new Error("Malformed duel snapshot: state.skippedPhases must be an array");
+  const seen = new Set<string>();
   for (const [index, skip] of skips.entries()) {
     const path = `state.skippedPhases.${index}`;
     if (!isRecord(skip)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
     assertSnapshotPlayerId(skip.player, `${path}.player`);
     if (!duelSnapshotPhases.has(skip.phase)) throw new Error(`Malformed duel snapshot: ${path}.phase must be a duel phase`);
     if (typeof skip.remaining !== "number") throw new Error(`Malformed duel snapshot: ${path}.remaining must be a number`);
+    if (skip.remaining <= 0) throw new Error(`Malformed duel snapshot: ${path}.remaining must be positive`);
+    const key = `${skip.player}:${skip.phase}`;
+    if (seen.has(key)) throw new Error(`Malformed duel snapshot: ${path} must be unique by player and phase`);
+    seen.add(key);
   }
 }
 
