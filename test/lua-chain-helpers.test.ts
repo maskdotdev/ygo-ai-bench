@@ -388,6 +388,91 @@ describe("Lua chain helpers", () => {
     expect(restored.host.messages).not.toContain("restore blocked quick resolved");
   });
 
+  it("returns restored Lua chain resolution to turn-player open fast-effect priority", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Open Priority Source", kind: "monster" },
+      { code: "300", name: "Restore Turn Open Quick", kind: "monster" },
+      { code: "400", name: "Restore Opponent Chain Quick", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("restore open priority source resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c300.lua") {
+          return `
+          c300={}
+          function c300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()==0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restore turn open quick resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c400.lua") {
+          return `
+          c400={}
+          function c400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restore opponent chain quick resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 55, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "300"] }, 1: { main: ["400"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.loadCardScript(400, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(sourceAction).toBeDefined();
+    const opened = applyResponse(session, sourceAction!);
+    expect(opened.ok, opened.error).toBe(true);
+    expect(opened.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+
+    const result = applyLuaRestoreResponse(restored, pass!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open" })]));
+    expect(getDuelLegalActions(restored.session, 1)).toEqual([]);
+    expect(restored.host.messages).toContain("restore open priority source resolved");
+    expect(restored.host.messages).not.toContain("restore turn open quick resolved");
+    expect(restored.host.messages).not.toContain("restore opponent chain quick resolved");
+  });
+
   it("detects duplicate card codes in the current Lua chain", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Duplicate Chain Source", kind: "monster" },
