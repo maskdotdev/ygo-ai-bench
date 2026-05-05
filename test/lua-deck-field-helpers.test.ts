@@ -4,6 +4,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua deck and field helpers", () => {
   it("lets Lua scripts inspect, confirm, and move deck-top groups", () => {
@@ -175,6 +176,114 @@ describe("Lua deck and field helpers", () => {
     expect(trigger).toBeTruthy();
     expect(applyResponse(session, trigger!).ok).toBe(true);
     expect(host.messages).toContain("tohand confirm resolved 1/1/100");
+  });
+
+  it("applies restored Lua confirm triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Confirmed A", kind: "monster" },
+      { code: "200", name: "Restore Confirmed B", kind: "monster" },
+      { code: "300", name: "Restore Confirm Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c300.lua") return undefined;
+        return `
+        c300={}
+        function c300.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_TRIGGER_O)
+          e:SetCode(EVENT_CONFIRM)
+          e:SetRange(LOCATION_HAND)
+          e:SetOperation(function(e,tp,eg,ep,ev)
+            Debug.Message("restored confirm " .. ep .. "/" .. ev .. "/" .. eg:GetFirst():GetCode())
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 168, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+    const watcher = session.state.cards.find((card) => card.code === "300");
+    expect(watcher).toBeTruthy();
+    moveDuelCard(session.state, watcher!.uid, "hand", 0);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const result = host.loadScript(
+      `
+      local top = Duel.GetDecktopGroup(0, 2)
+      Duel.ConfirmCards(1, top)
+      `,
+      "restore-confirm-trigger-action.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["confirmed"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["confirmed"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1211, eventPlayer: 1, eventValue: 2 });
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored confirm 1/2/100");
+  });
+
+  it("applies restored Lua to-hand confirm triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Searched Card", kind: "monster" },
+      { code: "200", name: "Restore To Hand Confirm Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c200.lua") return undefined;
+        return `
+        c200={}
+        function c200.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_TRIGGER_O)
+          e:SetCode(EVENT_TOHAND_CONFIRM)
+          e:SetRange(LOCATION_HAND)
+          e:SetOperation(function(e,tp,eg,ep,ev)
+            Debug.Message("restored tohand confirm " .. ep .. "/" .. ev .. "/" .. eg:GetFirst():GetCode())
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 169, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+    const watcher = session.state.cards.find((card) => card.code === "200");
+    expect(watcher).toBeTruthy();
+    moveDuelCard(session.state, watcher!.uid, "hand", 0);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const result = host.loadScript(
+      `
+      local top = Duel.GetDecktopGroup(0, 1)
+      Duel.SendtoHand(top, 0, REASON_EFFECT)
+      Duel.ConfirmCards(1, top)
+      `,
+      "restore-tohand-confirm-trigger-action.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHandConfirmed"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHandConfirmed"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1212, eventPlayer: 1, eventValue: 1 });
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored tohand confirm 1/1/100");
   });
 
   it("lets Lua scripts shuffle a player's hand", () => {
