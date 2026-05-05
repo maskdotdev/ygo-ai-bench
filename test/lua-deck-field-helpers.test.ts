@@ -308,10 +308,12 @@ describe("Lua deck and field helpers", () => {
       { code: "100", name: "Previous Field Spell", kind: "spell", typeFlags: 0x80002 },
       { code: "200", name: "Previous Pendulum Scale", kind: "monster", typeFlags: 0x1000001, leftScale: 1, rightScale: 1 },
       { code: "300", name: "Previous Spell Zone Card", kind: "spell" },
+      { code: "400", name: "Previous Main Monster", kind: "monster" },
+      { code: "500", name: "Previous Extra Monster", kind: "monster" },
     ];
-    const session = createDuel({ seed: 252, startingHandSize: 3, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 252, startingHandSize: 5, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300"] },
+      0: { main: ["100", "200", "300", "400", "500"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -319,12 +321,18 @@ describe("Lua deck and field helpers", () => {
     const field = session.state.cards.find((card) => card.code === "100")!;
     const pendulum = session.state.cards.find((card) => card.code === "200")!;
     const spell = session.state.cards.find((card) => card.code === "300")!;
+    const mainMonster = session.state.cards.find((card) => card.code === "400")!;
+    const extraMonster = session.state.cards.find((card) => card.code === "500")!;
     moveDuelCard(session.state, field.uid, "spellTrapZone", 0).sequence = 4;
     moveDuelCard(session.state, field.uid, "graveyard", 0);
     moveDuelCard(session.state, pendulum.uid, "spellTrapZone", 0).sequence = 0;
     moveDuelCard(session.state, pendulum.uid, "graveyard", 0);
     moveDuelCard(session.state, spell.uid, "spellTrapZone", 0).sequence = 2;
     moveDuelCard(session.state, spell.uid, "graveyard", 0);
+    moveDuelCard(session.state, mainMonster.uid, "monsterZone", 0).sequence = 2;
+    moveDuelCard(session.state, mainMonster.uid, "graveyard", 0);
+    moveDuelCard(session.state, extraMonster.uid, "monsterZone", 0).sequence = 5;
+    moveDuelCard(session.state, extraMonster.uid, "graveyard", 0);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -332,9 +340,13 @@ describe("Lua deck and field helpers", () => {
       local field=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       local pendulum=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local main_monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local extra_monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
       Debug.Message("previous field zone " .. field:GetPreviousLocation() .. "/" .. tostring(field:IsPreviousLocation(LOCATION_SZONE)) .. "/" .. tostring(field:IsPreviousLocation(LOCATION_FZONE)) .. "/" .. tostring(field:IsPreviousLocation(LOCATION_STZONE)) .. "/" .. tostring(field:IsPreviousLocation(LOCATION_PZONE)))
       Debug.Message("previous pendulum zone " .. pendulum:GetPreviousLocation() .. "/" .. tostring(pendulum:IsPreviousLocation(LOCATION_SZONE)) .. "/" .. tostring(pendulum:IsPreviousLocation(LOCATION_PZONE)) .. "/" .. tostring(pendulum:IsPreviousLocation(LOCATION_STZONE)) .. "/" .. tostring(pendulum:IsPreviousLocation(LOCATION_FZONE)))
       Debug.Message("previous spell zone " .. spell:GetPreviousLocation() .. "/" .. tostring(spell:IsPreviousLocation(LOCATION_SZONE)) .. "/" .. tostring(spell:IsPreviousLocation(LOCATION_STZONE)) .. "/" .. tostring(spell:IsPreviousLocation(LOCATION_FZONE)) .. "/" .. tostring(spell:IsPreviousLocation(LOCATION_PZONE)))
+      Debug.Message("previous main monster zone " .. main_monster:GetPreviousLocation() .. "/" .. tostring(main_monster:IsPreviousLocation(LOCATION_MZONE)) .. "/" .. tostring(main_monster:IsPreviousLocation(LOCATION_MMZONE)) .. "/" .. tostring(main_monster:IsPreviousLocation(LOCATION_EMZONE)))
+      Debug.Message("previous extra monster zone " .. extra_monster:GetPreviousLocation() .. "/" .. tostring(extra_monster:IsPreviousLocation(LOCATION_MZONE)) .. "/" .. tostring(extra_monster:IsPreviousLocation(LOCATION_EMZONE)) .. "/" .. tostring(extra_monster:IsPreviousLocation(LOCATION_MMZONE)))
       `,
       "symbolic-previous-locations.lua",
     );
@@ -343,6 +355,8 @@ describe("Lua deck and field helpers", () => {
     expect(host.messages).toContain("previous field zone 8/true/true/false/false");
     expect(host.messages).toContain("previous pendulum zone 8/true/true/false/false");
     expect(host.messages).toContain("previous spell zone 8/true/true/false/false");
+    expect(host.messages).toContain("previous main monster zone 4/true/true/false");
+    expect(host.messages).toContain("previous extra monster zone 4/true/true/false");
   });
 
   it("matches symbolic field and Pendulum destinations", () => {
