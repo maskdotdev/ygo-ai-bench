@@ -121,7 +121,7 @@ describe("Lua break-effect events", () => {
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["breakEffect"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
-    expect(restored.restoreComplete).toBe(true);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["breakEffect"]);
     const starter = session.state.cards.find((card) => card.code === "100");
     expect(starter).toBeDefined();
