@@ -784,6 +784,16 @@ describe("duel trigger buckets", () => {
     }))).toEqual([
       { label: "Trigger Activations", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", effectIds: ["opponent-restored-mandatory"] },
     ]);
+    const activation = getDuelLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.effectId === "opponent-restored-mandatory");
+    expect(activation).toBeTruthy();
+    const activated = applyResponse(restored, activation!);
+    expect(activated.ok).toBe(true);
+    expect(activated.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, activated.state.waitingFor!));
+    expect(restored.state.pendingTriggers).toEqual([]);
+    const staleActivation = applyResponse(restored, activation!);
+    expect(staleActivation.ok).toBe(false);
+    expect(staleActivation.error).toContain("Response is not currently legal");
+    expect(staleActivation.state.actionWindowId).toBe(restored.state.actionWindowId);
   });
 
   it("prunes restored pending triggers when their callback effect is unavailable", () => {
