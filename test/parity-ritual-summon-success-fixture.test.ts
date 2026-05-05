@@ -1,0 +1,125 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+
+describe("EDOPro parity Ritual Summon success fixtures", () => {
+  it("opens Ritual Summon actions, sends materials to Graveyard, and resolves success triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "First Ritual Material", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "200", name: "Second Ritual Material", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Ritual Summon Success Watcher", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "900", name: "Ritual Test Monster", kind: "monster", ritualMaterials: ["100", "200"], attack: 2000, defense: 2000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "ritual summon success trigger fixture",
+      options: { seed: 252, startingHandSize: 4 },
+      decks: {
+        0: { main: ["900", "100", "200", "300"] },
+        1: { main: [] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-ritual-success-watcher",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "specialSummoned",
+            range: ["hand"],
+            logMessage: "Fixture Ritual summon success watcher resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("ritualSummon", 0, { code: "900", location: "hand", materialUids: ["p0-deck-100-1", "p0-deck-200-2"] }), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro exposes eligible Ritual Summons as Main Phase legal actions with selected hand materials",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            phase: "main1",
+            legalActionCounts: { 0: 11, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "ritualSummon", player: 0, code: "900", location: "hand", materialUids: ["p0-deck-100-1", "p0-deck-200-2"], windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "normalSummon", player: 0, code: "900", location: "hand", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "normalSummon", player: 0, code: "100", location: "hand", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "normalSummon", player: 0, code: "200", location: "hand", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "normalSummon", player: 0, code: "300", location: "hand", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "setMonster", player: 0, code: "900", location: "hand", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "setMonster", player: 0, code: "100", location: "hand", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "setMonster", player: 0, code: "200", location: "hand", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "setMonster", player: 0, code: "300", location: "hand", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "ritualSummon", player: 0, code: "900", location: "hand", materialUids: ["p0-deck-100-1", "p0-deck-200-2"], windowId: 0, windowKind: "open", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Turn",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+                ],
+              },
+            ],
+            locations: { hand: ["900", "100", "200", "300"] },
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro sends Ritual materials to the Graveyard and queues Special Summon success triggers after the Ritual Summon",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "fixture-ritual-success-watcher", eventName: "specialSummoned", eventCardUid: "p0-deck-900-0" }],
+            locations: { monsterZone: ["900"], graveyard: ["100", "200"], hand: ["300"] },
+            cards: [
+              { uid: "p0-deck-900-0", code: "900", location: "monsterZone", position: "faceUpAttack", faceUp: true },
+              { uid: "p0-deck-100-1", code: "100", location: "graveyard" },
+              { uid: "p0-deck-200-2", code: "200", location: "graveyard" },
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-ritual-success-watcher" }), {
+          snapshotRestore: true,
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the Special Summon success trigger after the Ritual monster reaches the field",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            logIncludes: ["Fixture Ritual summon success watcher resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final fixture state keeps the Ritual monster on field and its materials in the Graveyard",
+        phase: "main1",
+        windowId: 2,
+        pendingTriggers: [],
+        chain: [],
+        locations: { monsterZone: ["900"], graveyard: ["100", "200"], hand: ["300"] },
+        logIncludes: ["Fixture Ritual summon success watcher resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
