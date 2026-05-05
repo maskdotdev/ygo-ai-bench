@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData, DuelSession } from "#duel/types.js";
 
 const cards: DuelCardData[] = [{ code: "100", name: "Random Probe", kind: "monster" }];
@@ -374,9 +374,12 @@ describe("Lua random helpers", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1151, eventPlayer: 0, eventValue: 2 });
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredCoinTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredCoinTrigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredCoinTrigger!).ok).toBe(true);
+    const restoredCoinResult = applyLuaRestoreResponse(restored, restoredCoinTrigger!);
+    expect(restoredCoinResult.ok).toBe(true);
+    expect(restoredCoinResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredCoinResult.state.waitingFor!));
     expect(restored.host.messages[0]).toMatch(/^coin trigger resolved 0\/2\/[01],[01]$/);
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(coinTrigger).toBeDefined();
