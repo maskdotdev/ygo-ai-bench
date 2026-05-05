@@ -21,6 +21,9 @@ describe("duel stale prompt responses", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.prompt).toBeUndefined();
     expect(session.state.waitingFor).toBe(0);
     expect(session.state.log.filter((entry) => entry.action === "selectOption" && entry.detail === "Selected option 3")).toHaveLength(1);
@@ -43,6 +46,9 @@ describe("duel stale prompt responses", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.prompt).toBeUndefined();
     expect(session.state.waitingFor).toBe(1);
     expect(session.state.log.filter((entry) => entry.action === "selectYesNo" && entry.detail === "Selected no")).toHaveLength(1);
