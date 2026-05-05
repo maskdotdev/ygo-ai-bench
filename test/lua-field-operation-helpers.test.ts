@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -111,7 +111,7 @@ describe("Lua field operation helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1014");
@@ -244,7 +244,7 @@ describe("Lua field operation helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1016");
@@ -270,7 +270,7 @@ describe("Lua field operation helpers", () => {
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === set!.uid);
     expect(setAction).toBeDefined();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -306,9 +306,9 @@ describe("Lua field operation helpers", () => {
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === set!.uid);
     expect(setAction).toBeDefined();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -397,7 +397,7 @@ describe("Lua field operation helpers", () => {
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === set!.uid);
     expect(setAction).toBeDefined();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -434,9 +434,9 @@ describe("Lua field operation helpers", () => {
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === set!.uid);
     expect(setAction).toBeDefined();
-    expect(applyResponse(session, setAction!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!).ok).toBe(true);
+    applyAndAssert(session, setAction!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "endTurn")!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "endTurn")!);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
@@ -980,3 +980,12 @@ describe("Lua field operation helpers", () => {
     expect(host.messages).toContain("vararg high 1");
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
