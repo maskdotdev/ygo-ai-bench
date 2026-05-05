@@ -25,10 +25,15 @@ describe("duel battle timing", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(restored.state.battleWindow).toEqual(session.state.battleWindow);
     expect(restored.state.pendingBattle).toEqual(session.state.pendingBattle);
-    expect(getDuelLegalActions(restored, 1).find((action) => action.type === "passDamage")).toMatchObject({
+    const staleRestoredPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passDamage");
+    expect(staleRestoredPass).toMatchObject({
       windowId: restored.state.actionWindowId,
       windowKind: "battle",
     });
+    expect(applyResponse(restored, staleRestoredPass!).ok).toBe(true);
+    const replay = applyResponse(restored, staleRestoredPass!);
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
 
     while (restored.state.battleWindow) {
       const player = restored.state.battleWindow.responsePlayer;
