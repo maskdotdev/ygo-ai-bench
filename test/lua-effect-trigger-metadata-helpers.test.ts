@@ -149,6 +149,7 @@ describe("Lua effect trigger metadata helpers", () => {
 
     const restoredIfResult = applyLuaRestoreResponse(restored, restoredIfTrigger!);
     expect(restoredIfResult.ok).toBe(true);
+    expect(restoredIfResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredIfResult.state.waitingFor!));
     expect(restoredIfResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredIfResult.state.waitingFor!));
     expect(restored.host.messages).toContain("lua if optional resolved");
     const staleRestoredIfTrigger = applyLuaRestoreResponse(restored, restoredIfTrigger!);
@@ -167,11 +168,13 @@ describe("Lua effect trigger metadata helpers", () => {
     expect(opponentWhenTrigger).toBeDefined();
     const opponentWhenResult = applyLuaRestoreResponse(restored, opponentWhenTrigger!);
     expect(opponentWhenResult.ok).toBe(true);
+    expect(opponentWhenResult.legalActions).toEqual(getDuelLegalActions(restored.session, opponentWhenResult.state.waitingFor!));
     expect(opponentWhenResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, opponentWhenResult.state.waitingFor!));
     const opponentIfTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger");
     expect(opponentIfTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
     const opponentIfResult = applyLuaRestoreResponse(restored, opponentIfTrigger!);
     expect(opponentIfResult.ok).toBe(true);
+    expect(opponentIfResult.legalActions).toEqual(getDuelLegalActions(restored.session, opponentIfResult.state.waitingFor!));
     expect(opponentIfResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, opponentIfResult.state.waitingFor!));
     expect(restored.host.messages).toContain("lua opponent when optional resolved");
     expect(restored.host.messages).toContain("lua opponent if optional resolved");
