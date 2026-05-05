@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import { passBattleGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro compatibility harness snapshot restore", () => {
   it("snapshot-restores after scripted fixture responses", () => {
@@ -21,6 +22,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               windowId: 1,
               waitingFor: 0,
               legalActions: [{ type: "changePhase", player: 0, phase: "battle", count: 1 }],
+              legalActionGroups: [turnGroup(1)],
             },
           }),
         ],
@@ -86,6 +88,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               attackedTargetUids: [],
               battlePairs: [],
               legalActions: [{ type: "passAttack", player: 1, windowKind: "battle", count: 1 }],
+              legalActionGroups: [passBattleGroup(1, "passAttack", 1)],
             },
           }),
           makeScriptedStep(makeResponseSelector("passAttack", 1), {
@@ -105,6 +108,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               attackPasses: [1],
               damagePasses: [],
               legalActions: [{ type: "passAttack", player: 0, windowKind: "battle", count: 1 }],
+              legalActionGroups: [passBattleGroup(0, "passAttack", 1)],
             },
           }),
         ],
@@ -121,6 +125,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
             responsePlayer: 0,
           },
           legalActions: [{ type: "passAttack", player: 0, windowKind: "battle", count: 1 }],
+          legalActionGroups: [passBattleGroup(0, "passAttack", 1)],
         },
       },
       { cardReader: createCardReader(cards) },
@@ -187,6 +192,10 @@ describe("EDOPro compatibility harness snapshot restore", () => {
                 { type: "activateEffect", player: 1, windowKind: "chainResponse", effectId: "fixture-opponent-chain-quick", count: 1 },
                 { type: "passChain", player: 1, windowKind: "chainResponse", count: 1 },
               ],
+              legalActionGroups: [
+                { player: 1, label: "Effects", windowKind: "chainResponse", actions: [{ type: "activateEffect", player: 1, effectId: "fixture-opponent-chain-quick", count: 1 }] },
+                { player: 1, label: "Pass", windowKind: "chainResponse", actions: [{ type: "passChain", player: 1, count: 1 }] },
+              ],
             },
           }),
           makeScriptedStep(makeResponseSelector("passChain", 1), {
@@ -199,6 +208,10 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               legalActions: [
                 { type: "activateEffect", player: 0, windowKind: "chainResponse", effectId: "fixture-chain-quick", count: 1 },
                 { type: "passChain", player: 0, windowKind: "chainResponse", count: 1 },
+              ],
+              legalActionGroups: [
+                { player: 0, label: "Effects", windowKind: "chainResponse", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-chain-quick", count: 1 }] },
+                { player: 0, label: "Pass", windowKind: "chainResponse", actions: [{ type: "passChain", player: 0, count: 1 }] },
               ],
             },
           }),
@@ -214,6 +227,10 @@ describe("EDOPro compatibility harness snapshot restore", () => {
           legalActions: [
             { type: "activateEffect", player: 0, windowKind: "chainResponse", effectId: "fixture-chain-quick", count: 1 },
             { type: "passChain", player: 0, windowKind: "chainResponse", count: 1 },
+          ],
+          legalActionGroups: [
+            { player: 0, label: "Effects", windowKind: "chainResponse", actions: [{ type: "activateEffect", player: 0, effectId: "fixture-chain-quick", count: 1 }] },
+            { player: 0, label: "Pass", windowKind: "chainResponse", actions: [{ type: "passChain", player: 0, count: 1 }] },
           ],
         },
       },
