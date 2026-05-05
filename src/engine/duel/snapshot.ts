@@ -450,8 +450,8 @@ function assertSnapshotChainLimits(limits: unknown): void {
     const path = `state.chainLimits.${index}`;
     if (!isRecord(limit)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
     if (limit.registryKey !== undefined && typeof limit.registryKey !== "string") throw new Error(`Malformed duel snapshot: ${path}.registryKey must be a string`);
-    if (limit.expiresAtChainLength !== undefined) assertSnapshotNonNegativeInteger(limit.expiresAtChainLength, `${path}.expiresAtChainLength`);
-    if (typeof limit.untilChainEnd !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.untilChainEnd must be a boolean`);
+    if (limit.expiresAtChainLength !== undefined) assertSnapshotNonNegativeInteger(limit.expiresAtChainLength, `${path}.expiresAtChainLength`); if (typeof limit.untilChainEnd !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.untilChainEnd must be a boolean`);
+    if (limit.untilChainEnd === true && limit.expiresAtChainLength !== undefined) throw new Error(`Malformed duel snapshot: ${path}.expiresAtChainLength must not be set for until-chain-end limits`);
   }
 }
 

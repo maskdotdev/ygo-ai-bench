@@ -749,11 +749,14 @@ describe("duel snapshot restore shape validation", () => {
     startDuel(session);
     const badRegistryKey = serializeDuel(session);
     const badExpiry = serializeDuel(session);
+    const badUntilEndExpiry = serializeDuel(session);
     badRegistryKey.state.chainLimits = [{ registryKey: 7 as unknown as string, untilChainEnd: true }];
     badExpiry.state.chainLimits = [{ registryKey: "limit", expiresAtChainLength: "one" as unknown as number, untilChainEnd: true }];
+    badUntilEndExpiry.state.chainLimits = [{ registryKey: "limit", expiresAtChainLength: 1, untilChainEnd: true }];
 
     expect(() => restoreDuel(badRegistryKey, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainLimits.0.registryKey must be a string");
     expect(() => restoreDuel(badExpiry, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainLimits.0.expiresAtChainLength must be a number");
+    expect(() => restoreDuel(badUntilEndExpiry, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainLimits.0.expiresAtChainLength must not be set for until-chain-end limits");
   });
 
   it("rejects malformed phase and activity history snapshots before restore", () => {
