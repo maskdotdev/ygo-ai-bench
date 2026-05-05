@@ -134,6 +134,47 @@ describe("battle action restore", () => {
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
     expect(getDuelLegalActions(restored, 0)).toEqual([]);
   });
+
+  it("returns restored damage-calculation quick chains to the damage-calculation response player", () => {
+    const session = createBattleSession(["100", "300"], ["400", "500"]);
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnQuickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(turnQuickSource).toBeTruthy();
+    expect(opponentQuickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, damageCalculationQuickEffect("restore-damage-calc-turn-quick", turnQuickSource!.uid, 0, "Restored damage calculation turn quick resolved"));
+    registerEffect(session, chainOnlyDamageCalculationQuickEffect("restore-damage-calc-opponent-chain-quick", opponentQuickSource!.uid, 1, "Restored damage calculation opponent chain quick resolved"));
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    passBattleWindow(session, "passAttack");
+    passBattleWindow(session, "passDamage");
+    passBattleWindow(session, "passDamage");
+    expect(session.state.battleWindow).toMatchObject({ kind: "duringDamageCalculation", responsePlayer: 1 });
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-damage-calc-turn-quick");
+    expect(quick).toBeDefined();
+    expect(applyResponse(session, quick!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-damage-calc-turn-quick": restoreDamageCalculationQuickEffect("Restored damage calculation turn quick resolved"),
+      "restore-damage-calc-opponent-chain-quick": restoreChainOnlyDamageCalculationQuickEffect("Restored damage calculation opponent chain quick resolved"),
+    });
+    const result = applyResponse(restored, pass!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 1 } });
+    expect(restored.state.chain).toHaveLength(0);
+    expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
+    expect(getDuelLegalActions(restored, 0)).toEqual([]);
+  });
 });
 
 function createBattleSession(playerDeck: string[], opponentDeck: string[]) {
@@ -144,6 +185,14 @@ function createBattleSession(playerDeck: string[], opponentDeck: string[]) {
   });
   startDuel(session);
   return session;
+}
+
+function passBattleWindow(session: ReturnType<typeof createDuel>, type: "passAttack" | "passDamage"): void {
+  for (const player of [session.state.waitingFor!, session.state.waitingFor === 0 ? 1 : 0] as const) {
+    const pass = getDuelLegalActions(session, player).find((action) => action.type === type);
+    expect(pass).toBeDefined();
+    expect(applyResponse(session, pass!).ok).toBe(true);
+  }
 }
 
 function battleQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
@@ -214,6 +263,38 @@ function restoreDamageStepQuickEffect(detail: string): (effect: Omit<DuelEffectD
 function restoreChainOnlyDamageStepQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
   return (effect) => ({
     ...restoreDamageStepQuickEffect(detail)(effect),
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
+    },
+  });
+}
+
+function damageCalculationQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
+  return {
+    ...battleQuickEffect(id, sourceUid, controller, detail),
+    property: 0x8000,
+  };
+}
+
+function chainOnlyDamageCalculationQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
+  return {
+    ...damageCalculationQuickEffect(id, sourceUid, controller, detail),
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
+    },
+  };
+}
+
+function restoreDamageCalculationQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...restoreBattleQuickEffect(detail)(effect),
+    property: 0x8000,
+  });
+}
+
+function restoreChainOnlyDamageCalculationQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...restoreDamageCalculationQuickEffect(detail)(effect),
     canActivate(ctx) {
       return ctx.duel.chain.length > 0;
     },
