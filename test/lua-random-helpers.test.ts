@@ -382,6 +382,7 @@ describe("Lua random helpers", () => {
     expect(restoredCoinResult.ok).toBe(true);
     expect(restoredCoinResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredCoinResult.state.waitingFor!));
     expect(restoredCoinResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredCoinResult.state.waitingFor!));
+    expect(restoredCoinResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredCoinResult.legalActions);
     expect(restored.host.messages[0]).toMatch(/^coin trigger resolved 0\/2\/64\/0\/[01],[01]$/);
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(coinTrigger).toBeDefined();
@@ -411,6 +412,7 @@ describe("Lua random helpers", () => {
     expect(restoredDiceResult.ok).toBe(true);
     expect(restoredDiceResult.legalActions).toEqual(getDuelLegalActions(restoredDice.session, restoredDiceResult.state.waitingFor!));
     expect(restoredDiceResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredDice.session, restoredDiceResult.state.waitingFor!));
+    expect(restoredDiceResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredDiceResult.legalActions);
     expect(restoredDice.host.messages[0]).toMatch(/^dice trigger resolved 0\/2\/64\/0\/[1-6],[1-6]$/);
     const diceTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(diceTrigger).toBeDefined();
@@ -716,6 +718,7 @@ describe("Lua random helpers", () => {
     expect(restoredResult.ok).toBe(true);
     expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
+    expect(restoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredResult.legalActions);
     expect(restored.host.messages[0]).toMatch(/^restored called coin trigger 0\/1\/[01]$/);
   });
 

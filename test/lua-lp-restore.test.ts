@@ -75,6 +75,7 @@ describe("Lua LP restore helpers", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.host.messages).toContain("restored recover trigger 0/900/7400");
   });
 
@@ -147,6 +148,7 @@ describe("Lua LP restore helpers", () => {
     expect(triggerResult.ok).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.host.messages).toContain("restored cost trigger 0/600/7400");
   });
 });
