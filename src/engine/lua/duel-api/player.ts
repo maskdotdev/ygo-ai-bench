@@ -211,6 +211,7 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelP
     if (!card) continue;
     collectDuelTriggerEffects(session.state, "counterRemoved", card);
   }
+  if (removed.length > 0 && hostState.activeContext) hostState.activeOperationMoved = true;
   lua.lua_pushinteger(L, removed.length > 0 ? query.count : 0);
   return 1;
 }
