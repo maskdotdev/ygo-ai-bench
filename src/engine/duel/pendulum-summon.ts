@@ -5,6 +5,7 @@ import type { DuelAction, DuelCardInstance, DuelState, PlayerId } from "#duel/ty
 type PendulumSummonAction = Extract<DuelAction, { type: "pendulumSummon" }>;
 
 export function pendulumSummonActions(state: DuelState, player: PlayerId, canSummon: (uid: string) => boolean): PendulumSummonAction[] {
+  if (!state.players[player].pendulumSummonAvailable) return [];
   const zoneCount = 5 - getCards(state, player, "monsterZone").length;
   const scales = pendulumScales(state, player);
   if (zoneCount <= 0 || !scales) return [];
@@ -30,6 +31,7 @@ export function pendulumSummonDuelCards(
     card.summonType = "pendulum";
     summoned.push(card);
   }
+  state.players[player].pendulumSummonAvailable = false;
   pushDuelLog(state, "pendulumSummon", player, undefined, `Pendulum Summoned ${summoned.length} monster(s)`);
   return summoned;
 }

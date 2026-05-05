@@ -309,6 +309,7 @@ function canSpecialSummonCount(session: DuelSession, player: PlayerId, count: nu
 
 function canPendulumSummon(session: DuelSession, player: PlayerId): boolean {
   if (!isMainPhaseForPlayer(session, player)) return false;
+  if (!session.state.players[player].pendulumSummonAvailable) return false;
   if (!canSpecialSummonCount(session, player, 1)) return false;
   if (availableMonsterZoneCount(session, player, []) <= 0) return false;
   const scales = pendulumScales(session, player);

@@ -100,6 +100,17 @@ describe("EDOPro parity Pendulum Summon success fixtures", () => {
             windowKind: "open",
             waitingFor: 0,
             pendingTriggers: [],
+            legalActionCounts: { 0: 5, 1: 0 },
+            absentLegalActions: [{ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-500-4"], windowId: 2, windowKind: "open" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowId: 2,
+                windowKind: "open",
+                actions: [{ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-500-4"], windowId: 2, windowKind: "open" }],
+              },
+            ],
             logIncludes: ["Fixture Pendulum summon success watcher resolved"],
           },
         }),

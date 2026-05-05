@@ -316,7 +316,7 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
   const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
   const zoneCount = availableMonsterZoneCount(session, player, []);
   const scales = pendulumScales(session, player);
-  if (!isMainPhaseForPlayer(session, player) || zoneCount <= 0 || !scales) {
+  if (!isMainPhaseForPlayer(session, player) || !session.state.players[player].pendulumSummonAvailable || zoneCount <= 0 || !scales) {
     setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
     return 1;
@@ -333,6 +333,7 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
       // EDOPro-style helpers report successful summons only.
     }
   }
+  if (summonedUids.length > 0) session.state.players[player].pendulumSummonAvailable = false;
   setOperatedUids(hostState, summonedUids);
   lua.lua_pushinteger(L, summonedUids.length);
   return 1;

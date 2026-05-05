@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyResponse,
   canMoveDuelCardToLocation,
   canSpecialSummonDuelCard,
   createDuel,
@@ -11,6 +12,7 @@ import {
 } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
+import type { DuelCardData } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("duel pendulum summons", () => {
@@ -77,6 +79,45 @@ describe("duel pendulum summons", () => {
 
     expect(summoned).toMatchObject({ location: "monsterZone", faceUp: true, position: "faceUpAttack", summonType: "special" });
     expect(session.state.log.some((entry) => entry.action === "specialSummon" && entry.card === "Pendulum Test Monster")).toBe(true);
+  });
+
+  it("consumes Pendulum Summon availability until the player's next turn", () => {
+    const pendulumCards: DuelCardData[] = [
+      { code: "101", name: "Low Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1 },
+      { code: "102", name: "High Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 8, rightScale: 8 },
+      { code: "301", name: "First Pendulum", kind: "monster", typeFlags: 0x1000001, level: 4 },
+      { code: "302", name: "Second Pendulum", kind: "monster", typeFlags: 0x1000001, level: 5 },
+    ];
+    const session = createDuel({ seed: 42, startingHandSize: 4, cardReader: createCardReader(pendulumCards) });
+    loadDecks(session, {
+      0: { main: ["101", "102", "301", "302"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const lowScale = session.state.cards.find((card) => card.code === "101");
+    const highScale = session.state.cards.find((card) => card.code === "102");
+    const firstPendulum = session.state.cards.find((card) => card.code === "301");
+    const secondPendulum = session.state.cards.find((card) => card.code === "302");
+    expect(lowScale).toBeTruthy();
+    expect(highScale).toBeTruthy();
+    expect(firstPendulum).toBeTruthy();
+    expect(secondPendulum).toBeTruthy();
+    moveDuelCard(session.state, lowScale!.uid, "spellTrapZone", 0).sequence = 0;
+    moveDuelCard(session.state, highScale!.uid, "spellTrapZone", 0).sequence = 1;
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "pendulumSummon");
+    if (!action || action.type !== "pendulumSummon") throw new Error("Expected Pendulum Summon action");
+    expect(action.summonUids).toHaveLength(2);
+    expect(action.summonUids).toEqual(expect.arrayContaining([firstPendulum!.uid, secondPendulum!.uid]));
+
+    const result = applyResponse(session, { ...action, summonUids: [firstPendulum!.uid] });
+
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state.players[0].pendulumSummonAvailable).toBe(false);
+    expect(result.legalActions.some((candidate) => candidate.type === "pendulumSummon")).toBe(false);
+    expect(session.state.cards.find((card) => card.uid === firstPendulum!.uid)).toMatchObject({ location: "monsterZone", summonType: "pendulum" });
+    expect(session.state.cards.find((card) => card.uid === secondPendulum!.uid)).toMatchObject({ location: "hand" });
   });
 
   it("hides normal summon actions when the monster zone is full", () => {

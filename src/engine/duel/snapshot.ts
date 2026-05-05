@@ -698,6 +698,7 @@ function assertSnapshotPlayer(player: unknown, expectedId: PlayerId): void {
   if (player.id !== expectedId) throw new Error(`Malformed duel snapshot: ${path}.id must match the player id`);
   assertSnapshotNonNegativeInteger(player.lifePoints, `${path}.lifePoints`);
   if (typeof player.normalSummonAvailable !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.normalSummonAvailable must be a boolean`);
+  if (typeof player.pendulumSummonAvailable !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.pendulumSummonAvailable must be a boolean`);
   if (player.initialMainDeckSize !== undefined) assertSnapshotNonNegativeInteger(player.initialMainDeckSize, `${path}.initialMainDeckSize`);
 }
 

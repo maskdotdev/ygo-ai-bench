@@ -87,6 +87,7 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   state.positionsChanged = [];
   for (const activityPlayer of [0, 1] satisfies PlayerId[]) resetDuelActivityCounts(state, activityPlayer);
   state.players[state.turnPlayer].normalSummonAvailable = true;
+  state.players[state.turnPlayer].pendulumSummonAvailable = true;
   handlers.collectEvent("preDraw");
   if (handlers.canDraw?.(state.turnPlayer) ?? true) drawDuelCardsFromDeck(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw", (drawPlayer) => handlers.canLoseByDeck?.(drawPlayer) ?? true);
   if (state.status === "ended") return;
