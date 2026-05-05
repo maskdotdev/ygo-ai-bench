@@ -63,4 +63,32 @@ describe("Lua break-effect events", () => {
       expect.objectContaining({ eventName: "chainSolved", eventCode: 1022 }),
     ]);
   });
+
+  it("keeps operation event helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Ended Event Source", kind: "monster" }];
+    const session = createDuel({ seed: 202, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Duel.BreakEffect()
+      Duel.AdjustInstantly(source)
+      Duel.Readjust()
+      Duel.RaiseSingleEvent(source, EVENT_BREAK_EFFECT, nil, 0, 0, 0, 0)
+      `,
+      "ended-operation-events.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.winner).toBe(0);
+    expect(session.state.pendingTriggers).toEqual([]);
+    expect(session.state.log.filter((entry) => entry.action === "breakEffect" || entry.action === "adjust")).toEqual([]);
+    expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("breakEffect");
+    expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("adjust");
+  });
 });

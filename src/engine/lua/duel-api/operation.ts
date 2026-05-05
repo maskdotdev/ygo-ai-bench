@@ -54,6 +54,7 @@ export function installDuelOperationApi(L: unknown, session: DuelSession, hostSt
 }
 
 function pushBreakEffect(session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   pushDuelLog(session.state, "breakEffect", session.state.turnPlayer, undefined, "Effect operation break");
   raiseDuelEvent(session.state, "breakEffect");
   return 0;
@@ -65,6 +66,7 @@ function pushAssumeReset(session: DuelSession): number {
 }
 
 function pushAdjustInstantly(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const uid = readCardUid(L, 1);
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   raiseDuelEvent(session.state, "adjust", card);
@@ -73,12 +75,14 @@ function pushAdjustInstantly(L: unknown, session: DuelSession): number {
 }
 
 function pushReadjust(session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   raiseDuelEvent(session.state, "adjust");
   pushDuelLog(session.state, "adjust", session.state.turnPlayer, undefined, "Readjust");
   return 0;
 }
 
 function pushRaiseEvent(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const eventName = triggerEventFromCode(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined);
   const eventCode = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
   const payload = readRaiseEventPayload(L);
@@ -92,6 +96,7 @@ function pushRaiseEvent(L: unknown, session: DuelSession): number {
 }
 
 function pushRaiseSingleEvent(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const uid = readCardUid(L, 1);
   const eventCode = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
   const eventName = triggerEventFromCode(eventCode);
