@@ -4,7 +4,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import { createCardReader, createUpstreamSourceConfig, normalizeCdbRows } from "#engine/data-loaders.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -802,6 +802,7 @@ describe("Node upstream snapshot restore", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
     const forgedAction = getDuelLegalActions(restored.session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
     expect(forgedAction).toBeDefined();
+    expect(forgedAction).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "chainResponse" });
     expect(getLuaRestoreLegalActions(restored, 1)).not.toContain(forgedAction);
     const forgedResult = applyLuaRestoreResponse(restored, forgedAction!);
     expect(forgedResult.ok).toBe(false);
