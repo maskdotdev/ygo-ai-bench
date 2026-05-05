@@ -147,6 +147,7 @@ describe("Lua attack negation helpers", () => {
     expect(restoredTrigger).toBeDefined();
     const restoredTriggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
     expect(restoredTriggerResult.ok).toBe(true);
+    expect(restoredTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
     expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("attack disabled trigger 100/0");
 
@@ -213,6 +214,7 @@ describe("Lua attack negation helpers", () => {
     const result = applyLuaRestoreResponse(restored, negate!);
 
     expect(result.ok).toBe(true);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(["lua-1"]);
     const replayAttackPass = applyLuaRestoreResponse(restored, staleAttackPass!);
@@ -224,6 +226,7 @@ describe("Lua attack negation helpers", () => {
     expect(pass).toBeDefined();
     const passResult = applyLuaRestoreResponse(restored, pass!);
     expect(passResult.ok).toBe(true);
+    expect(passResult.legalActions).toEqual(getDuelLegalActions(restored.session, passResult.state.waitingFor!));
     expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
     expect(restored.host.messages).toEqual(["restored attack negate true"]);
     expect(restored.session.state.currentAttack).toBeUndefined();

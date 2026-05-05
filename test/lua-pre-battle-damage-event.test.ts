@@ -115,6 +115,7 @@ describe("Lua pre-battle-damage events", () => {
     expect(trigger).toBeDefined();
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("restored pre battle damage 1/1800/32/1800");
@@ -138,6 +139,7 @@ function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScript
     expect(pass).toBeDefined();
     const passResult = applyLuaRestoreResponse(restored, pass!);
     expect(passResult.ok).toBe(true);
+    expect(passResult.legalActions).toEqual(getDuelLegalActions(restored.session, passResult.state.waitingFor!));
     expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
   }
 }
