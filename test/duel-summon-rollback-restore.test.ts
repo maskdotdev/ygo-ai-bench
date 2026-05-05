@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   queryPublicState,
@@ -17,6 +18,10 @@ import { cards, findPublicCard } from "./full-duel-engine-fixtures.js";
 
 function expectOpenWindowActions(actions: DuelAction[], windowId: number): void {
   for (const action of actions) expect(action).toMatchObject({ windowId, windowKind: "open" });
+}
+
+function expectOpenWindowGroups(groups: ReturnType<typeof getGroupedDuelLegalActions>, windowId: number): void {
+  for (const group of groups) expect(group).toMatchObject({ windowId, windowKind: "open" });
 }
 
 type RestoredFailedMoveCase = {
@@ -150,6 +155,8 @@ describe("duel summon rollback after restore", () => {
       expect(result.state.actionWindowId).toBe(restoredWindowId);
       expect(result.state.windowKind).toBe("open");
       expectOpenWindowActions(result.legalActions, restoredWindowId);
+      expectOpenWindowGroups(result.legalActionGroups, restoredWindowId);
+      expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
       expect(session.state.cards.find((card) => card.uid === target.uid)?.location).toBe(testCase.target.location);
       expect(session.state.cards.find((card) => card.uid === first.uid)?.location).toBe(testCase.first.moveTo ?? testCase.first.location);
       expect(session.state.cards.find((card) => card.uid === blocked.uid)?.location).toBe(testCase.blocked.moveTo ?? testCase.blocked.location);
