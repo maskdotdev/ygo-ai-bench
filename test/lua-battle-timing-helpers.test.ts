@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -414,7 +414,8 @@ describe("Lua battle timing helpers", () => {
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.pendingBattle).toBeDefined();
     expect(restored.session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
-    expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "passDamage")).toBe(true);
+    expect(queryPublicState(restored.session)).toMatchObject({ windowKind: "battle", waitingFor: 1, battleWindow: { kind: "beforeDamageCalculation", responsePlayer: 1 } });
+    expect(getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passDamage")).toMatchObject({ windowId: restored.session.state.actionWindowId, windowKind: "battle" });
   });
 
   it("applies restored Lua after-damage battle triggers through restore responses", () => {
@@ -485,7 +486,8 @@ describe("Lua battle timing helpers", () => {
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.pendingBattle).toBeDefined();
     expect(restored.session.state.battleWindow?.kind).toBe("afterDamageCalculation");
-    expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "passDamage")).toBe(true);
+    expect(queryPublicState(restored.session)).toMatchObject({ windowKind: "battle", waitingFor: 1, battleWindow: { kind: "afterDamageCalculation", responsePlayer: 1 } });
+    expect(getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passDamage")).toMatchObject({ windowId: restored.session.state.actionWindowId, windowKind: "battle" });
   });
 
   it("applies restored Lua damage-step-end triggers through restore responses", () => {
@@ -558,7 +560,8 @@ describe("Lua battle timing helpers", () => {
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.pendingBattle).toBeDefined();
     expect(restored.session.state.battleWindow?.kind).toBe("endDamageStep");
-    expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "passDamage")).toBe(true);
+    expect(queryPublicState(restored.session)).toMatchObject({ windowKind: "battle", waitingFor: 1, battleWindow: { kind: "endDamageStep", responsePlayer: 1 } });
+    expect(getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passDamage")).toMatchObject({ windowId: restored.session.state.actionWindowId, windowKind: "battle" });
   });
 
   it("applies restored Lua battle-damage triggers through restore responses", () => {
