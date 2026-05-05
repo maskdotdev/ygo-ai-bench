@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -97,6 +98,79 @@ describe("Lua chain helpers", () => {
     expect(host.messages).toContain("chain unique true");
     expect(host.messages).toContain("quick resolved");
     expect(host.messages).toContain("source resolved");
+  });
+
+  it("exposes Pendulum Summon type through chain info", () => {
+    const cards: DuelCardData[] = [
+      { code: "101", name: "Chain Low Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1 },
+      { code: "102", name: "Chain High Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 8, rightScale: 8 },
+      { code: "301", name: "Chain Pendulum Source", kind: "monster", typeFlags: 0x1000001, level: 4 },
+      { code: "400", name: "Chain Pendulum Inspector", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 247, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101", "102", "301"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const lowScale = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "101");
+    const highScale = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "102");
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "301");
+    expect(lowScale).toBeDefined();
+    expect(highScale).toBeDefined();
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, lowScale!.uid, "spellTrapZone", 0).sequence = 0;
+    moveDuelCard(session.state, highScale!.uid, "spellTrapZone", 0).sequence = 1;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c301={}
+      function c301.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_MZONE)
+        e:SetOperation(function(e,c)
+          Debug.Message("pendulum source resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          local sl,st,complete=Duel.GetChainInfo(1, CHAININFO_TRIGGERING_SUMMON_LOCATION, CHAININFO_TRIGGERING_SUMMON_TYPE, CHAININFO_TRIGGERING_SUMMON_PROC_COMPLETE)
+          Debug.Message("pendulum chain summon info " .. sl .. "/" .. st .. "/" .. tostring(st==SUMMON_TYPE_PENDULUM) .. "/" .. tostring(complete))
+          return st==SUMMON_TYPE_PENDULUM
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("pendulum inspector resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "pendulum-chain-summon-info.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const pendulumAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "pendulumSummon" && candidate.summonUids.includes(source!.uid));
+    expect(pendulumAction).toBeDefined();
+    expect(applyResponse(session, { ...pendulumAction!, summonUids: [source!.uid] }).ok).toBe(true);
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(quickAction).toBeDefined();
+    expect(applyResponse(session, quickAction!).ok).toBe(true);
+    passChainIfAvailable(session);
+    passChainIfAvailable(session);
+    expect(host.messages).toContain("pendulum chain summon info 2/1241513984/true/true");
+    expect(host.messages).toContain("pendulum inspector resolved");
+    expect(host.messages).toContain("pendulum source resolved");
   });
 
   it("lets Lua effects block immediate chain responses", () => {
