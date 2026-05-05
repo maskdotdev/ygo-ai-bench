@@ -430,6 +430,18 @@ describe("Lua trigger bucket helpers", () => {
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(resolved.state.chain).toEqual([]);
     expect(resolved.state.pendingTriggers).toEqual([]);
+    expect(resolved.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
+
+    const replay = applyLuaRestoreResponse(restored, opponentDecline!);
+
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(replay.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.host.messages).toEqual(["restored second optional bucket", "restored first optional bucket"]);
   });
 
