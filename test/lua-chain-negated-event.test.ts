@@ -83,27 +83,15 @@ describe("Lua chain-negated events", () => {
 
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(sourceAction).toBeDefined();
-    const opened = applyResponse(session, sourceAction!);
-    expect(opened.ok).toBe(true);
-    expect(opened.legalActions).toEqual(getDuelLegalActions(session, 1));
-    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
-    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
+    applyAndAssert(session, sourceAction!);
     const negatorAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(negatorAction).toBeDefined();
-    const chained = applyResponse(session, negatorAction!);
-    expect(chained.ok).toBe(true);
-    expect(chained.legalActions).toEqual(getDuelLegalActions(session, 1));
-    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
-    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
+    applyAndAssert(session, negatorAction!);
     while (session.state.chain.length > 0) {
       const player = session.state.waitingFor ?? session.state.turnPlayer;
       const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
       expect(pass).toBeDefined();
-      const passResult = applyResponse(session, pass!);
-      expect(passResult.ok).toBe(true);
-      expect(passResult.legalActions).toEqual(getDuelLegalActions(session, passResult.state.waitingFor!));
-      expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, passResult.state.waitingFor!));
-      expect(passResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(passResult.legalActions);
+      applyAndAssert(session, pass!);
     }
 
     expect(host.messages).toContain("negate result true");
@@ -122,21 +110,31 @@ describe("Lua chain-negated events", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const result = applyLuaRestoreResponse(restored, trigger!);
-    expect(result.ok).toBe(true);
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    applyLuaRestoreAndAssert(restored, trigger!);
     while (restored.session.state.chain.length > 0) {
       const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
       const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
       expect(pass).toBeDefined();
-      const passResult = applyLuaRestoreResponse(restored, pass!);
-      expect(passResult.ok).toBe(true);
-      expect(passResult.legalActions).toEqual(getDuelLegalActions(restored.session, passResult.state.waitingFor!));
-      expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
-      expect(passResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(passResult.legalActions);
+      applyLuaRestoreAndAssert(restored, pass!);
     }
     expect(restored.host.messages).toContain("chain negated resolved 0/0/1/0");
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const result = applyResponse(session, action);
+  expect(result.ok, result.error).toBe(true);
+  expect(result.legalActions).toEqual(getDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  return result;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const result = applyLuaRestoreResponse(restored, action);
+  expect(result.ok, result.error).toBe(true);
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  return result;
+}
