@@ -12,6 +12,7 @@ export function clearEndedDuelPendingState(state: DuelState): void {
   delete state.pendingBattle;
   delete state.battleStep;
   delete state.battleWindow;
+  state.attackCostPaid = 0;
   state.attackPasses = [];
   state.damagePasses = [];
 }

@@ -937,6 +937,7 @@ describe("duel battle", () => {
     expect(battle).toBeTruthy();
     expect(applyResponse(session, battle!).ok).toBe(true);
     declareDuelAttack(session.state, 0, attacker!.uid, target!.uid);
+    session.state.attackCostPaid = 1;
 
     setDuelPlayerLifePoints(session.state, 1, 0);
 
@@ -945,6 +946,7 @@ describe("duel battle", () => {
     expect(state.waitingFor).toBeUndefined();
     expect(state.battleStep).toBeUndefined();
     expect(state.battleWindow).toBeUndefined();
+    expect(session.state.attackCostPaid).toBe(0);
     expect(state.attackPasses).toEqual([]);
     expect(state.damagePasses).toEqual([]);
   });
