@@ -66,6 +66,7 @@ describe("EDOPro parity flip summon negation fixtures", () => {
               { player: 0, effectId: "fixture-flip-summon-negator", eventName: "flipSummoning", eventCardUid: "p0-deck-100-0" },
               { player: 0, effectId: "fixture-flip-success-watcher", eventName: "flipSummoned", eventCardUid: "p0-deck-100-0" },
             ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-flip-summon-negator" }), {
@@ -77,6 +78,7 @@ describe("EDOPro parity flip summon negation fixtures", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-flip-negated-watcher", eventName: "flipSummonNegated", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             locations: { graveyard: ["100"], hand: ["200", "300"] },
             logIncludes: ["Fixture flip summon negator resolved"],
           },

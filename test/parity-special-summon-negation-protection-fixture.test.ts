@@ -72,6 +72,7 @@ describe("EDOPro parity special summon negation protection fixtures", () => {
               { player: 0, effectId: "fixture-blocked-special-summon-negator", eventName: "specialSummoning", eventCardUid: "p0-deck-100-0" },
               { player: 0, effectId: "fixture-protected-special-success-watcher", eventName: "specialSummoned", eventCardUid: "p0-deck-100-0" },
             ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-blocked-special-summon-negator" }), {
@@ -83,6 +84,7 @@ describe("EDOPro parity special summon negation protection fixtures", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-protected-special-success-watcher", eventName: "specialSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             locations: { monsterZone: ["100"], hand: ["200", "300"] },
             logIncludes: ["Fixture blocked special summon negator resolved"],
           },

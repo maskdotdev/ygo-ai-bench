@@ -65,6 +65,7 @@ describe("EDOPro parity summon negation fixtures", () => {
               { player: 0, effectId: "fixture-summon-negator", eventName: "normalSummoning", eventCardUid: "p0-deck-100-0" },
               { player: 0, effectId: "fixture-success-watcher", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
             ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-summon-negator" }), {
@@ -76,6 +77,7 @@ describe("EDOPro parity summon negation fixtures", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-negated-summon-watcher", eventName: "normalSummonNegated", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             locations: { graveyard: ["100"], hand: ["200", "300"] },
             logIncludes: ["Fixture summon negator resolved"],
           },

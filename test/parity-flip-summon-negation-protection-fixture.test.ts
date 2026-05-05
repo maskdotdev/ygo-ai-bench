@@ -65,6 +65,7 @@ describe("EDOPro parity flip summon negation protection fixtures", () => {
               { player: 0, effectId: "fixture-blocked-flip-summon-negator", eventName: "flipSummoning", eventCardUid: "p0-deck-100-0" },
               { player: 0, effectId: "fixture-protected-flip-success-watcher", eventName: "flipSummoned", eventCardUid: "p0-deck-100-0" },
             ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-blocked-flip-summon-negator" }), {
@@ -76,6 +77,7 @@ describe("EDOPro parity flip summon negation protection fixtures", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-protected-flip-success-watcher", eventName: "flipSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             locations: { monsterZone: ["100"], hand: ["200", "300"] },
             logIncludes: ["Fixture blocked flip summon negator resolved"],
           },
