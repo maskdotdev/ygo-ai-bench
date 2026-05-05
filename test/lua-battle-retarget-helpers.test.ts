@@ -109,7 +109,8 @@ describe("Lua battle retarget helpers", () => {
     moveDuelCard(session.state, newTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const retargetScript = host.loadCardScript(300, source);
+    expect(retargetScript.ok, retargetScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
@@ -242,7 +243,8 @@ describe("Lua battle retarget helpers", () => {
     moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const retargetScript = host.loadCardScript(300, source);
+    expect(retargetScript.ok, retargetScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
@@ -413,7 +415,8 @@ describe("Lua battle retarget helpers", () => {
     moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const retargetScript = host.loadCardScript(300, source);
+    expect(retargetScript.ok, retargetScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
@@ -542,7 +545,8 @@ describe("Lua battle retarget helpers", () => {
     moveDuelCard(session.state, newTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const retargetScript = host.loadCardScript(300, source);
+    expect(retargetScript.ok, retargetScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
