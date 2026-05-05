@@ -12,6 +12,7 @@ import { duelReason } from "#duel/reasons.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { shuffle } from "#engine/rng.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
@@ -76,7 +77,7 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
     const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
     const drawUids = topDeckUids(session, player, count);
     if (drawUids.length > 0) markLuaOperationTimingBoundary(session, hostState);
-    const drawn = drawDuelCards(session.state, player, count, "Lua draw", { eventReason: reason, eventReasonPlayer: reasonPlayer });
+    const drawn = drawDuelCards(session.state, player, count, "Lua draw", luaEffectReasonPayload(hostState, reason, reasonPlayer));
     if (drawn > 0 && hostState.activeContext) hostState.activeOperationMoved = true;
     setOperatedUids(hostState, drawUids.slice(0, drawn));
     lua.lua_pushinteger(state, drawn);
