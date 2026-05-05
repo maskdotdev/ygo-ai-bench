@@ -1,0 +1,88 @@
+import { copyDuelActivityCounts } from "#duel/activity.js";
+import { copyBattleWindowState } from "#duel/battle-window-state.js";
+import { shouldContinueTriggerSelection } from "#duel/effect-activation.js";
+import { pendingTriggerBucketsForState } from "#duel/trigger-buckets.js";
+import type { DuelCardInstance, DuelPromptState, DuelState, PublicChainLink, PublicDuelCard, PublicDuelState } from "#duel/types.js";
+
+export function queryPublicState({ state }: { state: DuelState }): PublicDuelState {
+  const windowKind = currentPublicWindowKind(state);
+  return {
+    id: state.id,
+    status: state.status,
+    ...(state.winner === undefined ? {} : { winner: state.winner }),
+    ...(state.winReason === undefined ? {} : { winReason: state.winReason }),
+    turn: state.turn,
+    turnPlayer: state.turnPlayer,
+    phase: state.phase,
+    ...(state.waitingFor === undefined ? {} : { waitingFor: state.waitingFor }),
+    actionWindowId: state.actionWindowId,
+    ...(windowKind === undefined ? {} : { windowKind }),
+    ...(state.prompt === undefined ? {} : { prompt: copyPrompt(state.prompt) }),
+    players: {
+      0: { ...state.players[0] },
+      1: { ...state.players[1] },
+    },
+    cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
+    chain: state.chain.map(copyPublicChainLink),
+    pendingTriggers: state.pendingTriggers.map(copyPendingTrigger),
+    pendingTriggerBuckets: pendingTriggerBucketsForState(state),
+    activityCounts: copyDuelActivityCounts(state.activityCounts),
+    attacksDeclared: [...state.attacksDeclared],
+    attackCanceledUids: [...state.attackCanceledUids],
+    attackedTargetUids: [...state.attackedTargetUids],
+    battlePairs: state.battlePairs.map((pair) => ({ ...pair })),
+    attackPasses: [...state.attackPasses],
+    damagePasses: [...state.damagePasses],
+    ...(state.battleStep === undefined ? {} : { battleStep: state.battleStep }),
+    ...(state.battleWindow === undefined ? {} : { battleWindow: copyBattleWindowState(state.battleWindow) }),
+    positionsChanged: [...state.positionsChanged],
+    log: state.log.map((entry) => ({ ...entry })),
+  };
+}
+
+function currentPublicWindowKind(state: DuelState): PublicDuelState["windowKind"] {
+  if (state.status !== "awaiting" || state.waitingFor === undefined) return undefined;
+  if (state.prompt) return "prompt";
+  if (shouldContinueTriggerSelection(state)) return "triggerBucket";
+  if (state.chain.length) return "chainResponse";
+  if (state.pendingBattle) return "battle";
+  return "open";
+}
+
+function copyPublicChainLink(link: DuelState["chain"][number]): PublicChainLink {
+  const { operationOverride: _operationOverride, ...publicLink } = link;
+  return {
+    ...publicLink,
+    ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
+    ...(link.eventUids === undefined ? {} : { eventUids: [...link.eventUids] }),
+  };
+}
+
+function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): DuelState["pendingTriggers"][number] {
+  return {
+    ...trigger,
+    ...(trigger.eventUids === undefined ? {} : { eventUids: [...trigger.eventUids] }),
+  };
+}
+
+function copyPrompt(prompt: DuelPromptState): DuelPromptState {
+  if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options] };
+  return { ...prompt };
+}
+
+function toPublicCard(card: DuelCardInstance): PublicDuelCard {
+  return {
+    uid: card.uid,
+    code: card.code,
+    name: card.name,
+    kind: card.kind,
+    owner: card.owner,
+    controller: card.controller,
+    location: card.location,
+    sequence: card.sequence,
+    position: card.position,
+    faceUp: card.faceUp,
+    overlayCount: card.overlayUids.length,
+    ...(card.counters ? { counters: { ...card.counters } } : {}),
+  };
+}

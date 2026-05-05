@@ -16,13 +16,13 @@ import type {
   PendingTrigger,
   PlayerId,
   PublicChainLink,
-  PublicDuelCard,
-  PublicDuelState,
   SerializedChainLimit,
   SerializedDuel,
   SerializedDuelEffect,
   TriggerBucket,
 } from "#duel/types.js";
+
+export { queryPublicState } from "#duel/public-state.js";
 
 export type DuelEffectRestoreFactory = (effect: DuelEffectDefinition) => DuelEffectDefinition;
 export type DuelEffectRestoreRegistry = Record<string, DuelEffectRestoreFactory>;
@@ -31,40 +31,6 @@ export type DuelChainLimitRestoreRegistry = Record<string, DuelChainLimitRestore
 
 export interface DuelRestoreOptions {
   pruneUnrestoredPendingTriggers?: boolean;
-}
-
-export function queryPublicState(session: DuelSession): PublicDuelState {
-  const state = session.state;
-  return {
-    id: state.id,
-    status: state.status,
-    ...(state.winner === undefined ? {} : { winner: state.winner }),
-    ...(state.winReason === undefined ? {} : { winReason: state.winReason }),
-    turn: state.turn,
-    turnPlayer: state.turnPlayer,
-    phase: state.phase,
-    ...(state.waitingFor === undefined ? {} : { waitingFor: state.waitingFor }),
-    ...(state.prompt === undefined ? {} : { prompt: copyPrompt(state.prompt) }),
-    players: {
-      0: { ...state.players[0] },
-      1: { ...state.players[1] },
-    },
-    cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
-    chain: state.chain.map(copyPublicChainLink),
-    pendingTriggers: state.pendingTriggers.map(copyPendingTrigger),
-    pendingTriggerBuckets: pendingTriggerBucketsForState(state),
-    activityCounts: copyDuelActivityCounts(state.activityCounts),
-    attacksDeclared: [...state.attacksDeclared],
-    attackCanceledUids: [...state.attackCanceledUids],
-    attackedTargetUids: [...state.attackedTargetUids],
-    battlePairs: state.battlePairs.map((pair) => ({ ...pair })),
-    attackPasses: [...state.attackPasses],
-    damagePasses: [...state.damagePasses],
-    ...(state.battleStep === undefined ? {} : { battleStep: state.battleStep }),
-    ...(state.battleWindow === undefined ? {} : { battleWindow: copyBattleWindowState(state.battleWindow) }),
-    positionsChanged: [...state.positionsChanged],
-    log: state.log.map((entry) => ({ ...entry })),
-  };
 }
 
 export function serializeDuel(session: DuelSession): SerializedDuel {
@@ -979,21 +945,4 @@ function copyBattleAttack<T extends NonNullable<DuelState["currentAttack"]>>(bat
 function copyPrompt(prompt: DuelPromptState): DuelPromptState {
   if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options] };
   return { ...prompt };
-}
-
-function toPublicCard(card: DuelCardInstance): PublicDuelCard {
-  return {
-    uid: card.uid,
-    code: card.code,
-    name: card.name,
-    kind: card.kind,
-    owner: card.owner,
-    controller: card.controller,
-    location: card.location,
-    sequence: card.sequence,
-    position: card.position,
-    faceUp: card.faceUp,
-    overlayCount: card.overlayUids.length,
-    ...(card.counters ? { counters: { ...card.counters } } : {}),
-  };
 }

@@ -528,6 +528,8 @@ export interface PublicDuelState {
   turnPlayer: PlayerId;
   phase: DuelPhase;
   waitingFor?: PlayerId;
+  actionWindowId: number;
+  windowKind?: DuelActionWindowKind;
   prompt?: DuelPromptState;
   players: Record<PlayerId, DuelPlayerState>;
   cards: PublicDuelCard[];

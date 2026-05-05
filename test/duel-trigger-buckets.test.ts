@@ -223,6 +223,10 @@ describe("duel trigger buckets", () => {
     session.state.waitingFor = 0;
 
     expect(shouldContinueTriggerSelection(session.state)).toBe(false);
+    expect(queryPublicState(session).windowKind).toBe("chainResponse");
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([
+      { triggerBucket: "turnOptional", player: 0, triggerIds: ["second-payload"] },
+    ]);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateTrigger" && action.effectId === "second-payload-trigger")).toBe(false);
   });
 
