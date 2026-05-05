@@ -593,6 +593,9 @@ describe("Node upstream snapshot restore", () => {
     const staleResult = applyLuaRestoreResponse(restored, staleSecondTrigger!);
     expect(staleResult.ok).toBe(false);
     expect(staleResult.error).toContain("Response is not currently legal");
+    expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
     expect(restored.host.messages).toEqual([]);
   });
 
