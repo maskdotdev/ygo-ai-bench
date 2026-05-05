@@ -93,6 +93,21 @@ describe("Lua effect trigger metadata helpers", () => {
       if_effect:SetRange(LOCATION_GRAVE)
       if_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("lua if optional resolved") end)
       body:RegisterEffect(if_effect)
+
+      local opponent_when_effect=Effect.CreateEffect(opponent_body)
+      opponent_when_effect:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
+      opponent_when_effect:SetCode(EVENT_TO_GRAVE)
+      opponent_when_effect:SetRange(LOCATION_GRAVE)
+      opponent_when_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("lua opponent when optional resolved") end)
+      opponent_body:RegisterEffect(opponent_when_effect)
+
+      local opponent_if_effect=Effect.CreateEffect(opponent_body)
+      opponent_if_effect:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
+      opponent_if_effect:SetCode(EVENT_TO_GRAVE)
+      opponent_if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      opponent_if_effect:SetRange(LOCATION_GRAVE)
+      opponent_if_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("lua opponent if optional resolved") end)
+      opponent_body:RegisterEffect(opponent_if_effect)
       `,
       "lua-missed-timing-movement.lua",
     );
@@ -105,13 +120,29 @@ describe("Lua effect trigger metadata helpers", () => {
     expect(activation.ok).toBe(true);
     expect(host.messages).toContain("lua multistep movement resolved");
     const pendingTriggerEffects = session.state.pendingTriggers.map((trigger) => session.state.effects.find((effect) => effect.id === trigger.effectId && effect.sourceUid === trigger.sourceUid));
-    expect(pendingTriggerEffects.map((effect) => effect?.triggerTiming)).toEqual(["if"]);
-    expect(pendingTriggerEffects.map((effect) => effect?.optional)).toEqual([true]);
+    expect(pendingTriggerEffects.map((effect) => effect?.triggerTiming)).toEqual(["if", "when", "if"]);
+    expect(pendingTriggerEffects.map((effect) => effect?.optional)).toEqual([true, true, true]);
     const ifTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(ifTrigger?.uid).toBe(session.state.cards.find((card) => card.controller === 0 && card.location === "graveyard" && card.code === "500")?.uid);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(1);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
     expect(applyResponse(session, ifTrigger!).ok).toBe(true);
     expect(host.messages).toContain("lua if optional resolved");
+    const opponentTriggers = getDuelLegalActions(session, 1).filter((action) => action.type === "activateTrigger");
+    expect(opponentTriggers.map((action) => action.uid)).toEqual([
+      session.state.cards.find((card) => card.controller === 1 && card.location === "graveyard" && card.code === "500")?.uid,
+      session.state.cards.find((card) => card.controller === 1 && card.location === "graveyard" && card.code === "500")?.uid,
+    ]);
+    const opponentWhenTrigger = opponentTriggers.find((action) => {
+      const effect = session.state.effects.find((candidate) => candidate.id === action.effectId && candidate.sourceUid === action.uid);
+      return effect?.triggerTiming === "when";
+    });
+    expect(opponentWhenTrigger).toBeDefined();
+    expect(applyResponse(session, opponentWhenTrigger!).ok).toBe(true);
+    const opponentIfTrigger = getDuelLegalActions(session, 1).find((action) => action.type === "activateTrigger");
+    expect(applyResponse(session, opponentIfTrigger!).ok).toBe(true);
+    expect(host.messages).toContain("lua opponent when optional resolved");
+    expect(host.messages).toContain("lua opponent if optional resolved");
     expect(host.messages).not.toContain("lua when optional resolved");
   });
 
