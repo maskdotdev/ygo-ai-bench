@@ -62,6 +62,21 @@ describe("duel legal action groups", () => {
     expect(groups.flatMap((group) => group.actions)).toEqual(actions);
   });
 
+  it("preserves chain-response window metadata on grouped quick effects and passes", () => {
+    const actions: DuelAction[] = [
+      { type: "activateEffect", player: 1, uid: "quick", effectId: "chain-quick", label: "Quick", windowId: 8, windowKind: "chainResponse" },
+      { type: "passChain", player: 1, label: "Pass", windowId: 8, windowKind: "chainResponse" },
+    ];
+
+    const groups = groupDuelLegalActions(actions);
+
+    expect(groups.map((group) => ({ label: group.label, windowId: group.windowId, windowKind: group.windowKind }))).toEqual([
+      { label: "Effects", windowId: 8, windowKind: "chainResponse" },
+      { label: "Pass", windowId: 8, windowKind: "chainResponse" },
+    ]);
+    expect(groups.flatMap((group) => group.actions)).toEqual(actions);
+  });
+
   it("summarizes same-bucket trigger ids on grouped trigger actions", () => {
     const actions: DuelAction[] = [
       { type: "activateTrigger", player: 0, triggerId: "trigger-a", triggerBucket: "turnMandatory", uid: "card-a", effectId: "effect-a", label: "A", windowId: 7, windowKind: "triggerBucket" },
