@@ -675,17 +675,20 @@ describe("duel snapshot restore shape validation", () => {
     const badTargetUids = serializeDuel(session);
     const duplicateTargetUids = serializeDuel(session);
     const badEventUids = serializeDuel(session);
+    const duplicateLinkIds = serializeDuel(session);
     const badPlayer = serializeDuel(session);
     const badActivationLocation = serializeDuel(session);
     badTargetUids.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", targetUids: ["target", 7 as unknown as string] }];
     duplicateTargetUids.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", targetUids: [sourceUid, sourceUid] }];
     badEventUids.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", eventUids: [7 as unknown as string] }];
+    duplicateLinkIds.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect" }, { id: "link", player: 0, sourceUid, effectId: "effect" }];
     badPlayer.state.chain = [{ id: "link", player: 2 as 0, sourceUid, effectId: "effect" }];
     badActivationLocation.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", activationLocation: "field" as "hand" }];
 
     expect(() => restoreDuel(badTargetUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.targetUids.1 must be a string");
     expect(() => restoreDuel(duplicateTargetUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.targetUids must not contain duplicates");
     expect(() => restoreDuel(badEventUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.eventUids.0 must reference a card");
+    expect(() => restoreDuel(duplicateLinkIds, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.1.id must be unique");
     expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.player must be a player id");
     expect(() => restoreDuel(badActivationLocation, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.activationLocation must be a card location");
   });

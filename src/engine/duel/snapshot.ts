@@ -418,12 +418,14 @@ function assertSnapshotEventPayload(payload: Record<string, unknown>, path: stri
 
 function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): void {
   if (!Array.isArray(chain)) throw new Error("Malformed duel snapshot: state.chain must be an array");
+  const seenIds = new Set<string>();
   for (const [index, link] of chain.entries()) {
     const path = `state.chain.${index}`;
     if (!isRecord(link)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
     for (const field of ["id", "sourceUid", "effectId"] as const) {
       if (typeof link[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
     }
+    if (seenIds.has(link.id as string)) throw new Error(`Malformed duel snapshot: ${path}.id must be unique`); else seenIds.add(link.id as string);
     if (!cardUids.has(link.sourceUid as string)) throw new Error(`Malformed duel snapshot: ${path}.sourceUid must reference a card`);
     assertSnapshotPlayerId(link.player, `${path}.player`);
     if (link.activationLocation !== undefined && !duelSnapshotLocations.has(link.activationLocation)) throw new Error(`Malformed duel snapshot: ${path}.activationLocation must be a card location`);
