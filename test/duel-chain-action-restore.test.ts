@@ -33,6 +33,10 @@ describe("chain action restore", () => {
     const quick = getDuelLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-quick-response");
     expect(quick).toBeDefined();
     expect(quick).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse" });
+    expect(chainResponseGroups(restored, 1)).toEqual([
+      { label: "Effects", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["activateEffect"] },
+      { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["passChain"] },
+    ]);
 
     const result = applyResponse(restored, quick!);
     expect(result.ok).toBe(true);
@@ -41,6 +45,10 @@ describe("chain action restore", () => {
     expect(result.state.log.some((entry) => entry.detail === "Restored quick original resolved")).toBe(false);
     expect(result.state.log.some((entry) => entry.detail === "Restored quick quick resolved")).toBe(false);
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(chainResponseGroups(restored, 1)).toEqual([
+      { label: "Effects", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["activateEffect"] },
+      { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["passChain"] },
+    ]);
     const staleResult = applyResponse(restored, quick!);
     expect(staleResult.ok).toBe(false);
     expect(staleResult.error).toContain("Response is not currently legal");
@@ -55,6 +63,15 @@ describe("chain action restore", () => {
     expect(resolved.state.log.some((entry) => entry.detail === "Restored quick quick resolved")).toBe(true);
   });
 });
+
+function chainResponseGroups(session: ReturnType<typeof setupRestoredChainResponse>["restored"], player: 0 | 1) {
+  return getGroupedDuelLegalActions(session, player).map((group) => ({
+    label: group.label,
+    windowId: group.windowId,
+    windowKind: group.windowKind,
+    actionTypes: group.actions.map((action) => action.type),
+  }));
+}
 
 function setupRestoredChainResponse(kind: "pass" | "quick") {
   const session = createDuel({ seed: kind === "pass" ? 1 : 2, startingHandSize: 2, cardReader: createCardReader(cards) });
