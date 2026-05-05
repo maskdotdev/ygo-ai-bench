@@ -559,11 +559,26 @@ describe("Node upstream chain-limit snapshot restore", () => {
       `,
       "utf8",
     );
+    fs.writeFileSync(
+      path.join(root, "script", "c300.lua"),
+      `
+      c300 = {}
+      c300.initial_effect = function(c)
+        local e = Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c) return Duel.GetCurrentChain()>0 end)
+        e:SetOperation(function(e,c) Debug.Message("disallowed response-player response") end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "utf8",
+    );
 
-    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
-    const session = createDuel({ seed: 13, startingHandSize: 1, cardReader: createCardReader(cards) });
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
+    const session = createDuel({ seed: 13, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100"] },
+      0: { main: ["100", "300"] },
       1: { main: ["200"] },
     });
     startDuel(session);
@@ -572,10 +587,13 @@ describe("Node upstream chain-limit snapshot restore", () => {
     const host = createLuaScriptHost(session);
     expect(host.loadCardScript(100, workspace).ok).toBe(true);
     expect(host.loadCardScript(200, workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBe(2);
+    expect(host.loadCardScript(300, workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
     expect(applyResponse(session, action!).ok).toBe(true);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
+    expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(true);
 
     const snapshot = serializeDuel(session);
     expect(snapshot.state.chainLimits[0]?.registryKey).toContain(":known:closure:response-player:1");
@@ -583,7 +601,8 @@ describe("Node upstream chain-limit snapshot restore", () => {
 
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
+    expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
+    const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
     expect(restoredAction).toBeDefined();
     expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
   });
