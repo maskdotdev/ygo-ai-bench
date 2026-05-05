@@ -501,10 +501,23 @@ describe("duel trigger buckets", () => {
       label: group.label,
       windowId: group.windowId,
       windowKind: group.windowKind,
+      triggerBucket: group.triggerBucket,
       effectIds: group.actions.map((action) => "effectId" in action ? action.effectId : undefined),
     }))).toEqual([
-      { label: "Trigger Activations", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"] },
-      { label: "Trigger Declines", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"] },
+      {
+        label: "Trigger Activations",
+        windowId: queryPublicState(restored).actionWindowId,
+        windowKind: "triggerBucket",
+        triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: queryPublicState(restored).triggerOrderPrompt!.triggerIds },
+        effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"],
+      },
+      {
+        label: "Trigger Declines",
+        windowId: queryPublicState(restored).actionWindowId,
+        windowKind: "triggerBucket",
+        triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: queryPublicState(restored).triggerOrderPrompt!.triggerIds },
+        effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"],
+      },
     ]);
     expect(getDuelLegalActions(restored, 1)).toHaveLength(0);
 
