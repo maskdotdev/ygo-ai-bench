@@ -377,6 +377,87 @@ describe("Lua battle fast priority restore", () => {
     expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
   });
 
+  it("queues Lua pre-battle-damage triggers after restored end-damage-step cleanup", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Cleanup Pre-Damage Attacker", kind: "monster", attack: 1800 },
+      { code: "500", name: "Restore Cleanup Pre-Battle Damage Trigger", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name !== "c500.lua") return undefined;
+        return `
+        c500={}
+        function c500.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_TRIGGER_O)
+          e:SetCode(EVENT_PRE_BATTLE_DAMAGE)
+          e:SetRange(LOCATION_HAND)
+          e:SetOperation(function(e,tp,eg,ep,ev,re,r)
+            Debug.Message("restored cleanup pre battle damage " .. ep .. "/" .. ev .. "/" .. r .. "/" .. Duel.GetReasonPlayer() .. "/" .. Duel.GetLP(1))
+          end)
+          c:RegisterEffect(e)
+        end
+        `;
+      },
+    };
+    const session = createDuel({ seed: 60, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "500"] }, 1: { main: [] } });
+    startDuel(session);
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeDefined();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(500, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(session, battle!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined);
+    expect(attack).toBeDefined();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+    passBattleResponse(session, 1, "passAttack");
+    passBattleResponse(session, 0, "passAttack");
+    passBattleResponse(session, 1, "passDamage");
+    passBattleResponse(session, 0, "passDamage");
+    passBattleResponse(session, 1, "passDamage");
+    passBattleResponse(session, 0, "passDamage");
+    passBattleResponse(session, 1, "passDamage");
+    passBattleResponse(session, 0, "passDamage");
+    passBattleResponse(session, 1, "passDamage");
+    passBattleResponse(session, 0, "passDamage");
+    expect(session.state.battleWindow?.kind).toBe("endDamageStep");
+    passBattleResponse(session, 1, "passDamage");
+    expect(session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 } });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passDamage");
+    expect(pass).toMatchObject({ player: 0, windowKind: "battle" });
+    const cleaned = applyLuaRestoreResponse(restored, pass!);
+    expect(cleaned.ok, cleaned.error).toBe(true);
+    expect(cleaned.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 1: { lifePoints: 6200 } } });
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["beforeBattleDamage"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1136, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 });
+    expect(restored.session.state.eventHistory.slice(-2)).toEqual([
+      expect.objectContaining({ eventName: "beforeBattleDamage", eventCode: 1136, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }),
+      expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }),
+    ]);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toMatchObject({ player: 0, windowKind: "triggerBucket" });
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.state).toMatchObject({ waitingFor: 0, windowKind: "open", players: { 1: { lifePoints: 6200 } } });
+    expect(restored.session.state.pendingTriggers).toEqual([]);
+    expect(restored.session.state.pendingBattle).toBeUndefined();
+    expect(restored.session.state.battleWindow).toBeUndefined();
+    expect(restored.host.messages).toEqual(["restored cleanup pre battle damage 1/1800/32/0/6200"]);
+  });
+
   it("queues Lua counter battle-damage triggers after restored end-damage-step cleanup", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Restore Counter Damage Attacker", kind: "monster", attack: 1000 },
