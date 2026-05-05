@@ -237,7 +237,7 @@ describe("Lua LP helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1014");
@@ -310,7 +310,7 @@ describe("Lua LP helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1111");
@@ -567,7 +567,7 @@ describe("Lua LP helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const burn = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(burn).toBeDefined();
-    expect(applyResponse(session, burn!).ok).toBe(true);
+    applyAndAssert(session, burn!);
     expect(host.messages).toContain("burn applied 700");
     expect(session.state.players[1].lifePoints).toBe(7300);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["damageDealt"]);
@@ -593,7 +593,7 @@ describe("Lua LP helpers", () => {
 
     const damageTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(damageTrigger).toBeDefined();
-    expect(applyResponse(session, damageTrigger!).ok).toBe(true);
+    applyAndAssert(session, damageTrigger!);
     expect(host.messages).toContain("damage trigger resolved 1/700/64/0/7300");
   });
 
@@ -639,7 +639,7 @@ describe("Lua LP helpers", () => {
     expect(result.ok, result.error).toBe(true);
     const recover = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(recover).toBeDefined();
-    expect(applyResponse(session, recover!).ok).toBe(true);
+    applyAndAssert(session, recover!);
     expect(host.messages).toContain("recover applied 900");
     expect(session.state.players[0].lifePoints).toBe(7400);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["recoveredLifePoints"]);
@@ -650,7 +650,7 @@ describe("Lua LP helpers", () => {
 
     const recoverTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(recoverTrigger).toBeDefined();
-    expect(applyResponse(session, recoverTrigger!).ok).toBe(true);
+    applyAndAssert(session, recoverTrigger!);
     expect(host.messages).toContain("recover trigger resolved 0/900/64/0/7400");
   });
 
@@ -717,7 +717,7 @@ describe("Lua LP helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1112");
@@ -769,7 +769,7 @@ describe("Lua LP helpers", () => {
     expect(result.ok, result.error).toBe(true);
     const pay = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(pay).toBeDefined();
-    expect(applyResponse(session, pay!).ok).toBe(true);
+    applyAndAssert(session, pay!);
     expect(host.messages).toContain("cost paid 7400");
     expect(session.state.players[0].lifePoints).toBe(7400);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["lifePointCostPaid"]);
@@ -780,7 +780,7 @@ describe("Lua LP helpers", () => {
 
     const costTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(costTrigger).toBeDefined();
-    expect(applyResponse(session, costTrigger!).ok).toBe(true);
+    applyAndAssert(session, costTrigger!);
     expect(host.messages).toContain("cost trigger resolved 0/600/128/0/7400");
   });
 
@@ -846,7 +846,7 @@ describe("Lua LP helpers", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1201");
@@ -918,7 +918,7 @@ describe("Lua LP helpers", () => {
     expect(host.registerInitialEffects()).toBe(2);
     const draw = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(draw).toBeDefined();
-    expect(applyResponse(session, draw!).ok).toBe(true);
+    applyAndAssert(session, draw!);
     expect(host.messages).toContain("draw applied 1");
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("hand");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["cardsDrawn"]);
@@ -947,7 +947,16 @@ describe("Lua LP helpers", () => {
 
     const drawTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(drawTrigger).toBeDefined();
-    expect(applyResponse(session, drawTrigger!).ok).toBe(true);
+    applyAndAssert(session, drawTrigger!);
     expect(host.messages).toContain("draw trigger resolved 0/1/64/0/1/3");
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
