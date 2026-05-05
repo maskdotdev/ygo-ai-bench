@@ -14,6 +14,9 @@ function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restore
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
   expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
+  expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, staleResult.state.waitingFor!));
+  expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, staleResult.state.waitingFor!));
+  expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
 }
 
 describe("core summon restore", () => {
