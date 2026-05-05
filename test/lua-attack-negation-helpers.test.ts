@@ -156,7 +156,7 @@ describe("Lua attack negation helpers", () => {
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("attack disabled trigger 100/0/64/0");
   });
 
@@ -204,7 +204,7 @@ describe("Lua attack negation helpers", () => {
 
     const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.targetUid === target!.uid);
     expect(attack).toBeDefined();
-    expect(applyResponse(session, attack!).ok).toBe(true);
+    applyAndAssert(session, attack!);
     expect(getDuelLegalActions(session, 1).some((action) => action.type === "activateEffect")).toBe(true);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
@@ -309,11 +309,11 @@ describe("Lua attack negation helpers", () => {
 
     const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.targetUid === target!.uid);
     expect(attack).toBeDefined();
-    expect(applyResponse(session, attack!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    applyAndAssert(session, attack!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!);
     const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(quick).toBeDefined();
-    expect(applyResponse(session, quick!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(applyAndAssert(session, quick!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(getDuelLegalActions(session, 1).some((action) => action.type === "activateEffect")).toBe(true);
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -404,17 +404,17 @@ describe("Lua attack negation helpers", () => {
 
     const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.targetUid === target!.uid);
     expect(attack).toBeDefined();
-    expect(applyResponse(session, attack!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!).state).toMatchObject({
+    applyAndAssert(session, attack!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!);
+    expect(applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!).state).toMatchObject({
       waitingFor: 1,
       windowKind: "battle",
       battleWindow: { kind: "startDamageStep", responsePlayer: 1 },
     });
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!);
     const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(quick).toBeDefined();
-    expect(applyResponse(session, quick!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(applyAndAssert(session, quick!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(getDuelLegalActions(session, 1).some((action) => action.type === "activateEffect")).toBe(true);
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -505,18 +505,18 @@ describe("Lua attack negation helpers", () => {
 
     const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.targetUid === target!.uid);
     expect(attack).toBeDefined();
-    expect(applyResponse(session, attack!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    applyAndAssert(session, attack!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "passDamage")!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!);
     expect(session.state.battleWindow).toMatchObject({ kind: "duringDamageCalculation", responsePlayer: 0 });
     const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(quick).toBeDefined();
-    expect(applyResponse(session, quick!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(applyAndAssert(session, quick!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(getDuelLegalActions(session, 1).some((action) => action.type === "activateEffect")).toBe(true);
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -539,3 +539,12 @@ describe("Lua attack negation helpers", () => {
     expect(restored.session.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
