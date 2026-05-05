@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
@@ -25,6 +25,8 @@ describe("extra deck summon restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
   });
 
   it("restores Synchro Summon legal actions and applies the restored action", () => {
@@ -51,6 +53,8 @@ describe("extra deck summon restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === synchro!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
   });
 
   it("restores Xyz Summon legal actions and applies the restored action", () => {
@@ -77,6 +81,8 @@ describe("extra deck summon restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === xyz!.uid)).toMatchObject({ location: "monsterZone", overlayCount: 2, faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "overlay")).toBe(true);
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
   });
 
   it("restores Link Summon legal actions and applies the restored action", () => {
@@ -103,6 +109,8 @@ describe("extra deck summon restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === link!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
   });
 });
 
@@ -133,6 +141,8 @@ function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSu
   expect(result.ok).toBe(true);
   expect(result.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
   expect(materials.every((material) => result.state.cards.find((card) => card.uid === material.uid)?.location === materialLocation)).toBe(true);
+  expect(result.state.waitingFor).toBeDefined();
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
 }
 
 describe("full-zone extra deck summon restore", () => {
