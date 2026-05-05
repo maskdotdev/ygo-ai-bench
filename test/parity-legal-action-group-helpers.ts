@@ -133,6 +133,13 @@ export const absentEffectGroup = (player: 0 | 1, effectId: string, windowId?: nu
   actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), windowKind: "battle" as const }],
 });
 
+export const absentChainEffectGroup = (player: 0 | 1, effectId: string, windowId?: number) => ({
+  player,
+  label: "Effects",
+  ...(windowId === undefined ? {} : { windowId }),
+  actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), windowKind: "chainResponse" as const }],
+});
+
 export const passDamageGroup = (player: 0 | 1, count = 1, windowId?: number) => ({
   player,
   label: "Pass",

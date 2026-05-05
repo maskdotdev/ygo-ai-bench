@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader, normalizeCdbRows, parseBanlistConf, scriptFilenameForCard, upstreamBanlistPath, upstreamDatabasePath, upstreamScriptPath } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { chainEffectGroup, chainPassGroup, triggerActivationGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, chainEffectGroup, chainPassGroup, triggerActivationGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro compatibility harness scaffolding", () => {
   it("normalizes card database rows and banlist entries", () => {
@@ -253,6 +253,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
               ],
               legalActionGroups: [chainEffectGroup(0, "fixture-self-fast-quick", 1, 2), chainPassGroup(0, 1, 2)],
               absentLegalActions: [{ type: "activateEffect", player: 1 }],
+              absentLegalActionGroups: [absentChainEffectGroup(1, "fixture-self-fast-quick")],
             },
           }),
           makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-self-fast-quick" }), {
@@ -347,6 +348,7 @@ describe("EDOPro compatibility harness scaffolding", () => {
               ],
               legalActionGroups: [chainEffectGroup(1, "fixture-opponent-fast-quick", 1, 2), chainPassGroup(1, 1, 2)],
               absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-turn-fast-quick" }],
+              absentLegalActionGroups: [absentChainEffectGroup(0, "fixture-turn-fast-quick")],
             },
           }),
           makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-fast-quick" }), {
