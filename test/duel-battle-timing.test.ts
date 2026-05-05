@@ -35,7 +35,7 @@ describe("duel battle timing", () => {
     ]);
     const stalePassResult = applyResponse(restored, staleRestoredPass!);
     expect(stalePassResult.ok).toBe(true);
-    expect(stalePassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, stalePassResult.state.waitingFor!));
+    expectResultLegalActions(restored, stalePassResult);
     const replay = applyResponse(restored, staleRestoredPass!);
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
@@ -47,7 +47,7 @@ describe("duel battle timing", () => {
       expect(pass).toBeTruthy();
       const passResult = applyResponse(restored, pass!);
       expect(passResult.ok).toBe(true);
-      expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, passResult.state.waitingFor!));
+      expectResultLegalActions(restored, passResult);
     }
     expect(restored.state.players[1].lifePoints).toBeLessThan(session.state.players[1].lifePoints);
     expect(restored.state.pendingBattle).toBeUndefined();
@@ -104,7 +104,7 @@ describe("duel battle timing", () => {
 
     const cancelResult = applyResponse(restored, replayActions.find((action) => action.type === "cancelAttack")!);
     expect(cancelResult.ok).toBe(true);
-    expect(cancelResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, cancelResult.state.waitingFor!));
+    expectResultLegalActions(restored, cancelResult);
     expect(restored.state.pendingBattle).toBeUndefined();
     expect(restored.state.battleWindow).toBeUndefined();
   });
@@ -154,7 +154,7 @@ describe("duel battle timing", () => {
     ]);
     const negateResult = applyResponse(restored, action!);
     expect(negateResult.ok).toBe(true);
-    expect(negateResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, negateResult.state.waitingFor!));
+    expectResultLegalActions(restored, negateResult);
     expect(passCurrentChainIfPending(restored)).toBe(true);
     expect(restored.state.pendingBattle).toBeUndefined();
     expect(restored.state.battleWindow).toBeUndefined();
@@ -199,7 +199,7 @@ describe("duel battle timing", () => {
     expect(attack).toBeTruthy();
     const attackResult = applyResponse(restored, attack!);
     expect(attackResult.ok).toBe(true);
-    expect(attackResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, attackResult.state.waitingFor!));
+    expectResultLegalActions(restored, attackResult);
 
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", attackerUid: attacker!.uid });
     expect(restored.state.effects).toHaveLength(0);
@@ -226,7 +226,7 @@ describe("duel battle timing", () => {
     expect(attack).toBeTruthy();
     const attackResult = applyResponse(restored, attack!);
     expect(attackResult.ok).toBe(true);
-    expect(attackResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, attackResult.state.waitingFor!));
+    expectResultLegalActions(restored, attackResult);
 
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", attackerUid: attacker!.uid });
     expect(restored.state.flagEffects).toHaveLength(0);
@@ -287,7 +287,7 @@ describe("duel battle timing", () => {
     expect(attack).toBeTruthy();
     const attackResult = applyResponse(restored, attack!);
     expect(attackResult.ok).toBe(true);
-    expect(attackResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, attackResult.state.waitingFor!));
+    expectResultLegalActions(restored, attackResult);
 
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", attackerUid: attacker!.uid });
     expect(restored.state.effects.map((effect) => effect.id)).toEqual(["turn-player-opponent-turn-battle-step-reset"]);
@@ -433,7 +433,7 @@ describe("duel battle timing", () => {
     ]);
     const triggerResult = applyResponse(restored, trigger!);
     expect(triggerResult.ok).toBe(true);
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, triggerResult.state.waitingFor!));
+    expectResultLegalActions(restored, triggerResult);
     expect(passCurrentChainIfPending(restored)).toBe(true);
     expect(restored.state.pendingTriggers).toEqual([]);
     expect(restored.state.battleWindow?.kind).toBe("afterDamageCalculation");
@@ -504,7 +504,7 @@ describe("duel battle timing", () => {
     ]);
     const triggerResult = applyResponse(restored, trigger!);
     expect(triggerResult.ok).toBe(true);
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, triggerResult.state.waitingFor!));
+    expectResultLegalActions(restored, triggerResult);
     expect(passCurrentChainIfPending(restored)).toBe(true);
     expect(restored.state.pendingTriggers).toEqual([]);
     expect(restored.state.battleWindow?.kind).toBe("endDamageStep");
@@ -514,7 +514,7 @@ describe("duel battle timing", () => {
       expect(pass).toBeTruthy();
       const passResult = applyResponse(restored, pass!);
       expect(passResult.ok).toBe(true);
-      expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, passResult.state.waitingFor!));
+      expectResultLegalActions(restored, passResult);
     }
     expect(restored.state.battleWindow).toBeUndefined();
     expect(restored.state.pendingBattle).toBeUndefined();
@@ -632,6 +632,13 @@ function groupedActionSummary(session: ReturnType<typeof createDuel>, player: 0 
     windowKind: group.windowKind,
     actionTypes: group.actions.map((action) => action.type),
   }));
+}
+
+function expectResultLegalActions(session: ReturnType<typeof createDuel>, result: ReturnType<typeof applyResponse>): void {
+  expect(result.state.waitingFor).toBeDefined();
+  expect(result.legalActions).toEqual(getDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }
 
 function passBattleWindow(session: ReturnType<typeof createDuel>): void {
