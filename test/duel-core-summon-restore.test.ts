@@ -4,6 +4,18 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
+function expectRestoredOpenAction(restored: ReturnType<typeof restoreDuel>, action: { windowId?: number; windowKind?: string } | undefined): void {
+  expect(action).toBeDefined();
+  expect(action).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
+}
+
+function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restoreDuel>, action: NonNullable<Parameters<typeof applyResponse>[1]>): void {
+  const staleResult = applyResponse(restored, action);
+  expect(staleResult.ok).toBe(false);
+  expect(staleResult.error).toContain("Response is not currently legal");
+  expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
+}
+
 describe("core summon restore", () => {
   it("restores Normal Summon legal actions and applies the restored action", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -18,7 +30,7 @@ describe("core summon restore", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === monster!.uid);
-    expect(action).toBeDefined();
+    expectRestoredOpenAction(restored, action);
 
     const result = applyResponse(restored, action!);
     expect(result.ok).toBe(true);
@@ -26,6 +38,7 @@ describe("core summon restore", () => {
     expect(result.state.players[0].normalSummonAvailable).toBe(false);
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expectStaleRestoredResponseRejected(restored, action!);
   });
 
   it("restores Tribute Summon legal actions and applies the restored action", () => {
@@ -47,6 +60,7 @@ describe("core summon restore", () => {
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "tributeSummon" && candidate.uid === tributeMonster!.uid && candidate.tributeUids.includes(tribute!.uid));
     expect(action?.type).toBe("tributeSummon");
     if (!action || action.type !== "tributeSummon") throw new Error("Expected restored Tribute Summon action");
+    expectRestoredOpenAction(restored, action);
 
     const result = applyResponse(restored, action);
     expect(result.ok).toBe(true);
@@ -55,6 +69,7 @@ describe("core summon restore", () => {
     expect(result.state.players[0].normalSummonAvailable).toBe(false);
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expectStaleRestoredResponseRejected(restored, action);
   });
 
   it("restores Flip Summon legal actions and applies the restored action", () => {
@@ -73,13 +88,14 @@ describe("core summon restore", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === monster!.uid);
-    expect(action).toBeDefined();
+    expectRestoredOpenAction(restored, action);
 
     const result = applyResponse(restored, action!);
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack", faceUp: true });
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expectStaleRestoredResponseRejected(restored, action!);
   });
 
   it("restores Ritual Summon legal actions and applies the restored action", () => {
@@ -97,6 +113,7 @@ describe("core summon restore", () => {
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
     expect(action?.type).toBe("ritualSummon");
     if (!action || action.type !== "ritualSummon") throw new Error("Expected restored Ritual Summon action");
+    expectRestoredOpenAction(restored, action);
 
     const result = applyResponse(restored, action);
     expect(result.ok).toBe(true);
@@ -104,5 +121,6 @@ describe("core summon restore", () => {
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expectStaleRestoredResponseRejected(restored, action);
   });
 });
