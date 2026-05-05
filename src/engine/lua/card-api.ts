@@ -59,7 +59,7 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   installCardStateApi(L, session);
   installCardOverlayApi(L, session, hostState);
   installCardEquipApi(L, session, hostState);
-  installCardCounterApi(L, session);
+  installCardCounterApi(L, session, hostState);
   installCardRushApi(L, session, hostState);
   installCardTypePredicateApi(L, session);
   installCardLinkedApi(L, session);
