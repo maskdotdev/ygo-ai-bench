@@ -6,7 +6,7 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua open fast priority restore", () => {
-  it("alternates live fast-effect response priority after open quick effects", () => {
+  it("alternates live and restored fast-effect response priority after open quick effects", () => {
     const cards: DuelCardData[] = [
       { code: "20100", name: "Lua Live Open Fast Starter", kind: "monster" },
       { code: "20200", name: "Lua Live Turn Chain Fast", kind: "monster" },
@@ -79,11 +79,18 @@ describe("Lua open fast priority restore", () => {
     const opponentChained = applyAndAssert(session, opponentQuick!);
     expect(opponentChained.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
 
-    const turnQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("20200"));
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+
+    const turnQuick = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid.includes("20200"));
     expect(turnQuick).toMatchObject({ player: 0, windowKind: "chainResponse" });
-    const turnChained = applyAndAssert(session, turnQuick!);
+    const turnChained = applyLuaRestoreAndAssert(restored, turnQuick!);
     expect(turnChained.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
-    expect(host.messages).toEqual(["live turn chain fast resolved", "live opponent chain fast resolved", "live open fast starter resolved"]);
+    expect(host.messages).toEqual([]);
+    expect(restored.host.messages).toEqual(["live turn chain fast resolved", "live opponent chain fast resolved", "live open fast starter resolved"]);
   });
 
   it("activates restored open fast effects and rejects stale restored open actions", () => {
