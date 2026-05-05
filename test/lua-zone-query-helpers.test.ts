@@ -396,7 +396,7 @@ describe("Lua zone query helpers", () => {
       Debug.Message("main mzone " .. tostring(main:IsInMainMZone()) .. "/" .. tostring(main:IsInExtraMZone()) .. "/" .. tostring(main:IsInMainMZone(0)) .. "/" .. tostring(main:IsInMainMZone(1)))
       Debug.Message("extra mzone " .. tostring(extra:IsInMainMZone()) .. "/" .. tostring(extra:IsInExtraMZone()) .. "/" .. tostring(extra:IsInExtraMZone(0)) .. "/" .. tostring(extra:IsInExtraMZone(1)))
       Debug.Message("opponent main mzone " .. tostring(Card.IsInMainMZone(opponent,1)) .. "/" .. tostring(Card.IsInMainMZone(opponent,0)))
-      Debug.Message("symbolic current zones " .. tostring(main:IsLocation(LOCATION_MMZONE)) .. "/" .. tostring(main:IsLocation(LOCATION_EMZONE)) .. "/" .. tostring(extra:IsLocation(LOCATION_MMZONE)) .. "/" .. tostring(extra:IsLocation(LOCATION_EMZONE)) .. "/" .. tostring(spell:IsLocation(LOCATION_STZONE)) .. "/" .. tostring(spell:IsLocation(LOCATION_PUBLIC)))
+      Debug.Message("symbolic current zones " .. tostring(main:IsLocation(LOCATION_MZONE)) .. "/" .. tostring(main:IsLocation(LOCATION_MMZONE)) .. "/" .. tostring(main:IsLocation(LOCATION_EMZONE)) .. "/" .. tostring(extra:IsLocation(LOCATION_MZONE)) .. "/" .. tostring(extra:IsLocation(LOCATION_MMZONE)) .. "/" .. tostring(extra:IsLocation(LOCATION_EMZONE)) .. "/" .. tostring(spell:IsLocation(LOCATION_STZONE)) .. "/" .. tostring(spell:IsLocation(LOCATION_PUBLIC)))
       Debug.Message("symbolic group counts " .. Duel.GetMatchingGroupCount(nil,0,LOCATION_MMZONE,0,nil) .. "/" .. Duel.GetMatchingGroupCount(nil,0,LOCATION_EMZONE,0,nil) .. "/" .. Duel.GetMatchingGroupCount(nil,0,LOCATION_STZONE,0,nil) .. "/" .. Duel.GetFieldGroupCount(0,LOCATION_ALL,0))
       `,
       "main-extra-mzone.lua",
@@ -406,7 +406,7 @@ describe("Lua zone query helpers", () => {
     expect(host.messages).toContain("main mzone true/false/true/false");
     expect(host.messages).toContain("extra mzone false/true/true/false");
     expect(host.messages).toContain("opponent main mzone true/false");
-    expect(host.messages).toContain("symbolic current zones true/false/false/true/true/true");
+    expect(host.messages).toContain("symbolic current zones true/true/false/true/false/true/true/true");
     expect(host.messages).toContain("symbolic group counts 1/1/1/3");
   });
 
