@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { duelActivity, getDuelActivityCount } from "#duel/activity.js";
 import { pushCardTable } from "#lua/card-api.js";
-import { readOptionalFunctionRef } from "#lua/api-utils.js";
+import { readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -30,6 +30,10 @@ export function installDuelActivityApi(L: unknown, session: DuelSession): void {
     const id = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0;
     const activity = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : duelActivity.summon;
     const filterRef = readOptionalFunctionRef(state, 3);
+    if (session.state.status === "ended") {
+      releaseOptionalFunctionRef(state, filterRef);
+      return 0;
+    }
     if (filterRef !== undefined) customCounters.push({ id, activity, filterRef });
     return 0;
   });
