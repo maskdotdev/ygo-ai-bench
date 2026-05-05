@@ -239,6 +239,71 @@ describe("Lua chain helpers", () => {
     expect(host.messages).toContain("symbolic source resolved");
   });
 
+  it("exposes spell/trap triggering locations symbolically through chain info", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Symbolic Spell Source", kind: "spell" },
+      { code: "400", name: "Symbolic Spell Inspector", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 249, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    const moved = moveDuelCard(session.state, source!.uid, "spellTrapZone", 0);
+    moved.sequence = 2;
+    moved.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_SZONE)
+        e:SetOperation(function(e,c)
+          Debug.Message("symbolic spell source resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_QUICK_O)
+        e:SetRange(LOCATION_HAND)
+        e:SetCondition(function(e,c)
+          local loc,sym,seq=Duel.GetChainInfo(1, CHAININFO_TRIGGERING_LOCATION, CHAININFO_TRIGGERING_LOCATION_SYMBOLIC, CHAININFO_TRIGGERING_SEQUENCE)
+          Debug.Message("symbolic spell chain location " .. loc .. "/" .. sym .. "/" .. seq .. "/" .. tostring(sym==LOCATION_STZONE))
+          return sym==LOCATION_STZONE
+        end)
+        e:SetOperation(function(e,c)
+          Debug.Message("symbolic spell inspector resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "symbolic-spell-chain-location.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(sourceAction).toBeDefined();
+    expect(applyResponse(session, sourceAction!).ok).toBe(true);
+    const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
+    expect(quickAction).toBeDefined();
+    expect(applyResponse(session, quickAction!).ok).toBe(true);
+    passChainIfAvailable(session);
+    passChainIfAvailable(session);
+    expect(host.messages).toContain("symbolic spell chain location 8/1024/2/true");
+    expect(host.messages).toContain("symbolic spell inspector resolved");
+    expect(host.messages).toContain("symbolic spell source resolved");
+  });
+
   it("lets Lua effects block immediate chain responses", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Limit Source", kind: "monster" },
