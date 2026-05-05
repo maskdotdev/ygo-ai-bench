@@ -158,7 +158,11 @@ export function replayDuelAttack(
   const targets = getAttackTargets(state, player, canAttackTarget);
   const target = targetUid === undefined ? undefined : findCard(state, targetUid);
   if (targets.length > 0) {
-    if (!target || !targets.some((candidate) => candidate.uid === target.uid)) throw new Error("Replay attack target is not legal");
+    if (targetUid === undefined) {
+      if (!canDirectAttack(attacker, targets)) throw new Error(`${attacker.name} cannot replay as a direct attack`);
+    } else if (!target || !targets.some((candidate) => candidate.uid === target.uid)) {
+      throw new Error("Replay attack target is not legal");
+    }
   } else if (targetUid !== undefined) {
     throw new Error("Replay direct attacks cannot have a target");
   } else if (!canDirectAttack(attacker, targets)) {
