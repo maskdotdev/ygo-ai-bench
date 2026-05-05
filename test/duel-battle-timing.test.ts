@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, negateDuelAttack, queryPublicState, registerEffect, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, negateDuelAttack, queryPublicState, registerEffect, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
@@ -30,7 +30,9 @@ describe("duel battle timing", () => {
       windowId: restored.state.actionWindowId,
       windowKind: "battle",
     });
-    expect(applyResponse(restored, staleRestoredPass!).ok).toBe(true);
+    const stalePassResult = applyResponse(restored, staleRestoredPass!);
+    expect(stalePassResult.ok).toBe(true);
+    expect(stalePassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, stalePassResult.state.waitingFor!));
     const replay = applyResponse(restored, staleRestoredPass!);
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
@@ -39,7 +41,9 @@ describe("duel battle timing", () => {
       const player = restored.state.battleWindow.responsePlayer;
       const pass = getDuelLegalActions(restored, player).find((action) => action.type === "passDamage");
       expect(pass).toBeTruthy();
-      expect(applyResponse(restored, pass!).ok).toBe(true);
+      const passResult = applyResponse(restored, pass!);
+      expect(passResult.ok).toBe(true);
+      expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, passResult.state.waitingFor!));
     }
     expect(restored.state.players[1].lifePoints).toBeLessThan(session.state.players[1].lifePoints);
     expect(restored.state.pendingBattle).toBeUndefined();
@@ -91,7 +95,9 @@ describe("duel battle timing", () => {
     expect(replayActions.some((action) => action.type === "cancelAttack" && action.attackerUid === attacker!.uid)).toBe(true);
     expect(replayActions.some((action) => action.type === "replayAttack" && action.attackerUid === attacker!.uid && action.targetUid === undefined)).toBe(true);
 
-    expect(applyResponse(restored, replayActions.find((action) => action.type === "cancelAttack")!).ok).toBe(true);
+    const cancelResult = applyResponse(restored, replayActions.find((action) => action.type === "cancelAttack")!);
+    expect(cancelResult.ok).toBe(true);
+    expect(cancelResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, cancelResult.state.waitingFor!));
     expect(restored.state.pendingBattle).toBeUndefined();
     expect(restored.state.battleWindow).toBeUndefined();
   });
@@ -135,7 +141,9 @@ describe("duel battle timing", () => {
     expect(restored.state.battleWindow).toEqual(session.state.battleWindow);
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "restore-attack-negator");
     expect(action).toBeTruthy();
-    expect(applyResponse(restored, action!).ok).toBe(true);
+    const negateResult = applyResponse(restored, action!);
+    expect(negateResult.ok).toBe(true);
+    expect(negateResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, negateResult.state.waitingFor!));
     expect(passCurrentChainIfPending(restored)).toBe(true);
     expect(restored.state.pendingBattle).toBeUndefined();
     expect(restored.state.battleWindow).toBeUndefined();
@@ -178,7 +186,9 @@ describe("duel battle timing", () => {
 
     const attack = getDuelLegalActions(restored, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
     expect(attack).toBeTruthy();
-    expect(applyResponse(restored, attack!).ok).toBe(true);
+    const attackResult = applyResponse(restored, attack!);
+    expect(attackResult.ok).toBe(true);
+    expect(attackResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, attackResult.state.waitingFor!));
 
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", attackerUid: attacker!.uid });
     expect(restored.state.effects).toHaveLength(0);
@@ -203,7 +213,9 @@ describe("duel battle timing", () => {
 
     const attack = getDuelLegalActions(restored, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
     expect(attack).toBeTruthy();
-    expect(applyResponse(restored, attack!).ok).toBe(true);
+    const attackResult = applyResponse(restored, attack!);
+    expect(attackResult.ok).toBe(true);
+    expect(attackResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, attackResult.state.waitingFor!));
 
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", attackerUid: attacker!.uid });
     expect(restored.state.flagEffects).toHaveLength(0);
@@ -262,7 +274,9 @@ describe("duel battle timing", () => {
 
     const attack = getDuelLegalActions(restored, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid);
     expect(attack).toBeTruthy();
-    expect(applyResponse(restored, attack!).ok).toBe(true);
+    const attackResult = applyResponse(restored, attack!);
+    expect(attackResult.ok).toBe(true);
+    expect(attackResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, attackResult.state.waitingFor!));
 
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", attackerUid: attacker!.uid });
     expect(restored.state.effects.map((effect) => effect.id)).toEqual(["turn-player-opponent-turn-battle-step-reset"]);
@@ -402,7 +416,9 @@ describe("duel battle timing", () => {
     expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     const trigger = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-after-damage-trigger");
     expect(trigger).toBeTruthy();
-    expect(applyResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, triggerResult.state.waitingFor!));
     expect(passCurrentChainIfPending(restored)).toBe(true);
     expect(restored.state.pendingTriggers).toEqual([]);
     expect(restored.state.battleWindow?.kind).toBe("afterDamageCalculation");
@@ -467,7 +483,9 @@ describe("duel battle timing", () => {
     expect(restored.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     const trigger = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-end-damage-trigger");
     expect(trigger).toBeTruthy();
-    expect(applyResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, triggerResult.state.waitingFor!));
     expect(passCurrentChainIfPending(restored)).toBe(true);
     expect(restored.state.pendingTriggers).toEqual([]);
     expect(restored.state.battleWindow?.kind).toBe("endDamageStep");
@@ -475,7 +493,9 @@ describe("duel battle timing", () => {
     while (restored.state.battleWindow) {
       const pass = getDuelLegalActions(restored, restored.state.battleWindow.responsePlayer).find((action) => action.type === "passDamage");
       expect(pass).toBeTruthy();
-      expect(applyResponse(restored, pass!).ok).toBe(true);
+      const passResult = applyResponse(restored, pass!);
+      expect(passResult.ok).toBe(true);
+      expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, passResult.state.waitingFor!));
     }
     expect(restored.state.battleWindow).toBeUndefined();
     expect(restored.state.pendingBattle).toBeUndefined();
