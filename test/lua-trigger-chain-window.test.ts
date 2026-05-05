@@ -241,6 +241,11 @@ describe("Lua trigger chain windows", () => {
     expect(opened.state.pendingTriggers.map((trigger) => opened.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["13300"]);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([opened.state.pendingTriggers[0]?.effectId]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+    const staleActivation = applyResponse(session, firstActivation!);
+    expect(staleActivation.ok).toBe(false);
+    expect(staleActivation.error).toContain("Response is not currently legal");
+    expect(staleActivation.state.actionWindowId).toBe(session.state.actionWindowId);
+    expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["13300"]);
 
     const secondActivation = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === opened.state.pendingTriggers[0]?.effectId);
     expect(secondActivation).toBeDefined();
