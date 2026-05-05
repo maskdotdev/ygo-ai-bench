@@ -13,7 +13,7 @@ import {
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua effect trigger metadata helpers", () => {
   it("maps Lua trigger delay metadata to trigger timing", () => {
@@ -141,11 +141,14 @@ describe("Lua effect trigger metadata helpers", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), scriptSource, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredIfTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(restoredIfTrigger).toBeDefined();
     expect(restoredIfTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
     expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(1);
     expect(getLuaRestoreLegalActions(restored, 1)).toHaveLength(0);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
 
     const restoredIfResult = applyLuaRestoreResponse(restored, restoredIfTrigger!);
     expect(restoredIfResult.ok).toBe(true);
@@ -155,6 +158,8 @@ describe("Lua effect trigger metadata helpers", () => {
     const staleRestoredIfTrigger = applyLuaRestoreResponse(restored, restoredIfTrigger!);
     expect(staleRestoredIfTrigger.ok).toBe(false);
     expect(staleRestoredIfTrigger.error).toContain("Response is not currently legal");
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const opponentTriggers = getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger");
     expect(opponentTriggers.every((action) => action.windowId === queryPublicState(restored.session).actionWindowId && action.windowKind === "triggerBucket")).toBe(true);
     expect(opponentTriggers.map((action) => action.uid)).toEqual([
@@ -170,6 +175,8 @@ describe("Lua effect trigger metadata helpers", () => {
     expect(opponentWhenResult.ok).toBe(true);
     expect(opponentWhenResult.legalActions).toEqual(getDuelLegalActions(restored.session, opponentWhenResult.state.waitingFor!));
     expect(opponentWhenResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, opponentWhenResult.state.waitingFor!));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const opponentIfTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger");
     expect(opponentIfTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
     const opponentIfResult = applyLuaRestoreResponse(restored, opponentIfTrigger!);
