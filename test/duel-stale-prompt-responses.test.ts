@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -63,6 +63,7 @@ describe("duel stale prompt responses", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     const restoredOption = getDuelLegalActions(restored, 1).find((action) => action.type === "selectOption" && action.option === 2);
     expect(restoredOption).toBeDefined();
+    expect(restoredOption).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "prompt" });
     expect(applyResponse(restored, restoredOption!).ok).toBe(true);
     const replay = applyResponse(restored, staleOption!);
 
@@ -91,6 +92,7 @@ describe("duel stale prompt responses", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     const restoredYes = getDuelLegalActions(restored, 0).find((action) => action.type === "selectYesNo" && action.yes);
     expect(restoredYes).toBeDefined();
+    expect(restoredYes).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "prompt" });
     expect(applyResponse(restored, restoredYes!).ok).toBe(true);
     const replay = applyResponse(restored, staleNo!);
 
