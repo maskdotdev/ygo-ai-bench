@@ -434,7 +434,7 @@ function assertSnapshotChainLimits(limits: unknown): void {
     const path = `state.chainLimits.${index}`;
     if (!isRecord(limit)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
     if (limit.registryKey !== undefined && typeof limit.registryKey !== "string") throw new Error(`Malformed duel snapshot: ${path}.registryKey must be a string`);
-    if (limit.expiresAtChainLength !== undefined && typeof limit.expiresAtChainLength !== "number") throw new Error(`Malformed duel snapshot: ${path}.expiresAtChainLength must be a number`);
+    if (limit.expiresAtChainLength !== undefined) assertSnapshotNonNegativeInteger(limit.expiresAtChainLength, `${path}.expiresAtChainLength`);
     if (typeof limit.untilChainEnd !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.untilChainEnd must be a boolean`);
   }
 }
@@ -754,7 +754,7 @@ function assertSnapshotBattle(battle: unknown, path: string, cardUids: ReadonlyS
   if (battle.targetUid !== undefined && typeof battle.targetUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.targetUid must be a string`);
   if (!cardUids.has(battle.attackerUid)) throw new Error(`Malformed duel snapshot: ${path}.attackerUid must reference a card`);
   if (battle.targetUid !== undefined && !cardUids.has(battle.targetUid)) throw new Error(`Malformed duel snapshot: ${path}.targetUid must reference a card`);
-  if (battle.replayTargetCount !== undefined && typeof battle.replayTargetCount !== "number") throw new Error(`Malformed duel snapshot: ${path}.replayTargetCount must be a number`);
+  if (battle.replayTargetCount !== undefined) assertSnapshotNonNegativeInteger(battle.replayTargetCount, `${path}.replayTargetCount`);
   if (battle.replayTargetUids !== undefined) {
     assertSnapshotStringArray(battle.replayTargetUids, `${path}.replayTargetUids`);
     assertSnapshotCardUidArray(battle.replayTargetUids, `${path}.replayTargetUids`, cardUids);
@@ -763,7 +763,7 @@ function assertSnapshotBattle(battle: unknown, path: string, cardUids: ReadonlyS
   if (!isRecord(battle.battleDamageOverrides)) throw new Error(`Malformed duel snapshot: ${path}.battleDamageOverrides must be an object`);
   for (const [player, amount] of Object.entries(battle.battleDamageOverrides)) {
     if (player !== "0" && player !== "1") throw new Error(`Malformed duel snapshot: ${path}.battleDamageOverrides must use player ids`);
-    if (typeof amount !== "number") throw new Error(`Malformed duel snapshot: ${path}.battleDamageOverrides.${player} must be a number`);
+    assertSnapshotNonNegativeInteger(amount, `${path}.battleDamageOverrides.${player}`);
   }
 }
 
