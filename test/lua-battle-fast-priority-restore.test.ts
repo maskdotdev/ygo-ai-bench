@@ -7,6 +7,33 @@ import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua battle fast priority restore", () => {
+  it("restores live damage-step fast chains back to the battle response player", () => {
+    const fixture = setupRestoredBattleQuick("EFFECT_FLAG_DAMAGE_STEP");
+    passBattleResponse(fixture.session, 1, "passDamage");
+    expect(fixture.session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "startDamageStep", responsePlayer: 0 } });
+
+    const quick = getDuelLegalActions(fixture.session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(quick).toMatchObject({ player: 0, windowKind: "battle" });
+    const quickResult = applyAndAssert(fixture.session, quick!);
+    expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", damagePasses: [], battleWindow: { kind: "startDamageStep", responsePlayer: 0 } });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+
+    const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyLuaRestoreAndAssert(restored, pass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
+    expect(resolved.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
+    expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
+    expect(restored.host.messages).toEqual(["restored battle quick resolved"]);
+  });
+
   it("returns restored damage-step quick chains to the damage response player", () => {
     const fixture = setupRestoredBattleQuick("EFFECT_FLAG_DAMAGE_STEP");
     passBattleResponse(fixture.session, 1, "passDamage");
