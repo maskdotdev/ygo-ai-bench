@@ -22,7 +22,9 @@ describe("chain action restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.chain).toHaveLength(0);
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.state.log.some((entry) => entry.detail === "Restored pass original resolved")).toBe(true);
     expect(result.state.log.some((entry) => entry.detail === "Restored pass quick resolved")).toBe(false);
     const staleResult = applyResponse(restored, pass!);
@@ -51,7 +53,9 @@ describe("chain action restore", () => {
     expect(result.state.waitingFor).toBe(1);
     expect(result.state.log.some((entry) => entry.detail === "Restored quick original resolved")).toBe(false);
     expect(result.state.log.some((entry) => entry.detail === "Restored quick quick resolved")).toBe(false);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(chainResponseGroups(restored, 1)).toEqual([
       { label: "Effects", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["activateEffect"] },
       { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["passChain"] },
@@ -111,7 +115,9 @@ describe("chain action restore", () => {
     expect(quick).toBeDefined();
     const chained = applyResponse(restored, quick!);
     expect(chained.ok).toBe(true);
+    expect(chained.legalActions).toEqual(getDuelLegalActions(restored, chained.state.waitingFor!));
     expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, chained.state.waitingFor!));
+    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
     const staleQuick = applyResponse(restored, quick!);
     expect(staleQuick.ok).toBe(false);
     expect(staleQuick.error).toContain("Response is not currently legal");
