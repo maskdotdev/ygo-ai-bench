@@ -238,7 +238,7 @@ const duelSnapshotTriggerBuckets = new Set<unknown>(["turnMandatory", "opponentM
 const duelSnapshotCardKinds = new Set<unknown>(["monster", "spell", "trap", "extra"]);
 const duelSnapshotLocations = new Set<unknown>(["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"]);
 const duelSnapshotPositions = new Set<unknown>(["faceDownDefense", "faceUpAttack", "faceUpDefense", "faceDown"]);
-const duelSnapshotSummonTypes = new Set<unknown>(["normal", "tribute", "flip", "special", "fusion", "synchro", "xyz", "link", "ritual"]);
+const duelSnapshotSummonTypes = new Set<unknown>(["normal", "tribute", "flip", "special", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"]);
 const duelSnapshotEffectEvents = new Set<unknown>(["ignition", "trigger", "quick", "continuous", "summonProcedure"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {

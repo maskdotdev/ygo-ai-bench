@@ -11,6 +11,7 @@ import {
   requireZoneSpace,
 } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
+import { pendulumSummonActions, pendulumSummonDuelCards as pendulumSummonDuelCardsWithHooks } from "#duel/pendulum-summon.js";
 import { isNoTributeSummonAllowed } from "#duel/no-tribute.js";
 import {
   flipSummonActions,
@@ -214,6 +215,7 @@ const responseHandlers: DuelResponseHandlers = {
   xyzSummon: xyzSummonDuelCard,
   linkSummon: linkSummonDuelCard,
   ritualSummon: ritualSummonDuelCard,
+  pendulumSummon: pendulumSummonDuelCards,
   specialSummonProcedure(session, player, uid, effectId) {
     specialSummonDuelByProcedure(session, player, uid, effectId, activationHandlers);
   },
@@ -315,6 +317,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...xyzSummonActions(state, player, (uid) => !isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))));
     actions.push(...linkSummonActions(state, player, createMaterialUsePredicate(state, "link")));
     actions.push(...ritualSummonActions(state, player, hand, createMaterialUsePredicate(state, "ritual")));
+    actions.push(...pendulumSummonActions(state, player, (uid) => canSpecialSummonDuelCard(state, uid, player)));
     actions.push(...specialSummonProcedureActions(state, player));
     if (hasZoneSpace(state, player, "spellTrapZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
@@ -524,6 +527,10 @@ export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
 
 export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
   return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "ritual"));
+}
+
+export function pendulumSummonDuelCards(state: DuelState, player: PlayerId, summonUids: string[]): DuelCardInstance[] {
+  return pendulumSummonDuelCardsWithHooks(state, player, summonUids, (uid) => canSpecialSummonDuelCard(state, uid, player), (uid, controller) => specialSummonDuelCard(state, uid, controller));
 }
 
 function createMaterialMover(state: DuelState): DuelMaterialMover {

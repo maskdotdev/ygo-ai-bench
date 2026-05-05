@@ -24,6 +24,7 @@ export function describeDuelActionSelector(selector: ScriptedResponseSelector): 
     selector.windowKind ? `windowKind=${selector.windowKind}` : undefined,
     selector.code ? `code=${selector.code}` : undefined,
     selector.uid ? `uid=${selector.uid}` : undefined,
+    selector.summonUids ? `summonUids=${selector.summonUids.join(",")}` : undefined,
     selector.phase ? `phase=${selector.phase}` : undefined,
     selector.attackerUid ? `attackerUid=${selector.attackerUid}` : undefined,
     selector.targetUid ? `targetUid=${selector.targetUid}` : undefined,
@@ -51,6 +52,9 @@ export function duelActionMatchesSelector(
   }
   if (selector.materialUids) {
     if (!isMaterialAction(action) || !sameStringMembers(action.materialUids, selector.materialUids)) return false;
+  }
+  if (selector.summonUids) {
+    if (action.type !== "pendulumSummon" || !sameStringMembers(action.summonUids, selector.summonUids)) return false;
   }
   if (selector.position) {
     if (action.type !== "changePosition" || action.position !== selector.position) return false;

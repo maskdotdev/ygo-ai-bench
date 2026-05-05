@@ -21,6 +21,7 @@ export interface DuelResponseHandlers {
   xyzSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): void;
   linkSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): void;
   ritualSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): void;
+  pendulumSummon(state: DuelState, player: PlayerId, summonUids: string[]): void;
   specialSummonProcedure(session: DuelSession, player: PlayerId, uid: string, effectId: string): void;
   setMonster(state: DuelState, player: PlayerId, uid: string): void;
   setSpellTrap(state: DuelState, player: PlayerId, uid: string): void;
@@ -75,6 +76,7 @@ function dispatchDuelResponse(session: DuelSession, response: DuelResponse, hand
   else if (response.type === "xyzSummon") handlers.xyzSummon(session.state, response.player, response.uid, response.materialUids);
   else if (response.type === "linkSummon") handlers.linkSummon(session.state, response.player, response.uid, response.materialUids);
   else if (response.type === "ritualSummon") handlers.ritualSummon(session.state, response.player, response.uid, response.materialUids);
+  else if (response.type === "pendulumSummon") handlers.pendulumSummon(session.state, response.player, response.summonUids);
   else if (response.type === "specialSummonProcedure") handlers.specialSummonProcedure(session, response.player, response.uid, response.effectId);
   else if (response.type === "setMonster") handlers.setMonster(session.state, response.player, response.uid);
   else if (response.type === "setSpellTrap") handlers.setSpellTrap(session.state, response.player, response.uid);

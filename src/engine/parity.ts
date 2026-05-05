@@ -660,6 +660,7 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "xyzSummon" && response.type === "xyzSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
   if (action.type === "linkSummon" && response.type === "linkSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
   if (action.type === "ritualSummon" && response.type === "ritualSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
+  if (action.type === "pendulumSummon" && response.type === "pendulumSummon" && !sameStringMembers(action.summonUids, response.summonUids)) return false;
   if (action.type === "changePosition" && response.type === "changePosition" && action.position !== response.position) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.targetUid !== response.targetUid) return false;
@@ -680,6 +681,7 @@ function describeStep(step: ScriptedStepResponse): string {
     "uid" in step && step.uid ? `uid=${step.uid}` : undefined,
     "tributeUids" in step && step.tributeUids ? `tributeUids=${step.tributeUids.join(",")}` : undefined,
     "materialUids" in step && step.materialUids ? `materialUids=${step.materialUids.join(",")}` : undefined,
+    "summonUids" in step && step.summonUids ? `summonUids=${step.summonUids.join(",")}` : undefined,
     "position" in step && step.position ? `position=${step.position}` : undefined,
     "phase" in step && step.phase ? `phase=${step.phase}` : undefined,
     "attackerUid" in step && step.attackerUid ? `attackerUid=${step.attackerUid}` : undefined,

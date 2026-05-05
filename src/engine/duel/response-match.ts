@@ -24,6 +24,7 @@ export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
   if (a.type === "xyzSummon" && response.type === "xyzSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
   if (a.type === "linkSummon" && response.type === "linkSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
   if (a.type === "ritualSummon" && response.type === "ritualSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
+  if (a.type === "pendulumSummon" && response.type === "pendulumSummon" && !sameStringMembers(a.summonUids, response.summonUids)) return false;
   if (a.type === "changePosition" && response.type === "changePosition" && a.position !== response.position) return false;
   if (a.type === "declareAttack" && response.type === "declareAttack" && a.attackerUid !== response.attackerUid) return false;
   if (a.type === "declareAttack" && response.type === "declareAttack" && a.targetUid !== response.targetUid) return false;
@@ -81,6 +82,7 @@ function requiresWindowStampEcho(action: DuelAction): boolean {
     action.type === "xyzSummon" ||
     action.type === "linkSummon" ||
     action.type === "ritualSummon" ||
+    action.type === "pendulumSummon" ||
     action.type === "setMonster" ||
     action.type === "setSpellTrap" ||
     action.type === "flipSummon" ||

@@ -112,6 +112,7 @@ function summonTypeMask(card: DuelCardInstance | undefined): number {
   if (card.summonType === "ritual") return 0x45000000;
   if (card.summonType === "synchro") return 0x46000000;
   if (card.summonType === "xyz") return 0x49000000;
+  if (card.summonType === "pendulum") return 0x4a000000;
   if (card.summonType === "link") return 0x4c000000;
   return 0;
 }

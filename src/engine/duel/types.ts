@@ -6,7 +6,7 @@ export type DuelStatus = "setup" | "awaiting" | "resolving" | "ended";
 export type CardPosition = "faceDownDefense" | "faceUpAttack" | "faceUpDefense" | "faceDown";
 export type DuelLocation = "deck" | "hand" | "monsterZone" | "spellTrapZone" | "graveyard" | "banished" | "extraDeck" | "overlay";
 export type DuelCardKind = "monster" | "spell" | "trap" | "extra";
-export type DuelSummonType = "normal" | "tribute" | "flip" | "special" | "fusion" | "synchro" | "xyz" | "link" | "ritual";
+export type DuelSummonType = "normal" | "tribute" | "flip" | "special" | "fusion" | "synchro" | "xyz" | "link" | "ritual" | "pendulum";
 export type DuelEventName =
   | "normalSummoning"
   | "normalSummonNegated"
@@ -480,6 +480,7 @@ export type DuelAction = (
   | { type: "xyzSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
   | { type: "linkSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
   | { type: "ritualSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
+  | { type: "pendulumSummon"; player: PlayerId; summonUids: string[]; label: string }
   | { type: "setMonster"; player: PlayerId; uid: string; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
@@ -586,6 +587,7 @@ export interface ScriptedResponseSelector {
   uid?: string;
   tributeUids?: string[];
   materialUids?: string[];
+  summonUids?: string[];
   position?: CardPosition;
   phase?: DuelPhase;
   attackerUid?: string;
