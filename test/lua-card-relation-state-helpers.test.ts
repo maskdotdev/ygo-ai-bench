@@ -35,7 +35,9 @@ describe("Lua card relation state helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("delayed setup 4224/702/1");
-    applyResponse(session, { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase" });
+    const battlePhase = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battlePhase).toBeDefined();
+    applyResponse(session, battlePhase!);
     expect(host.messages).toContain("delayed operation 1/0/1");
     expect(session.state.effects.some((effect) => effect.code === 0x1000 + 0x80)).toBe(false);
   });

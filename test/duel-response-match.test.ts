@@ -125,4 +125,14 @@ describe("duel response matching", () => {
     expect(sameAction(procedure, { type: "specialSummonProcedure", player: 0, uid: "card", effectId: "procedure", label: "Procedure" })).toBe(false);
     expect(sameAction(procedure, { ...procedure })).toBe(true);
   });
+
+  it("requires turn-flow responses to echo their open window stamp", () => {
+    const phase: DuelAction = { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase", windowId: 13, windowKind: "open" };
+    const endTurn: DuelAction = { type: "endTurn", player: 0, label: "End Turn", windowId: 13, windowKind: "open" };
+
+    expect(sameAction(phase, { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase" })).toBe(false);
+    expect(sameAction(endTurn, { type: "endTurn", player: 0, label: "End Turn" })).toBe(false);
+    expect(sameAction(phase, { ...phase })).toBe(true);
+    expect(sameAction(endTurn, { ...endTurn })).toBe(true);
+  });
 });
