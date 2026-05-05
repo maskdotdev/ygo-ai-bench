@@ -39,6 +39,9 @@ describe("duel stale trigger responses", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(0);
     expect(session.state.log.filter((entry) => entry.detail === "Stale activate trigger resolved")).toHaveLength(1);
   });
@@ -79,6 +82,9 @@ describe("duel stale trigger responses", () => {
 
     expect(result.ok).toBe(false);
     expect(result.error).toContain("Response is not currently legal");
+    expect(result.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(1);
     expect(session.state.log.some((entry) => entry.detail === "Stale bucket activate trigger should not resolve")).toBe(false);
   });
@@ -118,6 +124,9 @@ describe("duel stale trigger responses", () => {
 
     expect(replay.ok).toBe(false);
     expect(replay.error).toContain("Response is not currently legal");
+    expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(0);
     expect(session.state.log.filter((entry) => entry.action === "declineTrigger" && entry.detail === "stale-decline-trigger")).toHaveLength(1);
     expect(session.state.log.some((entry) => entry.detail === "Stale decline trigger should not resolve")).toBe(false);
@@ -159,6 +168,9 @@ describe("duel stale trigger responses", () => {
 
     expect(result.ok).toBe(false);
     expect(result.error).toContain("Response is not currently legal");
+    expect(result.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(1);
     expect(session.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "stale-bucket-decline-trigger")).toBe(false);
   });
