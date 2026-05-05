@@ -802,6 +802,13 @@ describe("Node upstream snapshot restore", () => {
     expect(forgedResult.error).toContain("Lua snapshot restore is incomplete: missing Lua chain-limit registry keys: lua-chain-limit:");
     expect(forgedResult.legalActions).toEqual([]);
     expect(forgedResult.legalActionGroups).toEqual([]);
+
+    const chainLimitOnlySnapshot = JSON.parse(JSON.stringify(snapshot)) as typeof snapshot;
+    chainLimitOnlySnapshot.state.effects = [];
+    const chainLimitOnlyRestored = restoreDuelWithLuaScripts(chainLimitOnlySnapshot, workspace, createCardReader(cards));
+    expect(chainLimitOnlyRestored.loadedScripts).toContainEqual({ ok: true, name: "c100.lua" });
+    expect(chainLimitOnlyRestored.chainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
+    expect(chainLimitOnlyRestored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
   });
 
 });

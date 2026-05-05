@@ -26,12 +26,12 @@ export function restoreDuelWithLuaScripts(
   const session = restoreDuel(snapshot, cardReader, {}, {}, { pruneUnrestoredPendingTriggers: false });
   const host = createLuaScriptHost(session);
   const registryKeys = luaRegistryKeys(snapshot);
-  const loadedScripts = [...luaRegistryCardCodes(registryKeys)].map((code) => host.loadCardScript(code, source));
+  const chainLimitRegistryKeys = luaChainLimitRegistryKeys(snapshot);
+  const loadedScripts = [...luaRegistryCardCodes(registryKeys, chainLimitRegistryKeys)].map((code) => host.loadCardScript(code, source));
   const registeredEffects = loadedScripts.every((result) => result.ok) ? host.registerInitialEffects() : 0;
   const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys, snapshot.state.effects);
   prunePendingTriggersWithoutEffects(session.state);
   const missingRegistryKeys = [...registryKeys].filter((key) => !restoredRegistryKeys.includes(key));
-  const chainLimitRegistryKeys = luaChainLimitRegistryKeys(snapshot);
   const restoredChainLimitRegistryKeys = luaChainLimitRegistryKeys({ ...snapshot, state: session.state });
   const missingChainLimitRegistryKeys = chainLimitRegistryKeys.filter((key) => !restoredChainLimitRegistryKeys.includes(key));
   const incompleteReasons = luaRestoreIncompleteReasons(loadedScripts, missingRegistryKeys, missingChainLimitRegistryKeys);
@@ -96,9 +96,9 @@ function luaRestoreIncompleteError(restored: LuaSnapshotRestoreResult): string {
   return restored.incompleteReasons.length === 0 ? "Lua snapshot restore is incomplete" : `Lua snapshot restore is incomplete: ${restored.incompleteReasons.join("; ")}`;
 }
 
-function luaRegistryCardCodes(registryKeys: Set<string>): Set<string> {
+function luaRegistryCardCodes(registryKeys: Set<string>, chainLimitRegistryKeys: string[] = []): Set<string> {
   const codes = new Set<string>();
-  for (const key of registryKeys) {
+  for (const key of [...registryKeys, ...chainLimitRegistryKeys]) {
     const [, code] = key.split(":");
     if (code) codes.add(code);
   }
