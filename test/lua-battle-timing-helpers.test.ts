@@ -205,7 +205,8 @@ describe("Lua battle timing helpers", () => {
     moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const damageScript = host.loadCardScript(300, source);
+    expect(damageScript.ok, damageScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
@@ -420,7 +421,8 @@ describe("Lua battle timing helpers", () => {
     moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(200, source).ok).toBe(true);
+    const triggerScript = host.loadCardScript(200, source);
+    expect(triggerScript.ok, triggerScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
@@ -495,7 +497,8 @@ describe("Lua battle timing helpers", () => {
     moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const triggerScript = host.loadCardScript(300, source);
+    expect(triggerScript.ok, triggerScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
@@ -565,7 +568,8 @@ describe("Lua battle timing helpers", () => {
     moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
+    const triggerScript = host.loadCardScript(300, source);
+    expect(triggerScript.ok, triggerScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
@@ -620,7 +624,8 @@ describe("Lua battle timing helpers", () => {
     moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(400, source).ok).toBe(true);
+    const triggerScript = host.loadCardScript(400, source);
+    expect(triggerScript.ok, triggerScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
@@ -695,7 +700,8 @@ describe("Lua battle timing helpers", () => {
     moveDuelCard(session.state, attacker!.uid, "monsterZone", 0).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(500, source).ok).toBe(true);
+    const triggerScript = host.loadCardScript(500, source);
+    expect(triggerScript.ok, triggerScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
     expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
