@@ -389,6 +389,7 @@ describe("duel snapshot persistence", () => {
 
     expect(roundTripped.state.effects[0]).toMatchObject({ id: "snapshot-json-effect", registryKey: "snapshot-json-effect" });
     expect(roundTripped.state.chainLimits[0]).toEqual({ registryKey: "snapshot-json-chain-limit", untilChainEnd: true });
+    expect(roundTripped.state.chainLimits[0]).not.toHaveProperty("expiresAtChainLength");
   });
 
   it("copies nested assumed card state by value across snapshots", () => {
