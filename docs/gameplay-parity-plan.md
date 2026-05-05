@@ -124,7 +124,7 @@ Deliverables:
 - Track missed timing for "when optional" triggers after multi-step effects.
 - Handle simultaneous events and SEGOC ordering consistently.
 - Revisit fast effect response player selection after every action and chain resolution.
-- Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today; Lua-created predicate limits must either restore safely or fail closed with explicit parity-backlog diagnostics until the Lua callback state can be rebuilt without re-running costs or target selection.
+- Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today. Lua-created predicate limits currently fail closed with explicit missing chain-limit registry diagnostics; the remaining parity work is to rebuild or serialize those Lua predicates without re-running costs or target selection.
 
 Implementation files likely touched:
 
@@ -252,7 +252,7 @@ Acceptance gates:
 - Each new API has a small unit test plus at least one real-script or fixture motivation.
 - Deck probes report fewer missing APIs without masking semantic failures.
 - Lua prompt/selection APIs round-trip through browser-safe serialized prompts.
-- Lua `Duel.SetChainLimit*` restore has parity fixtures that either preserve legal actions after reconnect or fail with an explicit missing chain-limit registry key.
+- Lua `Duel.SetChainLimit*` restore should keep the existing fail-closed missing-registry diagnostics until predicate restoration can preserve legal actions after reconnect.
 
 ## Phase 6: App-Facing Gameplay
 
