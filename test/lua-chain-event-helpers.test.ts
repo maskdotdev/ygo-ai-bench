@@ -158,6 +158,81 @@ describe("Lua chain event helpers", () => {
     expect(session.state.log).toContainEqual(expect.objectContaining({ action: "adjust", detail: "Readjust" }));
   });
 
+  it("makes earlier Lua optional when triggers miss timing at readjust boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Readjust Boundary Source", kind: "monster" },
+      { code: "200", name: "Readjust Boundary Target", kind: "monster" },
+      { code: "300", name: "When To Grave Watcher", kind: "monster" },
+      { code: "400", name: "If To Grave Watcher", kind: "monster" },
+      { code: "500", name: "Readjust Boundary Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 169, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300", "400", "500"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local adjust_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local e=Effect.CreateEffect(source)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp)
+        Duel.SendtoGrave(target, REASON_EFFECT)
+        Duel.Readjust()
+      end)
+      source:RegisterEffect(e)
+
+      local when_effect=Effect.CreateEffect(when_watcher)
+      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      when_effect:SetCode(EVENT_TO_GRAVE)
+      when_effect:SetRange(LOCATION_HAND)
+      when_effect:SetOperation(function(e,tp)
+        Debug.Message("when to grave resolved")
+      end)
+      when_watcher:RegisterEffect(when_effect)
+
+      local if_effect=Effect.CreateEffect(if_watcher)
+      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      if_effect:SetCode(EVENT_TO_GRAVE)
+      if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      if_effect:SetRange(LOCATION_HAND)
+      if_effect:SetOperation(function(e,tp)
+        Debug.Message("if to grave resolved")
+      end)
+      if_watcher:RegisterEffect(if_effect)
+
+      local adjust_effect=Effect.CreateEffect(adjust_watcher)
+      adjust_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      adjust_effect:SetCode(EVENT_ADJUST)
+      adjust_effect:SetRange(LOCATION_HAND)
+      adjust_effect:SetOperation(function(e,tp)
+        Debug.Message("readjust boundary resolved")
+      end)
+      adjust_watcher:RegisterEffect(adjust_effect)
+      `,
+      "readjust-missed-timing.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1014");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1014", "lua-4-1040"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014 }), expect.objectContaining({ eventName: "adjust", eventCode: 1040 })]),
+    );
+    expect(session.state.log).toContainEqual(expect.objectContaining({ action: "adjust", detail: "Readjust" }));
+  });
+
   it("queues Lua chain-end triggers after a chain fully resolves", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Chain Starter", kind: "monster" },
