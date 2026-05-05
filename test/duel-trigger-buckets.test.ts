@@ -116,7 +116,7 @@ describe("duel trigger buckets", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeTruthy();
-    const result = applyResponse(session, summon!);
+    const result = applyAndAssert(session, summon!);
 
     expect(result.ok).toBe(true);
     expect(result.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
@@ -143,7 +143,7 @@ describe("duel trigger buckets", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeTruthy();
-    const result = applyResponse(session, summon!);
+    const result = applyAndAssert(session, summon!);
 
     expect(result.ok).toBe(true);
     expect(result.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
@@ -178,7 +178,7 @@ describe("duel trigger buckets", () => {
 
     const activate = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "first-turn-mandatory-bucket");
     expect(activate).toBeTruthy();
-    const afterFirst = applyResponse(session, activate!);
+    const afterFirst = applyAndAssert(session, activate!);
 
     expect(afterFirst.ok).toBe(true);
     expect(afterFirst.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-turn-mandatory-bucket", "opponent-later-mandatory-bucket"]);
@@ -318,14 +318,14 @@ describe("duel trigger buckets", () => {
 
     const opponentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(opponentPass).toBeTruthy();
-    const afterOpponentPass = applyResponse(restored, opponentPass!);
+    const afterOpponentPass = applyAndAssert(restored, opponentPass!);
     expect(afterOpponentPass.ok).toBe(true);
     expect(queryPublicState(restored).windowKind).toBe("chainResponse");
     expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateTrigger" && action.effectId === "restored-later-payload-trigger")).toBe(false);
 
     const turnPass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(turnPass).toBeTruthy();
-    const result = applyResponse(restored, turnPass!);
+    const result = applyAndAssert(restored, turnPass!);
 
     expect(result.ok).toBe(true);
     expect(queryPublicState(restored).windowKind).toBe("triggerBucket");
@@ -397,7 +397,7 @@ describe("duel trigger buckets", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeTruthy();
-    const result = applyResponse(session, summon!);
+    const result = applyAndAssert(session, summon!);
 
     expect(result.ok).toBe(true);
     expect(result.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
@@ -422,7 +422,7 @@ describe("duel trigger buckets", () => {
 
     const declineFirst = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === "first-turn-optional-bucket");
     expect(declineFirst).toBeTruthy();
-    const afterFirstDecline = applyResponse(session, declineFirst!);
+    const afterFirstDecline = applyAndAssert(session, declineFirst!);
 
     expect(afterFirstDecline.ok).toBe(true);
     expect(afterFirstDecline.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-turn-optional-bucket", "opponent-later-optional-bucket"]);
@@ -431,7 +431,7 @@ describe("duel trigger buckets", () => {
 
     const declineSecond = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === "second-turn-optional-bucket");
     expect(declineSecond).toBeTruthy();
-    const afterSecondDecline = applyResponse(session, declineSecond!);
+    const afterSecondDecline = applyAndAssert(session, declineSecond!);
 
     expect(afterSecondDecline.ok).toBe(true);
     expect(afterSecondDecline.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["opponent-later-optional-bucket"]);
@@ -448,7 +448,7 @@ describe("duel trigger buckets", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const laterTrigger = session.state.pendingTriggers.find((trigger) => trigger.effectId === "later-opponent-optional-bucket");
     expect(laterTrigger).toBeTruthy();
 
@@ -469,7 +469,7 @@ describe("duel trigger buckets", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     const laterTrigger = session.state.pendingTriggers.find((trigger) => trigger.effectId === "later-turn-optional-bucket");
     expect(laterTrigger).toBeTruthy();
 
@@ -489,7 +489,7 @@ describe("duel trigger buckets", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeTruthy();
-    const result = applyResponse(session, summon!);
+    const result = applyAndAssert(session, summon!);
 
     expect(result.ok).toBe(true);
     expect(result.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
@@ -505,7 +505,7 @@ describe("duel trigger buckets", () => {
 
     const activateFirst = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "first-turn-optional-activation");
     expect(activateFirst).toBeTruthy();
-    const afterFirstActivation = applyResponse(session, activateFirst!);
+    const afterFirstActivation = applyAndAssert(session, activateFirst!);
 
     expect(afterFirstActivation.ok).toBe(true);
     expect(afterFirstActivation.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-turn-optional-activation", "opponent-later-optional-activation"]);
@@ -514,7 +514,7 @@ describe("duel trigger buckets", () => {
 
     const activateSecond = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "second-turn-optional-activation");
     expect(activateSecond).toBeTruthy();
-    const afterSecondActivation = applyResponse(session, activateSecond!);
+    const afterSecondActivation = applyAndAssert(session, activateSecond!);
 
     expect(afterSecondActivation.ok).toBe(true);
     expect(afterSecondActivation.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["opponent-later-optional-activation"]);
@@ -562,7 +562,7 @@ describe("duel trigger buckets", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
       "first-restored-turn-optional",
       "second-restored-turn-optional",
@@ -616,11 +616,7 @@ describe("duel trigger buckets", () => {
 
     const activateFirst = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "first-restored-turn-optional");
     expect(activateFirst).toBeTruthy();
-    const firstResult = applyResponse(restored, activateFirst!);
-    expect(firstResult.ok).toBe(true);
-    expect(firstResult.legalActions).toEqual(getDuelLegalActions(restored, firstResult.state.waitingFor!));
-    expect(firstResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, firstResult.state.waitingFor!));
-    expect(firstResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(firstResult.legalActions);
+    const firstResult = applyAndAssert(restored, activateFirst!);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
       "second-restored-turn-optional",
       "opponent-restored-later-optional",
@@ -641,11 +637,7 @@ describe("duel trigger buckets", () => {
 
     const activateSecond = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "second-restored-turn-optional");
     expect(activateSecond).toBeTruthy();
-    const secondResult = applyResponse(restored, activateSecond!);
-    expect(secondResult.ok).toBe(true);
-    expect(secondResult.legalActions).toEqual(getDuelLegalActions(restored, secondResult.state.waitingFor!));
-    expect(secondResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, secondResult.state.waitingFor!));
-    expect(secondResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(secondResult.legalActions);
+    const secondResult = applyAndAssert(restored, activateSecond!);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["opponent-restored-later-optional"]);
     expect(restored.state.waitingFor).toBe(1);
 
@@ -699,7 +691,7 @@ describe("duel trigger buckets", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
       "first-restored-decline-optional": withOperation,
@@ -710,8 +702,7 @@ describe("duel trigger buckets", () => {
     const decline = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "first-restored-decline-optional");
     expect(decline).toBeTruthy();
 
-    const result = applyResponse(restored, decline!);
-    expect(result.ok).toBe(true);
+    const result = applyAndAssert(restored, decline!);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-restored-decline-optional"]);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-restored-decline-optional"]);
     expect(restored.state.log.some((entry) => entry.detail === "first-restored-decline-optional resolved")).toBe(false);
@@ -767,12 +758,12 @@ describe("duel trigger buckets", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
 
     for (const effectId of ["first-restored-turn-mandatory", "second-restored-turn-mandatory"]) {
       const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === effectId);
       expect(action).toBeTruthy();
-      expect(applyResponse(session, action!).ok).toBe(true);
+      applyAndAssert(session, action!);
     }
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["opponent-restored-mandatory"]);
     expect(session.state.waitingFor).toBe(1);
@@ -796,11 +787,7 @@ describe("duel trigger buckets", () => {
     ]);
     const activation = getDuelLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.effectId === "opponent-restored-mandatory");
     expect(activation).toBeTruthy();
-    const activated = applyResponse(restored, activation!);
-    expect(activated.ok).toBe(true);
-    expect(activated.legalActions).toEqual(getDuelLegalActions(restored, activated.state.waitingFor!));
-    expect(activated.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, activated.state.waitingFor!));
-    expect(activated.legalActionGroups.flatMap((group) => group.actions)).toEqual(activated.legalActions);
+    const activated = applyAndAssert(restored, activation!);
     expect(restored.state.pendingTriggers).toEqual([]);
     const staleActivation = applyResponse(restored, activation!);
     expect(staleActivation.ok).toBe(false);
@@ -841,7 +828,7 @@ describe("duel trigger buckets", () => {
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon).toBeTruthy();
-    expect(applyResponse(session, summon!).ok).toBe(true);
+    applyAndAssert(session, summon!);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["missing-restored-trigger", "available-restored-trigger"]);
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
@@ -878,3 +865,12 @@ describe("duel trigger buckets", () => {
     expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
