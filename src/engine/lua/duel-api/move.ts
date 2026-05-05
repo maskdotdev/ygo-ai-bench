@@ -22,6 +22,7 @@ import { duelReason } from "#duel/reasons.js";
 import { locationsFromMask, positionFromMask, readCardUid } from "#lua/api-utils.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { activeFieldSpell, isDuelType, isFieldSpell } from "#lua/duel-api/field-spell-state.js";
 import { applyLuaMovePosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { readCardOrGroupUids, readFieldDestination, readMoveReason, readOptionalPlayer, readSingleDestination } from "#lua/duel-api/move-readers.js";
@@ -200,7 +201,8 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
     const player = targetPlayer ?? card.controller;
     if (!hasOpenMonsterZone(session, player, zoneMask)) continue;
     try {
-      const summoned = specialSummonDuelCard(session.state, uid, player);
+      const reasonPlayer = hostState.activeContext?.player ?? player;
+      const summoned = specialSummonDuelCard(session.state, uid, player, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer));
       if (requestedPosition) applyLuaMovePosition(summoned, requestedPosition);
       applyMonsterZoneMask(session, summoned, player, zoneMask);
       moved.push(uid);

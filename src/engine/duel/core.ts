@@ -362,14 +362,16 @@ export function runScriptedDuelResponses(session: DuelSession, steps: ScriptedRe
   return runScriptedDuelResponsesWithHandlers(session, steps, { getLegalActions, applyResponse });
 }
 
-export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId): DuelCardInstance {
+export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance {
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
   const summonController = controller ?? card.controller;
   requireZoneSpace(state, summonController, "monsterZone");
   if (!canSpecialSummonDuelCard(state, uid, summonController)) throw new Error(`${card.name} cannot be Special Summoned`);
   collectTriggerEffects(state, "specialSummoning", card);
-  moveDuelCard(state, uid, "monsterZone", summonController, duelReason.summon | duelReason.specialSummon);
+  moveDuelCard(state, uid, "monsterZone", summonController, duelReason.summon | duelReason.specialSummon, reasonPlayer);
+  if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "special";
@@ -589,11 +591,7 @@ export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUi
   declareCoreDuelAttack(state, player, attackerUid, targetUid, coreBattleHandlers);
 }
 
-export function negateDuelAttack(
-  state: DuelState,
-  reasonPlayer: PlayerId = state.turnPlayer,
-  payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
-): boolean {
+export function negateDuelAttack(state: DuelState, reasonPlayer: PlayerId = state.turnPlayer, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): boolean {
   const attacker = state.currentAttack?.attackerUid === undefined ? undefined : findCard(state, state.currentAttack.attackerUid);
   const disabled = negateCoreDuelAttack(state);
   if (disabled) collectDuelTriggerEffects(state, "attackDisabled", attacker, attacker === undefined ? {} : { eventPlayer: attacker.controller, eventReason: duelReason.effect, eventReasonPlayer: reasonPlayer, ...payload });
