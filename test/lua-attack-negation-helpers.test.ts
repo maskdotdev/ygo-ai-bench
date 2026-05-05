@@ -147,11 +147,7 @@ describe("Lua attack negation helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
-    const restoredTriggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
-    expect(restoredTriggerResult.ok).toBe(true);
-    expect(restoredTriggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
-    expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
-    expect(restoredTriggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(restoredTriggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, restoredTrigger!);
     expect(restored.host.messages).toContain("attack disabled trigger 100/0/64/0");
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -216,12 +212,8 @@ describe("Lua attack negation helpers", () => {
     const staleAttackPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passAttack");
     expect(negate).toBeDefined();
     expect(staleAttackPass).toBeDefined();
-    const result = applyLuaRestoreResponse(restored, negate!);
+    const result = applyLuaRestoreAndAssert(restored, negate!);
 
-    expect(result.ok).toBe(true);
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(["lua-1"]);
     const replayAttackPass = applyLuaRestoreResponse(restored, staleAttackPass!);
     expect(replayAttackPass.ok).toBe(false);
@@ -231,11 +223,7 @@ describe("Lua attack negation helpers", () => {
     expect(replayAttackPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(replayAttackPass.legalActions);
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
-    const passResult = applyLuaRestoreResponse(restored, pass!);
-    expect(passResult.ok).toBe(true);
-    expect(passResult.legalActions).toEqual(getDuelLegalActions(restored.session, passResult.state.waitingFor!));
-    expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
-    expect(passResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(passResult.legalActions);
+    applyLuaRestoreAndAssert(restored, pass!);
     expect(restored.host.messages).toEqual(["restored attack negate true"]);
     expect(restored.session.state.currentAttack).toBeUndefined();
     expect(restored.session.state.pendingBattle).toBeUndefined();
@@ -323,13 +311,9 @@ describe("Lua attack negation helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    const result = applyLuaRestoreResponse(restored, pass!);
+    const result = applyLuaRestoreAndAssert(restored, pass!);
 
-    expect(result.ok).toBe(true);
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "attackNegationResponse", responsePlayer: 1 } });
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passAttack", player: 1, windowKind: "battle" })]));
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
     expect(restored.host.messages).toEqual(["restored lua battle quick resolved"]);
@@ -424,13 +408,9 @@ describe("Lua attack negation helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    const result = applyLuaRestoreResponse(restored, pass!);
+    const result = applyLuaRestoreAndAssert(restored, pass!);
 
-    expect(result.ok).toBe(true);
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
     expect(restored.host.messages).toEqual(["restored lua damage quick resolved"]);
@@ -526,13 +506,9 @@ describe("Lua attack negation helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    const result = applyLuaRestoreResponse(restored, pass!);
+    const result = applyLuaRestoreAndAssert(restored, pass!);
 
-    expect(result.ok).toBe(true);
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 1 } });
-    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
-    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
     expect(restored.host.messages).toEqual(["restored lua damage calculation quick resolved"]);
@@ -542,9 +518,18 @@ describe("Lua attack negation helpers", () => {
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
   const response = applyResponse(session, action);
-  expect(response.ok).toBe(true);
+  expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
 }
