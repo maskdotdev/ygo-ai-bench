@@ -771,8 +771,8 @@ describe("Lua battle timing helpers", () => {
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)!);
     passBattleResponses(session);
 
     expect(session.state.players[1].lifePoints).toBe(6200);
@@ -780,7 +780,7 @@ describe("Lua battle timing helpers", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 });
     const damageTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(damageTrigger).toBeDefined();
-    expect(applyResponse(session, damageTrigger!).ok).toBe(true);
+    applyAndAssert(session, damageTrigger!);
     expect(passLuaBattleChain(session)).toBe(true);
     expect(host.messages).toContain("lua battle damage trigger resolved 1/1800/32/0/6200");
   });
