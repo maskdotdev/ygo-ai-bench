@@ -27,6 +27,13 @@ describe("Lua battle fast priority restore", () => {
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
+
+    const stalePass = applyLuaRestoreResponse(restored, pass!);
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
     expect(restored.host.messages).toEqual(["restored battle quick resolved"]);
   });
 
@@ -55,6 +62,13 @@ describe("Lua battle fast priority restore", () => {
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
+
+    const stalePass = applyLuaRestoreResponse(restored, pass!);
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
     expect(restored.host.messages).toEqual(["restored battle quick resolved"]);
   });
 
