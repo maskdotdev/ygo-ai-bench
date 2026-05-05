@@ -49,6 +49,7 @@ export function sendCoreDuelCardToGraveyard(
   const card = moveDuelCard(state, uid, "graveyard", controller, reason, reasonPlayer);
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
   collectLeaveFieldTriggers(state, card, handlers);
+  collectLeaveGraveyardTriggers(state, card, handlers);
   collectReasonTriggers(state, card, reason, handlers);
   handlers.collectTrigger(state, "moved", card);
   handlers.collectTrigger(state, "sentToGraveyard", card);
@@ -80,6 +81,7 @@ export function destroyCoreDuelCard(
     applyRedirectDeckSequence(state, card, battleRedirectLocation);
     pushDuelLog(state, "destroy", card.controller, card.name, `Destroyed and moved to ${battleRedirectLocation.location}`);
     collectLeaveFieldTriggers(state, card, handlers);
+    collectLeaveGraveyardTriggers(state, card, handlers);
     handlers.collectTrigger(state, "moved", card);
     handlers.collectTrigger(state, "destroyed", card);
     if (battleRedirectLocation.location === "banished") handlers.collectTrigger(state, "banished", card);
@@ -89,6 +91,7 @@ export function destroyCoreDuelCard(
   const card = moveDuelCard(state, uid, "graveyard", controller, reason, reasonPlayer);
   pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
   collectLeaveFieldTriggers(state, card, handlers);
+  collectLeaveGraveyardTriggers(state, card, handlers);
   handlers.collectTrigger(state, "moved", card);
   handlers.collectTrigger(state, "destroyed", card);
   handlers.collectTrigger(state, "sentToGraveyard", card);
@@ -111,6 +114,7 @@ export function banishCoreDuelCard(
   const card = moveDuelCard(state, uid, "banished", controller, reason, reasonPlayer);
   pushDuelLog(state, "banish", card.controller, card.name, "Banished");
   collectLeaveFieldTriggers(state, card, handlers);
+  collectLeaveGraveyardTriggers(state, card, handlers);
   collectReasonTriggers(state, card, reason, handlers);
   handlers.collectTrigger(state, "moved", card);
   handlers.collectTrigger(state, "banished", card);
@@ -134,6 +138,7 @@ export function moveCoreDuelCardWithRedirects(
   const card = moveDuelCard(state, uid, destination, controller, moveReason, reasonPlayer);
   applyRedirectDeckSequence(state, card, redirectLocation);
   collectLeaveFieldTriggers(state, card, handlers);
+  collectLeaveGraveyardTriggers(state, card, handlers);
   collectReasonTriggers(state, card, moveReason, handlers);
   handlers.collectTrigger(state, "moved", card);
   collectDestinationTriggers(state, card, handlers);
@@ -181,6 +186,7 @@ function moveCoreDuelCardToRedirectedLocation(
   const card = moveDuelCard(state, uid, redirect.location, controller, reason | duelReason.redirect, reasonPlayer);
   applyRedirectDeckSequence(state, card, redirect);
   collectLeaveFieldTriggers(state, card, handlers);
+  collectLeaveGraveyardTriggers(state, card, handlers);
   collectReasonTriggers(state, card, reason | duelReason.redirect, handlers);
   handlers.collectTrigger(state, "moved", card);
   collectDestinationTriggers(state, card, handlers);
@@ -219,6 +225,10 @@ function collectLeaveFieldTriggers(state: DuelState, card: DuelCardInstance, han
   if (card.previousLocation !== "monsterZone" && card.previousLocation !== "spellTrapZone") return;
   if (card.location === "monsterZone" || card.location === "spellTrapZone") return;
   handlers.collectTrigger(state, "leftField", card);
+}
+
+function collectLeaveGraveyardTriggers(state: DuelState, card: DuelCardInstance, handlers: CoreMovementHandlers): void {
+  if (card.previousLocation === "graveyard" && card.location !== "graveyard") handlers.collectTrigger(state, "leftGraveyard", card);
 }
 
 function collectReasonTriggers(state: DuelState, card: DuelCardInstance, reason: number, handlers: CoreMovementHandlers): void {

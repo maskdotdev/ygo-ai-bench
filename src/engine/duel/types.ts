@@ -24,6 +24,7 @@ export type DuelEventName =
   | "destroyed"
   | "becameTarget"
   | "sentToGraveyard"
+  | "leftGraveyard"
   | "sentToHand"
   | "sentToDeck"
   | "released"

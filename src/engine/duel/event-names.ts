@@ -17,6 +17,7 @@ const duelEventNameRecord: Record<DuelEventName, true> = {
   destroyed: true,
   becameTarget: true,
   sentToGraveyard: true,
+  leftGraveyard: true,
   sentToHand: true,
   sentToDeck: true,
   released: true,

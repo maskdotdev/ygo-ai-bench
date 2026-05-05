@@ -23,6 +23,7 @@ const eventCodes: Partial<Record<DuelEventName, number>> = {
   becameTarget: 1028,
   destroyed: 1029,
   moved: 1030,
+  leftGraveyard: 1031,
   adjust: 1040,
   breakEffect: 1050,
   normalSummoned: 1100,

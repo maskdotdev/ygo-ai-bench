@@ -184,4 +184,69 @@ describe("Lua movement helpers", () => {
     expect(host.messages).toContain("left field trigger 200/16");
   });
 
+  it("raises Lua leave-grave triggers for cards moved from the graveyard", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Graveyard Mover", kind: "monster" },
+      { code: "200", name: "Leaving Graveyard", kind: "monster" },
+      { code: "300", name: "Leave Grave Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 166, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const mover = session.state.cards.find((card) => card.code === "100");
+    const leaving = session.state.cards.find((card) => card.code === "200");
+    expect(mover).toBeDefined();
+    expect(leaving).toBeDefined();
+    moveDuelCard(session.state, mover!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, leaving!.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_MZONE)
+        e:SetOperation(function(e,tp)
+          local g=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_GRAVE, 0, 1, 1, nil)
+          Duel.SendtoHand(g, tp, REASON_EFFECT)
+        end)
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_LEAVE_GRAVE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          local tc=eg:GetFirst()
+          Debug.Message("left grave trigger " .. tc:GetCode() .. "/" .. tostring(tc:IsPreviousLocation(LOCATION_GRAVE)) .. "/" .. tostring(tc:IsLocation(LOCATION_HAND)))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "leave-grave-trigger.lua",
+    );
+
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === mover!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["leftGraveyard"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1031, eventCardUid: leaving!.uid });
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "leftGraveyard", eventCode: 1031, eventCardUid: leaving!.uid })]));
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid !== mover!.uid);
+    expect(trigger).toBeDefined();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("left grave trigger 200/true/true");
+  });
+
 });
