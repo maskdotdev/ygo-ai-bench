@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, sendDuelCardToGraveyard, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, sendDuelCardToGraveyard, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { stampDuelActions } from "#duel/prompt-response.js";
 import type { DuelAction } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
@@ -19,10 +19,15 @@ function setupOneCardDuel(seed: number) {
 function expectLegalActionsMatchPublicWindow(session: ReturnType<typeof setupOneCardDuel>, player: 0 | 1): void {
   const publicState = queryPublicState(session);
   const actions = getDuelLegalActions(session, player);
+  const groups = getGroupedDuelLegalActions(session, player);
   expect(publicState.actionWindowId).toBe(session.state.actionWindowId);
   for (const action of actions) {
     expect(action.windowId).toBe(publicState.actionWindowId);
     expect(action.windowKind).toBe(publicState.windowKind);
+  }
+  for (const group of groups) {
+    expect(group.windowId).toBe(publicState.actionWindowId);
+    expect(group.windowKind).toBe(publicState.windowKind);
   }
 }
 
