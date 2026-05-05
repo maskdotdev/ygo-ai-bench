@@ -124,6 +124,59 @@ describe("Lua deck and field helpers", () => {
     expect(host.messages).toContain("confirm resolved 1/2/100");
   });
 
+  it("queues Lua to-hand confirm triggers for revealed hand cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Searched Card", kind: "monster" },
+      { code: "200", name: "To Hand Confirm Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 165, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+    const watcher = session.state.cards.find((card) => card.code === "200");
+    expect(watcher).toBeTruthy();
+    moveDuelCard(session.state, watcher!.uid, "hand", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_TOHAND_CONFIRM)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg,ep,ev)
+          Debug.Message("tohand confirm resolved " .. ep .. "/" .. ev .. "/" .. eg:GetFirst():GetCode())
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "lua-tohand-confirm-trigger.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const result = host.loadScript(
+      `
+      local top = Duel.GetDecktopGroup(0, 1)
+      Duel.SendtoHand(top, 0, REASON_EFFECT)
+      Duel.ConfirmCards(1, top)
+      Debug.Message("tohand confirm requested")
+      `,
+      "lua-tohand-confirm-trigger-action.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("tohand confirm requested");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHandConfirmed"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1212, eventPlayer: 1, eventValue: 1 });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "sentToHandConfirmed", eventCode: 1212, eventPlayer: 1, eventValue: 1 });
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeTruthy();
+    expect(applyResponse(session, trigger!).ok).toBe(true);
+    expect(host.messages).toContain("tohand confirm resolved 1/1/100");
+  });
+
   it("lets Lua scripts shuffle a player's hand", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Hand A", kind: "monster" },

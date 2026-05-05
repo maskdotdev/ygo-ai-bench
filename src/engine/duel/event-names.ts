@@ -54,6 +54,7 @@ const duelEventNameRecord: Record<DuelEventName, true> = {
   detachedMaterial: true,
   returnedToGraveyard: true,
   confirmed: true,
+  sentToHandConfirmed: true,
   levelChanged: true,
   counterAdded: true,
   counterRemoved: true,

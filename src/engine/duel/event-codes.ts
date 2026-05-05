@@ -64,6 +64,7 @@ const eventCodes: Partial<Record<DuelEventName, number>> = {
   returnedToGraveyard: 1203,
   turnEnded: 1210,
   confirmed: 1211,
+  sentToHandConfirmed: 1212,
   counterAdded: 0x10000,
   counterRemoved: 0x20000,
 };

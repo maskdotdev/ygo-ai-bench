@@ -232,7 +232,10 @@ function confirmedCodes(session: DuelSession, uids: string[]): string[] {
 
 function collectConfirmedEvent(session: DuelSession, uids: string[], player: PlayerId): void {
   const eventUids = uids.filter((uid) => session.state.cards.some((card) => card.uid === uid));
-  if (eventUids.length > 0) raiseDuelEventWithCode(session.state, "confirmed", 1211, undefined, { eventPlayer: player, eventValue: eventUids.length, eventUids });
+  if (eventUids.length === 0) return;
+  raiseDuelEventWithCode(session.state, "confirmed", 1211, undefined, { eventPlayer: player, eventValue: eventUids.length, eventUids });
+  const handUids = eventUids.filter((uid) => session.state.cards.some((card) => card.uid === uid && card.location === "hand"));
+  if (handUids.length > 0) raiseDuelEventWithCode(session.state, "sentToHandConfirmed", 1212, undefined, { eventPlayer: player, eventValue: handUids.length, eventUids: handUids });
 }
 
 function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDuelDeckApiHostState, edge: "top" | "bottom"): number {

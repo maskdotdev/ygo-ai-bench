@@ -61,6 +61,7 @@ export type DuelEventName =
   | "detachedMaterial"
   | "returnedToGraveyard"
   | "confirmed"
+  | "sentToHandConfirmed"
   | "levelChanged"
   | "counterAdded"
   | "counterRemoved"
