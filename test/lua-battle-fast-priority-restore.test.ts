@@ -192,6 +192,57 @@ describe("Lua battle fast priority restore", () => {
     expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
     expect(restored.host.messages).toEqual(["restored battle quick resolved"]);
   });
+
+  it("resets restored end-damage-step passes after a Lua quick effect resolves", () => {
+    const fixture = setupRestoredBattleQuick("EFFECT_FLAG_DAMAGE_STEP");
+    passBattleResponse(fixture.session, 1, "passDamage");
+    passBattleResponse(fixture.session, 0, "passDamage");
+    passBattleResponse(fixture.session, 1, "passDamage");
+    passBattleResponse(fixture.session, 0, "passDamage");
+    passBattleResponse(fixture.session, 1, "passDamage");
+    passBattleResponse(fixture.session, 0, "passDamage");
+    expect(fixture.session.state.battleWindow?.kind).toBe("afterDamageCalculation");
+    passBattleResponse(fixture.session, 1, "passDamage");
+    passBattleResponse(fixture.session, 0, "passDamage");
+    expect(fixture.session.state.battleWindow?.kind).toBe("endDamageStep");
+    passBattleResponse(fixture.session, 1, "passDamage");
+    expect(fixture.session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 } });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 } });
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    const quick = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(quick).toMatchObject({ player: 0, windowKind: "battle" });
+
+    const result = applyLuaRestoreResponse(restored, quick!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", damagePasses: [], battleWindow: { kind: "endDamageStep", responsePlayer: 0 } });
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passChain", player: 1, windowKind: "chainResponse" })]));
+    expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
+
+    const staleQuick = applyLuaRestoreResponse(restored, quick!);
+    expect(staleQuick.ok).toBe(false);
+    expect(staleQuick.error).toContain("Response is not currently legal");
+    expect(staleQuick.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleQuick.legalActions);
+
+    const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyLuaRestoreResponse(restored, pass!);
+    expect(resolved.ok, resolved.error).toBe(true);
+    expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "endDamageStep", responsePlayer: 1 } });
+    expect(resolved.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
+    expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
+    expect(restored.host.messages).toEqual(["restored battle quick resolved"]);
+  });
 });
 
 function setupRestoredBattleQuick(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_FLAG_DAMAGE_CAL") {
