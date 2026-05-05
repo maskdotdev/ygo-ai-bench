@@ -632,7 +632,7 @@ function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: st
   for (const field of ["cardTargetUids", "summonMaterialUids"] as const) {
     if (card[field] !== undefined) assertSnapshotStringArray(card[field], `${path}.${field}`);
   }
-  if (card.counters !== undefined) assertSnapshotNumberRecord(card.counters, `${path}.counters`);
+  if (card.counters !== undefined) assertSnapshotCounterRecord(card.counters, `${path}.counters`);
   if (card.assumedProperties !== undefined) assertSnapshotNumberRecord(card.assumedProperties, `${path}.assumedProperties`);
   if (card.uniqueOnField !== undefined) assertSnapshotUniqueOnField(card.uniqueOnField, `${path}.uniqueOnField`);
 }
@@ -674,6 +674,14 @@ function assertSnapshotNumberRecord(record: unknown, path: string): void {
   for (const [key, value] of Object.entries(record)) {
     if (!/^\d+$/.test(key)) throw new Error(`Malformed duel snapshot: ${path} must use numeric keys`);
     if (typeof value !== "number") throw new Error(`Malformed duel snapshot: ${path}.${key} must be a number`);
+  }
+}
+
+function assertSnapshotCounterRecord(record: unknown, path: string): void {
+  if (!isRecord(record)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+  for (const [key, value] of Object.entries(record)) {
+    if (!/^\d+$/.test(key)) throw new Error(`Malformed duel snapshot: ${path} must use numeric keys`);
+    assertSnapshotNonNegativeInteger(value, `${path}.${key}`);
   }
 }
 
