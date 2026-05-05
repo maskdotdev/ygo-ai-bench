@@ -70,7 +70,7 @@ describe("EDOPro parity battle extra attack fixtures", () => {
             locations: { monsterZone: ["100"], graveyard: ["200"] },
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open", count: 1 }],
+            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 14, windowKind: "open", count: 1 }],
             legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0" }], 1, 14)],
           },
         }),
@@ -90,7 +90,7 @@ describe("EDOPro parity battle extra attack fixtures", () => {
         locations: { monsterZone: ["100"], graveyard: ["200"] },
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
-        legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open", count: 1 }],
+        legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 14, windowKind: "open", count: 1 }],
         legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0" }], 1, 14)],
       },
     };
