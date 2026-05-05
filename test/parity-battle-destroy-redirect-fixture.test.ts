@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { passBattleGroup } from "./parity-legal-action-group-helpers.js";
+import { absentOpenAttackGroup, passBattleGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle destroy redirect fixtures", () => {
   it("redirects battle-destroyed cards to the banished zone", () => {
@@ -78,6 +78,8 @@ describe("EDOPro parity battle destroy redirect fixtures", () => {
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100"], banished: ["200"] },
             logIncludes: ["Destroyed and moved to banished"],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
+            absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
           },
         }),
       ],
@@ -95,6 +97,8 @@ describe("EDOPro parity battle destroy redirect fixtures", () => {
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100"], banished: ["200"] },
         logIncludes: ["Destroyed and moved to banished"],
+        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
+        absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
       },
     };
 
