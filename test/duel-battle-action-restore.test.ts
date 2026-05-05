@@ -91,6 +91,49 @@ describe("battle action restore", () => {
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passAttack", player: 1, windowKind: "battle" })]));
     expect(getDuelLegalActions(restored, 0)).toEqual([]);
   });
+
+  it("returns restored damage-step quick chains to the damage response player", () => {
+    const session = createBattleSession(["100", "300"], ["400", "500"]);
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnQuickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(turnQuickSource).toBeTruthy();
+    expect(opponentQuickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, damageStepQuickEffect("restore-damage-turn-quick", turnQuickSource!.uid, 0, "Restored damage turn quick resolved"));
+    registerEffect(session, chainOnlyDamageStepQuickEffect("restore-damage-opponent-chain-quick", opponentQuickSource!.uid, 1, "Restored damage opponent chain quick resolved"));
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!).ok).toBe(true);
+    expect(applyResponse(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!).state).toMatchObject({
+      waitingFor: 1,
+      windowKind: "battle",
+      battleWindow: { kind: "startDamageStep", responsePlayer: 1 },
+    });
+    expect(applyResponse(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!).ok).toBe(true);
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-damage-turn-quick");
+    expect(quick).toBeDefined();
+    expect(applyResponse(session, quick!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-damage-turn-quick": restoreDamageStepQuickEffect("Restored damage turn quick resolved"),
+      "restore-damage-opponent-chain-quick": restoreChainOnlyDamageStepQuickEffect("Restored damage opponent chain quick resolved"),
+    });
+    const result = applyResponse(restored, pass!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
+    expect(restored.state.chain).toHaveLength(0);
+    expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
+    expect(getDuelLegalActions(restored, 0)).toEqual([]);
+  });
 });
 
 function createBattleSession(playerDeck: string[], opponentDeck: string[]) {
@@ -139,6 +182,38 @@ function restoreBattleQuickEffect(detail: string): (effect: Omit<DuelEffectDefin
 function restoreChainOnlyBattleQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
   return (effect) => ({
     ...restoreBattleQuickEffect(detail)(effect),
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
+    },
+  });
+}
+
+function damageStepQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
+  return {
+    ...battleQuickEffect(id, sourceUid, controller, detail),
+    property: 0x4000,
+  };
+}
+
+function chainOnlyDamageStepQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
+  return {
+    ...damageStepQuickEffect(id, sourceUid, controller, detail),
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
+    },
+  };
+}
+
+function restoreDamageStepQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...restoreBattleQuickEffect(detail)(effect),
+    property: 0x4000,
+  });
+}
+
+function restoreChainOnlyDamageStepQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...restoreDamageStepQuickEffect(detail)(effect),
     canActivate(ctx) {
       return ctx.duel.chain.length > 0;
     },
