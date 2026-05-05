@@ -220,11 +220,7 @@ describe("Lua equip movement helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
-    expect(triggerResult.ok).toBe(true);
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored equip trigger 500/64/0");
   });
 
@@ -923,9 +919,18 @@ describe("Lua equip movement helpers", () => {
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
   const response = applyResponse(session, action);
-  expect(response.ok).toBe(true);
+  expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
 }
