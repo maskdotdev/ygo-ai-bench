@@ -94,6 +94,28 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: ended duel must not include waitingFor");
   });
 
+  it("rejects ended snapshots with battle bookkeeping before restore", () => {
+    const session = createDuel({ seed: 150, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const battleDamage = serializeDuel(session);
+    const attackCost = serializeDuel(session);
+    battleDamage.state.status = "ended";
+    battleDamage.state.winner = 0;
+    battleDamage.state.battleDamage = { 0: 0, 1: 1200 };
+    delete battleDamage.state.waitingFor;
+    attackCost.state.status = "ended";
+    attackCost.state.winner = 0;
+    attackCost.state.attackCostPaid = 1;
+    delete attackCost.state.waitingFor;
+
+    expect(() => restoreDuel(battleDamage, createCardReader(cards))).toThrow("Malformed duel snapshot: ended duel must not include battle damage");
+    expect(() => restoreDuel(attackCost, createCardReader(cards))).toThrow("Malformed duel snapshot: ended duel must not include attackCostPaid");
+  });
+
   it("rejects malformed optional prompt snapshots before restore", () => {
     const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
