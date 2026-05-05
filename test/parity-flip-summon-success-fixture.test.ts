@@ -1,0 +1,114 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+
+describe("EDOPro parity Flip Summon success fixtures", () => {
+  it("opens Flip Summon actions and resolves success triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Flip Summon Candidate", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "200", name: "Flip Summon Success Watcher", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "flip summon success trigger fixture",
+      options: { seed: 246, startingHandSize: 2 },
+      decks: {
+        0: { main: ["100", "200"] },
+        1: { main: [] },
+      },
+      setup: {
+        moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceDownDefense" }],
+        effects: [
+          {
+            id: "fixture-flip-success-watcher",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "flipSummoned",
+            range: ["hand"],
+            logMessage: "Fixture flip summon success watcher resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("flipSummon", 0, { code: "100", location: "monsterZone" }), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro exposes eligible Flip Summons as Main Phase legal actions before committing the summon attempt",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            phase: "main1",
+            legalActionCounts: { 0: 6, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [{ type: "flipSummon", player: 0, code: "100", location: "monsterZone", windowId: 0, windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "normalSummon", player: 0, code: "200", location: "hand", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "setMonster", player: 0, code: "200", location: "hand", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "flipSummon", player: 0, code: "100", location: "monsterZone", windowId: 0, windowKind: "open", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Turn",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+                ],
+              },
+            ],
+            locations: { monsterZone: ["100"], hand: ["200"] },
+            cards: [{ uid: "p0-deck-100-0", code: "100", location: "monsterZone", position: "faceDownDefense" }],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro queues Flip Summon success triggers after an un-negated Flip Summon turns the monster face-up",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "fixture-flip-success-watcher", eventName: "flipSummoned", eventCardUid: "p0-deck-100-0" }],
+            locations: { monsterZone: ["100"], hand: ["200"] },
+            cards: [{ uid: "p0-deck-100-0", code: "100", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-flip-success-watcher" }), {
+          snapshotRestore: true,
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the Flip Summon success trigger after the flipped monster is face-up on the field",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            logIncludes: ["Fixture flip summon success watcher resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final fixture state keeps the Flip Summoned monster face-up after resolving success triggers",
+        phase: "main1",
+        windowId: 2,
+        pendingTriggers: [],
+        chain: [],
+        locations: { monsterZone: ["100"], hand: ["200"] },
+        cards: [{ uid: "p0-deck-100-0", code: "100", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+        logIncludes: ["Fixture flip summon success watcher resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
