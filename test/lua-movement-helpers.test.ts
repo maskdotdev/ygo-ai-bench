@@ -5,6 +5,7 @@ import {
   createDuel,
   detachDuelOverlayMaterials,
   destroyDuelCard,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   serializeDuel,
@@ -325,7 +326,9 @@ describe("Lua movement helpers", () => {
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1015, eventCardUid: leaving!.uid });
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored left field 200/16");
   });
 
@@ -404,7 +407,9 @@ describe("Lua movement helpers", () => {
     expect(restored.session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1014, eventCardUid: target!.uid }));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored to grave 200/true");
   });
 
@@ -478,7 +483,9 @@ describe("Lua movement helpers", () => {
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1031, eventCardUid: leaving!.uid });
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
+    expect(triggerResult.ok).toBe(true);
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("restored left grave 200/true/true");
   });
 
