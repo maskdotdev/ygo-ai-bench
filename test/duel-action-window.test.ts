@@ -297,6 +297,7 @@ describe("duel action windows", () => {
 
     expect(staleReplay.ok).toBe(false);
     expect(staleReplay.error).toContain("Response is not currently legal");
+    expect(staleReplay.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(restored.state.actionWindowId).toBe(6);
   });
 
