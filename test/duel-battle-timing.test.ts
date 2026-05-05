@@ -97,6 +97,9 @@ describe("duel battle timing", () => {
     const replayActions = getDuelLegalActions(restored, 0);
     expect(replayActions.some((action) => action.type === "cancelAttack" && action.attackerUid === attacker!.uid)).toBe(true);
     expect(replayActions.some((action) => action.type === "replayAttack" && action.attackerUid === attacker!.uid && action.targetUid === undefined)).toBe(true);
+    expect(battleWindowGroups(restored, 0)).toEqual([
+      { label: "Attacks", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["cancelAttack", "replayAttack"] },
+    ]);
 
     const cancelResult = applyResponse(restored, replayActions.find((action) => action.type === "cancelAttack")!);
     expect(cancelResult.ok).toBe(true);
