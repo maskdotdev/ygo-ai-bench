@@ -151,6 +151,7 @@ function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaD
       : type === "setMonster" && tributeUids.length > 0
       ? setLuaMonsterWithTributes(session, target, tributeUids)
       : { ok: false };
+  if (result.ok && hostState.activeContext) hostState.activeOperationMoved = true;
   setOperatedUids(hostState, result.ok ? [target.uid] : []);
   lua.lua_pushinteger(L, result.ok ? 1 : 0);
   return 1;
@@ -234,6 +235,7 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
     else if (target.data.ritualMaterials?.length) ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids);
     else ritualSummonSelectedMaterials(session, hostState, target, materialUids);
+    if (hostState.activeContext) hostState.activeOperationMoved = true;
     setOperatedUids(hostState, [target.uid]);
     lua.lua_pushinteger(L, 1);
   } catch {
@@ -362,6 +364,7 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
     const summoned = specialSummonDuelCard(session.state, uid, targetPlayer);
     if (requestedPosition) applySummonPosition(summoned, requestedPosition);
     applyMonsterZoneMask(session, summoned, targetPlayer, zoneMask);
+    if (hostState.activeContext) hostState.activeOperationMoved = true;
     hostState.pendingSpecialSummonUids = [...(hostState.pendingSpecialSummonUids ?? []), uid];
     setOperatedUids(hostState, hostState.pendingSpecialSummonUids);
     lua.lua_pushboolean(L, true);
