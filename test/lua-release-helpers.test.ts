@@ -156,6 +156,90 @@ describe("Lua release helpers", () => {
     expect(host.messages).toContain("release trigger resolved 200");
   });
 
+  it("makes Lua optional when release triggers miss timing after later event boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Release Boundary Starter", kind: "monster" },
+      { code: "200", name: "Release Boundary Target", kind: "monster" },
+      { code: "300", name: "When Release Watcher", kind: "monster" },
+      { code: "400", name: "If Release Watcher", kind: "monster" },
+      { code: "500", name: "Damage Boundary Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 191, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const starter = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(starter).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, starter!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local damage_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local release=Effect.CreateEffect(starter)
+      release:SetType(EFFECT_TYPE_IGNITION)
+      release:SetRange(LOCATION_MZONE)
+      release:SetOperation(function(e,tp)
+        Duel.Release(target, REASON_COST)
+        Duel.Damage(1, 100, REASON_EFFECT)
+      end)
+      starter:RegisterEffect(release)
+
+      local when_effect=Effect.CreateEffect(when_watcher)
+      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      when_effect:SetCode(EVENT_RELEASE)
+      when_effect:SetRange(LOCATION_HAND)
+      when_effect:SetOperation(function(e,tp)
+        Debug.Message("when release resolved")
+      end)
+      when_watcher:RegisterEffect(when_effect)
+
+      local if_effect=Effect.CreateEffect(if_watcher)
+      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      if_effect:SetCode(EVENT_RELEASE)
+      if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      if_effect:SetRange(LOCATION_HAND)
+      if_effect:SetOperation(function(e,tp)
+        Debug.Message("if release resolved")
+      end)
+      if_watcher:RegisterEffect(if_effect)
+
+      local damage_effect=Effect.CreateEffect(damage_watcher)
+      damage_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      damage_effect:SetCode(EVENT_DAMAGE)
+      damage_effect:SetRange(LOCATION_HAND)
+      damage_effect:SetOperation(function(e,tp)
+        Debug.Message("damage boundary resolved")
+      end)
+      damage_watcher:RegisterEffect(damage_effect)
+      `,
+      "release-later-boundary-missed-timing.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === starter!.uid);
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1017");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1017", "lua-4-1111"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "released", eventCode: 1017 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
+    );
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
+  });
+
   it("lets Lua scripts use self tribute cost aliases", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Self Tribute Cost", kind: "monster" }];
     const session = createDuel({ seed: 189, startingHandSize: 1, cardReader: createCardReader(cards) });
