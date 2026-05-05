@@ -5,12 +5,14 @@ import {
   getLegalActions as getDuelLegalActions,
   loadDecks,
   moveDuelCard,
+  queryPublicState,
   serializeDuel,
   startDuel,
 } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua effect trigger metadata helpers", () => {
   it("maps Lua trigger delay metadata to trigger timing", () => {
@@ -62,57 +64,65 @@ describe("Lua effect trigger metadata helpers", () => {
     });
     startDuel(session);
 
+    const scriptSource = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          local s,id=GetID()
+          function s.initial_effect(c)
+            local starter_effect=Effect.CreateEffect(c)
+            starter_effect:SetType(EFFECT_TYPE_IGNITION)
+            starter_effect:SetRange(LOCATION_HAND)
+            starter_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              local body=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+              local opponent_body=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, 0, LOCATION_HAND, 1, 1, nil):GetFirst()
+              Duel.SendtoGrave(body, REASON_EFFECT)
+              Duel.SendtoGrave(opponent_body, REASON_EFFECT)
+              Debug.Message("lua multistep movement resolved")
+            end)
+            c:RegisterEffect(starter_effect)
+          end
+          `;
+        }
+        if (name === "c500.lua") {
+          return `
+          local s,id=GetID()
+          function s.initial_effect(c)
+            local when_effect=Effect.CreateEffect(c)
+            when_effect:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
+            when_effect:SetCode(EVENT_TO_GRAVE)
+            when_effect:SetRange(LOCATION_GRAVE)
+            when_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              if e:GetHandler():GetControler()==0 then
+                Debug.Message("lua when optional resolved")
+              else
+                Debug.Message("lua opponent when optional resolved")
+              end
+            end)
+            c:RegisterEffect(when_effect)
+
+            local if_effect=Effect.CreateEffect(c)
+            if_effect:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
+            if_effect:SetCode(EVENT_TO_GRAVE)
+            if_effect:SetProperty(EFFECT_FLAG_DELAY)
+            if_effect:SetRange(LOCATION_GRAVE)
+            if_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              if e:GetHandler():GetControler()==0 then
+                Debug.Message("lua if optional resolved")
+              else
+                Debug.Message("lua opponent if optional resolved")
+              end
+            end)
+            c:RegisterEffect(if_effect)
+          end
+          `;
+        }
+      },
+    };
     const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
-      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local body=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local opponent_body=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, 0, LOCATION_HAND, 1, 1, nil):GetFirst()
-
-      local starter_effect=Effect.CreateEffect(starter)
-      starter_effect:SetType(EFFECT_TYPE_IGNITION)
-      starter_effect:SetRange(LOCATION_HAND)
-      starter_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
-        Duel.SendtoGrave(body, REASON_EFFECT)
-        Duel.SendtoGrave(opponent_body, REASON_EFFECT)
-        Debug.Message("lua multistep movement resolved")
-      end)
-      starter:RegisterEffect(starter_effect)
-
-      local when_effect=Effect.CreateEffect(body)
-      when_effect:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
-      when_effect:SetCode(EVENT_TO_GRAVE)
-      when_effect:SetRange(LOCATION_GRAVE)
-      when_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("lua when optional resolved") end)
-      body:RegisterEffect(when_effect)
-
-      local if_effect=Effect.CreateEffect(body)
-      if_effect:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
-      if_effect:SetCode(EVENT_TO_GRAVE)
-      if_effect:SetProperty(EFFECT_FLAG_DELAY)
-      if_effect:SetRange(LOCATION_GRAVE)
-      if_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("lua if optional resolved") end)
-      body:RegisterEffect(if_effect)
-
-      local opponent_when_effect=Effect.CreateEffect(opponent_body)
-      opponent_when_effect:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
-      opponent_when_effect:SetCode(EVENT_TO_GRAVE)
-      opponent_when_effect:SetRange(LOCATION_GRAVE)
-      opponent_when_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("lua opponent when optional resolved") end)
-      opponent_body:RegisterEffect(opponent_when_effect)
-
-      local opponent_if_effect=Effect.CreateEffect(opponent_body)
-      opponent_if_effect:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
-      opponent_if_effect:SetCode(EVENT_TO_GRAVE)
-      opponent_if_effect:SetProperty(EFFECT_FLAG_DELAY)
-      opponent_if_effect:SetRange(LOCATION_GRAVE)
-      opponent_if_effect:SetOperation(function(e,tp,eg,ep,ev,re,r,rp) Debug.Message("lua opponent if optional resolved") end)
-      opponent_body:RegisterEffect(opponent_if_effect)
-      `,
-      "lua-missed-timing-movement.lua",
-    );
-
-    expect(result.ok, result.error).toBe(true);
+    expect(host.loadCardScript(100, scriptSource).ok).toBe(true);
+    expect(host.loadCardScript(500, scriptSource).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(8);
     const starterAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect");
     expect(starterAction).toBeTruthy();
     const activation = applyResponse(session, starterAction!);
@@ -126,24 +136,31 @@ describe("Lua effect trigger metadata helpers", () => {
     expect(ifTrigger?.uid).toBe(session.state.cards.find((card) => card.controller === 0 && card.location === "graveyard" && card.code === "500")?.uid);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(1);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
-    expect(applyResponse(session, ifTrigger!).ok).toBe(true);
-    expect(host.messages).toContain("lua if optional resolved");
-    const opponentTriggers = getDuelLegalActions(session, 1).filter((action) => action.type === "activateTrigger");
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), scriptSource, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
+    expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(1);
+    expect(getLuaRestoreLegalActions(restored, 1)).toHaveLength(0);
+
+    expect(applyLuaRestoreResponse(restored, ifTrigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("lua if optional resolved");
+    const opponentTriggers = getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger");
     expect(opponentTriggers.map((action) => action.uid)).toEqual([
-      session.state.cards.find((card) => card.controller === 1 && card.location === "graveyard" && card.code === "500")?.uid,
-      session.state.cards.find((card) => card.controller === 1 && card.location === "graveyard" && card.code === "500")?.uid,
+      restored.session.state.cards.find((card) => card.controller === 1 && card.location === "graveyard" && card.code === "500")?.uid,
+      restored.session.state.cards.find((card) => card.controller === 1 && card.location === "graveyard" && card.code === "500")?.uid,
     ]);
     const opponentWhenTrigger = opponentTriggers.find((action) => {
-      const effect = session.state.effects.find((candidate) => candidate.id === action.effectId && candidate.sourceUid === action.uid);
+      const effect = restored.session.state.effects.find((candidate) => candidate.id === action.effectId && candidate.sourceUid === action.uid);
       return effect?.triggerTiming === "when";
     });
     expect(opponentWhenTrigger).toBeDefined();
-    expect(applyResponse(session, opponentWhenTrigger!).ok).toBe(true);
-    const opponentIfTrigger = getDuelLegalActions(session, 1).find((action) => action.type === "activateTrigger");
-    expect(applyResponse(session, opponentIfTrigger!).ok).toBe(true);
-    expect(host.messages).toContain("lua opponent when optional resolved");
-    expect(host.messages).toContain("lua opponent if optional resolved");
-    expect(host.messages).not.toContain("lua when optional resolved");
+    expect(applyLuaRestoreResponse(restored, opponentWhenTrigger!).ok).toBe(true);
+    const opponentIfTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger");
+    expect(applyLuaRestoreResponse(restored, opponentIfTrigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("lua opponent when optional resolved");
+    expect(restored.host.messages).toContain("lua opponent if optional resolved");
+    expect(restored.host.messages).not.toContain("lua when optional resolved");
   });
 
   it("keeps mandatory Lua triggers through non-terminal movement timing", () => {
