@@ -296,7 +296,9 @@ describe("Lua stale chain responses", () => {
 
     const currentPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(currentPass).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, currentPass!).ok).toBe(true);
+    const currentPassResult = applyLuaRestoreResponse(restored, currentPass!);
+    expect(currentPassResult.ok).toBe(true);
+    expect(currentPassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, currentPassResult.state.waitingFor!));
     expect(restored.host.messages).toEqual(["restored quick stale pass response resolved", "restored quick stale pass source resolved"]);
     expect(restored.session.state.chain).toHaveLength(0);
   });

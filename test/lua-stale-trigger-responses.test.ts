@@ -162,7 +162,9 @@ describe("Lua stale trigger responses", () => {
     const restoredDecline = getDuelLegalActions(restored.session, 0).find((action) => action.type === "declineTrigger");
     expect(restoredDecline).toBeDefined();
     expect(restoredDecline).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
-    expect(applyLuaRestoreResponse(restored, restoredDecline!).ok).toBe(true);
+    const declineResult = applyLuaRestoreResponse(restored, restoredDecline!);
+    expect(declineResult.ok).toBe(true);
+    expect(declineResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const replay = applyLuaRestoreResponse(restored, staleDecline!);
 
     expect(replay.ok).toBe(false);
