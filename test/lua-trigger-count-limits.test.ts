@@ -174,7 +174,9 @@ describe("Lua trigger count limits", () => {
     expect(fixture.session.state.pendingTriggers).toHaveLength(1);
     expect(getDuelLegalActions(fixture.session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(0);
     expect(applyResponse(fixture.session, staleSecondTrigger!).ok).toBe(false);
-    expect(getDuelLegalActions(fixture.session, 0).filter((action) => action.type === "declineTrigger")).toHaveLength(1);
+    const declineSecond = getDuelLegalActions(fixture.session, 0).find((action) => action.type === "declineTrigger");
+    expect(declineSecond).toBeDefined();
+    expect(applyResponse(fixture.session, declineSecond!).ok).toBe(true);
     expect(fixture.host.messages).toContain(fixture.messages[0]);
     expect(fixture.host.messages).not.toContain(fixture.messages[1]);
   });

@@ -38,6 +38,8 @@ import {
   activateDuelEffect,
   activateDuelPendingTrigger,
   declineDuelPendingTrigger,
+  finishDuelPendingTriggerSelection,
+  shouldContinueTriggerSelection,
   specialSummonDuelByProcedure,
   type DuelActivationHandlers,
 } from "#duel/effect-activation.js";
@@ -240,6 +242,7 @@ const responseHandlers: DuelResponseHandlers = {
   },
   declineTrigger(session, response) {
     declineDuelPendingTrigger(session, response.player, response.triggerId, response.triggerBucket);
+    finishDuelPendingTriggerSelection(session, activationHandlers);
     continueAttackResponseWindow(session.state, battleContinuationHandlers);
   },
   flipSummon: flipSummonDuelCard,
@@ -278,14 +281,14 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...getPromptResponseActions(state.prompt, player));
     return stampDuelActions(actions, state.actionWindowId, "prompt");
   }
+  if (shouldContinueTriggerSelection(state)) {
+    actions.push(...getPendingTriggerActions(state, player));
+    return stampDuelActions(actions, state.actionWindowId, "triggerBucket");
+  }
   if (state.chain.length) {
     if (!chainLinksResolvable(state)) return stampDuelActions(actions, state.actionWindowId, "chainResponse");
     actions.push(...getChainResponseActions(state, player));
     return stampDuelActions(actions, state.actionWindowId, "chainResponse");
-  }
-  if (state.pendingTriggers.length) {
-    actions.push(...getPendingTriggerActions(state, player));
-    return stampDuelActions(actions, state.actionWindowId, "triggerBucket");
   }
   if (state.pendingBattle) {
     actions.push(...battleWindowActions(state, player, quickEffectActions, (duelState, actionPlayer) => coreReplayAttackActions(duelState, actionPlayer, coreBattleHandlers)));

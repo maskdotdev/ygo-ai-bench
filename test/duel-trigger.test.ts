@@ -188,19 +188,24 @@ describe("duel triggers", () => {
 
     expect(opened.ok).toBe(true);
     expect(opened.state.chain).toHaveLength(1);
-    expect(opened.state.waitingFor).toBe(1);
+    expect(opened.state.waitingFor).toBe(0);
     expect(opened.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-held-trigger"]);
-    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
-    expect(getDuelLegalActions(session, 1).map((action) => action.type)).toEqual(["activateEffect", "passChain"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-held-trigger"]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
+
+    const secondTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "second-held-trigger");
+    expect(secondTrigger).toBeTruthy();
+    const openedChain = applyResponse(session, secondTrigger!);
+    expect(openedChain.ok).toBe(true);
+    expect(openedChain.state.pendingTriggers).toHaveLength(0);
+    expect(openedChain.state.waitingFor).toBe(1);
 
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeTruthy();
     const resolved = applyResponse(session, pass!);
-
     expect(resolved.ok).toBe(true);
     expect(resolved.state.chain).toHaveLength(0);
-    expect(resolved.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-held-trigger"]);
-    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-held-trigger"]);
+    expect(resolved.state.pendingTriggers).toHaveLength(0);
   });
 
   it("offers the trigger controller quick responses when the opponent cannot chain", () => {
@@ -406,7 +411,8 @@ describe("duel triggers", () => {
     const secondResult = applyResponse(session, second!);
     expect(secondResult.ok).toBe(true);
     expect(secondResult.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["first-trigger"]);
-    expect(secondResult.state.cards.find((card) => card.uid === secondSource!.uid)?.location).toBe("graveyard");
+    expect(secondResult.state.chain.map((link) => link.effectId)).toEqual(["second-trigger"]);
+    expect(secondResult.state.cards.find((card) => card.uid === secondSource!.uid)?.location).toBe("hand");
     expect(secondResult.state.cards.find((card) => card.uid === firstSource!.uid)?.location).toBe("hand");
   });
 
@@ -602,7 +608,9 @@ describe("duel triggers", () => {
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-shared-count-trigger"]);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(0);
     expect(applyResponse(session, staleSecondTrigger!).ok).toBe(false);
-    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger" && action.effectId === "second-shared-count-trigger")).toHaveLength(1);
+    const declineSecond = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === "second-shared-count-trigger");
+    expect(declineSecond).toBeTruthy();
+    expect(applyResponse(session, declineSecond!).ok).toBe(true);
     expect(session.state.log.some((entry) => entry.detail.includes("First shared count saw"))).toBe(true);
     expect(session.state.log.some((entry) => entry.detail.includes("Second shared count saw"))).toBe(false);
   });

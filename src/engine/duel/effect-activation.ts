@@ -167,6 +167,10 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
     markEffectUsed(session.state, effect);
     pruneSpentMandatoryPendingTriggers(session.state);
+    if (shouldContinueTriggerSelection(session.state)) {
+      setWaitingForPendingTriggerBucket(session.state);
+      return;
+    }
     const responsePlayer = otherPlayer(trigger.player);
     const chainPlayer = nextChainResponsePlayer(session.state, trigger.player, responsePlayer, handlers);
     if (chainPlayer !== undefined) {
@@ -185,6 +189,29 @@ export function declineDuelPendingTrigger(session: DuelSession, player: PlayerId
   const source = findCard(session.state, trigger.sourceUid);
   pushDuelLog(session.state, "declineTrigger", player, source?.name, trigger.effectId);
   setWaitingForPendingTriggerBucket(session.state);
+}
+
+export function finishDuelPendingTriggerSelection(session: DuelSession, handlers: DuelActivationHandlers): void {
+  const lastLink = session.state.chain.at(-1);
+  if (!lastLink || shouldContinueTriggerSelection(session.state)) return;
+  const responsePlayer = otherPlayer(lastLink.player);
+  const chainPlayer = nextChainResponsePlayer(session.state, lastLink.player, responsePlayer, handlers);
+  if (chainPlayer !== undefined) {
+    session.state.waitingFor = chainPlayer;
+    return;
+  }
+  handlers.resolveChain(session.state);
+}
+
+export function shouldContinueTriggerSelection(state: DuelState): boolean {
+  if (state.pendingTriggers.length === 0) return false;
+  const firstLink = state.chain[0];
+  if (!firstLink) return true;
+  return state.pendingTriggers.every((trigger) => (
+    trigger.eventName === firstLink.eventName &&
+    trigger.eventCode === firstLink.eventCode &&
+    trigger.eventCardUid === firstLink.eventCardUid
+  ));
 }
 
 function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: string, triggerBucket: TriggerBucket): DuelState["pendingTriggers"][number] {

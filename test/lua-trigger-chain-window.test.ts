@@ -139,20 +139,22 @@ describe("Lua trigger chain windows", () => {
 
     expect(opened.ok).toBe(true);
     expect(opened.state.chain).toHaveLength(1);
-    expect(opened.state.waitingFor).toBe(1);
+    expect(opened.state.waitingFor).toBe(0);
     expect(opened.state.pendingTriggers.map((trigger) => opened.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12300"]);
-    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
-    expect(getDuelLegalActions(session, 1).map((action) => action.type)).toEqual(["activateEffect", "passChain"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([opened.state.pendingTriggers[0]?.effectId]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
 
+    const secondTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === opened.state.pendingTriggers[0]?.effectId);
+    expect(secondTrigger).toBeDefined();
+    expect(applyResponse(session, secondTrigger!).ok).toBe(true);
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     const resolved = applyResponse(session, pass!);
 
     expect(resolved.ok).toBe(true);
     expect(resolved.state.chain).toHaveLength(0);
-    expect(resolved.state.pendingTriggers.map((trigger) => resolved.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12300"]);
-    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([resolved.state.pendingTriggers[0]?.effectId]);
-    expect(host.messages).toEqual(["lua first held trigger resolved"]);
+    expect(resolved.state.pendingTriggers).toHaveLength(0);
+    expect(host.messages).toEqual(["lua second held trigger resolved", "lua first held trigger resolved"]);
   });
 
   it("keeps later optional Lua trigger bucket activations behind the open chain window", () => {
@@ -227,21 +229,22 @@ describe("Lua trigger chain windows", () => {
 
     expect(opened.ok).toBe(true);
     expect(opened.state.chain).toHaveLength(1);
-    expect(opened.state.waitingFor).toBe(1);
+    expect(opened.state.waitingFor).toBe(0);
     expect(opened.state.pendingTriggers.map((trigger) => opened.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["13300"]);
-    expect(getDuelLegalActions(session, 0)).toHaveLength(0);
-    expect(getDuelLegalActions(session, 1).map((action) => action.type)).toEqual(["activateEffect", "passChain"]);
+    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([opened.state.pendingTriggers[0]?.effectId]);
+    expect(getDuelLegalActions(session, 1)).toHaveLength(0);
 
+    const secondActivation = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === opened.state.pendingTriggers[0]?.effectId);
+    expect(secondActivation).toBeDefined();
+    expect(applyResponse(session, secondActivation!).ok).toBe(true);
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     const resolved = applyResponse(session, pass!);
 
     expect(resolved.ok).toBe(true);
     expect(resolved.state.chain).toHaveLength(0);
-    expect(resolved.state.pendingTriggers.map((trigger) => resolved.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["13300"]);
-    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([resolved.state.pendingTriggers[0]?.effectId]);
-    expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([resolved.state.pendingTriggers[0]?.effectId]);
-    expect(host.messages).toEqual(["lua first optional window resolved"]);
+    expect(resolved.state.pendingTriggers).toHaveLength(0);
+    expect(host.messages).toEqual(["lua second optional window resolved", "lua first optional window resolved"]);
   });
 
   it("declines optional Lua trigger buckets without exposing later player buckets early", () => {

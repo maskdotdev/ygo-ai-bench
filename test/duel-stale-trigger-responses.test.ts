@@ -233,6 +233,9 @@ describe("duel stale trigger responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-stale-first-trigger"]);
+    const declineFirst = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-stale-first-trigger");
+    expect(declineFirst).toBeTruthy();
+    expect(applyResponse(restored, declineFirst!).ok).toBe(true);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale second trigger resolved")).toBe(true);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale first trigger resolved")).toBe(false);
   });

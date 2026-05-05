@@ -555,6 +555,9 @@ describe("Node upstream snapshot restore", () => {
     expect(session.state.usedCountKeys).toEqual(["turn-1:0:code-1365"]);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["lua-2-1102"]);
     expect(getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "activateTrigger")).toEqual([]);
+    const declineSecond = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declineTrigger" && candidate.effectId === "lua-2-1102");
+    expect(declineSecond).toBeDefined();
+    expect(applyResponse(session, declineSecond!).ok).toBe(true);
     expect(host.messages).toContain("restored pending shared first");
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, createCardReader(cards));

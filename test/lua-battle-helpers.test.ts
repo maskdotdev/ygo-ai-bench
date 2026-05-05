@@ -570,7 +570,7 @@ describe("Lua battle helpers", () => {
     const secondTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(secondTrigger).toBeDefined();
     expect(applyResponse(session, secondTrigger!).ok).toBe(true);
-    expect(host.messages).toEqual(["aux bdocon attacker resolved", "aux bdogcon attacker resolved"]);
+    expect(host.messages).toEqual(["aux bdogcon attacker resolved", "aux bdocon attacker resolved"]);
   });
 
   it("lets Lua scripts inspect each player's battle monster", () => {
