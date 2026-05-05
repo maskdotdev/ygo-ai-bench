@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, destroyDuelCard, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { cards } from "./full-duel-engine-fixtures.js";
@@ -107,7 +107,16 @@ describe("duel destruction", () => {
     expect(session.state.eventHistory.map((event) => event.eventName)).toContain("destroyed");
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("lua destroy resolved 100");
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
