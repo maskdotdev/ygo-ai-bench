@@ -63,9 +63,12 @@ describe("Lua open fast priority restore", () => {
     loadDecks(session, { 0: { main: ["20100", "20200"] }, 1: { main: ["20300", "20400"] } });
     startDuel(session);
     const host = createLuaScriptHost(session);
-    expect(host.loadCardScript(20100, source).ok).toBe(true);
-    expect(host.loadCardScript(20200, source).ok).toBe(true);
-    expect(host.loadCardScript(20300, source).ok).toBe(true);
+    const starterScript = host.loadCardScript(20100, source);
+    const turnQuickScript = host.loadCardScript(20200, source);
+    const opponentQuickScript = host.loadCardScript(20300, source);
+    expect(starterScript.ok, starterScript.error).toBe(true);
+    expect(turnQuickScript.ok, turnQuickScript.error).toBe(true);
+    expect(opponentQuickScript.ok, opponentQuickScript.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
 
     const starter = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("20100"));
@@ -89,6 +92,13 @@ describe("Lua open fast priority restore", () => {
     expect(turnQuick).toMatchObject({ player: 0, windowKind: "chainResponse" });
     const turnChained = applyLuaRestoreAndAssert(restored, turnQuick!);
     expect(turnChained.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    const staleTurnQuick = applyLuaRestoreResponse(restored, turnQuick!);
+    expect(staleTurnQuick.ok).toBe(false);
+    expect(staleTurnQuick.error).toContain("Response is not currently legal");
+    expect(staleTurnQuick.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleTurnQuick.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleTurnQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleTurnQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTurnQuick.legalActions);
     expect(host.messages).toEqual([]);
     expect(restored.host.messages).toEqual(["live turn chain fast resolved", "live opponent chain fast resolved", "live open fast starter resolved"]);
   });
