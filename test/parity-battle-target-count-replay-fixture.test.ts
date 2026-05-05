@@ -124,6 +124,7 @@ describe("EDOPro parity battle target-count replay fixtures", () => {
           before: {
             source: "edopro",
             note: "EDOPro exposes each current legal target as a replay attack choice",
+            waitingFor: 0,
             pendingBattle: true,
             windowId: 16,
             windowKind: "battle",

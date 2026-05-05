@@ -103,6 +103,7 @@ describe("EDOPro parity battle direct replay fixtures", () => {
           before: {
             source: "edopro",
             note: "EDOPro exposes no-target replayAttack as the direct replay choice",
+            waitingFor: 0,
             pendingBattle: true,
             windowId: 16,
             windowKind: "battle",

@@ -155,6 +155,7 @@ describe("EDOPro parity battle replay fixtures", () => {
           before: {
             source: "edopro",
             note: "EDOPro exposes cancel attack as a legal replay response for the turn player",
+            waitingFor: 0,
             pendingBattle: true,
             windowId: 16,
             windowKind: "battle",

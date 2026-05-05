@@ -107,6 +107,10 @@ describe("parity fixture metadata", () => {
     expect(missingBattleWindowCoverage()).toEqual([]);
   });
 
+  it("requires battle-window expectations to pin the matching waiting player", () => {
+    expect(mismatchedBattleWindowWaitingPlayers()).toEqual([]);
+  });
+
   it("requires non-empty pending trigger expectations to pin trigger bucket summaries", () => {
     expect(missingPendingTriggerBucketCoverage()).toEqual([]);
   });
@@ -338,6 +342,15 @@ describe("parity fixture metadata", () => {
       ]),
     ).toEqual([]);
     expect(missingBattleWindowCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  pendingBattle: false,", "  battleWindow: null,", ...lines.slice(4)])).toEqual([]);
+    const battleWindowMismatch = [...lines.slice(0, 2), '  windowKind: "battle",', "  waitingFor: 1,", '  battleWindow: { kind: "startDamageStep", responsePlayer: 0 },', ...lines.slice(2)];
+    const battleWindowMatch = [...lines.slice(0, 2), '  windowKind: "battle",', "  waitingFor: 1,", '  battleWindow: { kind: "startDamageStep", responsePlayer: 1 },', ...lines.slice(2)];
+    expect(mismatchedBattleWindowWaitingPlayersInLines("fixture.ts", battleWindowMismatch)).toEqual(["fixture.ts:2"]);
+    expect(mismatchedBattleWindowWaitingPlayersInLines("fixture.ts", battleWindowMatch)).toEqual([]);
+    expect(mismatchedBattleWindowWaitingPlayersInLines("fixture.ts", [...lines.slice(0, 2), '  windowKind: "battle",', '  battleWindow: { kind: "startDamageStep", responsePlayer: 1 },', ...lines.slice(2)])).toEqual([
+      "fixture.ts:2",
+    ]);
+    const chainResponseWithBattleState = [...lines.slice(0, 2), '  windowKind: "chainResponse",', "  waitingFor: 1,", '  battleWindow: { kind: "attackNegationResponse", responsePlayer: 0 },', ...lines.slice(2)];
+    expect(mismatchedBattleWindowWaitingPlayersInLines("fixture.ts", chainResponseWithBattleState)).toEqual([]);
     expect(missingPendingTriggerBucketCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  pendingTriggers: [{ player: 0, effectId: 'trigger' }],", ...lines.slice(4)])).toEqual([
       "fixture.ts:2",
     ]);
@@ -516,6 +529,10 @@ function missingTimingExpectationWindowIds(): string[] {
 
 function missingBattleWindowCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingBattleWindowCoverageInLines(file, readFixtureLines(file)));
+}
+
+function mismatchedBattleWindowWaitingPlayers(): string[] {
+  return parityFixtureFiles().flatMap((file) => mismatchedBattleWindowWaitingPlayersInLines(file, readFixtureLines(file)));
 }
 
 function missingPendingTriggerBucketCoverage(): string[] {
@@ -716,6 +733,25 @@ function missingBattleWindowCoverageInLines(file: string, lines: string[]): stri
     if (!/\bbattleWindow:/.test(block)) missingWindows.push(`${file}:${index + 1}`);
   });
   return missingWindows;
+}
+
+function mismatchedBattleWindowWaitingPlayersInLines(file: string, lines: string[]): string[] {
+  const mismatches: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    const header = expectationHeaderText(block);
+    if (!/\bwindowKind:\s*["']battle["']/.test(header)) return;
+    const responsePlayer = block.match(/\bbattleWindow:\s*\{[^{}]*\bresponsePlayer:\s*([01])/)?.[1];
+    if (responsePlayer === undefined) return;
+    const waitingFor = block.match(/\bwaitingFor:\s*([01])/)?.[1];
+    if (waitingFor !== responsePlayer) mismatches.push(`${file}:${index + 1}`);
+  });
+  return mismatches;
+}
+
+function expectationHeaderText(block: string): string {
+  return block.split(/\n\s*(legalActions|absentLegalActions|legalActionGroups|absentLegalActionGroups):/)[0] ?? block;
 }
 
 function missingPendingTriggerBucketCoverageInLines(file: string, lines: string[]): string[] {
