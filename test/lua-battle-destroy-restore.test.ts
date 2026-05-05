@@ -61,8 +61,8 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   const host = createLuaScriptHost(session);
   expect(host.loadCardScript(300, source).ok).toBe(true);
   expect(host.registerInitialEffects()).toBe(1);
-  expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!).ok).toBe(true);
-  expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!).ok).toBe(true);
+  applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+  applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!);
   passBattleResponses(session);
 
   expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
@@ -79,11 +79,7 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
 
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
-  const triggerResult = applyLuaRestoreResponse(restored, trigger!);
-  expect(triggerResult.ok).toBe(true);
-  expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-  expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-  expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+  applyLuaRestoreAndAssert(restored, trigger!);
   return { messages: restored.host.messages };
 }
 
@@ -93,7 +89,24 @@ function passBattleResponses(session: ReturnType<typeof createDuel>): void {
     const passType = session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === passType);
     expect(pass).toBeDefined();
-    const result = applyResponse(session, pass!);
-    expect(result.ok, result.error).toBe(true);
+    applyAndAssert(session, pass!);
   }
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const result = applyResponse(session, action);
+  expect(result.ok, result.error).toBe(true);
+  expect(result.legalActions).toEqual(getDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  return result;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const result = applyLuaRestoreResponse(restored, action);
+  expect(result.ok, result.error).toBe(true);
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  return result;
 }
