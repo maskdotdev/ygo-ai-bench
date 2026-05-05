@@ -75,10 +75,11 @@ describe("Lua field and query helpers", () => {
       { code: "100", name: "Hand Defender", kind: "monster", typeFlags: 0x21, defense: 1200 },
       { code: "200", name: "Extra Link", kind: "extra", typeFlags: 0x4000021, level: 2, defense: 0 },
       { code: "300", name: "Defense Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "400", name: "Trap Zone Monster", kind: "monster", typeFlags: 0x21, defense: 800 },
     ];
-    const session = createDuel({ seed: 179, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 179, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "300"], extra: ["200"] },
+      0: { main: ["100", "300", "400"], extra: ["200"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -88,21 +89,27 @@ describe("Lua field and query helpers", () => {
     extraSummoned.summonPlayer = 0;
     extraSummoned.faceUp = true;
     extraSummoned.position = "faceUpAttack";
+    const trapZoneMonster = moveDuelCard(session.state, session.state.cards.find((card) => card.code === "400")!.uid, "spellTrapZone", 0);
+    trapZoneMonster.faceUp = true;
+    specialSummonDuelCard(session.state, trapZoneMonster.uid, 0);
 
     const host = createLuaScriptHost(session);
     const result = host.loadScript(
       `
       local hand_summoned=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local extra_summoned=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local st_summoned=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      Debug.Message("summon locations " .. hand_summoned:GetSummonLocation() .. "/" .. extra_summoned:GetSummonLocation() .. "/" .. spell:GetSummonLocation())
+      Debug.Message("summon locations " .. hand_summoned:GetSummonLocation() .. "/" .. extra_summoned:GetSummonLocation() .. "/" .. st_summoned:GetSummonLocation() .. "/" .. spell:GetSummonLocation())
+      Debug.Message("symbolic summon locations " .. tostring(st_summoned:IsSummonLocation(LOCATION_SZONE)) .. "/" .. tostring(st_summoned:IsSummonLocation(LOCATION_STZONE)) .. "/" .. tostring(st_summoned:IsSummonLocation(LOCATION_MZONE)))
       Debug.Message("has defense " .. tostring(hand_summoned:HasDefense()) .. "/" .. tostring(extra_summoned:HasDefense()) .. "/" .. tostring(spell:HasDefense()))
       `,
       "summon-location-defense.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("summon locations 2/64/0");
+    expect(host.messages).toContain("summon locations 2/64/8/0");
+    expect(host.messages).toContain("symbolic summon locations true/true/false");
     expect(host.messages).toContain("has defense true/false/false");
   });
 
