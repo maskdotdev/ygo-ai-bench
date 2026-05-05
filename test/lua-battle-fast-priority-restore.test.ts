@@ -507,6 +507,9 @@ describe("Lua battle fast priority restore", () => {
     const triggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.state).toMatchObject({ waitingFor: 0, windowKind: "open", players: { 1: { lifePoints: 6200 } } });
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.pendingBattle).toBeUndefined();
     expect(restored.session.state.battleWindow).toBeUndefined();
