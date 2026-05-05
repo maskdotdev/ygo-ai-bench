@@ -444,7 +444,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
   });
 
-  it("keeps non-type numeric Lua chain-limit closures incomplete after snapshots", () => {
+  it("restores chain-player Lua chain-limit closures from snapshots", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
     tempRoots.push(root);
     fs.mkdirSync(path.join(root, "script"), { recursive: true });
@@ -506,12 +506,14 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(applyResponse(session, action!).ok).toBe(true);
 
     const snapshot = serializeDuel(session);
-    expect(snapshot.state.chainLimits[0]?.registryKey).toMatch(/^lua-chain-limit:100:0:link:\d+$/);
+    expect(snapshot.state.chainLimits[0]?.registryKey).toContain(":known:closure:chain-player:0");
     const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
 
-    expect(restored.restoreComplete).toBe(false);
-    expect(restored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
-    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
+    expect(restoredAction).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, restoredAction!).ok).toBe(true);
   });
 
   it("reports Lua one-chain limit predicates that cannot be restored from snapshots", () => {

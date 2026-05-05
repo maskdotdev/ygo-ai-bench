@@ -186,6 +186,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number): string | undefi
   if (cardUid) return `closure:card-not-handler:${cardUid}`;
   const typeMask = capturedTypeMask(L, index);
   if (typeMask !== undefined) return `closure:type-mask-response-player:${typeMask}`;
+  const chainPlayer = capturedChainPlayer(L, index);
+  if (chainPlayer !== undefined) return `closure:chain-player:${chainPlayer}`;
   return undefined;
 }
 
@@ -273,6 +275,30 @@ function capturedTypeMask(L: unknown, index: number): number | undefined {
 
 function isTypeMaskUpvalueName(name: string): boolean {
   return name === "typ" || name === "typeMask" || name === "type_mask";
+}
+
+function capturedChainPlayer(L: unknown, index: number): PlayerId | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  const numbers: Array<{ name: string; value: number }> = [];
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) break;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    if (name !== "_ENV") {
+      if (!lua.lua_isnumber(L, -1)) {
+        lua.lua_pop(L, 1);
+        return undefined;
+      }
+      numbers.push({ name, value: lua.lua_tointeger(L, -1) });
+    }
+    lua.lua_pop(L, 1);
+  }
+  const captured = numbers.length === 1 && isChainPlayerUpvalueName(numbers[0]!.name) ? numbers[0]!.value : undefined;
+  return captured === 0 || captured === 1 ? captured : undefined;
+}
+
+function isChainPlayerUpvalueName(name: string): boolean {
+  return name === "ep" || name === "chainPlayer" || name === "chain_player";
 }
 
 function luaChainLimitRegistryKey(ctx: DuelEffectContext | undefined, untilChainEnd: boolean, filterRef: number): string | undefined {

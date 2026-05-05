@@ -137,7 +137,7 @@ Remaining deliverables:
 - Continue enriching the event/timing packet with broader cause metadata beyond moved-card and chain-origin context.
 - Broaden missed timing coverage for "when optional" triggers after multi-step effects.
 - Revisit fast effect response player selection after every action and chain resolution.
-- Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today, and Lua-created predicates now restore when they are known globals such as `aux.TRUE`/`aux.FALSE`, named card-table functions such as `s.chlimit`, single-card closures that block the captured card's own handler, or type-mask closures that allow the original chain player and block matching handler card types. Arbitrary Lua-created one-chain and until-chain-end predicate closures still fail closed by restoring deny-all raw guards without registry keys, hiding every Lua restore legal-action surface, and reporting explicit missing chain-limit registry diagnostics; the remaining parity work is to rebuild or serialize those broader Lua predicates without re-running costs or target selection.
+- Preserve active chain limits, including `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd`, across browser-safe snapshots. Fixture-backed limits can be restored by registry key today, and Lua-created predicates now restore when they are known globals such as `aux.TRUE`/`aux.FALSE`, named card-table functions such as `s.chlimit`, single-card closures that block the captured card's own handler, type-mask closures that allow the original chain player and block matching handler card types, or chain-player closures that capture the original activating player. Arbitrary Lua-created one-chain and until-chain-end predicate closures still fail closed by restoring deny-all raw guards without registry keys, hiding every Lua restore legal-action surface, and reporting explicit missing chain-limit registry diagnostics; the remaining parity work is to rebuild or serialize those broader Lua predicates without re-running costs or target selection.
 
 Implementation files likely touched:
 
@@ -249,7 +249,7 @@ Deliverables:
   - Pendulum
   - Ritual and Fusion helpers
 - Improve label object and group behavior, operation info, hints, selection prompts, field IDs, and query helpers.
-- Continue replacing transient Lua function-ref chain-limit predicates with serializable descriptors when the upstream script shape permits it; known globals, named card-table predicates, single-card handler-exclusion closures, and type-mask response-player closures are covered, while broader arbitrary closure predicates still need descriptor work.
+- Continue replacing transient Lua function-ref chain-limit predicates with serializable descriptors when the upstream script shape permits it; known globals, named card-table predicates, single-card handler-exclusion closures, type-mask response-player closures, and chain-player closures are covered, while broader arbitrary closure predicates still need descriptor work.
 - Add battle helper APIs after Phase 1 so they map to real battle sub-windows.
 
 Implementation files likely touched:
