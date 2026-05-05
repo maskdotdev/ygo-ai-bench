@@ -380,4 +380,61 @@ describe("Lua field group helpers", () => {
     expect(host.messages).toContain("spell material checks false/false");
   });
 
+  it("keeps stat mutation helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Ended Stat Source", kind: "monster", typeFlags: 0x21, attack: 2500, defense: 2100, level: 7, race: 0x2, attribute: 0x20 },
+      { code: "300", name: "Ended Rank Source", kind: "extra", typeFlags: 0x8000001, level: 4 },
+      { code: "400", name: "Ended Link Source", kind: "extra", typeFlags: 0x4000001, level: 2, linkMarkers: 0x5 },
+      { code: "901", name: "Ended Pendulum Source", kind: "monster", typeFlags: 0x1000021, level: 4, leftScale: 3, rightScale: 8 },
+    ];
+    const session = createDuel({ seed: 202, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "901"], extra: ["300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local pendulum=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,901),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local xyz=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode,300),0,LOCATION_EXTRA,0,nil):GetFirst()
+      local link=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode,400),0,LOCATION_EXTRA,0,nil):GetFirst()
+      Duel.MoveToField(pendulum,0,0,LOCATION_PZONE,POS_FACEUP,true,1)
+      c:UpdateAttack(300,RESETS_STANDARD_PHASE_END)
+      c:UpdateDefense(-400,RESETS_STANDARD_PHASE_END)
+      c:UpdateLevel(-20,RESETS_STANDARD_PHASE_END)
+      xyz:UpdateRank(-10,RESETS_STANDARD_PHASE_END)
+      link:UpdateLink(3,RESETS_STANDARD_PHASE_END)
+      pendulum:UpdateScale(-10,RESETS_STANDARD_PHASE_END)
+      c:AssumeProperty(ASSUME_CODE,999)
+      Duel.Win(0,WIN_REASON_EXODIA)
+      Debug.Message("attack ended " .. c:UpdateAttack(300,RESETS_STANDARD_PHASE_END) .. "/" .. c:GetAttack())
+      Debug.Message("defense ended " .. c:UpdateDefense(300,RESETS_STANDARD_PHASE_END) .. "/" .. c:GetDefense())
+      Debug.Message("level ended " .. c:UpdateLevel(3,RESETS_STANDARD_PHASE_END) .. "/" .. c:GetLevel())
+      Debug.Message("rank ended " .. xyz:UpdateRank(3,RESETS_STANDARD_PHASE_END) .. "/" .. xyz:GetRank())
+      Debug.Message("link ended " .. link:UpdateLink(3,RESETS_STANDARD_PHASE_END) .. "/" .. link:GetLink())
+      Debug.Message("scale ended " .. pendulum:UpdateScale(3,RESETS_STANDARD_PHASE_END) .. "/" .. pendulum:GetScale())
+      c:AssumeProperty(ASSUME_CODE,888)
+      Debug.Message("assume ended " .. c:GetCode())
+      `,
+      "ended-stat-noop.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    expect(host.messages).toEqual([
+      "attack ended 0/2800",
+      "defense ended 0/1700",
+      "level ended 0/1",
+      "rank ended 0/1",
+      "link ended 0/5",
+      "scale ended 0/1",
+      "assume ended 999",
+    ]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.pendingTriggers).toEqual([]);
+    expect(session.state.eventHistory.filter((event) => event.eventName === "levelChanged")).toHaveLength(1);
+  });
+
 });

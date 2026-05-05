@@ -229,6 +229,7 @@ function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefine
 }
 
 function pushAssumeProperty(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
   const card = readCard(L, session);
   const property = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
   const value = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : undefined;
@@ -240,6 +241,10 @@ function pushAssumeProperty(L: unknown, session: DuelSession): number {
 }
 
 function pushUpdateAttack(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const card = readCard(L, session);
   const amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   if (!card) {
@@ -253,6 +258,10 @@ function pushUpdateAttack(L: unknown, session: DuelSession): number {
 }
 
 function pushUpdateDefense(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const card = readCard(L, session);
   const amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   if (!card) {
@@ -266,6 +275,10 @@ function pushUpdateDefense(L: unknown, session: DuelSession): number {
 }
 
 function pushUpdateLevel(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const card = readCard(L, session);
   let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   if (!card) {
@@ -286,6 +299,10 @@ function collectStatEvent(session: DuelSession, eventName: "levelChanged", card:
 }
 
 function pushUpdateRank(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const card = readCard(L, session);
   let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   if (!card) {
@@ -300,6 +317,10 @@ function pushUpdateRank(L: unknown, session: DuelSession): number {
 }
 
 function pushUpdateLink(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const card = readCard(L, session);
   let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   if (!card) {
@@ -314,6 +335,10 @@ function pushUpdateLink(L: unknown, session: DuelSession): number {
 }
 
 function pushUpdateScale(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") {
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const card = readCard(L, session);
   let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   if (!isPendulumCardData(card) || currentLeftScale(card) === 0) {
