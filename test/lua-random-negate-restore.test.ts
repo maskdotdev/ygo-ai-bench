@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 const cards: DuelCardData[] = [{ code: "100", name: "Restore Toss Negate Watcher", kind: "monster" }];
@@ -62,6 +62,8 @@ function runTossNegateRestore(eventCode: string, numericCode: number, eventName:
   expect(restored.restoreComplete).toBe(true);
   expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual([eventName]);
   expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: numericCode, eventCardUid: watcher!.uid });
+  expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+  expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
