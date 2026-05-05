@@ -120,7 +120,7 @@ describe("EDOPro parity battle result fixtures", () => {
             ],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
-            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open", count: 0 }],
+            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 14, windowKind: "open", count: 0 }],
             legalActionGroups: [directAttackGroup(0, "p0-deck-100-0", 0, 14)],
           },
         }),
@@ -144,7 +144,7 @@ describe("EDOPro parity battle result fixtures", () => {
         ],
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
-        legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open", count: 0 }],
+        legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 14, windowKind: "open", count: 0 }],
         legalActionGroups: [directAttackGroup(0, "p0-deck-100-0", 0, 14)],
       },
     };

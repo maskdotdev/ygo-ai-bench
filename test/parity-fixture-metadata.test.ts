@@ -39,6 +39,10 @@ describe("parity fixture metadata", () => {
     expect(missingLegalActionGroupCoverage()).toEqual([]);
   });
 
+  it("requires direct-attack groups to be backed by raw direct attack expectations", () => {
+    expect(missingDirectAttackRawCoverage()).toEqual([]);
+  });
+
   it("requires UI-facing grouped absence expectations to track raw absent legal-action expectations", () => {
     expect(missingAbsentLegalActionGroupCoverage()).toEqual([]);
   });
@@ -112,6 +116,22 @@ describe("parity fixture metadata", () => {
     expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 7), '  note: "temporary local behavior",', ...lines.slice(7)])).toEqual(["fixture.ts:7"]);
     expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 6), "  source: 'parity-backlog',", '  note: "temporary local behavior",', ...lines.slice(8)])).toEqual(["fixture.ts:7"]);
     expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
+    expect(
+      missingDirectAttackRawCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        '  legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-card", windowId: 1, windowKind: "open", count: 1 }],',
+        '  legalActionGroups: [directAttackGroup(0, "p0-card", 1, 1)],',
+        ...lines.slice(4),
+      ]),
+    ).toEqual(["fixture.ts:2"]);
+    expect(
+      missingDirectAttackRawCoverageInLines("fixture.ts", [
+        ...lines.slice(0, 4),
+        '  legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-card", directAttack: true, windowId: 1, windowKind: "open", count: 1 }],',
+        '  legalActionGroups: [directAttackGroup(0, "p0-card", 1, 1)],',
+        ...lines.slice(4),
+      ]),
+    ).toEqual([]);
     expect(missingLegalActionCountsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
     expect(missingOpenLegalActionWindowIdsInLines("fixture.ts", [...lines.slice(0, 4), '  legalActions: [{ type: "endTurn", player: 0, windowKind: "open" }],', ...lines.slice(4)])).toEqual([
       "fixture.ts:5",
@@ -257,6 +277,10 @@ function missingLegalActionGroupCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingLegalActionGroupsInLines(file, readFixtureLines(file), "legalActions:", "legalActionGroups:"));
 }
 
+function missingDirectAttackRawCoverage(): string[] {
+  return parityFixtureFiles().flatMap((file) => missingDirectAttackRawCoverageInLines(file, readFixtureLines(file)));
+}
+
 function missingAbsentLegalActionGroupCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingLegalActionGroupsInLines(file, readFixtureLines(file), "absentLegalActions:", "absentLegalActionGroups:"));
 }
@@ -374,6 +398,18 @@ function missingLegalActionGroupsInLines(file: string, lines: string[], rawSearc
     if (rawCount > groupCount) missingGroups.push(`${file}:${index + 1}`);
   });
   return missingGroups;
+}
+
+function missingDirectAttackRawCoverageInLines(file: string, lines: string[]): string[] {
+  const missingRawDirectAttacks: string[] = [];
+  lines.forEach((line, index) => {
+    if (!/^\s*(before|after|expected): \{/.test(line)) return;
+    const block = expectationBlock(lines, index);
+    if (!block.includes("directAttackGroup(")) return;
+    const rawDirectAttack = block.match(/\{[^{}]*type:\s*["']declareAttack["'][^{}]*directAttack:\s*true[^{}]*\}/);
+    if (rawDirectAttack === null) missingRawDirectAttacks.push(`${file}:${index + 1}`);
+  });
+  return missingRawDirectAttacks;
 }
 
 function missingLegalActionCountsInLines(file: string, lines: string[]): string[] {
