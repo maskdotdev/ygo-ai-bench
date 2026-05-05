@@ -727,6 +727,12 @@ export interface ScriptedFixtureEffect {
   property?: number;
   logMessage?: string;
   negateAttackOnResolve?: boolean;
+  negateSummonOnResolve?: {
+    player: PlayerId;
+    code: string;
+    location?: DuelLocation;
+    occurrence?: number;
+  };
   chainLimitOnTarget?: {
     untilChainEnd: boolean;
     allowPlayer?: PlayerId;

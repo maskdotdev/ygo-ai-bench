@@ -8,6 +8,7 @@ import {
   loadDecks,
   moveDuelCard,
   negateDuelAttack,
+  negateDuelSummon,
   queryPublicState,
   registerEffect,
   restoreDuel,
@@ -592,9 +593,21 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
         }
       }
       if (effect.negateAttackOnResolve) ctx.log(`Negated attack ${negateDuelAttack(ctx.duel)}`);
+      if (effect.negateSummonOnResolve) ctx.log(`Negated summon ${Boolean(negateFixtureSummon(ctx.duel, effect.negateSummonOnResolve))}`);
       if (effect.logMessage) ctx.log(effect.logMessage);
     },
   };
+}
+
+function negateFixtureSummon(state: DuelSession["state"], target: NonNullable<ScriptedFixtureEffect["negateSummonOnResolve"]>) {
+  const candidates = state.cards
+    .filter((card) => {
+      if (card.controller !== target.player || card.code !== target.code) return false;
+      return target.location === undefined || card.location === target.location;
+    })
+    .sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence);
+  const card = candidates[target.occurrence ?? 0];
+  return card ? negateDuelSummon(state, card.uid) : undefined;
 }
 
 function createFixtureChainLimit(effect: ScriptedFixtureEffect, registryKey: string, expiresAtChainLength: number | undefined): DuelSession["state"]["chainLimits"][number] {

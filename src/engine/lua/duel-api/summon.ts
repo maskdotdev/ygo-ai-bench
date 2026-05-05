@@ -4,7 +4,6 @@ import {
   isMonsterSetPrevented,
   isMaterialUsePrevented,
   isSpellTrapSetPrevented,
-  isSummonNegationPrevented,
   type ContinuousEffectContextFactory,
   type MaterialUseKind,
 } from "#duel/continuous-effects.js";
@@ -21,6 +20,7 @@ import {
   synchroSummonDuelCard,
   getLegalActions,
   moveDuelCard,
+  negateDuelSummon,
   xyzSummonDuelCard,
 } from "#duel/core.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
@@ -379,17 +379,8 @@ function pushNegateSummon(L: unknown, session: DuelSession, hostState: LuaDuelSu
   if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
   const negated: string[] = [];
   for (const uid of readCardOrGroupUids(L, 1)) {
-    const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!card || card.location !== "monsterZone" || card.summonType === undefined) continue;
-    if (isSummonNegationPrevented(session.state, card, card.summonType, createMaterialCheckContext(session.state))) continue;
     try {
-      const eventName = summonNegatedEventName(card);
-      scrubSummonSuccessForNegatedCard(session.state, card);
-      moveDuelCard(session.state, card.uid, "graveyard", card.controller, duelReason.disSummon, session.state.turnPlayer);
-      delete card.summonType;
-      delete card.summonPlayer;
-      collectDuelTriggerEffects(session.state, eventName, card);
-      negated.push(uid);
+      if (negateDuelSummon(session.state, uid)) negated.push(uid);
     } catch {
       // EDOPro-style helpers report successful negations only.
     }
@@ -397,24 +388,6 @@ function pushNegateSummon(L: unknown, session: DuelSession, hostState: LuaDuelSu
   setOperatedUids(hostState, negated);
   lua.lua_pushinteger(L, negated.length);
   return 1;
-}
-
-function scrubSummonSuccessForNegatedCard(state: DuelState, card: DuelCardInstance): void {
-  const successEvent = summonSuccessEventName(card);
-  state.pendingTriggers = state.pendingTriggers.filter((trigger) => trigger.eventName !== successEvent || trigger.eventCardUid !== card.uid);
-  state.eventHistory = state.eventHistory.filter((event) => event.eventName !== successEvent || event.eventCardUid !== card.uid);
-}
-
-function summonSuccessEventName(card: DuelCardInstance): "normalSummoned" | "flipSummoned" | "specialSummoned" {
-  if (card.summonType === "normal" || card.summonType === "tribute") return "normalSummoned";
-  if (card.summonType === "flip") return "flipSummoned";
-  return "specialSummoned";
-}
-
-function summonNegatedEventName(card: DuelCardInstance): "normalSummonNegated" | "flipSummonNegated" | "specialSummonNegated" {
-  if (card.summonType === "normal" || card.summonType === "tribute") return "normalSummonNegated";
-  if (card.summonType === "flip") return "flipSummonNegated";
-  return "specialSummonNegated";
 }
 
 function readFirstCardOrGroupUid(L: unknown, index: number): string | undefined {
