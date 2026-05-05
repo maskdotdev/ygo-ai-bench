@@ -215,11 +215,11 @@ describe("Lua battle timing helpers", () => {
     applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passAttack")!);
     applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!);
     applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!);
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
-    expect(applyResponse(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passDamage")!);
     expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
 
-    expect(applyResponse(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!).ok).toBe(true);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!);
     expect(legalEffectCodes(session, 0)).toEqual(["300"]);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
