@@ -3,7 +3,7 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions 
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua turn-end events", () => {
   it("queues Lua turn-end triggers when a player ends their turn", () => {
@@ -93,6 +93,8 @@ describe("Lua turn-end events", () => {
     expect(restored.session.state.turnPlayer).toBe(1);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["turnEnded"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1210 });
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
