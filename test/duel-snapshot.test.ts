@@ -52,6 +52,21 @@ describe("duel snapshot persistence", () => {
     expect(restored.state.skippedPhases).toEqual([]);
   });
 
+  it("exposes the active action window in public state", () => {
+    const session = createDuel({ seed: 182, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    expect(queryPublicState(session)).toMatchObject({
+      actionWindowId: session.state.actionWindowId,
+      windowKind: "open",
+      waitingFor: 0,
+    });
+  });
+
   it("deep-copies replay target sets across snapshots", () => {
     const session = createDuel({ seed: 181, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

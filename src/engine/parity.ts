@@ -16,7 +16,6 @@ import {
   type CreateDuelOptions,
 } from "#duel/core.js";
 import { describeDuelActionSelector, duelActionMatchesSelector, selectDuelActionBySelector } from "#duel/action-selectors.js";
-import { shouldContinueTriggerSelection } from "#duel/effect-activation.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
 import type { DuelChainLimitRestoreRegistry, DuelEffectRestoreRegistry } from "#duel/snapshot.js";
 import type {
@@ -269,13 +268,7 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
 }
 
 function currentWindowKind(session: DuelSession): DuelActionWindowKind | undefined {
-  const { state } = session;
-  if (state.status !== "awaiting" || state.waitingFor === undefined) return undefined;
-  if (state.prompt) return "prompt";
-  if (shouldContinueTriggerSelection(state)) return "triggerBucket";
-  if (state.chain.length) return "chainResponse";
-  if (state.pendingBattle) return "battle";
-  return "open";
+  return queryPublicState(session).windowKind;
 }
 
 function expectationLabel(expected: ScriptedDuelWindowExpectation): string {
