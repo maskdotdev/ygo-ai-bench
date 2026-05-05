@@ -633,13 +633,16 @@ describe("duel snapshot restore shape validation", () => {
     });
     startDuel(session);
     const badEventName = serializeDuel(session);
+    const unknownEventName = serializeDuel(session);
     const badPayload = serializeDuel(session);
     const badEventUids = serializeDuel(session);
     badEventName.state.eventHistory = [{ eventName: 12 as unknown as "customEvent" }];
+    unknownEventName.state.eventHistory = [{ eventName: "unknown" as "customEvent" }];
     badPayload.state.eventHistory = [{ eventName: "customEvent", eventCardUid: 12 as unknown as string }];
     badEventUids.state.eventHistory = [{ eventName: "customEvent", eventUids: "uid" as unknown as string[] }];
 
     expect(() => restoreDuel(badEventName, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventName must be a string");
+    expect(() => restoreDuel(unknownEventName, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventName must be a duel event");
     expect(() => restoreDuel(badPayload, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventCardUid must be a string");
     expect(() => restoreDuel(badEventUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventUids must be an array");
   });
@@ -952,11 +955,14 @@ describe("duel snapshot restore shape validation", () => {
     });
     const badEvent = serializeDuel(session);
     const badRange = serializeDuel(session);
+    const badTriggerEvent = serializeDuel(session);
     badEvent.state.effects[0] = { ...badEvent.state.effects[0]!, event: "passive" as "ignition" };
     badRange.state.effects[0] = { ...badRange.state.effects[0]!, range: ["hand", "field" as "hand"] };
+    badTriggerEvent.state.effects[0] = { ...badTriggerEvent.state.effects[0]!, triggerEvent: "unknown" as "customEvent" };
 
     expect(() => restoreDuel(badEvent, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.event must be an effect event");
     expect(() => restoreDuel(badRange, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.range.1 must be a card location");
+    expect(() => restoreDuel(badTriggerEvent, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.triggerEvent must be a duel event");
   });
 
   it("rejects malformed effect reset and tuple snapshots before restore", () => {
