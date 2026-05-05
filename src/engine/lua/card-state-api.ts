@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { locationMatchesMask, readCardUid } from "#lua/api-utils.js";
+import { locationMatchesCardMask, readCardUid } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import type { CardPosition, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -44,7 +44,7 @@ export function installCardStateApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushboolean(state, Boolean(card && locationMatchesMask(card.location, card.sequence, locationMask)));
+    lua.lua_pushboolean(state, Boolean(card && locationMatchesCardMask(card, locationMask)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsLocation"));

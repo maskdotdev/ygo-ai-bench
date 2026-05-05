@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { getDuelFlagEffectLabel } from "#duel/flags.js";
 import { phaseMask } from "#duel/phase-mask.js";
-import { locationMatchesMask, readTableStringField } from "#lua/api-utils.js";
+import { locationMatchesCardMask, readTableStringField } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -14,7 +14,7 @@ export function installCardSummonApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card?.summonType && requested.some((value) => locationMatchesMask(card.previousLocation, card.previousSequence, value))));
+    lua.lua_pushboolean(state, Boolean(card?.summonType && requested.some((value) => locationMatchesCardMask(card, value, card.previousLocation, card.previousSequence))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSummonLocation"));

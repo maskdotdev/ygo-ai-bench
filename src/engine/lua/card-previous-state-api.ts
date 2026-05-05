@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { locationMatchesMask, readCardUid } from "#lua/api-utils.js";
+import { locationMatchesCardMask, readCardUid } from "#lua/api-utils.js";
 import { cardCodes, isSetcodeMatch, readRequestedCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
 import { cardLink, cardRank, cardTypeFlags } from "#lua/card-stat-api.js";
 import type { CardPosition, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
@@ -10,13 +10,13 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => locationMatchesMask(card.location, card.sequence, value))));
+    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => locationMatchesCardMask(card, value))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDestination"));
   pushNumberGetter(L, "GetDestination", session, (card) => leaveFieldDestinationMask(card));
   pushNumberGetter(L, "GetLeaveFieldDest", session, (card) => leaveFieldDestinationMask(card));
-  pushAnyNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => isLeaveFieldDestination(card) && requested.some((value) => locationMatchesMask(card.location, card.sequence, value)));
+  pushAnyNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => isLeaveFieldDestination(card) && requested.some((value) => locationMatchesCardMask(card, value)));
   pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
   pushNumberGetter(L, "GetPreviousSequence", session, (card) => card?.previousSequence ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -47,7 +47,7 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession): v
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requested.some((value) => locationMatchesMask(card.previousLocation, card.previousSequence, value))));
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requested.some((value) => locationMatchesCardMask(card, value, card.previousLocation, card.previousSequence))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPreviousLocation"));

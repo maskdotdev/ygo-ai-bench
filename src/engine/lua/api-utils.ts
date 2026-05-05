@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import type { CardPosition, DuelLocation } from "#duel/types.js";
+import type { CardPosition, DuelCardInstance, DuelLocation } from "#duel/types.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
 
@@ -91,6 +91,32 @@ export function locationMatchesMask(location: DuelLocation | undefined, sequence
   if ((mask & 0x400) !== 0 && location === "spellTrapZone") return true;
   if ((mask & 0x800) !== 0 && location === "monsterZone" && sequence !== undefined && sequence >= 0 && sequence <= 4) return true;
   return (mask & 0x1000) !== 0 && location === "monsterZone" && sequence !== undefined && sequence >= 5 && sequence <= 6;
+}
+
+export function locationMatchesCardMask(card: DuelCardInstance | undefined, mask: number, location = card?.location, sequence = card?.sequence): boolean {
+  if (!card || !location) return false;
+  if (locationMatchesMask(location, sequence, mask)) return true;
+  const symbolic = symbolicLocationMask(card, location, sequence);
+  return symbolic !== 0 && (mask & symbolic) !== 0;
+}
+
+export function symbolicLocationMask(card: DuelCardInstance | undefined, location = card?.location, sequence = card?.sequence): number {
+  if (!card || !location) return 0;
+  if (location === "spellTrapZone") {
+    if (isFieldSpell(card)) return 0x100;
+    if (isPendulumZoneCard(card, sequence)) return 0x200;
+    return 0x400;
+  }
+  if (location === "monsterZone" && sequence !== undefined) return sequence >= 5 ? 0x1000 : 0x800;
+  return locationMaskFromLocation(location);
+}
+
+function isFieldSpell(card: DuelCardInstance): boolean {
+  return card.kind === "spell" && ((card.data.typeFlags ?? 0) & 0x80000) !== 0;
+}
+
+function isPendulumZoneCard(card: DuelCardInstance, sequence: number | undefined): boolean {
+  return sequence !== undefined && sequence >= 0 && sequence <= 1 && ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
 }
 
 function locationMaskFromLocation(location: DuelLocation): number {

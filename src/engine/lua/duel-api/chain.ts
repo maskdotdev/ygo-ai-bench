@@ -2,7 +2,7 @@ import fengari from "fengari";
 import { addDuelChainLimit, canNegateDuelChainLink, negateDuelChainLink } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
-import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -149,13 +149,6 @@ function pushChainEvent(L: unknown, session: DuelSession, hostState: LuaDuelChai
 function pushRelatedEffectById(L: unknown, hostState: LuaDuelChainApiHostState, relatedEffectId: number | undefined): void {
   if (relatedEffectId !== undefined && Number.isFinite(relatedEffectId)) hostState.pushEffectTable(L, relatedEffectId);
   else lua.lua_pushnil(L);
-}
-
-function symbolicLocationMask(card: DuelCardInstance | undefined): number {
-  if (!card) return 0;
-  if (card.location === "spellTrapZone") return 0x400;
-  if (card.location === "monsterZone" && card.sequence !== undefined) return card.sequence >= 5 ? 0x1000 : 0x800;
-  return locationMaskFromLocation(card.location);
 }
 
 function pushChainMaterial(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
