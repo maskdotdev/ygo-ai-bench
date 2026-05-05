@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, type LuaSnapshotRestoreResult, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, type LuaSnapshotRestoreResult, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua chain-disabled events", () => {
   it("queues Lua chain-disabled triggers after a disabled chain link is skipped", () => {
@@ -101,9 +101,12 @@ describe("Lua chain-disabled events", () => {
     expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    const result = applyLuaRestoreResponse(restored, trigger!);
+    expect(result.ok).toBe(true);
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("chain disabled resolved 0/0/1/0");
   });
@@ -123,6 +126,8 @@ function drainRestoredChain(restored: LuaSnapshotRestoreResult): void {
     const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
     const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
+    const result = applyLuaRestoreResponse(restored, pass!);
+    expect(result.ok).toBe(true);
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   }
 }
