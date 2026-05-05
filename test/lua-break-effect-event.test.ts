@@ -55,12 +55,14 @@ describe("Lua break-effect events", () => {
     expect(host.messages).toContain("before break");
     expect(host.messages).toContain("after break");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["breakEffect"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0 });
+    const source = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
     expect(session.state.eventHistory).toEqual([
       expect.objectContaining({ eventName: "chainActivating", eventCode: 1021 }),
       expect.objectContaining({ eventName: "chaining", eventCode: 1027 }),
       expect.objectContaining({ eventName: "chainSolving", eventCode: 1020 }),
-      expect.objectContaining({ eventName: "breakEffect", eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0 }),
+      expect.objectContaining({ eventName: "breakEffect", eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }),
       expect.objectContaining({ eventName: "chainSolved", eventCode: 1022 }),
     ]);
   });
@@ -121,7 +123,9 @@ describe("Lua break-effect events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["breakEffect"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0 });
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 

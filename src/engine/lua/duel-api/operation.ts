@@ -5,6 +5,7 @@ import { duelReason } from "#duel/reasons.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid } from "#lua/api-utils.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary } from "#lua/duel-api/move.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelEventRecord, DuelSession, PlayerId } from "#duel/types.js";
@@ -62,7 +63,7 @@ function pushBreakEffect(session: DuelSession, hostState: LuaDuelOperationApiHos
   if (session.state.status === "ended") return 0;
   markLuaOperationTimingBoundary(session, hostState);
   pushDuelLog(session.state, "breakEffect", session.state.turnPlayer, undefined, "Effect operation break");
-  collectDuelTriggerEffects(session.state, "breakEffect", undefined, { eventReason: duelReason.effect, eventReasonPlayer: hostState.activeContext?.player ?? session.state.turnPlayer });
+  collectDuelTriggerEffects(session.state, "breakEffect", undefined, luaEffectReasonPayload(hostState, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer));
   if (hostState.activeContext) hostState.activeOperationMoved = true;
   return 0;
 }
@@ -77,10 +78,7 @@ function pushAdjustInstantly(L: unknown, session: DuelSession, hostState: LuaDue
   const uid = readCardUid(L, 1);
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   markLuaOperationTimingBoundary(session, hostState);
-  collectDuelTriggerEffects(session.state, "adjust", card, {
-    eventReason: duelReason.effect,
-    eventReasonPlayer: hostState.activeContext?.player ?? card?.controller ?? session.state.turnPlayer,
-  });
+  collectDuelTriggerEffects(session.state, "adjust", card, luaEffectReasonPayload(hostState, duelReason.effect, hostState.activeContext?.player ?? card?.controller ?? session.state.turnPlayer));
   if (hostState.activeContext) hostState.activeOperationMoved = true;
   pushDuelLog(session.state, "adjust", card?.controller ?? session.state.turnPlayer, card?.name, "Instant adjust");
   return 0;
@@ -89,10 +87,7 @@ function pushAdjustInstantly(L: unknown, session: DuelSession, hostState: LuaDue
 function pushReadjust(session: DuelSession, hostState: LuaDuelOperationApiHostState): number {
   if (session.state.status === "ended") return 0;
   markLuaOperationTimingBoundary(session, hostState);
-  collectDuelTriggerEffects(session.state, "adjust", undefined, {
-    eventReason: duelReason.effect,
-    eventReasonPlayer: hostState.activeContext?.player ?? session.state.turnPlayer,
-  });
+  collectDuelTriggerEffects(session.state, "adjust", undefined, luaEffectReasonPayload(hostState, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer));
   if (hostState.activeContext) hostState.activeOperationMoved = true;
   pushDuelLog(session.state, "adjust", session.state.turnPlayer, undefined, "Readjust");
   return 0;

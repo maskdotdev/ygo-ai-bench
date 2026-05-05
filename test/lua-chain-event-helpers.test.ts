@@ -51,7 +51,10 @@ describe("Lua chain event helpers", () => {
     expect(adjustResult.ok, adjustResult.error).toBe(true);
     expect(host.messages).toContain("adjust queued");
     expect(session.state.pendingTriggers).toHaveLength(1);
-    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "adjust", eventReason: 0x40, eventReasonPlayer: 0 }));
+    const adjustEvent = session.state.eventHistory.find((event) => event.eventName === "adjust");
+    expect(adjustEvent).toMatchObject({ eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(adjustEvent).not.toHaveProperty("eventReasonCardUid");
+    expect(adjustEvent).not.toHaveProperty("eventReasonEffectId");
     expect(session.state.log).toContainEqual(expect.objectContaining({ action: "adjust", detail: "Instant adjust" }));
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -226,7 +229,10 @@ describe("Lua chain event helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("readjust event true");
-    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "adjust", eventReason: 0x40, eventReasonPlayer: 0 }));
+    const adjustEvent = session.state.eventHistory.find((event) => event.eventName === "adjust");
+    expect(adjustEvent).toMatchObject({ eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(adjustEvent).not.toHaveProperty("eventReasonCardUid");
+    expect(adjustEvent).not.toHaveProperty("eventReasonEffectId");
     expect(session.state.log).toContainEqual(expect.objectContaining({ action: "adjust", detail: "Readjust" }));
   });
 
