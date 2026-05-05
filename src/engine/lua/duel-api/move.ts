@@ -139,6 +139,11 @@ function pushMoveToLocationHelper(L: unknown, fieldName: string, session: DuelSe
 }
 
 function pushRemoveCards(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
+  if (session.state.status === "ended") {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const requested = new Set(readCardOrGroupUids(L, 1));
   const removed = session.state.cards.filter((card) => requested.has(card.uid)).map((card) => card.uid);
   if (removed.length > 0) {

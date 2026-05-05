@@ -53,6 +53,39 @@ describe("Lua movement helpers", () => {
     expect(session.state.cards.map((card) => card.code).sort()).toEqual(["300"]);
   });
 
+  it("keeps remove-cards helpers from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Ended Remove A", kind: "monster" },
+      { code: "200", name: "Ended Remove B", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 229, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local remove_group = Duel.GetMatchingGroup(aux.TRUE, 0, LOCATION_MZONE, 0, nil)
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Debug.Message("ended remove cards " .. Duel.RemoveCards(remove_group, 0, -2, REASON_RULE))
+      Debug.Message("ended remove operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("ended remove field " .. Duel.GetFieldGroupCount(0, LOCATION_MZONE, 0))
+      `,
+      "ended-remove-cards.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["ended remove cards 0", "ended remove operated 0", "ended remove field 2"]);
+    expect(session.state.status).toBe("ended");
+    expect(session.state.cards.map((card) => card.code).sort()).toEqual(["100", "200"]);
+  });
+
   it("lets Lua scripts banish cards face-down with the third-argument reason", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Hidden Banish", kind: "monster" }];
     const session = createDuel({ seed: 95, startingHandSize: 1, cardReader: createCardReader(cards) });
