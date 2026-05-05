@@ -217,6 +217,7 @@ describe("Lua open fast priority restore", () => {
       { code: "19400", name: "Lua Restored Trigger Fast Chain Quick", kind: "monster" },
       { code: "19500", name: "Lua Restored Trigger Fast Filler", kind: "monster" },
       { code: "19600", name: "Lua Restored Trigger Fast Turn Chain Quick", kind: "monster" },
+      { code: "19700", name: "Lua Restored Trigger Fast Opponent Open Quick", kind: "monster" },
     ];
     const source = {
       readScript(name: string) {
@@ -273,22 +274,37 @@ describe("Lua open fast priority restore", () => {
           end
           `;
         }
+        if (name === "c19700.lua") {
+          return `
+          c19700={}
+          function c19700.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()==0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restored trigger fast opponent open quick resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
         return undefined;
       },
     };
     const session = createDuel({ seed: 99, startingHandSize: 4, cardReader: createCardReader(cards) });
-    loadDecks(session, { 0: { main: ["19100", "19200", "19300", "19600"] }, 1: { main: ["19400", "19500", "19500", "19500"] } });
+    loadDecks(session, { 0: { main: ["19100", "19200", "19300", "19600"] }, 1: { main: ["19400", "19700", "19500", "19500"] } });
     startDuel(session);
     const host = createLuaScriptHost(session);
     const triggerScript = host.loadCardScript(19200, source);
     const openQuickScript = host.loadCardScript(19300, source);
     const opponentChainQuickScript = host.loadCardScript(19400, source);
     const turnChainQuickScript = host.loadCardScript(19600, source);
+    const opponentOpenQuickScript = host.loadCardScript(19700, source);
     expect(triggerScript.ok, triggerScript.error).toBe(true);
     expect(openQuickScript.ok, openQuickScript.error).toBe(true);
     expect(opponentChainQuickScript.ok, opponentChainQuickScript.error).toBe(true);
     expect(turnChainQuickScript.ok, turnChainQuickScript.error).toBe(true);
-    expect(host.registerInitialEffects()).toBe(4);
+    expect(opponentOpenQuickScript.ok, opponentOpenQuickScript.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(5);
 
     const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "19100");
     expect(summonSource).toBeDefined();
@@ -375,6 +391,12 @@ describe("Lua open fast priority restore", () => {
     expect(staleFinalPass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleFinalPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(staleFinalPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleFinalPass.legalActions);
+
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", uid: expect.stringContaining("19300") })]));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(restored.host.messages).toEqual(["restored trigger fast turn chain quick resolved", "restored trigger fast chain quick resolved", "restored trigger fast trigger resolved", "restored trigger fast quick resolved"]);
   });
 });
