@@ -122,8 +122,10 @@ function assertSnapshotRestore(
   const before = JSON.stringify(queryPublicState(session));
   const snapshot = serializeDuel(session);
   const restored = restoreDuel(snapshot, cardReader ?? session.cardReader, effectRegistry, chainLimitRegistry);
+  const restoredSnapshot = serializeDuel(restored);
   const after = JSON.stringify(queryPublicState(restored));
   if (after !== before) failures.push({ fixture, message: `${context}: snapshot/restore changed public state` });
+  assertSnapshotJsonEqual("serialized duel state", snapshot.state, restoredSnapshot.state, fixture, context, failures);
   if (restored.state.actionWindowId !== session.state.actionWindowId) {
     failures.push({ fixture, message: `${context}: snapshot/restore changed actionWindowId from ${session.state.actionWindowId} to ${restored.state.actionWindowId}` });
   }
@@ -155,7 +157,7 @@ function assertSnapshotRestore(
   assertSnapshotJsonEqual("shuffleCheckDisabled", session.state.shuffleCheckDisabled, restored.state.shuffleCheckDisabled, fixture, context, failures);
   assertSnapshotJsonEqual("options", session.state.options, restored.state.options, fixture, context, failures);
   assertSnapshotJsonEqual("cards", session.state.cards, restored.state.cards, fixture, context, failures);
-  assertSnapshotJsonEqual("effects", snapshotEffects(snapshot.state.effects), snapshotEffects(serializeDuel(restored).state.effects), fixture, context, failures);
+  assertSnapshotJsonEqual("effects", snapshotEffects(snapshot.state.effects), snapshotEffects(restoredSnapshot.state.effects), fixture, context, failures);
   if (restored.state.attackCostPaid !== session.state.attackCostPaid) {
     failures.push({ fixture, message: `${context}: snapshot/restore changed attackCostPaid from ${session.state.attackCostPaid} to ${restored.state.attackCostPaid}` });
   }
