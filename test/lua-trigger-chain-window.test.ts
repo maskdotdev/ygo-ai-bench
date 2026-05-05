@@ -347,6 +347,11 @@ describe("Lua trigger chain windows", () => {
     expect(afterFirstDecline.state.pendingTriggers.map((trigger) => afterFirstDecline.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["14300", "14400"]);
     expect(getDuelLegalActions(session, 1)).toHaveLength(0);
     expect(getDuelLegalActions(session, 0).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual([afterFirstDecline.state.pendingTriggers[0]?.effectId]);
+    const staleDecline = applyResponse(session, firstDecline!);
+    expect(staleDecline.ok).toBe(false);
+    expect(staleDecline.error).toContain("Response is not currently legal");
+    expect(staleDecline.state.actionWindowId).toBe(session.state.actionWindowId);
+    expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["14300", "14400"]);
 
     const secondDecline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger" && action.effectId === afterFirstDecline.state.pendingTriggers[0]?.effectId);
     expect(secondDecline).toBeDefined();
