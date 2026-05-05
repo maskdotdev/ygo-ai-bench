@@ -31,6 +31,7 @@ describe("chain action restore", () => {
     expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
   });
 
   it("restores chain response quick actions and rejects stale restored quick actions", () => {
@@ -61,6 +62,7 @@ describe("chain action restore", () => {
     expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
 
     const pass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -116,6 +118,7 @@ describe("chain action restore", () => {
     expect(staleQuick.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleQuick.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleQuick.legalActions);
   });
 });
 
