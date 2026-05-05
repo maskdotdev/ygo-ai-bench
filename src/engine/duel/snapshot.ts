@@ -664,6 +664,11 @@ function assertSnapshotNumberRecord(record: unknown, path: string): void {
   }
 }
 
+function assertSnapshotNonNegativeInteger(value: unknown, path: string): void {
+  if (typeof value !== "number") throw new Error(`Malformed duel snapshot: ${path} must be a number`);
+  if (!Number.isInteger(value) || value < 0) throw new Error(`Malformed duel snapshot: ${path} must be a non-negative integer`);
+}
+
 function assertSnapshotPlayers(players: unknown): void {
   if (!isRecord(players)) throw new Error("Malformed duel snapshot: state.players must be an object");
   assertSnapshotPlayer(players[0], 0);
@@ -674,15 +679,15 @@ function assertSnapshotPlayer(player: unknown, expectedId: PlayerId): void {
   const path = `state.players.${expectedId}`;
   if (!isRecord(player)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
   if (player.id !== expectedId) throw new Error(`Malformed duel snapshot: ${path}.id must match the player id`);
-  if (typeof player.lifePoints !== "number") throw new Error(`Malformed duel snapshot: ${path}.lifePoints must be a number`);
+  assertSnapshotNonNegativeInteger(player.lifePoints, `${path}.lifePoints`);
   if (typeof player.normalSummonAvailable !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.normalSummonAvailable must be a boolean`);
-  if (player.initialMainDeckSize !== undefined && typeof player.initialMainDeckSize !== "number") throw new Error(`Malformed duel snapshot: ${path}.initialMainDeckSize must be a number`);
+  if (player.initialMainDeckSize !== undefined) assertSnapshotNonNegativeInteger(player.initialMainDeckSize, `${path}.initialMainDeckSize`);
 }
 
 function assertSnapshotOptions(options: unknown): void {
   if (!isRecord(options)) throw new Error("Malformed duel snapshot: state.options must be an object");
   for (const field of ["startingLifePoints", "startingHandSize", "drawPerTurn"] as const) {
-    if (typeof options[field] !== "number") throw new Error(`Malformed duel snapshot: state.options.${field} must be a number`);
+    assertSnapshotNonNegativeInteger(options[field], `state.options.${field}`);
   }
 }
 
@@ -695,15 +700,14 @@ function assertSnapshotActivityCounts(counts: unknown): void {
 function assertSnapshotActivityCount(count: unknown, path: string): void {
   if (!isRecord(count)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
   for (const field of ["summon", "normalSummon", "specialSummon", "flipSummon", "attack"] as const) {
-    if (typeof count[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
-    if (!Number.isInteger(count[field]) || count[field] < 0) throw new Error(`Malformed duel snapshot: ${path}.${field} must be a non-negative integer`);
+    assertSnapshotNonNegativeInteger(count[field], `${path}.${field}`);
   }
 }
 
 function assertSnapshotBattleDamage(battleDamage: unknown): void {
   if (!isRecord(battleDamage)) throw new Error("Malformed duel snapshot: state.battleDamage must be an object");
   for (const player of [0, 1] as const) {
-    if (typeof battleDamage[player] !== "number") throw new Error(`Malformed duel snapshot: state.battleDamage.${player} must be a number`);
+    assertSnapshotNonNegativeInteger(battleDamage[player], `state.battleDamage.${player}`);
   }
 }
 

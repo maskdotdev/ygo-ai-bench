@@ -238,6 +238,28 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badOption, createCardReader(cards))).toThrow("Malformed duel snapshot: state.options.drawPerTurn must be a number");
   });
 
+  it("rejects impossible player and option numeric snapshots before restore", () => {
+    const session = createDuel({ seed: 234, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const negativeLife = serializeDuel(session);
+    const fractionalDeckSize = serializeDuel(session);
+    const negativeHandSize = serializeDuel(session);
+    const fractionalDraw = serializeDuel(session);
+    negativeLife.state.players[0] = { ...negativeLife.state.players[0], lifePoints: -1 };
+    fractionalDeckSize.state.players[1] = { ...fractionalDeckSize.state.players[1], initialMainDeckSize: 1.5 };
+    negativeHandSize.state.options = { ...negativeHandSize.state.options, startingHandSize: -1 };
+    fractionalDraw.state.options = { ...fractionalDraw.state.options, drawPerTurn: 0.5 };
+
+    expect(() => restoreDuel(negativeLife, createCardReader(cards))).toThrow("Malformed duel snapshot: state.players.0.lifePoints must be a non-negative integer");
+    expect(() => restoreDuel(fractionalDeckSize, createCardReader(cards))).toThrow("Malformed duel snapshot: state.players.1.initialMainDeckSize must be a non-negative integer");
+    expect(() => restoreDuel(negativeHandSize, createCardReader(cards))).toThrow("Malformed duel snapshot: state.options.startingHandSize must be a non-negative integer");
+    expect(() => restoreDuel(fractionalDraw, createCardReader(cards))).toThrow("Malformed duel snapshot: state.options.drawPerTurn must be a non-negative integer");
+  });
+
   it("rejects malformed winner snapshots before restore", () => {
     const session = createDuel({ seed: 146, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -481,6 +503,22 @@ describe("duel snapshot restore shape validation", () => {
 
     expect(() => restoreDuel(badActivity, createCardReader(cards))).toThrow("Malformed duel snapshot: state.activityCounts.0.attack must be a number");
     expect(() => restoreDuel(badBattleDamage, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleDamage.1 must be a number");
+  });
+
+  it("rejects impossible battle damage snapshots before restore", () => {
+    const session = createDuel({ seed: 235, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const negative = serializeDuel(session);
+    const fractional = serializeDuel(session);
+    negative.state.battleDamage = { ...negative.state.battleDamage, 0: -1 };
+    fractional.state.battleDamage = { ...fractional.state.battleDamage, 1: 0.5 };
+
+    expect(() => restoreDuel(negative, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleDamage.0 must be a non-negative integer");
+    expect(() => restoreDuel(fractional, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleDamage.1 must be a non-negative integer");
   });
 
   it("rejects impossible activity count snapshots before restore", () => {
