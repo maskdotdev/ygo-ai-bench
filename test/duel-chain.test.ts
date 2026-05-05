@@ -657,6 +657,7 @@ describe("duel chains", () => {
     expect(replay.state.actionWindowId).toBe(session.state.actionWindowId);
     expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.chain).toHaveLength(0);
     expect(session.state.log.filter((entry) => entry.detail === "Stale pass source resolved")).toHaveLength(1);
   });
@@ -730,6 +731,7 @@ describe("duel chains", () => {
     expect(replay.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(replay.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.state.chain).toHaveLength(2);
 
     const currentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
@@ -795,6 +797,7 @@ describe("duel chains", () => {
     expect(replay.state.actionWindowId).toBe(session.state.actionWindowId);
     expect(replay.legalActions).toEqual(getDuelLegalActions(session, 0));
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.chain).toHaveLength(0);
     expect(session.state.log.filter((entry) => entry.detail === "Stale self quick resolved")).toHaveLength(0);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.effectId === "stale-self-quick")).toBe(true);
@@ -929,6 +932,7 @@ describe("duel chains", () => {
     expect(replay.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(replay.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.state.chain).toHaveLength(0);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale quick source resolved")).toHaveLength(1);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale self quick resolved")).toBe(false);
