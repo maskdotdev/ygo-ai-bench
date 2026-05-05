@@ -106,10 +106,13 @@ describe("Node upstream snapshot restore", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.effects[0]).toMatchObject({ triggerEvent: "phaseBattle", triggerCode: 0x1080 });
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
     const battle = getDuelLegalActions(restored.session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, battle!).ok).toBe(true);
+    const result = applyLuaRestoreResponse(restored, battle!);
+    expect(result.ok).toBe(true);
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
 
     expect(restored.session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "phaseBattle", eventCode: 0x1008 }));
     expect(restored.session.state.pendingTriggers).toEqual([]);
@@ -430,6 +433,7 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.session.state.usedCountKeys).toEqual(session.state.usedCountKeys);
 
     expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1")).toBe(false);
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1")).toBe(false);
     expect(restored.host.messages).toEqual([]);
   });
 
@@ -489,6 +493,7 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.session.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
 
     expect(getLuaRestoreLegalActions(restored, 0).filter((candidate) => candidate.type === "activateEffect").map((candidate) => candidate.effectId)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions).filter((candidate) => candidate.type === "activateEffect").map((candidate) => candidate.effectId)).toEqual([]);
     expect(restored.host.messages).toEqual([]);
   });
 
@@ -570,6 +575,7 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.session.state.usedCountKeys).toEqual(["turn-1:0:code-1365"]);
 
     expect(getLuaRestoreLegalActions(restored, 0).filter((candidate) => candidate.type === "activateTrigger")).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions).filter((candidate) => candidate.type === "activateTrigger")).toEqual([]);
     const staleResult = applyLuaRestoreResponse(restored, staleSecondTrigger!);
     expect(staleResult.ok).toBe(false);
     expect(staleResult.error).toContain("Response is not currently legal");
