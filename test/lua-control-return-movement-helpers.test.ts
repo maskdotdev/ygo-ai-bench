@@ -623,6 +623,87 @@ describe("Lua control and return movement helpers", () => {
     expect(host.messages).toContain("control trigger resolved 0");
   });
 
+  it("makes Lua optional when control-change triggers miss timing after later event boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Control Boundary Source", kind: "monster" },
+      { code: "300", name: "When Control Watcher", kind: "monster" },
+      { code: "400", name: "If Control Watcher", kind: "monster" },
+      { code: "500", name: "Damage Boundary Watcher", kind: "monster" },
+      { code: "600", name: "Control Boundary Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 183, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "400", "500"] },
+      1: { main: ["600"] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "600");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, 0, LOCATION_MZONE, 1, 1, nil)
+      local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local damage_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local take=Effect.CreateEffect(source)
+      take:SetType(EFFECT_TYPE_IGNITION)
+      take:SetRange(LOCATION_HAND)
+      take:SetOperation(function(e,tp)
+        Duel.GetControl(target, 0, 0, 0, LOCATION_MZONE)
+        Duel.Damage(1, 100, REASON_EFFECT)
+      end)
+      source:RegisterEffect(take)
+
+      local when_effect=Effect.CreateEffect(when_watcher)
+      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      when_effect:SetCode(EVENT_CONTROL_CHANGED)
+      when_effect:SetRange(LOCATION_HAND)
+      when_effect:SetOperation(function(e,tp)
+        Debug.Message("when control resolved")
+      end)
+      when_watcher:RegisterEffect(when_effect)
+
+      local if_effect=Effect.CreateEffect(if_watcher)
+      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      if_effect:SetCode(EVENT_CONTROL_CHANGED)
+      if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      if_effect:SetRange(LOCATION_HAND)
+      if_effect:SetOperation(function(e,tp)
+        Debug.Message("if control resolved")
+      end)
+      if_watcher:RegisterEffect(if_effect)
+
+      local damage_effect=Effect.CreateEffect(damage_watcher)
+      damage_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      damage_effect:SetCode(EVENT_DAMAGE)
+      damage_effect:SetRange(LOCATION_HAND)
+      damage_effect:SetOperation(function(e,tp)
+        Debug.Message("damage boundary resolved")
+      end)
+      damage_watcher:RegisterEffect(damage_effect)
+      `,
+      "control-later-boundary-missed-timing.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1120");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1120", "lua-4-1111"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "controlChanged", eventCode: 1120 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
+    );
+    expect(session.state.cards.find((card) => card.code === "600")).toMatchObject({ location: "monsterZone", controller: 0 });
+  });
+
   it("lets Lua scripts swap control of field cards", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Swap Self", kind: "monster" },
