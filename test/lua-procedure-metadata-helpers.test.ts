@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyResponse,
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   moveDuelCard,
@@ -262,10 +263,10 @@ describe("Lua procedure metadata helpers", () => {
 
     const baseAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === session.state.effects[0]?.id);
     expect(baseAction).toBeDefined();
-    expect(applyResponse(session, baseAction!).ok).toBe(true);
+    applyAndAssert(session, baseAction!);
     const cloneAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === session.state.effects[1]?.id);
     expect(cloneAction).toBeDefined();
-    expect(applyResponse(session, cloneAction!).ok).toBe(true);
+    applyAndAssert(session, cloneAction!);
 
     expect(host.messages).toContain("base op 111/5/10/2/0");
     expect(host.messages).toContain("clone op 222/9/20/2/0");
@@ -310,3 +311,12 @@ describe("Lua procedure metadata helpers", () => {
   });
 
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
