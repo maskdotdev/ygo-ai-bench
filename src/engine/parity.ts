@@ -600,15 +600,7 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
         const moved = ctx.moveCard(card.uid, move.to, move.controller);
         if (move.position) moved.position = move.position;
         if (move.collectEvent) {
-          collectDuelTriggerEffects(ctx.duel, move.collectEvent, moved, {
-            ...(move.eventCode === undefined ? {} : { eventCode: move.eventCode }),
-            ...(move.eventIsLast === undefined ? {} : { eventIsLast: move.eventIsLast }),
-            ...(move.eventPlayer === undefined ? {} : { eventPlayer: move.eventPlayer }),
-            ...(move.eventValue === undefined ? {} : { eventValue: move.eventValue }),
-            ...(move.eventReason === undefined ? {} : { eventReason: move.eventReason }),
-            ...(move.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: move.eventReasonPlayer }),
-            ...(move.relatedEffectId === undefined ? {} : { relatedEffectId: move.relatedEffectId }),
-          });
+          collectDuelTriggerEffects(ctx.duel, move.collectEvent, moved, fixtureMoveEventPayload(move));
         }
       }
       if (effect.negateAttackOnResolve) ctx.log(`Negated attack ${negateDuelAttack(ctx.duel)}`);
@@ -653,7 +645,25 @@ function applyFixtureSetup(session: DuelSession, moves: ScriptedFixtureMove[], f
     }
     const moved = moveDuelCard(session.state, card.uid, move.to, move.controller);
     if (move.position) moved.position = move.position;
+    if (move.collectEvent) collectDuelTriggerEffects(session.state, move.collectEvent, moved, fixtureMoveEventPayload(move));
   }
+}
+
+function fixtureMoveEventPayload(move: ScriptedFixtureMove) {
+  return {
+    ...(move.eventCode === undefined ? {} : { eventCode: move.eventCode }),
+    ...(move.eventIsLast === undefined ? {} : { eventIsLast: move.eventIsLast }),
+    ...(move.eventPlayer === undefined ? {} : { eventPlayer: move.eventPlayer }),
+    ...(move.eventValue === undefined ? {} : { eventValue: move.eventValue }),
+    ...(move.eventReason === undefined ? {} : { eventReason: move.eventReason }),
+    ...(move.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: move.eventReasonPlayer }),
+    ...(move.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: move.eventReasonCardUid }),
+    ...(move.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: move.eventReasonEffectId }),
+    ...(move.relatedEffectId === undefined ? {} : { relatedEffectId: move.relatedEffectId }),
+    ...(move.eventChainDepth === undefined ? {} : { eventChainDepth: move.eventChainDepth }),
+    ...(move.eventChainLinkId === undefined ? {} : { eventChainLinkId: move.eventChainLinkId }),
+    ...(move.eventUids === undefined || move.eventUids.length === 0 ? {} : { eventUids: [...move.eventUids] }),
+  };
 }
 
 function applyFixturePrompt(session: DuelSession, prompt: DuelSession["state"]["prompt"] | undefined): void {

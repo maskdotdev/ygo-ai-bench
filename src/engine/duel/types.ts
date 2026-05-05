@@ -761,6 +761,7 @@ export interface ScriptedFixtureMove {
   relatedEffectId?: number;
   eventChainDepth?: number;
   eventChainLinkId?: string;
+  eventUids?: string[];
 }
 
 export interface ScriptedFixtureEffect {
