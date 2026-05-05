@@ -235,6 +235,25 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.waitingFor is required for a pending chain");
   });
 
+  it("rejects pending chain snapshots outside awaiting status", () => {
+    const session = createDuel({ seed: 179, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = serializeDuel(session).state.cards[0]!.uid;
+    const resolvingChain = serializeDuel(session);
+    const endedChain = serializeDuel(session);
+    resolvingChain.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect" }];
+    resolvingChain.state.status = "resolving";
+    endedChain.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect" }];
+    endedChain.state.status = "ended";
+
+    expect(() => restoreDuel(resolvingChain, createCardReader(cards))).toThrow("Malformed duel snapshot: pending chain requires an awaiting duel");
+    expect(() => restoreDuel(endedChain, createCardReader(cards))).toThrow("Malformed duel snapshot: pending chain requires an awaiting duel");
+  });
+
   it("rejects malformed snapshot scalar collections before restore", () => {
     const session = createDuel({ seed: 148, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

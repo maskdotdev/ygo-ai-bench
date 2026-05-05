@@ -13,6 +13,7 @@ export function assertSnapshotPendingWindowConsistency(state: Record<string, unk
 
 function assertSnapshotPassWindows(state: Record<string, unknown>): void {
   if ((state.chain as unknown[]).length === 0 && (state.chainPasses as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.chainPasses requires a pending chain");
+  if ((state.chain as unknown[]).length > 0 && state.status !== "awaiting") throw new Error("Malformed duel snapshot: pending chain requires an awaiting duel");
   if (chainWindowIsActive(state) && state.waitingFor === undefined) throw new Error("Malformed duel snapshot: state.waitingFor is required for a pending chain");
   if ((state.chain as unknown[]).length > 0 && (state.chainPasses as PlayerId[]).length === 2) throw new Error("Malformed duel snapshot: state.chainPasses must not contain both players");
   if ((state.chain as unknown[]).length > 0 && state.waitingFor !== undefined && (state.chainPasses as PlayerId[]).includes(state.waitingFor as PlayerId)) throw new Error("Malformed duel snapshot: state.waitingFor must not be included in chainPasses");
