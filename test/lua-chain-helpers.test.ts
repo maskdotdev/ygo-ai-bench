@@ -452,6 +452,9 @@ describe("Lua chain helpers", () => {
     const opened = applyResponse(session, sourceAction!);
     expect(opened.ok, opened.error).toBe(true);
     expect(opened.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(opened.legalActions).toEqual(getDuelLegalActions(session, 1));
+    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
+    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
