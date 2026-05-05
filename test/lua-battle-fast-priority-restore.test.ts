@@ -142,6 +142,7 @@ describe("Lua battle fast priority restore", () => {
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
     expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
@@ -196,6 +197,7 @@ describe("Lua battle fast priority restore", () => {
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
     expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
@@ -250,6 +252,7 @@ describe("Lua battle fast priority restore", () => {
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
     expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
@@ -307,6 +310,7 @@ describe("Lua battle fast priority restore", () => {
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
     expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
