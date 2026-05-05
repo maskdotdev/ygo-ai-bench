@@ -41,7 +41,7 @@ describe("duel chains", () => {
 
     const effect = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "send-self");
     expect(effect).toBeTruthy();
-    const result = applyResponse(session, effect!);
+    const result = applyAndAssert(session, effect!);
 
     expect(result.ok).toBe(true);
     expect(result.state.chain).toHaveLength(0);
@@ -73,7 +73,7 @@ describe("duel chains", () => {
 
     const effect = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "reset-after-chain");
     expect(effect).toBeTruthy();
-    const result = applyResponse(session, effect!);
+    const result = applyAndAssert(session, effect!);
 
     expect(result.ok).toBe(true);
     expect(result.state.chain).toHaveLength(0);
@@ -116,7 +116,7 @@ describe("duel chains", () => {
 
     const starterAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "first-chain-starter");
     expect(starterAction).toBeTruthy();
-    expect(applyResponse(session, starterAction!).ok).toBe(true);
+    applyAndAssert(session, starterAction!);
     expect(session.state.effects.find((effect) => effect.id === "counted-reset-chain")).toMatchObject({ reset: { count: 1 } });
 
     registerEffect(session, {
@@ -131,7 +131,7 @@ describe("duel chains", () => {
     });
     const secondAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "second-chain-starter");
     expect(secondAction).toBeTruthy();
-    expect(applyResponse(session, secondAction!).ok).toBe(true);
+    applyAndAssert(session, secondAction!);
 
     expect(session.state.effects.some((effect) => effect.id === "counted-reset-chain")).toBe(false);
   });
@@ -161,7 +161,7 @@ describe("duel chains", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "reset-chain-count-limited");
     expect(action).toBeTruthy();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     expect(session.state.effects).toHaveLength(0);
     expect(session.state.usedCountKeys).toHaveLength(0);
@@ -202,7 +202,7 @@ describe("duel chains", () => {
 
     const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "original-effect");
     expect(original).toBeTruthy();
-    const opened = applyResponse(session, original!);
+    const opened = applyAndAssert(session, original!);
 
     expect(opened.ok).toBe(true);
     expect(opened.state.chain).toHaveLength(1);
@@ -211,19 +211,16 @@ describe("duel chains", () => {
 
     const response = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "quick-response");
     expect(response).toBeTruthy();
-    const chained = applyResponse(session, response!);
+    const chained = applyAndAssert(session, response!);
 
     expect(chained.ok).toBe(true);
     expect(chained.state.chain).toHaveLength(2);
     expect(chained.state.waitingFor).toBe(1);
-    expect(chained.legalActions).toEqual(getDuelLegalActions(session, 1));
-    expect(chained.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
-    expect(chained.legalActionGroups.flatMap((group) => group.actions)).toEqual(chained.legalActions);
     expect(chained.state.log.some((entry) => entry.detail === "Original operation resolved")).toBe(false);
 
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeTruthy();
-    const resolved = applyResponse(session, pass!);
+    const resolved = applyAndAssert(session, pass!);
     const quickLog = resolved.state.log.find((entry) => entry.detail === "Quick response resolved");
     const originalLog = resolved.state.log.find((entry) => entry.detail === "Original operation resolved");
 
@@ -277,7 +274,7 @@ describe("duel chains", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "targeted-send");
     expect(action).toBeTruthy();
-    const opened = applyResponse(session, action!);
+    const opened = applyAndAssert(session, action!);
 
     expect(opened.ok).toBe(true);
     expect(opened.state.chain).toHaveLength(1);
@@ -286,7 +283,7 @@ describe("duel chains", () => {
 
     const response = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "target-response");
     expect(response).toBeTruthy();
-    const chained = applyResponse(session, response!);
+    const chained = applyAndAssert(session, response!);
 
     expect(chained.ok).toBe(true);
     expect(chained.state.chain).toHaveLength(2);
@@ -295,7 +292,7 @@ describe("duel chains", () => {
 
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeTruthy();
-    const resolved = applyResponse(session, pass!);
+    const resolved = applyAndAssert(session, pass!);
 
     expect(resolved.ok).toBe(true);
     expect(resolved.state.cards.find((card) => card.uid === target!.uid)?.location).toBe("graveyard");
@@ -341,12 +338,12 @@ describe("duel chains", () => {
 
     const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "negated-original");
     expect(original).toBeTruthy();
-    const opened = applyResponse(session, original!);
+    const opened = applyAndAssert(session, original!);
     expect(opened.state.chain).toHaveLength(1);
 
     const response = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "negating-response");
     expect(response).toBeTruthy();
-    const chained = applyResponse(session, response!);
+    const chained = applyAndAssert(session, response!);
 
     expect(chained.ok).toBe(true);
     expect(chained.state.chain).toHaveLength(2);
@@ -355,7 +352,7 @@ describe("duel chains", () => {
 
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeTruthy();
-    const resolved = applyResponse(session, pass!);
+    const resolved = applyAndAssert(session, pass!);
 
     expect(resolved.ok).toBe(true);
     expect(resolved.state.chain).toHaveLength(0);
@@ -401,11 +398,11 @@ describe("duel chains", () => {
 
     const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "pass-original");
     expect(original).toBeTruthy();
-    expect(applyResponse(session, original!).state.chain).toHaveLength(1);
+    expect(applyAndAssert(session, original!).state.chain).toHaveLength(1);
 
     const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(pass).toBeTruthy();
-    const resolved = applyResponse(session, pass!);
+    const resolved = applyAndAssert(session, pass!);
 
     expect(resolved.ok).toBe(true);
     expect(resolved.state.chain).toHaveLength(0);
@@ -452,7 +449,7 @@ describe("duel chains", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "pass-failing-operation");
     expect(action).toBeTruthy();
-    const opened = applyResponse(session, action!);
+    const opened = applyAndAssert(session, action!);
     expect(opened.ok).toBe(true);
     expect(opened.state.chain).toHaveLength(1);
     expect(opened.state.waitingFor).toBe(1);
@@ -519,10 +516,10 @@ describe("duel chains", () => {
 
     const starter = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "chain-starter");
     expect(starter).toBeTruthy();
-    expect(applyResponse(session, starter!).state.waitingFor).toBe(1);
+    expect(applyAndAssert(session, starter!).state.waitingFor).toBe(1);
     const opponentQuick = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "opponent-quick-once");
     expect(opponentQuick).toBeTruthy();
-    const chained = applyResponse(session, opponentQuick!);
+    const chained = applyAndAssert(session, opponentQuick!);
 
     expect(chained.ok).toBe(true);
     expect(chained.state.chain).toHaveLength(2);
@@ -530,7 +527,7 @@ describe("duel chains", () => {
 
     const pass = getDuelLegalActions(session, 0).find((action) => action.type === "passChain");
     expect(pass).toBeTruthy();
-    const resolved = applyResponse(session, pass!);
+    const resolved = applyAndAssert(session, pass!);
 
     expect(resolved.ok).toBe(true);
     expect(resolved.state.chain).toHaveLength(0);
@@ -599,13 +596,13 @@ describe("duel chains", () => {
 
     const starter = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "priority-starter");
     expect(starter).toBeTruthy();
-    expect(applyResponse(session, starter!).state.waitingFor).toBe(1);
+    expect(applyAndAssert(session, starter!).state.waitingFor).toBe(1);
     const opponent = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "opponent-quick");
     expect(opponent).toBeTruthy();
-    expect(applyResponse(session, opponent!).state.waitingFor).toBe(0);
+    expect(applyAndAssert(session, opponent!).state.waitingFor).toBe(0);
     const playerA = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "player-quick-a");
     expect(playerA).toBeTruthy();
-    const afterPlayerA = applyResponse(session, playerA!);
+    const afterPlayerA = applyAndAssert(session, playerA!);
 
     expect(afterPlayerA.ok).toBe(true);
     expect(afterPlayerA.state.chain).toHaveLength(3);
@@ -648,11 +645,11 @@ describe("duel chains", () => {
 
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "stale-pass-source");
     expect(sourceAction).toBeTruthy();
-    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(1);
+    expect(applyAndAssert(session, sourceAction!).state.waitingFor).toBe(1);
     const stalePass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(stalePass).toBeTruthy();
 
-    expect(applyResponse(session, stalePass!).ok).toBe(true);
+    applyAndAssert(session, stalePass!);
     const replay = applyResponse(session, stalePass!);
 
     expect(replay.ok).toBe(false);
@@ -702,7 +699,7 @@ describe("duel chains", () => {
 
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-stale-pass-source");
     expect(sourceAction).toBeTruthy();
-    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(1);
+    expect(applyAndAssert(session, sourceAction!).state.waitingFor).toBe(1);
     const stalePass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(stalePass).toBeTruthy();
 
@@ -722,11 +719,7 @@ describe("duel chains", () => {
     });
     const quick = getDuelLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-stale-pass-quick");
     expect(quick).toBeTruthy();
-    const quickResult = applyResponse(restored, quick!);
-    expect(quickResult.ok).toBe(true);
-    expect(quickResult.legalActions).toEqual(getDuelLegalActions(restored, quickResult.state.waitingFor!));
-    expect(quickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, quickResult.state.waitingFor!));
-    expect(quickResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(quickResult.legalActions);
+    const quickResult = applyAndAssert(restored, quick!);
     expect(restored.state.chain).toHaveLength(2);
     expect(restored.state.waitingFor).toBe(1);
     const replay = applyResponse(restored, stalePass!);
@@ -741,11 +734,7 @@ describe("duel chains", () => {
 
     const currentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(currentPass).toBeTruthy();
-    const currentPassResult = applyResponse(restored, currentPass!);
-    expect(currentPassResult.ok).toBe(true);
-    expect(currentPassResult.legalActions).toEqual(getDuelLegalActions(restored, currentPassResult.state.waitingFor!));
-    expect(currentPassResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, currentPassResult.state.waitingFor!));
-    expect(currentPassResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(currentPassResult.legalActions);
+    const currentPassResult = applyAndAssert(restored, currentPass!);
     expect(restored.state.chain).toHaveLength(0);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass source resolved")).toHaveLength(1);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass quick resolved")).toHaveLength(1);
@@ -786,7 +775,7 @@ describe("duel chains", () => {
 
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "stale-quick-source");
     expect(sourceAction).toBeTruthy();
-    const opened = applyResponse(session, sourceAction!);
+    const opened = applyAndAssert(session, sourceAction!);
     expect(opened.ok).toBe(true);
     expect(opened.state.waitingFor).toBe(0);
     const staleQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "stale-self-quick");
@@ -795,7 +784,7 @@ describe("duel chains", () => {
     expect(pass).toBeTruthy();
     expect(staleQuick).toMatchObject({ windowId: queryPublicState(session).actionWindowId, windowKind: "chainResponse" });
     expect(pass).toMatchObject({ windowId: queryPublicState(session).actionWindowId, windowKind: "chainResponse" });
-    expect(applyResponse(session, pass!).ok).toBe(true);
+    applyAndAssert(session, pass!);
 
     const replay = applyResponse(session, staleQuick!);
 
@@ -847,7 +836,7 @@ describe("duel chains", () => {
 
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "missing-restored-chain-source");
     expect(sourceAction).toBeTruthy();
-    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(1);
+    expect(applyAndAssert(session, sourceAction!).state.waitingFor).toBe(1);
     expect(session.state.chain.map((link) => link.effectId)).toEqual(["missing-restored-chain-source"]);
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
@@ -907,7 +896,7 @@ describe("duel chains", () => {
 
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-stale-quick-source");
     expect(sourceAction).toBeTruthy();
-    expect(applyResponse(session, sourceAction!).state.waitingFor).toBe(0);
+    expect(applyAndAssert(session, sourceAction!).state.waitingFor).toBe(0);
     const staleQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-stale-self-quick");
     expect(staleQuick).toBeTruthy();
     expect(staleQuick).toMatchObject({ windowId: queryPublicState(session).actionWindowId, windowKind: "chainResponse" });
@@ -929,11 +918,7 @@ describe("duel chains", () => {
     const pass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeTruthy();
     expect(pass).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse" });
-    const passResult = applyResponse(restored, pass!);
-    expect(passResult.ok).toBe(true);
-    expect(passResult.legalActions).toEqual(getDuelLegalActions(restored, passResult.state.waitingFor!));
-    expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, passResult.state.waitingFor!));
-    expect(passResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(passResult.legalActions);
+    const passResult = applyAndAssert(restored, pass!);
     const replay = applyResponse(restored, staleQuick!);
 
     expect(replay.ok).toBe(false);
@@ -948,3 +933,12 @@ describe("duel chains", () => {
   });
 
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
