@@ -87,6 +87,22 @@ describe("Lua chain-negated events", () => {
     const negatorAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(negatorAction).toBeDefined();
     applyAndAssert(session, negatorAction!);
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restoredChain, 1)).toEqual(getDuelLegalActions(restoredChain.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
+    while (restoredChain.session.state.chain.length > 0) {
+      const player = restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer;
+      const pass = getLuaRestoreLegalActions(restoredChain, player).find((candidate) => candidate.type === "passChain");
+      expect(pass).toBeDefined();
+      applyLuaRestoreAndAssert(restoredChain, pass!);
+    }
+    expect(restoredChain.host.messages).toContain("negate result true");
+    expect(restoredChain.host.messages).not.toContain("negated source resolved");
+    expect(restoredChain.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainNegated"]);
+
     while (session.state.chain.length > 0) {
       const player = session.state.waitingFor ?? session.state.turnPlayer;
       const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
