@@ -445,11 +445,12 @@ describe("duel trigger buckets", () => {
     ]);
     expect(getGroupedDuelLegalActions(restored, 0).map((group) => ({
       label: group.label,
+      windowId: group.windowId,
       windowKind: group.windowKind,
       effectIds: group.actions.map((action) => "effectId" in action ? action.effectId : undefined),
     }))).toEqual([
-      { label: "Trigger Activations", windowKind: "triggerBucket", effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"] },
-      { label: "Trigger Declines", windowKind: "triggerBucket", effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"] },
+      { label: "Trigger Activations", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"] },
+      { label: "Trigger Declines", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"] },
     ]);
     expect(getDuelLegalActions(restored, 1)).toHaveLength(0);
 
@@ -480,11 +481,12 @@ describe("duel trigger buckets", () => {
     expect(getDuelLegalActions(restoredOpponentBucket, 1).filter((action) => action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["opponent-restored-later-optional"]);
     expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => ({
       label: group.label,
+      windowId: group.windowId,
       windowKind: group.windowKind,
       effectIds: group.actions.map((action) => "effectId" in action ? action.effectId : undefined),
     }))).toEqual([
-      { label: "Trigger Activations", windowKind: "triggerBucket", effectIds: ["opponent-restored-later-optional"] },
-      { label: "Trigger Declines", windowKind: "triggerBucket", effectIds: ["opponent-restored-later-optional"] },
+      { label: "Trigger Activations", windowId: queryPublicState(restoredOpponentBucket).actionWindowId, windowKind: "triggerBucket", effectIds: ["opponent-restored-later-optional"] },
+      { label: "Trigger Declines", windowId: queryPublicState(restoredOpponentBucket).actionWindowId, windowKind: "triggerBucket", effectIds: ["opponent-restored-later-optional"] },
     ]);
   });
 
@@ -599,10 +601,11 @@ describe("duel trigger buckets", () => {
     expect(getDuelLegalActions(restored, 1).some((action) => action.type === "declineTrigger")).toBe(false);
     expect(getGroupedDuelLegalActions(restored, 1).map((group) => ({
       label: group.label,
+      windowId: group.windowId,
       windowKind: group.windowKind,
       effectIds: group.actions.map((action) => "effectId" in action ? action.effectId : undefined),
     }))).toEqual([
-      { label: "Trigger Activations", windowKind: "triggerBucket", effectIds: ["opponent-restored-mandatory"] },
+      { label: "Trigger Activations", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", effectIds: ["opponent-restored-mandatory"] },
     ]);
   });
 
