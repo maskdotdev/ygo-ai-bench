@@ -24,7 +24,7 @@ export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
   if (a.type === "xyzSummon" && response.type === "xyzSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
   if (a.type === "linkSummon" && response.type === "linkSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
   if (a.type === "ritualSummon" && response.type === "ritualSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
-  if (a.type === "pendulumSummon" && response.type === "pendulumSummon" && !sameStringMembers(a.summonUids, response.summonUids)) return false;
+  if (a.type === "pendulumSummon" && response.type === "pendulumSummon" && !isPendulumSummonSelection(a.summonUids, response.summonUids)) return false;
   if (a.type === "changePosition" && response.type === "changePosition" && a.position !== response.position) return false;
   if (a.type === "declareAttack" && response.type === "declareAttack" && a.attackerUid !== response.attackerUid) return false;
   if (a.type === "declareAttack" && response.type === "declareAttack" && a.targetUid !== response.targetUid) return false;
@@ -44,6 +44,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function sameDirectAttackIntent(action: Extract<DuelAction, { type: "declareAttack" | "replayAttack" }>, response: Extract<DuelResponse, { type: "declareAttack" | "replayAttack" }>): boolean {
   if (action.directAttack === true) return response.directAttack === true;
   return response.directAttack !== true;
+}
+
+function isPendulumSummonSelection(candidates: string[], selected: string[]): boolean {
+  if (!selected.length || selected.length > candidates.length) return false;
+  if (new Set(selected).size !== selected.length) return false;
+  return selected.every((uid) => candidates.includes(uid));
 }
 
 function hasWindowId(value: unknown): value is { windowId: number } {

@@ -1,6 +1,5 @@
 import { isDuelMonsterLike } from "#duel/card-predicates.js";
 import { findCard, getCards, pushDuelLog } from "#duel/card-state.js";
-import { sameStringMembers } from "#duel/string-list-match.js";
 import type { DuelAction, DuelCardInstance, DuelState, PlayerId } from "#duel/types.js";
 
 type PendulumSummonAction = Extract<DuelAction, { type: "pendulumSummon" }>;
@@ -23,16 +22,22 @@ export function pendulumSummonDuelCards(
   canSummon: (uid: string) => boolean,
   specialSummon: (uid: string, player: PlayerId) => DuelCardInstance,
 ): DuelCardInstance[] {
-  const legalAction = pendulumSummonActions(state, player, canSummon).find((action) => sameStringMembers(action.summonUids, summonUids));
+  const legalAction = pendulumSummonActions(state, player, canSummon).find((action) => isPendulumSummonSelection(action.summonUids, summonUids));
   if (!legalAction) throw new Error("Pendulum Summon is not legal");
   const summoned: DuelCardInstance[] = [];
-  for (const uid of legalAction.summonUids) {
+  for (const uid of summonUids) {
     const card = specialSummon(uid, player);
     card.summonType = "pendulum";
     summoned.push(card);
   }
   pushDuelLog(state, "pendulumSummon", player, undefined, `Pendulum Summoned ${summoned.length} monster(s)`);
   return summoned;
+}
+
+function isPendulumSummonSelection(candidates: string[], selected: string[]): boolean {
+  if (!selected.length || selected.length > candidates.length) return false;
+  if (new Set(selected).size !== selected.length) return false;
+  return selected.every((uid) => candidates.includes(uid));
 }
 
 function pendulumSummonCandidates(

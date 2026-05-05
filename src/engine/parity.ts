@@ -660,7 +660,7 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "xyzSummon" && response.type === "xyzSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
   if (action.type === "linkSummon" && response.type === "linkSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
   if (action.type === "ritualSummon" && response.type === "ritualSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
-  if (action.type === "pendulumSummon" && response.type === "pendulumSummon" && !sameStringMembers(action.summonUids, response.summonUids)) return false;
+  if (action.type === "pendulumSummon" && response.type === "pendulumSummon" && !isPendulumSummonSelection(action.summonUids, response.summonUids)) return false;
   if (action.type === "changePosition" && response.type === "changePosition" && action.position !== response.position) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.targetUid !== response.targetUid) return false;
@@ -694,6 +694,12 @@ function describeStep(step: ScriptedStepResponse): string {
     "location" in step && step.location ? `location=${step.location}` : undefined,
   ].filter(Boolean);
   return detail.join(" ");
+}
+
+function isPendulumSummonSelection(candidates: string[], selected: string[]): boolean {
+  if (!selected.length || selected.length > candidates.length) return false;
+  if (new Set(selected).size !== selected.length) return false;
+  return selected.every((uid) => candidates.includes(uid));
 }
 
 function describeGroupExpectation(expectation: ScriptedLegalActionGroupExpectation): string {

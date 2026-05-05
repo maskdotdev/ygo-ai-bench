@@ -47,16 +47,24 @@ export function applyDuelResponse(session: DuelSession, response: unknown, handl
   const legal = handlers.getLegalActions(session, player);
   const canonicalResponse = legal.find((action) => sameAction(action, response));
   if (!canonicalResponse) return result(session, handlers, false, "Response is not currently legal");
+  const dispatchResponse = responseForDispatch(canonicalResponse, response);
 
   const rollback = captureDuelState(session.state);
   try {
-    dispatchDuelResponse(session, canonicalResponse, handlers);
+    dispatchDuelResponse(session, dispatchResponse, handlers);
     session.state.actionWindowId += 1;
     return result(session, handlers, true);
   } catch (error) {
     restoreDuelState(session.state, rollback);
     return result(session, handlers, false, error instanceof Error ? error.message : "Unknown duel engine error");
   }
+}
+
+function responseForDispatch(canonicalResponse: DuelResponse, response: unknown): DuelResponse {
+  if (canonicalResponse.type === "pendulumSummon" && isRecord(response) && Array.isArray(response.summonUids)) {
+    return { ...canonicalResponse, summonUids: response.summonUids.filter((uid): uid is string => typeof uid === "string") };
+  }
+  return canonicalResponse;
 }
 
 function responsePlayer(response: unknown): PlayerId | undefined {
