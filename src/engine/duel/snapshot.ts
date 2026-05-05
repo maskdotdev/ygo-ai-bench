@@ -433,9 +433,8 @@ function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): voi
     }
     if (link.targetUids !== undefined) {
       assertSnapshotStringArray(link.targetUids, `${path}.targetUids`);
-      for (const [targetIndex, uid] of (link.targetUids as string[]).entries()) {
-        if (!cardUids.has(uid)) throw new Error(`Malformed duel snapshot: ${path}.targetUids.${targetIndex} must reference a card`);
-      }
+      assertSnapshotUniqueStringArray(link.targetUids, `${path}.targetUids`);
+      for (const [targetIndex, uid] of (link.targetUids as string[]).entries()) if (!cardUids.has(uid)) throw new Error(`Malformed duel snapshot: ${path}.targetUids.${targetIndex} must reference a card`);
     }
     if (link.targetPlayer !== undefined) assertSnapshotPlayerId(link.targetPlayer, `${path}.targetPlayer`);
     if (link.disablePlayer !== undefined) assertSnapshotPlayerId(link.disablePlayer, `${path}.disablePlayer`);
