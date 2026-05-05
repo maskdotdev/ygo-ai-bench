@@ -262,6 +262,7 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   assertPartialList("eventHistory", session.state.eventHistory, expected.eventHistory, fail);
   assertLegalActionCounts(session, expected.legalActionCounts, fail);
   assertLegalActionGroupCounts(session, expected.legalActionGroupCounts, fail);
+  assertLegalActionGroupsFlattenLegalActions(session, expected, fail);
   for (const expectedLog of expected.logIncludes ?? []) {
     if (!state.log.some((entry) => entry.detail.includes(expectedLog) || entry.action.includes(expectedLog))) fail(`Expected log containing ${expectedLog}`);
   }
@@ -349,6 +350,21 @@ function assertLegalActionGroupCounts(session: DuelSession, expected: Partial<Re
   for (const [player, expectedCount] of Object.entries(expected ?? {}) as [string, number][]) {
     const actualCount = getGroupedDuelLegalActions(session, Number(player) as PlayerId).length;
     if (actualCount !== expectedCount) fail(`Expected player ${player} legal action group count ${expectedCount}, got ${actualCount}`);
+  }
+}
+
+function assertLegalActionGroupsFlattenLegalActions(session: DuelSession, expected: ScriptedDuelWindowExpectation, fail: (message: string) => void): void {
+  const players = new Set<PlayerId>();
+  for (const player of Object.keys(expected.legalActionCounts ?? {})) players.add(Number(player) as PlayerId);
+  for (const player of Object.keys(expected.legalActionGroupCounts ?? {})) players.add(Number(player) as PlayerId);
+  for (const action of expected.legalActions ?? []) players.add(action.player);
+  for (const action of expected.absentLegalActions ?? []) players.add(action.player);
+  for (const group of expected.legalActionGroups ?? []) players.add(group.player);
+  for (const group of expected.absentLegalActionGroups ?? []) players.add(group.player);
+  for (const player of players) {
+    const legalActions = getLegalActions(session, player);
+    const groupedActions = getGroupedDuelLegalActions(session, player).flatMap((group) => group.actions);
+    if (JSON.stringify(groupedActions) !== JSON.stringify(legalActions)) fail(`Expected player ${player} legal action groups to flatten to legal actions`);
   }
 }
 

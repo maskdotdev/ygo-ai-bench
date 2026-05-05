@@ -335,12 +335,12 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       if (!canChooseEffect(state, effect, source, player)) continue;
       actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
     }
-    actions.push(...corePositionChangeActions(state, player, coreBattleHandlers));
     actions.push(...flipSummonActions(state, player).filter((action) => {
       if (action.type !== "flipSummon") return false;
       const card = findCard(state, action.uid);
       return Boolean(card && !isFlipSummonPrevented(state, card, createContinuousEffectContext(state)));
     }));
+    actions.push(...corePositionChangeActions(state, player, coreBattleHandlers));
   }
   appendBattleActions(actions, state, player, coreBattleHandlers);
   const mustAttack = hasCoreMustAttackAction(state, player, actions, coreBattleHandlers);
