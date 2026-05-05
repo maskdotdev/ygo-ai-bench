@@ -3,7 +3,7 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions 
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua custom events", () => {
   it("matches raised EVENT_CUSTOM codes by their full numeric event code", () => {
@@ -111,6 +111,8 @@ describe("Lua custom events", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers).toHaveLength(1);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "customEvent", eventCode, eventCardUid: target!.uid, eventPlayer: 0, eventValue: 77, eventReason: 64, eventReasonPlayer: 1 });
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
