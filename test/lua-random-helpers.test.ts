@@ -379,6 +379,7 @@ describe("Lua random helpers", () => {
     expect(restoredCoinTrigger).toBeDefined();
     const restoredCoinResult = applyLuaRestoreResponse(restored, restoredCoinTrigger!);
     expect(restoredCoinResult.ok).toBe(true);
+    expect(restoredCoinResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredCoinResult.state.waitingFor!));
     expect(restoredCoinResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredCoinResult.state.waitingFor!));
     expect(restored.host.messages[0]).toMatch(/^coin trigger resolved 0\/2\/[01],[01]$/);
     const coinTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -406,6 +407,7 @@ describe("Lua random helpers", () => {
     expect(restoredDiceTrigger).toBeDefined();
     const restoredDiceResult = applyLuaRestoreResponse(restoredDice, restoredDiceTrigger!);
     expect(restoredDiceResult.ok).toBe(true);
+    expect(restoredDiceResult.legalActions).toEqual(getDuelLegalActions(restoredDice.session, restoredDiceResult.state.waitingFor!));
     expect(restoredDiceResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredDice.session, restoredDiceResult.state.waitingFor!));
     expect(restoredDice.host.messages[0]).toMatch(/^dice trigger resolved 0\/2\/[1-6],[1-6]$/);
     const diceTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -709,6 +711,7 @@ describe("Lua random helpers", () => {
     expect(restoredTrigger).toBeDefined();
     const restoredResult = applyLuaRestoreResponse(restored, restoredTrigger!);
     expect(restoredResult.ok).toBe(true);
+    expect(restoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
     expect(restored.host.messages[0]).toMatch(/^restored called coin trigger 0\/1\/[01]$/);
   });
