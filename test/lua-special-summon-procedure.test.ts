@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -131,6 +131,8 @@ describe("Lua special summon procedures", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredAction = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid.includes("100"));
     expect(restoredAction).toBeDefined();
+    const restoredPublic = queryPublicState(restored.session);
+    expect(restoredAction).toMatchObject({ windowId: restoredPublic.actionWindowId, windowKind: "open" });
     const restoredResult = applyLuaRestoreResponse(restored, restoredAction!);
     expect(restoredResult.ok).toBe(true);
     expect(restoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredResult.state.waitingFor!));
@@ -141,6 +143,10 @@ describe("Lua special summon procedures", () => {
     expect(restored.session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
     expect(getLuaRestoreLegalActions(restored, 0).some((candidate) => candidate.type === "specialSummonProcedure")).toBe(false);
+    const staleRestoredResult = applyLuaRestoreResponse(restored, restoredAction!);
+    expect(staleRestoredResult.ok).toBe(false);
+    expect(staleRestoredResult.error).toContain("Response is not currently legal");
+    expect(staleRestoredResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
 
     expect(applyResponse(session, action!).ok).toBe(true);
 
