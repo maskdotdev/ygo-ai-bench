@@ -49,6 +49,23 @@ describe("duel battle end state", () => {
     expect(state.damagePasses).toEqual([]);
   });
 
+  it("records a draw when LP loss resolves with both players at zero", () => {
+    const session = createDuel({ seed: 122, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.players[0].lifePoints = 0;
+
+    setDuelPlayerLifePoints(session.state, 1, 0);
+
+    const state = queryPublicState(session);
+    expect(state.status).toBe("ended");
+    expect(state.winner).toBe("draw");
+    expect(state.waitingFor).toBeUndefined();
+  });
+
   it("does not reopen trigger windows after lethal battle damage", () => {
     const localCards = [
       ...cards,
