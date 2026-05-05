@@ -3,6 +3,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { isCounterPlacementPrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { addDuelCardCounter, canAddDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
 import { collectDuelTriggerEffects } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import { readTableStringField } from "#lua/api-utils.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import type { DuelCardInstance, DuelEventName, DuelSession } from "#duel/types.js";
@@ -57,7 +58,7 @@ function pushAddCounter(L: unknown, session: DuelSession, hostState: LuaOperatio
   const added = canPlaceCounter(session, card, count) && addDuelCardCounter(card, counterType, count);
   if (added && card) {
     markLuaOperationTimingBoundary(session, hostState);
-    collectCounterEvent(session, "counterAdded", card);
+    collectCounterEvent(session, hostState, "counterAdded", card);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
   }
   lua.lua_pushboolean(L, added);
@@ -78,7 +79,7 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaOpera
   const removed = removeDuelCardCounter(card, counterType, count);
   if (removed && card) {
     markLuaOperationTimingBoundary(session, hostState);
-    collectCounterEvent(session, "counterRemoved", card);
+    collectCounterEvent(session, hostState, "counterRemoved", card);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
   }
   lua.lua_pushboolean(L, removed);
@@ -120,8 +121,8 @@ function totalCounters(card: DuelCardInstance): number {
   return Object.values(card.counters ?? {}).reduce((total, value) => total + value, 0);
 }
 
-function collectCounterEvent(session: DuelSession, eventName: DuelEventName, card: DuelCardInstance): void {
-  collectDuelTriggerEffects(session.state, eventName, card);
+function collectCounterEvent(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, eventName: DuelEventName, card: DuelCardInstance): void {
+  collectDuelTriggerEffects(session.state, eventName, card, { eventReason: duelReason.effect, eventReasonPlayer: hostState.activeContext?.player ?? session.state.turnPlayer });
 }
 
 function canPlaceCounter(session: DuelSession, card: DuelCardInstance | undefined, count: number): boolean {

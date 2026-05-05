@@ -206,10 +206,11 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelP
   const removed = removeDuelCounters(session.state, query.player, query.selfLocations, query.opponentLocations, query.counterType, query.count);
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...removed);
   if (removed.length > 0) markLuaOperationTimingBoundary(session, hostState);
+  const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
   for (const uid of removed) {
     const card = findCard(session.state, uid);
     if (!card) continue;
-    collectDuelTriggerEffects(session.state, "counterRemoved", card);
+    collectDuelTriggerEffects(session.state, "counterRemoved", card, { eventReason: query.reason, eventReasonPlayer: reasonPlayer });
   }
   if (removed.length > 0 && hostState.activeContext) hostState.activeOperationMoved = true;
   lua.lua_pushinteger(L, removed.length > 0 ? query.count : 0);
@@ -416,6 +417,7 @@ function readCounterQuery(L: unknown, session: DuelSession): {
   opponentLocations: DuelLocation[];
   counterType: number;
   count: number;
+  reason: number;
 } {
   return {
     player: normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer),
@@ -423,6 +425,7 @@ function readCounterQuery(L: unknown, session: DuelSession): {
     opponentLocations: counterLocations(lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0),
     counterType: lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0,
     count: Math.max(0, lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 1),
+    reason: lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : duelReason.effect,
   };
 }
 
