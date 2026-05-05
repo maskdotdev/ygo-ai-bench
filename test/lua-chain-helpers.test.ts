@@ -80,12 +80,10 @@ describe("Lua chain helpers", () => {
     const sourceUid = session.state.cards.find((card) => card.code === "100" && card.owner === 0)?.uid;
     const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sourceUid);
     expect(sourceAction).toBeDefined();
-    const opened = applyResponse(session, sourceAction!);
-    expect(opened.ok).toBe(true);
+    applyAndAssert(session, sourceAction!);
     const quickAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quickAction).toBeDefined();
-    const quickResult = applyResponse(session, quickAction!);
-    expect(quickResult.ok, quickResult.error).toBe(true);
+    applyAndAssert(session, quickAction!);
     passChainIfAvailable(session);
     passChainIfAvailable(session);
     passChainIfAvailable(session);
@@ -910,6 +908,15 @@ function passChainIfAvailable(session: ReturnType<typeof createDuel>): boolean {
   if (player === undefined) return false;
   const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passChain");
   return Boolean(pass && applyResponse(session, pass).ok);
+}
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
 }
 
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
