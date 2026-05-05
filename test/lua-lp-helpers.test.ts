@@ -173,6 +173,38 @@ describe("Lua LP helpers", () => {
     expect(session.state.pendingTriggers).toEqual([]);
   });
 
+  it("keeps deck and grave swap from mutating ended duels", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Post-End Deck", kind: "monster" },
+      { code: "200", name: "Post-End Grave", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 956, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const graveCard = session.state.cards.find((card) => card.code === "200");
+    expect(graveCard).toBeDefined();
+    moveDuelCard(session.state, graveCard!.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Duel.SwapDeckAndGrave(0)
+      Debug.Message("operated " .. Duel.GetOperatedGroup():GetCount())
+      `,
+      "ended-swap-deck-grave-noop.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["operated 0"]);
+    expect(session.state.cards.find((card) => card.code === "100")?.location).toBe("deck");
+    expect(session.state.cards.find((card) => card.code === "200")?.location).toBe("graveyard");
+    expect(session.state.pendingTriggers).toEqual([]);
+  });
+
   it("clears pending actors when LP loss ends the duel", () => {
     const session = createDuel({ seed: 951, startingHandSize: 0 });
     loadDecks(session, {

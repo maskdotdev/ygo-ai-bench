@@ -105,6 +105,10 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
   });
   lua.lua_setfield(L, -2, to_luastring("DiscardHand"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") {
+      setOperatedUids(hostState, []);
+      return 0;
+    }
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const moved = swapDeckAndGrave(session, player);
     setOperatedUids(hostState, moved);
