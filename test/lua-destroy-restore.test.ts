@@ -4,7 +4,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua destroy restore helpers", () => {
   it("applies restored Lua destroying triggers through restore responses", () => {
@@ -73,6 +73,8 @@ describe("Lua destroy restore helpers", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("destroying");
     expect(restored.session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1010, eventCardUid: destroyed!.uid }));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
@@ -149,6 +151,8 @@ describe("Lua destroy restore helpers", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("destroyed");
     expect(restored.session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1029, eventCardUid: destroyed!.uid }));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
