@@ -70,7 +70,7 @@ function pushActivateResult(L: unknown, session: DuelSession): number {
 }
 
 function getReasonPlayer(session: DuelSession, hostState: LuaDuelEffectApiHostState): PlayerId {
-  return hostState.activeContext?.eventCard?.reasonPlayer ?? hostState.activeContext?.eventCard?.controller ?? hostState.activeContext?.player ?? session.state.turnPlayer;
+  return hostState.activeContext?.eventReasonPlayer ?? hostState.activeContext?.eventCard?.reasonPlayer ?? hostState.activeContext?.eventCard?.controller ?? hostState.activeContext?.player ?? session.state.turnPlayer;
 }
 
 function pushReasonEffect(L: unknown, session: DuelSession, hostState: LuaDuelEffectApiHostState): number {
