@@ -3,7 +3,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua attack negation helpers", () => {
@@ -142,9 +142,12 @@ describe("Lua attack negation helpers", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0 });
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, restoredTrigger!).ok).toBe(true);
+    const restoredTriggerResult = applyLuaRestoreResponse(restored, restoredTrigger!);
+    expect(restoredTriggerResult.ok).toBe(true);
+    expect(restoredTriggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, restoredTriggerResult.state.waitingFor!));
     expect(restored.host.messages).toContain("attack disabled trigger 100/0");
 
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
@@ -202,6 +205,7 @@ describe("Lua attack negation helpers", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const negate = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
     const staleAttackPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passAttack");
     expect(negate).toBeDefined();
@@ -209,6 +213,7 @@ describe("Lua attack negation helpers", () => {
     const result = applyLuaRestoreResponse(restored, negate!);
 
     expect(result.ok).toBe(true);
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
     expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(["lua-1"]);
     const replayAttackPass = applyLuaRestoreResponse(restored, staleAttackPass!);
     expect(replayAttackPass.ok).toBe(false);
@@ -217,7 +222,9 @@ describe("Lua attack negation helpers", () => {
     expect(replayAttackPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
-    expect(applyLuaRestoreResponse(restored, pass!).ok).toBe(true);
+    const passResult = applyLuaRestoreResponse(restored, pass!);
+    expect(passResult.ok).toBe(true);
+    expect(passResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, passResult.state.waitingFor!));
     expect(restored.host.messages).toEqual(["restored attack negate true"]);
     expect(restored.session.state.currentAttack).toBeUndefined();
     expect(restored.session.state.pendingBattle).toBeUndefined();
