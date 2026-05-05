@@ -320,6 +320,82 @@ describe("Lua normal summon field helpers", () => {
     expect(host.messages).toContain("lua spell trap set resolved 100");
   });
 
+  it("makes earlier Lua optional when triggers miss timing at SSet boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "SSet Boundary Source", kind: "monster" },
+      { code: "200", name: "SSet Boundary Target", kind: "monster" },
+      { code: "300", name: "When To Grave Watcher", kind: "monster" },
+      { code: "400", name: "If To Grave Watcher", kind: "monster" },
+      { code: "500", name: "SSet Boundary Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "600", name: "SSet Boundary Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 161, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300", "400", "500", "600"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil)
+      local set_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 600), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local e=Effect.CreateEffect(source)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp)
+        Duel.SendtoGrave(target, REASON_EFFECT)
+        Duel.SSet(spell)
+      end)
+      source:RegisterEffect(e)
+
+      local when_effect=Effect.CreateEffect(when_watcher)
+      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      when_effect:SetCode(EVENT_TO_GRAVE)
+      when_effect:SetRange(LOCATION_HAND)
+      when_effect:SetOperation(function(e,tp)
+        Debug.Message("when to grave resolved")
+      end)
+      when_watcher:RegisterEffect(when_effect)
+
+      local if_effect=Effect.CreateEffect(if_watcher)
+      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      if_effect:SetCode(EVENT_TO_GRAVE)
+      if_effect:SetProperty(EFFECT_FLAG_DELAY)
+      if_effect:SetRange(LOCATION_HAND)
+      if_effect:SetOperation(function(e,tp)
+        Debug.Message("if to grave resolved")
+      end)
+      if_watcher:RegisterEffect(if_effect)
+
+      local set_effect=Effect.CreateEffect(set_watcher)
+      set_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      set_effect:SetCode(EVENT_SSET)
+      set_effect:SetRange(LOCATION_HAND)
+      set_effect:SetOperation(function(e,tp)
+        Debug.Message("sset boundary resolved")
+      end)
+      set_watcher:RegisterEffect(set_effect)
+      `,
+      "sset-missed-timing.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1014");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1014", "lua-4-1107"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014 }), expect.objectContaining({ eventName: "spellTrapSet", eventCode: 1107 })]),
+    );
+  });
+
   it("lets Lua scripts set spells and traps", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Set Spell", kind: "spell", typeFlags: 0x2 },

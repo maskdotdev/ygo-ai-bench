@@ -30,6 +30,7 @@ import { sameStringMembers } from "#duel/string-list-match.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
+import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
@@ -40,7 +41,7 @@ const { lua, to_luastring } = fengari;
 type LuaSummonType = "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummon" | "RitualSummon";
 type LuaSummonOrSetAction = Extract<DuelAction, { type: "normalSummon" | "tributeSummon" | "setMonster" | "setSpellTrap" }>;
 
-export interface LuaDuelSummonApiHostState {
+export interface LuaDuelSummonApiHostState extends LuaOperationTimingBoundaryHostState {
   operatedUids: string[];
   pendingSpecialSummonUids?: string[];
 }
@@ -141,11 +142,12 @@ function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaD
   }
   const tributeUids = type === "normalSummon" || type === "setMonster" ? readCardCollectionUids(L, 3) : [];
   const legalAction = selectBasicSummonAction(session, target, type, tributeUids);
+  if (legalAction) markLuaOperationTimingBoundary(session, hostState);
   const result =
     legalAction
       ? applyResponse(session, legalAction)
       : type === "setSpellTrap"
-      ? setLuaSpellTrap(session, target)
+      ? setLuaSpellTrap(session, hostState, target)
       : type === "setMonster" && tributeUids.length > 0
       ? setLuaMonsterWithTributes(session, target, tributeUids)
       : { ok: false };
@@ -186,8 +188,9 @@ function setLuaMonsterWithTributes(session: DuelSession, target: DuelCardInstanc
   }
 }
 
-function setLuaSpellTrap(session: DuelSession, target: DuelCardInstance): { ok: boolean } {
+function setLuaSpellTrap(session: DuelSession, hostState: LuaDuelSummonApiHostState, target: DuelCardInstance): { ok: boolean } {
   if (!canLuaSetSpellTrap(session, target)) return { ok: false };
+  markLuaOperationTimingBoundary(session, hostState);
   if (target.location === "hand") {
     setCoreSpellTrap(session.state, target.controller, target.uid, (eventName, eventCard) => collectDuelTriggerEffects(session.state, eventName, eventCard));
   } else {
