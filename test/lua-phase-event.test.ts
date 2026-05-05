@@ -34,13 +34,21 @@ describe("Lua phase events", () => {
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    const battleResponse = applyResponse(session, battle!);
+    expect(battleResponse.ok).toBe(true);
+    expect(battleResponse.legalActions).toEqual(getDuelLegalActions(session, battleResponse.state.waitingFor!));
+    expect(battleResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, battleResponse.state.waitingFor!));
+    expect(battleResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(battleResponse.legalActions);
 
     expect(session.state.pendingTriggers).toEqual([expect.objectContaining({ eventName: "phaseBattle", eventCode: 0x1008 })]);
     expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "phaseBattle", eventCode: 0x1008 }));
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    const triggerResponse = applyResponse(session, trigger!);
+    expect(triggerResponse.ok).toBe(true);
+    expect(triggerResponse.legalActions).toEqual(getDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResponse.legalActions);
     expect(host.messages).toContain("phase battle start resolved 8");
   });
 
@@ -72,7 +80,11 @@ describe("Lua phase events", () => {
 
     const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    const battleResponse = applyResponse(session, battle!);
+    expect(battleResponse.ok).toBe(true);
+    expect(battleResponse.legalActions).toEqual(getDuelLegalActions(session, battleResponse.state.waitingFor!));
+    expect(battleResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, battleResponse.state.waitingFor!));
+    expect(battleResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(battleResponse.legalActions);
 
     expect(session.state.pendingTriggers).toEqual([]);
     expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "phaseBattle", eventCode: 0x1008 }));
@@ -114,7 +126,11 @@ describe("Lua phase events", () => {
     for (const phase of ["battle", "main2", "end"] satisfies DuelPhase[]) {
       const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === phase);
       expect(action).toBeDefined();
-      expect(applyResponse(session, action!).ok).toBe(true);
+      const response = applyResponse(session, action!);
+      expect(response.ok).toBe(true);
+      expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+      expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+      expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     }
 
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["phaseEnd"]);
@@ -122,7 +138,11 @@ describe("Lua phase events", () => {
     expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "phaseEnd", eventCode: 0x1200 });
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    const triggerResponse = applyResponse(session, trigger!);
+    expect(triggerResponse.ok).toBe(true);
+    expect(triggerResponse.legalActions).toEqual(getDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, triggerResponse.state.waitingFor!));
+    expect(triggerResponse.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResponse.legalActions);
     expect(host.messages).toContain("phase end resolved 0/512");
   });
 
@@ -160,7 +180,11 @@ describe("Lua phase events", () => {
     for (const phase of ["battle", "main2", "end"] satisfies DuelPhase[]) {
       const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === phase);
       expect(action).toBeDefined();
-      expect(applyResponse(session, action!).ok).toBe(true);
+      const response = applyResponse(session, action!);
+      expect(response.ok).toBe(true);
+      expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+      expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+      expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     }
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["phaseEnd"]);
 
@@ -231,12 +255,19 @@ describe("Lua phase events", () => {
     for (const phase of ["battle", "main2", "end"] satisfies DuelPhase[]) {
       const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === phase);
       expect(action).toBeDefined();
-      expect(applyResponse(session, action!).ok).toBe(true);
+      const response = applyResponse(session, action!);
+      expect(response.ok).toBe(true);
+      expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+      expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+      expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     }
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     const opened = applyResponse(session, trigger!);
     expect(opened.ok, opened.error).toBe(true);
+    expect(opened.legalActions).toEqual(getDuelLegalActions(session, opened.state.waitingFor!));
+    expect(opened.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, opened.state.waitingFor!));
+    expect(opened.legalActionGroups.flatMap((group) => group.actions)).toEqual(opened.legalActions);
     expect(opened.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
