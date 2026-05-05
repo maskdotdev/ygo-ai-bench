@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua break-effect events", () => {
   it("queues break-effect triggers when Lua marks an operation boundary", () => {
@@ -62,6 +63,70 @@ describe("Lua break-effect events", () => {
       expect.objectContaining({ eventName: "breakEffect", eventCode: 1050 }),
       expect.objectContaining({ eventName: "chainSolved", eventCode: 1022 }),
     ]);
+  });
+
+  it("applies restored Lua break-effect triggers through restore responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Break Source", kind: "monster" },
+      { code: "200", name: "Restore Break Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Duel.BreakEffect()
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c200.lua") {
+          return `
+          c200={}
+          function c200.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_BREAK_EFFECT)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Debug.Message("restored break trigger " .. tp)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 205, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    expect(applyResponse(session, action!).ok).toBe(true);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["breakEffect"]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["breakEffect"]);
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1050 });
+
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    expect(applyLuaRestoreResponse(restored, trigger!).ok).toBe(true);
+    expect(restored.host.messages).toContain("restored break trigger 0");
   });
 
   it("makes earlier Lua optional when triggers miss timing at BreakEffect boundaries", () => {
