@@ -83,11 +83,7 @@ describe("Lua destroy restore helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
-    expect(triggerResult.ok, triggerResult.error).toBe(true);
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored destroying trigger 200");
   });
 
@@ -167,11 +163,7 @@ describe("Lua destroy restore helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    const triggerResult = applyLuaRestoreResponse(restored, trigger!);
-    expect(triggerResult.ok, triggerResult.error).toBe(true);
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored destroyed trigger 200");
   });
 
@@ -341,3 +333,12 @@ describe("Lua destroy restore helpers", () => {
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard", controller: 1 });
   });
 });
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
