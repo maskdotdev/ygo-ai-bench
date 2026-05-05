@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
-import { applyResponse, createDuel, getLegalActions, loadDecks, registerEffect, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, registerEffect, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -144,7 +144,7 @@ describe("Lua summon and release helpers", () => {
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "usedAsMaterial", eventCode: 1108 }));
     const trigger = getLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("lua material trigger resolved 100");
   });
 
@@ -184,7 +184,7 @@ describe("Lua summon and release helpers", () => {
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "preUsedAsMaterial", eventCode: 1109 }));
     const trigger = getLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
-    expect(applyResponse(session, trigger!).ok).toBe(true);
+    applyAndAssert(session, trigger!);
     expect(host.messages).toContain("lua pre material trigger resolved 100");
   });
 
@@ -253,7 +253,7 @@ describe("Lua summon and release helpers", () => {
 
     const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1108");
@@ -328,7 +328,7 @@ describe("Lua summon and release helpers", () => {
 
     const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1109");
@@ -405,7 +405,7 @@ describe("Lua summon and release helpers", () => {
 
     const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1102");
@@ -437,7 +437,7 @@ describe("Lua summon and release helpers", () => {
     expect(ritualSpell).toBeTruthy();
     const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === ritualSpell!.uid);
     expect(action).toBeTruthy();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
     while (session.state.chain.length > 0) {
       expect(passCurrentChain(session)).toBe(true);
     }
@@ -566,7 +566,7 @@ describe("Lua summon and release helpers", () => {
 
     const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    applyAndAssert(session, action!);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1014");
@@ -923,8 +923,19 @@ describe("Lua summon and release helpers", () => {
 
 });
 
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
 function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
   const player = session.state.waitingFor ?? session.state.turnPlayer;
   const pass = getLegalActions(session, player).find((candidate) => candidate.type === "passChain");
-  return Boolean(pass && applyResponse(session, pass).ok);
+  if (!pass) return false;
+  applyAndAssert(session, pass);
+  return true;
 }
