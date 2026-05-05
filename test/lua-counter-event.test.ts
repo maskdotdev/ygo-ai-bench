@@ -55,7 +55,11 @@ describe("Lua counter events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const source = session.state.cards.find((card) => card.code === "100");
     expect(source).toBeDefined();
@@ -122,7 +126,11 @@ describe("Lua counter events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["counterAdded"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
@@ -210,7 +218,11 @@ describe("Lua counter events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1014");
@@ -285,7 +297,11 @@ describe("Lua counter events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-65536");
@@ -342,7 +358,11 @@ describe("Lua counter events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const source = session.state.cards.find((card) => card.code === "100");
     expect(source).toBeDefined();
@@ -409,7 +429,11 @@ describe("Lua counter events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["counterRemoved"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
@@ -495,7 +519,11 @@ describe("Lua counter events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-1014");
@@ -571,7 +599,11 @@ describe("Lua counter events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-131072");
@@ -647,7 +679,11 @@ describe("Lua counter events", () => {
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
-    expect(applyResponse(session, action!).ok).toBe(true);
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+    expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 
     const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(pendingEffectIds).not.toContain("lua-2-131072");
