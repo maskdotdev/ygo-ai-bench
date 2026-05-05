@@ -103,4 +103,11 @@ describe("duel response matching", () => {
     expect(sameAction(effect, { type: "activateEffect", player: 0, uid: "card", effectId: "effect", label: "Effect" })).toBe(false);
     expect(sameAction(effect, { ...effect })).toBe(true);
   });
+
+  it("requires special summon procedure responses to echo their action window stamp", () => {
+    const procedure: DuelAction = { type: "specialSummonProcedure", player: 0, uid: "card", effectId: "procedure", label: "Procedure", windowId: 12, windowKind: "open" };
+
+    expect(sameAction(procedure, { type: "specialSummonProcedure", player: 0, uid: "card", effectId: "procedure", label: "Procedure" })).toBe(false);
+    expect(sameAction(procedure, { ...procedure })).toBe(true);
+  });
 });
