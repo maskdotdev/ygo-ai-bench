@@ -22,7 +22,9 @@ describe("phase action restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.phase).toBe("battle");
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.state.log.some((entry) => entry.action === "phase" && entry.detail === "Moved to battle")).toBe(true);
   });
 
@@ -46,7 +48,9 @@ describe("phase action restore", () => {
     expect(result.state.turn).toBe(2);
     expect(result.state.phase).toBe("main1");
     expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.state.log.some((entry) => entry.action === "turn" && entry.player === 1)).toBe(true);
   });
 });
