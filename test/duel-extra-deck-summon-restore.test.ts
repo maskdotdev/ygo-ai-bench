@@ -136,6 +136,7 @@ function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSu
   const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === type && candidate.uid === target!.uid);
   expect(action).toMatchObject({ type, materialUids: materials.map((card) => card.uid) });
   if (!action || action.type !== type) throw new Error(`Expected restored full-zone ${type} action`);
+  expect(action).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
 
   const result = applyResponse(restored, action);
   expect(result.ok).toBe(true);
@@ -143,6 +144,10 @@ function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSu
   expect(materials.every((material) => result.state.cards.find((card) => card.uid === material.uid)?.location === materialLocation)).toBe(true);
   expect(result.state.waitingFor).toBeDefined();
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+  const staleResult = applyResponse(restored, action);
+  expect(staleResult.ok).toBe(false);
+  expect(staleResult.error).toContain("Response is not currently legal");
+  expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
 }
 
 describe("full-zone extra deck summon restore", () => {
