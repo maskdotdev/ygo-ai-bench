@@ -346,6 +346,127 @@ describe("Lua trigger chain windows", () => {
     expect(restored.host.messages).toEqual(["restored opponent mandatory resolved", "restored turn mandatory resolved"]);
   });
 
+  it("returns restored Lua SEGOC chain resolution to turn-player open fast priority", () => {
+    const cards: DuelCardData[] = [
+      { code: "17100", name: "Lua Restored Open Priority Summon", kind: "monster" },
+      { code: "17200", name: "Lua Restored Open Priority Trigger", kind: "monster" },
+      { code: "17300", name: "Lua Restored Open Priority Opponent Trigger", kind: "monster" },
+      { code: "17400", name: "Lua Restored Open Priority Turn Quick", kind: "monster" },
+      { code: "17500", name: "Lua Restored Open Priority Opponent Chain Quick", kind: "monster" },
+      { code: "17600", name: "Lua Restored Open Priority Filler", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c17200.lua") {
+          return `
+          c17200={}
+          function c17200.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_F)
+            e:SetCode(EVENT_SUMMON_SUCCESS)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("restored open turn trigger resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c17300.lua") {
+          return `
+          c17300={}
+          function c17300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_F)
+            e:SetCode(EVENT_SUMMON_SUCCESS)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("restored open opponent trigger resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c17400.lua") {
+          return `
+          c17400={}
+          function c17400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()==0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restored open turn quick resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c17500.lua") {
+          return `
+          c17500={}
+          function c17500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+            e:SetOperation(function(e,tp) Debug.Message("restored open opponent chain quick resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 97, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["17100", "17200", "17400"] }, 1: { main: ["17300", "17500", "17600"] } });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(17200, source).ok).toBe(true);
+    expect(host.loadCardScript(17300, source).ok).toBe(true);
+    expect(host.loadCardScript(17400, source).ok).toBe(true);
+    expect(host.loadCardScript(17500, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(4);
+
+    const summonSource = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "17100");
+    expect(summonSource).toBeDefined();
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summonSource!.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+    const firstTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
+    expect(firstTrigger).toBeDefined();
+    expect(applyResponse(session, firstTrigger!).ok).toBe(true);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const turnOpenQuickId = effectIdForSourceCode(restored.session, "17400");
+    const opponentChainQuickId = effectIdForSourceCode(restored.session, "17500");
+    expect(restored.session.state.chain).toHaveLength(1);
+    expect(restored.session.state.pendingTriggers.map((trigger) => restored.session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["17300"]);
+    expect(restored.session.state.waitingFor).toBe(1);
+
+    const opponentTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.effectId === restored.session.state.pendingTriggers[0]?.effectId);
+    expect(opponentTrigger).toBeDefined();
+    const chained = applyLuaRestoreResponse(restored, opponentTrigger!);
+    expect(chained.ok, chained.error).toBe(true);
+    expect(restored.session.state.waitingFor).toBe(1);
+    expect(getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual([opponentChainQuickId]);
+    expect(getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId)).toMatchObject({ windowKind: "chainResponse" });
+    expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
+
+    const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
+    expect(opponentQuick).toBeDefined();
+    const quickChained = applyLuaRestoreResponse(restored, opponentQuick!);
+    expect(quickChained.ok, quickChained.error).toBe(true);
+    expect(restored.session.state.waitingFor).toBe(1);
+
+    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const opponentPassed = applyLuaRestoreResponse(restored, pass!);
+    expect(opponentPassed.ok, opponentPassed.error).toBe(true);
+    expect(opponentPassed.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(opponentPassed.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(opponentPassed.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(opponentPassed.legalActionGroups.flatMap((group) => group.actions)).toEqual(opponentPassed.legalActions);
+    expect(opponentPassed.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", effectId: turnOpenQuickId })]));
+    expect(getDuelLegalActions(restored.session, 1)).toEqual([]);
+    expect(restored.host.messages).toEqual(["restored open opponent chain quick resolved", "restored open opponent trigger resolved", "restored open turn trigger resolved"]);
+  });
+
   it("keeps later optional Lua trigger bucket activations behind the open chain window", () => {
     const { session, host } = setupLuaChainFixture({
       seed: 93,
@@ -546,3 +667,12 @@ describe("Lua trigger chain windows", () => {
     expect(host.messages).toEqual([]);
   });
 });
+
+function effectIdForSourceCode(session: ReturnType<typeof createDuel>, code: string): string {
+  const effect = session.state.effects.find((candidate) => {
+    const source = session.state.cards.find((card) => card.uid === candidate.sourceUid);
+    return source?.code === code;
+  });
+  expect(effect).toBeDefined();
+  return effect!.id;
+}
