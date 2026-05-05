@@ -31,6 +31,10 @@ describe("parity fixture metadata", () => {
     expect(missingExpectationNotes()).toEqual([]);
   });
 
+  it("requires EDOPro expectation notes to reference EDOPro behavior", () => {
+    expect(edoproNotesWithoutEdopro()).toEqual([]);
+  });
+
   it("requires backlog expectation notes to reference EDOPro behavior", () => {
     expect(backlogNotesWithoutEdopro()).toEqual([]);
   });
@@ -125,6 +129,10 @@ describe("parity fixture metadata", () => {
     expect(invalidSourcesInLines("fixture.ts", [...lines.slice(0, 3), "  source: 'local',", ...lines.slice(3)])).toEqual(["fixture.ts:2"]);
     expect(missingBacklogNotesInLines("fixture.ts", lines)).toEqual(["fixture.ts:7"]);
     expect(missingExpectationNotesInLines("fixture.ts", [...lines.slice(0, 3), '  source: "edopro",', ...lines.slice(3, 5)])).toEqual(["fixture.ts:2"]);
+    expect(edoproNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 3), '  source: "edopro",', ...lines.slice(3, 4), '  note: "local behavior"', ...lines.slice(4)])).toEqual([
+      "fixture.ts:2",
+    ]);
+    expect(edoproNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 3), "  source: 'edopro',", ...lines.slice(3, 4), '  note: "EDOPro observed behavior"', ...lines.slice(4)])).toEqual([]);
     expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 7), '  note: "temporary local behavior",', ...lines.slice(7)])).toEqual(["fixture.ts:7"]);
     expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 6), "  source: 'parity-backlog',", '  note: "temporary local behavior",', ...lines.slice(8)])).toEqual(["fixture.ts:7"]);
     expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
@@ -339,6 +347,10 @@ function backlogNotesWithoutEdopro(): string[] {
   return scriptedFixtureFiles().flatMap((file) => backlogNotesWithoutEdoproInLines(file, readFixtureLines(file)));
 }
 
+function edoproNotesWithoutEdopro(): string[] {
+  return parityFixtureFiles().flatMap((file) => edoproNotesWithoutEdoproInLines(file, readFixtureLines(file)));
+}
+
 function missingLegalActionGroupCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingLegalActionGroupsInLines(file, readFixtureLines(file), "legalActions:", "legalActionGroups:"));
 }
@@ -455,6 +467,16 @@ function backlogNotesWithoutEdoproInLines(file: string, lines: string[]): string
     if (!hasParityBacklogSource(line)) return;
     const noteLine = expectationBlock(lines, index).split("\n").find((blockLine) => blockLine.includes("note:"));
     if (noteLine !== undefined && !/edopro/i.test(noteLine)) missingEdopro.push(`${file}:${index + 1}`);
+  });
+  return missingEdopro;
+}
+
+function edoproNotesWithoutEdoproInLines(file: string, lines: string[]): string[] {
+  const missingEdopro: string[] = [];
+  lines.forEach((line, index) => {
+    if (!hasEdoproSource(line)) return;
+    const noteLine = expectationBlock(lines, index).split("\n").find((blockLine) => blockLine.includes("note:"));
+    if (noteLine !== undefined && !/edopro/i.test(noteLine)) missingEdopro.push(`${file}:${findExpectationHeader(lines, index) + 1}`);
   });
   return missingEdopro;
 }
@@ -752,4 +774,8 @@ function sourceLineInBlock(block: string): string | undefined {
 
 function hasParityBacklogSource(line: string): boolean {
   return /source:\s*["']parity-backlog["']/.test(line);
+}
+
+function hasEdoproSource(line: string): boolean {
+  return /source:\s*["']edopro["']/.test(line);
 }
