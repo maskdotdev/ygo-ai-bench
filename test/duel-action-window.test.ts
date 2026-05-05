@@ -40,6 +40,9 @@ function expectResultActionsMatchResultState(result: ReturnType<typeof applyResp
     expect(group.windowId).toBe(result.state.actionWindowId);
     expect(group.windowKind).toBe(result.state.windowKind);
   }
+  const groupedActions = result.legalActionGroups.flatMap((group) => group.actions);
+  expect(groupedActions).toHaveLength(result.legalActions.length);
+  expect(groupedActions).toEqual(expect.arrayContaining(result.legalActions));
 }
 
 describe("duel action windows", () => {
@@ -252,7 +255,9 @@ describe("duel action windows", () => {
     expect(battlePhase).toBeDefined();
     const battleResult = applyResponse(restored, battlePhase!);
     expect(battleResult.ok).toBe(true);
+    expect(battleResult.legalActions).toEqual(getDuelLegalActions(restored, battleResult.state.waitingFor!));
     expect(battleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, battleResult.state.waitingFor!));
+    expectResultActionsMatchResultState(battleResult);
     expect(restored.state.actionWindowId).toBe(1);
 
     const replay = applyResponse(restored, staleSummon!);
@@ -295,7 +300,9 @@ describe("duel action windows", () => {
 
     const replayResult = applyResponse(restored, replayAttack!);
     expect(replayResult.ok).toBe(true);
+    expect(replayResult.legalActions).toEqual(getDuelLegalActions(restored, replayResult.state.waitingFor!));
     expect(replayResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, replayResult.state.waitingFor!));
+    expectResultActionsMatchResultState(replayResult);
     expect(restored.state.actionWindowId).toBe(6);
     const staleReplay = applyResponse(restored, staleCancel!);
 

@@ -66,7 +66,9 @@ describe("duel stale prompt responses", () => {
     expect(restoredOption).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "prompt" });
     const optionResult = applyResponse(restored, restoredOption!);
     expect(optionResult.ok).toBe(true);
+    expect(optionResult.legalActions).toEqual(getDuelLegalActions(restored, optionResult.state.waitingFor!));
     expect(optionResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, optionResult.state.waitingFor!));
+    expect(optionResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(optionResult.legalActions);
     const replay = applyResponse(restored, staleOption!);
 
     expect(replay.ok).toBe(false);
@@ -97,7 +99,9 @@ describe("duel stale prompt responses", () => {
     expect(restoredYes).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "prompt" });
     const yesResult = applyResponse(restored, restoredYes!);
     expect(yesResult.ok).toBe(true);
+    expect(yesResult.legalActions).toEqual(getDuelLegalActions(restored, yesResult.state.waitingFor!));
     expect(yesResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, yesResult.state.waitingFor!));
+    expect(yesResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(yesResult.legalActions);
     const replay = applyResponse(restored, staleNo!);
 
     expect(replay.ok).toBe(false);
