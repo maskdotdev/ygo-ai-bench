@@ -34,6 +34,16 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   return response;
 }
 
+function expectLuaRestoreStalePreapply(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1) {
+  const staleResult = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(staleResult.ok).toBe(false);
+  expect(staleResult.error).toContain("Response is not currently legal");
+  expect(staleResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+}
+
 describe("Node upstream snapshot restore", () => {
   it("rehydrates Lua effects from restored snapshots", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
@@ -129,6 +139,7 @@ describe("Node upstream snapshot restore", () => {
 
     const battle = getDuelLegalActions(restored.session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(battle).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, battle!, 0);
     const result = applyLuaRestoreAndAssert(restored, battle!);
 
     expect(restored.session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "phaseBattle", eventCode: 0x1008 }));
@@ -338,6 +349,7 @@ describe("Node upstream snapshot restore", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
     expect(action).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, action!, 0);
     const result = applyLuaRestoreAndAssert(restored, action!);
     expect(restored.host.messages).toContain("restored ignition");
     const replay = applyLuaRestoreResponse(restored, action!);
@@ -372,7 +384,9 @@ describe("Node upstream snapshot restore", () => {
     ]);
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
-    const result = applyLuaRestoreAndAssert(restored, getLuaRestoreLegalActions(restored, 1)[1]!);
+    const option = getLuaRestoreLegalActions(restored, 1)[1]!;
+    expectLuaRestoreStalePreapply(restored, option, 1);
+    const result = applyLuaRestoreAndAssert(restored, option);
     expect(restored.session.state.prompt).toBeUndefined();
     expect(restored.session.state.waitingFor).toBe(0);
     expect(restored.session.state.log.some((entry) => entry.action === "selectOption" && entry.detail === "Selected option 5")).toBe(true);
@@ -393,6 +407,7 @@ describe("Node upstream snapshot restore", () => {
     expect(staleYes).toBeDefined();
     const no = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "selectYesNo" && !candidate.yes);
     expect(no).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, no!, 0);
     const noResult = applyLuaRestoreAndAssert(restored, no!);
     expect(restored.session.state.prompt).toBeUndefined();
     expect(restored.session.state.waitingFor).toBe(1);
