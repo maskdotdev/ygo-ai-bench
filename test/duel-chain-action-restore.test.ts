@@ -615,7 +615,9 @@ function assertFinalOpenRestore(
   registry: Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition>,
 ): void {
   const restored = restoreDuel(serializeDuel(session), createCardReader(cards), registry);
-  expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggerBuckets: [] });
+  const publicState = queryPublicState(restored);
+  expect(publicState).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggerBuckets: [] });
+  expect(publicState).not.toHaveProperty("triggerOrderPrompt");
   expect(restored.state).toMatchObject({ chain: [], pendingTriggers: [] });
   expect(actionsWithoutWindowToken(getDuelLegalActions(restored, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(session, 0)));
   expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restored, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(session, 0)));
