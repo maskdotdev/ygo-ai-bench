@@ -378,14 +378,18 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.loadedScripts).toEqual([]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+    const restoredPromptToken = restored.session.state.actionWindowToken;
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([
-      { type: "selectOption", player: 1, promptId: "lua-restore-prompt", option: 3, label: "Select option 3", windowId: 0, windowKind: "prompt" },
-      { type: "selectOption", player: 1, promptId: "lua-restore-prompt", option: 5, label: "Select option 5", windowId: 0, windowKind: "prompt" },
+      { type: "selectOption", player: 1, promptId: "lua-restore-prompt", option: 3, label: "Select option 3", windowId: 0, windowKind: "prompt", windowToken: restoredPromptToken },
+      { type: "selectOption", player: 1, promptId: "lua-restore-prompt", option: 5, label: "Select option 5", windowId: 0, windowKind: "prompt", windowToken: restoredPromptToken },
     ]);
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
     const option = getLuaRestoreLegalActions(restored, 1)[1]!;
     expectLuaRestoreStalePreapply(restored, option, 1);
+    const staleOptionPreapply = applyLuaRestoreResponse(restored, staleOption!);
+    expect(staleOptionPreapply.ok).toBe(false);
+    expect(staleOptionPreapply.error).toContain("Response is not currently legal");
     const result = applyLuaRestoreAndAssert(restored, option);
     expect(restored.session.state.prompt).toBeUndefined();
     expect(restored.session.state.waitingFor).toBe(0);
@@ -399,9 +403,10 @@ describe("Node upstream snapshot restore", () => {
 
     restored.session.state.prompt = { id: "lua-restore-yes-no", type: "selectYesNo", player: 0, description: 101, returnTo: 1 };
     restored.session.state.waitingFor = 0;
+    const restoredYesNoToken = restored.session.state.actionWindowToken;
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([
-      { type: "selectYesNo", player: 0, promptId: "lua-restore-yes-no", yes: true, label: "Yes", windowId: 1, windowKind: "prompt" },
-      { type: "selectYesNo", player: 0, promptId: "lua-restore-yes-no", yes: false, label: "No", windowId: 1, windowKind: "prompt" },
+      { type: "selectYesNo", player: 0, promptId: "lua-restore-yes-no", yes: true, label: "Yes", windowId: 1, windowKind: "prompt", windowToken: restoredYesNoToken },
+      { type: "selectYesNo", player: 0, promptId: "lua-restore-yes-no", yes: false, label: "No", windowId: 1, windowKind: "prompt", windowToken: restoredYesNoToken },
     ]);
     const staleYes = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "selectYesNo" && candidate.yes);
     expect(staleYes).toBeDefined();
