@@ -363,6 +363,15 @@ describe("Lua open fast priority restore", () => {
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     const trigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(trigger).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnMandatory" });
+    const staleBeforeTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
+    expect(staleBeforeTrigger.ok).toBe(false);
+    expect(staleBeforeTrigger.error).toContain("Response is not currently legal");
+    expect(staleBeforeTrigger.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleBeforeTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTrigger.legalActions);
+    expect(restored.host.messages).toEqual([]);
+
     const triggerResult = applyLuaRestoreAndAssert(restored, trigger!);
     expect(triggerResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
