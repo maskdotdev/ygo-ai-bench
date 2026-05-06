@@ -8,223 +8,76 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 describe("Lua battle chain quick replay restore", () => {
   it("replays restored damage-step chain quick responses back to the battle window", () => {
-    const fixture = setupBattleQuickFixture("EFFECT_FLAG_DAMAGE_STEP");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    activateTurnQuick(fixture.session);
+    assertBattleReplayRestore("EFFECT_FLAG_DAMAGE_STEP", "startDamageStep", [1]);
+  });
 
-    const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
-    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-    expect(queryPublicState(restored.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid.includes("400"));
-    expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
-    expect(hasGroupedLuaEffect(restored, 1, "400", "chainResponse")).toBe(true);
-    expect(hasGroupedLuaEffect(restored, 1, "500", "chainResponse")).toBe(false);
-
-    const opponentChained = applyLuaRestoreAndAssert(restored, opponentQuick!);
-    expect(opponentChained.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", battleWindow: { kind: "startDamageStep", responsePlayer: 0 } });
-    expect(opponentChained.state.chain.map((link) => link.sourceUid)).toEqual([
-      expect.stringContaining("300"),
-      expect.stringContaining("400"),
-    ]);
-    expect(restored.host.messages).toEqual([]);
-
-    const restoredOpponentResponse = restoreDuelWithLuaScripts(serializeDuel(restored.session), fixture.source, createCardReader(fixture.cards));
-    expect(restoredOpponentResponse.restoreComplete, restoredOpponentResponse.incompleteReasons.join("; ")).toBe(true);
-    expect(queryPublicState(restoredOpponentResponse.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    expect(restoredOpponentResponse.session.state.chain.map((link) => link.sourceUid)).toEqual([
-      expect.stringContaining("300"),
-      expect.stringContaining("400"),
-    ]);
-    expect(getLuaRestoreLegalActions(restoredOpponentResponse, 0)).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredOpponentResponse, 1).some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
-    expect(getLuaRestoreLegalActionGroups(restoredOpponentResponse, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpponentResponse, 1));
-
-    const pass = getLuaRestoreLegalActions(restoredOpponentResponse, 1).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const resolved = applyLuaRestoreAndAssert(restoredOpponentResponse, pass!);
-    expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
-    expect(resolved.legalActions).toEqual(expect.arrayContaining([
-      expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") }),
-      expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" }),
-    ]));
-    expect(restoredOpponentResponse.host.messages).toEqual(["restored chain-only battle quick resolved", "restored battle quick resolved"]);
-
-    const stalePass = applyLuaRestoreResponse(restoredOpponentResponse, pass!);
-    expect(stalePass.ok).toBe(false);
-    expect(stalePass.error).toContain("Response is not currently legal");
-    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse.session, 1));
-    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse.session, 1));
+  it("replays restored before-damage-calculation chain quick responses back to the battle window", () => {
+    assertBattleReplayRestore("EFFECT_FLAG_DAMAGE_STEP", "beforeDamageCalculation", [1, 0, 1]);
   });
 
   it("replays restored damage-calculation chain quick responses back to the battle window", () => {
-    const fixture = setupBattleQuickFixture("EFFECT_FLAG_DAMAGE_CAL");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    passBattleResponse(fixture.session, 0, "passDamage");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    passBattleResponse(fixture.session, 0, "passDamage");
-    expect(fixture.session.state.battleWindow?.kind).toBe("duringDamageCalculation");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    activateTurnQuick(fixture.session);
-
-    const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
-    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-    expect(queryPublicState(restored.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid.includes("400"));
-    expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
-    expect(hasGroupedLuaEffect(restored, 1, "400", "chainResponse")).toBe(true);
-    expect(hasGroupedLuaEffect(restored, 1, "500", "chainResponse")).toBe(false);
-
-    const opponentChained = applyLuaRestoreAndAssert(restored, opponentQuick!);
-    expect(opponentChained.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 0 } });
-    expect(opponentChained.state.chain.map((link) => link.sourceUid)).toEqual([
-      expect.stringContaining("300"),
-      expect.stringContaining("400"),
-    ]);
-    expect(restored.host.messages).toEqual([]);
-
-    const restoredOpponentResponse = restoreDuelWithLuaScripts(serializeDuel(restored.session), fixture.source, createCardReader(fixture.cards));
-    expect(restoredOpponentResponse.restoreComplete, restoredOpponentResponse.incompleteReasons.join("; ")).toBe(true);
-    expect(queryPublicState(restoredOpponentResponse.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    expect(restoredOpponentResponse.session.state.chain.map((link) => link.sourceUid)).toEqual([
-      expect.stringContaining("300"),
-      expect.stringContaining("400"),
-    ]);
-    expect(getLuaRestoreLegalActions(restoredOpponentResponse, 0)).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredOpponentResponse, 1).some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
-    expect(getLuaRestoreLegalActionGroups(restoredOpponentResponse, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpponentResponse, 1));
-
-    const pass = getLuaRestoreLegalActions(restoredOpponentResponse, 1).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const resolved = applyLuaRestoreAndAssert(restoredOpponentResponse, pass!);
-    expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleStep: "damageCalculation", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 1 } });
-    expect(resolved.legalActions).toEqual(expect.arrayContaining([
-      expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") }),
-      expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" }),
-    ]));
-    expect(restoredOpponentResponse.host.messages).toEqual(["restored chain-only battle quick resolved", "restored battle quick resolved"]);
-
-    const stalePass = applyLuaRestoreResponse(restoredOpponentResponse, pass!);
-    expect(stalePass.ok).toBe(false);
-    expect(stalePass.error).toContain("Response is not currently legal");
-    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse.session, 1));
-    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse.session, 1));
+    assertBattleReplayRestore("EFFECT_FLAG_DAMAGE_CAL", "duringDamageCalculation", [1, 0, 1, 0, 1]);
   });
 
   it("replays restored after-damage-calculation chain quick responses back to the battle window", () => {
-    const fixture = setupBattleQuickFixture("EFFECT_FLAG_DAMAGE_STEP");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    passBattleResponse(fixture.session, 0, "passDamage");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    passBattleResponse(fixture.session, 0, "passDamage");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    passBattleResponse(fixture.session, 0, "passDamage");
-    expect(fixture.session.state.battleWindow?.kind).toBe("afterDamageCalculation");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    activateTurnQuick(fixture.session);
-
-    const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
-    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-    expect(queryPublicState(restored.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid.includes("400"));
-    expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
-    expect(hasGroupedLuaEffect(restored, 1, "400", "chainResponse")).toBe(true);
-    expect(hasGroupedLuaEffect(restored, 1, "500", "chainResponse")).toBe(false);
-
-    const opponentChained = applyLuaRestoreAndAssert(restored, opponentQuick!);
-    expect(opponentChained.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", battleWindow: { kind: "afterDamageCalculation", responsePlayer: 0 } });
-    expect(opponentChained.state.chain.map((link) => link.sourceUid)).toEqual([
-      expect.stringContaining("300"),
-      expect.stringContaining("400"),
-    ]);
-    expect(restored.host.messages).toEqual([]);
-
-    const restoredOpponentResponse = restoreDuelWithLuaScripts(serializeDuel(restored.session), fixture.source, createCardReader(fixture.cards));
-    expect(restoredOpponentResponse.restoreComplete, restoredOpponentResponse.incompleteReasons.join("; ")).toBe(true);
-    expect(queryPublicState(restoredOpponentResponse.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    expect(restoredOpponentResponse.session.state.chain.map((link) => link.sourceUid)).toEqual([
-      expect.stringContaining("300"),
-      expect.stringContaining("400"),
-    ]);
-    expect(getLuaRestoreLegalActions(restoredOpponentResponse, 0)).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredOpponentResponse, 1).some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
-    expect(getLuaRestoreLegalActionGroups(restoredOpponentResponse, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpponentResponse, 1));
-
-    const pass = getLuaRestoreLegalActions(restoredOpponentResponse, 1).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const resolved = applyLuaRestoreAndAssert(restoredOpponentResponse, pass!);
-    expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "afterDamageCalculation", responsePlayer: 1 } });
-    expect(resolved.legalActions).toEqual(expect.arrayContaining([
-      expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") }),
-      expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" }),
-    ]));
-    expect(restoredOpponentResponse.host.messages).toEqual(["restored chain-only battle quick resolved", "restored battle quick resolved"]);
-
-    const stalePass = applyLuaRestoreResponse(restoredOpponentResponse, pass!);
-    expect(stalePass.ok).toBe(false);
-    expect(stalePass.error).toContain("Response is not currently legal");
-    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse.session, 1));
-    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse.session, 1));
+    assertBattleReplayRestore("EFFECT_FLAG_DAMAGE_STEP", "afterDamageCalculation", [1, 0, 1, 0, 1, 0, 1]);
   });
 
   it("replays restored end-damage-step chain quick responses back to the battle window", () => {
-    const fixture = setupBattleQuickFixture("EFFECT_FLAG_DAMAGE_STEP");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    passBattleResponse(fixture.session, 0, "passDamage");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    passBattleResponse(fixture.session, 0, "passDamage");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    passBattleResponse(fixture.session, 0, "passDamage");
-    expect(fixture.session.state.battleWindow?.kind).toBe("afterDamageCalculation");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    passBattleResponse(fixture.session, 0, "passDamage");
-    expect(fixture.session.state.battleWindow?.kind).toBe("endDamageStep");
-    passBattleResponse(fixture.session, 1, "passDamage");
-    activateTurnQuick(fixture.session);
-
-    const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
-    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-    expect(queryPublicState(restored.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid.includes("400"));
-    expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
-    expect(hasGroupedLuaEffect(restored, 1, "400", "chainResponse")).toBe(true);
-    expect(hasGroupedLuaEffect(restored, 1, "500", "chainResponse")).toBe(false);
-
-    const opponentChained = applyLuaRestoreAndAssert(restored, opponentQuick!);
-    expect(opponentChained.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", battleWindow: { kind: "endDamageStep", responsePlayer: 0 } });
-    expect(opponentChained.state.chain.map((link) => link.sourceUid)).toEqual([
-      expect.stringContaining("300"),
-      expect.stringContaining("400"),
-    ]);
-    expect(restored.host.messages).toEqual([]);
-
-    const restoredOpponentResponse = restoreDuelWithLuaScripts(serializeDuel(restored.session), fixture.source, createCardReader(fixture.cards));
-    expect(restoredOpponentResponse.restoreComplete, restoredOpponentResponse.incompleteReasons.join("; ")).toBe(true);
-    expect(queryPublicState(restoredOpponentResponse.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    expect(restoredOpponentResponse.session.state.chain.map((link) => link.sourceUid)).toEqual([
-      expect.stringContaining("300"),
-      expect.stringContaining("400"),
-    ]);
-    expect(getLuaRestoreLegalActions(restoredOpponentResponse, 0)).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredOpponentResponse, 1).some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
-    expect(getLuaRestoreLegalActionGroups(restoredOpponentResponse, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpponentResponse, 1));
-
-    const pass = getLuaRestoreLegalActions(restoredOpponentResponse, 1).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const resolved = applyLuaRestoreAndAssert(restoredOpponentResponse, pass!);
-    expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "endDamageStep", responsePlayer: 1 } });
-    expect(resolved.legalActions).toEqual(expect.arrayContaining([
-      expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") }),
-      expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" }),
-    ]));
-    expect(restoredOpponentResponse.host.messages).toEqual(["restored chain-only battle quick resolved", "restored battle quick resolved"]);
-
-    const stalePass = applyLuaRestoreResponse(restoredOpponentResponse, pass!);
-    expect(stalePass.ok).toBe(false);
-    expect(stalePass.error).toContain("Response is not currently legal");
-    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse.session, 1));
-    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse.session, 1));
+    assertBattleReplayRestore("EFFECT_FLAG_DAMAGE_STEP", "endDamageStep", [1, 0, 1, 0, 1, 0, 1, 0, 1]);
   });
 });
+
+function assertBattleReplayRestore(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_FLAG_DAMAGE_CAL", expectedWindow: string, damagePassSequence: Array<0 | 1>): void {
+  const fixture = setupBattleQuickFixture(property);
+  for (const player of damagePassSequence) passBattleResponse(fixture.session, player, "passDamage");
+  expect(fixture.session.state.battleWindow?.kind).toBe(expectedWindow);
+  activateTurnQuick(fixture.session);
+
+  const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
+  expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expect(queryPublicState(restored.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+  const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid.includes("400"));
+  expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+  expect(hasGroupedLuaEffect(restored, 1, "400", "chainResponse")).toBe(true);
+  expect(hasGroupedLuaEffect(restored, 1, "500", "chainResponse")).toBe(false);
+
+  const opponentChained = applyLuaRestoreAndAssert(restored, opponentQuick!);
+  expect(opponentChained.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", battleWindow: { kind: expectedWindow, responsePlayer: 0 } });
+  expect(opponentChained.state.chain.map((link) => link.sourceUid)).toEqual([
+    expect.stringContaining("300"),
+    expect.stringContaining("400"),
+  ]);
+  expect(restored.host.messages).toEqual([]);
+
+  const restoredOpponentResponse = restoreDuelWithLuaScripts(serializeDuel(restored.session), fixture.source, createCardReader(fixture.cards));
+  expect(restoredOpponentResponse.restoreComplete, restoredOpponentResponse.incompleteReasons.join("; ")).toBe(true);
+  expect(queryPublicState(restoredOpponentResponse.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+  expect(restoredOpponentResponse.session.state.chain.map((link) => link.sourceUid)).toEqual([
+    expect.stringContaining("300"),
+    expect.stringContaining("400"),
+  ]);
+  expect(getLuaRestoreLegalActions(restoredOpponentResponse, 0)).toEqual([]);
+  expect(getLuaRestoreLegalActions(restoredOpponentResponse, 1).some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
+  expect(getLuaRestoreLegalActionGroups(restoredOpponentResponse, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpponentResponse, 1));
+
+  const pass = getLuaRestoreLegalActions(restoredOpponentResponse, 1).find((action) => action.type === "passChain");
+  expect(pass).toBeDefined();
+  const resolved = applyLuaRestoreAndAssert(restoredOpponentResponse, pass!);
+  expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: expectedWindow, responsePlayer: 1 } });
+  if (expectedWindow === "duringDamageCalculation") expect(resolved.state).toMatchObject({ battleStep: "damageCalculation" });
+  expect(resolved.legalActions).toEqual(expect.arrayContaining([
+    expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") }),
+    expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" }),
+  ]));
+  expect(restoredOpponentResponse.host.messages).toEqual(["restored chain-only battle quick resolved", "restored battle quick resolved"]);
+
+  const stalePass = applyLuaRestoreResponse(restoredOpponentResponse, pass!);
+  expect(stalePass.ok).toBe(false);
+  expect(stalePass.error).toContain("Response is not currently legal");
+  expect(stalePass.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse.session, 1));
+  expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse.session, 1));
+}
 
 function setupBattleQuickFixture(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_FLAG_DAMAGE_CAL") {
   const cards: DuelCardData[] = [
