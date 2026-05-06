@@ -54,7 +54,7 @@ describe("trigger order prompt restore", () => {
     expect(staleDecline.state.actionWindowId).toBe(restoredSingleTrigger.state.actionWindowId);
     expect(staleDecline.legalActions).toEqual(getDuelLegalActions(restoredSingleTrigger, 0));
     expect(staleDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 0));
-    expect(staleDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleDecline.legalActions);
+    assertLegalWindowMetadata(restoredSingleTrigger, staleDecline, 0);
   });
 
   it("restores same-bucket optional order prompts and clears them after activation", () => {
@@ -106,7 +106,7 @@ describe("trigger order prompt restore", () => {
     expect(staleActivation.state.actionWindowId).toBe(restoredSingleTrigger.state.actionWindowId);
     expect(staleActivation.legalActions).toEqual(getDuelLegalActions(restoredSingleTrigger, 0));
     expect(staleActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 0));
-    expect(staleActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleActivation.legalActions);
+    assertLegalWindowMetadata(restoredSingleTrigger, staleActivation, 0);
   });
 
   it("restores same-bucket mandatory order prompts and clears them after activation", () => {
@@ -153,7 +153,7 @@ describe("trigger order prompt restore", () => {
     expect(staleActivation.state.actionWindowId).toBe(restoredSingleTrigger.state.actionWindowId);
     expect(staleActivation.legalActions).toEqual(getDuelLegalActions(restoredSingleTrigger, 0));
     expect(staleActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 0));
-    expect(staleActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleActivation.legalActions);
+    assertLegalWindowMetadata(restoredSingleTrigger, staleActivation, 0);
   });
 
   it("restores opponent same-bucket order prompts after bucket handoff", () => {
@@ -214,7 +214,7 @@ describe("trigger order prompt restore", () => {
     expect(staleDecline.state.actionWindowId).toBe(restoredSingleTrigger.state.actionWindowId);
     expect(staleDecline.legalActions).toEqual(getDuelLegalActions(restoredSingleTrigger, 1));
     expect(staleDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 1));
-    expect(staleDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleDecline.legalActions);
+    assertLegalWindowMetadata(restoredSingleTrigger, staleDecline, 1);
   });
 
   it("restores opponent mandatory order prompts after bucket handoff", () => {
@@ -271,7 +271,7 @@ describe("trigger order prompt restore", () => {
     expect(staleActivation.state.actionWindowId).toBe(restoredSingleTrigger.state.actionWindowId);
     expect(staleActivation.legalActions).toEqual(getDuelLegalActions(restoredSingleTrigger, 1));
     expect(staleActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 1));
-    expect(staleActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleActivation.legalActions);
+    assertLegalWindowMetadata(restoredSingleTrigger, staleActivation, 1);
   });
 });
 
@@ -368,6 +368,16 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
   expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
-  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  assertLegalWindowMetadata(session, response, response.state.waitingFor!);
   return response;
+}
+
+function assertLegalWindowMetadata(session: ReturnType<typeof createDuel>, response: ReturnType<typeof applyResponse>, player: 0 | 1) {
+  const windowId = session.state.actionWindowId;
+  expect(response.state.actionWindowId).toBe(windowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, player));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
+  for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
 }
