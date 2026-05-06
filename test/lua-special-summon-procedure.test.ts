@@ -149,6 +149,7 @@ describe("Lua special summon procedures", () => {
     expect(staleRestoredResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleRestoredResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(staleRestoredResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleRestoredResult.legalActions);
+    assertPublicRestoreMetadata(restored, staleRestoredResult);
 
     applyAndAssert(session, action!);
 
@@ -952,5 +953,13 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  assertPublicRestoreMetadata(restored, response);
   return response;
+}
+
+function assertPublicRestoreMetadata(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: ReturnType<typeof applyLuaRestoreResponse>): void {
+  const publicState = queryPublicState(restored.session);
+  expect(response.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) expect(response.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  else expect(response.state).not.toHaveProperty("triggerOrderPrompt");
 }
