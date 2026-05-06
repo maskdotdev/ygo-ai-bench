@@ -437,6 +437,7 @@ describe("battle action restore", () => {
     const opponentQuick = getDuelLegalActions(restoredQuick, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-battle-opponent-chain-quick");
     expect(opponentQuick).toBeDefined();
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredQuick, 1), 1, "restore-battle-opponent-chain-quick", "chainResponse")).toBe(true);
     expect(getDuelLegalActions(restoredQuick, 0)).toEqual([]);
     const quickResult = applyAndAssert(restoredQuick, opponentQuick!);
     expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "attackNegationResponse", responsePlayer: 1 } });
@@ -446,6 +447,7 @@ describe("battle action restore", () => {
     expect(quickResult.state.log.some((entry) => entry.detail === "Restored battle opponent chain quick resolved")).toBe(true);
     expect(quickResult.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passAttack", player: 1, windowKind: "battle" })]));
     expect(quickResult.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-battle-opponent-chain-quick")).toBe(false);
+    expect(hasGroupedEffect(quickResult.legalActionGroups, 1, "restore-battle-opponent-chain-quick", "battle")).toBe(false);
     expect(getDuelLegalActions(restoredQuick, 0)).toEqual([]);
     assertStaleResponse(restoredQuick, opponentQuick!);
 
@@ -456,6 +458,7 @@ describe("battle action restore", () => {
     expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passAttack", player: 1, windowKind: "battle" })]));
     expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-battle-opponent-chain-quick")).toBe(false);
+    expect(hasGroupedEffect(result.legalActionGroups, 1, "restore-battle-opponent-chain-quick", "battle")).toBe(false);
     expect(getDuelLegalActions(restored, 0)).toEqual([]);
     assertStaleResponse(restored, pass!);
   });
@@ -497,6 +500,7 @@ describe("battle action restore", () => {
     const opponentQuick = getDuelLegalActions(restoredQuick, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-damage-opponent-chain-quick");
     expect(opponentQuick).toBeDefined();
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredQuick, 1), 1, "restore-damage-opponent-chain-quick", "chainResponse")).toBe(true);
     expect(getDuelLegalActions(restoredQuick, 0)).toEqual([]);
     const quickResult = applyAndAssert(restoredQuick, opponentQuick!);
     expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
@@ -506,6 +510,7 @@ describe("battle action restore", () => {
     expect(quickResult.state.log.some((entry) => entry.detail === "Restored damage opponent chain quick resolved")).toBe(true);
     expect(quickResult.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
     expect(quickResult.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-damage-opponent-chain-quick")).toBe(false);
+    expect(hasGroupedEffect(quickResult.legalActionGroups, 1, "restore-damage-opponent-chain-quick", "battle")).toBe(false);
     expect(getDuelLegalActions(restoredQuick, 0)).toEqual([]);
     assertStaleResponse(restoredQuick, opponentQuick!);
 
@@ -516,6 +521,7 @@ describe("battle action restore", () => {
     expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
     expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-damage-opponent-chain-quick")).toBe(false);
+    expect(hasGroupedEffect(result.legalActionGroups, 1, "restore-damage-opponent-chain-quick", "battle")).toBe(false);
     expect(getDuelLegalActions(restored, 0)).toEqual([]);
     assertStaleResponse(restored, pass!);
   });
@@ -555,6 +561,7 @@ describe("battle action restore", () => {
     const opponentQuick = getDuelLegalActions(restoredQuick, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-damage-calc-opponent-chain-quick");
     expect(opponentQuick).toBeDefined();
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredQuick, 1), 1, "restore-damage-calc-opponent-chain-quick", "chainResponse")).toBe(true);
     expect(getDuelLegalActions(restoredQuick, 0)).toEqual([]);
     const quickResult = applyAndAssert(restoredQuick, opponentQuick!);
     expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 1 } });
@@ -564,6 +571,7 @@ describe("battle action restore", () => {
     expect(quickResult.state.log.some((entry) => entry.detail === "Restored damage calculation opponent chain quick resolved")).toBe(true);
     expect(quickResult.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
     expect(quickResult.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-damage-calc-opponent-chain-quick")).toBe(false);
+    expect(hasGroupedEffect(quickResult.legalActionGroups, 1, "restore-damage-calc-opponent-chain-quick", "battle")).toBe(false);
     expect(getDuelLegalActions(restoredQuick, 0)).toEqual([]);
     assertStaleResponse(restoredQuick, opponentQuick!);
 
@@ -574,6 +582,7 @@ describe("battle action restore", () => {
     expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
     expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-damage-calc-opponent-chain-quick")).toBe(false);
+    expect(hasGroupedEffect(result.legalActionGroups, 1, "restore-damage-calc-opponent-chain-quick", "battle")).toBe(false);
     expect(getDuelLegalActions(restored, 0)).toEqual([]);
     assertStaleResponse(restored, pass!);
   });
@@ -740,6 +749,21 @@ function assertLegalWindow(session: ReturnType<typeof createDuel>, response: Ret
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
+function hasGroupedEffect(
+  groups: ReturnType<typeof getGroupedDuelLegalActions>,
+  player: 0 | 1,
+  effectId: string,
+  windowKind: "battle" | "chainResponse",
+): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === windowKind &&
+      group.actions.some(
+        (action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowKind === windowKind,
+      ),
+  );
 }
 
 function battleQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
