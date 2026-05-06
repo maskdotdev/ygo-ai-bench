@@ -255,6 +255,13 @@ describe("Lua trigger chain windows", () => {
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     applyLuaRestoreAndAssert(restored, pass!);
+    const stalePass = applyLuaRestoreResponse(restored, pass!);
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, stalePass.state.waitingFor!));
+    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, stalePass.state.waitingFor!));
+    expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
     expect(restored.host.messages).toEqual(["restored opponent quick resolved", "restored second trigger resolved", "restored first trigger resolved"]);
   });
 
