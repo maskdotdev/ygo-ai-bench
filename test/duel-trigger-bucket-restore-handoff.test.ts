@@ -23,6 +23,7 @@ describe("trigger bucket restore handoff", () => {
     registerEffect(session, normalSummonTrigger("restore-turn-optional-decline", turnTriggerSource!.uid, 0, "Restored turn optional trigger resolved"));
     registerEffect(session, normalSummonTrigger("restore-opponent-optional-decline", opponentTriggerSource!.uid, 1, "Restored opponent optional trigger resolved"));
     registerEffect(session, openOnlyQuickEffect("restore-open-priority-after-opponent-decline", turnQuickSource!.uid, 0, "Restored open priority after opponent decline resolved"));
+    registerEffect(session, chainOnlyQuickEffect("restore-chain-priority-after-opponent-decline", turnQuickSource!.uid, 0, "Restored chain priority after opponent decline resolved"));
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeDefined();
@@ -52,6 +53,7 @@ describe("trigger bucket restore handoff", () => {
     const declined = applyAndAssert(restoredOpponentBucket, opponentDecline!);
     expect(declined.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
     expect(declined.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-open-priority-after-opponent-decline", windowKind: "open" })]));
+    expect(declined.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-chain-priority-after-opponent-decline")).toBe(false);
     expect(restoredOpponentBucket.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "restore-opponent-optional-decline")).toBe(true);
     expect(restoredOpponentBucket.state.log.some((entry) => entry.detail === "Restored opponent optional trigger resolved")).toBe(false);
     expect(getDuelLegalActions(restoredOpponentBucket, 1)).toEqual([]);
@@ -283,6 +285,12 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
       ...restoreLoggedEffect("Restored open priority after opponent decline resolved")(effect),
       canActivate(ctx) {
         return ctx.duel.chain.length === 0;
+      },
+    }),
+    "restore-chain-priority-after-opponent-decline": (effect) => ({
+      ...restoreLoggedEffect("Restored chain priority after opponent decline resolved")(effect),
+      canActivate(ctx) {
+        return ctx.duel.chain.length > 0;
       },
     }),
   };
