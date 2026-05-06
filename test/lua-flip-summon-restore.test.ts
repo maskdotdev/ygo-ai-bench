@@ -71,6 +71,13 @@ describe("Lua Flip Summon restore helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored flip alias 100/true");
+    const staleReplay = applyLuaRestoreResponse(restored, trigger!);
+    expect(staleReplay.ok).toBe(false);
+    expect(staleReplay.error).toContain("Response is not currently legal");
+    expect(staleReplay.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
+    expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
+    expect(staleReplay.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleReplay.legalActions);
 
     const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(originalTrigger).toBeDefined();
@@ -142,6 +149,13 @@ describe("Lua Flip Summon restore helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored flip summon success 100/true/536870912");
+    const staleReplay = applyLuaRestoreResponse(restored, trigger!);
+    expect(staleReplay.ok).toBe(false);
+    expect(staleReplay.error).toContain("Response is not currently legal");
+    expect(staleReplay.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
+    expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
+    expect(staleReplay.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleReplay.legalActions);
 
     const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(originalTrigger).toBeDefined();
