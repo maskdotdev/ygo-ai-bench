@@ -459,6 +459,8 @@ describe("Lua open fast priority restore", () => {
 
     const chainQuickResult = applyLuaRestoreAndAssert(restored, chainQuick!);
     expect(chainQuickResult.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(hasGroupedLuaEffect(chainQuickResult.legalActionGroups, 0, "19600", "chainResponse")).toBe(true);
+    expect(hasGroupedLuaEffect(chainQuickResult.legalActionGroups, 0, "19300", "chainResponse")).toBe(false);
 
     const staleChainQuick = applyLuaRestoreResponse(restored, chainQuick!);
     expect(staleChainQuick.ok).toBe(false);
@@ -470,6 +472,8 @@ describe("Lua open fast priority restore", () => {
 
     const turnChainQuick = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid.includes("19600"));
     expect(turnChainQuick).toMatchObject({ player: 0, windowKind: "chainResponse" });
+    expect(hasGroupedLuaEffect(getLuaRestoreLegalActionGroups(restored, 0), 0, "19600", "chainResponse")).toBe(true);
+    expect(hasGroupedLuaEffect(getLuaRestoreLegalActionGroups(restored, 0), 0, "19300", "chainResponse")).toBe(false);
     const staleBeforeTurnChainQuick = applyLuaRestoreResponse(restored, { ...turnChainQuick!, windowId: turnChainQuick!.windowId! - 1 });
     expect(staleBeforeTurnChainQuick.ok).toBe(false);
     expect(staleBeforeTurnChainQuick.error).toContain("Response is not currently legal");
@@ -514,6 +518,7 @@ describe("Lua open fast priority restore", () => {
     expect(getLuaRestoreLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.uid.includes("19700"))).toBe(false);
     expect(hasGroupedLuaEffect(opened.legalActionGroups, 0, "19300", "open")).toBe(true);
     expect(hasGroupedLuaEffect(opened.legalActionGroups, 0, "19600", "open")).toBe(false);
+    expect(hasGroupedLuaEffect(opened.legalActionGroups, 1, "19400", "open")).toBe(false);
     expect(hasGroupedLuaEffect(getLuaRestoreLegalActionGroups(restored, 0), 0, "19700", "open")).toBe(false);
 
     const stalePass = applyLuaRestoreResponse(restored, pass!);
