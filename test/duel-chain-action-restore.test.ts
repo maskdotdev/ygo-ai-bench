@@ -305,6 +305,89 @@ describe("chain action restore", () => {
     expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
     expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
   });
+
+  it("opens restored chain-ended trigger buckets after resolving a restored chain", () => {
+    const session = createDuel({ seed: 5, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(source).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    expect(opponentQuickSource).toBeTruthy();
+    registerEffect(session, chainEffect("restore-chain-ended-source", source!.uid, 0, "ignition", "Restored chain-ended source resolved"));
+    registerEffect(session, chainEffect("restore-chain-ended-trigger", triggerSource!.uid, 0, "trigger", "Restored chain-ended trigger resolved", "chainEnded"));
+    registerEffect(session, chainOnlyQuickEffect("restore-chain-ended-opponent-quick", opponentQuickSource!.uid, 1, "Restored chain-ended opponent quick resolved"));
+
+    const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-chain-ended-source");
+    expect(original).toBeTruthy();
+    const opened = applyResponse(session, original!);
+    expect(opened.ok, opened.error).toBe(true);
+    expect(opened.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-chain-ended-source": restoreChainEffect("Restored chain-ended source resolved"),
+      "restore-chain-ended-trigger": restoreChainEffect("Restored chain-ended trigger resolved"),
+      "restore-chain-ended-opponent-quick": restoreChainOnlyQuickEffect("Restored chain-ended opponent quick resolved"),
+    });
+    const result = applyResponse(restored, pass!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", chain: [] });
+    expect(result.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-chain-ended-trigger", eventName: "chainEnded", triggerBucket: "turnOptional" }),
+    ]);
+    expect(queryPublicState(restored).pendingTriggerBuckets).toEqual([
+      { player: 0, triggerBucket: "turnOptional", triggerIds: [result.state.pendingTriggers[0]!.id] },
+    ]);
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(restored.state.log.some((entry) => entry.detail === "Restored chain-ended source resolved")).toBe(true);
+    expect(restored.state.log.some((entry) => entry.detail === "Restored chain-ended trigger resolved")).toBe(false);
+
+    const restoredTriggerBucket = restoreDuel(serializeDuel(restored), createCardReader(cards), {
+      "restore-chain-ended-source": restoreChainEffect("Restored chain-ended source resolved"),
+      "restore-chain-ended-trigger": restoreChainEffect("Restored chain-ended trigger resolved"),
+      "restore-chain-ended-opponent-quick": restoreChainOnlyQuickEffect("Restored chain-ended opponent quick resolved"),
+    });
+    expect(restoredTriggerBucket.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
+    expect(queryPublicState(restoredTriggerBucket)).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
+    expect(getGroupedDuelLegalActions(restoredTriggerBucket, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredTriggerBucket, 0));
+    const trigger = getDuelLegalActions(restoredTriggerBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-chain-ended-trigger");
+    expect(trigger).toBeDefined();
+    const staleBeforeTrigger = applyResponse(restoredTriggerBucket, { ...trigger!, windowId: trigger!.windowId! - 1 });
+    expect(staleBeforeTrigger.ok).toBe(false);
+    expect(staleBeforeTrigger.error).toContain("Response is not currently legal");
+    expect(staleBeforeTrigger.state.actionWindowId).toBe(restoredTriggerBucket.state.actionWindowId);
+    expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, 0));
+    expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, 0));
+    expect(staleBeforeTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTrigger.legalActions);
+
+    const triggerResult = applyResponse(restoredTriggerBucket, trigger!);
+    expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.state.pendingTriggers).toEqual([]);
+    expect(triggerResult.state.chain.map((link) => link.effectId)).toEqual(["restore-chain-ended-trigger"]);
+    expect(triggerResult.state.log.some((entry) => entry.detail === "Restored chain-ended trigger resolved")).toBe(false);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    const triggerPass = getDuelLegalActions(restoredTriggerBucket, triggerResult.state.waitingFor!).find((action) => action.type === "passChain");
+    expect(triggerPass).toBeDefined();
+    const resolvedTrigger = applyResponse(restoredTriggerBucket, triggerPass!);
+    expect(resolvedTrigger.ok, resolvedTrigger.error).toBe(true);
+    expect(resolvedTrigger.state.chain).toEqual([]);
+    expect(resolvedTrigger.state.log.some((entry) => entry.detail === "Restored chain-ended trigger resolved")).toBe(true);
+    expect(resolvedTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, resolvedTrigger.state.waitingFor!));
+    expect(resolvedTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, resolvedTrigger.state.waitingFor!));
+    expect(resolvedTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolvedTrigger.legalActions);
+  });
 });
 
 function chainResponseGroups(session: ReturnType<typeof setupRestoredChainResponse>["restored"], player: 0 | 1) {
@@ -347,7 +430,7 @@ function setupRestoredChainResponse(kind: "pass" | "quick") {
   return { session, restored };
 }
 
-function chainEffect(id: string, sourceUid: string, controller: 0 | 1, event: "ignition" | "quick" | "trigger", detail: string, triggerEvent?: "normalSummoned"): DuelEffectDefinition {
+function chainEffect(id: string, sourceUid: string, controller: 0 | 1, event: "ignition" | "quick" | "trigger", detail: string, triggerEvent?: DuelEffectDefinition["triggerEvent"]): DuelEffectDefinition {
   return {
     id,
     registryKey: id,
