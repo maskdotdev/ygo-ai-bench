@@ -1,0 +1,237 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, triggerActivationGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain lifecycle trigger bucket fixture", () => {
+  it("queues chainEnded triggers only after chainSolved trigger buckets resolve", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Lifecycle Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Chain Solved Watcher", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Chain Ended Watcher", kind: "monster", attack: 1500, defense: 1600 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain solved before chain ended trigger bucket fixture",
+      options: { seed: 282, startingHandSize: 3 },
+      decks: {
+        0: { main: ["100", "300", "400"] },
+        1: { main: [] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-chain-lifecycle-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            logMessage: "Chain lifecycle starter resolved",
+          },
+          {
+            id: "fixture-chain-solved-watcher",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainSolved",
+            optional: false,
+            range: ["hand"],
+            oncePerTurn: true,
+            logMessage: "Chain solved watcher resolved",
+          },
+          {
+            id: "fixture-chain-ended-watcher",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainEnded",
+            optional: false,
+            range: ["hand"],
+            oncePerTurn: true,
+            logMessage: "Chain ended watcher resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-lifecycle-starter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens a chainSolved trigger bucket after the current chain resolves before collecting chainEnded triggers",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-solved-watcher", eventName: "chainSolved", triggerBucket: "turnMandatory" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-solved-watcher", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-chain-solved-watcher", "turnMandatory", 1, 1)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-ended-watcher", triggerBucket: "turnMandatory" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-solved-watcher", triggerBucket: "turnMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-ended-watcher", "turnMandatory", 1, "triggerBucket"),
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-solved-watcher" }],
+              },
+            ],
+            logIncludes: ["Chain lifecycle starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-solved-watcher" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro collects chainEnded triggers only after the pending chainSolved trigger chain has resolved",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-ended-watcher", eventName: "chainEnded", triggerBucket: "turnMandatory" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-ended-watcher", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-chain-ended-watcher", "turnMandatory", 1, 2)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-solved-watcher", triggerBucket: "turnMandatory" },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-ended-watcher", triggerBucket: "turnMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-solved-watcher", "turnMandatory", 2, "triggerBucket"),
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-ended-watcher" }],
+              },
+            ],
+            logIncludes: ["Chain solved watcher resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-ended-watcher" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro returns to open priority after the deferred chainEnded trigger resolves",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 9, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-lifecycle-starter", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-lifecycle-starter", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Summons",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+                  { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+                  { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+                  { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+                  { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+                  { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+                ],
+              },
+              turnGroup(3),
+            ],
+            logIncludes: ["Chain ended watcher resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state resolves chainSolved buckets before deferred chainEnded buckets",
+        windowId: 3,
+        windowKind: "open",
+        waitingFor: 0,
+        chain: [],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        legalActionCounts: { 0: 9, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-lifecycle-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-lifecycle-starter", count: 1 }],
+          },
+          {
+            player: 0,
+            label: "Summons",
+            windowId: 3,
+            windowKind: "open",
+            count: 1,
+            actions: [
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+            ],
+          },
+          turnGroup(3),
+        ],
+        logIncludes: ["Chain lifecycle starter resolved", "Chain solved watcher resolved", "Chain ended watcher resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
