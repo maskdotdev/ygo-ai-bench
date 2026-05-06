@@ -150,6 +150,25 @@ describe("EDOPro parity phase lock fixtures", () => {
         turnPlayer: 1,
         pendingBattle: false,
         battleWindow: null,
+        legalActionCounts: { 0: 0, 1: 2 },
+        legalActionGroupCounts: { 0: 0, 1: 1 },
+        legalActions: [
+          { type: "changePhase", player: 1, windowId: 2, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 1, windowId: 2, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 1,
+            label: "Turn",
+            windowId: 2,
+            windowKind: "open",
+            count: 1,
+            actions: [
+              { type: "changePhase", player: 1, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 1, windowId: 2, windowKind: "open", count: 1 },
+            ],
+          },
+        ],
       },
     };
 
