@@ -72,8 +72,8 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
                 triggerBucket: { player: 0, triggerBucket: "turnOptional" },
                 count: 1,
                 actions: [
-                  { type: "activateTrigger", player: 0, effectId: "fixture-first-optional", count: 1 },
-                  { type: "activateTrigger", player: 0, effectId: "fixture-second-optional", count: 1 },
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-optional", count: 1 },
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-optional", count: 1 },
                 ],
               },
               {
@@ -84,8 +84,8 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
                 triggerBucket: { player: 0, triggerBucket: "turnOptional" },
                 count: 1,
                 actions: [
-                  { type: "declineTrigger", player: 0, effectId: "fixture-first-optional", count: 1 },
-                  { type: "declineTrigger", player: 0, effectId: "fixture-second-optional", count: 1 },
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-optional", count: 1 },
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-optional", count: 1 },
                 ],
               },
             ],
@@ -111,7 +111,7 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
                 windowKind: "triggerBucket",
                 triggerBucket: { player: 0, triggerBucket: "turnOptional" },
                 count: 1,
-                actions: [{ type: "declineTrigger", player: 0, effectId: "fixture-first-optional", count: 1 }],
+                actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-optional", count: 1 }],
               },
             ],
           },
@@ -138,7 +138,7 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
                 windowKind: "triggerBucket",
                 triggerBucket: { player: 0, triggerBucket: "turnOptional" },
                 count: 1,
-                actions: [{ type: "activateTrigger", player: 0, effectId: "fixture-second-optional", count: 1 }],
+                actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-optional", count: 1 }],
               },
               {
                 player: 0,
@@ -147,7 +147,7 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
                 windowKind: "triggerBucket",
                 triggerBucket: { player: 0, triggerBucket: "turnOptional" },
                 count: 1,
-                actions: [{ type: "declineTrigger", player: 0, effectId: "fixture-second-optional", count: 1 }],
+                actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-optional", count: 1 }],
               },
             ],
             logIncludes: ["fixture-first-optional"],
