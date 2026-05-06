@@ -257,7 +257,7 @@ describe("EDOPro parity missed timing fixtures", () => {
                 windowId: 3,
                 windowKind: "triggerBucket",
                 triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-                actions: [{ type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional-when" }],
+                actions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-when" }],
               },
             ],
           },
