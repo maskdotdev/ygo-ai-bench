@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelEffectDefinition, DuelResponse } from "#duel/types.js";
+import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
+import type { DuelAction, DuelEffectDefinition, DuelResponse } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("trigger order prompt restore", () => {
@@ -130,6 +131,7 @@ describe("trigger order prompt restore", () => {
     expect(staleActivation.legalActions).toEqual(getDuelLegalActions(restoredSingleTrigger, 0));
     expect(staleActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 0));
     assertLegalWindowMetadata(restoredSingleTrigger, staleActivation, 0);
+    resolveRemainingTriggerAndAssertRestore(restoredSingleTrigger, 0, "restore-order-second-after-activation", restoreActivationRegistry());
   });
 
   it("restores same-bucket mandatory order prompts and clears them after activation", () => {
@@ -183,6 +185,7 @@ describe("trigger order prompt restore", () => {
     expect(staleActivation.legalActions).toEqual(getDuelLegalActions(restoredSingleTrigger, 0));
     expect(staleActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 0));
     assertLegalWindowMetadata(restoredSingleTrigger, staleActivation, 0);
+    resolveRemainingTriggerAndAssertRestore(restoredSingleTrigger, 0, "restore-order-second-mandatory", restoreMandatoryRegistry());
   });
 
   it("restores opponent same-bucket order prompts after bucket handoff", () => {
@@ -318,6 +321,7 @@ describe("trigger order prompt restore", () => {
     expect(staleActivation.legalActions).toEqual(getDuelLegalActions(restoredSingleTrigger, 1));
     expect(staleActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 1));
     assertLegalWindowMetadata(restoredSingleTrigger, staleActivation, 1);
+    resolveRemainingTriggerAndAssertRestore(restoredSingleTrigger, 1, "restore-order-second-opponent-mandatory", restoreOpponentMandatoryRegistry());
   });
 });
 
@@ -433,6 +437,50 @@ function assertLegalWindowMetadata(session: ReturnType<typeof createDuel>, respo
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
+function resolveRemainingTriggerAndAssertRestore(
+  session: ReturnType<typeof createDuel>,
+  player: 0 | 1,
+  effectId: string,
+  registry: Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition>,
+): void {
+  const activation = getDuelLegalActions(session, player).find((action) => action.type === "activateTrigger" && action.effectId === effectId);
+  expect(activation).toBeDefined();
+  const activated = applyAndAssert(session, activation!);
+  expect(queryPublicState(session).pendingTriggerBuckets).toEqual([]);
+  if (activated.state.windowKind === "chainResponse") {
+    expect(activated.state.pendingTriggers).toEqual([]);
+    const passPlayer = activated.state.waitingFor!;
+    const pass = getDuelLegalActions(session, passPlayer).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyAndAssert(session, pass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+  }
+  else {
+    expect(activated.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+  }
+  expect(queryPublicState(session).pendingTriggerBuckets).toEqual([]);
+
+  const restoredAfterResolution = restoreDuel(serializeDuel(session), createCardReader(cards), registry);
+  expect(queryPublicState(restoredAfterResolution)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+  expect(actionsWithoutWindowToken(getDuelLegalActions(restoredAfterResolution, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(session, 0)));
+  expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredAfterResolution, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(session, 0)));
+  expect(getDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
+}
+
+function actionsWithoutWindowToken(actions: DuelAction[]): Array<Omit<DuelAction, "windowToken">> {
+  return actions.map((action) => {
+    const { windowToken: _windowToken, ...rest } = action;
+    return rest;
+  });
+}
+
+function groupsWithoutWindowToken(groups: DuelLegalActionGroup[]): DuelLegalActionGroup[] {
+  return groups.map((group) => ({
+    ...group,
+    actions: actionsWithoutWindowToken(group.actions) as DuelAction[],
+  }));
 }
 
 function hasGroupedTrigger(
