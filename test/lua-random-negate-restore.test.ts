@@ -66,9 +66,12 @@ function runTossNegateRestore(eventCode: string, numericCode: number, eventName:
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+  expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+  expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
 
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
+  expect(hasGroupedTrigger(restored, 0, trigger!.effectId)).toBe(true);
   const staleTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
   expect(staleTrigger.ok).toBe(false);
   expect(staleTrigger.error).toContain("Response is not currently legal");
@@ -125,4 +128,8 @@ function assertLuaRestoreLegalWindow(restored: ReturnType<typeof restoreDuelWith
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
+function hasGroupedTrigger(restored: Parameters<typeof getLuaRestoreLegalActions>[0], player: 0 | 1, effectId: string): boolean {
+  return getLuaRestoreLegalActionGroups(restored, player).some((group) => group.actions.some((action) => action.type === "activateTrigger" && action.effectId === effectId));
 }
