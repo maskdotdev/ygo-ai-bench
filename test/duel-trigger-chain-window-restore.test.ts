@@ -120,6 +120,15 @@ describe("trigger chain-window restore", () => {
     expect(afterOpponentQuick.state.log.some((entry) => entry.detail === "Restored second mandatory trigger resolved")).toBe(false);
     expect(afterOpponentQuick.state.log.some((entry) => entry.detail === "Restored opponent mandatory chain-window quick resolved")).toBe(false);
     assertStaleResponse(restoredChainWindow, opponentQuick!);
+
+    const pass = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyAndAssert(restoredChainWindow, pass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored first mandatory trigger resolved")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored second mandatory trigger resolved")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored opponent mandatory chain-window quick resolved")).toBe(true);
+    assertStaleResponse(restoredChainWindow, pass!);
   });
 });
 
