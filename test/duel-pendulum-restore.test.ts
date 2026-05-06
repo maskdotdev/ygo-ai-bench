@@ -62,6 +62,16 @@ describe("pendulum restore", () => {
     expect(action).toMatchObject({ type: "pendulumSummon", summonUids: [candidate!.uid], windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
     if (!action || action.type !== "pendulumSummon") throw new Error("Expected restored Pendulum Summon action");
 
+    const staleBeforeSummon = applyResponse(restored, { ...action, windowId: action.windowId! - 1 });
+    expect(staleBeforeSummon.ok).toBe(false);
+    expect(staleBeforeSummon.error).toContain("Response is not currently legal");
+    expect(staleBeforeSummon.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+    expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "extraDeck", faceUp: true });
+    expect(restored.state.players[0].pendulumSummonAvailable).toBe(true);
+
     const result = applyResponse(restored, action);
     expect(result.ok).toBe(true);
     expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", summonType: "pendulum", faceUp: true });
