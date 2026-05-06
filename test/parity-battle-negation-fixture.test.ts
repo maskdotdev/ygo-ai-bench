@@ -73,7 +73,10 @@ describe("EDOPro parity battle negation fixtures", () => {
             battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-attack-negator", count: 1 }],
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-attack-negator", count: 1 },
+              { type: "passAttack", player: 0, windowId: 3, windowKind: "battle", count: 1 },
+            ],
             legalActionGroups: [
               {
                 player: 0,
@@ -82,6 +85,14 @@ describe("EDOPro parity battle negation fixtures", () => {
                 windowKind: "battle",
                 count: 1,
                 actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-attack-negator", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Pass",
+                windowId: 3,
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "passAttack", player: 0, windowId: 3, windowKind: "battle", count: 1 }],
               },
             ],
           },
