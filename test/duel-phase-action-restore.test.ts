@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -18,6 +18,17 @@ describe("phase action restore", () => {
     expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
     expect(action).toBeDefined();
+    expect(action).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
+
+    const staleResult = applyResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
+    expect(staleResult.ok).toBe(false);
+    expect(staleResult.error).toContain("Response is not currently legal");
+    expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expect(restored.state.phase).toBe("main1");
+    expect(restored.state.log.some((entry) => entry.action === "phase" && entry.detail === "Moved to battle")).toBe(false);
 
     const result = applyResponse(restored, action!);
     expect(result.ok).toBe(true);
@@ -43,6 +54,19 @@ describe("phase action restore", () => {
     expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn");
     expect(action).toBeDefined();
+    expect(action).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
+
+    const staleResult = applyResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
+    expect(staleResult.ok).toBe(false);
+    expect(staleResult.error).toContain("Response is not currently legal");
+    expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expect(restored.state.turnPlayer).toBe(0);
+    expect(restored.state.turn).toBe(1);
+    expect(restored.state.phase).toBe("main1");
+    expect(restored.state.log.some((entry) => entry.action === "turn" && entry.player === 1)).toBe(false);
 
     const result = applyResponse(restored, action!);
     expect(result.ok).toBe(true);
