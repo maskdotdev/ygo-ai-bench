@@ -282,11 +282,29 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
             logIncludes: ["fixture-segoc-turn-optional-decline", "fixture-segoc-opponent-optional-decline"],
           },
         }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-segoc-open-fast-after-opponent-decline" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the restored open fast effect after both SEGOC optional buckets are declined",
+            windowId: 4,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-optional-decline" },
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-optional-decline" },
+            ],
+            logIncludes: ["SEGOC open fast after opponent decline resolved"],
+          },
+        }),
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final state offers turn-player open fast effects after both optional SEGOC buckets are declined",
-        windowId: 3,
+        note: "EDOPro final state returns to open priority after the post-SEGOC open fast effect resolves",
+        windowId: 4,
         windowKind: "open",
         waitingFor: 0,
         pendingTriggers: [],
@@ -294,27 +312,11 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
         chain: [],
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
-        legalActions: [
-          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-decline", count: 1 },
-          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
-          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
-        ],
-        legalActionGroups: [
-          {
-            player: 0,
-            label: "Effects",
-            windowId: 3,
-            windowKind: "open",
-            count: 1,
-            actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-decline", count: 1 }],
-          },
-          turnGroup(3),
-        ],
         absentLegalActions: [
-          { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-optional-decline" },
-          { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-decline" },
+          { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-optional-decline" },
+          { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-optional-decline" },
         ],
-        logIncludes: ["fixture-segoc-turn-optional-decline", "fixture-segoc-opponent-optional-decline"],
+        logIncludes: ["SEGOC open fast after opponent decline resolved"],
       },
     };
 
