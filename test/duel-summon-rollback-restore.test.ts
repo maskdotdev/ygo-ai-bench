@@ -147,6 +147,22 @@ describe("duel summon rollback after restore", () => {
       const restoredWindowId = queryPublicState(session).actionWindowId;
       expect(action).toMatchObject({ windowId: restoredWindowId, windowKind: "open" });
 
+      const staleResult = applyResponse(session, { ...action!, windowId: restoredWindowId - 1 });
+
+      expect(staleResult.ok).toBe(false);
+      expect(staleResult.error).toContain("Response is not currently legal");
+      expect(staleResult.state.actionWindowId).toBe(restoredWindowId);
+      expect(staleResult.state.windowKind).toBe("open");
+      expectOpenWindowActions(staleResult.legalActions, restoredWindowId);
+      expectOpenWindowGroups(staleResult.legalActionGroups, restoredWindowId);
+      expect(staleResult.legalActions).toEqual(getDuelLegalActions(session, 0));
+      expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+      expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+      expect(session.state.cards.find((card) => card.uid === target.uid)?.location).toBe(testCase.target.location);
+      expect(session.state.cards.find((card) => card.uid === first.uid)?.location).toBe(testCase.first.moveTo ?? testCase.first.location);
+      expect(session.state.cards.find((card) => card.uid === blocked.uid)?.location).toBe(testCase.blocked.moveTo ?? testCase.blocked.location);
+      expect(session.state.log.some((entry) => entry.action === testCase.logAction)).toBe(false);
+
       const result = applyResponse(session, action!);
 
       expect(result.ok).toBe(false);
