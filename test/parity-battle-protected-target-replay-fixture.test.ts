@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup, passBattleGroup, targetedAttackGroup } from "./parity-legal-action-group-helpers.js";
+import { absentAttackGroup, passBattleGroup, targetedAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle protected-target replay fixtures", () => {
   it("does not open replay when only protected raw targets differ", () => {
@@ -49,8 +49,12 @@ describe("EDOPro parity battle protected-target replay fixtures", () => {
             battleWindow: null,
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowId: 1, windowKind: "open", count: 1 }],
-            legalActionGroups: [targetedAttackGroup(0, "p0-deck-100-0", "p1-deck-300-1", 1, 1)],
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [targetedAttackGroup(0, "p0-deck-100-0", "p1-deck-300-1", 1, 1), turnGroup(1)],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowId: 1, windowKind: "open" }],
             absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-200-0", undefined, 1)],
           },
