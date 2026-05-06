@@ -127,6 +127,7 @@ describe("Lua open fast priority restore", () => {
 
     const turnChained = applyLuaRestoreAndAssert(restored, turnQuick!);
     expect(turnChained.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(turnChained.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", uid: expect.stringContaining("20100") })]));
     expect(hasGroupedLuaEffect(turnChained.legalActionGroups, 0, "20100", "open")).toBe(true);
     expect(getDuelLegalActions(restored.session, 1)).toEqual([]);
@@ -232,6 +233,7 @@ describe("Lua open fast priority restore", () => {
 
     const opened = applyLuaRestoreAndAssert(restored, chainPass!);
     expect(opened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(opened.legalActions.some((action) => action.type === "activateEffect" && action.uid.includes("18300"))).toBe(false);
     expect(hasGroupedLuaEffect(opened.legalActionGroups, 1, "18300", "open")).toBe(false);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
@@ -239,6 +241,7 @@ describe("Lua open fast priority restore", () => {
     const restoredOpenWindow = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
     expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
     expect(queryPublicState(restoredOpenWindow.session)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpenWindow.session.state.chainPasses).toEqual([]);
     expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restoredOpenWindow, 0))).toEqual(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0)));
     expect(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restoredOpenWindow, 0))).toEqual(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restored, 0)));
     expect(getLuaRestoreLegalActions(restoredOpenWindow, 1)).toEqual([]);
@@ -313,6 +316,7 @@ describe("Lua open fast priority restore", () => {
     expect(hasGroupedPass(getLuaRestoreLegalActionGroups(restoredFinalResponse, 1), 1)).toBe(true);
     const restoredFinalOpened = applyLuaRestoreAndAssert(restoredFinalResponse, restoredFinalPass!);
     expect(restoredFinalOpened.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restoredFinalResponse.session.state.chainPasses).toEqual([]);
     expect(restoredFinalResponse.host.messages).toEqual([
       "restored open fast opponent chain quick resolved",
       "restored open fast opponent chain quick resolved",
@@ -569,6 +573,7 @@ describe("Lua open fast priority restore", () => {
 
     const opened = applyLuaRestoreAndAssert(restored, pass!);
     expect(opened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(opened.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", uid: expect.stringContaining("19300") })]));
     expect(opened.legalActions.some((action) => action.type === "activateEffect" && action.uid.includes("19600"))).toBe(false);
@@ -621,6 +626,7 @@ describe("Lua open fast priority restore", () => {
 
     const finalOpened = applyLuaRestoreAndAssert(restored, finalPass!);
     expect(finalOpened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(finalOpened.legalActionGroups.flatMap((group) => group.actions)).toEqual(finalOpened.legalActions);
     expect(finalOpened.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", uid: expect.stringContaining("19300") })]));
     expect(hasGroupedLuaEffect(finalOpened.legalActionGroups, 0, "19300", "open")).toBe(true);
