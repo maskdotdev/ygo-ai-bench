@@ -329,6 +329,7 @@ describe("duel trigger buckets", () => {
 
     expect(result.ok).toBe(true);
     expect(queryPublicState(restored).windowKind).toBe("triggerBucket");
+    expect(restored.state.chainPasses).toEqual([]);
     expect(restored.state.waitingFor).toBe(0);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restored-later-payload-trigger"]);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["restored-later-payload-trigger"]);
@@ -701,6 +702,7 @@ describe("duel trigger buckets", () => {
     expect(opponentActivation).toBeTruthy();
     const opponentActivated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
     expect(opponentActivated.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restoredOpponentBucket.state.chainPasses).toEqual([]);
     expect(restoredOpponentBucket.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
       "first-restored-turn-optional resolved",
       "second-restored-turn-optional resolved",
@@ -714,6 +716,7 @@ describe("duel trigger buckets", () => {
       "opponent-restored-later-optional": withOperation,
     });
     expect(queryPublicState(restoredAfterOpponentResolution)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredAfterOpponentResolution.state.chainPasses).toEqual([]);
     expect(getDuelLegalActions(restoredAfterOpponentResolution, 0).map((action) => action.type)).toEqual(getDuelLegalActions(restoredOpponentBucket, 0).map((action) => action.type));
     expect(getGroupedDuelLegalActions(restoredAfterOpponentResolution, 0).map((group) => group.label)).toEqual(getGroupedDuelLegalActions(restoredOpponentBucket, 0).map((group) => group.label));
     expect(getDuelLegalActions(restoredAfterOpponentResolution, 1)).toEqual([]);
