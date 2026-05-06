@@ -90,6 +90,20 @@ describe("Lua special summon procedure restore", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
+    expect(action).toMatchObject({ windowKind: "open" });
+
+    const staleAction = { ...action!, windowId: action!.windowId! - 1 };
+    const staleResult = applyLuaRestoreResponse(restored, staleAction);
+    expect(staleResult.ok).toBe(false);
+    expect(staleResult.error).toContain("Response is not currently legal");
+    expect(staleResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(restored.session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.host.messages).toEqual([]);
 
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
