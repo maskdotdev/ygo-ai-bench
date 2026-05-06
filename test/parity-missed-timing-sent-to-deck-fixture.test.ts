@@ -96,6 +96,21 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "return-optional-if" }), {
           snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the surviving optional if sent-to-deck trigger after restore without resurrecting missed optional when triggers",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-optional-if" },
+            ],
+            logIncludes: ["Return optional if resolved"],
+          },
         }),
       ],
       expected: {

@@ -96,6 +96,21 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "destroy-optional-if" }), {
           snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the surviving optional if destroyed trigger after restore without resurrecting missed optional when triggers",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-optional-if" },
+            ],
+            logIncludes: ["Destroy optional if resolved"],
+          },
         }),
       ],
       expected: {
