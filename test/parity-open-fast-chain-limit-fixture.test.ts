@@ -244,6 +244,23 @@ describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-opponent-allowed" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the until-chain-end SetChainLimit response window restorable before the allowed opponent chains",
+            windowId: 1,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "open-fast-until-limiter", sourceUid: "p0-deck-110-0" }],
+            chainLimits: [{ untilChainEnd: true }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-opponent-allowed", count: 1 },
+              { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "open-fast-opponent-allowed", 1, 1), chainPassGroup(1, 1, 1)],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-turn-blocked" }],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the chain when until-chain-end restrictions leave no legal turn-player response",
