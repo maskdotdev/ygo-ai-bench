@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -142,6 +142,8 @@ describe("Lua attack negation helpers", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventPlayer: 0, eventReason: 0x40, eventReasonPlayer: 0 });
+    expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
+    expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -151,6 +153,7 @@ describe("Lua attack negation helpers", () => {
     expect(staleTrigger.ok).toBe(false);
     expect(staleTrigger.error).toContain("Response is not currently legal");
     expect(staleTrigger.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    assertPublicRestoreMetadata(restored, staleTrigger);
     expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
@@ -227,6 +230,7 @@ describe("Lua attack negation helpers", () => {
     const originalPassPreapply = applyLuaRestoreResponse(restored, originalAttackPass!);
     expect(originalPassPreapply.ok).toBe(false);
     expect(originalPassPreapply.error).toContain("Response is not currently legal");
+    assertPublicRestoreMetadata(restored, originalPassPreapply);
     expectLuaRestoreStalePreapply(restored, negate!, 1);
     const result = applyLuaRestoreAndAssert(restored, negate!);
 
@@ -234,6 +238,7 @@ describe("Lua attack negation helpers", () => {
     const replayAttackPass = applyLuaRestoreResponse(restored, staleAttackPass!);
     expect(replayAttackPass.ok).toBe(false);
     expect(replayAttackPass.error).toContain("Response is not currently legal");
+    assertPublicRestoreMetadata(restored, replayAttackPass);
     expect(replayAttackPass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(replayAttackPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(replayAttackPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(replayAttackPass.legalActions);
@@ -554,6 +559,7 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const response = applyLuaRestoreResponse(restored, action);
   expect(response.ok, response.error).toBe(true);
+  assertPublicRestoreMetadata(restored, response);
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
@@ -565,7 +571,18 @@ function expectLuaRestoreStalePreapply(restored: ReturnType<typeof restoreDuelWi
   expect(response.ok).toBe(false);
   expect(response.error).toContain("Response is not currently legal");
   expect(response.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  assertPublicRestoreMetadata(restored, response);
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, player));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+}
+
+function assertPublicRestoreMetadata(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: ReturnType<typeof applyLuaRestoreResponse>): void {
+  const publicState = queryPublicState(restored.session);
+  expect(response.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) {
+    expect(response.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  } else {
+    expect(response.state).not.toHaveProperty("triggerOrderPrompt");
+  }
 }
