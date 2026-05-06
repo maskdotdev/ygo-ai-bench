@@ -29,6 +29,7 @@ describe("trigger chain-window restore", () => {
       expect.objectContaining({ player: 0, effectId: "restore-second-held-trigger", eventName: "normalSummoned", eventCardUid: summoned!.uid }),
     ]);
     expect(getDuelLegalActions(restoredFirstBucket, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-opponent-chain-window-quick")).toBe(false);
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredFirstBucket, 1), 1, "restore-opponent-chain-window-quick", "triggerBucket")).toBe(false);
 
     const restoredSecondBucket = restoreDuel(serializeDuel(restoredFirstBucket), createCardReader(cards), restoreRegistry());
     const secondTrigger = getDuelLegalActions(restoredSecondBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-second-held-trigger");
@@ -42,6 +43,7 @@ describe("trigger chain-window restore", () => {
     const opponentQuick = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-opponent-chain-window-quick");
     expect(opponentQuick).toBeDefined();
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredChainWindow, 1), 1, "restore-opponent-chain-window-quick", "chainResponse")).toBe(true);
     expect(getDuelLegalActions(restoredChainWindow, 0)).toEqual([]);
     assertStaleResponse(restoredChainWindow, secondTrigger!);
 
@@ -64,6 +66,7 @@ describe("trigger chain-window restore", () => {
     expect(resolved.state.log.some((entry) => entry.detail === "Restored first trigger resolved")).toBe(true);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored second trigger resolved")).toBe(true);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored opponent chain-window quick resolved")).toBe(true);
+    expect(hasGroupedEffect(resolved.legalActionGroups, 1, "restore-opponent-chain-window-quick", "open")).toBe(false);
     assertStaleResponse(restoredChainWindow, pass!);
   });
 
@@ -93,6 +96,7 @@ describe("trigger chain-window restore", () => {
       expect.objectContaining({ player: 0, effectId: "restore-second-mandatory-held-trigger", eventName: "normalSummoned", eventCardUid: summoned!.uid }),
     ]);
     expect(getDuelLegalActions(restoredFirstBucket, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-opponent-mandatory-chain-window-quick")).toBe(false);
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredFirstBucket, 1), 1, "restore-opponent-mandatory-chain-window-quick", "triggerBucket")).toBe(false);
 
     const restoredSecondBucket = restoreDuel(serializeDuel(restoredFirstBucket), createCardReader(cards), restoreMandatoryRegistry());
     expect(getDuelLegalActions(restoredSecondBucket, 0).some((action) => action.type === "declineTrigger")).toBe(false);
@@ -106,6 +110,7 @@ describe("trigger chain-window restore", () => {
     const opponentQuick = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-opponent-mandatory-chain-window-quick");
     expect(opponentQuick).toBeDefined();
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredChainWindow, 1), 1, "restore-opponent-mandatory-chain-window-quick", "chainResponse")).toBe(true);
     expect(getDuelLegalActions(restoredChainWindow, 0)).toEqual([]);
     assertStaleResponse(restoredChainWindow, secondTrigger!);
 
@@ -128,6 +133,7 @@ describe("trigger chain-window restore", () => {
     expect(resolved.state.log.some((entry) => entry.detail === "Restored first mandatory trigger resolved")).toBe(true);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored second mandatory trigger resolved")).toBe(true);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored opponent mandatory chain-window quick resolved")).toBe(true);
+    expect(hasGroupedEffect(resolved.legalActionGroups, 1, "restore-opponent-mandatory-chain-window-quick", "open")).toBe(false);
     assertStaleResponse(restoredChainWindow, pass!);
   });
 });
@@ -232,4 +238,19 @@ function assertLegalWindow(session: ReturnType<typeof createDuel>, response: Ret
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
+function hasGroupedEffect(
+  groups: ReturnType<typeof getGroupedDuelLegalActions>,
+  player: 0 | 1,
+  effectId: string,
+  windowKind: "chainResponse" | "open" | "triggerBucket",
+): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === windowKind &&
+      group.actions.some(
+        (action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowKind === windowKind,
+      ),
+  );
 }
