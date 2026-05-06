@@ -442,7 +442,11 @@ function expectGroupedActionsToContainLegalActions(result: ReturnType<typeof app
 
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const response = applyLuaRestoreResponse(restored, action);
+  const publicState = queryPublicState(restored.session);
   expect(response.ok, response.error).toBe(true);
+  expect(response.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) expect(response.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  else expect(response.state).not.toHaveProperty("triggerOrderPrompt");
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expectGroupedActionsToContainLegalActions(response);
@@ -451,9 +455,13 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
 
 function expectLuaRestoreStalePreapply(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1): void {
   const response = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  const publicState = queryPublicState(restored.session);
   expect(response.ok).toBe(false);
   expect(response.error).toContain("Response is not currently legal");
   expect(response.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(response.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) expect(response.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  else expect(response.state).not.toHaveProperty("triggerOrderPrompt");
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, player));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
   expectGroupedActionsToContainLegalActions(response);
