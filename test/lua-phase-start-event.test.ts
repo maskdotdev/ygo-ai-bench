@@ -191,6 +191,21 @@ describe("Lua phase-start events", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    expect(
+      getLuaRestoreLegalActionGroups(restored, 0).some(
+        (group) =>
+          group.windowId === restored.session.state.actionWindowId &&
+          group.windowKind === "triggerBucket" &&
+          group.actions.some(
+            (action) =>
+              action.type === "activateTrigger" &&
+              action.player === 0 &&
+              action.effectId === trigger!.effectId &&
+              action.windowId === restored.session.state.actionWindowId &&
+              action.windowKind === "triggerBucket",
+          ),
+      ),
+    ).toBe(true);
     const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalPhaseStartTrigger!);
     expect(originalTriggerPreapply.ok).toBe(false);
     expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
@@ -205,6 +220,21 @@ describe("Lua phase-start events", () => {
 
     const phaseEndTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(phaseEndTrigger).toBeDefined();
+    expect(
+      getLuaRestoreLegalActionGroups(restored, 0).some(
+        (group) =>
+          group.windowId === restored.session.state.actionWindowId &&
+          group.windowKind === "triggerBucket" &&
+          group.actions.some(
+            (action) =>
+              action.type === "activateTrigger" &&
+              action.player === 0 &&
+              action.effectId === phaseEndTrigger!.effectId &&
+              action.windowId === restored.session.state.actionWindowId &&
+              action.windowKind === "triggerBucket",
+          ),
+      ),
+    ).toBe(true);
     expectLuaRestoreStalePreapply(restored, phaseEndTrigger!, 0);
     applyLuaRestoreAndAssert(restored, phaseEndTrigger!);
     expect(restored.host.messages).toContain("restored phase end 512");
