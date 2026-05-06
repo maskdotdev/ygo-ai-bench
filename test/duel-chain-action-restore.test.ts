@@ -250,6 +250,53 @@ describe("chain action restore", () => {
     expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
     expect(staleQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleQuick.legalActions);
 
+    const restoredQuickChain = restoreDuel(serializeDuel(restored), createCardReader(cards), {
+      "restore-open-priority-source": restoreChainEffect("Restored open priority source resolved"),
+      "restore-open-priority-turn-quick": restoreOpenOnlyQuickEffect("Restored turn open quick resolved"),
+      "restore-open-priority-opponent-chain-quick": restoreChainOnlyQuickEffect("Restored opponent chain quick resolved"),
+    });
+    expect(restoredQuickChain.state.chain.map((link) => link.effectId)).toEqual(["restore-open-priority-turn-quick"]);
+    expect(queryPublicState(restoredQuickChain)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(getDuelLegalActions(restoredQuickChain, 0)).toEqual([]);
+    const opponentQuick = getDuelLegalActions(restoredQuickChain, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-opponent-chain-quick");
+    expect(opponentQuick).toBeDefined();
+    const staleBeforeOpponentQuick = applyResponse(restoredQuickChain, { ...opponentQuick!, windowId: opponentQuick!.windowId! - 1 });
+    expect(staleBeforeOpponentQuick.ok).toBe(false);
+    expect(staleBeforeOpponentQuick.error).toContain("Response is not currently legal");
+    expect(staleBeforeOpponentQuick.state.actionWindowId).toBe(restoredQuickChain.state.actionWindowId);
+    expect(staleBeforeOpponentQuick.legalActions).toEqual(getDuelLegalActions(restoredQuickChain, 1));
+    expect(staleBeforeOpponentQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredQuickChain, 1));
+    expect(staleBeforeOpponentQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeOpponentQuick.legalActions);
+
+    const opponentQuickResult = applyResponse(restoredQuickChain, opponentQuick!);
+    expect(opponentQuickResult.ok, opponentQuickResult.error).toBe(true);
+    expect(opponentQuickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(opponentQuickResult.state.chain.map((link) => link.effectId)).toEqual([
+      "restore-open-priority-turn-quick",
+      "restore-open-priority-opponent-chain-quick",
+    ]);
+    expect(opponentQuickResult.legalActions).toEqual(getDuelLegalActions(restoredQuickChain, 1));
+    expect(opponentQuickResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredQuickChain, 1));
+    expect(opponentQuickResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(opponentQuickResult.legalActions);
+    const staleOpponentQuick = applyResponse(restoredQuickChain, opponentQuick!);
+    expect(staleOpponentQuick.ok).toBe(false);
+    expect(staleOpponentQuick.error).toContain("Response is not currently legal");
+    expect(staleOpponentQuick.state.actionWindowId).toBe(restoredQuickChain.state.actionWindowId);
+    expect(staleOpponentQuick.legalActions).toEqual(getDuelLegalActions(restoredQuickChain, 1));
+    expect(staleOpponentQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredQuickChain, 1));
+    expect(staleOpponentQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleOpponentQuick.legalActions);
+
+    const opponentPass = getDuelLegalActions(restoredQuickChain, 1).find((action) => action.type === "passChain");
+    expect(opponentPass).toBeDefined();
+    const resolvedQuickChain = applyResponse(restoredQuickChain, opponentPass!);
+    expect(resolvedQuickChain.ok, resolvedQuickChain.error).toBe(true);
+    expect(resolvedQuickChain.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+    expect(resolvedQuickChain.state.log.some((entry) => entry.detail === "Restored turn open quick resolved")).toBe(true);
+    expect(resolvedQuickChain.state.log.some((entry) => entry.detail === "Restored opponent chain quick resolved")).toBe(true);
+    expect(resolvedQuickChain.legalActions).toEqual(getDuelLegalActions(restoredQuickChain, 0));
+    expect(resolvedQuickChain.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredQuickChain, 0));
+    expect(resolvedQuickChain.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolvedQuickChain.legalActions);
+
     const stalePass = applyResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
