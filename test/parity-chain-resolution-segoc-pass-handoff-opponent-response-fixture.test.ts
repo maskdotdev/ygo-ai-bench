@@ -1,0 +1,227 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  summonGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution SEGOC pass handoff opponent response fixture", () => {
+  it("resolves opponent responses to trigger-player post-handoff chains", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Handoff Opponent Response Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Turn Chain Handoff Opponent Response Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Chain Handoff Opponent Response Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Opponent Chain Handoff Opponent Response Quick", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Chain Handoff Opponent Response Optional", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "700", name: "Chain Handoff Opponent Response Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Filler", kind: "monster", attack: 800, defense: 800 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc pass handoff opponent response fixture",
+      options: { seed: 290, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "500", "700"] },
+        1: { main: ["400", "800", "800", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-chain-handoff-opponent-response-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 1, code: "400", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Chain handoff opponent response starter resolved",
+          },
+          {
+            id: "fixture-chain-handoff-opponent-response-mandatory",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain handoff opponent response mandatory resolved",
+          },
+          {
+            id: "fixture-chain-handoff-opponent-response-optional",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Chain handoff opponent response optional resolved",
+          },
+          {
+            id: "fixture-chain-handoff-opponent-response-turn-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Turn quick after chain-created SEGOC opponent response resolved",
+          },
+          {
+            id: "fixture-chain-handoff-opponent-response-opponent-quick",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Opponent quick after chain-created SEGOC opponent response resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-handoff-opponent-response-starter" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-handoff-opponent-response-mandatory" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-handoff-opponent-response-optional" })),
+        makeScriptedStep(makeResponseSelector("passChain", 1)),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-handoff-opponent-response-turn-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro gives the opponent another chain-response window after the trigger player chains from chain-created SEGOC pass handoff",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-handoff-opponent-response-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-opponent-response-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-opponent-response-turn-quick", sourceUid: "p0-deck-200-1" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-handoff-opponent-response-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-chain-handoff-opponent-response-opponent-quick", 1, 5), chainPassGroup(1, 1, 5)],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-handoff-opponent-response-turn-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(0, "fixture-chain-handoff-opponent-response-turn-quick", 5)],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-handoff-opponent-response-opponent-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the chain-created SEGOC trigger chain after the opponent responds to the trigger player's post-handoff chain link",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 9, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-chain-handoff-opponent-response-starter", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 6, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 6, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 6,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-chain-handoff-opponent-response-starter", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+              ], 1, 6),
+              turnGroup(6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-chain-handoff-opponent-response-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "open", effectId: "fixture-chain-handoff-opponent-response-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-chain-handoff-opponent-response-optional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-handoff-opponent-response-turn-quick", 6, "open"),
+              absentWindowEffectGroup(1, "fixture-chain-handoff-opponent-response-opponent-quick", 6, "open"),
+              absentTriggerActivationGroup(0, "fixture-chain-handoff-opponent-response-optional", "turnOptional", 6, "open"),
+            ],
+            locations: { graveyard: ["700", "200", "400"], hand: ["100", "300", "500", "800", "800", "800", "800"] },
+            logIncludes: [
+              "Opponent quick after chain-created SEGOC opponent response resolved",
+              "Turn quick after chain-created SEGOC opponent response resolved",
+              "Chain handoff opponent response optional resolved",
+              "Chain handoff opponent response mandatory resolved",
+            ],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state returns to open priority after the opponent responds to the trigger player's post-handoff chain link",
+        phase: "main1",
+        windowId: 6,
+        windowKind: "open",
+        waitingFor: 0,
+        chain: [],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        legalActionCounts: { 0: 9, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        locations: { graveyard: ["700", "200", "400"], hand: ["100", "300", "500", "800", "800", "800", "800"] },
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-chain-handoff-opponent-response-turn-quick" },
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "open", effectId: "fixture-chain-handoff-opponent-response-opponent-quick" },
+          { type: "activateTrigger", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-chain-handoff-opponent-response-optional" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-chain-handoff-opponent-response-turn-quick", 6, "open"),
+          absentWindowEffectGroup(1, "fixture-chain-handoff-opponent-response-opponent-quick", 6, "open"),
+          absentTriggerActivationGroup(0, "fixture-chain-handoff-opponent-response-optional", "turnOptional", 6, "open"),
+        ],
+        logIncludes: [
+          "Chain handoff opponent response starter resolved",
+          "Opponent quick after chain-created SEGOC opponent response resolved",
+          "Turn quick after chain-created SEGOC opponent response resolved",
+          "Chain handoff opponent response optional resolved",
+          "Chain handoff opponent response mandatory resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
