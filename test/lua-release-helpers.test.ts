@@ -375,6 +375,19 @@ describe("Lua release helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+
+    const ifReleaseTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "lua-3-1017");
+    expect(ifReleaseTrigger).toBeDefined();
+    const ifReleaseResult = applyLuaRestoreAndAssert(restored, ifReleaseTrigger!);
+    expect(ifReleaseResult.state.pendingTriggers.map((trigger) => trigger.effectId)).not.toContain("lua-2-1017");
+    expect(restored.host.messages).not.toContain("when release resolved");
+    expect(restored.host.messages).toContain("if release resolved");
+
+    const damageTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "lua-4-1111");
+    expect(damageTrigger).toBeDefined();
+    const damageResult = applyLuaRestoreAndAssert(restored, damageTrigger!);
+    expect(damageResult.state.pendingTriggers.map((trigger) => trigger.effectId)).not.toContain("lua-2-1017");
+    expect(restored.host.messages).not.toContain("when release resolved");
   });
 
   it("lets Lua scripts use self tribute cost aliases", () => {
