@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentOpenAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle direct replay fixtures", () => {
   it("replays directly when the original target leaves and no targets remain", () => {
@@ -177,16 +178,15 @@ describe("EDOPro parity battle direct replay fixtures", () => {
             lifePoints: { 1: 6200 },
             battleDamage: { 1: 1800 },
             locations: { monsterZone: ["100"], graveyard: ["200"] },
-            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 29, windowKind: "open" }],
-            absentLegalActionGroups: [
-              {
-                player: 0,
-                label: "Attacks",
-                windowId: 29,
-                windowKind: "open",
-                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 29, windowKind: "open" }],
-              },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 29, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 29, windowKind: "open", count: 1 },
             ],
+            legalActionGroups: [turnGroup(29)],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 29, windowKind: "open" }],
+            absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 29)],
           },
         }),
       ],
@@ -205,16 +205,15 @@ describe("EDOPro parity battle direct replay fixtures", () => {
         battleDamage: { 1: 1800 },
         locations: { monsterZone: ["100"], graveyard: ["200"] },
         windowId: 29,
-        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 29, windowKind: "open" }],
-        absentLegalActionGroups: [
-          {
-            player: 0,
-            label: "Attacks",
-            windowId: 29,
-            windowKind: "open",
-                actions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 29, windowKind: "open" }],
-          },
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 29, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 29, windowKind: "open", count: 1 },
         ],
+        legalActionGroups: [turnGroup(29)],
+        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 29, windowKind: "open" }],
+        absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 29)],
         logIncludes: ["Fixture target left before direct replay", "Replay decision pending", "Replayed direct attack"],
       },
     };
