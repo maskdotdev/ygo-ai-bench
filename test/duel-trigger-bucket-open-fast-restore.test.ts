@@ -32,12 +32,23 @@ describe("trigger bucket open fast restore", () => {
     applyAndAssert(session, summon!);
 
     const restoredTurnBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredTurnBucket).pendingTriggerBuckets.map((bucket) => bucket.triggerBucket)).toEqual(["turnOptional", "opponentOptional"]);
     const turnDecline = getDuelLegalActions(restoredTurnBucket, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-open-fast-turn-trigger");
     expect(turnDecline).toBeDefined();
-    applyAndAssert(restoredTurnBucket, turnDecline!);
+    const afterTurnDecline = applyAndAssert(restoredTurnBucket, turnDecline!);
+    expect(afterTurnDecline.state).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
+    expect(afterTurnDecline.state.pendingTriggerBuckets.map((bucket) => bucket.triggerBucket)).toEqual(["opponentOptional"]);
+    expect(afterTurnDecline.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-open-fast-opponent-trigger"]);
+    const staleTurnDecline = applyResponse(restoredTurnBucket, turnDecline!);
+    expect(staleTurnDecline.ok).toBe(false);
+    expect(staleTurnDecline.error).toContain("Response is not currently legal");
+    expect(staleTurnDecline.legalActions).toEqual(getDuelLegalActions(restoredTurnBucket, 1));
+    expect(staleTurnDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTurnBucket, 1));
 
     const restoredOpponentBucket = restoreDuel(serializeDuel(restoredTurnBucket), createCardReader(cards), restoreRegistry());
     expect(queryPublicState(restoredOpponentBucket)).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
+    expect(queryPublicState(restoredOpponentBucket).pendingTriggerBuckets.map((bucket) => bucket.triggerBucket)).toEqual(["opponentOptional"]);
+    expect(restoredOpponentBucket.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-open-fast-opponent-trigger"]);
     expect(getDuelLegalActions(restoredOpponentBucket, 0)).toEqual([]);
     const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-open-fast-opponent-trigger");
     expect(opponentActivation).toBeDefined();
