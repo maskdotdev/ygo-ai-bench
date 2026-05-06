@@ -192,6 +192,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (handlerCode !== undefined) return `closure:handler-code:${handlerCode}`;
   const literalHandlerCode = literalHandlerCodePredicate(L, index, hostState);
   if (literalHandlerCode !== undefined) return `closure:handler-code:${literalHandlerCode}`;
+  const blockedActiveTypeForOpponent = literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L, index, hostState);
+  if (blockedActiveTypeForOpponent !== undefined) return `closure:not-active-type-response-player:${blockedActiveTypeForOpponent}`;
   if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
   const blockedEffectType = literalNotEffectTypePredicate(L, index, hostState);
   if (blockedEffectType !== undefined) return `closure:not-effect-type:${blockedEffectType}`;
@@ -312,7 +314,7 @@ function literalResponseMatchesChainPlayerPredicate(L: unknown, index: number, h
   const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
   const responsePlayerParam = params?.[1];
   const chainPlayerParam = params?.[2];
-  const equality = snippet.match(/return\s+([A-Za-z_]\w*)\s*==\s*([A-Za-z_]\w*)/);
+  const equality = snippet.match(/return\s+([A-Za-z_]\w*)\s*==\s*([A-Za-z_]\w*)\s*(?:;?\s*end\b|$)/);
   if (!responsePlayerParam || !chainPlayerParam || !equality?.[1] || !equality[2]) return false;
   const compared = [equality[1], equality[2]].sort().join(":");
   return compared === [responsePlayerParam, chainPlayerParam].sort().join(":");
@@ -352,6 +354,26 @@ function literalNotActiveTypePredicate(L: unknown, index: number, hostState: Lua
   if (match[2] === "IsMonsterEffect") return 0x1;
   if (match[2] === "IsSpellEffect") return 0x2;
   if (match[2] === "IsTrapEffect") return 0x4;
+  return undefined;
+}
+
+function literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  const responsePlayerParam = params?.[1];
+  const chainPlayerParam = params?.[2];
+  if (!effectParam || !responsePlayerParam || !chainPlayerParam) return undefined;
+  const activeTypePattern = `not\\s+${effectParam}\\s*:\\s*(IsMonsterEffect|IsSpellEffect|IsTrapEffect)\\s*\\(\\s*\\)`;
+  const equalityPattern = `(?:${responsePlayerParam}\\s*==\\s*${chainPlayerParam}|${chainPlayerParam}\\s*==\\s*${responsePlayerParam})`;
+  const match = snippet.match(new RegExp(`return\\s+(?:${equalityPattern})\\s+or\\s+${activeTypePattern}`))
+    ?? snippet.match(new RegExp(`return\\s+${activeTypePattern}\\s+or\\s+(?:${equalityPattern})`));
+  const method = match?.[1] ?? match?.[2];
+  if (method === "IsMonsterEffect") return 0x1;
+  if (method === "IsSpellEffect") return 0x2;
+  if (method === "IsTrapEffect") return 0x4;
   return undefined;
 }
 
