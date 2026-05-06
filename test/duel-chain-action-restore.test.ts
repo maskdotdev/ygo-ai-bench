@@ -413,6 +413,81 @@ describe("chain action restore", () => {
     expect(resolvedTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerChain, resolvedTrigger.state.waitingFor!));
     expect(resolvedTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolvedTrigger.legalActions);
   });
+
+  it("returns restored chain-ended trigger declines to open fast-effect priority", () => {
+    const session = createDuel({ seed: 6, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "400", "400"] },
+    });
+    startDuel(session);
+    const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const openQuickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(source).toBeTruthy();
+    expect(triggerSource).toBeTruthy();
+    expect(openQuickSource).toBeTruthy();
+    expect(opponentQuickSource).toBeTruthy();
+    registerEffect(session, chainEffect("restore-chain-ended-decline-source", source!.uid, 0, "ignition", "Restored chain-ended decline source resolved"));
+    registerEffect(session, chainEffect("restore-chain-ended-decline-trigger", triggerSource!.uid, 0, "trigger", "Restored chain-ended decline trigger resolved", "chainEnded"));
+    registerEffect(session, openOnlyQuickEffect("restore-chain-ended-decline-open-quick", openQuickSource!.uid, 0, "Restored chain-ended decline open quick resolved"));
+    registerEffect(session, chainOnlyQuickEffect("restore-chain-ended-decline-opponent-quick", opponentQuickSource!.uid, 1, "Restored chain-ended decline opponent quick resolved"));
+
+    const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-chain-ended-decline-source");
+    expect(original).toBeTruthy();
+    const opened = applyResponse(session, original!);
+    expect(opened.ok, opened.error).toBe(true);
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-chain-ended-decline-source": restoreChainEffect("Restored chain-ended decline source resolved"),
+      "restore-chain-ended-decline-trigger": restoreChainEffect("Restored chain-ended decline trigger resolved"),
+      "restore-chain-ended-decline-open-quick": restoreOpenOnlyQuickEffect("Restored chain-ended decline open quick resolved"),
+      "restore-chain-ended-decline-opponent-quick": restoreChainOnlyQuickEffect("Restored chain-ended decline opponent quick resolved"),
+    });
+    const result = applyResponse(restored, pass!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", chain: [] });
+    expect(result.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-chain-ended-decline-trigger", eventName: "chainEnded", triggerBucket: "turnOptional" }),
+    ]);
+
+    const restoredTriggerBucket = restoreDuel(serializeDuel(restored), createCardReader(cards), {
+      "restore-chain-ended-decline-source": restoreChainEffect("Restored chain-ended decline source resolved"),
+      "restore-chain-ended-decline-trigger": restoreChainEffect("Restored chain-ended decline trigger resolved"),
+      "restore-chain-ended-decline-open-quick": restoreOpenOnlyQuickEffect("Restored chain-ended decline open quick resolved"),
+      "restore-chain-ended-decline-opponent-quick": restoreChainOnlyQuickEffect("Restored chain-ended decline opponent quick resolved"),
+    });
+    const decline = getDuelLegalActions(restoredTriggerBucket, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-chain-ended-decline-trigger");
+    expect(decline).toBeDefined();
+    const staleBeforeDecline = applyResponse(restoredTriggerBucket, { ...decline!, windowId: decline!.windowId! - 1 });
+    expect(staleBeforeDecline.ok).toBe(false);
+    expect(staleBeforeDecline.error).toContain("Response is not currently legal");
+    expect(staleBeforeDecline.state.actionWindowId).toBe(restoredTriggerBucket.state.actionWindowId);
+    expect(staleBeforeDecline.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, 0));
+    expect(staleBeforeDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, 0));
+    expect(staleBeforeDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeDecline.legalActions);
+
+    const declined = applyResponse(restoredTriggerBucket, decline!);
+    expect(declined.ok, declined.error).toBe(true);
+    expect(declined.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(declined.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-chain-ended-decline-open-quick", windowKind: "open" })]));
+    expect(restoredTriggerBucket.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "restore-chain-ended-decline-trigger")).toBe(true);
+    expect(restoredTriggerBucket.state.log.some((entry) => entry.detail === "Restored chain-ended decline trigger resolved")).toBe(false);
+    expect(getDuelLegalActions(restoredTriggerBucket, 1)).toEqual([]);
+    expect(declined.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, 0));
+    expect(declined.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, 0));
+    expect(declined.legalActionGroups.flatMap((group) => group.actions)).toEqual(declined.legalActions);
+    const staleDecline = applyResponse(restoredTriggerBucket, decline!);
+    expect(staleDecline.ok).toBe(false);
+    expect(staleDecline.error).toContain("Response is not currently legal");
+    expect(staleDecline.state.actionWindowId).toBe(restoredTriggerBucket.state.actionWindowId);
+    expect(staleDecline.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, 0));
+    expect(staleDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, 0));
+    expect(staleDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleDecline.legalActions);
+  });
 });
 
 function chainResponseGroups(session: ReturnType<typeof setupRestoredChainResponse>["restored"], player: 0 | 1) {
