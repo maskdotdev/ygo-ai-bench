@@ -248,6 +248,15 @@ describe("EDOPro parity optional when timing fixtures", () => {
               turnGroup(2),
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-when-decline" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-when-decline" }],
+              },
+            ],
             logIncludes: ["Single step send decline resolved", "fixture-optional-when-decline"],
           },
         }),
