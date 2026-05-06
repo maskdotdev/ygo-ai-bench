@@ -396,6 +396,12 @@ describe("battle action restore", () => {
     ]);
     expect(afterBeforeTrigger.state.log.some((entry) => entry.detail === "Restored before battle damage bucket trigger resolved")).toBe(true);
     expect(afterBeforeTrigger.state.log.some((entry) => entry.detail === "Restored battle damage bucket trigger resolved")).toBe(false);
+    const staleBeforeTrigger = applyResponse(restoredTriggerWindow, beforeTrigger!);
+    expect(staleBeforeTrigger.ok).toBe(false);
+    expect(staleBeforeTrigger.error).toContain("Response is not currently legal");
+    expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, 0));
+    expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, 0));
+    assertLegalWindow(restoredTriggerWindow, staleBeforeTrigger, 0);
 
     const restoredSecondTriggerWindow = restoreDuel(serializeDuel(restoredTriggerWindow), createCardReader(cards), battleCleanupTriggerRegistry());
     const damageTrigger = getDuelLegalActions(restoredSecondTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-battle-damage-bucket-trigger");
