@@ -45,7 +45,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro lets the trigger player order multiple same-bucket mandatory triggers and does not offer decline actions",
@@ -98,7 +98,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-second-mandatory" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro allows either same-bucket mandatory trigger to be selected first by its controller",
@@ -228,7 +228,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro lets the trigger player order same-bucket optional triggers and also exposes declines",
@@ -278,7 +278,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-second-optional" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro allows either same-bucket optional trigger to be selected first by its controller",
