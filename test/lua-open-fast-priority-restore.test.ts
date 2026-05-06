@@ -259,6 +259,24 @@ describe("Lua open fast priority restore", () => {
     expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(staleQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleQuick.legalActions);
 
+    const opponentChainQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid.includes("18300"));
+    expect(opponentChainQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    const opponentChainResult = applyLuaRestoreAndAssert(restored, opponentChainQuick!);
+    expect(opponentChainResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(opponentChainResult.state.chain.map((link) => link.sourceUid)).toEqual([
+      expect.stringContaining("18200"),
+      expect.stringContaining("18300"),
+    ]);
+    expect(restored.host.messages).toEqual(["restored open fast source resolved"]);
+
+    const staleOpponentChainQuick = applyLuaRestoreResponse(restored, opponentChainQuick!);
+    expect(staleOpponentChainQuick.ok).toBe(false);
+    expect(staleOpponentChainQuick.error).toContain("Response is not currently legal");
+    expect(staleOpponentChainQuick.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleOpponentChainQuick.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleOpponentChainQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleOpponentChainQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleOpponentChainQuick.legalActions);
+
     const finalPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(finalPass).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
@@ -279,7 +297,7 @@ describe("Lua open fast priority restore", () => {
     expect(staleFinalPass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleFinalPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(staleFinalPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleFinalPass.legalActions);
-    expect(restored.host.messages).toEqual(["restored open fast source resolved", "restored open fast quick resolved"]);
+    expect(restored.host.messages).toEqual(["restored open fast source resolved", "restored open fast opponent chain quick resolved", "restored open fast quick resolved"]);
   });
 
   it("opens restored fast effects after restored trigger chains resolve", () => {
