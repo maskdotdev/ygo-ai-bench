@@ -69,7 +69,24 @@ function runTossNegateRestore(eventCode: string, numericCode: number, eventName:
 
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
+  const staleTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
+  expect(staleTrigger.ok).toBe(false);
+  expect(staleTrigger.error).toContain("Response is not currently legal");
+  expect(staleTrigger.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+  expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+  expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
+  expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual([eventName]);
+  expect(restored.host.messages).not.toContain(`${message} 100`);
+
   applyLuaRestoreAndAssert(restored, trigger!);
+  const staleReplay = applyLuaRestoreResponse(restored, trigger!);
+  expect(staleReplay.ok).toBe(false);
+  expect(staleReplay.error).toContain("Response is not currently legal");
+  expect(staleReplay.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
+  expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
+  expect(staleReplay.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleReplay.legalActions);
 
   const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(originalTrigger).toBeDefined();
