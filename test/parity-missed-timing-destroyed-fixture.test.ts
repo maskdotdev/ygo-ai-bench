@@ -77,8 +77,28 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-optional-if", count: 1 },
-              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-optional-if", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-optional-if", triggerBucket: "turnOptional", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-optional-if", triggerBucket: "turnOptional", count: 1 }],
+              },
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-optional-when" }],
             absentLegalActionGroups: [
@@ -109,6 +129,19 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "open",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-optional-when" },
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-optional-if" },
+                ],
+              },
             ],
             logIncludes: ["Destroy optional if resolved"],
           },
@@ -163,6 +196,7 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
             label: "Trigger Activations",
             windowId: 2,
             windowKind: "open",
+            triggerBucket: { player: 0, triggerBucket: "turnOptional" },
             actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-optional-when" }],
           },
         ],
@@ -256,8 +290,28 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-decline-optional-if", count: 1 },
-              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-decline-optional-if", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-decline-optional-if", triggerBucket: "turnOptional", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-decline-optional-if", triggerBucket: "turnOptional", count: 1 }],
+              },
             ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-decline-optional-when" },
@@ -313,6 +367,30 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
               { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
               { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
             ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-decline-open-fast", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-decline-multistep", count: 1 },
+                ],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "800", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "800", location: "hand" },
+              ], 1, 2),
+              turnGroup(2),
+            ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-decline-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-decline-optional-if" },
@@ -323,6 +401,7 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
                 label: "Trigger Activations",
                 windowId: 2,
                 windowKind: "open",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
                 actions: [
                   { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-decline-optional-when" },
                   { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-decline-optional-if" },
@@ -348,6 +427,19 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "destroy-decline-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "destroy-decline-optional-if" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 3,
+                windowKind: "open",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "destroy-decline-optional-when" },
+                  { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "destroy-decline-optional-if" },
+                ],
+              },
+            ],
             logIncludes: ["Destroy decline open fast resolved"],
           },
         }),
@@ -367,6 +459,19 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
         absentLegalActions: [
           { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "destroy-decline-optional-when" },
           { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "destroy-decline-optional-if" },
+        ],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Trigger Activations",
+            windowId: 3,
+            windowKind: "open",
+            triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+            actions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "destroy-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "destroy-decline-optional-if" },
+            ],
+          },
         ],
         logIncludes: ["Destroy decline open fast resolved"],
       },
