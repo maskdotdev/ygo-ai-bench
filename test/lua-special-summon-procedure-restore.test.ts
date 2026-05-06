@@ -367,7 +367,12 @@ describe("Lua special summon procedure restore", () => {
 });
 
 function assertFailedRestoreSurface(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: ReturnType<typeof applyLuaRestoreResponse>): void {
+  const windowId = restored.session.state.actionWindowId;
+  expect(response.state.actionWindowId).toBe(windowId);
+  expect(response.state.windowKind).toBe("open");
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  for (const action of response.legalActions) expect(action).toMatchObject({ windowId, windowKind: "open" });
+  for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: "open" });
 }
