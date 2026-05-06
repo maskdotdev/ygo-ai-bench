@@ -79,8 +79,25 @@ describe("Lua control and return restore helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    const staleTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
+    expect(staleTrigger.ok).toBe(false);
+    expect(staleTrigger.error).toContain("Response is not currently legal");
+    expect(staleTrigger.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
+    expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["sentToDeck"]);
+    expect(restored.host.messages).not.toContain("restored to deck trigger 200");
+
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored to deck trigger 200");
+    const staleReplay = applyLuaRestoreResponse(restored, trigger!);
+    expect(staleReplay.ok).toBe(false);
+    expect(staleReplay.error).toContain("Response is not currently legal");
+    expect(staleReplay.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
+    expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
+    expect(staleReplay.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleReplay.legalActions);
   });
 
   it("applies restored Lua control-change triggers through restore responses", () => {
@@ -148,8 +165,25 @@ describe("Lua control and return restore helpers", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    const staleTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
+    expect(staleTrigger.ok).toBe(false);
+    expect(staleTrigger.error).toContain("Response is not currently legal");
+    expect(staleTrigger.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
+    expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["controlChanged"]);
+    expect(restored.host.messages).not.toContain("restored control trigger 0/64/0");
+
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored control trigger 0/64/0");
+    const staleReplay = applyLuaRestoreResponse(restored, trigger!);
+    expect(staleReplay.ok).toBe(false);
+    expect(staleReplay.error).toContain("Response is not currently legal");
+    expect(staleReplay.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
+    expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
+    expect(staleReplay.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleReplay.legalActions);
   });
 });
 
