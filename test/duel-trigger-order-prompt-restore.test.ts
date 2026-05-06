@@ -27,6 +27,10 @@ describe("trigger order prompt restore", () => {
       triggerIds: restored.state.pendingTriggers.map((trigger) => trigger.id),
     });
     expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([prompt!.triggerIds, prompt!.triggerIds]);
+    expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.actions.map((action) => action.type))).toEqual([
+      ["activateTrigger", "activateTrigger"],
+      ["declineTrigger", "declineTrigger"],
+    ]);
 
     const decline = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-order-first-optional");
     expect(decline).toBeDefined();
@@ -80,6 +84,11 @@ describe("trigger order prompt restore", () => {
       triggerBucket: "turnOptional",
       triggerIds: restored.state.pendingTriggers.map((trigger) => trigger.id),
     });
+    expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([prompt!.triggerIds, prompt!.triggerIds]);
+    expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.actions.map((action) => action.type))).toEqual([
+      ["activateTrigger", "activateTrigger"],
+      ["declineTrigger", "declineTrigger"],
+    ]);
 
     const activation = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-activation");
     expect(activation).toBeDefined();
@@ -136,6 +145,7 @@ describe("trigger order prompt restore", () => {
     });
     expect(getDuelLegalActions(restored, 0).some((action) => action.type === "declineTrigger")).toBe(false);
     expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([prompt!.triggerIds]);
+    expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.actions.map((action) => action.type))).toEqual([["activateTrigger", "activateTrigger"]]);
 
     const activation = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-mandatory");
     expect(activation).toBeDefined();
@@ -193,6 +203,10 @@ describe("trigger order prompt restore", () => {
     });
     expect(getDuelLegalActions(restoredOpponentBucket, 0)).toEqual([]);
     expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => group.triggerBucket?.triggerIds)).toEqual([prompt!.triggerIds, prompt!.triggerIds]);
+    expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => group.actions.map((action) => action.type))).toEqual([
+      ["activateTrigger", "activateTrigger"],
+      ["declineTrigger", "declineTrigger"],
+    ]);
 
     const opponentDecline = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "declineTrigger" && action.effectId === "restore-order-first-opponent");
     expect(opponentDecline).toBeDefined();
@@ -258,6 +272,7 @@ describe("trigger order prompt restore", () => {
     expect(getDuelLegalActions(restoredOpponentBucket, 0)).toEqual([]);
     expect(getDuelLegalActions(restoredOpponentBucket, 1).some((action) => action.type === "declineTrigger")).toBe(false);
     expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => group.triggerBucket?.triggerIds)).toEqual([prompt!.triggerIds]);
+    expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => group.actions.map((action) => action.type))).toEqual([["activateTrigger", "activateTrigger"]]);
 
     const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-opponent-mandatory");
     expect(opponentActivation).toBeDefined();
