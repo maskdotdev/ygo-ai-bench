@@ -431,6 +431,14 @@ describe("Lua trigger chain windows", () => {
     expect(getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId)).toMatchObject({ windowKind: "chainResponse" });
     expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
 
+    const restoredAfterOpponentTrigger = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
+    expect(restoredAfterOpponentTrigger.restoreComplete, restoredAfterOpponentTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredAfterOpponentTrigger.session.state.chain).toHaveLength(2);
+    expect(restoredAfterOpponentTrigger.session.state.pendingTriggers).toEqual([]);
+    expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual([opponentChainQuickId]);
+    expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId)).toMatchObject({ windowKind: "chainResponse" });
+    expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
+
     const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
     expect(opponentQuick).toBeDefined();
     applyLuaRestoreAndAssert(restored, opponentQuick!);
