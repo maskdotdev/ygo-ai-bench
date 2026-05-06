@@ -1,0 +1,165 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity open fast-effect chain-response pass handoff opponent response fixture", () => {
+  it("returns response priority to the turn player after the opponent responds to the reopened handoff window", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Open Chain Handoff Opponent Response Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "200", name: "Open Chain Handoff Opponent Response First Turn Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Open Chain Handoff Opponent Response Opponent First Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Open Chain Handoff Opponent Response Opponent Second Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "600", name: "Open Chain Handoff Opponent Response Opponent Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "700", name: "Open Chain Handoff Opponent Response Filler", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "800", name: "Open Chain Handoff Opponent Response Opponent Third Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "900", name: "Open Chain Handoff Opponent Response Second Turn Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "open fast chain response pass handoff opponent response fixture",
+      options: { seed: 310, startingHandSize: 4 },
+      decks: {
+        0: { main: ["100", "200", "900", "700"] },
+        1: { main: ["300", "500", "800", "600"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "open-fast-chain-handoff-opponent-response-open-quick",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Open fast chain handoff opponent response open quick should not resolve yet",
+          },
+          {
+            id: "open-fast-chain-handoff-opponent-response-first-turn-chain-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Open fast chain handoff opponent response first turn chain quick should not resolve yet",
+          },
+          {
+            id: "open-fast-chain-handoff-opponent-response-opponent-first-chain-quick",
+            player: 1,
+            code: "300",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Open fast chain handoff opponent response opponent first chain quick should not resolve yet",
+          },
+          {
+            id: "open-fast-chain-handoff-opponent-response-opponent-second-chain-quick",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Open fast chain handoff opponent response opponent second chain quick should not resolve yet",
+          },
+          {
+            id: "open-fast-chain-handoff-opponent-response-opponent-open-quick",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Open fast chain handoff opponent response opponent open quick should not resolve",
+          },
+          {
+            id: "open-fast-chain-handoff-opponent-response-opponent-third-chain-quick",
+            player: 1,
+            code: "800",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Open fast chain handoff opponent response opponent third chain quick should not resolve yet",
+          },
+          {
+            id: "open-fast-chain-handoff-opponent-response-second-turn-chain-quick",
+            player: 0,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Open fast chain handoff opponent response second turn chain quick should not resolve yet",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-fast-chain-handoff-opponent-response-open-quick" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-chain-handoff-opponent-response-opponent-first-chain-quick" })),
+        makeScriptedStep(makeResponseSelector("passChain", 0)),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-chain-handoff-opponent-response-opponent-second-chain-quick" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-fast-chain-handoff-opponent-response-first-turn-chain-quick" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-chain-handoff-opponent-response-opponent-third-chain-quick" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro returns response priority to the turn player after the opponent uses the response window reopened by the turn player's handoff response",
+        phase: "main1",
+        windowId: 6,
+        windowKind: "chainResponse",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [
+          { player: 0, effectId: "open-fast-chain-handoff-opponent-response-open-quick", sourceUid: "p0-deck-100-0" },
+          { player: 1, effectId: "open-fast-chain-handoff-opponent-response-opponent-first-chain-quick", sourceUid: "p1-deck-300-0" },
+          { player: 1, effectId: "open-fast-chain-handoff-opponent-response-opponent-second-chain-quick", sourceUid: "p1-deck-500-1" },
+          { player: 0, effectId: "open-fast-chain-handoff-opponent-response-first-turn-chain-quick", sourceUid: "p0-deck-200-1" },
+          { player: 1, effectId: "open-fast-chain-handoff-opponent-response-opponent-third-chain-quick", sourceUid: "p1-deck-800-2" },
+        ],
+        chainPasses: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-second-turn-chain-quick", count: 1 },
+          { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(0, "open-fast-chain-handoff-opponent-response-second-turn-chain-quick", 1, 6),
+          chainPassGroup(0, 1, 6),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-open-quick" },
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-first-turn-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-opponent-first-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-opponent-second-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-opponent-third-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-opponent-open-quick" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "open-fast-chain-handoff-opponent-response-open-quick", 6, "chainResponse"),
+          absentChainEffectGroup(0, "open-fast-chain-handoff-opponent-response-first-turn-chain-quick", 6),
+          absentChainEffectGroup(1, "open-fast-chain-handoff-opponent-response-opponent-first-chain-quick", 6),
+          absentChainEffectGroup(1, "open-fast-chain-handoff-opponent-response-opponent-second-chain-quick", 6),
+          absentChainEffectGroup(1, "open-fast-chain-handoff-opponent-response-opponent-third-chain-quick", 6),
+          absentWindowEffectGroup(1, "open-fast-chain-handoff-opponent-response-opponent-open-quick", 6, "chainResponse"),
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
