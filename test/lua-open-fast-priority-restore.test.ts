@@ -219,6 +219,15 @@ describe("Lua open fast priority restore", () => {
     expect(quick).toMatchObject({ player: 0, windowKind: "open" });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    const staleBeforeQuick = applyLuaRestoreResponse(restored, { ...quick!, windowId: quick!.windowId! - 1 });
+    expect(staleBeforeQuick.ok).toBe(false);
+    expect(staleBeforeQuick.error).toContain("Response is not currently legal");
+    expect(staleBeforeQuick.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeQuick.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleBeforeQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleBeforeQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeQuick.legalActions);
+    expect(restored.host.messages).toEqual(["restored open fast source resolved"]);
+
     const quickResult = applyLuaRestoreAndAssert(restored, quick!);
     expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
 
