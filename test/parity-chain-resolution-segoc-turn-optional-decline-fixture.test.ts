@@ -1,0 +1,274 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution SEGOC turn optional decline fixture", () => {
+  it("advances chain-created SEGOC from a declined turn optional bucket to the opponent optional bucket", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cross Optional Decline Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Turn Cross Optional Decline Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Cross Optional Decline Turn Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Cross Optional Decline Opponent Mandatory", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Cross Optional Decline Turn Optional", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Cross Optional Decline Opponent Optional", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "700", name: "Cross Optional Decline Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Opponent Cross Optional Decline Quick", kind: "monster", attack: 1600, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc turn optional decline fixture",
+      options: { seed: 305, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "500", "700"] },
+        1: { main: ["400", "600", "900", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-cross-optional-decline-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 1, code: "900", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Cross optional decline starter resolved",
+          },
+          {
+            id: "fixture-cross-optional-decline-turn-mandatory",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Cross optional decline turn mandatory should not resolve yet",
+          },
+          {
+            id: "fixture-cross-optional-decline-opponent-mandatory",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Cross optional decline opponent mandatory should not resolve yet",
+          },
+          {
+            id: "fixture-cross-optional-decline-turn-optional",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Cross optional decline turn optional should not resolve",
+          },
+          {
+            id: "fixture-cross-optional-decline-opponent-optional",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Cross optional decline opponent optional should not resolve yet",
+          },
+          {
+            id: "fixture-cross-optional-decline-turn-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Cross optional decline turn quick should not resolve",
+          },
+          {
+            id: "fixture-cross-optional-decline-opponent-quick",
+            player: 1,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Cross optional decline opponent quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-optional-decline-starter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro builds cross-player SEGOC buckets from trigger events created while an effect chain resolves before exposing fast responses",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-cross-optional-decline-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-optional-decline-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-optional-decline-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-4" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 1, triggerBucket: "opponentMandatory" },
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-turn-mandatory", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-cross-optional-decline-turn-mandatory", "turnMandatory", 1, 1)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-opponent-mandatory", triggerBucket: "opponentMandatory" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-turn-optional", triggerBucket: "turnOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-optional-decline-turn-quick", 1, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-optional-decline-opponent-quick", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-cross-optional-decline-opponent-mandatory", "opponentMandatory", 1, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-cross-optional-decline-turn-optional", "turnOptional", 1, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+            logIncludes: ["Cross optional decline starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-optional-decline-turn-mandatory" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-optional-decline-opponent-mandatory" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-cross-optional-decline-turn-optional" }), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player optional bucket active before fast responses while opponent optional triggers remain pending",
+            phase: "main1",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [
+              { player: 0, effectId: "fixture-cross-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-cross-optional-decline-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-optional-decline-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-turn-optional", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-turn-optional", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-cross-optional-decline-turn-optional", "turnOptional", 1, 3),
+              triggerDeclineGroup(0, "fixture-cross-optional-decline-turn-optional", "turnOptional", 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-optional-decline-turn-quick", 3, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-optional-decline-opponent-quick", 3, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-cross-optional-decline-opponent-optional", "opponentOptional", 3, "triggerBucket"),
+            ],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro advances to the opponent optional bucket after the turn-player optional chain-created SEGOC trigger is declined",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-cross-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-optional-decline-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-cross-optional-decline-opponent-optional", "opponentOptional", 1, 4),
+              triggerDeclineGroup(1, "fixture-cross-optional-decline-opponent-optional", "opponentOptional", 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-turn-optional", triggerBucket: "turnOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-optional-decline-turn-quick", 4, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-optional-decline-opponent-quick", 4, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-cross-optional-decline-turn-optional", "turnOptional", 4, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state keeps the opponent optional bucket active after restoring through a turn-player optional SEGOC decline",
+        phase: "main1",
+        windowId: 4,
+        windowKind: "triggerBucket",
+        waitingFor: 1,
+        chain: [
+          { player: 0, effectId: "fixture-cross-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+          { player: 1, effectId: "fixture-cross-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+        ],
+        pendingTriggers: [{ player: 1, effectId: "fixture-cross-optional-decline-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" }],
+        pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+        legalActionCounts: { 0: 0, 1: 2 },
+        legalActionGroupCounts: { 0: 0, 1: 2 },
+        legalActions: [
+          { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+          { type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+        ],
+        legalActionGroups: [
+          triggerActivationGroup(1, "fixture-cross-optional-decline-opponent-optional", "opponentOptional", 1, 4),
+          triggerDeclineGroup(1, "fixture-cross-optional-decline-opponent-optional", "opponentOptional", 1, 4),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-turn-quick" },
+          { type: "activateEffect", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-opponent-quick" },
+          { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-optional-decline-turn-optional", triggerBucket: "turnOptional" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-cross-optional-decline-turn-quick", 4, "triggerBucket"),
+          absentWindowEffectGroup(1, "fixture-cross-optional-decline-opponent-quick", 4, "triggerBucket"),
+          absentTriggerActivationGroup(0, "fixture-cross-optional-decline-turn-optional", "turnOptional", 4, "triggerBucket"),
+        ],
+        locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+        logIncludes: ["Cross optional decline starter resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
