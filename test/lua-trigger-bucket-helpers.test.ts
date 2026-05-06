@@ -429,6 +429,14 @@ describe("Lua trigger bucket helpers", () => {
     const secondEffectId = restored.session.state.pendingTriggers[0]?.effectId;
     const secondActivation = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === secondEffectId);
     expect(secondActivation).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnOptional" });
+    const staleBeforeSecondActivation = applyLuaRestoreResponse(restored, { ...secondActivation!, windowId: secondActivation!.windowId! - 1 });
+    expect(staleBeforeSecondActivation.ok).toBe(false);
+    expect(staleBeforeSecondActivation.error).toContain("Response is not currently legal");
+    expect(staleBeforeSecondActivation.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeSecondActivation.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleBeforeSecondActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleBeforeSecondActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSecondActivation.legalActions);
+
     const afterSecondActivation = applyLuaRestoreAndAssert(restored, secondActivation!);
     expect(afterSecondActivation.state.chain.map((link) => link.effectId)).toEqual([firstEffectId, secondEffectId]);
     expect(afterSecondActivation.state.pendingTriggers.map((trigger) => afterSecondActivation.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["11400"]);
@@ -445,6 +453,14 @@ describe("Lua trigger bucket helpers", () => {
 
     const opponentDecline = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "declineTrigger");
     expect(opponentDecline).toMatchObject({ player: 1, windowKind: "triggerBucket", triggerBucket: "opponentOptional" });
+    const staleBeforeOpponentDecline = applyLuaRestoreResponse(restored, { ...opponentDecline!, windowId: opponentDecline!.windowId! - 1 });
+    expect(staleBeforeOpponentDecline.ok).toBe(false);
+    expect(staleBeforeOpponentDecline.error).toContain("Response is not currently legal");
+    expect(staleBeforeOpponentDecline.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeOpponentDecline.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleBeforeOpponentDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleBeforeOpponentDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeOpponentDecline.legalActions);
+
     const resolved = applyLuaRestoreAndAssert(restored, opponentDecline!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(resolved.state.chain).toEqual([]);
