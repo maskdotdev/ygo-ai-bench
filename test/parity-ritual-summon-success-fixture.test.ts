@@ -82,6 +82,36 @@ describe("EDOPro parity Ritual Summon success fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "fixture-ritual-success-watcher", eventName: "specialSummoned", eventCardUid: "p0-deck-900-0" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-ritual-success-watcher", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-ritual-success-watcher", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-ritual-success-watcher", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-ritual-success-watcher", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+            ],
             locations: { monsterZone: ["900"], graveyard: ["100", "200"], hand: ["300"] },
             cards: [
               { uid: "p0-deck-900-0", code: "900", location: "monsterZone", position: "faceUpAttack", faceUp: true },
