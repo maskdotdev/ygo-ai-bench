@@ -776,6 +776,7 @@ describe("duel chains", () => {
     expect(currentPass).toBeTruthy();
     const currentPassResult = applyAndAssert(restored, currentPass!);
     expect(restored.state.chain).toHaveLength(0);
+    expect(restored.state.chainPasses).toEqual([]);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass source resolved")).toHaveLength(1);
     expect(restored.state.log.filter((entry) => entry.detail === "Restore stale pass quick resolved")).toHaveLength(1);
   });
@@ -959,6 +960,7 @@ describe("duel chains", () => {
     expect(pass).toBeTruthy();
     expect(pass).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse" });
     const passResult = applyAndAssert(restored, pass!);
+    expect(restored.state.chainPasses).toEqual([]);
     const replay = applyResponse(restored, staleQuick!);
 
     expect(replay.ok).toBe(false);
