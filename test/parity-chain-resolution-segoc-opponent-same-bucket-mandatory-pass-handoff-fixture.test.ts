@@ -1,0 +1,247 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  triggerActivationGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-handoff fixture", () => {
+  it("hands response priority back after restored opponent same-bucket mandatory triggers are selected", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Opponent Mandatory Pass Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Opponent Mandatory Pass Turn Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Opponent Mandatory Pass Turn Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Opponent Mandatory Pass First Opponent", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Opponent Mandatory Pass Second Opponent", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "700", name: "Opponent Mandatory Pass Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Mandatory Pass Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Opponent Mandatory Pass Opponent Quick", kind: "monster", attack: 1600, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution opponent same-bucket mandatory pass-handoff fixture",
+      options: { seed: 355, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "700", "800"] },
+        1: { main: ["400", "500", "900", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-chain-resolution-opponent-mandatory-pass-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 1, code: "900", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Chain resolution opponent mandatory pass starter resolved",
+          },
+          {
+            id: "fixture-chain-resolution-turn-mandatory-pass-handoff",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain resolution turn mandatory pass handoff should not resolve yet",
+          },
+          {
+            id: "fixture-chain-resolution-first-opponent-mandatory-pass",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain resolution first opponent mandatory pass should not resolve yet",
+          },
+          {
+            id: "fixture-chain-resolution-second-opponent-mandatory-pass",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain resolution second opponent mandatory pass should not resolve yet",
+          },
+          {
+            id: "fixture-chain-resolution-opponent-mandatory-pass-turn-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain resolution opponent mandatory pass turn quick should not resolve",
+          },
+          {
+            id: "fixture-chain-resolution-opponent-mandatory-pass-opponent-quick",
+            player: 1,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain resolution opponent mandatory pass opponent quick should not resolve yet",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-mandatory-pass-starter" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-resolution-turn-mandatory-pass-handoff" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro restores opponent same-bucket mandatory trigger ordering before allowing fast responses",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-chain-resolution-turn-mandatory-pass-handoff", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            pendingTriggers: [
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-pass", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-pass", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
+            ],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentMandatory" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 1, triggerBucket: "opponentMandatory" },
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-pass", triggerBucket: "opponentMandatory", count: 1 },
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-mandatory-pass", triggerBucket: "opponentMandatory", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentMandatory" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-pass", triggerBucket: "opponentMandatory", count: 1 },
+                  { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-mandatory-pass", triggerBucket: "opponentMandatory", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-mandatory-pass-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-mandatory-pass-opponent-quick" },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-pass", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-pass-turn-quick", 2, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-pass-opponent-quick", 2, "triggerBucket"),
+              {
+                player: 1,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentMandatory" },
+                actions: [{ type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-pass" }],
+              },
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Chain resolution opponent mandatory pass starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-second-opponent-mandatory-pass" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-first-opponent-mandatory-pass" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens turn-player chain-response priority after restored opponent mandatory selections finish",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-pass-handoff", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-pass", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-pass", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-pass-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-pass-turn-quick", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-pass-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-pass", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-pass-opponent-quick", 4),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-pass", "opponentMandatory", 4, "chainResponse"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro hands restored opponent same-bucket mandatory trigger-chain responses to the opponent after the turn player passes",
+        phase: "main1",
+        windowId: 5,
+        windowKind: "chainResponse",
+        waitingFor: 1,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [
+          { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-pass-handoff", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+          { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-pass", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+          { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-pass", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+        ],
+        chainPasses: [0],
+        legalActionCounts: { 0: 0, 1: 2 },
+        legalActionGroupCounts: { 0: 0, 1: 2 },
+        legalActions: [
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-pass-opponent-quick", count: 1 },
+          { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-pass-opponent-quick", 1, 5),
+          chainPassGroup(1, 1, 5),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-pass-turn-quick" },
+          { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-pass", triggerBucket: "opponentMandatory" },
+        ],
+        absentLegalActionGroups: [
+          absentChainEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-pass-turn-quick", 5),
+          absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-pass", "opponentMandatory", 5, "chainResponse"),
+        ],
+        locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+        logIncludes: ["Chain resolution opponent mandatory pass starter resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
