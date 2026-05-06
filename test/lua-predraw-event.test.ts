@@ -70,6 +70,7 @@ describe("Lua predraw events", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, restoredTrigger!, 1);
     applyLuaRestoreAndAssert(restored, restoredTrigger!);
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("predraw resolved 1/1/1/2");
@@ -105,6 +106,7 @@ function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScript
     const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
     const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, pass!, player);
     applyLuaRestoreAndAssert(restored, pass!);
   }
 }
@@ -114,6 +116,26 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(result.ok, result.error).toBe(true);
   expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
-  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  assertLuaRestoreLegalWindow(restored, result, result.state.waitingFor!);
   return result;
+}
+
+function expectLuaRestoreStalePreapply(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1): void {
+  const result = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(result.ok).toBe(false);
+  expect(result.error).toContain("Response is not currently legal");
+  expect(result.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  assertLuaRestoreLegalWindow(restored, result, player);
+}
+
+function assertLuaRestoreLegalWindow(restored: ReturnType<typeof restoreDuelWithLuaScripts>, result: ReturnType<typeof applyLuaRestoreResponse>, player: 0 | 1): void {
+  const windowId = restored.session.state.actionWindowId;
+  expect(result.state.actionWindowId).toBe(windowId);
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  for (const legalAction of result.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: result.state.windowKind });
+  for (const group of result.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: result.state.windowKind });
 }
