@@ -1,0 +1,163 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity mandatory before optional activation opponent-response turn-response opponent-response resolution fixture", () => {
+  it("resolves same-player mandatory and optional triggers after the trigger player passes the reopened response window", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summon Source", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Mandatory Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Optional Trigger", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Opponent Chain Quick First", kind: "monster", attack: 500, defense: 500 },
+      { code: "600", name: "Turn Chain Quick First", kind: "monster", attack: 600, defense: 600 },
+      { code: "700", name: "Opponent Open Quick Filtered", kind: "monster", attack: 700, defense: 700 },
+      { code: "800", name: "Opponent Chain Quick Second", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Turn Chain Quick Second", kind: "monster", attack: 900, defense: 900 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "mandatory before optional activation opponent response turn response opponent response resolution fixture",
+      options: { seed: 433, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "300", "400", "600", "900"] },
+        1: { main: ["500", "800", "700", "100", "100"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-opponent-turn-opponent-resolution-mandatory-first",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Opponent turn opponent resolution mandatory trigger resolved",
+          },
+          {
+            id: "fixture-opponent-turn-opponent-resolution-optional-second",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            range: ["hand"],
+            logMessage: "Opponent turn opponent resolution optional trigger resolved",
+          },
+          {
+            id: "fixture-opponent-turn-opponent-resolution-opponent-first",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Opponent turn opponent resolution first opponent quick resolved",
+          },
+          {
+            id: "fixture-opponent-turn-opponent-resolution-turn-first",
+            player: 0,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Opponent turn opponent resolution first turn quick resolved",
+          },
+          {
+            id: "fixture-opponent-turn-opponent-resolution-opponent-open-filtered",
+            player: 1,
+            code: "700",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Opponent turn opponent resolution open quick should not resolve",
+          },
+          {
+            id: "fixture-opponent-turn-opponent-resolution-opponent-second",
+            player: 1,
+            code: "800",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Opponent turn opponent resolution second opponent quick resolved",
+          },
+          {
+            id: "fixture-opponent-turn-opponent-resolution-turn-second",
+            player: 0,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Opponent turn opponent resolution second turn quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-opponent-turn-opponent-resolution-mandatory-first" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-opponent-turn-opponent-resolution-optional-second" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-turn-opponent-resolution-opponent-first" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-opponent-turn-opponent-resolution-turn-first" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-turn-opponent-resolution-opponent-second" })),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro resolves selected same-player mandatory and optional triggers after the trigger player passes the response window reopened by the opponent's response",
+        windowId: 7,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 7, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 7, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(7)],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 7, windowKind: "triggerBucket", effectId: "fixture-opponent-turn-opponent-resolution-mandatory-first" },
+          { type: "activateTrigger", player: 0, windowId: 7, windowKind: "triggerBucket", effectId: "fixture-opponent-turn-opponent-resolution-optional-second" },
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-opponent-turn-opponent-resolution-turn-first" },
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-opponent-turn-opponent-resolution-turn-second" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "open", effectId: "fixture-opponent-turn-opponent-resolution-opponent-first" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "open", effectId: "fixture-opponent-turn-opponent-resolution-opponent-second" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "open", effectId: "fixture-opponent-turn-opponent-resolution-opponent-open-filtered" },
+        ],
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "fixture-opponent-turn-opponent-resolution-mandatory-first", "turnMandatory", 7, "triggerBucket"),
+          absentTriggerActivationGroup(0, "fixture-opponent-turn-opponent-resolution-optional-second", "turnOptional", 7, "triggerBucket"),
+          absentWindowEffectGroup(0, "fixture-opponent-turn-opponent-resolution-turn-first", 7, "open"),
+          absentWindowEffectGroup(0, "fixture-opponent-turn-opponent-resolution-turn-second", 7, "open"),
+          absentWindowEffectGroup(1, "fixture-opponent-turn-opponent-resolution-opponent-first", 7, "open"),
+          absentWindowEffectGroup(1, "fixture-opponent-turn-opponent-resolution-opponent-second", 7, "open"),
+          absentWindowEffectGroup(1, "fixture-opponent-turn-opponent-resolution-opponent-open-filtered", 7, "open"),
+        ],
+        logIncludes: [
+          "Opponent turn opponent resolution second opponent quick resolved",
+          "Opponent turn opponent resolution first turn quick resolved",
+          "Opponent turn opponent resolution first opponent quick resolved",
+          "Opponent turn opponent resolution optional trigger resolved",
+          "Opponent turn opponent resolution mandatory trigger resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
