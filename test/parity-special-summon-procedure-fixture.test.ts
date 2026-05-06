@@ -105,7 +105,7 @@ describe("EDOPro parity special summon procedure fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-special-success-watcher" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the Special Summon success trigger after the procedure summon reaches the field",
