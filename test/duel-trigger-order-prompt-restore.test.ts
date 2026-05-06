@@ -464,6 +464,7 @@ function resolveRemainingTriggerAndAssertRestore(
     const passPlayer = activated.state.waitingFor!;
     const pass = getDuelLegalActions(session, passPlayer).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    expect(hasGroupedPass(session, passPlayer)).toBe(true);
     const resolved = applyAndAssert(session, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
   }
@@ -506,5 +507,14 @@ function hasGroupedTrigger(
       group.actions.some(
         (action) => action.type === actionType && action.player === player && action.effectId === effectId && action.windowId === group.windowId && action.windowKind === "triggerBucket",
       ),
+  );
+}
+
+function hasGroupedPass(session: ReturnType<typeof createDuel>, player: 0 | 1): boolean {
+  return getGroupedDuelLegalActions(session, player).some(
+    (group) =>
+      group.windowId === session.state.actionWindowId &&
+      group.windowKind === "chainResponse" &&
+      group.actions.some((action) => action.type === "passChain" && action.player === player && action.windowId === group.windowId && action.windowKind === "chainResponse"),
   );
 }
