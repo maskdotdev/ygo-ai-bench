@@ -97,6 +97,7 @@ describe("Lua chain-solved events", () => {
     const originalPassPreapply = applyLuaRestoreResponse(restoredChain, originalPass!);
     expect(originalPassPreapply.ok).toBe(false);
     expect(originalPassPreapply.error).toContain("Response is not currently legal");
+    assertLuaRestoreLegalWindow(restoredChain, originalPassPreapply, 1);
     applyLuaRestoreAndAssert(restoredChain, restoredPass!);
     expect(restoredChain.host.messages).toContain("chain starter resolved");
     expect(restoredChain.host.messages).not.toContain("unexpected response");
@@ -120,11 +121,13 @@ describe("Lua chain-solved events", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
     while (restored.session.state.chain.length > 0) {
       const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
       const chainPass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
       expect(chainPass).toBeDefined();
+      expectLuaRestoreStalePreapply(restored, chainPass!, player);
       applyLuaRestoreAndAssert(restored, chainPass!);
     }
     expect(restored.host.messages).toContain("chain solved resolved 0/0/1/0");
@@ -145,6 +148,26 @@ function applyLuaRestoreAndAssert(restored: Parameters<typeof applyLuaRestoreRes
   expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
-  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  assertLuaRestoreLegalWindow(restored, response, response.state.waitingFor!);
   return response;
+}
+
+function expectLuaRestoreStalePreapply(restored: Parameters<typeof applyLuaRestoreResponse>[0], action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1): void {
+  const response = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(response.ok).toBe(false);
+  expect(response.error).toContain("Response is not currently legal");
+  expect(response.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  assertLuaRestoreLegalWindow(restored, response, player);
+}
+
+function assertLuaRestoreLegalWindow(restored: Parameters<typeof applyLuaRestoreResponse>[0], response: ReturnType<typeof applyLuaRestoreResponse>, player: 0 | 1): void {
+  const windowId = restored.session.state.actionWindowId;
+  expect(response.state.actionWindowId).toBe(windowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
+  for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
 }
