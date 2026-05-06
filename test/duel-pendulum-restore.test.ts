@@ -148,6 +148,65 @@ describe("pendulum restore", () => {
     expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, staleTrigger.state.waitingFor!));
     assertRestoreLegalWindow(restoredTriggerWindow, staleTrigger, staleTrigger.state.waitingFor!);
   });
+
+  it("restores triggerless Pendulum Summons to turn-player open fast-effect priority", () => {
+    const pendulumCards: DuelCardData[] = [
+      { code: "100", name: "Low Open Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1 },
+      { code: "200", name: "High Open Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 8, rightScale: 8 },
+      { code: "300", name: "Open Pendulum Candidate", kind: "monster", typeFlags: 0x1000001, level: 4 },
+      { code: "400", name: "Turn Open Quick", kind: "monster", level: 4 },
+      { code: "500", name: "Opponent Open Quick", kind: "monster", level: 4 },
+    ];
+    const session = createDuel({ seed: 253, startingHandSize: 4, cardReader: createCardReader(pendulumCards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: ["500"] },
+    });
+    startDuel(session);
+
+    const low = session.state.cards.find((card) => card.code === "100");
+    const high = session.state.cards.find((card) => card.code === "200");
+    const candidate = session.state.cards.find((card) => card.code === "300");
+    const turnQuick = session.state.cards.find((card) => card.code === "400");
+    const opponentQuick = session.state.cards.find((card) => card.code === "500");
+    expect(low).toBeDefined();
+    expect(high).toBeDefined();
+    expect(candidate).toBeDefined();
+    expect(turnQuick).toBeDefined();
+    expect(opponentQuick).toBeDefined();
+    moveDuelCard(session.state, low!.uid, "spellTrapZone", 0).sequence = 0;
+    moveDuelCard(session.state, high!.uid, "spellTrapZone", 0).sequence = 1;
+    registerEffect(session, openOnlyQuick("restore-pendulum-open-turn-quick", turnQuick!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-pendulum-open-opponent-quick", opponentQuick!.uid, 1));
+
+    const action = getDuelLegalActions(session, 0).find((candidateAction) => candidateAction.type === "pendulumSummon" && candidateAction.summonUids.includes(candidate!.uid));
+    expect(action?.type).toBe("pendulumSummon");
+    if (!action || action.type !== "pendulumSummon") throw new Error("Expected Pendulum Summon action");
+    const result = applyResponse(session, { ...action, summonUids: [candidate!.uid] });
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(result.legalActions.some((candidateAction) => candidateAction.type === "activateEffect" && candidateAction.effectId === "restore-pendulum-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(pendulumCards), {
+      "restore-pendulum-open-turn-quick": restoreOpenOnlyQuick,
+      "restore-pendulum-open-opponent-quick": restoreOpenOnlyQuick,
+    });
+    expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", summonType: "pendulum", faceUp: true });
+    expect(restored.state.players[0].pendulumSummonAvailable).toBe(false);
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getDuelLegalActions(restored, 0).some((candidateAction) => candidateAction.type === "activateEffect" && candidateAction.effectId === "restore-pendulum-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(restored, 0).some((candidateAction) => candidateAction.type === "activateEffect" && candidateAction.effectId === "restore-pendulum-open-opponent-quick")).toBe(false);
+    expect(getDuelLegalActions(restored, 0).some((candidateAction) => candidateAction.type === "pendulumSummon" && candidateAction.summonUids.includes(candidate!.uid))).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+
+    const staleSummon = applyResponse(restored, action);
+    expect(staleSummon.ok).toBe(false);
+    expect(staleSummon.error).toContain("Response is not currently legal");
+    assertRestoreLegalWindow(restored, staleSummon, 0);
+  });
 });
 
 function summonSuccessWatcher(id: string, sourceUid: string, detail: string): DuelEffectDefinition {
@@ -172,6 +231,35 @@ function restoreSummonSuccessWatcher(detail: string): (effect: Omit<DuelEffectDe
       ctx.log(detail);
     },
   });
+}
+
+function openOnlyQuick(id: string, sourceUid: string, controller: 0 | 1): DuelEffectDefinition {
+  return {
+    id,
+    registryKey: id,
+    sourceUid,
+    controller,
+    event: "quick",
+    range: ["hand"],
+    canActivate(ctx) {
+      return ctx.duel.chain.length === 0;
+    },
+    operation(ctx) {
+      ctx.log(`${id} resolved`);
+    },
+  };
+}
+
+function restoreOpenOnlyQuick(effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition {
+  return {
+    ...effect,
+    canActivate(ctx) {
+      return ctx.duel.chain.length === 0;
+    },
+    operation(ctx) {
+      ctx.log(`${effect.id} resolved`);
+    },
+  };
 }
 
 function expectGroupedTrigger(restored: ReturnType<typeof restoreDuel>, effectId: string): void {
