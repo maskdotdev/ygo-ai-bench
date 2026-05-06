@@ -93,6 +93,8 @@ describe("pendulum restore", () => {
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, staleResult.state.waitingFor!));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, staleResult.state.waitingFor!));
     expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    for (const legalAction of staleResult.legalActions) expect(legalAction).toMatchObject({ windowId: restored.state.actionWindowId, windowKind: staleResult.state.windowKind });
+    for (const group of staleResult.legalActionGroups) expect(group).toMatchObject({ windowId: restored.state.actionWindowId, windowKind: staleResult.state.windowKind });
 
     const restoredTriggerWindow = restoreDuel(serializeDuel(restored), createCardReader(pendulumCards), {
       "restore-pendulum-success-watcher": restoreSummonSuccessWatcher("Restored Pendulum success watcher resolved"),
@@ -115,6 +117,8 @@ describe("pendulum restore", () => {
     expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, staleTrigger.state.waitingFor!));
     expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, staleTrigger.state.waitingFor!));
     expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
+    for (const legalAction of staleTrigger.legalActions) expect(legalAction).toMatchObject({ windowId: restoredTriggerWindow.state.actionWindowId, windowKind: staleTrigger.state.windowKind });
+    for (const group of staleTrigger.legalActionGroups) expect(group).toMatchObject({ windowId: restoredTriggerWindow.state.actionWindowId, windowKind: staleTrigger.state.windowKind });
   });
 });
 
