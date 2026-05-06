@@ -116,6 +116,7 @@ describe("Lua chain-disabled events", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("chain disabled resolved 0/0/1/0");
@@ -145,6 +146,7 @@ function drainRestoredChain(restored: LuaSnapshotRestoreResult): void {
     const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
     const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, pass!, player);
     applyLuaRestoreAndAssert(restored, pass!);
   }
 }
@@ -156,4 +158,14 @@ function applyLuaRestoreAndAssert(restored: LuaSnapshotRestoreResult, action: Pa
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   return result;
+}
+
+function expectLuaRestoreStalePreapply(restored: LuaSnapshotRestoreResult, action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1): void {
+  const result = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(result.ok).toBe(false);
+  expect(result.error).toContain("Response is not currently legal");
+  expect(result.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }
