@@ -189,6 +189,7 @@ describe("chain action restore", () => {
     registerEffect(session, chainEffect("restore-open-priority-source", source!.uid, 0, "ignition", "Restored open priority source resolved"));
     registerEffect(session, openOnlyQuickEffect("restore-open-priority-turn-quick", turnQuickSource!.uid, 0, "Restored turn open quick resolved"));
     registerEffect(session, chainOnlyQuickEffect("restore-open-priority-opponent-chain-quick", opponentQuickSource!.uid, 1, "Restored opponent chain quick resolved"));
+    registerEffect(session, openOnlyQuickEffect("restore-open-priority-opponent-open-only", opponentQuickSource!.uid, 1, "Restored opponent open-only quick resolved"));
 
     const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-source");
     expect(original).toBeTruthy();
@@ -205,7 +206,9 @@ describe("chain action restore", () => {
       "restore-open-priority-source": restoreChainEffect("Restored open priority source resolved"),
       "restore-open-priority-turn-quick": restoreOpenOnlyQuickEffect("Restored turn open quick resolved"),
       "restore-open-priority-opponent-chain-quick": restoreChainOnlyQuickEffect("Restored opponent chain quick resolved"),
+      "restore-open-priority-opponent-open-only": restoreOpenOnlyQuickEffect("Restored opponent open-only quick resolved"),
     });
+    expect(getDuelLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-opponent-open-only")).toBe(false);
     const staleBeforePass = applyResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
     expect(staleBeforePass.ok).toBe(false);
     expect(staleBeforePass.error).toContain("Response is not currently legal");
@@ -254,10 +257,12 @@ describe("chain action restore", () => {
       "restore-open-priority-source": restoreChainEffect("Restored open priority source resolved"),
       "restore-open-priority-turn-quick": restoreOpenOnlyQuickEffect("Restored turn open quick resolved"),
       "restore-open-priority-opponent-chain-quick": restoreChainOnlyQuickEffect("Restored opponent chain quick resolved"),
+      "restore-open-priority-opponent-open-only": restoreOpenOnlyQuickEffect("Restored opponent open-only quick resolved"),
     });
     expect(restoredQuickChain.state.chain.map((link) => link.effectId)).toEqual(["restore-open-priority-turn-quick"]);
     expect(queryPublicState(restoredQuickChain)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(getDuelLegalActions(restoredQuickChain, 0)).toEqual([]);
+    expect(getDuelLegalActions(restoredQuickChain, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-opponent-open-only")).toBe(false);
     const opponentQuick = getDuelLegalActions(restoredQuickChain, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-opponent-chain-quick");
     expect(opponentQuick).toBeDefined();
     const staleBeforeOpponentQuick = applyResponse(restoredQuickChain, { ...opponentQuick!, windowId: opponentQuick!.windowId! - 1 });
