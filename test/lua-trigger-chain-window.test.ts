@@ -450,6 +450,7 @@ describe("Lua trigger chain windows", () => {
     expect(restoredPassed.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(restoredPassed.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", effectId: turnOpenQuickId })]));
     expect(getDuelLegalActions(restoredAfterOpponentTrigger.session, 1)).toEqual([]);
+    expect(restoredAfterOpponentTrigger.host.messages).toEqual(["restored open opponent chain quick resolved", "restored open opponent trigger resolved", "restored open turn trigger resolved"]);
 
     const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
     expect(opponentQuick).toBeDefined();
