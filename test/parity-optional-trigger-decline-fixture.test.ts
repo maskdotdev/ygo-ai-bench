@@ -187,4 +187,150 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
 
     expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
   });
+
+  it("returns final same-bucket optional declines to open fast-effect priority", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summon Source", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "First Optional", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Second Optional", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Open Quick After Declines", kind: "monster", attack: 500, defense: 500 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "same-player optional final decline open fast fixture",
+      options: { seed: 53, startingHandSize: 4 },
+      decks: {
+        0: { main: ["100", "300", "400", "500"] },
+        1: { main: ["100", "100", "100", "100"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-final-decline-first-optional",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            range: ["hand"],
+            logMessage: "Final decline first optional should not resolve",
+          },
+          {
+            id: "fixture-final-decline-second-optional",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            range: ["hand"],
+            logMessage: "Final decline second optional should not resolve",
+          },
+          {
+            id: "fixture-final-decline-open-quick",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Final decline open quick resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-final-decline-first-optional" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro preserves remaining same-bucket optional triggers after a decline before exposing open fast effects",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "fixture-final-decline-second-optional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-final-decline-second-optional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-final-decline-second-optional", count: 1 },
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-final-decline-open-quick" }],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-final-decline-second-optional" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro exposes turn-player open fast effects after the final same-bucket optional trigger is declined",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            triggerOrderPrompt: null,
+            chain: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-final-decline-open-quick", count: 1 },
+              { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-final-decline-open-quick", count: 1 }],
+              },
+              turnGroup(3),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-final-decline-second-optional" },
+              { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-final-decline-second-optional" },
+            ],
+            logIncludes: ["fixture-final-decline-first-optional", "fixture-final-decline-second-optional"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state offers open fast effects after declining every same-bucket optional trigger",
+        windowId: 3,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        triggerOrderPrompt: null,
+        chain: [],
+        legalActionCounts: { 0: 3, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-final-decline-open-quick", count: 1 },
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-final-decline-open-quick", count: 1 }],
+          },
+          turnGroup(3),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-final-decline-second-optional" },
+          { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-final-decline-second-optional" },
+        ],
+        logIncludes: ["fixture-final-decline-first-optional", "fixture-final-decline-second-optional"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
 });
