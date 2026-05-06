@@ -20,6 +20,7 @@ describe("extra deck summon restore", () => {
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
     expect(action?.type).toBe("fusionSummon");
     if (!action || action.type !== "fusionSummon") throw new Error("Expected restored Fusion Summon action");
+    expectStaleExtraDeckPreapplyRejected(restored, action, fusion!.uid, "hand");
 
     const result = applyResponse(restored, action);
     expect(result.ok).toBe(true);
@@ -51,6 +52,7 @@ describe("extra deck summon restore", () => {
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid);
     expect(action?.type).toBe("synchroSummon");
     if (!action || action.type !== "synchroSummon") throw new Error("Expected restored Synchro Summon action");
+    expectStaleExtraDeckPreapplyRejected(restored, action, synchro!.uid, "monsterZone");
 
     const result = applyResponse(restored, action);
     expect(result.ok).toBe(true);
@@ -82,6 +84,7 @@ describe("extra deck summon restore", () => {
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid);
     expect(action?.type).toBe("xyzSummon");
     if (!action || action.type !== "xyzSummon") throw new Error("Expected restored Xyz Summon action");
+    expectStaleExtraDeckPreapplyRejected(restored, action, xyz!.uid, "monsterZone");
 
     const result = applyResponse(restored, action);
     expect(result.ok).toBe(true);
@@ -113,6 +116,7 @@ describe("extra deck summon restore", () => {
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid);
     expect(action?.type).toBe("linkSummon");
     if (!action || action.type !== "linkSummon") throw new Error("Expected restored Link Summon action");
+    expectStaleExtraDeckPreapplyRejected(restored, action, link!.uid, "monsterZone");
 
     const result = applyResponse(restored, action);
     expect(result.ok).toBe(true);
@@ -134,6 +138,23 @@ function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restore
   expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, staleResult.state.waitingFor!));
   expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, staleResult.state.waitingFor!));
   expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+}
+
+function expectStaleExtraDeckPreapplyRejected(
+  restored: ReturnType<typeof restoreDuel>,
+  action: NonNullable<Parameters<typeof applyResponse>[1]> & { materialUids: string[]; windowId?: number },
+  targetUid: string,
+  materialLocation: "hand" | "monsterZone",
+): void {
+  const staleBeforeSummon = applyResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(staleBeforeSummon.ok).toBe(false);
+  expect(staleBeforeSummon.error).toContain("Response is not currently legal");
+  expect(staleBeforeSummon.state.actionWindowId).toBe(restored.state.actionWindowId);
+  expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
+  expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+  expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+  expect(restored.state.cards.find((card) => card.uid === targetUid)).toMatchObject({ location: "extraDeck" });
+  expect(action.materialUids.every((uid) => restored.state.cards.find((card) => card.uid === uid)?.location === materialLocation)).toBe(true);
 }
 
 function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSummon" | "xyzSummon" | "linkSummon", code: string, materialLocation: "graveyard" | "overlay"): void {
