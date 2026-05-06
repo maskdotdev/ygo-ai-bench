@@ -65,7 +65,7 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "destroy-multistep" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro drops optional when destroyed triggers when destruction is followed by another event, while optional if remains available",
@@ -85,7 +85,7 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "destroy-optional-if" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
         }),
       ],
       expected: {
