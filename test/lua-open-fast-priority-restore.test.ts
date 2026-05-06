@@ -202,6 +202,8 @@ describe("Lua open fast priority restore", () => {
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("18100"));
     expect(sourceAction).toBeDefined();
     expect(applyAndAssert(session, sourceAction!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const originalChainPass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(originalChainPass).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -216,6 +218,10 @@ describe("Lua open fast priority restore", () => {
     expect(staleBeforeChainPass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(staleBeforeChainPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(staleBeforeChainPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeChainPass.legalActions);
+    const originalChainPassPreapply = applyLuaRestoreResponse(restored, originalChainPass!);
+    expect(originalChainPassPreapply.ok).toBe(false);
+    expect(originalChainPassPreapply.error).toContain("Response is not currently legal");
+    expect(originalChainPassPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(restored.host.messages).toEqual([]);
 
     const opened = applyLuaRestoreAndAssert(restored, chainPass!);
