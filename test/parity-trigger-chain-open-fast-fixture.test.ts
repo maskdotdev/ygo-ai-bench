@@ -145,6 +145,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
             windowKind: "open",
             waitingFor: 0,
             chain: [],
+            chainPasses: [],
             pendingTriggers: [],
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
@@ -192,6 +193,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
         windowKind: "open",
         waitingFor: 0,
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
         legalActions: [
