@@ -39,15 +39,32 @@ describe("EDOPro parity Battle Phase entry lock fixtures", () => {
             waitingFor: 0,
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "changePhase", player: 0, phase: "main2", windowId: 0, windowKind: "open", count: 1 }],
+            legalActions: [
+              { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 0, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, phase: "main2", windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
             legalActionGroups: [
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 0, windowKind: "open", count: 1 },
+                ],
+              },
               {
                 player: 0,
                 label: "Turn",
                 windowId: 0,
                 windowKind: "open",
                 count: 1,
-                actions: [{ type: "changePhase", player: 0, phase: "main2", windowId: 0, windowKind: "open", count: 1 }],
+                actions: [
+                  { type: "changePhase", player: 0, phase: "main2", windowId: 0, windowKind: "open", count: 1 },
+                  { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+                ],
               },
             ],
             absentLegalActions: [{ type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open" }],
@@ -83,15 +100,32 @@ describe("EDOPro parity Battle Phase entry lock fixtures", () => {
             turnPlayer: 0,
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 }],
+            legalActions: [
+              { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, phase: "end", windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
             legalActionGroups: [
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 1, windowKind: "open", count: 1 },
+                ],
+              },
               {
                 player: 0,
                 label: "Turn",
                 windowId: 1,
                 windowKind: "open",
                 count: 1,
-                actions: [{ type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 }],
+                actions: [
+                  { type: "changePhase", player: 0, phase: "end", windowId: 1, windowKind: "open", count: 1 },
+                  { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+                ],
               },
             ],
           },
