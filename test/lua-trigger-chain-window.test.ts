@@ -244,7 +244,9 @@ describe("Lua trigger chain windows", () => {
 
     const quick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
     expect(quick).toBeDefined();
-    applyLuaRestoreAndAssert(restored, quick!);
+    const quickResult = applyLuaRestoreAndAssert(restored, quick!);
+    expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(quickResult.state.chain).toHaveLength(3);
     const staleQuick = applyLuaRestoreResponse(restored, quick!);
     expect(staleQuick.ok).toBe(false);
     expect(staleQuick.error).toContain("Response is not currently legal");
