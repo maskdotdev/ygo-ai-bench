@@ -31,8 +31,10 @@ describe("trigger order prompt restore", () => {
     const decline = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-order-first-optional");
     expect(decline).toBeDefined();
     const declined = applyAndAssert(restored, decline!);
+    expect(declined.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
     expect(declined.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-optional"]);
     expect(queryPublicState(restored).triggerOrderPrompt).toBeUndefined();
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
       "restore-order-second-optional",
       "restore-order-second-optional",
