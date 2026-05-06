@@ -113,12 +113,17 @@ describe("duel stale prompt responses", () => {
       1: { main: ["400", "400"] },
     });
     startDuel(session);
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand");
+    expect(quickSource).toBeDefined();
+    registerEffect(session, openOnlyQuickEffect("restore-yes-no-open-quick", quickSource!.uid, 1, "Restored yes-no open quick resolved"));
     session.state.prompt = { id: "restore-stale-yes-no-prompt", type: "selectYesNo", player: 0, description: 789, returnTo: 1 };
     session.state.waitingFor = 0;
 
     const staleNo = getDuelLegalActions(session, 0).find((action) => action.type === "selectYesNo" && !action.yes);
     expect(staleNo).toBeDefined();
-    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-yes-no-open-quick": restoreOpenOnlyQuickEffect("Restored yes-no open quick resolved"),
+    });
     const restoredYes = getDuelLegalActions(restored, 0).find((action) => action.type === "selectYesNo" && action.yes);
     expect(restoredYes).toBeDefined();
     expect(restoredYes).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "prompt" });
@@ -133,9 +138,12 @@ describe("duel stale prompt responses", () => {
     expect(restored.state.log.some((entry) => entry.action === "selectYesNo")).toBe(false);
     const yesResult = applyResponse(restored, restoredYes!);
     expect(yesResult.ok).toBe(true);
+    expect(yesResult.state).toMatchObject({ waitingFor: 1, windowKind: "open" });
+    expect(yesResult.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, effectId: "restore-yes-no-open-quick", windowKind: "open" })]));
     expect(yesResult.legalActions).toEqual(getDuelLegalActions(restored, yesResult.state.waitingFor!));
     expect(yesResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, yesResult.state.waitingFor!));
     expect(yesResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(yesResult.legalActions);
+    expect(getDuelLegalActions(restored, 0)).toEqual([]);
     const replay = applyResponse(restored, staleNo!);
 
     expect(replay.ok).toBe(false);
@@ -147,15 +155,18 @@ describe("duel stale prompt responses", () => {
     expect(restored.state.waitingFor).toBe(1);
     expect(restored.state.log.filter((entry) => entry.action === "selectYesNo" && entry.detail === "Selected yes")).toHaveLength(1);
     expect(restored.state.log.some((entry) => entry.action === "selectYesNo" && entry.detail === "Selected no")).toBe(false);
+    expect(restored.state.log.some((entry) => entry.detail === "Restored yes-no open quick resolved")).toBe(false);
   });
 });
 
-function openOnlyQuickEffect(id: string, sourceUid: string, detail: string): DuelEffectDefinition {
+function openOnlyQuickEffect(id: string, sourceUid: string, controllerOrDetail: 0 | 1 | string, maybeDetail?: string): DuelEffectDefinition {
+  const controller = typeof controllerOrDetail === "number" ? controllerOrDetail : 0;
+  const detail = maybeDetail ?? String(controllerOrDetail);
   return {
     id,
     registryKey: id,
     sourceUid,
-    controller: 0,
+    controller,
     event: "quick",
     range: ["hand"],
     canActivate(ctx) {
