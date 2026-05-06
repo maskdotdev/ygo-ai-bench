@@ -216,6 +216,7 @@ describe("Lua open fast priority restore", () => {
     expect(chainPass).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    expect(hasGroupedPass(getLuaRestoreLegalActionGroups(restored, 1), 1)).toBe(true);
     const staleBeforeChainPass = applyLuaRestoreResponse(restored, { ...chainPass!, windowId: chainPass!.windowId! - 1 });
     expect(staleBeforeChainPass.ok).toBe(false);
     expect(staleBeforeChainPass.error).toContain("Response is not currently legal");
@@ -309,6 +310,7 @@ describe("Lua open fast priority restore", () => {
     ]);
     const restoredFinalPass = getLuaRestoreLegalActions(restoredFinalResponse, 1).find((action) => action.type === "passChain");
     expect(restoredFinalPass).toBeDefined();
+    expect(hasGroupedPass(getLuaRestoreLegalActionGroups(restoredFinalResponse, 1), 1)).toBe(true);
     const restoredFinalOpened = applyLuaRestoreAndAssert(restoredFinalResponse, restoredFinalPass!);
     expect(restoredFinalOpened.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
     expect(restoredFinalResponse.host.messages).toEqual([
@@ -329,6 +331,7 @@ describe("Lua open fast priority restore", () => {
     expect(finalPass).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    expect(hasGroupedPass(getLuaRestoreLegalActionGroups(restored, 1), 1)).toBe(true);
     const staleBeforeFinalPass = applyLuaRestoreResponse(restored, { ...finalPass!, windowId: finalPass!.windowId! - 1 });
     expect(staleBeforeFinalPass.ok).toBe(false);
     expect(staleBeforeFinalPass.error).toContain("Response is not currently legal");
@@ -554,6 +557,7 @@ describe("Lua open fast priority restore", () => {
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    expect(hasGroupedPass(getLuaRestoreLegalActionGroups(restored, 1), 1)).toBe(true);
     const staleBeforePass = applyLuaRestoreResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
     expect(staleBeforePass.ok).toBe(false);
     expect(staleBeforePass.error).toContain("Response is not currently legal");
@@ -606,6 +610,7 @@ describe("Lua open fast priority restore", () => {
 
     const finalPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(finalPass).toBeDefined();
+    expect(hasGroupedPass(getLuaRestoreLegalActionGroups(restored, 1), 1)).toBe(true);
     const staleBeforeFinalPass = applyLuaRestoreResponse(restored, { ...finalPass!, windowId: finalPass!.windowId! - 1 });
     expect(staleBeforeFinalPass.ok).toBe(false);
     expect(staleBeforeFinalPass.error).toContain("Response is not currently legal");
@@ -709,5 +714,13 @@ function hasGroupedLuaEffect(
 ): boolean {
   return groups.some((group) =>
     group.windowKind === windowKind && group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.uid.includes(code) && action.windowKind === windowKind),
+  );
+}
+
+function hasGroupedPass(groups: ReturnType<typeof getLuaRestoreLegalActionGroups>, player: 0 | 1): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === "chainResponse" &&
+      group.actions.some((action) => action.type === "passChain" && action.player === player && action.windowId === group.windowId && action.windowKind === "chainResponse"),
   );
 }
