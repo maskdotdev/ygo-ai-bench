@@ -721,6 +721,14 @@ describe("duel trigger buckets", () => {
     const decline = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "first-restored-decline-optional");
     expect(decline).toBeTruthy();
 
+    const staleBeforeDecline = applyResponse(restored, { ...decline!, windowId: decline!.windowId! - 1 });
+    expect(staleBeforeDecline.ok).toBe(false);
+    expect(staleBeforeDecline.error).toContain("Response is not currently legal");
+    expect(staleBeforeDecline.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleBeforeDecline.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleBeforeDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleBeforeDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeDecline.legalActions);
+
     const result = applyAndAssert(restored, decline!);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["second-restored-decline-optional"]);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["second-restored-decline-optional"]);
