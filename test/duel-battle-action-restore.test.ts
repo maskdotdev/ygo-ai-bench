@@ -67,7 +67,7 @@ describe("battle action restore", () => {
     expect(staleBeforeOpponentPass.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforeOpponentPass.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleBeforeOpponentPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
-    expect(staleBeforeOpponentPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeOpponentPass.legalActions);
+    assertLegalWindow(restored, staleBeforeOpponentPass, 1);
 
     const afterOpponentPass = applyAndAssert(restored, opponentPass!);
     expect(afterOpponentPass.state).toMatchObject({ waitingFor: 0, windowKind: "battle", attackPasses: [1], battleWindow: { kind: "attackNegationResponse", responsePlayer: 0 } });
@@ -114,7 +114,7 @@ describe("battle action restore", () => {
     expect(staleBeforeTurnPass.state.actionWindowId).toBe(restoredTurnPassWindow.state.actionWindowId);
     expect(staleBeforeTurnPass.legalActions).toEqual(getDuelLegalActions(restoredTurnPassWindow, 0));
     expect(staleBeforeTurnPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTurnPassWindow, 0));
-    expect(staleBeforeTurnPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTurnPass.legalActions);
+    assertLegalWindow(restoredTurnPassWindow, staleBeforeTurnPass, 0);
 
     const result = applyAndAssert(restoredTurnPassWindow, turnPass!);
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "beforeDamageCalculation", responsePlayer: 1 } });
@@ -298,7 +298,7 @@ describe("battle action restore", () => {
     expect(staleBeforeTrigger.error).toContain("Response is not currently legal");
     expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, 0));
     expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, 0));
-    expect(staleBeforeTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTrigger.legalActions);
+    assertLegalWindow(restoredTriggerWindow, staleBeforeTrigger, 0);
     const triggerResult = applyAndAssert(restoredTriggerWindow, trigger!);
     expect(triggerResult.state.pendingTriggers).toEqual([]);
     expect(triggerResult.state.log.some((entry) => entry.detail === "Restored battle damage trigger resolved")).toBe(true);
@@ -353,7 +353,7 @@ describe("battle action restore", () => {
     expect(staleBeforeTrigger.error).toContain("Response is not currently legal");
     expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, 0));
     expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, 0));
-    expect(staleBeforeTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTrigger.legalActions);
+    assertLegalWindow(restoredTriggerWindow, staleBeforeTrigger, 0);
     const triggerResult = applyAndAssert(restoredTriggerWindow, trigger!);
     expect(triggerResult.state.pendingTriggers).toEqual([]);
     expect(triggerResult.state.log.some((entry) => entry.detail === "Restored before battle damage trigger resolved")).toBe(true);
@@ -721,9 +721,7 @@ function passBattleWindow(session: ReturnType<typeof createDuel>, type: "passAtt
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
   const response = applyResponse(session, action);
   expect(response.ok, response.error).toBe(true);
-  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
-  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
-  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  assertLegalWindow(session, response, response.state.waitingFor!);
   return response;
 }
 
@@ -731,10 +729,17 @@ function assertStaleResponse(session: ReturnType<typeof createDuel>, action: Par
   const stale = applyResponse(session, action);
   expect(stale.ok).toBe(false);
   expect(stale.error).toContain("Response is not currently legal");
-  expect(stale.state.actionWindowId).toBe(session.state.actionWindowId);
-  expect(stale.legalActions).toEqual(getDuelLegalActions(session, stale.state.waitingFor!));
-  expect(stale.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, stale.state.waitingFor!));
-  expect(stale.legalActionGroups.flatMap((group) => group.actions)).toEqual(stale.legalActions);
+  assertLegalWindow(session, stale, stale.state.waitingFor!);
+}
+
+function assertLegalWindow(session: ReturnType<typeof createDuel>, response: ReturnType<typeof applyResponse>, player: 0 | 1): void {
+  const windowId = session.state.actionWindowId;
+  expect(response.state.actionWindowId).toBe(windowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, player));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
+  for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
 }
 
 function battleQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
