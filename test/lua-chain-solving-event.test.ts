@@ -87,6 +87,8 @@ describe("Lua chain-solving events", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
+    const originalPass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+    expect(originalPass).toBeDefined();
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
@@ -95,6 +97,9 @@ describe("Lua chain-solving events", () => {
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     const restoredPass = getLuaRestoreLegalActions(restoredChain, 1).find((candidate) => candidate.type === "passChain");
     expect(restoredPass).toBeDefined();
+    const originalPassPreapply = applyLuaRestoreResponse(restoredChain, originalPass!);
+    expect(originalPassPreapply.ok).toBe(false);
+    expect(originalPassPreapply.error).toContain("Response is not currently legal");
     applyLuaRestoreAndAssert(restoredChain, restoredPass!);
     expect(restoredChain.host.messages).toContain("starter resolved");
     expect(restoredChain.host.messages).not.toContain("unexpected response");
