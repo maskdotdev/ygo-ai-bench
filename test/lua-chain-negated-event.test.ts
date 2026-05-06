@@ -134,6 +134,21 @@ describe("Lua chain-negated events", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    expect(
+      getLuaRestoreLegalActionGroups(restored, 0).some(
+        (group) =>
+          group.windowId === restored.session.state.actionWindowId &&
+          group.windowKind === "triggerBucket" &&
+          group.actions.some(
+            (action) =>
+              action.type === "activateTrigger" &&
+              action.player === 0 &&
+              action.effectId === trigger!.effectId &&
+              action.windowId === restored.session.state.actionWindowId &&
+              action.windowKind === "triggerBucket",
+          ),
+      ),
+    ).toBe(true);
     expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
     while (restored.session.state.chain.length > 0) {
