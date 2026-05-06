@@ -1,0 +1,265 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentSummonGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity post-Pendulum-Summon open fast-effect handoff turn-response until-chain-end limit fixture", () => {
+  it("keeps until-chain-end limits after the turn player responds to a post-Pendulum-Summon pass handoff", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Post Pendulum Until Low Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1, attack: 1000, defense: 1000 },
+      { code: "200", name: "Post Pendulum Until High Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 8, rightScale: 8, attack: 1000, defense: 1000 },
+      { code: "300", name: "Post Pendulum Until Candidate", kind: "monster", typeFlags: 0x1000001, level: 4, attack: 1500, defense: 1500 },
+      { code: "400", name: "Post Pendulum Until Turn Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "700", name: "Post Pendulum Until Turn Chain Limiter", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "800", name: "Post Pendulum Until Turn Followup Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Post Pendulum Until Opponent Blocked Quick", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "post pendulum summon open fast pass handoff turn response until-chain-end limit fixture",
+      options: { seed: 438, startingHandSize: 6 },
+      decks: {
+        0: { main: ["100", "200", "300", "400", "700", "800"] },
+        1: { main: ["500"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "100", from: "hand", to: "spellTrapZone" },
+          { player: 0, code: "200", from: "hand", to: "spellTrapZone" },
+          { player: 0, code: "400", from: "hand", to: "graveyard" },
+          { player: 0, code: "700", from: "hand", to: "graveyard" },
+          { player: 0, code: "800", from: "hand", to: "graveyard" },
+          { player: 1, code: "500", from: "hand", to: "graveyard" },
+        ],
+        effects: [
+          {
+            id: "post-pendulum-summon-until-turn-open-quick",
+            player: 0,
+            code: "400",
+            location: "graveyard",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "open",
+            oncePerTurn: true,
+            logMessage: "Post Pendulum Summon until turn open quick resolved",
+          },
+          {
+            id: "post-pendulum-summon-until-turn-chain-limiter",
+            player: 0,
+            code: "700",
+            location: "graveyard",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "chain",
+            oncePerTurn: true,
+            chainLimitOnTarget: { untilChainEnd: true, allowPlayer: 0 },
+            logMessage: "Post Pendulum Summon until turn chain limiter resolved",
+          },
+          {
+            id: "post-pendulum-summon-until-turn-followup",
+            player: 0,
+            code: "800",
+            location: "graveyard",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "chain",
+            logMessage: "Post Pendulum Summon until turn followup should not resolve",
+          },
+          {
+            id: "post-pendulum-summon-until-opponent-blocked",
+            player: 1,
+            code: "500",
+            location: "graveyard",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "chain",
+            logMessage: "Post Pendulum Summon until opponent blocked should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected until-chain-end candidate", windowId: 0, windowKind: "open" }, {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro returns triggerless Pendulum Summons to turn-player open fast-effect priority before until-chain-end limits can be created",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            chainLimits: [],
+            locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], graveyard: ["400", "700", "800", "500"] },
+            cards: [{ uid: "p0-deck-300-2", code: "300", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "post-pendulum-summon-until-turn-open-quick", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "post-pendulum-summon-until-turn-open-quick", count: 1 }],
+              },
+              turnGroup(1),
+            ],
+            absentLegalActions: [
+              { type: "pendulumSummon", player: 0, windowId: 1, windowKind: "open", summonUids: ["p0-deck-300-2"] },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "post-pendulum-summon-until-turn-chain-limiter" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "post-pendulum-summon-until-turn-followup" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "post-pendulum-summon-until-opponent-blocked" },
+            ],
+            absentLegalActionGroups: [
+              absentSummonGroup({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"] }, 1),
+              absentWindowEffectGroup(0, "post-pendulum-summon-until-turn-chain-limiter", 1, "open"),
+              absentWindowEffectGroup(0, "post-pendulum-summon-until-turn-followup", 1, "open"),
+              absentWindowEffectGroup(1, "post-pendulum-summon-until-opponent-blocked", 1, "open"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "post-pendulum-summon-until-turn-open-quick" })),
+        makeScriptedStep(makeResponseSelector("passChain", 1)),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "post-pendulum-summon-until-turn-chain-limiter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro applies SetChainLimitTillChainEnd restrictions when the turn player responds from a post-Pendulum-Summon pass-handoff window",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "post-pendulum-summon-until-turn-open-quick", sourceUid: "p0-deck-400-3" },
+              { player: 0, effectId: "post-pendulum-summon-until-turn-chain-limiter", sourceUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: true }],
+            locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], graveyard: ["400", "700", "800", "500"] },
+            cards: [{ uid: "p0-deck-300-2", code: "300", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "post-pendulum-summon-until-turn-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "post-pendulum-summon-until-turn-followup", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "post-pendulum-summon-until-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "post-pendulum-summon-until-turn-chain-limiter" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "post-pendulum-summon-until-opponent-blocked" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "post-pendulum-summon-until-turn-open-quick", 4),
+              absentChainEffectGroup(0, "post-pendulum-summon-until-turn-chain-limiter", 4),
+              absentChainEffectGroup(1, "post-pendulum-summon-until-opponent-blocked", 4),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the post-Pendulum-Summon SetChainLimitTillChainEnd response window restorable before the allowed player passes",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "post-pendulum-summon-until-turn-open-quick", sourceUid: "p0-deck-400-3" },
+              { player: 0, effectId: "post-pendulum-summon-until-turn-chain-limiter", sourceUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: true }],
+            locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], graveyard: ["400", "700", "800", "500"] },
+            cards: [{ uid: "p0-deck-300-2", code: "300", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "post-pendulum-summon-until-turn-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "post-pendulum-summon-until-turn-followup", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "post-pendulum-summon-until-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "post-pendulum-summon-until-turn-chain-limiter" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "post-pendulum-summon-until-opponent-blocked" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "post-pendulum-summon-until-turn-open-quick", 4),
+              absentChainEffectGroup(0, "post-pendulum-summon-until-turn-chain-limiter", 4),
+              absentChainEffectGroup(1, "post-pendulum-summon-until-opponent-blocked", 4),
+            ],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro clears until-chain-end limits and returns post-Pendulum-Summon handoff chains to turn-player open priority after the allowed player passes",
+        phase: "main1",
+        windowId: 5,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        chainLimits: [],
+        locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], graveyard: ["400", "700", "800", "500"] },
+        cards: [{ uid: "p0-deck-300-2", code: "300", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 5, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 5, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(5)],
+        absentLegalActions: [
+          { type: "pendulumSummon", player: 0, windowId: 5, windowKind: "open", summonUids: ["p0-deck-300-2"] },
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "post-pendulum-summon-until-turn-open-quick" },
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "post-pendulum-summon-until-turn-chain-limiter" },
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "post-pendulum-summon-until-turn-followup" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "post-pendulum-summon-until-opponent-blocked" },
+        ],
+        absentLegalActionGroups: [
+          absentSummonGroup({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"] }, 5),
+          absentWindowEffectGroup(0, "post-pendulum-summon-until-turn-open-quick", 5, "open"),
+          absentWindowEffectGroup(0, "post-pendulum-summon-until-turn-chain-limiter", 5, "open"),
+          absentWindowEffectGroup(0, "post-pendulum-summon-until-turn-followup", 5, "open"),
+          absentWindowEffectGroup(1, "post-pendulum-summon-until-opponent-blocked", 5, "open"),
+        ],
+        logIncludes: [
+          "Post Pendulum Summon until turn chain limiter resolved",
+          "Post Pendulum Summon until turn open quick resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
