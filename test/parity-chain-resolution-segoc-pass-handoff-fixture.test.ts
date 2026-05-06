@@ -1,0 +1,255 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution SEGOC pass handoff fixture", () => {
+  it("returns chain-created SEGOC response priority to the trigger player after the opponent passes", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Handoff Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Turn Chain Handoff Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Chain Handoff Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Opponent Chain Handoff Quick", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Chain Handoff Optional", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "700", name: "Chain Handoff Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Filler", kind: "monster", attack: 800, defense: 800 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc pass handoff fixture",
+      options: { seed: 286, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "500", "700"] },
+        1: { main: ["400", "800", "800", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-chain-handoff-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 1, code: "400", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Chain handoff starter resolved",
+          },
+          {
+            id: "fixture-chain-handoff-mandatory",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain handoff mandatory should not resolve yet",
+          },
+          {
+            id: "fixture-chain-handoff-optional",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Chain handoff optional should not resolve yet",
+          },
+          {
+            id: "fixture-chain-handoff-turn-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Turn quick after chain-created SEGOC handoff should not resolve yet",
+          },
+          {
+            id: "fixture-chain-handoff-opponent-quick",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Opponent quick after chain-created SEGOC handoff should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-handoff-starter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro starts chain-created SEGOC trigger selection before exposing fast responses",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-chain-handoff-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 0, triggerBucket: "turnOptional" },
+            ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-handoff-mandatory", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-chain-handoff-mandatory", "turnMandatory", 1, 1)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-handoff-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-handoff-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-handoff-optional", triggerBucket: "turnOptional" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-handoff-mandatory", triggerBucket: "turnMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-handoff-turn-quick", 1, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-chain-handoff-opponent-quick", 1, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-chain-handoff-optional", "turnOptional", 1, "triggerBucket"),
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-handoff-mandatory" }],
+              },
+            ],
+            locations: { graveyard: ["700", "200", "400"], hand: ["100", "300", "500", "800", "800", "800", "800"] },
+            logIncludes: ["Chain handoff starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-handoff-mandatory" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps same-event optional trigger selection ahead of chain responses after the mandatory trigger is chosen",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "fixture-chain-handoff-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" }],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-handoff-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-handoff-optional", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-handoff-optional", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-chain-handoff-optional", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "fixture-chain-handoff-optional", "turnOptional", 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-handoff-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-handoff-opponent-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-handoff-turn-quick", 2, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-chain-handoff-opponent-quick", 2, "triggerBucket"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-handoff-optional" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro gives the opponent first chain-response priority after chain-created SEGOC trigger selection completes",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-handoff-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-chain-handoff-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-chain-handoff-opponent-quick", 1, 3), chainPassGroup(1, 1, 3)],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-chain-handoff-turn-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(0, "fixture-chain-handoff-turn-quick", 3)],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro returns chain-created SEGOC response priority to the trigger player after the opponent passes with a response available",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-handoff-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-handoff-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "fixture-chain-handoff-turn-quick", 1, 4), chainPassGroup(0, 1, 4)],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-handoff-opponent-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "fixture-chain-handoff-opponent-quick", 4)],
+            locations: { graveyard: ["700", "200", "400"], hand: ["100", "300", "500", "800", "800", "800", "800"] },
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro keeps the chain-created SEGOC trigger chain pending after the opponent passes and the trigger player has a chain response",
+        phase: "main1",
+        windowId: 4,
+        windowKind: "chainResponse",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [
+          { player: 0, effectId: "fixture-chain-handoff-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+          { player: 0, effectId: "fixture-chain-handoff-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+        ],
+        chainPasses: [1],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-handoff-turn-quick", count: 1 },
+          { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [chainEffectGroup(0, "fixture-chain-handoff-turn-quick", 1, 4), chainPassGroup(0, 1, 4)],
+        absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-handoff-opponent-quick" }],
+        absentLegalActionGroups: [absentChainEffectGroup(1, "fixture-chain-handoff-opponent-quick", 4)],
+        locations: { graveyard: ["700", "200", "400"], hand: ["100", "300", "500", "800", "800", "800", "800"] },
+        logIncludes: ["Chain handoff starter resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
