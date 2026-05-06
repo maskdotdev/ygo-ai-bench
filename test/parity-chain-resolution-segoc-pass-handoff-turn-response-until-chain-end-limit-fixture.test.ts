@@ -1,0 +1,207 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentChainEffectGroup, chainEffectGroup, chainPassGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response until-chain-end limit fixture", () => {
+  it("keeps until-chain-end limits after the turn player responds to a chain-created SEGOC pass handoff", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Handoff Until Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Chain Handoff Until Turn Chain Limiter", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Chain Handoff Until Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Chain Handoff Until Opponent Blocked Quick", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Chain Handoff Until Optional", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "700", name: "Chain Handoff Until Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Chain Handoff Until Opponent Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Chain Handoff Until Turn Followup Quick", kind: "monster", attack: 1600, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc pass handoff turn response until-chain-end limit fixture",
+      options: { seed: 386, startingHandSize: 6 },
+      decks: {
+        0: { main: ["100", "200", "300", "500", "700", "900"] },
+        1: { main: ["400", "800", "800", "800", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-chain-resolution-segoc-until-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            oncePerTurn: true,
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 0, code: "900", from: "hand", to: "graveyard" },
+              { player: 1, code: "400", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Chain resolution SEGOC until starter resolved",
+          },
+          {
+            id: "fixture-chain-resolution-segoc-until-mandatory",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain resolution SEGOC until mandatory resolved",
+          },
+          {
+            id: "fixture-chain-resolution-segoc-until-optional",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Chain resolution SEGOC until optional resolved",
+          },
+          {
+            id: "fixture-chain-resolution-segoc-until-turn-chain-limiter",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "chain",
+            oncePerTurn: true,
+            chainLimitOnTarget: { untilChainEnd: true, allowPlayer: 0 },
+            logMessage: "Chain resolution SEGOC until turn chain limiter resolved",
+          },
+          {
+            id: "fixture-chain-resolution-segoc-until-turn-followup",
+            player: 0,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "chain",
+            logMessage: "Chain resolution SEGOC until turn followup should not resolve",
+          },
+          {
+            id: "fixture-chain-resolution-segoc-until-opponent-blocked",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "chain",
+            logMessage: "Chain resolution SEGOC until opponent blocked should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-segoc-until-starter" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-resolution-segoc-until-mandatory" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-resolution-segoc-until-optional" })),
+        makeScriptedStep(makeResponseSelector("passChain", 1)),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-segoc-until-turn-chain-limiter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro applies SetChainLimitTillChainEnd restrictions when the turn player responds from a chain-created SEGOC pass-handoff window",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-turn-chain-limiter", sourceUid: "p0-deck-200-1" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: true }],
+            locations: { graveyard: ["700", "200", "900", "400"], hand: ["100", "300", "500", "800", "800", "800", "800", "800"] },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-until-turn-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-resolution-segoc-until-turn-followup", 1, 5),
+              chainPassGroup(0, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-until-turn-chain-limiter" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-until-opponent-blocked" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-chain-resolution-segoc-until-turn-chain-limiter", 5),
+              absentChainEffectGroup(1, "fixture-chain-resolution-segoc-until-opponent-blocked", 5),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the chain-created SEGOC SetChainLimitTillChainEnd response window restorable before the allowed trigger player passes",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-turn-chain-limiter", sourceUid: "p0-deck-200-1" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: true }],
+            locations: { graveyard: ["700", "200", "900", "400"], hand: ["100", "300", "500", "800", "800", "800", "800", "800"] },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-until-turn-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-resolution-segoc-until-turn-followup", 1, 5),
+              chainPassGroup(0, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-until-turn-chain-limiter" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-until-opponent-blocked" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-chain-resolution-segoc-until-turn-chain-limiter", 5),
+              absentChainEffectGroup(1, "fixture-chain-resolution-segoc-until-opponent-blocked", 5),
+            ],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro clears until-chain-end limits and returns chain-created SEGOC handoff chains to turn-player open priority after the allowed player passes",
+        phase: "main1",
+        windowId: 6,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        chainLimits: [],
+        locations: { graveyard: ["700", "200", "900", "400"], hand: ["100", "300", "500", "800", "800", "800", "800", "800"] },
+        logIncludes: [
+          "Chain resolution SEGOC until turn chain limiter resolved",
+          "Chain resolution SEGOC until optional resolved",
+          "Chain resolution SEGOC until mandatory resolved",
+          "Chain resolution SEGOC until starter resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
