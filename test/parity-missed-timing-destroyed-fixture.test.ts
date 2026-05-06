@@ -261,6 +261,18 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-decline-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-decline-optional-if" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "open",
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-decline-optional-when" },
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-decline-optional-if" },
+                ],
+              },
+            ],
             logIncludes: ["Destroy decline multi step resolved", "destroy-decline-optional-if"],
           },
         }),
