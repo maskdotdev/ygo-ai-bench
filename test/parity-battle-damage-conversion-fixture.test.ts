@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentOpenAttackGroup, passBattleGroup } from "./parity-legal-action-group-helpers.js";
+import { absentOpenAttackGroup, passBattleGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle damage conversion fixtures", () => {
   it("converts battle damage to effect damage", () => {
@@ -70,6 +70,13 @@ describe("EDOPro parity battle damage conversion fixtures", () => {
             lifePoints: { 0: 8000, 1: 6200 },
             battleDamage: { 0: 0, 1: 1800 },
             attacksDeclared: ["p0-deck-100-0"],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 14, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 14, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(14)],
             logIncludes: ["effectDamage", "1800", "Direct attack"],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
             absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
@@ -87,6 +94,13 @@ describe("EDOPro parity battle damage conversion fixtures", () => {
         lifePoints: { 0: 8000, 1: 6200 },
         battleDamage: { 0: 0, 1: 1800 },
         attacksDeclared: ["p0-deck-100-0"],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 14, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 14, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(14)],
         logIncludes: ["effectDamage", "1800", "Direct attack"],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
         absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
