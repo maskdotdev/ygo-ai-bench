@@ -700,7 +700,23 @@ describe("duel trigger buckets", () => {
     const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "opponent-restored-later-optional");
     expect(opponentActivation).toBeTruthy();
     const opponentActivated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
+    expect(opponentActivated.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restoredOpponentBucket.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+      "first-restored-turn-optional resolved",
+      "second-restored-turn-optional resolved",
+      "opponent-restored-later-optional resolved",
+    ]));
     expect(restoredOpponentBucket.state.pendingTriggers).toEqual([]);
+    expect(queryPublicState(restoredOpponentBucket).pendingTriggerBuckets).toEqual([]);
+    const restoredAfterOpponentResolution = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), {
+      "first-restored-turn-optional": withOperation,
+      "second-restored-turn-optional": withOperation,
+      "opponent-restored-later-optional": withOperation,
+    });
+    expect(queryPublicState(restoredAfterOpponentResolution)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(getDuelLegalActions(restoredAfterOpponentResolution, 0).map((action) => action.type)).toEqual(getDuelLegalActions(restoredOpponentBucket, 0).map((action) => action.type));
+    expect(getGroupedDuelLegalActions(restoredAfterOpponentResolution, 0).map((group) => group.label)).toEqual(getGroupedDuelLegalActions(restoredOpponentBucket, 0).map((group) => group.label));
+    expect(getDuelLegalActions(restoredAfterOpponentResolution, 1)).toEqual([]);
     const staleOpponentActivation = applyResponse(restoredOpponentBucket, opponentActivation!);
     expect(staleOpponentActivation.ok).toBe(false);
     expect(staleOpponentActivation.error).toContain("Response is not currently legal");
