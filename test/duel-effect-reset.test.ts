@@ -305,6 +305,7 @@ describe("duel effect reset", () => {
     expect(source).toBeDefined();
     registerEffect(session, {
       id: "reset-phase-count-limited",
+      registryKey: "reset-phase-count-limited",
       sourceUid: source!.uid,
       controller: 0,
       event: "ignition",
@@ -321,12 +322,23 @@ describe("duel effect reset", () => {
     expect(applyResponse(session, effect!).ok).toBe(true);
     expect(session.state.usedCountKeys).toHaveLength(1);
 
-    const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
-    expect(battle).toBeDefined();
-    expect(applyResponse(session, battle!).ok).toBe(true);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "reset-phase-count-limited": (effect) => ({
+        ...effect,
+        operation(ctx) {
+          ctx.log("Reset phase count-limited effect resolved");
+        },
+      }),
+    });
+    expect(restored.state.effects).toHaveLength(1);
+    expect(restored.state.usedCountKeys).toHaveLength(1);
 
-    expect(session.state.effects).toHaveLength(0);
-    expect(session.state.usedCountKeys).toHaveLength(0);
+    const battle = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
+    expect(battle).toBeDefined();
+    expect(applyResponse(restored, battle!).ok).toBe(true);
+
+    expect(restored.state.effects).toHaveLength(0);
+    expect(restored.state.usedCountKeys).toHaveLength(0);
   });
 
   it("removes reset-to-field effects when their source enters the field", () => {
