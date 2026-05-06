@@ -616,6 +616,11 @@ describe("Lua open fast priority restore", () => {
 
     const finalOpened = applyLuaRestoreAndAssert(restored, finalPass!);
     expect(finalOpened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(finalOpened.legalActionGroups.flatMap((group) => group.actions)).toEqual(finalOpened.legalActions);
+    expect(finalOpened.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", uid: expect.stringContaining("19300") })]));
+    expect(hasGroupedLuaEffect(finalOpened.legalActionGroups, 0, "19300", "open")).toBe(true);
+    expect(hasGroupedLuaEffect(finalOpened.legalActionGroups, 0, "19600", "open")).toBe(false);
+    expect(hasGroupedLuaEffect(finalOpened.legalActionGroups, 1, "19700", "open")).toBe(false);
 
     const staleFinalPass = applyLuaRestoreResponse(restored, finalPass!);
     expect(staleFinalPass.ok).toBe(false);
