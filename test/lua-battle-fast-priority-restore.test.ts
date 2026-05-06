@@ -541,6 +541,7 @@ describe("Lua battle fast priority restore", () => {
 
     const cleaned = applyLuaRestoreAndAssert(restored, pass!);
     expect(cleaned.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 1: { lifePoints: 6200 } } });
+    expect(cleaned.legalActionGroups.flatMap((group) => group.actions)).toEqual(cleaned.legalActions);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDamageDealt"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 });
     expect(restored.session.state.eventHistory.slice(-2)).toEqual([
@@ -655,6 +656,7 @@ describe("Lua battle fast priority restore", () => {
 
     const cleaned = applyLuaRestoreAndAssert(restored, pass!);
     expect(cleaned.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 1: { lifePoints: 6200 } } });
+    expect(cleaned.legalActionGroups.flatMap((group) => group.actions)).toEqual(cleaned.legalActions);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["beforeBattleDamage"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1136, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 });
     expect(restored.session.state.eventHistory.slice(-2)).toEqual([
@@ -775,6 +777,7 @@ describe("Lua battle fast priority restore", () => {
 
     const cleaned = applyLuaRestoreAndAssert(restored, pass!);
     expect(cleaned.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 0: { lifePoints: 7200 } } });
+    expect(cleaned.legalActionGroups.flatMap((group) => group.actions)).toEqual(cleaned.legalActions);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDamageDealt"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143, eventPlayer: 0, eventValue: 800, eventReason: 0x20, eventReasonPlayer: 1 });
     expect(restored.session.state.eventHistory.slice(-2)).toEqual([
