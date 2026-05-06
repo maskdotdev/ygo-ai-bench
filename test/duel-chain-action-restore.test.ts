@@ -227,6 +227,7 @@ describe("chain action restore", () => {
       "restore-open-priority-opponent-open-only": restoreOpenOnlyQuickEffect("Restored opponent open-only quick resolved"),
     });
     expect(getDuelLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-opponent-open-only")).toBe(false);
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 1), 1, "restore-open-priority-opponent-open-only", "chainResponse")).toBe(false);
     const staleBeforePass = applyResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
     expect(staleBeforePass.ok).toBe(false);
     expect(staleBeforePass.error).toContain("Response is not currently legal");
@@ -243,6 +244,7 @@ describe("chain action restore", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-open-priority-turn-quick", windowKind: "open" })]));
+    expect(hasGroupedEffect(result.legalActionGroups, 0, "restore-open-priority-turn-quick", "open")).toBe(true);
     expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
     expect(getDuelLegalActions(restored, 1)).toEqual([]);
     const quick = getDuelLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-turn-quick");
@@ -281,8 +283,10 @@ describe("chain action restore", () => {
     expect(queryPublicState(restoredQuickChain)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(getDuelLegalActions(restoredQuickChain, 0)).toEqual([]);
     expect(getDuelLegalActions(restoredQuickChain, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-opponent-open-only")).toBe(false);
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredQuickChain, 1), 1, "restore-open-priority-opponent-open-only", "chainResponse")).toBe(false);
     const opponentQuick = getDuelLegalActions(restoredQuickChain, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-opponent-chain-quick");
     expect(opponentQuick).toBeDefined();
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredQuickChain, 1), 1, "restore-open-priority-opponent-chain-quick", "chainResponse")).toBe(true);
     const staleBeforeOpponentQuick = applyResponse(restoredQuickChain, { ...opponentQuick!, windowId: opponentQuick!.windowId! - 1 });
     expect(staleBeforeOpponentQuick.ok).toBe(false);
     expect(staleBeforeOpponentQuick.error).toContain("Response is not currently legal");
@@ -452,6 +456,7 @@ describe("chain action restore", () => {
     expect(resolvedTrigger.state.log.some((entry) => entry.detail === "Restored chain-ended opponent quick resolved")).toBe(true);
     expect(resolvedTrigger.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(resolvedTrigger.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-chain-ended-open-quick", windowKind: "open" })]));
+    expect(hasGroupedEffect(resolvedTrigger.legalActionGroups, 0, "restore-chain-ended-open-quick", "open")).toBe(true);
     expect(getDuelLegalActions(restoredTriggerChain, 1)).toEqual([]);
     expect(resolvedTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerChain, resolvedTrigger.state.waitingFor!));
     expect(resolvedTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerChain, resolvedTrigger.state.waitingFor!));
@@ -521,8 +526,11 @@ describe("chain action restore", () => {
     expect(declined.ok, declined.error).toBe(true);
     expect(declined.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
     expect(declined.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-chain-ended-decline-open-quick", windowKind: "open" })]));
+    expect(hasGroupedEffect(declined.legalActionGroups, 0, "restore-chain-ended-decline-open-quick", "open")).toBe(true);
     expect(declined.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-chain-ended-decline-opponent-quick")).toBe(false);
     expect(declined.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-chain-ended-decline-opponent-open-only")).toBe(false);
+    expect(hasGroupedEffect(declined.legalActionGroups, 1, "restore-chain-ended-decline-opponent-quick", "open")).toBe(false);
+    expect(hasGroupedEffect(declined.legalActionGroups, 1, "restore-chain-ended-decline-opponent-open-only", "open")).toBe(false);
     expect(restoredTriggerBucket.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "restore-chain-ended-decline-trigger")).toBe(true);
     expect(restoredTriggerBucket.state.log.some((entry) => entry.detail === "Restored chain-ended decline trigger resolved")).toBe(false);
     expect(getDuelLegalActions(restoredTriggerBucket, 1)).toEqual([]);
@@ -546,6 +554,17 @@ function chainResponseGroups(session: ReturnType<typeof setupRestoredChainRespon
     windowKind: group.windowKind,
     actionTypes: group.actions.map((action) => action.type),
   }));
+}
+
+function hasGroupedEffect(
+  groups: ReturnType<typeof getGroupedDuelLegalActions>,
+  player: 0 | 1,
+  effectId: string,
+  windowKind: "chainResponse" | "open",
+): boolean {
+  return groups.some((group) =>
+    group.windowKind === windowKind && group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowKind === windowKind),
+  );
 }
 
 function setupRestoredChainResponse(kind: "pass" | "quick") {
