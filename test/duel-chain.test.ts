@@ -148,9 +148,12 @@ describe("duel chains", () => {
     startDuel(session);
 
     const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
     expect(source).toBeTruthy();
+    expect(quickSource).toBeTruthy();
     registerEffect(session, {
       id: "reset-chain-count-limited",
+      registryKey: "reset-chain-count-limited",
       sourceUid: source!.uid,
       controller: 0,
       event: "ignition",
@@ -161,13 +164,47 @@ describe("duel chains", () => {
         ctx.log("Reset chain count-limited effect resolved");
       },
     });
+    registerEffect(session, {
+      id: "reset-chain-cleanup-quick",
+      registryKey: "reset-chain-cleanup-quick",
+      sourceUid: quickSource!.uid,
+      controller: 1,
+      event: "quick",
+      range: ["hand"],
+      operation(ctx) {
+        ctx.log("Reset chain cleanup quick resolved");
+      },
+    });
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "reset-chain-count-limited");
     expect(action).toBeTruthy();
     applyAndAssert(session, action!);
+    expect(session.state.effects.some((effect) => effect.id === "reset-chain-count-limited")).toBe(true);
+    expect(session.state.usedCountKeys).toHaveLength(1);
 
-    expect(session.state.effects).toHaveLength(0);
-    expect(session.state.usedCountKeys).toHaveLength(0);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "reset-chain-count-limited": (effect) => ({
+        ...effect,
+        operation(ctx) {
+          ctx.log("Reset chain count-limited effect resolved");
+        },
+      }),
+      "reset-chain-cleanup-quick": (effect) => ({
+        ...effect,
+        operation(ctx) {
+          ctx.log("Reset chain cleanup quick resolved");
+        },
+      }),
+    });
+    expect(restored.state.effects.some((effect) => effect.id === "reset-chain-count-limited")).toBe(true);
+    expect(restored.state.usedCountKeys).toHaveLength(1);
+
+    const pass = getDuelLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeTruthy();
+    applyAndAssert(restored, pass!);
+
+    expect(restored.state.effects.some((effect) => effect.id === "reset-chain-count-limited")).toBe(false);
+    expect(restored.state.usedCountKeys).toHaveLength(0);
   });
 
   it("lets an opponent quick effect chain before the original operation resolves", () => {
