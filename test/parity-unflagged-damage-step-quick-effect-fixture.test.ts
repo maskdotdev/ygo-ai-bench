@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup, absentEffectGroup, passDamageGroup } from "./parity-legal-action-group-helpers.js";
+import { absentAttackGroup, absentEffectGroup, passDamageGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity unflagged damage-step quick-effect fixtures", () => {
   it("does not offer unflagged quick effects during damage-step battle windows", () => {
@@ -157,6 +157,13 @@ describe("EDOPro parity unflagged damage-step quick-effect fixtures", () => {
         lifePoints: { 1: 6200 },
         battleDamage: { 1: 1800 },
         attacksDeclared: ["p0-deck-100-0"],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 14, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 14, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(14)],
         absentLegalActions: [
           { type: "activateEffect", player: 0, effectId: "fixture-unflagged-quick" },
           { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" },
