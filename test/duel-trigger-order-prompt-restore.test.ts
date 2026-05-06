@@ -423,9 +423,12 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
 }
 
 function assertStalePreviousWindow(session: ReturnType<typeof createDuel>, action: DuelResponse, player: 0 | 1): void {
+  const before = queryPublicState(session);
   const stale = applyResponse(session, { ...action, windowId: action.windowId! - 1 });
   expect(stale.ok).toBe(false);
   expect(stale.error).toContain("Response is not currently legal");
+  expect(queryPublicState(session).triggerOrderPrompt).toEqual(before.triggerOrderPrompt);
+  expect(queryPublicState(session).pendingTriggerBuckets).toEqual(before.pendingTriggerBuckets);
   assertLegalWindowMetadata(session, stale, player);
 }
 
