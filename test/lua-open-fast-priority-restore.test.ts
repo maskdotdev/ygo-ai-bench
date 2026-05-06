@@ -225,6 +225,13 @@ describe("Lua open fast priority restore", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     applyLuaRestoreAndAssert(restored, finalPass!);
+    const staleFinalPass = applyLuaRestoreResponse(restored, finalPass!);
+    expect(staleFinalPass.ok).toBe(false);
+    expect(staleFinalPass.error).toContain("Response is not currently legal");
+    expect(staleFinalPass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleFinalPass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleFinalPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleFinalPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleFinalPass.legalActions);
     expect(restored.host.messages).toEqual(["restored open fast source resolved", "restored open fast quick resolved"]);
   });
 
