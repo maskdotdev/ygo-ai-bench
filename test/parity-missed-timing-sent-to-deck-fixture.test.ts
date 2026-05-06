@@ -77,8 +77,28 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-optional-if", count: 1 },
-              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-optional-if", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-optional-if", triggerBucket: "turnOptional", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-optional-if", triggerBucket: "turnOptional", count: 1 }],
+              },
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-optional-when" }],
             absentLegalActionGroups: [
@@ -109,6 +129,19 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "open",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-optional-when" },
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-optional-if" },
+                ],
+              },
             ],
             logIncludes: ["Return optional if resolved"],
           },
@@ -163,6 +196,7 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
             label: "Trigger Activations",
             windowId: 2,
             windowKind: "open",
+            triggerBucket: { player: 0, triggerBucket: "turnOptional" },
             actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-optional-when" }],
           },
         ],
@@ -256,12 +290,49 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
-              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-if", count: 1 },
-              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-if", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-if", triggerBucket: "turnOptional", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-if", triggerBucket: "turnOptional", count: 1 }],
+              },
             ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-when" },
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-open-fast" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-when" }],
+              },
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-open-fast" }],
+              },
             ],
             logIncludes: ["Return decline multi step resolved"],
           },
@@ -281,9 +352,32 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
             legalActionCounts: { 0: 12, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
             legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-open-fast", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-open-fast", count: 1 }],
+              },
+            ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "open",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-optional-when" },
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-optional-if" },
+                ],
+              },
             ],
             logIncludes: ["Return decline multi step resolved", "return-decline-optional-if"],
           },
@@ -304,6 +398,19 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "return-decline-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "return-decline-optional-if" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 3,
+                windowKind: "open",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "return-decline-optional-when" },
+                  { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "return-decline-optional-if" },
+                ],
+              },
+            ],
             logIncludes: ["Return decline open fast resolved"],
           },
         }),
@@ -323,6 +430,19 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
         absentLegalActions: [
           { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "return-decline-optional-when" },
           { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "return-decline-optional-if" },
+        ],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Trigger Activations",
+            windowId: 3,
+            windowKind: "open",
+            triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+            actions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "return-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "return-decline-optional-if" },
+            ],
+          },
         ],
         logIncludes: ["Return decline open fast resolved"],
       },
