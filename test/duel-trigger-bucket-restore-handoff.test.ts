@@ -128,9 +128,65 @@ describe("trigger bucket restore handoff", () => {
     expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainWindow, 0));
     expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
   });
+
+  it("returns restored opponent mandatory activations through chain response to open priority", () => {
+    const session = createDuel({ seed: 3, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "100", "100"] },
+    });
+    startDuel(session);
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const turnQuickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const opponentTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(turnTriggerSource).toBeTruthy();
+    expect(turnQuickSource).toBeTruthy();
+    expect(opponentTriggerSource).toBeTruthy();
+    registerEffect(session, normalSummonTrigger("restore-turn-mandatory-before-opponent-activation", turnTriggerSource!.uid, 0, "Restored turn mandatory before opponent activation resolved", false));
+    registerEffect(session, normalSummonTrigger("restore-opponent-mandatory-activation", opponentTriggerSource!.uid, 1, "Restored opponent mandatory activation resolved", false));
+    registerEffect(session, openOnlyQuickEffect("restore-open-priority-after-opponent-mandatory", turnQuickSource!.uid, 0, "Restored open priority after opponent mandatory resolved"));
+    registerEffect(session, chainOnlyQuickEffect("restore-turn-chain-response-after-opponent-mandatory", turnQuickSource!.uid, 0, "Restored turn chain response after opponent mandatory resolved"));
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeDefined();
+    applyAndAssert(session, summon!);
+    const restoredTurnBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreMandatoryRegistry());
+    const turnActivation = getDuelLegalActions(restoredTurnBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-turn-mandatory-before-opponent-activation");
+    expect(turnActivation).toBeDefined();
+    expect(getDuelLegalActions(restoredTurnBucket, 0).some((action) => action.type === "declineTrigger")).toBe(false);
+    applyAndAssert(restoredTurnBucket, turnActivation!);
+
+    const restoredOpponentBucket = restoreDuel(serializeDuel(restoredTurnBucket), createCardReader(cards), restoreMandatoryRegistry());
+    expect(queryPublicState(restoredOpponentBucket)).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
+    expect(getDuelLegalActions(restoredOpponentBucket, 1).some((action) => action.type === "declineTrigger")).toBe(false);
+    const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-opponent-mandatory-activation");
+    expect(opponentActivation).toBeDefined();
+    const activated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
+    expect(activated.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", pendingTriggers: [] });
+    expect(activated.state.chain.map((link) => link.effectId)).toEqual(["restore-turn-mandatory-before-opponent-activation", "restore-opponent-mandatory-activation"]);
+    expect(getDuelLegalActions(restoredOpponentBucket, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", effectId: "restore-turn-chain-response-after-opponent-mandatory", windowKind: "chainResponse" })]));
+
+    const restoredChainWindow = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreMandatoryRegistry());
+    const pass = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyAndAssert(restoredChainWindow, pass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored turn mandatory before opponent activation resolved")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored opponent mandatory activation resolved")).toBe(true);
+    expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-open-priority-after-opponent-mandatory", windowKind: "open" })]));
+    const stalePass = applyResponse(restoredChainWindow, pass!);
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.state.actionWindowId).toBe(restoredChainWindow.state.actionWindowId);
+    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restoredChainWindow, 0));
+    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainWindow, 0));
+    expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
+  });
 });
 
-function normalSummonTrigger(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
+function normalSummonTrigger(id: string, sourceUid: string, controller: 0 | 1, detail: string, optional = true): DuelEffectDefinition {
   return {
     id,
     registryKey: id,
@@ -138,6 +194,7 @@ function normalSummonTrigger(id: string, sourceUid: string, controller: 0 | 1, d
     controller,
     event: "trigger",
     triggerEvent: "normalSummoned",
+    optional,
     range: ["hand"],
     operation(ctx) {
       ctx.log(detail);
@@ -204,6 +261,25 @@ function restoreActivationRegistry(): Record<string, (effect: Omit<DuelEffectDef
     }),
     "restore-turn-chain-response-after-opponent-activation": (effect) => ({
       ...restoreLoggedEffect("Restored turn chain response after opponent activation resolved")(effect),
+      canActivate(ctx) {
+        return ctx.duel.chain.length > 0;
+      },
+    }),
+  };
+}
+
+function restoreMandatoryRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
+  return {
+    "restore-turn-mandatory-before-opponent-activation": restoreLoggedEffect("Restored turn mandatory before opponent activation resolved"),
+    "restore-opponent-mandatory-activation": restoreLoggedEffect("Restored opponent mandatory activation resolved"),
+    "restore-open-priority-after-opponent-mandatory": (effect) => ({
+      ...restoreLoggedEffect("Restored open priority after opponent mandatory resolved")(effect),
+      canActivate(ctx) {
+        return ctx.duel.chain.length === 0;
+      },
+    }),
+    "restore-turn-chain-response-after-opponent-mandatory": (effect) => ({
+      ...restoreLoggedEffect("Restored turn chain response after opponent mandatory resolved")(effect),
       canActivate(ctx) {
         return ctx.duel.chain.length > 0;
       },
