@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -600,8 +600,19 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const response = applyLuaRestoreResponse(restored, action);
   expect(response.ok, response.error).toBe(true);
+  assertPublicRestoreMetadata(restored, response);
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function assertPublicRestoreMetadata(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: ReturnType<typeof applyLuaRestoreResponse>): void {
+  const publicState = queryPublicState(restored.session);
+  expect(response.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) {
+    expect(response.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  } else {
+    expect(response.state).not.toHaveProperty("triggerOrderPrompt");
+  }
 }
