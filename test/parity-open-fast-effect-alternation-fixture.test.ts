@@ -193,13 +193,14 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
       { code: "100", name: "Turn Open Quick", kind: "monster", attack: 1000, defense: 1000 },
       { code: "200", name: "Opponent Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
       { code: "300", name: "Turn Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Opponent Open Quick", kind: "monster", attack: 1000, defense: 1000 },
     ];
     const fixture: ScriptedDuelFixture = {
       name: "open fast effect pass handoff fixture",
       options: { seed: 262, startingHandSize: 2 },
       decks: {
         0: { main: ["100", "300"] },
-        1: { main: ["200", "200"] },
+        1: { main: ["200", "500"] },
       },
       setup: {
         effects: [
@@ -235,6 +236,16 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
             activationChain: "chain",
             logMessage: "Pass handoff opponent chain quick resolved",
           },
+          {
+            id: "pass-handoff-opponent-open-quick",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Pass handoff opponent open quick should not resolve",
+          },
         ],
       },
       responses: [
@@ -255,6 +266,7 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
               { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
             ],
             legalActionGroups: [chainEffectGroup(1, "pass-handoff-opponent-chain-quick", 1, 1), chainPassGroup(1, 1, 1)],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "pass-handoff-opponent-open-quick" }],
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
@@ -274,7 +286,10 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
               { type: "passChain", player: 0, windowId: 2, windowKind: "chainResponse", count: 1 },
             ],
             legalActionGroups: [chainEffectGroup(0, "pass-handoff-turn-chain-quick", 1, 2), chainPassGroup(0, 1, 2)],
-            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "pass-handoff-opponent-chain-quick" }],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "pass-handoff-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "pass-handoff-opponent-open-quick" },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
@@ -309,6 +324,7 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
             absentLegalActions: [
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-open-quick" },
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "pass-handoff-opponent-open-quick" },
             ],
             logIncludes: ["Pass handoff turn open quick resolved"],
           },
@@ -344,6 +360,7 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-open-quick" },
           { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "pass-handoff-opponent-open-quick" },
         ],
         logIncludes: ["Pass handoff turn open quick resolved"],
       },
