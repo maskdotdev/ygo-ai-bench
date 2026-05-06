@@ -107,6 +107,8 @@ describe("Lua custom events", () => {
     expect(target).toBeDefined();
     expect(session.state.pendingTriggers).toHaveLength(1);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "customEvent", eventCode, eventCardUid: target!.uid, eventPlayer: 0, eventValue: 77, eventReason: 64, eventReasonPlayer: 1 });
+    const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -118,6 +120,10 @@ describe("Lua custom events", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalTrigger!);
+    expect(originalTriggerPreapply.ok).toBe(false);
+    expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
+    expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored custom trigger 100/0/77/64/1");
   });
