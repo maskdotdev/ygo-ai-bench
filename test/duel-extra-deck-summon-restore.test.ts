@@ -1,21 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
+import type { DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("extra deck summon restore", () => {
   it("restores Fusion Summon legal actions and applies the restored action", () => {
-    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "300"], extra: ["900"] },
-      1: { main: ["400", "400"] },
+      0: { main: ["100", "300", "500"], extra: ["900"] },
+      1: { main: ["400", "400", "400"] },
     });
     startDuel(session);
 
     const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    const watcher = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
     expect(fusion).toBeTruthy();
-    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(watcher).toBeTruthy();
+    registerEffect(session, summonSuccessWatcher("restore-fusion-success-watcher", watcher!.uid, "Restored Fusion success watcher resolved"));
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-fusion-success-watcher": restoreSummonSuccessWatcher("Restored Fusion success watcher resolved"),
+    });
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
     expect(action?.type).toBe("fusionSummon");
@@ -26,11 +32,27 @@ describe("extra deck summon restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
+    expect(result.state.pendingTriggers).toEqual([expect.objectContaining({ effectId: "restore-fusion-success-watcher", eventName: "specialSummoned", eventCardUid: fusion!.uid })]);
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expectStaleRestoredResponseRejected(restored, action);
+
+    const restoredTriggerWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), {
+      "restore-fusion-success-watcher": restoreSummonSuccessWatcher("Restored Fusion success watcher resolved"),
+    });
+    expect(restoredTriggerWindow.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
+    const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "restore-fusion-success-watcher");
+    expect(trigger).toBeDefined();
+    const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
+    expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.state.pendingTriggers).toEqual([]);
+    expect(triggerResult.state.log.some((entry) => entry.detail === "Restored Fusion success watcher resolved")).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    expectStaleRestoredResponseRejected(restoredTriggerWindow, trigger!);
   });
 
   it("restores Synchro Summon legal actions and applies the restored action", () => {
@@ -129,6 +151,30 @@ describe("extra deck summon restore", () => {
     expectStaleRestoredResponseRejected(restored, action);
   });
 });
+
+function summonSuccessWatcher(id: string, sourceUid: string, detail: string): DuelEffectDefinition {
+  return {
+    id,
+    registryKey: id,
+    sourceUid,
+    controller: 0,
+    event: "trigger",
+    triggerEvent: "specialSummoned",
+    range: ["hand"],
+    operation(ctx) {
+      ctx.log(detail);
+    },
+  };
+}
+
+function restoreSummonSuccessWatcher(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...effect,
+    operation(ctx) {
+      ctx.log(detail);
+    },
+  });
+}
 
 function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restoreDuel>, action: NonNullable<Parameters<typeof applyResponse>[1]>): void {
   const staleResult = applyResponse(restored, action);
