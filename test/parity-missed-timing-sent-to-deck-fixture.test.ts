@@ -65,7 +65,7 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "return-multistep" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro drops optional when sent-to-deck triggers when that return is followed by another event, while optional if remains available",
@@ -85,7 +85,7 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "return-optional-if" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
         }),
       ],
       expected: {
