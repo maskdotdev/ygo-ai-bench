@@ -467,14 +467,17 @@ function resolveRemainingTriggerAndAssertRestore(
     expect(hasGroupedPass(session, passPlayer)).toBe(true);
     const resolved = applyAndAssert(session, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(session.state.chainPasses).toEqual([]);
   }
   else {
     expect(activated.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(session.state.chainPasses).toEqual([]);
   }
   expect(queryPublicState(session).pendingTriggerBuckets).toEqual([]);
 
   const restoredAfterResolution = restoreDuel(serializeDuel(session), createCardReader(cards), registry);
   expect(queryPublicState(restoredAfterResolution)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+  expect(restoredAfterResolution.state.chainPasses).toEqual([]);
   expect(actionsWithoutWindowToken(getDuelLegalActions(restoredAfterResolution, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(session, 0)));
   expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredAfterResolution, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(session, 0)));
   expect(getDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
