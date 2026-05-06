@@ -97,6 +97,52 @@ describe("core summon restore", () => {
     assertRestoreLegalWindow(restored, staleSummon, 0);
   });
 
+  it("restores triggerless Special Summon procedures to turn-player open fast-effect priority", () => {
+    const session = createDuel({ seed: 264, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "500", "500"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(turnQuick).toBeTruthy();
+    expect(opponentQuick).toBeTruthy();
+    registerEffect(session, summonProcedure("restore-special-open-procedure", summoned!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-special-open-turn-quick", turnQuick!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-special-open-opponent-quick", opponentQuick!.uid, 1));
+
+    const procedure = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === summoned!.uid && candidate.effectId === "restore-special-open-procedure");
+    expect(procedure).toBeDefined();
+    const result = applyResponse(session, procedure!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-special-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-special-open-procedure": restoreSummonProcedure,
+      "restore-special-open-turn-quick": restoreOpenOnlyQuick,
+      "restore-special-open-opponent-quick": restoreOpenOnlyQuick,
+    });
+    expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restored.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-special-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-special-open-opponent-quick")).toBe(false);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "specialSummonProcedure" && action.effectId === "restore-special-open-procedure")).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+
+    const staleProcedure = applyResponse(restored, procedure!);
+    expect(staleProcedure.ok).toBe(false);
+    expect(staleProcedure.error).toContain("Response is not currently legal");
+    assertRestoreLegalWindow(restored, staleProcedure, 0);
+  });
+
   it("restores Normal Summon legal actions and applies the restored action", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -326,6 +372,29 @@ function restoreOpenOnlyQuick(effect: Omit<DuelEffectDefinition, "operation">): 
     },
     operation(ctx) {
       ctx.log(`${effect.id} resolved`);
+    },
+  };
+}
+
+function summonProcedure(id: string, sourceUid: string, controller: 0 | 1): DuelEffectDefinition {
+  return {
+    id,
+    registryKey: id,
+    sourceUid,
+    controller,
+    event: "summonProcedure",
+    range: ["hand"],
+    operation(ctx) {
+      ctx.log(`${id} procedure applied`);
+    },
+  };
+}
+
+function restoreSummonProcedure(effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition {
+  return {
+    ...effect,
+    operation(ctx) {
+      ctx.log(`${effect.id} procedure applied`);
     },
   };
 }
