@@ -68,6 +68,15 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
             legalActionCounts: { 0: 9, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "alternation-turn-chain-quick" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "alternation-turn-chain-quick" }],
+              },
+            ],
           },
           after: {
             source: "edopro",
