@@ -453,7 +453,7 @@ describe("EDOPro parity missed timing fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "decline-multistep-send" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps mandatory when and optional if triggers after restore while optional when triggers miss the non-last movement",
@@ -509,7 +509,7 @@ describe("EDOPro parity missed timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "decline-mandatory-when" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro restored mandatory trigger selection advances to turn optional if without exposing missed optional when",
@@ -565,7 +565,7 @@ describe("EDOPro parity missed timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "decline-optional-if" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro declining restored turn optional if hands off to opponent optional if while opponent optional when remains missed",
@@ -615,7 +615,7 @@ describe("EDOPro parity missed timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "decline-opponent-optional-if" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the already-chosen mandatory trigger after restored optional declines without resurrecting missed optional when triggers",
