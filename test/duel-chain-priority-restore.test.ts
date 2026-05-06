@@ -38,6 +38,7 @@ describe("chain priority restore", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
     expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
     expect(restored.state.chain.map((link) => link.effectId)).toEqual(["restore-priority-starter", "restore-opponent-quick"]);
+    expect(restored.state.chainPasses).toEqual([]);
     expect(getDuelLegalActions(restored, 1)).toEqual([]);
     expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 0), 0, "restore-player-quick-a")).toBe(true);
     expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 0), 0, "restore-player-quick-b")).toBe(true);
@@ -54,6 +55,7 @@ describe("chain priority restore", () => {
     const afterPlayerA = applyAndAssert(restored, playerA!);
     expect(afterPlayerA.state.chain.map((link) => link.effectId)).toEqual(["restore-priority-starter", "restore-opponent-quick", "restore-player-quick-a"]);
     expect(afterPlayerA.state.waitingFor).toBe(0);
+    expect(restored.state.chainPasses).toEqual([]);
     expect(hasGroupedEffect(afterPlayerA.legalActionGroups, 0, "restore-player-quick-b")).toBe(true);
     expect(hasGroupedPass(afterPlayerA.legalActionGroups, 0)).toBe(true);
     expect(getDuelLegalActions(restored, 1)).toEqual([]);
