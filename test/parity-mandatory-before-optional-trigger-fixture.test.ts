@@ -163,6 +163,7 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
         waitingFor: 0,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         locations: { monsterZone: ["100"], hand: ["300", "400"] },
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
@@ -271,6 +272,7 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            chainPasses: [],
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
@@ -307,6 +309,7 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            chainPasses: [],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-open-mandatory-first" },
               { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-open-optional-second" },
@@ -324,6 +327,7 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
         pendingTriggers: [],
         pendingTriggerBuckets: [],
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
         absentLegalActions: [
