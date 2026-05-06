@@ -134,6 +134,8 @@ describe("Lua become-target events", () => {
     const target = session.state.cards.find((card) => card.code === "200");
     expect(target).toBeDefined();
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["becameTarget"]);
+    const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -145,6 +147,10 @@ describe("Lua become-target events", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalTrigger!);
+    expect(originalTriggerPreapply.ok).toBe(false);
+    expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
+    expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored become target trigger 200");
   });
