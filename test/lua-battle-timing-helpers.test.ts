@@ -228,12 +228,14 @@ describe("Lua battle timing helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, action!, 0);
     applyLuaRestoreAndAssert(restored, action!);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, pass!, 0);
     applyLuaRestoreAndAssert(restored, pass!);
 
     expect(restored.session.state.battleDamage[1]).toBe(700);
@@ -446,6 +448,7 @@ describe("Lua battle timing helpers", () => {
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(trigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
+    expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
     const staleTriggerResult = applyLuaRestoreResponse(restored, trigger!);
     expect(staleTriggerResult.ok).toBe(false);
@@ -527,6 +530,7 @@ describe("Lua battle timing helpers", () => {
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(trigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
+    expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
 
     expect(restored.host.messages).toEqual(["restored battled trigger true/false"]);
@@ -587,6 +591,7 @@ describe("Lua battle timing helpers", () => {
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1137 });
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toEqual(["restored battle end trigger true/false"]);
   });
@@ -656,6 +661,7 @@ describe("Lua battle timing helpers", () => {
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(trigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
+    expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
 
     expect(restored.host.messages).toEqual(["restored damage step end trigger true/false"]);
@@ -843,4 +849,14 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function expectLuaRestoreStalePreapply(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1) {
+  const staleResult = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(staleResult.ok).toBe(false);
+  expect(staleResult.error).toContain("Response is not currently legal");
+  expect(staleResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
 }
