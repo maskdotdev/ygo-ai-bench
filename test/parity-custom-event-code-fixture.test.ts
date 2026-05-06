@@ -166,7 +166,7 @@ describe("EDOPro parity fixture event codes", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-matching-custom-trigger" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro carries custom event payload fields onto the activated trigger chain link",
@@ -222,7 +222,7 @@ describe("EDOPro parity fixture event codes", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
         }),
       ],
       expected: {
