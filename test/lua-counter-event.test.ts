@@ -237,8 +237,8 @@ describe("Lua counter events", () => {
     moveDuelCard(session.state, source!.uid, "monsterZone", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const scriptName = "counter-add-later-boundary-missed-timing.lua";
+    const script = `
       local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -280,9 +280,68 @@ describe("Lua counter events", () => {
         Debug.Message("damage boundary resolved")
       end)
       damage_watcher:RegisterEffect(damage_effect)
-      `,
-      "counter-add-later-boundary-missed-timing.lua",
-    );
+      `;
+    const sourceScripts = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_MZONE)
+            e:SetOperation(function(e,tp)
+              c:AddCounter(99, 1)
+              Duel.Damage(1, 100, REASON_EFFECT)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c300.lua") {
+          return `
+          c300={}
+          function c300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_ADD_COUNTER)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("when counter resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c400.lua") {
+          return `
+          c400={}
+          function c400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_ADD_COUNTER)
+            e:SetProperty(EFFECT_FLAG_DELAY)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("if counter resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c500.lua") {
+          return `
+          c500={}
+          function c500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_DAMAGE)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("damage boundary resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const loaded = host.loadScript(script, scriptName);
     expect(loaded.ok, loaded.error).toBe(true);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
@@ -295,6 +354,15 @@ describe("Lua counter events", () => {
     expect(session.state.eventHistory).toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "counterAdded", eventCode: 0x10000 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
     );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScripts, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(restoredPendingEffectIds).not.toContain("lua-2-65536");
+    expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-65536", "lua-4-1111"]));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
   });
 
   it("queues remove-counter triggers when Lua removes counters from the field", () => {
