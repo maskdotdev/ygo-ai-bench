@@ -18,6 +18,57 @@ function assertRestoreLegalWindow(session: ReturnType<typeof restoreDuel>, respo
 }
 
 describe("phase action restore", () => {
+  it("restores end turn handoff to the new turn player's open priority", () => {
+    const session = createDuel({ seed: 266, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const turnQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const nextTurnQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(turnQuick).toBeDefined();
+    expect(nextTurnQuick).toBeDefined();
+    registerEffect(session, openOnlyQuick("restore-end-turn-old-turn-open-quick", turnQuick!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-end-turn-new-turn-open-quick", nextTurnQuick!.uid, 1));
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-end-turn-old-turn-open-quick": restoreOpenOnlyQuick,
+      "restore-end-turn-new-turn-open-quick": restoreOpenOnlyQuick,
+    });
+    const endTurn = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn");
+    expect(endTurn).toBeDefined();
+    const result = applyResponse(restored, endTurn!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "open", turnPlayer: 1, turn: 2, phase: "main1", chain: [], pendingTriggers: [] });
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-new-turn-open-quick")).toBe(true);
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-open-quick")).toBe(false);
+    expect(getDuelLegalActions(restored, 0)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 0)).toEqual([]);
+
+    const restoredHandoff = restoreDuel(serializeDuel(restored), createCardReader(cards), {
+      "restore-end-turn-old-turn-open-quick": restoreOpenOnlyQuick,
+      "restore-end-turn-new-turn-open-quick": restoreOpenOnlyQuick,
+    });
+    expect(queryPublicState(restoredHandoff)).toMatchObject({ waitingFor: 1, windowKind: "open", turnPlayer: 1, turn: 2, phase: "main1", chain: [], pendingTriggers: [] });
+    expect(getDuelLegalActions(restoredHandoff, 0)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restoredHandoff, 0)).toEqual([]);
+    expect(getDuelLegalActions(restoredHandoff, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-new-turn-open-quick")).toBe(true);
+    expect(getDuelLegalActions(restoredHandoff, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-open-quick")).toBe(false);
+    expect(getGroupedDuelLegalActions(restoredHandoff, 1).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredHandoff, 1));
+
+    const staleEndTurn = applyResponse(restoredHandoff, endTurn!);
+    expect(staleEndTurn.ok).toBe(false);
+    expect(staleEndTurn.error).toContain("Response is not currently legal");
+    expect(staleEndTurn.legalActions).toEqual(getDuelLegalActions(restoredHandoff, 1));
+    expect(staleEndTurn.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredHandoff, 1));
+    assertRestoreLegalWindow(restoredHandoff, staleEndTurn, 1);
+  });
+
   it("restores phase changes to turn-player open priority without open fast effects", () => {
     const session = createDuel({ seed: 265, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
