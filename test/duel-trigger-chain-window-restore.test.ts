@@ -23,6 +23,7 @@ describe("trigger chain-window restore", () => {
     const restoredFirstBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
     const firstTrigger = getDuelLegalActions(restoredFirstBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-first-chain-window-trigger");
     expect(firstTrigger).toBeDefined();
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredFirstBucket, 0), 0, "restore-first-chain-window-trigger")).toBe(true);
     const afterFirstTrigger = applyAndAssert(restoredFirstBucket, firstTrigger!);
     expect(afterFirstTrigger.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
     expect(afterFirstTrigger.state.pendingTriggers).toEqual([
@@ -34,6 +35,7 @@ describe("trigger chain-window restore", () => {
     const restoredSecondBucket = restoreDuel(serializeDuel(restoredFirstBucket), createCardReader(cards), restoreRegistry());
     const secondTrigger = getDuelLegalActions(restoredSecondBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-second-held-trigger");
     expect(secondTrigger).toBeDefined();
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredSecondBucket, 0), 0, "restore-second-held-trigger")).toBe(true);
     const afterSecondTrigger = applyAndAssert(restoredSecondBucket, secondTrigger!);
     expect(afterSecondTrigger.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(afterSecondTrigger.state.pendingTriggers).toEqual([]);
@@ -89,6 +91,7 @@ describe("trigger chain-window restore", () => {
     expect(getDuelLegalActions(restoredFirstBucket, 0).some((action) => action.type === "declineTrigger")).toBe(false);
     const firstTrigger = getDuelLegalActions(restoredFirstBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-first-mandatory-chain-window-trigger");
     expect(firstTrigger).toBeDefined();
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredFirstBucket, 0), 0, "restore-first-mandatory-chain-window-trigger")).toBe(true);
     const afterFirstTrigger = applyAndAssert(restoredFirstBucket, firstTrigger!);
     expect(afterFirstTrigger.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
     expect(afterFirstTrigger.state.chain.map((link) => link.effectId)).toEqual(["restore-first-mandatory-chain-window-trigger"]);
@@ -102,6 +105,7 @@ describe("trigger chain-window restore", () => {
     expect(getDuelLegalActions(restoredSecondBucket, 0).some((action) => action.type === "declineTrigger")).toBe(false);
     const secondTrigger = getDuelLegalActions(restoredSecondBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-second-mandatory-held-trigger");
     expect(secondTrigger).toBeDefined();
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredSecondBucket, 0), 0, "restore-second-mandatory-held-trigger")).toBe(true);
     const afterSecondTrigger = applyAndAssert(restoredSecondBucket, secondTrigger!);
     expect(afterSecondTrigger.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [] });
     expect(afterSecondTrigger.state.chain.map((link) => link.effectId)).toEqual(["restore-first-mandatory-chain-window-trigger", "restore-second-mandatory-held-trigger"]);
@@ -251,6 +255,20 @@ function hasGroupedEffect(
       group.windowKind === windowKind &&
       group.actions.some(
         (action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowKind === windowKind,
+      ),
+  );
+}
+
+function hasGroupedTrigger(
+  groups: ReturnType<typeof getGroupedDuelLegalActions>,
+  player: 0 | 1,
+  effectId: string,
+): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === "triggerBucket" &&
+      group.actions.some(
+        (action) => action.type === "activateTrigger" && action.player === player && action.effectId === effectId && action.windowId === group.windowId && action.windowKind === "triggerBucket",
       ),
   );
 }
