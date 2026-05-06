@@ -582,6 +582,61 @@ describe("battle declaration restore", () => {
     expect(staleReplay.error).toContain("Response is not currently legal");
     assertLegalWindow(restored, staleReplay, 0);
   });
+
+  it("restores targeted turn after-damage passes into end damage step", () => {
+    const session = createDuel({ seed: 264, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(target).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const battlePhase = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battlePhase).toBeDefined();
+    expect(applyResponse(session, battlePhase!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === target!.uid);
+    expect(attack).toBeDefined();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+    passDamageProgressionToAfterDamageCalculation(session);
+    const opponentAfterDamagePass = getDuelLegalActions(session, 1).find((action) => action.type === "passDamage");
+    expect(opponentAfterDamagePass).toBeDefined();
+    expect(applyResponse(session, opponentAfterDamagePass!).ok).toBe(true);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.currentAttack).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
+    expect(restored.state.damagePasses).toEqual([1]);
+    expect(restored.state.battleStep).toBe("damage");
+    expect(restored.state.battleWindow).toMatchObject({ kind: "afterDamageCalculation", responsePlayer: 0 });
+    const turnAfterDamagePass = getDuelLegalActions(restored, 0).find((action) => action.type === "passDamage");
+    expect(turnAfterDamagePass).toBeDefined();
+
+    const stalePass = applyResponse(restored, { ...turnAfterDamagePass!, windowId: turnAfterDamagePass!.windowId! - 1 });
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    assertLegalWindow(restored, stalePass, 0);
+
+    const passResult = applyResponse(restored, turnAfterDamagePass!);
+    expect(passResult.ok, passResult.error).toBe(true);
+    expect(passResult.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleStep: "damage", battleWindow: { kind: "endDamageStep", responsePlayer: 1 } });
+    expect(restored.state.currentAttack).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
+    expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
+    expect(getDuelLegalActions(restored, 0)).toEqual([]);
+    expect(getDuelLegalActions(restored, 1).some((action) => action.type === "passDamage")).toBe(true);
+    expect(getGroupedDuelLegalActions(restored, 1).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 1));
+    assertLegalWindow(restored, passResult, 1);
+
+    const staleReplay = applyResponse(restored, turnAfterDamagePass!);
+    expect(staleReplay.ok).toBe(false);
+    expect(staleReplay.error).toContain("Response is not currently legal");
+    assertLegalWindow(restored, staleReplay, 1);
+  });
 });
 
 function passDamageProgressionToAfterDamageCalculation(session: ReturnType<typeof createDuel>): void {
