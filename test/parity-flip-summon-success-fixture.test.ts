@@ -42,8 +42,8 @@ describe("EDOPro parity Flip Summon success fixtures", () => {
             windowKind: "open",
             waitingFor: 0,
             phase: "main1",
-            legalActionCounts: { 0: 6, 1: 0 },
-            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActionCounts: { 0: 5, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [{ type: "flipSummon", player: 0, code: "100", location: "monsterZone", windowId: 0, windowKind: "open", count: 1 }],
             legalActionGroups: [
               summonGroup([

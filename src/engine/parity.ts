@@ -22,6 +22,7 @@ import type { DuelChainLimitRestoreRegistry, DuelEffectRestoreRegistry } from "#
 import type {
   DuelAction,
   DuelActionWindowKind,
+  DuelCardInstance,
   DuelCardReader,
   DuelEffectDefinition,
   DuelLocation,
@@ -657,7 +658,7 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
           throw new Error(`Fixture effect could not move ${move.code} for player ${move.player}`);
         }
         const moved = ctx.moveCard(card.uid, move.to, move.controller);
-        if (move.position) moved.position = move.position;
+        applyFixturePosition(moved, move.position);
         if (move.collectEvent) {
           collectDuelTriggerEffects(ctx.duel, move.collectEvent, moved, fixtureMoveEventPayload(move));
         }
@@ -703,9 +704,15 @@ function applyFixtureSetup(session: DuelSession, moves: ScriptedFixtureMove[], f
       return;
     }
     const moved = moveDuelCard(session.state, card.uid, move.to, move.controller);
-    if (move.position) moved.position = move.position;
+    applyFixturePosition(moved, move.position);
     if (move.collectEvent) collectDuelTriggerEffects(session.state, move.collectEvent, moved, fixtureMoveEventPayload(move));
   }
+}
+
+function applyFixturePosition(card: Pick<DuelCardInstance, "position" | "faceUp">, position: ScriptedFixtureMove["position"]): void {
+  if (!position) return;
+  card.position = position;
+  card.faceUp = position !== "faceDown" && position !== "faceDownDefense";
 }
 
 function fixtureMoveEventPayload(move: ScriptedFixtureMove) {

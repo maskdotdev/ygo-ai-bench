@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { directAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { directAttackGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity tribute summon lock fixtures", () => {
   it("removes Tribute Summon actions for high-level monsters affected by cannot-summon effects", () => {
@@ -38,10 +38,14 @@ describe("EDOPro parity tribute summon lock fixtures", () => {
             windowId: 0,
             windowKind: "open",
             waitingFor: 0,
-            legalActionCounts: { 0: 3, 1: 0 },
-            legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open", count: 1 }],
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "tributeSet", player: 0, code: "100", location: "hand", tributeUids: ["p0-deck-200-1"], windowId: 0, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open", count: 1 },
+            ],
             legalActionGroups: [
+              summonGroup([{ type: "tributeSet", player: 0, code: "100", location: "hand", tributeUids: ["p0-deck-200-1"] }], 1, 0),
               {
                 player: 0,
                 label: "Turn",

@@ -38,8 +38,8 @@ describe("EDOPro parity cannot-flip-summon lock fixtures", () => {
             windowId: 0,
             windowKind: "open",
             waitingFor: 0,
-            legalActionCounts: { 0: 3, 1: 0 },
-            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open", count: 1 }],
             legalActionGroups: [
               {

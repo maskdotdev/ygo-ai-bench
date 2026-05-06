@@ -265,7 +265,6 @@ export function attackActions(
 function nextManualPositions(card: DuelCardInstance): CardPosition[] {
   if (card.position === "faceUpAttack") return ["faceUpDefense"];
   if (card.position === "faceUpDefense") return ["faceUpAttack"];
-  if (card.position === "faceDownDefense") return ["faceUpAttack"];
   return [];
 }
 
