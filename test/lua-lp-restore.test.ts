@@ -194,6 +194,106 @@ describe("Lua LP restore helpers", () => {
     assertLuaRestoreLegalWindow(restored, staleReplay, staleReplay.state.waitingFor!);
   });
 
+  it("restores recover missed timing after later event boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Recover Later Source", kind: "monster" },
+      { code: "300", name: "Restore When Recover Watcher", kind: "monster" },
+      { code: "400", name: "Restore If Recover Watcher", kind: "monster" },
+      { code: "500", name: "Restore Recover Damage Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Duel.Recover(0, 900, REASON_EFFECT)
+              Duel.Damage(1, 100, REASON_EFFECT)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c300.lua") {
+          return `
+          c300={}
+          function c300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_RECOVER)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("when recover resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c400.lua") {
+          return `
+          c400={}
+          function c400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_RECOVER)
+            e:SetProperty(EFFECT_FLAG_DELAY)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("if recover resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c500.lua") {
+          return `
+          c500={}
+          function c500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_DAMAGE)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("damage boundary resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 960, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "300", "400", "500"] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.players[0].lifePoints = 6500;
+
+    const host = createLuaScriptHost(session);
+    for (const code of [100, 300, 400, 500]) {
+      const loaded = host.loadCardScript(code, source);
+      expect(loaded.ok, loaded.error).toBe(true);
+    }
+    expect(host.registerInitialEffects()).toBe(4);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1112");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1112", "lua-4-1111"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(restoredPendingEffectIds).not.toContain("lua-2-1112");
+    expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1112", "lua-4-1111"]));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+  });
+
   it("applies restored Lua LP-cost triggers through restore responses", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Restore Cost Starter", kind: "monster" },
