@@ -19,22 +19,26 @@ function assertRestoreLegalWindow(session: ReturnType<typeof restoreDuel>, respo
 
 describe("phase action restore", () => {
   it("restores end turn handoff to the new turn player's open priority", () => {
-    const session = createDuel({ seed: 266, startingHandSize: 1, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 266, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100"] },
-      1: { main: ["400"] },
+      0: { main: ["100", "500"] },
+      1: { main: ["400", "300"] },
     });
     startDuel(session);
 
     const turnQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const oldTurnChainQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
     const nextTurnQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
     expect(turnQuick).toBeDefined();
+    expect(oldTurnChainQuick).toBeDefined();
     expect(nextTurnQuick).toBeDefined();
     registerEffect(session, openOnlyQuick("restore-end-turn-old-turn-open-quick", turnQuick!.uid, 0));
+    registerEffect(session, chainOnlyQuick("restore-end-turn-old-turn-chain-quick", oldTurnChainQuick!.uid, 0));
     registerEffect(session, openOnlyQuick("restore-end-turn-new-turn-open-quick", nextTurnQuick!.uid, 1));
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
       "restore-end-turn-old-turn-open-quick": restoreOpenOnlyQuick,
+      "restore-end-turn-old-turn-chain-quick": restoreChainOnlyQuick,
       "restore-end-turn-new-turn-open-quick": restoreOpenOnlyQuick,
     });
     const endTurn = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "endTurn");
@@ -47,11 +51,13 @@ describe("phase action restore", () => {
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-new-turn-open-quick")).toBe(true);
     expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-open-quick")).toBe(false);
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-chain-quick")).toBe(false);
     expect(getDuelLegalActions(restored, 0)).toEqual([]);
     expect(getGroupedDuelLegalActions(restored, 0)).toEqual([]);
 
     const restoredHandoff = restoreDuel(serializeDuel(restored), createCardReader(cards), {
       "restore-end-turn-old-turn-open-quick": restoreOpenOnlyQuick,
+      "restore-end-turn-old-turn-chain-quick": restoreChainOnlyQuick,
       "restore-end-turn-new-turn-open-quick": restoreOpenOnlyQuick,
     });
     expect(queryPublicState(restoredHandoff)).toMatchObject({ waitingFor: 1, windowKind: "open", turnPlayer: 1, turn: 2, phase: "main1", chain: [], pendingTriggers: [] });
@@ -59,14 +65,39 @@ describe("phase action restore", () => {
     expect(getGroupedDuelLegalActions(restoredHandoff, 0)).toEqual([]);
     expect(getDuelLegalActions(restoredHandoff, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-new-turn-open-quick")).toBe(true);
     expect(getDuelLegalActions(restoredHandoff, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-open-quick")).toBe(false);
+    expect(getDuelLegalActions(restoredHandoff, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-chain-quick")).toBe(false);
     expect(getGroupedDuelLegalActions(restoredHandoff, 1).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredHandoff, 1));
+
+    const newTurnQuick = getDuelLegalActions(restoredHandoff, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-new-turn-open-quick");
+    expect(newTurnQuick).toBeDefined();
+    const chainWindow = applyResponse(restoredHandoff, newTurnQuick!);
+    expect(chainWindow.ok, chainWindow.error).toBe(true);
+    expect(chainWindow.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", turnPlayer: 1, turn: 2, phase: "main1" });
+    expect(restoredHandoff.state.chainPasses).toEqual([]);
+    expect(chainWindow.state.chain.map((link) => link.effectId)).toEqual(["restore-end-turn-new-turn-open-quick"]);
+    expect(chainWindow.legalActions).toEqual(getDuelLegalActions(restoredHandoff, 0));
+    expect(chainWindow.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredHandoff, 0));
+    expect(chainWindow.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-chain-quick")).toBe(true);
+    expect(chainWindow.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-open-quick")).toBe(false);
+    expect(getDuelLegalActions(restoredHandoff, 1)).toEqual([]);
+
+    const restoredChainWindow = restoreDuel(serializeDuel(restoredHandoff), createCardReader(cards), {
+      "restore-end-turn-old-turn-open-quick": restoreOpenOnlyQuick,
+      "restore-end-turn-old-turn-chain-quick": restoreChainOnlyQuick,
+      "restore-end-turn-new-turn-open-quick": restoreOpenOnlyQuick,
+    });
+    expect(queryPublicState(restoredChainWindow)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", turnPlayer: 1, turn: 2, phase: "main1" });
+    expect(restoredChainWindow.state.chain.map((link) => link.effectId)).toEqual(["restore-end-turn-new-turn-open-quick"]);
+    expect(getDuelLegalActions(restoredChainWindow, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-chain-quick")).toBe(true);
+    expect(getDuelLegalActions(restoredChainWindow, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-open-quick")).toBe(false);
+    expect(getGroupedDuelLegalActions(restoredChainWindow, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredChainWindow, 0));
 
     const staleEndTurn = applyResponse(restoredHandoff, endTurn!);
     expect(staleEndTurn.ok).toBe(false);
     expect(staleEndTurn.error).toContain("Response is not currently legal");
-    expect(staleEndTurn.legalActions).toEqual(getDuelLegalActions(restoredHandoff, 1));
-    expect(staleEndTurn.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredHandoff, 1));
-    assertRestoreLegalWindow(restoredHandoff, staleEndTurn, 1);
+    expect(staleEndTurn.legalActions).toEqual(getDuelLegalActions(restoredHandoff, 0));
+    expect(staleEndTurn.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredHandoff, 0));
+    assertRestoreLegalWindow(restoredHandoff, staleEndTurn, 0);
   });
 
   it("restores phase changes to turn-player open priority without open fast effects", () => {
@@ -225,6 +256,27 @@ function restoreOpenOnlyQuick(effect: Omit<DuelEffectDefinition, "operation">): 
     ...effect,
     canActivate(ctx) {
       return ctx.duel.chain.length === 0;
+    },
+    operation(ctx) {
+      ctx.log(`${effect.id} resolved`);
+    },
+  };
+}
+
+function chainOnlyQuick(id: string, sourceUid: string, controller: 0 | 1): DuelEffectDefinition {
+  return {
+    ...openOnlyQuick(id, sourceUid, controller),
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
+    },
+  };
+}
+
+function restoreChainOnlyQuick(effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition {
+  return {
+    ...effect,
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
     },
     operation(ctx) {
       ctx.log(`${effect.id} resolved`);
