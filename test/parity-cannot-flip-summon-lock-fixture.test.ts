@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentSummonGroup } from "./parity-legal-action-group-helpers.js";
+import { absentSummonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity cannot-flip-summon lock fixtures", () => {
   it("removes Flip Summon actions for monsters affected by cannot-flip-summon effects", () => {
@@ -66,7 +66,15 @@ describe("EDOPro parity cannot-flip-summon lock fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state preserves the locked monster's face-down position",
         phase: "battle",
+        windowId: 1,
         cards: [{ uid: "p0-deck-100-0", position: "faceDownDefense" }],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(1)],
       },
     };
 

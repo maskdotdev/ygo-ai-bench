@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { attackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity field position lock fixtures", () => {
   it("removes manual position changes when another monster applies cannot-change-position to its field", () => {
@@ -81,8 +82,24 @@ describe("EDOPro parity field position lock fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state preserves field-scoped position locks",
         phase: "battle",
+        windowId: 1,
         locations: { monsterZone: ["100", "200"] },
         positionsChanged: [],
+        legalActionCounts: { 0: 4, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 1, windowKind: "open", count: 1 },
+          { type: "declareAttack", player: 0, attackerUid: "p0-deck-200-1", directAttack: true, windowId: 1, windowKind: "open", count: 1 },
+          { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          attackGroup([
+            { attackerUid: "p0-deck-100-0", directAttack: true },
+            { attackerUid: "p0-deck-200-1", directAttack: true },
+          ], 1, 1),
+          turnGroup(1),
+        ],
       },
     };
 
