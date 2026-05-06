@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup } from "./parity-legal-action-group-helpers.js";
+import { absentAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle target-count replay fixtures", () => {
   it("opens replay choices when the number of attack targets changes", () => {
@@ -210,6 +210,13 @@ describe("EDOPro parity battle target-count replay fixtures", () => {
               { uid: "p1-deck-200-1", location: "monsterZone", controller: 1 },
               { uid: "p1-deck-200-2", location: "graveyard", controller: 1 },
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 29, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 29, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(29)],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 29, windowKind: "open" }],
             absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, undefined, 29)],
           },
@@ -236,6 +243,13 @@ describe("EDOPro parity battle target-count replay fixtures", () => {
           { uid: "p1-deck-200-1", location: "monsterZone", controller: 1 },
           { uid: "p1-deck-200-2", location: "graveyard", controller: 1 },
         ],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 29, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 29, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(29)],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 29, windowKind: "open" }],
         absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, undefined, 29)],
         logIncludes: ["Fixture target count changed before replay", "Replay decision pending", "Replayed attack on Replay Target"],
