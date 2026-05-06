@@ -125,6 +125,8 @@ describe("Lua battle fast priority restore", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passChain", player: 1, windowKind: "chainResponse" })]));
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "chainResponse", uid: expect.stringContaining("400") })]));
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
 
     const staleQuick = applyLuaRestoreResponse(restored, quick!);
@@ -180,6 +182,8 @@ describe("Lua battle fast priority restore", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passChain", player: 1, windowKind: "chainResponse" })]));
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "chainResponse", uid: expect.stringContaining("400") })]));
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
 
     const staleQuick = applyLuaRestoreResponse(restored, quick!);
@@ -237,6 +241,8 @@ describe("Lua battle fast priority restore", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passChain", player: 1, windowKind: "chainResponse" })]));
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "chainResponse", uid: expect.stringContaining("400") })]));
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
 
     const staleQuick = applyLuaRestoreResponse(restored, quick!);
@@ -295,6 +301,8 @@ describe("Lua battle fast priority restore", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passChain", player: 1, windowKind: "chainResponse" })]));
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "chainResponse", uid: expect.stringContaining("400") })]));
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
 
     const staleQuick = applyLuaRestoreResponse(restored, quick!);
