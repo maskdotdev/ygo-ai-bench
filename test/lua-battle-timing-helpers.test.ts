@@ -729,6 +729,7 @@ describe("Lua battle timing helpers", () => {
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     expect(trigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
+    expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
 
     expect(restored.host.messages).toEqual(["restored battle damage trigger 1/1800/32/0/6200"]);
