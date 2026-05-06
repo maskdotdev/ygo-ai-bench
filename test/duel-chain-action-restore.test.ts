@@ -485,6 +485,7 @@ describe("chain action restore", () => {
     expect(declined.ok, declined.error).toBe(true);
     expect(declined.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
     expect(declined.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-chain-ended-decline-open-quick", windowKind: "open" })]));
+    expect(declined.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-chain-ended-decline-opponent-quick")).toBe(false);
     expect(restoredTriggerBucket.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "restore-chain-ended-decline-trigger")).toBe(true);
     expect(restoredTriggerBucket.state.log.some((entry) => entry.detail === "Restored chain-ended decline trigger resolved")).toBe(false);
     expect(getDuelLegalActions(restoredTriggerBucket, 1)).toEqual([]);
