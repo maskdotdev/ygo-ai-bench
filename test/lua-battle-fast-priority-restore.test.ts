@@ -31,6 +31,7 @@ describe("Lua battle fast priority restore", () => {
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
+    expect(hasGroupedPass(getLuaRestoreLegalActionGroups(restored, 1), 1)).toBe(true);
     const staleBeforePass = applyLuaRestoreResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
     expect(staleBeforePass.ok).toBe(false);
     expect(staleBeforePass.error).toContain("Response is not currently legal");
@@ -82,6 +83,7 @@ describe("Lua battle fast priority restore", () => {
     expect(hasGroupedLuaEffect(getLuaRestoreLegalActionGroups(restored, 1), 1, "500", "chainResponse")).toBe(false);
     const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
+    expect(hasGroupedPass(getLuaRestoreLegalActionGroups(restored, 1), 1)).toBe(true);
 
     const result = applyLuaRestoreAndAssert(restored, pass!);
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleStep: "damage", battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
@@ -123,6 +125,7 @@ describe("Lua battle fast priority restore", () => {
     expect(hasGroupedLuaEffect(getLuaRestoreLegalActionGroups(restored, 1), 1, "500", "chainResponse")).toBe(false);
     const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
+    expect(hasGroupedPass(getLuaRestoreLegalActionGroups(restored, 1), 1)).toBe(true);
 
     const result = applyLuaRestoreAndAssert(restored, pass!);
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleStep: "damageCalculation", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 1 } });
@@ -961,5 +964,13 @@ function hasGroupedLuaEffect(
 ): boolean {
   return groups.some((group) =>
     group.windowKind === windowKind && group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.uid.includes(code) && action.windowKind === windowKind),
+  );
+}
+
+function hasGroupedPass(groups: ReturnType<typeof getLuaRestoreLegalActionGroups>, player: 0 | 1): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === "chainResponse" &&
+      group.actions.some((action) => action.type === "passChain" && action.player === player && action.windowId === group.windowId && action.windowKind === "chainResponse"),
   );
 }
