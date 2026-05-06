@@ -265,6 +265,65 @@ describe("battle declaration restore", () => {
     expect(staleReplay.error).toContain("Response is not currently legal");
     assertLegalWindow(restored, staleReplay, 0);
   });
+
+  it("restores targeted turn start-damage passes into before-damage calculation", () => {
+    const session = createDuel({ seed: 259, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(target).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const battlePhase = getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
+    expect(battlePhase).toBeDefined();
+    expect(applyResponse(session, battlePhase!).ok).toBe(true);
+    const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === target!.uid);
+    expect(attack).toBeDefined();
+    expect(applyResponse(session, attack!).ok).toBe(true);
+    const opponentAttackPass = getDuelLegalActions(session, 1).find((action) => action.type === "passAttack");
+    expect(opponentAttackPass).toBeDefined();
+    expect(applyResponse(session, opponentAttackPass!).ok).toBe(true);
+    const turnAttackPass = getDuelLegalActions(session, 0).find((action) => action.type === "passAttack");
+    expect(turnAttackPass).toBeDefined();
+    expect(applyResponse(session, turnAttackPass!).ok).toBe(true);
+    const opponentDamagePass = getDuelLegalActions(session, 1).find((action) => action.type === "passDamage");
+    expect(opponentDamagePass).toBeDefined();
+    expect(applyResponse(session, opponentDamagePass!).ok).toBe(true);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.currentAttack).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
+    expect(restored.state.damagePasses).toEqual([1]);
+    expect(restored.state.battleWindow).toMatchObject({ kind: "startDamageStep", responsePlayer: 0 });
+    const turnDamagePass = getDuelLegalActions(restored, 0).find((action) => action.type === "passDamage");
+    expect(turnDamagePass).toBeDefined();
+
+    const stalePass = applyResponse(restored, { ...turnDamagePass!, windowId: turnDamagePass!.windowId! - 1 });
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    assertLegalWindow(restored, stalePass, 0);
+
+    const passResult = applyResponse(restored, turnDamagePass!);
+    expect(passResult.ok, passResult.error).toBe(true);
+    expect(passResult.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "beforeDamageCalculation", responsePlayer: 1 } });
+    expect(restored.state.currentAttack).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
+    expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
+    expect(getDuelLegalActions(restored, 0)).toEqual([]);
+    expect(getDuelLegalActions(restored, 1).some((action) => action.type === "passDamage")).toBe(true);
+    expect(getGroupedDuelLegalActions(restored, 1).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 1));
+    assertLegalWindow(restored, passResult, 1);
+
+    const staleReplay = applyResponse(restored, turnDamagePass!);
+    expect(staleReplay.ok).toBe(false);
+    expect(staleReplay.error).toContain("Response is not currently legal");
+    assertLegalWindow(restored, staleReplay, 1);
+  });
 });
 
 function battleQuickEffect(id: string, sourceUid: string, controller: 0 | 1): DuelEffectDefinition {
