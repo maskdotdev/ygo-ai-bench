@@ -224,7 +224,10 @@ describe("Lua stale trigger responses", () => {
     const restoredTrigger = getDuelLegalActions(restored.session, 0).find((action) => action.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
     expect(restoredTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
-    applyLuaRestoreAndAssert(restored, restoredTrigger!);
+    const restoredActivation = applyLuaRestoreAndAssert(restored, restoredTrigger!);
+    expect(restoredActivation.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(restoredActivation.state.chain).toHaveLength(0);
+    expect(restoredActivation.state.pendingTriggers).toHaveLength(0);
     const replay = applyLuaRestoreResponse(restored, staleTrigger!);
 
     expect(replay.ok).toBe(false);
