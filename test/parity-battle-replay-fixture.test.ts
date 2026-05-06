@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup, absentOpenAttackGroup } from "./parity-legal-action-group-helpers.js";
+import { absentAttackGroup, absentOpenAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle replay fixtures", () => {
   it("opens a replay decision and allows canceling when the attack target leaves", () => {
@@ -190,6 +190,13 @@ describe("EDOPro parity battle replay fixtures", () => {
             battleWindow: null,
             lifePoints: { 0: 8000, 1: 8000 },
             locations: { monsterZone: ["100"], graveyard: ["200"] },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 17, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 17, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(17)],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 17, windowKind: "open" }],
             absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 17)],
             logIncludes: ["Canceled replay attack"],
@@ -214,6 +221,13 @@ describe("EDOPro parity battle replay fixtures", () => {
           { uid: "p0-deck-100-0", location: "monsterZone", controller: 0 },
           { uid: "p1-deck-200-1", location: "graveyard", controller: 1 },
         ],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 17, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 17, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(17)],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 17, windowKind: "open" }],
         absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 17)],
         logIncludes: ["Fixture target left before replay", "Replay decision pending", "Canceled replay attack"],
