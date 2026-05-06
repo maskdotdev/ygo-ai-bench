@@ -207,11 +207,12 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
   }
 }
 
-export function declineDuelPendingTrigger(session: DuelSession, player: PlayerId, triggerId: string, triggerBucket: TriggerBucket): void {
+export function declineDuelPendingTrigger(session: DuelSession, player: PlayerId, triggerId: string, triggerBucket: TriggerBucket): DuelState["pendingTriggers"][number] {
   const trigger = takePendingTrigger(session.state, player, triggerId, triggerBucket);
   const source = findCard(session.state, trigger.sourceUid);
   pushDuelLog(session.state, "declineTrigger", player, source?.name, trigger.effectId);
   setWaitingForPendingTriggerBucket(session.state);
+  return trigger;
 }
 
 export function finishDuelPendingTriggerSelection(session: DuelSession, handlers: DuelActivationHandlers): void {

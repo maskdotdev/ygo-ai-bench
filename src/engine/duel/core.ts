@@ -1,5 +1,6 @@
 import { markDuelPhaseActivity, recordSpecialSummonActivity } from "#duel/activity.js";
 import { clearChainLimits, clearStaleChainLimits } from "#duel/chain-limits.js";
+import { collectDeferredChainEndedAfterDecline } from "#duel/chain-lifecycle.js";
 import { isDuelMonsterLike, isFaceUpPendulumExtraDeckCard } from "#duel/card-predicates.js";
 import {
   findCard,
@@ -249,8 +250,9 @@ const responseHandlers: DuelResponseHandlers = {
     activateDuelPendingTrigger(session, response.player, response.triggerId, response.triggerBucket, activationHandlers);
   },
   declineTrigger(session, response) {
-    declineDuelPendingTrigger(session, response.player, response.triggerId, response.triggerBucket);
+    const declinedTrigger = declineDuelPendingTrigger(session, response.player, response.triggerId, response.triggerBucket);
     finishDuelPendingTriggerSelection(session, activationHandlers);
+    collectDeferredChainEndedAfterDecline(session.state, declinedTrigger, () => collectTriggerEffects(session.state, "chainEnded"));
     continueAttackResponseWindow(session.state, battleContinuationHandlers);
   },
   flipSummon: flipSummonDuelCard,
