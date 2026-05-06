@@ -55,6 +55,7 @@ describe("trigger bucket restore handoff", () => {
 
     const declined = applyAndAssert(restoredOpponentBucket, opponentDecline!);
     expect(declined.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restoredOpponentBucket.state.chainPasses).toEqual([]);
     expect(declined.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-open-priority-after-opponent-decline", windowKind: "open" })]));
     expect(hasGroupedEffect(declined.legalActionGroups, 0, "restore-open-priority-after-opponent-decline", "open")).toBe(true);
     expect(declined.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-chain-priority-after-opponent-decline")).toBe(false);
@@ -158,6 +159,7 @@ describe("trigger bucket restore handoff", () => {
     expect(getDuelLegalActions(restoredChainWindow, 1)).toEqual([]);
     const restoredAfterResolution = restoreDuel(serializeDuel(restoredChainWindow), createCardReader(cards), restoreActivationRegistry());
     expect(queryPublicState(restoredAfterResolution)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredAfterResolution.state.chainPasses).toEqual([]);
     expect(actionsWithoutWindowToken(getDuelLegalActions(restoredAfterResolution, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(restoredChainWindow, 0)));
     expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredAfterResolution, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredChainWindow, 0)));
     expect(getDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
@@ -261,6 +263,7 @@ describe("trigger bucket restore handoff", () => {
     expect(hasGroupedEffect(resolved.legalActionGroups, 1, "restore-opponent-open-after-opponent-mandatory", "open")).toBe(false);
     const restoredAfterResolution = restoreDuel(serializeDuel(restoredChainWindow), createCardReader(cards), restoreMandatoryRegistry());
     expect(queryPublicState(restoredAfterResolution)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredAfterResolution.state.chainPasses).toEqual([]);
     expect(actionsWithoutWindowToken(getDuelLegalActions(restoredAfterResolution, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(restoredChainWindow, 0)));
     expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredAfterResolution, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredChainWindow, 0)));
     expect(getDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
