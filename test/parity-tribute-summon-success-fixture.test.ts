@@ -43,7 +43,7 @@ describe("EDOPro parity Tribute Summon success fixtures", () => {
             windowKind: "open",
             waitingFor: 0,
             phase: "main1",
-            legalActionCounts: { 0: 6, 1: 0 },
+            legalActionCounts: { 0: 7, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
             legalActions: [
               { type: "tributeSummon", player: 0, code: "100", location: "hand", tributeUids: ["p0-deck-200-1"], windowId: 0, windowKind: "open", count: 1 },
@@ -51,6 +51,7 @@ describe("EDOPro parity Tribute Summon success fixtures", () => {
             legalActionGroups: [
               summonGroup([
                 { type: "tributeSummon", player: 0, code: "100", location: "hand", tributeUids: ["p0-deck-200-1"] },
+                { type: "tributeSet", player: 0, code: "100", location: "hand", tributeUids: ["p0-deck-200-1"] },
                 { type: "normalSummon", player: 0, code: "300", location: "hand" },
                 { type: "setMonster", player: 0, code: "300", location: "hand" },
               ], 1, 0),
@@ -134,6 +135,7 @@ describe("EDOPro parity Tribute Summon success fixtures", () => {
         windowId: 2,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         locations: { monsterZone: ["100"], graveyard: ["200"], hand: ["300"] },
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
