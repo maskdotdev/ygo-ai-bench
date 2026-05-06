@@ -66,6 +66,7 @@ function assertBattleReplayRestore(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT
   expect(pass).toBeDefined();
   const resolved = applyLuaRestoreAndAssert(restoredOpponentResponse, pass!);
   expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: expectedWindow, responsePlayer: 1 } });
+  expect(restoredOpponentResponse.session.state.chainPasses).toEqual([]);
   if (expectedWindow === "duringDamageCalculation") expect(resolved.state).toMatchObject({ battleStep: "damageCalculation" });
   expect(resolved.legalActions).toEqual(expect.arrayContaining([
     expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") }),
