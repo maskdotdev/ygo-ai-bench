@@ -142,6 +142,13 @@ function runRandomBoundaryRestore(options: {
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+  const restoredLegalEffectIds = getLuaRestoreTriggerEffectIds(restored, 0);
+  expect(restoredLegalEffectIds).not.toContain(options.staleEffectId);
+  expect(restoredLegalEffectIds).toEqual(expect.arrayContaining([options.survivingEffectId, "lua-4-1111"]));
+}
+
+function getLuaRestoreTriggerEffectIds(restored: Parameters<typeof getLuaRestoreLegalActions>[0], player: 0 | 1): string[] {
+  return getLuaRestoreLegalActions(restored, player).flatMap((action) => (action.type === "activateTrigger" ? [action.effectId] : []));
 }
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
