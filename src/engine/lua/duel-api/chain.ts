@@ -296,7 +296,7 @@ function capturedResponsePlayer(L: unknown, index: number): PlayerId | undefined
 }
 
 function isResponsePlayerUpvalueName(name: string): boolean {
-  return name === "responsePlayer" || name === "response_player";
+  return name === "responsePlayer" || name === "response_player" || name === "rp";
 }
 
 function capturedChainPlayer(L: unknown, index: number): PlayerId | undefined {
