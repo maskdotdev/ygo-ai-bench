@@ -325,11 +325,14 @@ function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSu
 
   const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
   expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+  expect(getDuelLegalActions(restored, 1)).toEqual([]);
+  expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
   const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === type && candidate.uid === target!.uid);
   expect(action).toMatchObject({ type, materialUids: materials.map((card) => card.uid) });
   if (!action || action.type !== type) throw new Error(`Expected restored full-zone ${type} action`);
   const restoredWindowId = queryPublicState(restored).actionWindowId;
   expect(action).toMatchObject({ windowId: restoredWindowId, windowKind: "open" });
+  expect(hasGroupedExtraDeckSummon(restored, type, target!.uid)).toBe(true);
 
   const staleBeforeSummon = applyResponse(restored, { ...action, windowId: restoredWindowId - 1 });
   expect(staleBeforeSummon.ok).toBe(false);
@@ -356,6 +359,12 @@ function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSu
   expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, staleResult.state.waitingFor!));
   expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, staleResult.state.waitingFor!));
   assertRestoreLegalWindow(restored, staleResult, staleResult.state.waitingFor!);
+}
+
+function hasGroupedExtraDeckSummon(restored: ReturnType<typeof restoreDuel>, type: "fusionSummon" | "synchroSummon" | "xyzSummon" | "linkSummon", uid: string): boolean {
+  return getGroupedDuelLegalActions(restored, 0).some((group) =>
+    group.actions.some((action) => action.type === type && action.uid === uid),
+  );
 }
 
 describe("full-zone extra deck summon restore", () => {
