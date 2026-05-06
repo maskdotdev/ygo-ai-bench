@@ -142,13 +142,22 @@ function runRandomBoundaryRestore(options: {
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+  expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+  expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
   const restoredLegalEffectIds = getLuaRestoreTriggerEffectIds(restored, 0);
   expect(restoredLegalEffectIds).not.toContain(options.staleEffectId);
   expect(restoredLegalEffectIds).toEqual(expect.arrayContaining([options.survivingEffectId, "lua-4-1111"]));
+  expect(hasGroupedTrigger(restored, 0, options.survivingEffectId)).toBe(true);
+  expect(hasGroupedTrigger(restored, 0, "lua-4-1111")).toBe(true);
+  expect(hasGroupedTrigger(restored, 0, options.staleEffectId)).toBe(false);
 }
 
 function getLuaRestoreTriggerEffectIds(restored: Parameters<typeof getLuaRestoreLegalActions>[0], player: 0 | 1): string[] {
   return getLuaRestoreLegalActions(restored, player).flatMap((action) => (action.type === "activateTrigger" ? [action.effectId] : []));
+}
+
+function hasGroupedTrigger(restored: Parameters<typeof getLuaRestoreLegalActions>[0], player: 0 | 1, effectId: string): boolean {
+  return getLuaRestoreLegalActionGroups(restored, player).some((group) => group.actions.some((action) => action.type === "activateTrigger" && action.effectId === effectId));
 }
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
