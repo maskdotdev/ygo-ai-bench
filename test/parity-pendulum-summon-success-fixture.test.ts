@@ -133,6 +133,22 @@ describe("EDOPro parity Pendulum Summon success fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [],
             legalActionCounts: { 0: 5, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "normalSummon", player: 0, code: "400", location: "hand", windowId: 2, windowKind: "open", count: 1 },
+              { type: "setMonster", player: 0, code: "400", location: "hand", windowId: 2, windowKind: "open", count: 1 },
+              { type: "tributeSummon", player: 0, code: "500", location: "hand", tributeUids: ["p0-deck-300-2"], windowId: 2, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "tributeSummon", player: 0, code: "500", location: "hand", tributeUids: ["p0-deck-300-2"] },
+              ], 1, 2),
+              turnGroup(2),
+            ],
             absentLegalActions: [{ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-500-4"], windowId: 2, windowKind: "open" }],
             absentLegalActionGroups: [
               {
@@ -160,6 +176,7 @@ describe("EDOPro parity Pendulum Summon success fixtures", () => {
         legalActions: [
           { type: "normalSummon", player: 0, code: "400", location: "hand", windowId: 2, windowKind: "open", count: 1 },
           { type: "setMonster", player: 0, code: "400", location: "hand", windowId: 2, windowKind: "open", count: 1 },
+          { type: "tributeSummon", player: 0, code: "500", location: "hand", tributeUids: ["p0-deck-300-2"], windowId: 2, windowKind: "open", count: 1 },
           { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
           { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
         ],
@@ -167,6 +184,7 @@ describe("EDOPro parity Pendulum Summon success fixtures", () => {
           summonGroup([
             { type: "normalSummon", player: 0, code: "400", location: "hand" },
             { type: "setMonster", player: 0, code: "400", location: "hand" },
+            { type: "tributeSummon", player: 0, code: "500", location: "hand", tributeUids: ["p0-deck-300-2"] },
           ], 1, 2),
           turnGroup(2),
         ],
