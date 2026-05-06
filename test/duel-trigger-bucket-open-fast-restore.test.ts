@@ -152,10 +152,16 @@ describe("trigger bucket open fast restore", () => {
     const resolved = applyAndAssert(restoredOpponentResponse, opponentPass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
     expect(resolved.legalActions.filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-fast-alt-turn-open-quick"]);
+    expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
+    expect(hasGroupedEffect(restoredOpponentResponse, 0, "restore-fast-alt-turn-open-quick", "open")).toBe(true);
+    expect(hasGroupedEffect(restoredOpponentResponse, 0, "restore-fast-alt-turn-chain-quick", "open")).toBe(false);
+    expect(hasGroupedEffect(restoredOpponentResponse, 1, "restore-fast-alt-opponent-open-quick", "open")).toBe(false);
     expect(getDuelLegalActions(restoredOpponentResponse, 1)).toEqual([]);
     const staleTurnChain = applyResponse(restoredTurnResponse, turnChain!);
     expect(staleTurnChain.ok).toBe(false);
     expect(staleTurnChain.error).toContain("Response is not currently legal");
+    expect(staleTurnChain.legalActions).toEqual(getDuelLegalActions(restoredTurnResponse, 1));
+    expect(staleTurnChain.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTurnResponse, 1));
   });
 
   it("resolves restored trigger-chain fast-effect alternation after the opponent chains", () => {
