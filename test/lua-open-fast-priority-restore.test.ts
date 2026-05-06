@@ -682,7 +682,9 @@ function assertLuaFinalOpenRestore(restored: ReturnType<typeof restoreDuelWithLu
   expect(publicFinalOpen).not.toHaveProperty("triggerOrderPrompt");
   expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restoredFinalOpen, 0))).toEqual(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0)));
   expect(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restoredFinalOpen, 0))).toEqual(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restored, 0)));
+  expect(getLuaRestoreLegalActionGroups(restoredFinalOpen, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredFinalOpen, 0));
   expect(getLuaRestoreLegalActions(restoredFinalOpen, 1)).toEqual([]);
+  expect(getLuaRestoreLegalActionGroups(restoredFinalOpen, 1)).toEqual([]);
 }
 
 function actionsWithoutWindowToken(actions: DuelAction[]): Array<Omit<DuelAction, "windowToken">> {
