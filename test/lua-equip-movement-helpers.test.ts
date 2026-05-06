@@ -8,6 +8,7 @@ import {
   getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  queryPublicState,
   serializeDuel,
   specialSummonDuelCard,
   startDuel,
@@ -214,6 +215,8 @@ describe("Lua equip movement helpers", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["equipped"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1121, eventCardUid: equip!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 2 });
+    expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
+    expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -932,7 +935,15 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  assertPublicRestoreMetadata(restored, response);
   return response;
+}
+
+function assertPublicRestoreMetadata(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: ReturnType<typeof applyLuaRestoreResponse>): void {
+  const publicState = queryPublicState(restored.session);
+  expect(response.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) expect(response.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  else expect(response.state).not.toHaveProperty("triggerOrderPrompt");
 }
 
 function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
