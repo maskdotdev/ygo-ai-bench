@@ -148,6 +148,26 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
         chain: [],
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "trigger-chain-turn-open-quick", count: 1 },
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "trigger-chain-turn-open-quick", count: 1 }],
+          },
+          turnGroup(3),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "trigger-chain-opponent-chain-quick" },
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "200", location: "hand" },
+        ],
         logIncludes: ["Summon success trigger resolved"],
       },
     };
