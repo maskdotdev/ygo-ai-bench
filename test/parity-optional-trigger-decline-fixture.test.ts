@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity optional trigger decline fixtures", () => {
   it("lets the trigger player decline one same-bucket optional trigger while preserving the next", () => {
@@ -173,6 +174,13 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
           { eventName: "chainEnded" },
         ],
         locations: { monsterZone: ["100"], hand: ["300", "400"] },
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(3)],
         logIncludes: ["fixture-first-optional", "Second optional resolved"],
       },
     };

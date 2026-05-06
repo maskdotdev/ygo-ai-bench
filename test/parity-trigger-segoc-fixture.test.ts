@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity SEGOC trigger fixtures", () => {
   it("orders turn-player mandatory triggers before non-turn mandatory triggers", () => {
@@ -135,6 +136,13 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
         waitingFor: 0,
         pendingTriggers: [],
         chain: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(3)],
         logIncludes: ["Turn mandatory resolved", "Opponent mandatory resolved"],
       },
     };
