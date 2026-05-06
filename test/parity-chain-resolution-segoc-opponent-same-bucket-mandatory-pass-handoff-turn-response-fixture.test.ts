@@ -1,0 +1,221 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  chainEffectGroup,
+  chainPassGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-handoff turn-response fixture", () => {
+  it("reopens opponent responses after the turn player answers a restored opponent mandatory handoff response", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Opponent Mandatory Turn Response Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Opponent Mandatory Turn Response Turn Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Opponent Mandatory Turn Response Turn Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Opponent Mandatory Turn Response First Opponent", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Opponent Mandatory Turn Response Second Opponent", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "700", name: "Opponent Mandatory Turn Response Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Mandatory Turn Response Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Opponent Mandatory Turn Response First Opponent Quick", kind: "monster", attack: 1600, defense: 1000 },
+      { code: "950", name: "Opponent Mandatory Turn Response Second Opponent Quick", kind: "monster", attack: 1300, defense: 1300 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution opponent same-bucket mandatory pass-handoff turn-response fixture",
+      options: { seed: 360, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "700", "800"] },
+        1: { main: ["400", "500", "900", "950", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-chain-resolution-opponent-mandatory-turn-response-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 1, code: "900", from: "hand", to: "graveyard" },
+              { player: 1, code: "950", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Chain resolution opponent mandatory turn response starter resolved",
+          },
+          {
+            id: "fixture-chain-resolution-turn-mandatory-turn-response",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain resolution turn mandatory turn response should not resolve",
+          },
+          {
+            id: "fixture-chain-resolution-first-opponent-mandatory-turn-response",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain resolution first opponent mandatory turn response should not resolve",
+          },
+          {
+            id: "fixture-chain-resolution-second-opponent-mandatory-turn-response",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain resolution second opponent mandatory turn response should not resolve yet",
+          },
+          {
+            id: "fixture-chain-resolution-opponent-mandatory-turn-response-turn-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain resolution opponent mandatory turn response turn quick should not resolve yet",
+          },
+          {
+            id: "fixture-chain-resolution-opponent-mandatory-turn-response-first-opponent-quick",
+            player: 1,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain resolution opponent mandatory turn response first opponent quick should not resolve yet",
+          },
+          {
+            id: "fixture-chain-resolution-opponent-mandatory-turn-response-second-opponent-quick",
+            player: 1,
+            code: "950",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain resolution opponent mandatory turn response second opponent quick should not resolve yet",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-starter" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-resolution-turn-mandatory-turn-response" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-second-opponent-mandatory-turn-response" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-first-opponent-mandatory-turn-response" })),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro hands restored opponent mandatory trigger-chain responses to the opponent before any opponent handoff response is chosen",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-turn-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-turn-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-turn-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+            ],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-first-opponent-quick", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-second-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 5,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-first-opponent-quick", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-second-opponent-quick", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-turn-response", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-turn-response-turn-quick", 5),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-turn-response", "opponentMandatory", 5, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "800", "400", "500", "800"] },
+            logIncludes: ["Chain resolution opponent mandatory turn response starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-first-opponent-quick" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-turn-quick" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro gives the opponent another chain-response window when they still have a response after the turn player answers a restored opponent mandatory handoff chain",
+        phase: "main1",
+        windowId: 7,
+        windowKind: "chainResponse",
+        waitingFor: 1,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [
+          { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-turn-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+          { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-turn-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+          { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-turn-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+          { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-first-opponent-quick", sourceUid: "p1-deck-900-2" },
+          { player: 0, effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-turn-quick", sourceUid: "p0-deck-200-1" },
+        ],
+        chainPasses: [],
+        legalActionCounts: { 0: 0, 1: 2 },
+        legalActionGroupCounts: { 0: 0, 1: 2 },
+        legalActions: [
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-second-opponent-quick", count: 1 },
+          { type: "passChain", player: 1, windowId: 7, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-turn-response-second-opponent-quick", 1, 7),
+          chainPassGroup(1, 1, 7),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-turn-quick" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-first-opponent-quick" },
+          { type: "activateTrigger", player: 1, windowId: 7, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-turn-response", triggerBucket: "opponentMandatory" },
+        ],
+        absentLegalActionGroups: [
+          absentChainEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-turn-response-turn-quick", 7),
+          absentChainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-turn-response-first-opponent-quick", 7),
+          absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-turn-response", "opponentMandatory", 7, "chainResponse"),
+        ],
+        locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "800", "400", "500", "800"] },
+        logIncludes: ["Chain resolution opponent mandatory turn response starter resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
