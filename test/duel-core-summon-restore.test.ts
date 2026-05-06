@@ -77,6 +77,17 @@ describe("core summon restore", () => {
     if (!action || action.type !== "tributeSummon") throw new Error("Expected restored Tribute Summon action");
     expectRestoredOpenAction(restored, action);
 
+    const staleBeforeSummon = applyResponse(restored, { ...action, windowId: action.windowId! - 1 });
+    expect(staleBeforeSummon.ok).toBe(false);
+    expect(staleBeforeSummon.error).toContain("Response is not currently legal");
+    expect(staleBeforeSummon.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+    expect(restored.state.cards.find((card) => card.uid === tribute!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(restored.state.cards.find((card) => card.uid === tributeMonster!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.state.players[0].normalSummonAvailable).toBe(true);
+
     const result = applyResponse(restored, action);
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === tribute!.uid)?.location).toBe("graveyard");
