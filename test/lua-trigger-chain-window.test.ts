@@ -245,6 +245,13 @@ describe("Lua trigger chain windows", () => {
     const quick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
     expect(quick).toBeDefined();
     applyLuaRestoreAndAssert(restored, quick!);
+    const staleQuick = applyLuaRestoreResponse(restored, quick!);
+    expect(staleQuick.ok).toBe(false);
+    expect(staleQuick.error).toContain("Response is not currently legal");
+    expect(staleQuick.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleQuick.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleQuick.legalActions);
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     applyLuaRestoreAndAssert(restored, pass!);
