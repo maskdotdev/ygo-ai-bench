@@ -63,6 +63,15 @@ describe("EDOPro parity open fast-effect priority fixtures", () => {
               turnGroup(1),
             ],
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "fixture-turn-open-pass-quick" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "fixture-turn-open-pass-quick" }],
+              },
+            ],
             logIncludes: ["Turn open pass quick resolved"],
           },
         }),
@@ -94,6 +103,15 @@ describe("EDOPro parity open fast-effect priority fixtures", () => {
           turnGroup(1),
         ],
         absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "fixture-turn-open-pass-quick" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 1,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "fixture-turn-open-pass-quick" }],
+          },
+        ],
         logIncludes: ["Turn open pass quick resolved"],
       },
     };
@@ -224,6 +242,15 @@ describe("EDOPro parity open fast-effect priority fixtures", () => {
               turnGroup(2),
             ],
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "fixture-turn-open-quick" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "fixture-turn-open-quick" }],
+              },
+            ],
             logIncludes: ["Opponent chain quick resolved", "Turn open quick resolved"],
           },
         }),
@@ -256,6 +283,15 @@ describe("EDOPro parity open fast-effect priority fixtures", () => {
           turnGroup(2),
         ],
         absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "fixture-turn-open-quick" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 2,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "fixture-turn-open-quick" }],
+          },
+        ],
         logIncludes: ["Opponent chain quick resolved", "Turn open quick resolved"],
       },
     };
