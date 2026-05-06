@@ -1,0 +1,252 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity mandatory before optional activation opponent-response until-chain-end limit fixture", () => {
+  it("keeps until-chain-end limits after the opponent responds to same-player mandatory and optional triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summon Source", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Mandatory Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Optional Trigger", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Opponent Until Limiter", kind: "monster", attack: 500, defense: 500 },
+      { code: "600", name: "Turn Chain Quick Blocked", kind: "monster", attack: 600, defense: 600 },
+      { code: "700", name: "Opponent Chain Followup", kind: "monster", attack: 700, defense: 700 },
+      { code: "800", name: "Turn Open Quick After Until", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Opponent Open Quick Filtered", kind: "monster", attack: 900, defense: 900 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "mandatory before optional activation opponent response until-chain-end limit fixture",
+      options: { seed: 429, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "300", "400", "600", "800"] },
+        1: { main: ["500", "700", "900", "100", "100"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-opponent-until-mandatory-first",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Opponent until mandatory trigger resolved",
+          },
+          {
+            id: "fixture-opponent-until-optional-second",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            range: ["hand"],
+            logMessage: "Opponent until optional trigger resolved",
+          },
+          {
+            id: "fixture-opponent-until-chain-limiter",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            chainLimitOnTarget: { untilChainEnd: true, allowPlayer: 1 },
+            logMessage: "Opponent until chain limiter resolved",
+          },
+          {
+            id: "fixture-opponent-until-followup",
+            player: 1,
+            code: "700",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "chain",
+            logMessage: "Opponent until followup should not resolve",
+          },
+          {
+            id: "fixture-opponent-until-turn-blocked",
+            player: 0,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "chain",
+            logMessage: "Opponent until turn blocked should not resolve",
+          },
+          {
+            id: "fixture-opponent-until-turn-open",
+            player: 0,
+            code: "800",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Opponent until turn open fast should not resolve yet",
+          },
+          {
+            id: "fixture-opponent-until-opponent-open-filtered",
+            player: 1,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Opponent until open fast should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-opponent-until-mandatory-first" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-opponent-until-optional-second" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens opponent chain-response priority after same-player mandatory and optional trigger selection completes before until-chain-end limits are created",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-opponent-until-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-opponent-until-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-until-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-until-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-until-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-until-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-until-turn-blocked" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-until-turn-open" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-until-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-opponent-until-turn-blocked", 3, "chainResponse"),
+              absentWindowEffectGroup(0, "fixture-opponent-until-turn-open", 3, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-opponent-until-opponent-open-filtered", 3, "chainResponse"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-until-chain-limiter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro applies SetChainLimitTillChainEnd restrictions when the opponent responds to same-player mandatory and optional triggers",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-opponent-until-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-opponent-until-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "fixture-opponent-until-chain-limiter", sourceUid: "p1-deck-500-0" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: true }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-until-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-opponent-until-followup", 1, 4), chainPassGroup(1, 1, 4)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-until-turn-blocked" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-until-turn-open" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-until-chain-limiter" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-until-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-opponent-until-turn-blocked", 4, "chainResponse"),
+              absentWindowEffectGroup(0, "fixture-opponent-until-turn-open", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-opponent-until-chain-limiter", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-opponent-until-opponent-open-filtered", 4, "chainResponse"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro clears until-chain-end limits and returns responded same-player trigger chains to turn-player open priority after the allowed opponent passes",
+        windowId: 5,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        chainLimits: [],
+        legalActionCounts: { 0: 3, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-opponent-until-turn-open", count: 1 },
+          { type: "changePhase", player: 0, windowId: 5, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 5, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 5,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-opponent-until-turn-open", count: 1 }],
+          },
+          turnGroup(5),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-opponent-until-mandatory-first" },
+          { type: "activateTrigger", player: 0, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-opponent-until-optional-second" },
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-opponent-until-turn-blocked" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "fixture-opponent-until-chain-limiter" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "fixture-opponent-until-followup" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "fixture-opponent-until-opponent-open-filtered" },
+        ],
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "fixture-opponent-until-mandatory-first", "turnMandatory", 5, "triggerBucket"),
+          absentTriggerActivationGroup(0, "fixture-opponent-until-optional-second", "turnOptional", 5, "triggerBucket"),
+          absentWindowEffectGroup(0, "fixture-opponent-until-turn-blocked", 5, "open"),
+          absentWindowEffectGroup(1, "fixture-opponent-until-chain-limiter", 5, "open"),
+          absentWindowEffectGroup(1, "fixture-opponent-until-followup", 5, "open"),
+          absentWindowEffectGroup(1, "fixture-opponent-until-opponent-open-filtered", 5, "open"),
+        ],
+        logIncludes: [
+          "Opponent until chain limiter resolved",
+          "Opponent until optional trigger resolved",
+          "Opponent until mandatory trigger resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
