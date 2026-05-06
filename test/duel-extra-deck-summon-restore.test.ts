@@ -55,6 +55,7 @@ describe("extra deck summon restore", () => {
     expect(restoredTriggerWindow.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
     const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "restore-fusion-success-watcher");
     expect(trigger).toBeDefined();
+    expectGroupedTrigger(restoredTriggerWindow, "restore-fusion-success-watcher");
     const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.state.pendingTriggers).toEqual([]);
@@ -108,6 +109,7 @@ describe("extra deck summon restore", () => {
     expect(restoredTriggerWindow.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
     const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "restore-synchro-success-watcher");
     expect(trigger).toBeDefined();
+    expectGroupedTrigger(restoredTriggerWindow, "restore-synchro-success-watcher");
     const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.state.pendingTriggers).toEqual([]);
@@ -162,6 +164,7 @@ describe("extra deck summon restore", () => {
     expect(action.materialUids.every((uid) => restoredTriggerWindow.state.cards.find((card) => card.uid === uid)?.location === "overlay")).toBe(true);
     const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "restore-xyz-success-watcher");
     expect(trigger).toBeDefined();
+    expectGroupedTrigger(restoredTriggerWindow, "restore-xyz-success-watcher");
     const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.state.pendingTriggers).toEqual([]);
@@ -217,6 +220,7 @@ describe("extra deck summon restore", () => {
     expect(action.materialUids.every((uid) => restoredTriggerWindow.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
     const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "restore-link-success-watcher");
     expect(trigger).toBeDefined();
+    expectGroupedTrigger(restoredTriggerWindow, "restore-link-success-watcher");
     const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.state.pendingTriggers).toEqual([]);
@@ -259,6 +263,19 @@ function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restore
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
   assertRestoreLegalWindow(restored, staleResult, staleResult.state.waitingFor!);
+}
+
+function expectGroupedTrigger(restored: ReturnType<typeof restoreDuel>, effectId: string): void {
+  const windowId = restored.state.actionWindowId;
+  expect(
+    getGroupedDuelLegalActions(restored, 0).some(
+      (group) =>
+        group.windowId === windowId &&
+        group.windowKind === "triggerBucket" &&
+        group.triggerBucket?.triggerBucket === "turnOptional" &&
+        group.actions.some((action) => action.type === "activateTrigger" && action.effectId === effectId && action.windowId === windowId && action.windowKind === "triggerBucket"),
+    ),
+  ).toBe(true);
 }
 
 function expectStaleExtraDeckPreapplyRejected(
