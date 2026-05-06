@@ -332,6 +332,36 @@ describe("duel trigger buckets", () => {
     expect(restored.state.waitingFor).toBe(0);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restored-later-payload-trigger"]);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["restored-later-payload-trigger"]);
+
+    const restoredTriggerBucket = restoreDuel(serializeDuel(restored), createCardReader(cards), {
+      "restored-chain-first-payload": withOperation,
+      "restored-later-payload-trigger": withOperation,
+    });
+    expect(restoredTriggerBucket.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
+    expect(queryPublicState(restoredTriggerBucket).windowKind).toBe("triggerBucket");
+    expect(queryPublicState(restoredTriggerBucket).pendingTriggerBuckets).toEqual([
+      { triggerBucket: "turnOptional", player: 0, triggerIds: ["restored-second-payload"] },
+    ]);
+    expect(getDuelLegalActions(restoredTriggerBucket, 1)).toHaveLength(0);
+    const restoredTrigger = getDuelLegalActions(restoredTriggerBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restored-later-payload-trigger");
+    expect(restoredTrigger).toBeTruthy();
+    const restoredTriggerResult = applyAndAssert(restoredTriggerBucket, restoredTrigger!);
+    expect(restoredTriggerResult.ok).toBe(true);
+    expect(restoredTriggerBucket.state.pendingTriggers).toEqual([]);
+    expect(restoredTriggerBucket.state.chain.map((link) => link.effectId)).toEqual(["restored-later-payload-trigger"]);
+    expect(restoredTriggerBucket.state.chain[0]).toMatchObject({
+      eventName: "customEvent",
+      eventCardUid,
+      eventValue: 2,
+    });
+    const staleRestoredTrigger = applyResponse(restoredTriggerBucket, restoredTrigger!);
+    expect(staleRestoredTrigger.ok).toBe(false);
+    expect(staleRestoredTrigger.error).toContain("Response is not currently legal");
+    expect(staleRestoredTrigger.state.actionWindowId).toBe(restoredTriggerBucket.state.actionWindowId);
+    expect(staleRestoredTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, restoredTriggerResult.state.waitingFor!));
+    expect(staleRestoredTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, restoredTriggerResult.state.waitingFor!));
+    expect(staleRestoredTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleRestoredTrigger.legalActions);
+
     const staleTurnPass = applyResponse(restored, turnPass!);
     expect(staleTurnPass.ok).toBe(false);
     expect(staleTurnPass.error).toContain("Response is not currently legal");
