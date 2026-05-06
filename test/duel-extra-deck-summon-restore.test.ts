@@ -237,6 +237,24 @@ describe("extra deck summon restore", () => {
   });
 });
 
+describe("triggerless extra deck summon open-priority restore", () => {
+  it("restores triggerless Fusion Summons to turn-player open fast-effect priority", () => {
+    assertRestoredTriggerlessExtraDeckOpenPriority("fusionSummon", "900", "hand", "graveyard");
+  });
+
+  it("restores triggerless Synchro Summons to turn-player open fast-effect priority", () => {
+    assertRestoredTriggerlessExtraDeckOpenPriority("synchroSummon", "910", "monsterZone", "graveyard");
+  });
+
+  it("restores triggerless Xyz Summons to turn-player open fast-effect priority", () => {
+    assertRestoredTriggerlessExtraDeckOpenPriority("xyzSummon", "920", "monsterZone", "overlay");
+  });
+
+  it("restores triggerless Link Summons to turn-player open fast-effect priority", () => {
+    assertRestoredTriggerlessExtraDeckOpenPriority("linkSummon", "930", "monsterZone", "graveyard");
+  });
+});
+
 function summonSuccessWatcher(id: string, sourceUid: string, detail: string): DuelEffectDefinition {
   return {
     id,
@@ -259,6 +277,35 @@ function restoreSummonSuccessWatcher(detail: string): (effect: Omit<DuelEffectDe
       ctx.log(detail);
     },
   });
+}
+
+function openOnlyQuick(id: string, sourceUid: string, controller: 0 | 1): DuelEffectDefinition {
+  return {
+    id,
+    registryKey: id,
+    sourceUid,
+    controller,
+    event: "quick",
+    range: ["hand"],
+    canActivate(ctx) {
+      return ctx.duel.chain.length === 0;
+    },
+    operation(ctx) {
+      ctx.log(`${id} resolved`);
+    },
+  };
+}
+
+function restoreOpenOnlyQuick(effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition {
+  return {
+    ...effect,
+    canActivate(ctx) {
+      return ctx.duel.chain.length === 0;
+    },
+    operation(ctx) {
+      ctx.log(`${effect.id} resolved`);
+    },
+  };
 }
 
 function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restoreDuel>, action: NonNullable<Parameters<typeof applyResponse>[1]>): void {
@@ -304,6 +351,66 @@ function expectStaleExtraDeckPreapplyRejected(
   assertRestoreLegalWindow(restored, staleBeforeSummon, 0);
   expect(restored.state.cards.find((card) => card.uid === targetUid)).toMatchObject({ location: "extraDeck" });
   expect(action.materialUids.every((uid) => restored.state.cards.find((card) => card.uid === uid)?.location === materialLocation)).toBe(true);
+}
+
+function assertRestoredTriggerlessExtraDeckOpenPriority(
+  type: "fusionSummon" | "synchroSummon" | "xyzSummon" | "linkSummon",
+  code: string,
+  materialStartLocation: "hand" | "monsterZone",
+  materialResultLocation: "graveyard" | "overlay",
+): void {
+  const session = createDuel({ seed: 270, startingHandSize: 3, cardReader: createCardReader(cards) });
+  loadDecks(session, {
+    0: { main: ["100", "300", "500"], extra: [code] },
+    1: { main: ["400", "500", "500"] },
+  });
+  startDuel(session);
+
+  const target = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === code);
+  const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
+  const turnQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+  const opponentQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+  expect(target).toBeTruthy();
+  expect(materials).toHaveLength(2);
+  expect(turnQuick).toBeTruthy();
+  expect(opponentQuick).toBeTruthy();
+  if (materialStartLocation === "monsterZone") {
+    for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+  }
+  registerEffect(session, openOnlyQuick(`restore-${type}-open-turn-quick`, turnQuick!.uid, 0));
+  registerEffect(session, openOnlyQuick(`restore-${type}-open-opponent-quick`, opponentQuick!.uid, 1));
+
+  const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === type && candidate.uid === target!.uid);
+  expect(action?.type).toBe(type);
+  if (!action || action.type !== type) throw new Error(`Expected ${type} action`);
+  const result = applyResponse(session, action);
+  expect(result.ok, result.error).toBe(true);
+  expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+  expect(result.legalActions.some((candidate) => candidate.type === "activateEffect" && candidate.effectId === `restore-${type}-open-turn-quick`)).toBe(true);
+  expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+  const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+    [`restore-${type}-open-turn-quick`]: restoreOpenOnlyQuick,
+    [`restore-${type}-open-opponent-quick`]: restoreOpenOnlyQuick,
+  });
+  expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+  expect(restored.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
+    location: "monsterZone",
+    faceUp: true,
+  });
+  if (materialResultLocation === "overlay") expect(restored.state.cards.find((card) => card.uid === target!.uid)?.overlayUids).toHaveLength(2);
+  expect(action.materialUids.every((uid) => restored.state.cards.find((card) => card.uid === uid)?.location === materialResultLocation)).toBe(true);
+  expect(getDuelLegalActions(restored, 1)).toEqual([]);
+  expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
+  expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === `restore-${type}-open-turn-quick`)).toBe(true);
+  expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === `restore-${type}-open-opponent-quick`)).toBe(false);
+  expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === type && candidate.uid === target!.uid)).toBe(false);
+  expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+
+  const staleSummon = applyResponse(restored, action);
+  expect(staleSummon.ok).toBe(false);
+  expect(staleSummon.error).toContain("Response is not currently legal");
+  assertRestoreLegalWindow(restored, staleSummon, 0);
 }
 
 function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSummon" | "xyzSummon" | "linkSummon", code: string, materialLocation: "graveyard" | "overlay"): void {
