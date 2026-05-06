@@ -57,7 +57,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro opens the summon-success trigger bucket before open fast effects after a Normal Summon",
@@ -76,7 +76,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "trigger-chain-success" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent the first fast-effect response to a selected summon-success trigger chain",
@@ -104,7 +104,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro returns resolved trigger chains to turn-player open priority with open fast effects available",
