@@ -813,11 +813,29 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
             logIncludes: ["SEGOC opponent mandatory open resolved", "SEGOC turn mandatory before opponent open resolved"],
           },
         }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-segoc-open-fast-after-opponent-mandatory" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the restored open fast effect after an unresponded mandatory SEGOC chain",
+            windowId: 4,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-mandatory-before-opponent-open" },
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-mandatory-open" },
+            ],
+            logIncludes: ["SEGOC open fast after opponent mandatory resolved"],
+          },
+        }),
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final state offers turn-player open fast effects after an unresponded mandatory SEGOC chain resolves",
-        windowId: 3,
+        note: "EDOPro final state returns to open priority after resolving the post-mandatory SEGOC open fast effect",
+        windowId: 4,
         windowKind: "open",
         waitingFor: 0,
         pendingTriggers: [],
@@ -825,27 +843,11 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
         chain: [],
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
-        legalActions: [
-          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-mandatory", count: 1 },
-          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
-          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
-        ],
-        legalActionGroups: [
-          {
-            player: 0,
-            label: "Effects",
-            windowId: 3,
-            windowKind: "open",
-            count: 1,
-            actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-mandatory", count: 1 }],
-          },
-          turnGroup(3),
-        ],
         absentLegalActions: [
-          { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-mandatory" },
-          { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-mandatory-open" },
+          { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-mandatory-before-opponent-open" },
+          { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-mandatory-open" },
         ],
-        logIncludes: ["SEGOC opponent mandatory open resolved", "SEGOC turn mandatory before opponent open resolved"],
+        logIncludes: ["SEGOC open fast after opponent mandatory resolved"],
       },
     };
 
