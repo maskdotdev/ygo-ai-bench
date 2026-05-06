@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
   it("returns a triggerless inherent Special Summon to turn-player open fast-effect priority", () => {
@@ -95,6 +95,15 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
               { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "special-summon-opponent-open-quick" },
               { type: "specialSummonProcedure", player: 0, windowId: 1, windowKind: "open", effectId: "special-summon-procedure" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "special-summon-opponent-open-quick" }],
+              },
+            ],
           },
         }),
       ],
@@ -137,6 +146,15 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
         absentLegalActions: [
           { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "special-summon-opponent-open-quick" },
           { type: "specialSummonProcedure", player: 0, windowId: 1, windowKind: "open", effectId: "special-summon-procedure" },
+        ],
+        absentLegalActionGroups: [
+          {
+            player: 1,
+            label: "Effects",
+            windowId: 1,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "special-summon-opponent-open-quick" }],
+          },
         ],
       },
     };
@@ -224,6 +242,7 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
             ],
             legalActionGroups: [chainEffectGroup(1, "special-summon-opponent-chain-response-quick", 1, 2), chainPassGroup(1, 1, 2)],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "special-summon-opponent-open-chain-filtered" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "special-summon-opponent-open-chain-filtered", 2)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
@@ -261,6 +280,22 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "special-summon-opponent-open-chain-filtered" },
               { type: "specialSummonProcedure", player: 0, windowId: 3, windowKind: "open", effectId: "special-summon-chain-procedure" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "special-summon-turn-open-chain-quick" }],
+              },
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "special-summon-opponent-open-chain-filtered" }],
+              },
+            ],
             logIncludes: ["Turn open quick after special chain resolved"],
           },
         }),
@@ -297,6 +332,22 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
           { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "special-summon-turn-open-chain-quick" },
           { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "special-summon-opponent-open-chain-filtered" },
           { type: "specialSummonProcedure", player: 0, windowId: 3, windowKind: "open", effectId: "special-summon-chain-procedure" },
+        ],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "special-summon-turn-open-chain-quick" }],
+          },
+          {
+            player: 1,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "special-summon-opponent-open-chain-filtered" }],
+          },
         ],
         logIncludes: ["Turn open quick after special chain resolved"],
       },
