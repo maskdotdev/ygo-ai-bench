@@ -99,6 +99,18 @@ describe("trigger chain-window restore", () => {
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
     expect(getDuelLegalActions(restoredChainWindow, 0)).toEqual([]);
     assertStaleResponse(restoredChainWindow, secondTrigger!);
+
+    const afterOpponentQuick = applyAndAssert(restoredChainWindow, opponentQuick!);
+    expect(afterOpponentQuick.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [] });
+    expect(afterOpponentQuick.state.chain.map((link) => link.effectId)).toEqual([
+      "restore-first-mandatory-chain-window-trigger",
+      "restore-second-mandatory-held-trigger",
+      "restore-opponent-mandatory-chain-window-quick",
+    ]);
+    expect(afterOpponentQuick.state.log.some((entry) => entry.detail === "Restored first mandatory trigger resolved")).toBe(false);
+    expect(afterOpponentQuick.state.log.some((entry) => entry.detail === "Restored second mandatory trigger resolved")).toBe(false);
+    expect(afterOpponentQuick.state.log.some((entry) => entry.detail === "Restored opponent mandatory chain-window quick resolved")).toBe(false);
+    assertStaleResponse(restoredChainWindow, opponentQuick!);
   });
 });
 
