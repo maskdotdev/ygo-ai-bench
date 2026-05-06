@@ -52,6 +52,51 @@ function expectGroupedTrigger(restored: ReturnType<typeof restoreDuel>, effectId
 }
 
 describe("core summon restore", () => {
+  it("restores triggerless Normal Summons to turn-player open fast-effect priority", () => {
+    const session = createDuel({ seed: 263, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "500", "500"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(turnQuick).toBeTruthy();
+    expect(opponentQuick).toBeTruthy();
+    registerEffect(session, openOnlyQuick("restore-normal-open-turn-quick", turnQuick!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-normal-open-opponent-quick", opponentQuick!.uid, 1));
+
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summoned!.uid);
+    expect(summon).toBeDefined();
+    const result = applyResponse(session, summon!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-normal-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-normal-open-turn-quick": restoreOpenOnlyQuick,
+      "restore-normal-open-opponent-quick": restoreOpenOnlyQuick,
+    });
+    expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restored.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(restored.state.players[0].normalSummonAvailable).toBe(false);
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-normal-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-normal-open-opponent-quick")).toBe(false);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "normalSummon")).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+
+    const staleSummon = applyResponse(restored, summon!);
+    expect(staleSummon.ok).toBe(false);
+    expect(staleSummon.error).toContain("Response is not currently legal");
+    assertRestoreLegalWindow(restored, staleSummon, 0);
+  });
+
   it("restores Normal Summon legal actions and applies the restored action", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -254,4 +299,33 @@ function restoreSummonSuccessWatcher(detail: string): (effect: Omit<DuelEffectDe
       ctx.log(detail);
     },
   });
+}
+
+function openOnlyQuick(id: string, sourceUid: string, controller: 0 | 1): DuelEffectDefinition {
+  return {
+    id,
+    registryKey: id,
+    sourceUid,
+    controller,
+    event: "quick",
+    range: ["hand"],
+    canActivate(ctx) {
+      return ctx.duel.chain.length === 0;
+    },
+    operation(ctx) {
+      ctx.log(`${id} resolved`);
+    },
+  };
+}
+
+function restoreOpenOnlyQuick(effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition {
+  return {
+    ...effect,
+    canActivate(ctx) {
+      return ctx.duel.chain.length === 0;
+    },
+    operation(ctx) {
+      ctx.log(`${effect.id} resolved`);
+    },
+  };
 }
