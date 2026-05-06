@@ -110,6 +110,7 @@ describe("Lua open fast priority restore", () => {
     expect(turnQuick).toMatchObject({ player: 0, windowKind: "chainResponse" });
     const turnChained = applyLuaRestoreAndAssert(restored, turnQuick!);
     expect(turnChained.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(turnChained.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", uid: expect.stringContaining("20100") })]));
     expect(getDuelLegalActions(restored.session, 1)).toEqual([]);
     const staleTurnQuick = applyLuaRestoreResponse(restored, turnQuick!);
     expect(staleTurnQuick.ok).toBe(false);
