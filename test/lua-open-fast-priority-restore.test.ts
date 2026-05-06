@@ -617,7 +617,9 @@ function assertLuaFinalOpenRestore(restored: ReturnType<typeof restoreDuelWithLu
   const restoredFinalOpen = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(restored.session.state.cards.map((card) => card.data)));
   expect(restoredFinalOpen.restoreComplete, restoredFinalOpen.incompleteReasons.join("; ")).toBe(true);
   expect(restoredFinalOpen.session.state).toMatchObject({ waitingFor: 0, chain: [], pendingTriggers: [] });
-  expect(queryPublicState(restoredFinalOpen.session)).toMatchObject({ windowKind: "open", pendingTriggerBuckets: [] });
+  const publicFinalOpen = queryPublicState(restoredFinalOpen.session);
+  expect(publicFinalOpen).toMatchObject({ windowKind: "open", pendingTriggerBuckets: [] });
+  expect(publicFinalOpen).not.toHaveProperty("triggerOrderPrompt");
   expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restoredFinalOpen, 0))).toEqual(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0)));
   expect(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restoredFinalOpen, 0))).toEqual(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restored, 0)));
   expect(getLuaRestoreLegalActions(restoredFinalOpen, 1)).toEqual([]);
