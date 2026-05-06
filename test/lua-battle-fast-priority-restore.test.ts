@@ -52,6 +52,11 @@ describe("Lua battle fast priority restore", () => {
     expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") })]));
     expect(hasGroupedLuaEffect(resolved.legalActionGroups, 1, "500", "battle")).toBe(true);
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
+    const restoredBattleWindow = restoreDuelWithLuaScripts(serializeDuel(restored.session), fixture.source, createCardReader(fixture.cards));
+    expect(restoredBattleWindow.restoreComplete, restoredBattleWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(queryPublicState(restoredBattleWindow.session)).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
+    expect(getLuaRestoreLegalActions(restoredBattleWindow, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredBattleWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredBattleWindow, 1));
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
