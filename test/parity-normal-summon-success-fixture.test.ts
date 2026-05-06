@@ -108,7 +108,7 @@ describe("EDOPro parity Normal Summon success fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-normal-success-watcher" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the Normal Summon success trigger after the summoned monster reaches the field",

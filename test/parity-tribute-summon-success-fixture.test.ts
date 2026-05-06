@@ -115,7 +115,7 @@ describe("EDOPro parity Tribute Summon success fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-tribute-success-watcher" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the Normal Summon success trigger after a Tribute Summon completes",
