@@ -782,6 +782,7 @@ export interface ScriptedFixtureEffect {
   range: DuelLocation[];
   oncePerTurn?: boolean;
   property?: number;
+  activationChain?: "open" | "chain";
   logMessage?: string;
   negateAttackOnResolve?: boolean;
   negateSummonOnResolve?: {

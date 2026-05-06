@@ -633,6 +633,9 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
     ...(effect.optional === undefined ? {} : { optional: effect.optional }),
     ...(effect.oncePerTurn === undefined ? {} : { oncePerTurn: effect.oncePerTurn }),
     ...(effect.property === undefined ? {} : { property: effect.property }),
+    ...(effect.activationChain === undefined
+      ? {}
+      : { canActivate: (ctx) => effect.activationChain === "chain" ? ctx.duel.chain.length > 0 : ctx.duel.chain.length === 0 }),
     ...(effect.chainLimitOnTarget === undefined
       ? {}
       : {
