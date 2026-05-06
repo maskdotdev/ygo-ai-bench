@@ -53,7 +53,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro exposes same-bucket trigger choices before any selected trigger opens a chain-response window",
@@ -103,7 +103,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-first-chain-window-trigger" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps sibling trigger choices visible until SEGOC trigger selection is complete",
@@ -152,7 +152,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-second-held-trigger" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro opens fast responses only after SEGOC trigger selection is complete",
@@ -259,7 +259,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro exposes same-bucket mandatory trigger choices without decline actions before fast responses",
@@ -320,7 +320,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-first-mandatory-chain-window-trigger" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps the remaining mandatory sibling trigger before exposing chain-response quick effects",
@@ -368,7 +368,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-second-mandatory-held-trigger" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro opens fast responses after all mandatory SEGOC trigger choices are made",
