@@ -130,6 +130,7 @@ describe("Lua open fast priority restore", () => {
     expect(turnChained.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", uid: expect.stringContaining("20100") })]));
     expect(hasGroupedLuaEffect(turnChained.legalActionGroups, 0, "20100", "open")).toBe(true);
     expect(getDuelLegalActions(restored.session, 1)).toEqual([]);
+    assertLuaFinalOpenRestore(restored, source);
     const staleTurnQuick = applyLuaRestoreResponse(restored, turnQuick!);
     expect(staleTurnQuick.ok).toBe(false);
     expect(staleTurnQuick.error).toContain("Response is not currently legal");
@@ -579,13 +580,7 @@ describe("Lua open fast priority restore", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", uid: expect.stringContaining("19300") })]));
     expect(hasGroupedLuaEffect(getLuaRestoreLegalActionGroups(restored, 0), 0, "19300", "open")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
-    const restoredFinalOpen = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
-    expect(restoredFinalOpen.restoreComplete).toBe(true);
-    expect(restoredFinalOpen.session.state).toMatchObject({ waitingFor: 0, chain: [], pendingTriggers: [] });
-    expect(queryPublicState(restoredFinalOpen.session)).toMatchObject({ windowKind: "open", pendingTriggerBuckets: [] });
-    expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restoredFinalOpen, 0))).toEqual(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0)));
-    expect(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restoredFinalOpen, 0))).toEqual(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restored, 0)));
-    expect(getLuaRestoreLegalActions(restoredFinalOpen, 1)).toEqual([]);
+    assertLuaFinalOpenRestore(restored, source);
     expect(restored.host.messages).toEqual(["restored trigger fast turn chain quick resolved", "restored trigger fast chain quick resolved", "restored trigger fast trigger resolved", "restored trigger fast quick resolved"]);
   });
 });
@@ -616,6 +611,16 @@ function assertLuaRestoreLegalWindow(restored: ReturnType<typeof restoreDuelWith
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
+function assertLuaFinalOpenRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>, source: Parameters<typeof restoreDuelWithLuaScripts>[1]): void {
+  const restoredFinalOpen = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(restored.session.state.cards.map((card) => card.data)));
+  expect(restoredFinalOpen.restoreComplete, restoredFinalOpen.incompleteReasons.join("; ")).toBe(true);
+  expect(restoredFinalOpen.session.state).toMatchObject({ waitingFor: 0, chain: [], pendingTriggers: [] });
+  expect(queryPublicState(restoredFinalOpen.session)).toMatchObject({ windowKind: "open", pendingTriggerBuckets: [] });
+  expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restoredFinalOpen, 0))).toEqual(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0)));
+  expect(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restoredFinalOpen, 0))).toEqual(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restored, 0)));
+  expect(getLuaRestoreLegalActions(restoredFinalOpen, 1)).toEqual([]);
 }
 
 function actionsWithoutWindowToken(actions: DuelAction[]): Array<Omit<DuelAction, "windowToken">> {
