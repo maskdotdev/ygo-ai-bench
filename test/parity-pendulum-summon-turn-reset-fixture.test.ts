@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Pendulum Summon turn reset fixtures", () => {
   it("removes same-turn Pendulum Summon actions and restores them on the player's next turn", () => {
@@ -149,6 +150,32 @@ describe("EDOPro parity Pendulum Summon turn reset fixtures", () => {
         windowKind: "open",
         waitingFor: 0,
         locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], hand: ["400", "500"] },
+        legalActionCounts: { 0: 7, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "changePosition", player: 0, code: "300", location: "monsterZone", position: "faceUpDefense", windowId: 3, windowKind: "open", count: 1 },
+          { type: "normalSummon", player: 0, code: "500", location: "hand", windowId: 3, windowKind: "open", count: 1 },
+          { type: "setMonster", player: 0, code: "500", location: "hand", windowId: 3, windowKind: "open", count: 1 },
+          { type: "pendulumSummon", player: 0, summonUids: ["p0-deck-400-3"], windowId: 3, windowKind: "open", count: 1 },
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Actions",
+            windowId: 3,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "changePosition", player: 0, code: "300", location: "monsterZone", position: "faceUpDefense", windowId: 3, windowKind: "open", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+            { type: "pendulumSummon", player: 0, summonUids: ["p0-deck-400-3"] },
+          ], 1, 3),
+          turnGroup(3),
+        ],
       },
     };
 

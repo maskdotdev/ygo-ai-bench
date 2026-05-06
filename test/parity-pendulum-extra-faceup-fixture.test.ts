@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Pendulum extra deck fixtures", () => {
   it("keeps Pendulum monsters face-up when they move from the field to the Extra Deck", () => {
@@ -57,8 +58,16 @@ describe("EDOPro parity Pendulum extra deck fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state keeps the Pendulum monster face-up in the Extra Deck",
         phase: "battle",
+        windowId: 1,
         locations: { extraDeck: ["100"] },
         cards: [{ uid: "p0-deck-100-0", code: "100", location: "extraDeck", faceUp: true, position: "faceDown" }],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(1)],
       },
     };
 

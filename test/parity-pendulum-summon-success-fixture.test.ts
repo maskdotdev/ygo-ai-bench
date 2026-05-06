@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Pendulum Summon success fixtures", () => {
   it("opens Pendulum Summon actions for face-up Extra Deck monsters and resolves success triggers", () => {
@@ -154,6 +155,21 @@ describe("EDOPro parity Pendulum Summon success fixtures", () => {
         pendingTriggers: [],
         chain: [],
         locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], hand: ["400", "500"] },
+        legalActionCounts: { 0: 5, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "normalSummon", player: 0, code: "400", location: "hand", windowId: 2, windowKind: "open", count: 1 },
+          { type: "setMonster", player: 0, code: "400", location: "hand", windowId: 2, windowKind: "open", count: 1 },
+          { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "400", location: "hand" },
+            { type: "setMonster", player: 0, code: "400", location: "hand" },
+          ], 1, 2),
+          turnGroup(2),
+        ],
         logIncludes: ["Fixture Pendulum summon success watcher resolved"],
       },
     };
