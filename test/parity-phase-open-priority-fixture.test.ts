@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentWindowEffectGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity phase open priority fixtures", () => {
   it("returns phase changes to turn-player open priority", () => {
@@ -65,6 +65,10 @@ describe("EDOPro parity phase open priority fixtures", () => {
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "phase-turn-open-quick" },
               { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "phase-opponent-open-quick" },
             ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "phase-turn-open-quick", 1, "open"),
+              absentWindowEffectGroup(1, "phase-opponent-open-quick", 1, "open"),
+            ],
           },
         }),
       ],
@@ -87,6 +91,10 @@ describe("EDOPro parity phase open priority fixtures", () => {
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "phase-turn-open-quick" },
           { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "phase-opponent-open-quick" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "phase-turn-open-quick", 1, "open"),
+          absentWindowEffectGroup(1, "phase-opponent-open-quick", 1, "open"),
         ],
       },
     };
@@ -201,13 +209,9 @@ describe("EDOPro parity phase open priority fixtures", () => {
               { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "phase-old-turn-open-quick" },
             ],
             absentLegalActionGroups: [
-              {
-                player: 0,
-                label: "Effects",
-                windowId: 1,
-                windowKind: "open",
-                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "phase-old-turn-open-quick" }],
-              },
+              absentWindowEffectGroup(0, "phase-old-turn-open-quick", 1, "open"),
+              absentWindowEffectGroup(0, "phase-old-turn-chain-quick", 1, "open"),
+              absentWindowEffectGroup(1, "phase-old-turn-open-quick", 1, "open"),
             ],
           },
         }),
@@ -252,6 +256,10 @@ describe("EDOPro parity phase open priority fixtures", () => {
             absentLegalActions: [
               { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "phase-old-turn-open-quick" },
               { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "phase-new-turn-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "phase-old-turn-open-quick", 2, "chainResponse"),
+              absentWindowEffectGroup(1, "phase-new-turn-open-quick", 2, "chainResponse"),
             ],
           },
         }),
@@ -302,6 +310,11 @@ describe("EDOPro parity phase open priority fixtures", () => {
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "phase-old-turn-open-quick" },
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "phase-old-turn-chain-quick" },
             ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "phase-new-turn-open-quick", 3, "open"),
+              absentWindowEffectGroup(0, "phase-old-turn-open-quick", 3, "open"),
+              absentWindowEffectGroup(0, "phase-old-turn-chain-quick", 3, "open"),
+            ],
             logIncludes: ["Old turn chain quick resolved", "New turn open quick resolved"],
           },
         }),
@@ -350,6 +363,11 @@ describe("EDOPro parity phase open priority fixtures", () => {
           { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "phase-new-turn-open-quick" },
           { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "phase-old-turn-open-quick" },
           { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "phase-old-turn-chain-quick" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(1, "phase-new-turn-open-quick", 3, "open"),
+          absentWindowEffectGroup(0, "phase-old-turn-open-quick", 3, "open"),
+          absentWindowEffectGroup(0, "phase-old-turn-chain-quick", 3, "open"),
         ],
         logIncludes: ["Old turn chain quick resolved", "New turn open quick resolved"],
       },
