@@ -8,6 +8,7 @@ import {
   getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  queryPublicState,
   serializeDuel,
   specialSummonDuelCard,
   startDuel,
@@ -182,6 +183,8 @@ describe("Lua deck and cost movement helpers", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["discarded"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1018, eventCardUid: discarded!.uid });
+    expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
+    expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -192,6 +195,7 @@ describe("Lua deck and cost movement helpers", () => {
     expect(staleTrigger.ok).toBe(false);
     expect(staleTrigger.error).toContain("Response is not currently legal");
     expect(staleTrigger.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    assertPublicRestoreMetadata(restored, staleTrigger);
     expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
@@ -348,6 +352,8 @@ describe("Lua deck and cost movement helpers", () => {
     const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(restoredPendingEffectIds).not.toContain("lua-2-1018");
     expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1018", "lua-4-1111"]));
+    expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
+    expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -578,6 +584,8 @@ describe("Lua deck and cost movement helpers", () => {
     const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(restoredPendingEffectIds).not.toContain("lua-2-1110");
     expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1110", "lua-4-1111"]));
+    expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
+    expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -861,8 +869,19 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const response = applyLuaRestoreResponse(restored, action);
   expect(response.ok, response.error).toBe(true);
+  assertPublicRestoreMetadata(restored, response);
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function assertPublicRestoreMetadata(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: ReturnType<typeof applyLuaRestoreResponse>): void {
+  const publicState = queryPublicState(restored.session);
+  expect(response.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) {
+    expect(response.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  } else {
+    expect(response.state).not.toHaveProperty("triggerOrderPrompt");
+  }
 }
