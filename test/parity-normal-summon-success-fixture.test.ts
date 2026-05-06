@@ -127,6 +127,7 @@ describe("EDOPro parity Normal Summon success fixtures", () => {
         windowId: 2,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         locations: { monsterZone: ["100"], hand: ["200"] },
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },

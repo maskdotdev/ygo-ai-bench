@@ -154,6 +154,7 @@ describe("EDOPro parity Xyz Summon success fixtures", () => {
         windowId: 2,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         locations: { monsterZone: ["900"], overlay: ["100", "200"], hand: ["300"] },
         cards: [{ uid: "p0-extraDeck-900-0", code: "900", location: "monsterZone", overlayCount: 2 }],
         legalActionCounts: { 0: 4, 1: 0 },

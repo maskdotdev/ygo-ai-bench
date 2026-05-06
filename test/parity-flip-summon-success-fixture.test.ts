@@ -128,6 +128,7 @@ describe("EDOPro parity Flip Summon success fixtures", () => {
         windowId: 2,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         locations: { monsterZone: ["100"], hand: ["200"] },
         cards: [{ uid: "p0-deck-100-0", code: "100", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
         legalActionCounts: { 0: 4, 1: 0 },

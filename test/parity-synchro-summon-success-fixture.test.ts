@@ -153,6 +153,7 @@ describe("EDOPro parity Synchro Summon success fixtures", () => {
         windowId: 2,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         locations: { monsterZone: ["900"], graveyard: ["100", "200"], hand: ["300"] },
         legalActionCounts: { 0: 4, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
