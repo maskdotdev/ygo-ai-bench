@@ -222,6 +222,7 @@ describe("Lua attack negation helpers", () => {
     const staleAttackPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passAttack");
     expect(negate).toBeDefined();
     expect(staleAttackPass).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, negate!, 1);
     const result = applyLuaRestoreAndAssert(restored, negate!);
 
     expect(restored.session.state.chain.map((link) => link.effectId)).toEqual(["lua-1"]);
@@ -233,6 +234,7 @@ describe("Lua attack negation helpers", () => {
     expect(replayAttackPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(replayAttackPass.legalActions);
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, pass!, 1);
     applyLuaRestoreAndAssert(restored, pass!);
     expect(restored.host.messages).toEqual(["restored attack negate true"]);
     expect(restored.session.state.currentAttack).toBeUndefined();
@@ -542,4 +544,14 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function expectLuaRestoreStalePreapply(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1): void {
+  const response = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(response.ok).toBe(false);
+  expect(response.error).toContain("Response is not currently legal");
+  expect(response.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 }
