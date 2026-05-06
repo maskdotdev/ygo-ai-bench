@@ -410,6 +410,13 @@ describe("Lua trigger bucket helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(restored.host.messages).toEqual([]);
+    const staleFirstActivation = applyLuaRestoreResponse(restored, firstActivation!);
+    expect(staleFirstActivation.ok).toBe(false);
+    expect(staleFirstActivation.error).toContain("Response is not currently legal");
+    expect(staleFirstActivation.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleFirstActivation.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleFirstActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleFirstActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleFirstActivation.legalActions);
 
     const secondEffectId = restored.session.state.pendingTriggers[0]?.effectId;
     const secondActivation = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === secondEffectId);
