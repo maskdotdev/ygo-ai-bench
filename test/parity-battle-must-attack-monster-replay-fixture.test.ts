@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup } from "./parity-legal-action-group-helpers.js";
+import { absentAttackGroup, absentOpenAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle must-attack-monster replay fixtures", () => {
   it("does not offer direct replay for must-attack-monster attackers", () => {
@@ -106,33 +106,53 @@ describe("EDOPro parity battle must-attack-monster replay fixtures", () => {
             logIncludes: ["Replay decision pending"],
           },
         }),
+        makeScriptedStep(makeResponseSelector("cancelAttack", 0, { attackerUid: "p0-deck-100-0" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro returns must-attack-monster replay cancel to the Battle Phase open window",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 17,
+            windowKind: "open",
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            locations: { monsterZone: ["100"], graveyard: ["200"] },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 17, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 17, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(17)],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 17, windowKind: "open" }],
+            absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 17)],
+            logIncludes: ["Canceled replay attack"],
+          },
+        }),
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final fixture state keeps must-attack-monster replay at the cancel-only decision window",
+        note: "EDOPro final fixture state after canceling must-attack-monster replay returns to open Battle Phase timing",
         phase: "battle",
         waitingFor: 0,
-        windowId: 16,
-        windowKind: "battle",
-        pendingBattle: true,
-        currentAttack: true,
-        battleWindow: { kind: "replayDecision", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
-        legalActionCounts: { 0: 1, 1: 0 },
+        windowId: 17,
+        windowKind: "open",
+        pendingBattle: false,
+        currentAttack: false,
+        battleWindow: null,
+        locations: { monsterZone: ["100"], graveyard: ["200"] },
+        legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
-        legalActions: [{ type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 }],
-        legalActionGroups: [
-          {
-            player: 0,
-            label: "Attacks",
-            windowId: 16,
-            windowKind: "battle",
-            count: 1,
-            actions: [{ type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 }],
-          },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 17, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 17, windowKind: "open", count: 1 },
         ],
-        absentLegalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle" }],
-        absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, undefined, 16)],
-        logIncludes: ["Fixture must-monster target left before replay", "Replay decision pending"],
+        legalActionGroups: [turnGroup(17)],
+        absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 17, windowKind: "open" }],
+        absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 17)],
+        logIncludes: ["Fixture must-monster target left before replay", "Replay decision pending", "Canceled replay attack"],
       },
     };
 
