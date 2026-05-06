@@ -263,6 +263,7 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   assertLegalActionCounts(session, expected.legalActionCounts, fail);
   assertLegalActionGroupCounts(session, expected.legalActionGroupCounts, fail);
   assertLegalActionGroupsFlattenLegalActions(session, expected, fail);
+  assertLegalActionWindowStamps(session, expected, fail);
   for (const expectedLog of expected.logIncludes ?? []) {
     if (!state.log.some((entry) => entry.detail.includes(expectedLog) || entry.action.includes(expectedLog))) fail(`Expected log containing ${expectedLog}`);
   }
@@ -354,6 +355,30 @@ function assertLegalActionGroupCounts(session: DuelSession, expected: Partial<Re
 }
 
 function assertLegalActionGroupsFlattenLegalActions(session: DuelSession, expected: ScriptedDuelWindowExpectation, fail: (message: string) => void): void {
+  for (const player of expectedLegalActionPlayers(expected)) {
+    const legalActions = getLegalActions(session, player);
+    const groupedActions = getGroupedDuelLegalActions(session, player).flatMap((group) => group.actions);
+    if (JSON.stringify(groupedActions) !== JSON.stringify(legalActions)) fail(`Expected player ${player} legal action groups to flatten to legal actions`);
+  }
+}
+
+function assertLegalActionWindowStamps(session: DuelSession, expected: ScriptedDuelWindowExpectation, fail: (message: string) => void): void {
+  const windowKind = currentWindowKind(session);
+  for (const player of expectedLegalActionPlayers(expected)) {
+    for (const action of getLegalActions(session, player)) {
+      if (action.windowId !== session.state.actionWindowId || action.windowKind !== windowKind) {
+        fail(`Expected player ${player} legal action ${action.type} to be stamped with window ${session.state.actionWindowId}/${windowKind ?? "none"}`);
+      }
+    }
+    for (const group of getGroupedDuelLegalActions(session, player)) {
+      if (group.windowId !== session.state.actionWindowId || group.windowKind !== windowKind) {
+        fail(`Expected player ${player} legal action group ${group.label} to be stamped with window ${session.state.actionWindowId}/${windowKind ?? "none"}`);
+      }
+    }
+  }
+}
+
+function expectedLegalActionPlayers(expected: ScriptedDuelWindowExpectation): Set<PlayerId> {
   const players = new Set<PlayerId>();
   for (const player of Object.keys(expected.legalActionCounts ?? {})) players.add(Number(player) as PlayerId);
   for (const player of Object.keys(expected.legalActionGroupCounts ?? {})) players.add(Number(player) as PlayerId);
@@ -361,11 +386,7 @@ function assertLegalActionGroupsFlattenLegalActions(session: DuelSession, expect
   for (const action of expected.absentLegalActions ?? []) players.add(action.player);
   for (const group of expected.legalActionGroups ?? []) players.add(group.player);
   for (const group of expected.absentLegalActionGroups ?? []) players.add(group.player);
-  for (const player of players) {
-    const legalActions = getLegalActions(session, player);
-    const groupedActions = getGroupedDuelLegalActions(session, player).flatMap((group) => group.actions);
-    if (JSON.stringify(groupedActions) !== JSON.stringify(legalActions)) fail(`Expected player ${player} legal action groups to flatten to legal actions`);
-  }
+  return players;
 }
 
 function assertBattlePairsForWindow(actual: { attackerUid: string; targetUid: string }[], expected: { attackerUid: string; targetUid: string }[] | undefined, fail: (message: string) => void): void {
