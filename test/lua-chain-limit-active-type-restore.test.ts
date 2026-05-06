@@ -79,6 +79,7 @@ describe("Lua active-type chain-limit restore", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey: "lua-chain-limit:100:0:link:known:closure:not-active-type:1", untilChainEnd: false });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));

@@ -68,6 +68,7 @@ describe("Lua short chain-player chain-limit restore", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));

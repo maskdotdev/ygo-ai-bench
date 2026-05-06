@@ -79,6 +79,7 @@ describe("Lua response-matches-chain-player chain-limit restore", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey: "lua-chain-limit:100:0:chain:known:closure:response-matches-chain-player", untilChainEnd: true });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0))).toEqual(actionsWithoutWindowToken(getLegalActions(session, 0)));
     expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 1))).toEqual(actionsWithoutWindowToken(getLegalActions(session, 1)));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
