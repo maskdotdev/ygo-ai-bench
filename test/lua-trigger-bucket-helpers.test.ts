@@ -402,6 +402,7 @@ describe("Lua trigger bucket helpers", () => {
     const firstActivation = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === restored.session.state.pendingTriggers[0]?.effectId);
     expect(firstActivation).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnOptional" });
     const firstEffectId = restored.session.state.pendingTriggers[0]?.effectId;
+    expect(hasGroupedTrigger(restored, 0, firstEffectId!, "activateTrigger")).toBe(true);
     const staleBeforeFirstActivation = applyLuaRestoreResponse(restored, { ...firstActivation!, windowId: firstActivation!.windowId! - 1 });
     expect(staleBeforeFirstActivation.ok).toBe(false);
     expect(staleBeforeFirstActivation.error).toContain("Response is not currently legal");
@@ -429,6 +430,7 @@ describe("Lua trigger bucket helpers", () => {
     const secondEffectId = restored.session.state.pendingTriggers[0]?.effectId;
     const secondActivation = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === secondEffectId);
     expect(secondActivation).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnOptional" });
+    expect(hasGroupedTrigger(restored, 0, secondEffectId!, "activateTrigger")).toBe(true);
     const staleBeforeSecondActivation = applyLuaRestoreResponse(restored, { ...secondActivation!, windowId: secondActivation!.windowId! - 1 });
     expect(staleBeforeSecondActivation.ok).toBe(false);
     expect(staleBeforeSecondActivation.error).toContain("Response is not currently legal");
@@ -453,6 +455,7 @@ describe("Lua trigger bucket helpers", () => {
 
     const opponentDecline = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "declineTrigger");
     expect(opponentDecline).toMatchObject({ player: 1, windowKind: "triggerBucket", triggerBucket: "opponentOptional" });
+    expect(hasGroupedTrigger(restored, 1, afterSecondActivation.state.pendingTriggers[0]!.effectId, "declineTrigger")).toBe(true);
     const staleBeforeOpponentDecline = applyLuaRestoreResponse(restored, { ...opponentDecline!, windowId: opponentDecline!.windowId! - 1 });
     expect(staleBeforeOpponentDecline.ok).toBe(false);
     expect(staleBeforeOpponentDecline.error).toContain("Response is not currently legal");
@@ -528,6 +531,7 @@ describe("Lua trigger bucket helpers", () => {
 
     const turnMandatory = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(turnMandatory).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnMandatory" });
+    expect(hasGroupedTrigger(restored, 0, restored.session.state.pendingTriggers[0]!.effectId, "activateTrigger")).toBe(true);
     const originalTurnMandatoryPreapply = applyLuaRestoreResponse(restored, originalTurnMandatory!);
     expect(originalTurnMandatoryPreapply.ok).toBe(false);
     expect(originalTurnMandatoryPreapply.error).toContain("Response is not currently legal");
@@ -569,6 +573,7 @@ describe("Lua trigger bucket helpers", () => {
 
     const opponentMandatory = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger");
     expect(opponentMandatory).toMatchObject({ player: 1, windowKind: "triggerBucket", triggerBucket: "opponentMandatory" });
+    expect(hasGroupedTrigger(restored, 1, restored.session.state.pendingTriggers[0]!.effectId, "activateTrigger")).toBe(true);
     const staleBeforeOpponentMandatory = applyLuaRestoreResponse(restored, { ...opponentMandatory!, windowId: opponentMandatory!.windowId! - 1 });
     expect(staleBeforeOpponentMandatory.ok).toBe(false);
     expect(staleBeforeOpponentMandatory.error).toContain("Response is not currently legal");
@@ -603,6 +608,7 @@ describe("Lua trigger bucket helpers", () => {
 
     const turnOptionalDecline = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "declineTrigger");
     expect(turnOptionalDecline).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnOptional" });
+    expect(hasGroupedTrigger(restored, 0, restored.session.state.pendingTriggers[0]!.effectId, "declineTrigger")).toBe(true);
     const staleBeforeTurnOptionalDecline = applyLuaRestoreResponse(restored, { ...turnOptionalDecline!, windowId: turnOptionalDecline!.windowId! - 1 });
     expect(staleBeforeTurnOptionalDecline.ok).toBe(false);
     expect(staleBeforeTurnOptionalDecline.error).toContain("Response is not currently legal");
@@ -636,6 +642,7 @@ describe("Lua trigger bucket helpers", () => {
 
     const restoredOpponentDecline = getLuaRestoreLegalActions(restoredAfterTurnOptional, 1).find((action) => action.type === "declineTrigger");
     expect(restoredOpponentDecline).toMatchObject({ player: 1, windowKind: "triggerBucket", triggerBucket: "opponentOptional" });
+    expect(hasGroupedTrigger(restoredAfterTurnOptional, 1, restoredAfterTurnOptional.session.state.pendingTriggers[0]!.effectId, "declineTrigger")).toBe(true);
     const staleBeforeRestoredOpponentDecline = applyLuaRestoreResponse(restoredAfterTurnOptional, {
       ...restoredOpponentDecline!,
       windowId: restoredOpponentDecline!.windowId! - 1,
@@ -661,6 +668,7 @@ describe("Lua trigger bucket helpers", () => {
 
     const opponentOptionalDecline = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "declineTrigger");
     expect(opponentOptionalDecline).toMatchObject({ player: 1, windowKind: "triggerBucket", triggerBucket: "opponentOptional" });
+    expect(hasGroupedTrigger(restored, 1, restored.session.state.pendingTriggers[0]!.effectId, "declineTrigger")).toBe(true);
     const staleBeforeOpponentOptionalDecline = applyLuaRestoreResponse(restored, { ...opponentOptionalDecline!, windowId: opponentOptionalDecline!.windowId! - 1 });
     expect(staleBeforeOpponentOptionalDecline.ok).toBe(false);
     expect(staleBeforeOpponentOptionalDecline.error).toContain("Response is not currently legal");
@@ -709,4 +717,20 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function hasGroupedTrigger(
+  restored: ReturnType<typeof restoreDuelWithLuaScripts>,
+  player: 0 | 1,
+  effectId: string,
+  actionType: "activateTrigger" | "declineTrigger",
+): boolean {
+  return getLuaRestoreLegalActionGroups(restored, player).some(
+    (group) =>
+      group.windowId === restored.session.state.actionWindowId &&
+      group.windowKind === "triggerBucket" &&
+      group.actions.some(
+        (action) => action.type === actionType && action.player === player && action.effectId === effectId && action.windowId === group.windowId && action.windowKind === "triggerBucket",
+      ),
+  );
 }
