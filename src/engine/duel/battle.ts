@@ -319,13 +319,13 @@ function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: Due
 
 function resolveAttackPositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetAttack: number, callbacks: DuelBattleCallbacks): void {
   if (attackerAttack > targetAttack) {
-    if (destroyBattleCard(target, attacker.controller, callbacks)) callbacks.collectEvent("battleDestroyed", target);
     callbacks.damagePlayer(target.controller, attackerAttack - targetAttack, [attacker, target]);
+    if (destroyBattleCard(target, attacker.controller, callbacks)) callbacks.collectEvent("battleDestroyed", target);
     return;
   }
   if (attackerAttack < targetAttack) {
-    if (destroyBattleCard(attacker, target.controller, callbacks)) callbacks.collectEvent("battleDestroyed", attacker);
     callbacks.damagePlayer(attacker.controller, targetAttack - attackerAttack, [attacker, target]);
+    if (destroyBattleCard(attacker, target.controller, callbacks)) callbacks.collectEvent("battleDestroyed", attacker);
     return;
   }
   if (destroyBattleCard(attacker, target.controller, callbacks)) callbacks.collectEvent("battleDestroyed", attacker);
