@@ -1,4 +1,5 @@
 import { fallbackCardReader } from "#duel/card-reader.js";
+import { createActionWindowToken } from "#duel/action-window-token.js";
 import { applyResponse, getGroupedDuelLegalActions, getLegalActions, queryPublicState } from "#duel/core.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
@@ -25,6 +26,7 @@ export function restoreDuelWithLuaScripts(
 ): LuaSnapshotRestoreResult {
   const chainLimitRegistryKeys = luaChainLimitRegistryKeys(snapshot);
   const session = restoreDuel(snapshot, cardReader, {}, luaDenyChainLimitRegistry(chainLimitRegistryKeys), { pruneUnrestoredPendingTriggers: false });
+  session.state.actionWindowToken = createActionWindowToken();
   const host = createLuaScriptHost(session);
   const registryKeys = luaRegistryKeys(snapshot);
   const loadedScripts = [...luaRegistryCardCodes(registryKeys, chainLimitRegistryKeys)].map((code) => host.loadCardScript(code, source));

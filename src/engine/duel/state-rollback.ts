@@ -6,6 +6,7 @@ export interface DuelStateRollback {
   winner: DuelState["winner"] | undefined;
   winReason: number | undefined;
   actionWindowId: number;
+  actionWindowToken: string;
   turn: number;
   turnPlayer: PlayerId;
   phase: DuelState["phase"];
@@ -54,6 +55,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     winner: state.winner,
     winReason: state.winReason,
     actionWindowId: state.actionWindowId,
+    actionWindowToken: state.actionWindowToken,
     turn: state.turn,
     turnPlayer: state.turnPlayer,
     phase: state.phase,
@@ -104,6 +106,7 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   if (rollback.winReason === undefined) delete state.winReason;
   else state.winReason = rollback.winReason;
   state.actionWindowId = rollback.actionWindowId;
+  state.actionWindowToken = rollback.actionWindowToken;
   state.turn = rollback.turn;
   state.turnPlayer = rollback.turnPlayer;
   state.phase = rollback.phase;

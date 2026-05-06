@@ -1,4 +1,5 @@
 import { copyDuelActivityCounts } from "#duel/activity.js";
+import { createActionWindowToken } from "#duel/action-window-token.js";
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { isDuelEventName } from "#duel/event-names.js";
@@ -88,6 +89,7 @@ export function restoreDuel(
   const { pendingTriggerBuckets: _pendingTriggerBuckets, ...restorableState } = snapshot.state;
   const state: DuelState = {
     ...restorableState,
+    actionWindowToken: snapshot.state.actionWindowToken ?? createActionWindowToken(),
     players: {
       0: { ...snapshot.state.players[0] },
       1: { ...snapshot.state.players[1] },
@@ -171,6 +173,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   for (const field of ["id", "seed", "status", "phase"] as const) {
     if (typeof state[field] !== "string") throw new Error(`Malformed duel snapshot: state.${field} must be a string`);
   }
+  if (state.actionWindowToken !== undefined && typeof state.actionWindowToken !== "string") throw new Error("Malformed duel snapshot: state.actionWindowToken must be a string");
   for (const field of ["actionWindowId", "turn", "randomCounter"] as const) {
     assertSnapshotNonNegativeInteger(state[field], `state.${field}`);
   }

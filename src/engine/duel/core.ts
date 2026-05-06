@@ -284,20 +284,20 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   const actions: DuelAction[] = [];
   if (state.prompt) {
     actions.push(...getPromptResponseActions(state.prompt, player));
-    return stampDuelActions(actions, state.actionWindowId, "prompt");
+    return stampDuelActions(actions, state.actionWindowId, "prompt", state.actionWindowToken);
   }
   if (shouldContinueTriggerSelection(state)) {
     actions.push(...getPendingTriggerActions(state, player));
-    return stampDuelActions(actions, state.actionWindowId, "triggerBucket");
+    return stampDuelActions(actions, state.actionWindowId, "triggerBucket", state.actionWindowToken);
   }
   if (state.chain.length) {
-    if (!chainLinksResolvable(state)) return stampDuelActions(actions, state.actionWindowId, "chainResponse");
+    if (!chainLinksResolvable(state)) return stampDuelActions(actions, state.actionWindowId, "chainResponse", state.actionWindowToken);
     actions.push(...getChainResponseActions(state, player));
-    return stampDuelActions(actions, state.actionWindowId, "chainResponse");
+    return stampDuelActions(actions, state.actionWindowId, "chainResponse", state.actionWindowToken);
   }
   if (state.pendingBattle) {
     actions.push(...battleWindowActions(state, player, quickEffectActions, (duelState, actionPlayer) => coreReplayAttackActions(duelState, actionPlayer, coreBattleHandlers)));
-    return stampDuelActions(actions, state.actionWindowId, "battle");
+    return stampDuelActions(actions, state.actionWindowId, "battle", state.actionWindowToken);
   }
   const hand = getCards(state, player, "hand");
   if (state.phase === "main1" || state.phase === "main2") {
@@ -348,7 +348,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   const nextPhase = nextAvailableDuelPhase(state, player, (phase) => canEnterDuelPhase(state, player, phase));
   if (!mustAttack && nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
   if (!mustAttack) actions.push({ type: "endTurn", player, label: "End turn" });
-  return stampDuelActions(actions, state.actionWindowId, "open");
+  return stampDuelActions(actions, state.actionWindowId, "open", state.actionWindowToken);
 }
 
 export function getGroupedDuelLegalActions(session: DuelSession, player: PlayerId): ReturnType<typeof groupDuelLegalActions> {

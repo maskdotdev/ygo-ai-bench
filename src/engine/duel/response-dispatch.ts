@@ -1,4 +1,5 @@
 import { sameAction } from "#duel/response-match.js";
+import { createActionWindowToken } from "#duel/action-window-token.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { queryPublicState } from "#duel/snapshot.js";
 import { groupDuelLegalActions } from "#duel/legal-action-groups.js";
@@ -53,6 +54,7 @@ export function applyDuelResponse(session: DuelSession, response: unknown, handl
   try {
     dispatchDuelResponse(session, dispatchResponse, handlers);
     session.state.actionWindowId += 1;
+    session.state.actionWindowToken = createActionWindowToken();
     return result(session, handlers, true);
   } catch (error) {
     restoreDuelState(session.state, rollback);

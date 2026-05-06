@@ -24,6 +24,7 @@ function expectLegalActionsMatchPublicWindow(session: ReturnType<typeof setupOne
   for (const action of actions) {
     expect(action.windowId).toBe(publicState.actionWindowId);
     expect(action.windowKind).toBe(publicState.windowKind);
+    expect(action.windowToken).toBe(session.state.actionWindowToken);
   }
   for (const group of groups) {
     expect(group.windowId).toBe(publicState.actionWindowId);
@@ -35,6 +36,7 @@ function expectResultActionsMatchResultState(result: ReturnType<typeof applyResp
   for (const action of result.legalActions) {
     expect(action.windowId).toBe(result.state.actionWindowId);
     expect(action.windowKind).toBe(result.state.windowKind);
+    expect(action.windowToken).toBeDefined();
   }
   for (const group of result.legalActionGroups) {
     expect(group.windowId).toBe(result.state.actionWindowId);
@@ -58,9 +60,10 @@ function expectStalePreapplyRejected(session: ReturnType<typeof restoreDuel>, ac
 describe("duel action windows", () => {
   it("copies stamped action payloads away from the source action list", () => {
     const actions: DuelAction[] = [{ type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["a", "b"], label: "Fusion" }];
-    const stamped = stampDuelActions(actions, 2, "open");
+    const stamped = stampDuelActions(actions, 2, "open", "token-1");
     const stampedAction = stamped[0];
     expect(stampedAction?.type).toBe("fusionSummon");
+    expect(stampedAction?.windowToken).toBe("token-1");
     if (!stampedAction || stampedAction.type !== "fusionSummon") throw new Error("Expected a stamped fusion action");
 
     stampedAction.materialUids.push("c");

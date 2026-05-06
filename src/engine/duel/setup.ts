@@ -1,4 +1,5 @@
 import { shuffle } from "#engine/rng.js";
+import { createActionWindowToken } from "#duel/action-window-token.js";
 import { createDuelActivityCounts } from "#duel/activity.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { getCards, pushDuelLog, resequence } from "#duel/card-state.js";
@@ -15,6 +16,7 @@ export function createDuel(options: CreateDuelOptions = {}): DuelSession {
     id: `duel-${seed}-${Date.now().toString(36)}`,
     seed,
     actionWindowId: 0,
+    actionWindowToken: createActionWindowToken(),
     status: "setup",
     turn: 0,
     turnPlayer: 0,

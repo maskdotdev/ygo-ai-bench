@@ -455,6 +455,7 @@ export interface DuelState {
   id: string;
   seed: string;
   actionWindowId: number;
+  actionWindowToken: string;
   status: DuelStatus;
   winner?: DuelWinner;
   winReason?: number;
@@ -546,7 +547,7 @@ export type DuelAction = (
   | { type: "declareAttack"; player: PlayerId; attackerUid: string; targetUid?: string; directAttack?: true; label: string }
   | { type: "changePhase"; player: PlayerId; phase: DuelPhase; label: string }
   | { type: "endTurn"; player: PlayerId; label: string }
-) & { windowId?: number; windowKind?: DuelActionWindowKind };
+) & { windowId?: number; windowKind?: DuelActionWindowKind; windowToken?: string };
 
 export type DuelResponse = DuelAction;
 

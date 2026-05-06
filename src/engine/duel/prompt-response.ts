@@ -27,6 +27,6 @@ export function resolveDuelPrompt(state: DuelState, response: Extract<DuelRespon
   delete state.prompt;
 }
 
-export function stampDuelActions(actions: DuelAction[], windowId: number, windowKind: DuelActionWindowKind): DuelAction[] {
-  return actions.map((action) => ({ ...copyDuelAction(action), windowId, windowKind }));
+export function stampDuelActions(actions: DuelAction[], windowId: number, windowKind: DuelActionWindowKind, windowToken: string): DuelAction[] {
+  return actions.map((action) => ({ ...copyDuelAction(action), windowId, windowKind, windowToken }));
 }

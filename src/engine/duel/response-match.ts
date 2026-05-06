@@ -11,6 +11,7 @@ export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
   if (requiresWindowStampEcho(a) && !hasWindowStamp(response)) return false;
   if (hasWindowId(a) && hasWindowId(response) && a.windowId !== response.windowId) return false;
   if (hasWindowKind(a) && hasWindowKind(response) && a.windowKind !== response.windowKind) return false;
+  if (hasWindowToken(a) && hasWindowToken(response) && a.windowToken !== response.windowToken) return false;
   if ("uid" in a && (!("uid" in response) || a.uid !== response.uid)) return false;
   if (a.type === "activateEffect" && response.type === "activateEffect" && a.effectId !== response.effectId) return false;
   if (a.type === "specialSummonProcedure" && response.type === "specialSummonProcedure" && a.effectId !== response.effectId) return false;
@@ -60,12 +61,16 @@ function hasWindowKind(value: unknown): value is { windowKind: DuelActionWindowK
   return isRecord(value) && "windowKind" in value && typeof value.windowKind === "string" && duelActionWindowKinds.has(value.windowKind as DuelActionWindowKind);
 }
 
+function hasWindowToken(value: unknown): value is { windowToken: string } {
+  return isRecord(value) && "windowToken" in value && typeof value.windowToken === "string";
+}
+
 function hasPartialWindowStamp(value: unknown): boolean {
   return hasWindowIdKey(value) !== hasWindowKindKey(value);
 }
 
 function hasWindowStamp(value: unknown): boolean {
-  return hasWindowId(value) && hasWindowKind(value);
+  return hasWindowId(value) && hasWindowKind(value) && hasWindowToken(value);
 }
 
 function requiresWindowStampEcho(action: DuelAction): boolean {
@@ -100,7 +105,7 @@ function requiresWindowStampEcho(action: DuelAction): boolean {
 }
 
 function hasMalformedWindowStamp(value: unknown): boolean {
-  return (hasWindowIdKey(value) && !hasWindowId(value)) || (hasWindowKindKey(value) && !hasWindowKind(value));
+  return (hasWindowIdKey(value) && !hasWindowId(value)) || (hasWindowKindKey(value) && !hasWindowKind(value)) || (hasWindowTokenKey(value) && !hasWindowToken(value));
 }
 
 function hasWindowIdKey(value: unknown): boolean {
@@ -109,4 +114,8 @@ function hasWindowIdKey(value: unknown): boolean {
 
 function hasWindowKindKey(value: unknown): boolean {
   return isRecord(value) && "windowKind" in value;
+}
+
+function hasWindowTokenKey(value: unknown): boolean {
+  return isRecord(value) && "windowToken" in value;
 }

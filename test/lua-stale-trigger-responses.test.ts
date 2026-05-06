@@ -163,6 +163,9 @@ describe("Lua stale trigger responses", () => {
     const restoredDecline = getDuelLegalActions(restored.session, 0).find((action) => action.type === "declineTrigger");
     expect(restoredDecline).toBeDefined();
     expect(restoredDecline).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
+    const stalePreapply = applyLuaRestoreResponse(restored, staleDecline!);
+    expect(stalePreapply.ok).toBe(false);
+    expect(stalePreapply.error).toContain("Response is not currently legal");
     applyLuaRestoreAndAssert(restored, restoredDecline!);
     const replay = applyLuaRestoreResponse(restored, staleDecline!);
 
@@ -224,6 +227,9 @@ describe("Lua stale trigger responses", () => {
     const restoredTrigger = getDuelLegalActions(restored.session, 0).find((action) => action.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
     expect(restoredTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
+    const stalePreapply = applyLuaRestoreResponse(restored, staleTrigger!);
+    expect(stalePreapply.ok).toBe(false);
+    expect(stalePreapply.error).toContain("Response is not currently legal");
     const restoredActivation = applyLuaRestoreAndAssert(restored, restoredTrigger!);
     expect(restoredActivation.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(restoredActivation.state.chain).toHaveLength(0);
