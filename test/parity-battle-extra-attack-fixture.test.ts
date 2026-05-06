@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { attackGroup } from "./parity-legal-action-group-helpers.js";
+import { attackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 const resolveBattleStepsBeforeFinalPass = [
   makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -70,8 +70,12 @@ describe("EDOPro parity battle extra attack fixtures", () => {
             locations: { monsterZone: ["100"], graveyard: ["200"] },
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 14, windowKind: "open", count: 1 }],
-            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0" }], 1, 14)],
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 14, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 14, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 14, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0" }], 1, 14), turnGroup(14)],
           },
         }),
       ],
@@ -90,8 +94,12 @@ describe("EDOPro parity battle extra attack fixtures", () => {
         locations: { monsterZone: ["100"], graveyard: ["200"] },
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
-        legalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 14, windowKind: "open", count: 1 }],
-        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0" }], 1, 14)],
+        legalActions: [
+          { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 14, windowKind: "open", count: 1 },
+          { type: "changePhase", player: 0, windowId: 14, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 14, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0" }], 1, 14), turnGroup(14)],
       },
     };
 
