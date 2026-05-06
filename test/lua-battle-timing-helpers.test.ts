@@ -221,6 +221,8 @@ describe("Lua battle timing helpers", () => {
 
     applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passDamage")!);
     expect(legalEffectCodes(session, 0)).toEqual(["300"]);
+    const originalDamageQuick = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(originalDamageQuick).toBeDefined();
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -228,6 +230,9 @@ describe("Lua battle timing helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
+    const originalQuickPreapply = applyLuaRestoreResponse(restored, originalDamageQuick!);
+    expect(originalQuickPreapply.ok).toBe(false);
+    expect(originalQuickPreapply.error).toContain("Response is not currently legal");
     expectLuaRestoreStalePreapply(restored, action!, 0);
     applyLuaRestoreAndAssert(restored, action!);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
