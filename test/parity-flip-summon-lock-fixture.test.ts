@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { summonGroup } from "./parity-legal-action-group-helpers.js";
+import { turnGroup, summonGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity flip summon lock fixtures", () => {
   it("exposes Flip Summon actions for eligible face-down monsters", () => {
@@ -50,7 +50,15 @@ describe("EDOPro parity flip summon lock fixtures", () => {
         note: "EDOPro final fixture state keeps the flipped monster face-up after a legal Flip Summon",
         phase: "main1",
         waitingFor: 0,
+        windowId: 1,
         cards: [{ uid: "p0-deck-100-0", position: "faceUpAttack", faceUp: true }],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(1)],
       },
     };
 
