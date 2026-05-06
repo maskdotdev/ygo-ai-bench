@@ -64,6 +64,7 @@ describe("trigger chain-window restore", () => {
 
     const pass = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restoredChainWindow, 1), 1)).toBe(true);
     assertStalePreviousWindow(restoredChainWindow, pass!);
     const resolved = applyAndAssert(restoredChainWindow, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
@@ -128,6 +129,7 @@ describe("trigger chain-window restore", () => {
 
     const pass = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restoredChainWindow, 1), 1)).toBe(true);
     assertStalePreviousWindow(restoredChainWindow, pass!);
     const resolved = applyAndAssert(restoredChainWindow, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
@@ -198,6 +200,7 @@ describe("trigger chain-window restore", () => {
 
     const pass = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restoredChainWindow, 1), 1)).toBe(true);
     assertStalePreviousWindow(restoredChainWindow, pass!);
     const resolved = applyAndAssert(restoredChainWindow, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
@@ -364,6 +367,14 @@ function hasGroupedEffect(
       group.actions.some(
         (action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowKind === windowKind,
       ),
+  );
+}
+
+function hasGroupedPass(groups: ReturnType<typeof getGroupedDuelLegalActions>, player: 0 | 1): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === "chainResponse" &&
+      group.actions.some((action) => action.type === "passChain" && action.player === player && action.windowId === group.windowId && action.windowKind === "chainResponse"),
   );
 }
 
