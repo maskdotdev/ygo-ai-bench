@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
-import type { DuelCardData } from "#duel/types.js";
+import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
+import type { DuelAction, DuelCardData } from "#duel/types.js";
 
 describe("Lua open fast priority restore", () => {
   it("alternates live and restored fast-effect response priority after open quick effects", () => {
@@ -578,6 +579,13 @@ describe("Lua open fast priority restore", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", uid: expect.stringContaining("19300") })]));
     expect(hasGroupedLuaEffect(getLuaRestoreLegalActionGroups(restored, 0), 0, "19300", "open")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    const restoredFinalOpen = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
+    expect(restoredFinalOpen.restoreComplete).toBe(true);
+    expect(restoredFinalOpen.session.state).toMatchObject({ waitingFor: 0, chain: [], pendingTriggers: [] });
+    expect(queryPublicState(restoredFinalOpen.session)).toMatchObject({ windowKind: "open", pendingTriggerBuckets: [] });
+    expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restoredFinalOpen, 0))).toEqual(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0)));
+    expect(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restoredFinalOpen, 0))).toEqual(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restored, 0)));
+    expect(getLuaRestoreLegalActions(restoredFinalOpen, 1)).toEqual([]);
     expect(restored.host.messages).toEqual(["restored trigger fast turn chain quick resolved", "restored trigger fast chain quick resolved", "restored trigger fast trigger resolved", "restored trigger fast quick resolved"]);
   });
 });
@@ -608,6 +616,20 @@ function assertLuaRestoreLegalWindow(restored: ReturnType<typeof restoreDuelWith
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
+function actionsWithoutWindowToken(actions: DuelAction[]): Array<Omit<DuelAction, "windowToken">> {
+  return actions.map((action) => {
+    const { windowToken: _windowToken, ...rest } = action;
+    return rest;
+  });
+}
+
+function groupsWithoutWindowToken(groups: DuelLegalActionGroup[]): DuelLegalActionGroup[] {
+  return groups.map((group) => ({
+    ...group,
+    actions: actionsWithoutWindowToken(group.actions) as DuelAction[],
+  }));
 }
 
 function hasGroupedLuaEffect(
