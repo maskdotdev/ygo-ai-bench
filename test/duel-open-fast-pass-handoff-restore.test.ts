@@ -5,6 +5,42 @@ import type { DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("open fast pass handoff restore", () => {
+  it("restores open priority after an open fast effect has no legal response", () => {
+    const session = createDuel({ seed: 263, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "500"] },
+    });
+    startDuel(session);
+
+    const turnOpenQuick = findHandCard(session, 0, "100");
+    expect(turnOpenQuick).toBeDefined();
+    registerEffect(session, openOnlyQuick("restore-open-no-response-turn-quick", turnOpenQuick!.uid, 0, true));
+
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-no-response-turn-quick");
+    expect(quick).toBeDefined();
+    const resolved = applyAndAssert(session, quick!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+    expect(session.state.chainPasses).toEqual([]);
+    expect(session.state.log.map((entry) => entry.detail)).toContain("restore-open-no-response-turn-quick resolved");
+    expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-open-no-response-turn-quick")).toBe(false);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+    expect(restored.state.chainPasses).toEqual([]);
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 0), 0, "restore-open-no-response-turn-quick", "open")).toBe(false);
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restored, 0), 0)).toBe(false);
+
+    const staleQuick = applyResponse(restored, quick!);
+    expect(staleQuick.ok).toBe(false);
+    expect(staleQuick.error).toContain("Response is not currently legal");
+    expect(staleQuick.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+  });
+
   it("restores chain-response priority to the turn player after the opponent passes", () => {
     const session = createDuel({ seed: 262, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -183,6 +219,7 @@ function chainOnlyQuick(id: string, sourceUid: string, controller: 0 | 1, oncePe
 
 function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
   return {
+    "restore-open-no-response-turn-quick": restoreOpenOnlyQuick(true),
     "restore-open-pass-turn-open-quick": restoreOpenOnlyQuick(true),
     "restore-open-pass-turn-chain-quick": restoreChainOnlyQuick(true),
     "restore-open-pass-opponent-chain-quick": restoreChainOnlyQuick(),
