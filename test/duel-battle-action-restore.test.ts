@@ -440,6 +440,7 @@ describe("battle action restore", () => {
       "restore-battle-turn-quick": restoreBattleQuickEffect("Restored battle turn quick resolved"),
       "restore-battle-opponent-chain-quick": restoreChainOnlyBattleQuickEffect("Restored battle opponent chain quick resolved"),
     });
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restored, 1), 1)).toBe(true);
     const opponentQuick = getDuelLegalActions(restoredQuick, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-battle-opponent-chain-quick");
     expect(opponentQuick).toBeDefined();
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
@@ -503,6 +504,7 @@ describe("battle action restore", () => {
       "restore-damage-turn-quick": restoreDamageStepQuickEffect("Restored damage turn quick resolved"),
       "restore-damage-opponent-chain-quick": restoreChainOnlyDamageStepQuickEffect("Restored damage opponent chain quick resolved"),
     });
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restored, 1), 1)).toBe(true);
     const opponentQuick = getDuelLegalActions(restoredQuick, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-damage-opponent-chain-quick");
     expect(opponentQuick).toBeDefined();
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
@@ -564,6 +566,7 @@ describe("battle action restore", () => {
       "restore-damage-calc-turn-quick": restoreDamageCalculationQuickEffect("Restored damage calculation turn quick resolved"),
       "restore-damage-calc-opponent-chain-quick": restoreChainOnlyDamageCalculationQuickEffect("Restored damage calculation opponent chain quick resolved"),
     });
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restored, 1), 1)).toBe(true);
     const opponentQuick = getDuelLegalActions(restoredQuick, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-damage-calc-opponent-chain-quick");
     expect(opponentQuick).toBeDefined();
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
@@ -626,6 +629,7 @@ describe("battle action restore", () => {
       "restore-after-damage-turn-quick": restoreDamageStepQuickEffect("Restored after damage turn quick resolved"),
       "restore-after-damage-opponent-chain-quick": restoreChainOnlyDamageStepQuickEffect("Restored after damage opponent chain quick resolved"),
     });
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restored, 1), 1)).toBe(true);
     const opponentQuick = getDuelLegalActions(restoredQuick, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-after-damage-opponent-chain-quick");
     expect(opponentQuick).toBeDefined();
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
@@ -690,6 +694,7 @@ describe("battle action restore", () => {
       "restore-end-damage-turn-quick": restoreDamageStepQuickEffect("Restored end damage turn quick resolved"),
       "restore-end-damage-opponent-chain-quick": restoreChainOnlyDamageStepQuickEffect("Restored end damage opponent chain quick resolved"),
     });
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restored, 1), 1)).toBe(true);
     const opponentQuick = getDuelLegalActions(restoredQuick, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-end-damage-opponent-chain-quick");
     expect(opponentQuick).toBeDefined();
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
@@ -775,6 +780,14 @@ function hasGroupedEffect(
       group.actions.some(
         (action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowKind === windowKind,
       ),
+  );
+}
+
+function hasGroupedPass(groups: ReturnType<typeof getGroupedDuelLegalActions>, player: 0 | 1): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === "chainResponse" &&
+      group.actions.some((action) => action.type === "passChain" && action.player === player && action.windowId === group.windowId && action.windowKind === "chainResponse"),
   );
 }
 
