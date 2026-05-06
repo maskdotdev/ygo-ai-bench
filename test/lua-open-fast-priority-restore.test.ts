@@ -290,6 +290,24 @@ describe("Lua open fast priority restore", () => {
     expect(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restoredFinalResponse, 1))).toEqual(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restored, 1)));
     expect(getLuaRestoreLegalActionGroups(restoredFinalResponse, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredFinalResponse, 1));
     expect(hasGroupedLuaEffect(getLuaRestoreLegalActionGroups(restoredFinalResponse, 1), 1, "18300", "chainResponse")).toBe(true);
+    const restoredOpponentChainQuick = getLuaRestoreLegalActions(restoredFinalResponse, 1).find((action) => action.type === "activateEffect" && action.uid.includes("18300"));
+    expect(restoredOpponentChainQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    const restoredOpponentChainResult = applyLuaRestoreAndAssert(restoredFinalResponse, restoredOpponentChainQuick!);
+    expect(restoredOpponentChainResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(restoredOpponentChainResult.state.chain.map((link) => link.sourceUid)).toEqual([
+      expect.stringContaining("18200"),
+      expect.stringContaining("18300"),
+      expect.stringContaining("18300"),
+    ]);
+    const restoredFinalPass = getLuaRestoreLegalActions(restoredFinalResponse, 1).find((action) => action.type === "passChain");
+    expect(restoredFinalPass).toBeDefined();
+    const restoredFinalOpened = applyLuaRestoreAndAssert(restoredFinalResponse, restoredFinalPass!);
+    expect(restoredFinalOpened.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restoredFinalResponse.host.messages).toEqual([
+      "restored open fast opponent chain quick resolved",
+      "restored open fast opponent chain quick resolved",
+      "restored open fast quick resolved",
+    ]);
 
     const staleOpponentChainQuick = applyLuaRestoreResponse(restored, opponentChainQuick!);
     expect(staleOpponentChainQuick.ok).toBe(false);
