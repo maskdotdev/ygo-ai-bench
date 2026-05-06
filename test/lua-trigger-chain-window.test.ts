@@ -444,6 +444,12 @@ describe("Lua trigger chain windows", () => {
     const restoredQuickResult = applyLuaRestoreAndAssert(restoredAfterOpponentTrigger, restoredOpponentQuick!);
     expect(restoredQuickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
+    const restoredPass = getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).find((action) => action.type === "passChain");
+    expect(restoredPass).toBeDefined();
+    const restoredPassed = applyLuaRestoreAndAssert(restoredAfterOpponentTrigger, restoredPass!);
+    expect(restoredPassed.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(restoredPassed.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", effectId: turnOpenQuickId })]));
+    expect(getDuelLegalActions(restoredAfterOpponentTrigger.session, 1)).toEqual([]);
 
     const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
     expect(opponentQuick).toBeDefined();
