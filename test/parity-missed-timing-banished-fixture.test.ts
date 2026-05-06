@@ -136,4 +136,168 @@ describe("EDOPro parity banished missed timing fixtures", () => {
 
     expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
   });
+
+  it("returns declined optional if banished triggers to open fast priority while optional when remains missed", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Banish Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "400", name: "Banish Optional When", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Banish Optional If", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "800", name: "Open Quick After Banish", kind: "monster", attack: 500, defense: 500 },
+      { code: "600", name: "Banished Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "700", name: "After Banish Body", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "banished missed timing decline open fast fixture",
+      options: { seed: 65, startingHandSize: 6 },
+      decks: {
+        0: { main: ["100", "400", "500", "800", "600", "700"] },
+        1: { main: ["600", "600", "600", "600", "600", "600"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "600", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 0, code: "700", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+        ],
+        effects: [
+          {
+            id: "banish-decline-multistep",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "600", from: "monsterZone", to: "banished", collectEvent: "banished", eventIsLast: false },
+              { player: 0, code: "700", from: "monsterZone", to: "graveyard" },
+            ],
+            logMessage: "Banish decline multi step resolved",
+          },
+          {
+            id: "banish-decline-optional-when",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "banished",
+            triggerTiming: "when",
+            range: ["hand"],
+            logMessage: "Banish decline optional when should not resolve",
+          },
+          {
+            id: "banish-decline-optional-if",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "banished",
+            triggerTiming: "if",
+            range: ["hand"],
+            logMessage: "Banish decline optional if should not resolve",
+          },
+          {
+            id: "banish-decline-open-fast",
+            player: 0,
+            code: "800",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Banish decline open fast resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "banish-decline-multistep" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps optional if banished triggers available while optional when banished triggers miss timing",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "banish-decline-optional-if", eventName: "banished", eventCardUid: "p0-deck-600-4" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-decline-optional-if", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-decline-optional-if", count: 1 },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-decline-open-fast" },
+            ],
+            logIncludes: ["Banish decline multi step resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "banish-decline-optional-if" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro exposes open fast effects after declining the surviving optional if banished trigger without resurrecting missed optional when triggers",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            legalActionCounts: { 0: 12, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-multistep", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "800", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "800", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-if" },
+            ],
+            logIncludes: ["Banish decline multi step resolved", "banish-decline-optional-if"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state offers open fast effects after declining surviving optional if banished triggers while optional when remains missed",
+        windowId: 2,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        legalActionCounts: { 0: 12, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-open-fast", count: 1 },
+          { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-multistep", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "800", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "800", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-if" },
+        ],
+        logIncludes: ["Banish decline multi step resolved", "banish-decline-optional-if"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
 });
