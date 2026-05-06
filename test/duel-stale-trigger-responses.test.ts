@@ -43,6 +43,7 @@ describe("duel stale trigger responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(0);
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([]);
     expect(session.state.log.filter((entry) => entry.detail === "Stale activate trigger resolved")).toHaveLength(1);
   });
 
@@ -86,6 +87,7 @@ describe("duel stale trigger responses", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(1);
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([{ player: 0, triggerBucket: "turnOptional", triggerIds: session.state.pendingTriggers.map((trigger) => trigger.id) }]);
     expect(session.state.log.some((entry) => entry.detail === "Stale bucket activate trigger should not resolve")).toBe(false);
   });
 
@@ -128,6 +130,7 @@ describe("duel stale trigger responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(0);
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([]);
     expect(session.state.log.filter((entry) => entry.action === "declineTrigger" && entry.detail === "stale-decline-trigger")).toHaveLength(1);
     expect(session.state.log.some((entry) => entry.detail === "Stale decline trigger should not resolve")).toBe(false);
   });
@@ -172,6 +175,7 @@ describe("duel stale trigger responses", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(1);
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([{ player: 0, triggerBucket: "turnOptional", triggerIds: session.state.pendingTriggers.map((trigger) => trigger.id) }]);
     expect(session.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "stale-bucket-decline-trigger")).toBe(false);
   });
 
@@ -246,10 +250,12 @@ describe("duel stale trigger responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-stale-first-trigger"]);
+    expect(queryPublicState(restored).pendingTriggerBuckets).toEqual([{ player: 0, triggerBucket: "turnOptional", triggerIds: restored.state.pendingTriggers.map((trigger) => trigger.id) }]);
     const declineFirst = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-stale-first-trigger");
     expect(declineFirst).toBeTruthy();
     expect(declineFirst).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket" });
     applyAndAssert(restored, declineFirst!);
+    expect(queryPublicState(restored).pendingTriggerBuckets).toEqual([]);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale second trigger resolved")).toBe(true);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale first trigger resolved")).toBe(false);
   });
@@ -325,6 +331,7 @@ describe("duel stale trigger responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-stale-first-decline"]);
+    expect(queryPublicState(restored).pendingTriggerBuckets).toEqual([{ player: 0, triggerBucket: "turnOptional", triggerIds: restored.state.pendingTriggers.map((trigger) => trigger.id) }]);
     expect(restored.state.log.filter((entry) => entry.action === "declineTrigger" && entry.detail === "restore-stale-second-decline")).toHaveLength(1);
     expect(restored.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "restore-stale-first-decline")).toBe(false);
     expect(restored.state.log.some((entry) => entry.detail === "Restore stale first decline should not resolve")).toBe(false);
