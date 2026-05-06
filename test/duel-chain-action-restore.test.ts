@@ -233,6 +233,7 @@ describe("chain action restore", () => {
     });
     expect(getDuelLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-opponent-open-only")).toBe(false);
     expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 1), 1, "restore-open-priority-opponent-open-only", "chainResponse")).toBe(false);
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restored, 1), 1)).toBe(true);
     const staleBeforePass = applyResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
     expect(staleBeforePass.ok).toBe(false);
     expect(staleBeforePass.error).toContain("Response is not currently legal");
@@ -320,6 +321,7 @@ describe("chain action restore", () => {
 
     const opponentPass = getDuelLegalActions(restoredQuickChain, 1).find((action) => action.type === "passChain");
     expect(opponentPass).toBeDefined();
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restoredQuickChain, 1), 1)).toBe(true);
     const resolvedQuickChain = applyResponse(restoredQuickChain, opponentPass!);
     expect(resolvedQuickChain.ok, resolvedQuickChain.error).toBe(true);
     expect(resolvedQuickChain.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
@@ -464,6 +466,7 @@ describe("chain action restore", () => {
     assertRestoreLegalWindow(restoredTriggerChain, staleOpponentQuick, 1);
     const triggerPass = getDuelLegalActions(restoredTriggerChain, triggerResult.state.waitingFor!).find((action) => action.type === "passChain");
     expect(triggerPass).toBeDefined();
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restoredTriggerChain, triggerResult.state.waitingFor!), triggerResult.state.waitingFor!)).toBe(true);
     const staleBeforeTriggerPass = applyResponse(restoredTriggerChain, { ...triggerPass!, windowId: triggerPass!.windowId! - 1 });
     expect(staleBeforeTriggerPass.ok).toBe(false);
     expect(staleBeforeTriggerPass.error).toContain("Response is not currently legal");
@@ -611,6 +614,14 @@ function hasGroupedEffect(
 ): boolean {
   return groups.some((group) =>
     group.windowKind === windowKind && group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowKind === windowKind),
+  );
+}
+
+function hasGroupedPass(groups: ReturnType<typeof getGroupedDuelLegalActions>, player: 0 | 1): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === "chainResponse" &&
+      group.actions.some((action) => action.type === "passChain" && action.player === player && action.windowId === group.windowId && action.windowKind === "chainResponse"),
   );
 }
 
