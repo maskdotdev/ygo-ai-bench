@@ -88,9 +88,12 @@ describe("Lua special summon procedure restore", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
     expect(action).toMatchObject({ windowKind: "open" });
+    expect(hasGroupedProcedure(restored, source!.uid)).toBe(true);
 
     const staleAction = { ...action!, windowId: action!.windowId! - 1 };
     const staleResult = applyLuaRestoreResponse(restored, staleAction);
@@ -158,8 +161,11 @@ describe("Lua special summon procedure restore", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
+    expect(hasGroupedProcedure(restored, source!.uid)).toBe(true);
 
     const staleAction = applyLuaRestoreResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
     expect(staleAction.ok).toBe(false);
@@ -240,8 +246,11 @@ describe("Lua special summon procedure restore", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
+    expect(hasGroupedProcedure(restored, source!.uid)).toBe(true);
 
     const staleAction = applyLuaRestoreResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
     expect(staleAction.ok).toBe(false);
@@ -339,8 +348,11 @@ describe("Lua special summon procedure restore", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
+    expect(hasGroupedProcedure(restored, source!.uid)).toBe(true);
 
     const staleAction = applyLuaRestoreResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
     expect(staleAction.ok).toBe(false);
@@ -373,4 +385,10 @@ function assertFailedRestoreSurface(restored: ReturnType<typeof restoreDuelWithL
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const action of response.legalActions) expect(action).toMatchObject({ windowId, windowKind: "open" });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: "open" });
+}
+
+function hasGroupedProcedure(restored: ReturnType<typeof restoreDuelWithLuaScripts>, uid: string): boolean {
+  return getLuaRestoreLegalActionGroups(restored, 0).some((group) =>
+    group.actions.some((action) => action.type === "specialSummonProcedure" && action.uid === uid),
+  );
 }
