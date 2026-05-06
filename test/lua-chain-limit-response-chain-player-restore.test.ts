@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { applyResponse, createDuel, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelAction } from "#duel/types.js";
 
 describe("Lua response-matches-chain-player chain-limit restore", () => {
@@ -81,9 +81,18 @@ describe("Lua response-matches-chain-player chain-limit restore", () => {
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey: "lua-chain-limit:100:0:chain:known:closure:response-matches-chain-player", untilChainEnd: true });
     expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0))).toEqual(actionsWithoutWindowToken(getLegalActions(session, 0)));
     expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 1))).toEqual(actionsWithoutWindowToken(getLegalActions(session, 1)));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
+    expect(hasGroupedLuaEffect(restored, 1, "lua-2")).toBe(false);
   });
 });
+
+function hasGroupedLuaEffect(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1, effectId: string): boolean {
+  return getLuaRestoreLegalActionGroups(restored, player).some((group) =>
+    group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId),
+  );
+}
 
 function actionsWithoutWindowToken(actions: DuelAction[]): Array<Omit<DuelAction, "windowToken">> {
   return actions.map((action) => {

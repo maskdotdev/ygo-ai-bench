@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { applyResponse, createDuel, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua effect-type chain-limit restore", () => {
   it("restores inline not IsHasType(EFFECT_TYPE_ACTIVATE) predicates from snapshots", () => {
@@ -79,7 +79,16 @@ describe("Lua effect-type chain-limit restore", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey: "lua-chain-limit:100:0:link:known:closure:not-effect-type:16", untilChainEnd: false });
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
+    expect(hasGroupedLuaEffect(restored, 1, "lua-2")).toBe(true);
+    expect(hasGroupedLuaEffect(restored, 1, "lua-3")).toBe(false);
   });
 });
+
+function hasGroupedLuaEffect(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1, effectId: string): boolean {
+  return getLuaRestoreLegalActionGroups(restored, player).some((group) =>
+    group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId),
+  );
+}
