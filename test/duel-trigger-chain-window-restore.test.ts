@@ -321,16 +321,20 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
 }
 
 function assertStaleResponse(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const beforeChainPasses = [...session.state.chainPasses];
   const stale = applyResponse(session, action);
   expect(stale.ok).toBe(false);
   expect(stale.error).toContain("Response is not currently legal");
+  expect(session.state.chainPasses).toEqual(beforeChainPasses);
   assertLegalWindow(session, stale, stale.state.waitingFor!);
 }
 
 function assertStalePreviousWindow(session: ReturnType<typeof createDuel>, action: DuelResponse) {
+  const beforeChainPasses = [...session.state.chainPasses];
   const stale = applyResponse(session, { ...action, windowId: action.windowId! - 1 });
   expect(stale.ok).toBe(false);
   expect(stale.error).toContain("Response is not currently legal");
+  expect(session.state.chainPasses).toEqual(beforeChainPasses);
   assertLegalWindow(session, stale, stale.state.waitingFor!);
 }
 
