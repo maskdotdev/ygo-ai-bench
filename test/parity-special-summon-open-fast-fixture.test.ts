@@ -149,6 +149,7 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
       { code: "100", name: "Open Fast Special Summon", kind: "monster", attack: 1000, defense: 1000 },
       { code: "200", name: "Turn Open Quick After Special", kind: "monster", attack: 1000, defense: 1000 },
       { code: "300", name: "Opponent Chain Quick After Special", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Opponent Open Quick After Special Chain", kind: "monster", attack: 1000, defense: 1000 },
       { code: "400", name: "Turn Normal Follow-up", kind: "monster", attack: 1000, defense: 1000 },
     ];
     const fixture: ScriptedDuelFixture = {
@@ -156,7 +157,7 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
       options: { seed: 265, startingHandSize: 3 },
       decks: {
         0: { main: ["100", "200", "400"] },
-        1: { main: ["300", "400", "400"] },
+        1: { main: ["300", "500", "400"] },
       },
       setup: {
         effects: [
@@ -190,6 +191,16 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
             activationChain: "chain",
             logMessage: "Opponent chain quick after special resolved",
           },
+          {
+            id: "special-summon-opponent-open-chain-filtered",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Opponent open quick after special chain should not resolve",
+          },
         ],
       },
       responses: [
@@ -212,6 +223,7 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
               { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
             ],
             legalActionGroups: [chainEffectGroup(1, "special-summon-opponent-chain-response-quick", 1, 2), chainPassGroup(1, 1, 2)],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "special-summon-opponent-open-chain-filtered" }],
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
@@ -246,6 +258,7 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
             ],
             absentLegalActions: [
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "special-summon-turn-open-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "special-summon-opponent-open-chain-filtered" },
               { type: "specialSummonProcedure", player: 0, windowId: 3, windowKind: "open", effectId: "special-summon-chain-procedure" },
             ],
             logIncludes: ["Turn open quick after special chain resolved"],
@@ -282,6 +295,7 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
         ],
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "special-summon-turn-open-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "special-summon-opponent-open-chain-filtered" },
           { type: "specialSummonProcedure", player: 0, windowId: 3, windowKind: "open", effectId: "special-summon-chain-procedure" },
         ],
         logIncludes: ["Turn open quick after special chain resolved"],
