@@ -65,6 +65,7 @@ describe("trigger bucket open fast restore", () => {
     expect(pass).toBeDefined();
     const resolved = applyAndAssert(restoredChainWindow, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredChainWindow.state.chainPasses).toEqual([]);
     expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-open-fast-turn-open-quick")).toBe(true);
     expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-open-fast-turn-chain-quick")).toBe(false);
     expect(hasGroupedEffect(restoredChainWindow, 0, "restore-open-fast-turn-open-quick", "open")).toBe(true);
@@ -74,6 +75,7 @@ describe("trigger bucket open fast restore", () => {
 
     const restoredOpenWindow = restoreDuel(serializeDuel(restoredChainWindow), createCardReader(cards), restoreRegistry());
     expect(queryPublicState(restoredOpenWindow)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpenWindow.state.chainPasses).toEqual([]);
     expect(getDuelLegalActions(restoredOpenWindow, 0).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-open-fast-turn-open-quick"]);
     expect(getGroupedDuelLegalActions(restoredOpenWindow, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpenWindow, 0));
     expect(hasGroupedEffect(restoredOpenWindow, 0, "restore-open-fast-turn-open-quick", "open")).toBe(true);
@@ -153,6 +155,7 @@ describe("trigger bucket open fast restore", () => {
     expect(opponentPass).toBeDefined();
     const resolved = applyAndAssert(restoredOpponentResponse, opponentPass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpponentResponse.state.chainPasses).toEqual([]);
     expect(resolved.legalActions.filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-fast-alt-turn-open-quick"]);
     expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
     expect(hasGroupedEffect(restoredOpponentResponse, 0, "restore-fast-alt-turn-open-quick", "open")).toBe(true);
@@ -225,6 +228,7 @@ describe("trigger bucket open fast restore", () => {
 
     const resolved = applyAndAssert(restoredOpponentResponse, opponentChain!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpponentResponse.state.chainPasses).toEqual([]);
     expect(resolved.legalActions.filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-fast-resolve-turn-open-quick"]);
     expect(getDuelLegalActions(restoredOpponentResponse, 1)).toEqual([]);
     expect(restoredOpponentResponse.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
@@ -235,6 +239,7 @@ describe("trigger bucket open fast restore", () => {
 
     const restoredOpenWindow = restoreDuel(serializeDuel(restoredOpponentResponse), createCardReader(cards), restoreRegistry());
     expect(queryPublicState(restoredOpenWindow)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpenWindow.state.chainPasses).toEqual([]);
     expect(getDuelLegalActions(restoredOpenWindow, 0).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-fast-resolve-turn-open-quick"]);
     expect(getGroupedDuelLegalActions(restoredOpenWindow, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpenWindow, 0));
     expect(hasGroupedEffect(restoredOpenWindow, 0, "restore-fast-resolve-turn-open-quick", "open")).toBe(true);
