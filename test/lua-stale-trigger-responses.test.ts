@@ -62,6 +62,7 @@ describe("Lua stale trigger responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(0);
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([]);
     expect(host.messages).toEqual(["lua stale activate trigger resolved"]);
   });
 
@@ -111,6 +112,7 @@ describe("Lua stale trigger responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(0);
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([]);
     expect(host.messages).toEqual([]);
   });
 
@@ -175,6 +177,7 @@ describe("Lua stale trigger responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.session.state.pendingTriggers).toHaveLength(0);
+    expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual([]);
     expect(restored.host.messages).toEqual([]);
   });
 
@@ -234,6 +237,7 @@ describe("Lua stale trigger responses", () => {
     expect(restoredActivation.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(restoredActivation.state.chain).toHaveLength(0);
     expect(restoredActivation.state.pendingTriggers).toHaveLength(0);
+    expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual([]);
     const replay = applyLuaRestoreResponse(restored, staleTrigger!);
 
     expect(replay.ok).toBe(false);
@@ -242,6 +246,7 @@ describe("Lua stale trigger responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.session.state.pendingTriggers).toHaveLength(0);
+    expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual([]);
     expect(restored.host.messages).toEqual(["restored stale activate trigger resolved"]);
   });
 });
