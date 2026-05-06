@@ -48,6 +48,13 @@ describe("trigger order prompt restore", () => {
       "restore-order-second-optional",
       "restore-order-second-optional",
     ]);
+    const stalePromptDecline = applyResponse(restored, decline!);
+    expect(stalePromptDecline.ok).toBe(false);
+    expect(stalePromptDecline.error).toContain("Response is not currently legal");
+    expect(stalePromptDecline.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(stalePromptDecline.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(stalePromptDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    assertLegalWindowMetadata(restored, stalePromptDecline, 0);
 
     const restoredSingleTrigger = restoreDuel(serializeDuel(restored), createCardReader(cards), restoreRegistry());
     expect(queryPublicState(restoredSingleTrigger).triggerOrderPrompt).toBeUndefined();
