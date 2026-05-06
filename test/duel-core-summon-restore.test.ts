@@ -12,12 +12,15 @@ function expectRestoredOpenAction(restored: ReturnType<typeof restoreDuel>, acti
 
 function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restoreDuel>, action: NonNullable<Parameters<typeof applyResponse>[1]>): void {
   const staleResult = applyResponse(restored, action);
+  const windowId = restored.state.actionWindowId;
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
-  expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
+  expect(staleResult.state.actionWindowId).toBe(windowId);
   expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, staleResult.state.waitingFor!));
   expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, staleResult.state.waitingFor!));
   expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+  for (const legalAction of staleResult.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: staleResult.state.windowKind });
+  for (const group of staleResult.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: staleResult.state.windowKind });
 }
 
 describe("core summon restore", () => {
