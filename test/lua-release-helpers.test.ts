@@ -387,7 +387,9 @@ describe("Lua release helpers", () => {
     expect(damageTrigger).toBeDefined();
     const damageResult = applyLuaRestoreAndAssert(restored, damageTrigger!);
     expect(damageResult.state.pendingTriggers.map((trigger) => trigger.effectId)).not.toContain("lua-2-1017");
+    expect(damageResult.state.pendingTriggers).toEqual([]);
     expect(restored.host.messages).not.toContain("when release resolved");
+    expect(restored.host.messages).toContain("damage boundary resolved");
   });
 
   it("lets Lua scripts use self tribute cost aliases", () => {
