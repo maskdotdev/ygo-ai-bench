@@ -428,6 +428,15 @@ describe("Lua open fast priority restore", () => {
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    const staleBeforePass = applyLuaRestoreResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
+    expect(staleBeforePass.ok).toBe(false);
+    expect(staleBeforePass.error).toContain("Response is not currently legal");
+    expect(staleBeforePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleBeforePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforePass.legalActions);
+    expect(restored.host.messages).toEqual([]);
+
     const opened = applyLuaRestoreAndAssert(restored, pass!);
     expect(opened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
