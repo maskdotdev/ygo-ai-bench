@@ -1,0 +1,223 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  summonGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution SEGOC pass handoff turn pass resolution fixture", () => {
+  it("resolves opponent post-handoff chains after the trigger player passes the reopened response window", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Handoff Turn Pass Resolution Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Chain Handoff Turn Pass Resolution First Turn Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Chain Handoff Turn Pass Resolution Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Chain Handoff Turn Pass Resolution Opponent Quick", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Chain Handoff Turn Pass Resolution Optional", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "700", name: "Chain Handoff Turn Pass Resolution Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Chain Handoff Turn Pass Resolution Second Turn Quick", kind: "monster", attack: 1600, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc pass handoff turn pass resolution fixture",
+      options: { seed: 322, startingHandSize: 6 },
+      decks: {
+        0: { main: ["100", "200", "300", "500", "700", "900"] },
+        1: { main: ["400", "800", "800", "800", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-chain-handoff-turn-pass-resolution-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 0, code: "900", from: "hand", to: "graveyard" },
+              { player: 1, code: "400", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Chain handoff turn pass resolution starter resolved",
+          },
+          {
+            id: "fixture-chain-handoff-turn-pass-resolution-mandatory",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain handoff turn pass resolution mandatory resolved",
+          },
+          {
+            id: "fixture-chain-handoff-turn-pass-resolution-optional",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Chain handoff turn pass resolution optional resolved",
+          },
+          {
+            id: "fixture-chain-handoff-turn-pass-resolution-first-turn-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "First turn quick after chain-created SEGOC handoff pass resolved",
+          },
+          {
+            id: "fixture-chain-handoff-turn-pass-resolution-opponent-quick",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Opponent quick after chain-created SEGOC handoff turn pass resolved",
+          },
+          {
+            id: "fixture-chain-handoff-turn-pass-resolution-second-turn-quick",
+            player: 0,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Second turn quick after chain-created SEGOC handoff pass should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-handoff-turn-pass-resolution-starter" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-handoff-turn-pass-resolution-mandatory" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-handoff-turn-pass-resolution-optional" })),
+        makeScriptedStep(makeResponseSelector("passChain", 1)),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-handoff-turn-pass-resolution-first-turn-quick" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-handoff-turn-pass-resolution-opponent-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro gives the trigger player another chain-response window after the opponent responds to a chain-created SEGOC pass-handoff chain",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-handoff-turn-pass-resolution-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-turn-pass-resolution-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-turn-pass-resolution-first-turn-quick", sourceUid: "p0-deck-200-1" },
+              { player: 1, effectId: "fixture-chain-handoff-turn-pass-resolution-opponent-quick", sourceUid: "p1-deck-400-0" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-handoff-turn-pass-resolution-second-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-handoff-turn-pass-resolution-second-turn-quick", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-handoff-turn-pass-resolution-first-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-handoff-turn-pass-resolution-opponent-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-chain-handoff-turn-pass-resolution-first-turn-quick", 6),
+              absentChainEffectGroup(1, "fixture-chain-handoff-turn-pass-resolution-opponent-quick", 6),
+            ],
+            locations: { graveyard: ["700", "200", "900", "400"], hand: ["100", "300", "500", "800", "800", "800", "800", "800"] },
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro resolves the chain-created SEGOC trigger chain after the trigger player passes the response window reopened by the opponent's post-handoff chain link",
+        phase: "main1",
+        windowId: 7,
+        windowKind: "open",
+        waitingFor: 0,
+        chain: [],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        legalActionCounts: { 0: 9, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-chain-handoff-turn-pass-resolution-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 7, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 7, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 7, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 7, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 7, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 7, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 7, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 7, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 7,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-chain-handoff-turn-pass-resolution-starter", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "300", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "300", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+          ], 1, 7),
+          turnGroup(7),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-chain-handoff-turn-pass-resolution-first-turn-quick" },
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-chain-handoff-turn-pass-resolution-second-turn-quick" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "open", effectId: "fixture-chain-handoff-turn-pass-resolution-opponent-quick" },
+          { type: "activateTrigger", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-chain-handoff-turn-pass-resolution-optional" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-chain-handoff-turn-pass-resolution-first-turn-quick", 7, "open"),
+          absentWindowEffectGroup(0, "fixture-chain-handoff-turn-pass-resolution-second-turn-quick", 7, "open"),
+          absentWindowEffectGroup(1, "fixture-chain-handoff-turn-pass-resolution-opponent-quick", 7, "open"),
+          absentTriggerActivationGroup(0, "fixture-chain-handoff-turn-pass-resolution-optional", "turnOptional", 7, "open"),
+        ],
+        locations: { graveyard: ["700", "200", "900", "400"], hand: ["100", "300", "500", "800", "800", "800", "800", "800"] },
+        logIncludes: [
+          "Chain handoff turn pass resolution starter resolved",
+          "Opponent quick after chain-created SEGOC handoff turn pass resolved",
+          "First turn quick after chain-created SEGOC handoff pass resolved",
+          "Chain handoff turn pass resolution optional resolved",
+          "Chain handoff turn pass resolution mandatory resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
