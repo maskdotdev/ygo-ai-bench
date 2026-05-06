@@ -5,6 +5,16 @@ import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData, DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
+function assertRestoreLegalWindow(restored: ReturnType<typeof restoreDuel>, response: ReturnType<typeof applyResponse>, player: 0 | 1): void {
+  const windowId = restored.state.actionWindowId;
+  expect(response.state.actionWindowId).toBe(windowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, player));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
+  for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
 describe("pendulum restore", () => {
   it("restores face-up extra deck pendulum state and direct special summon legality", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -74,7 +84,7 @@ describe("pendulum restore", () => {
     expect(staleBeforeSummon.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
-    expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforeSummon, 0);
     expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "extraDeck", faceUp: true });
     expect(restored.state.players[0].pendulumSummonAvailable).toBe(true);
 
@@ -85,16 +95,14 @@ describe("pendulum restore", () => {
     expect(result.state.pendingTriggers).toEqual([expect.objectContaining({ effectId: "restore-pendulum-success-watcher", eventName: "specialSummoned", eventCardUid: candidate!.uid })]);
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    assertRestoreLegalWindow(restored, result, result.state.waitingFor!);
     const staleResult = applyResponse(restored, action);
     expect(staleResult.ok).toBe(false);
     expect(staleResult.error).toContain("Response is not currently legal");
     expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, staleResult.state.waitingFor!));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, staleResult.state.waitingFor!));
-    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
-    for (const legalAction of staleResult.legalActions) expect(legalAction).toMatchObject({ windowId: restored.state.actionWindowId, windowKind: staleResult.state.windowKind });
-    for (const group of staleResult.legalActionGroups) expect(group).toMatchObject({ windowId: restored.state.actionWindowId, windowKind: staleResult.state.windowKind });
+    assertRestoreLegalWindow(restored, staleResult, staleResult.state.waitingFor!);
 
     const restoredTriggerWindow = restoreDuel(serializeDuel(restored), createCardReader(pendulumCards), {
       "restore-pendulum-success-watcher": restoreSummonSuccessWatcher("Restored Pendulum success watcher resolved"),
@@ -109,16 +117,14 @@ describe("pendulum restore", () => {
     expect(triggerResult.state.log.some((entry) => entry.detail === "Restored Pendulum success watcher resolved")).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    assertRestoreLegalWindow(restoredTriggerWindow, triggerResult, triggerResult.state.waitingFor!);
     const staleTrigger = applyResponse(restoredTriggerWindow, trigger!);
     expect(staleTrigger.ok).toBe(false);
     expect(staleTrigger.error).toContain("Response is not currently legal");
     expect(staleTrigger.state.actionWindowId).toBe(restoredTriggerWindow.state.actionWindowId);
     expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, staleTrigger.state.waitingFor!));
     expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, staleTrigger.state.waitingFor!));
-    expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
-    for (const legalAction of staleTrigger.legalActions) expect(legalAction).toMatchObject({ windowId: restoredTriggerWindow.state.actionWindowId, windowKind: staleTrigger.state.windowKind });
-    for (const group of staleTrigger.legalActionGroups) expect(group).toMatchObject({ windowId: restoredTriggerWindow.state.actionWindowId, windowKind: staleTrigger.state.windowKind });
+    assertRestoreLegalWindow(restoredTriggerWindow, staleTrigger, staleTrigger.state.waitingFor!);
   });
 });
 
