@@ -97,6 +97,56 @@ describe("core summon restore", () => {
     assertRestoreLegalWindow(restored, staleSummon, 0);
   });
 
+  it("restores triggerless Tribute Summons to turn-player open fast-effect priority", () => {
+    const session = createDuel({ seed: 247, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["600", "100", "300"] },
+      1: { main: ["400", "500", "500"] },
+    });
+    startDuel(session);
+
+    const tributeMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "600");
+    const tribute = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(tributeMonster).toBeTruthy();
+    expect(tribute).toBeTruthy();
+    expect(turnQuick).toBeTruthy();
+    expect(opponentQuick).toBeTruthy();
+    moveDuelCard(session.state, tribute!.uid, "monsterZone", 0);
+    registerEffect(session, openOnlyQuick("restore-tribute-open-turn-quick", turnQuick!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-tribute-open-opponent-quick", opponentQuick!.uid, 1));
+
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "tributeSummon" && candidate.uid === tributeMonster!.uid && candidate.tributeUids.includes(tribute!.uid));
+    expect(summon?.type).toBe("tributeSummon");
+    if (!summon || summon.type !== "tributeSummon") throw new Error("Expected Tribute Summon action");
+    const result = applyResponse(session, summon);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-tribute-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-tribute-open-turn-quick": restoreOpenOnlyQuick,
+      "restore-tribute-open-opponent-quick": restoreOpenOnlyQuick,
+    });
+    expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restored.state.cards.find((card) => card.uid === tribute!.uid)?.location).toBe("graveyard");
+    expect(restored.state.cards.find((card) => card.uid === tributeMonster!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(restored.state.players[0].normalSummonAvailable).toBe(false);
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-tribute-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-tribute-open-opponent-quick")).toBe(false);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "tributeSummon" && action.uid === tributeMonster!.uid)).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+
+    const staleSummon = applyResponse(restored, summon);
+    expect(staleSummon.ok).toBe(false);
+    expect(staleSummon.error).toContain("Response is not currently legal");
+    assertRestoreLegalWindow(restored, staleSummon, 0);
+  });
+
   it("restores triggerless Special Summon procedures to turn-player open fast-effect priority", () => {
     const session = createDuel({ seed: 264, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
