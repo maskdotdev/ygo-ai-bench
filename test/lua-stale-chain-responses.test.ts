@@ -309,6 +309,8 @@ describe("Lua stale chain responses", () => {
     const currentPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(currentPass).toBeDefined();
     const currentPassResult = applyLuaRestoreAndAssert(restored, currentPass!);
+    expect(currentPassResult.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(currentPassResult.state.chain).toEqual([]);
 
     const staleCurrentPass = applyLuaRestoreResponse(restored, currentPass!);
 
