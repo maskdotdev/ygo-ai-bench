@@ -97,6 +97,8 @@ describe("Lua open fast priority restore", () => {
     expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
     const opponentChained = applyAndAssert(session, opponentQuick!);
     expect(opponentChained.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    const originalTurnQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("20200"));
+    expect(originalTurnQuick).toMatchObject({ player: 0, windowKind: "chainResponse" });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -116,6 +118,9 @@ describe("Lua open fast priority restore", () => {
     expect(staleBeforeTurnQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(staleBeforeTurnQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTurnQuick.legalActions);
     expect(restored.host.messages).toEqual([]);
+    const originalTurnQuickPreapply = applyLuaRestoreResponse(restored, originalTurnQuick!);
+    expect(originalTurnQuickPreapply.ok).toBe(false);
+    expect(originalTurnQuickPreapply.error).toContain("Response is not currently legal");
 
     const turnChained = applyLuaRestoreAndAssert(restored, turnQuick!);
     expect(turnChained.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
