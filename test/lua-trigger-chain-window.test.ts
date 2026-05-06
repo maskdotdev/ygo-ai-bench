@@ -257,7 +257,9 @@ describe("Lua trigger chain windows", () => {
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     assertStaleLuaPreviousWindow(restored, pass!, 1);
-    applyLuaRestoreAndAssert(restored, pass!);
+    const passed = applyLuaRestoreAndAssert(restored, pass!);
+    expect(passed.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restored.session.state.chainPasses).toEqual([]);
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
@@ -352,6 +354,7 @@ describe("Lua trigger chain windows", () => {
     assertLuaRestoreLegalWindow(restored, originalSecondTriggerPreapply, 1);
     applyLuaRestoreAndAssert(restored, secondTrigger!);
     expect(restored.session.state.chain).toHaveLength(0);
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.host.messages).toEqual(["restored opponent mandatory resolved", "restored turn mandatory resolved"]);
   });
@@ -601,6 +604,7 @@ describe("Lua trigger chain windows", () => {
     expect(pass).toBeDefined();
     const resolved = applyAndAssert(session, pass!);
     expect(resolved.state.chain).toHaveLength(0);
+    expect(session.state.chainPasses).toEqual([]);
     expect(resolved.state.pendingTriggers).toHaveLength(0);
     expect(host.messages).toEqual(["lua second optional window resolved", "lua first optional window resolved"]);
   });
