@@ -439,6 +439,12 @@ describe("Lua trigger chain windows", () => {
     expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId)).toMatchObject({ windowKind: "chainResponse" });
     expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
 
+    const restoredOpponentQuick = getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
+    expect(restoredOpponentQuick).toBeDefined();
+    const restoredQuickResult = applyLuaRestoreAndAssert(restoredAfterOpponentTrigger, restoredOpponentQuick!);
+    expect(restoredQuickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
+
     const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
     expect(opponentQuick).toBeDefined();
     applyLuaRestoreAndAssert(restored, opponentQuick!);
