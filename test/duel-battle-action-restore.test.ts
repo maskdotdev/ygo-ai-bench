@@ -618,6 +618,48 @@ describe("battle action restore", () => {
     expect(getDuelLegalActions(restored, 0)).toEqual([]);
     assertStaleResponse(restored, pass!);
   });
+
+  it("returns restored end-damage quick chains to the end-damage response player", () => {
+    const session = createBattleSession(["100", "300"], ["400", "500"]);
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnQuickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(attacker).toBeTruthy();
+    expect(turnQuickSource).toBeTruthy();
+    expect(opponentQuickSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, damageStepQuickEffect("restore-end-damage-turn-quick", turnQuickSource!.uid, 0, "Restored end damage turn quick resolved"));
+    registerEffect(session, chainOnlyDamageStepQuickEffect("restore-end-damage-opponent-chain-quick", opponentQuickSource!.uid, 1, "Restored end damage opponent chain quick resolved"));
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!);
+    passBattleWindow(session, "passAttack");
+    passBattleWindow(session, "passDamage");
+    passBattleWindow(session, "passDamage");
+    passBattleWindow(session, "passDamage");
+    passBattleWindow(session, "passDamage");
+    expect(session.state.battleWindow).toMatchObject({ kind: "endDamageStep", responsePlayer: 1 });
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passDamage")!);
+    const quick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-end-damage-turn-quick");
+    expect(quick).toBeDefined();
+    expect(applyAndAssert(session, quick!).state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const pass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-end-damage-turn-quick": restoreDamageStepQuickEffect("Restored end damage turn quick resolved"),
+      "restore-end-damage-opponent-chain-quick": restoreChainOnlyDamageStepQuickEffect("Restored end damage opponent chain quick resolved"),
+    });
+    const result = applyAndAssert(restored, pass!);
+
+    expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "endDamageStep", responsePlayer: 1 } });
+    expect(restored.state.chain).toHaveLength(0);
+    expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
+    expect(result.state.log.some((entry) => entry.detail === "Restored end damage turn quick resolved")).toBe(true);
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-end-damage-opponent-chain-quick")).toBe(false);
+    expect(getDuelLegalActions(restored, 0)).toEqual([]);
+    assertStaleResponse(restored, pass!);
+  });
 });
 
 function createBattleSession(playerDeck: string[], opponentDeck: string[]) {
