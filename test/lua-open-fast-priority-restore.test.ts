@@ -12,6 +12,7 @@ describe("Lua open fast priority restore", () => {
       { code: "20200", name: "Lua Live Turn Chain Fast", kind: "monster" },
       { code: "20300", name: "Lua Live Opponent Chain Fast", kind: "monster" },
       { code: "20400", name: "Lua Live Fast Filler", kind: "monster" },
+      { code: "20500", name: "Lua Live Opponent Open Fast", kind: "monster" },
     ];
     const source = {
       readScript(name: string) {
@@ -56,20 +57,35 @@ describe("Lua open fast priority restore", () => {
           end
           `;
         }
+        if (name === "c20500.lua") {
+          return `
+          c20500={}
+          function c20500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetRange(LOCATION_HAND)
+            e:SetCondition(function(e,tp) return Duel.GetCurrentChain()==0 end)
+            e:SetOperation(function(e,tp) Debug.Message("live opponent open fast resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
         return undefined;
       },
     };
     const session = createDuel({ seed: 100, startingHandSize: 2, cardReader: createCardReader(cards) });
-    loadDecks(session, { 0: { main: ["20100", "20200"] }, 1: { main: ["20300", "20400"] } });
+    loadDecks(session, { 0: { main: ["20100", "20200"] }, 1: { main: ["20300", "20500"] } });
     startDuel(session);
     const host = createLuaScriptHost(session);
     const starterScript = host.loadCardScript(20100, source);
     const turnQuickScript = host.loadCardScript(20200, source);
     const opponentQuickScript = host.loadCardScript(20300, source);
+    const opponentOpenQuickScript = host.loadCardScript(20500, source);
     expect(starterScript.ok, starterScript.error).toBe(true);
     expect(turnQuickScript.ok, turnQuickScript.error).toBe(true);
     expect(opponentQuickScript.ok, opponentQuickScript.error).toBe(true);
-    expect(host.registerInitialEffects()).toBe(3);
+    expect(opponentOpenQuickScript.ok, opponentOpenQuickScript.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(4);
 
     const starter = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("20100"));
     expect(starter).toMatchObject({ player: 0, windowKind: "open" });
@@ -92,6 +108,7 @@ describe("Lua open fast priority restore", () => {
     expect(turnQuick).toMatchObject({ player: 0, windowKind: "chainResponse" });
     const turnChained = applyLuaRestoreAndAssert(restored, turnQuick!);
     expect(turnChained.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(getDuelLegalActions(restored.session, 1)).toEqual([]);
     const staleTurnQuick = applyLuaRestoreResponse(restored, turnQuick!);
     expect(staleTurnQuick.ok).toBe(false);
     expect(staleTurnQuick.error).toContain("Response is not currently legal");
