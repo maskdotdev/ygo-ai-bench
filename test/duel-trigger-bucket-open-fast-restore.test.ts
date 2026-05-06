@@ -146,6 +146,85 @@ describe("trigger bucket open fast restore", () => {
     expect(staleTurnChain.ok).toBe(false);
     expect(staleTurnChain.error).toContain("Response is not currently legal");
   });
+
+  it("resolves restored trigger-chain fast-effect alternation after the opponent chains", () => {
+    const session = createDuel({ seed: 235, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "500", "300"] },
+    });
+    startDuel(session);
+
+    const summoned = findHandCard(session, 0, "100");
+    const turnTrigger = findHandCard(session, 0, "300");
+    const turnQuick = findHandCard(session, 0, "500");
+    const opponentTrigger = findHandCard(session, 1, "400");
+    const opponentQuick = findHandCard(session, 1, "500");
+    expect(summoned).toBeDefined();
+    expect(turnTrigger).toBeDefined();
+    expect(turnQuick).toBeDefined();
+    expect(opponentTrigger).toBeDefined();
+    expect(opponentQuick).toBeDefined();
+
+    registerEffect(session, normalSummonTrigger("restore-fast-resolve-turn-trigger", turnTrigger!.uid, 0));
+    registerEffect(session, normalSummonTrigger("restore-fast-resolve-opponent-trigger", opponentTrigger!.uid, 1));
+    registerEffect(session, chainOnlyQuick("restore-fast-resolve-turn-chain-quick", turnQuick!.uid, 0, true));
+    registerEffect(session, openOnlyQuick("restore-fast-resolve-turn-open-quick", turnQuick!.uid, 0));
+    registerEffect(session, chainOnlyQuick("restore-fast-resolve-opponent-chain-quick", opponentQuick!.uid, 1, true));
+    registerEffect(session, openOnlyQuick("restore-fast-resolve-opponent-open-quick", opponentQuick!.uid, 1));
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeDefined();
+    applyAndAssert(session, summon!);
+
+    const restoredTurnBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
+    const turnDecline = getDuelLegalActions(restoredTurnBucket, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-fast-resolve-turn-trigger");
+    expect(turnDecline).toBeDefined();
+    applyAndAssert(restoredTurnBucket, turnDecline!);
+
+    const restoredOpponentBucket = restoreDuel(serializeDuel(restoredTurnBucket), createCardReader(cards), restoreRegistry());
+    const opponentTriggerAction = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-fast-resolve-opponent-trigger");
+    expect(opponentTriggerAction).toBeDefined();
+    applyAndAssert(restoredOpponentBucket, opponentTriggerAction!);
+
+    const restoredTurnResponse = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreRegistry());
+    const turnChain = getDuelLegalActions(restoredTurnResponse, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-fast-resolve-turn-chain-quick");
+    expect(turnChain).toBeDefined();
+    applyAndAssert(restoredTurnResponse, turnChain!);
+
+    const restoredOpponentResponse = restoreDuel(serializeDuel(restoredTurnResponse), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredOpponentResponse)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const opponentChain = getDuelLegalActions(restoredOpponentResponse, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-fast-resolve-opponent-chain-quick");
+    expect(opponentChain).toBeDefined();
+    expect(hasGroupedEffect(restoredOpponentResponse, 1, "restore-fast-resolve-opponent-chain-quick", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(restoredOpponentResponse, 1, "restore-fast-resolve-opponent-open-quick", "chainResponse")).toBe(false);
+    const staleBeforeOpponentChain = applyResponse(restoredOpponentResponse, { ...opponentChain!, windowId: opponentChain!.windowId! - 1 });
+    expect(staleBeforeOpponentChain.ok).toBe(false);
+    expect(staleBeforeOpponentChain.error).toContain("Response is not currently legal");
+    expect(staleBeforeOpponentChain.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse, 1));
+    expect(staleBeforeOpponentChain.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse, 1));
+
+    const resolved = applyAndAssert(restoredOpponentResponse, opponentChain!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(resolved.legalActions.filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-fast-resolve-turn-open-quick"]);
+    expect(getDuelLegalActions(restoredOpponentResponse, 1)).toEqual([]);
+    expect(restoredOpponentResponse.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+      "restore-fast-resolve-opponent-chain-quick resolved",
+      "restore-fast-resolve-turn-chain-quick resolved",
+      "restore-fast-resolve-opponent-trigger resolved",
+    ]));
+
+    const restoredOpenWindow = restoreDuel(serializeDuel(restoredOpponentResponse), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredOpenWindow)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(getDuelLegalActions(restoredOpenWindow, 0).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-fast-resolve-turn-open-quick"]);
+    expect(getGroupedDuelLegalActions(restoredOpenWindow, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpenWindow, 0));
+    expect(getDuelLegalActions(restoredOpenWindow, 1)).toEqual([]);
+    const staleOpponentChain = applyResponse(restoredOpponentResponse, opponentChain!);
+    expect(staleOpponentChain.ok).toBe(false);
+    expect(staleOpponentChain.error).toContain("Response is not currently legal");
+    expect(staleOpponentChain.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse, 0));
+    expect(staleOpponentChain.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse, 0));
+  });
 });
 
 function normalSummonTrigger(id: string, sourceUid: string, controller: 0 | 1): DuelEffectDefinition {
@@ -201,6 +280,12 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-fast-alt-turn-open-quick": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
     "restore-fast-alt-opponent-chain-quick": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
     "restore-fast-alt-opponent-open-quick": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
+    "restore-fast-resolve-turn-trigger": restoreLoggedEffect,
+    "restore-fast-resolve-opponent-trigger": restoreLoggedEffect,
+    "restore-fast-resolve-turn-chain-quick": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-fast-resolve-turn-open-quick": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
+    "restore-fast-resolve-opponent-chain-quick": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-fast-resolve-opponent-open-quick": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
   };
 }
 
