@@ -140,6 +140,7 @@ describe("Lua return-to-grave events", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored return trigger 200/131072/0");
   });
@@ -244,4 +245,14 @@ function applyLuaRestoreAndAssert(restored: Parameters<typeof applyLuaRestoreRes
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function expectLuaRestoreStalePreapply(restored: Parameters<typeof applyLuaRestoreResponse>[0], action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1): void {
+  const response = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(response.ok).toBe(false);
+  expect(response.error).toContain("Response is not currently legal");
+  expect(response.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 }
