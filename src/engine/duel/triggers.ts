@@ -56,7 +56,7 @@ function triggerCodeMatchesEvent(eventName: DuelEventName, triggerCode: number, 
 
 function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard: DuelCardInstance | undefined, options: DuelTriggerCollectOptions): PendingTrigger {
   return {
-    id: `trigger-${state.log.length + 1}-${state.pendingTriggers.length + 1}`,
+    id: nextPendingTriggerId(state),
     player: effect.controller,
     sourceUid: source.uid,
     effectId: effect.id,
@@ -80,6 +80,15 @@ function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, so
     ...(effect.triggerTiming === undefined ? {} : { eventTriggerTiming: effect.triggerTiming }),
     ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
   };
+}
+
+function nextPendingTriggerId(state: DuelState): string {
+  const base = `trigger-${state.log.length + 1}-${state.pendingTriggers.length + 1}`;
+  if (!state.pendingTriggers.some((trigger) => trigger.id === base)) return base;
+  for (let suffix = 2;; suffix += 1) {
+    const candidate = `${base}-${suffix}`;
+    if (!state.pendingTriggers.some((trigger) => trigger.id === candidate)) return candidate;
+  }
 }
 
 function triggerBucket(state: DuelState, effect: DuelEffectDefinition): TriggerBucket {
