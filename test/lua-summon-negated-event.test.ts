@@ -99,6 +99,8 @@ describe("Lua summon-negated events", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "normalSummonNegated", eventCode: 1114, eventCardUid: summoned!.uid });
     expect(session.state.eventHistory.map((event) => event.eventName)).not.toContain("normalSummoned");
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("300"))).toBe(false);
+    const originalNegatedTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("400"));
+    expect(originalNegatedTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), scriptSource, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -112,6 +114,10 @@ describe("Lua summon-negated events", () => {
     const negatedTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("400"));
     expect(negatedTrigger).toBeDefined();
     expectLuaRestoreStalePreapply(restored, negatedTrigger!, 0);
+    const originalNegatedTriggerPreapply = applyLuaRestoreResponse(restored, originalNegatedTrigger!);
+    expect(originalNegatedTriggerPreapply.ok).toBe(false);
+    expect(originalNegatedTriggerPreapply.error).toContain("Response is not currently legal");
+    expect(originalNegatedTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     applyLuaRestoreAndAssert(restored, negatedTrigger!);
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("negated after attempt 100");
@@ -131,7 +137,9 @@ describe("Lua summon-negated events", () => {
     expect(fixture.session.state.cards.find((card) => card.uid === fixture.summoned.uid)).toMatchObject({ location: "graveyard" });
     expect(fixture.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["normalSummonNegated"]);
     expect(fixture.session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: fixture.summoned.uid, eventCode: 1114 });
-    assertRestoredNegatedTrigger(fixture, "normal summon negated 100");
+    const originalTrigger = getDuelLegalActions(fixture.session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
+    assertRestoredNegatedTrigger(fixture, "normal summon negated 100", originalTrigger!);
   });
 
   it("queues flip-summon-negated triggers when Duel.NegateSummon negates a Flip Summon", () => {
@@ -149,7 +157,9 @@ describe("Lua summon-negated events", () => {
     expect(fixture.session.state.cards.find((card) => card.uid === fixture.summoned.uid)).toMatchObject({ location: "graveyard" });
     expect(fixture.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummonNegated"]);
     expect(fixture.session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: fixture.summoned.uid, eventCode: 1115 });
-    assertRestoredNegatedTrigger(fixture, "flip summon negated 100");
+    const originalTrigger = getDuelLegalActions(fixture.session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
+    assertRestoredNegatedTrigger(fixture, "flip summon negated 100", originalTrigger!);
   });
 
   it("queues special-summon-negated triggers when Duel.NegateSummon negates a Special Summon", () => {
@@ -164,7 +174,9 @@ describe("Lua summon-negated events", () => {
     expect(fixture.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["specialSummonNegated"]);
     expect(fixture.session.state.pendingTriggers[0]).toMatchObject({ eventCardUid: fixture.summoned.uid, eventCode: 1116 });
     expect(fixture.session.state.eventHistory.map((event) => event.eventName).slice(-2)).toEqual(["specialSummonNegated", "chainSolved"]);
-    assertRestoredNegatedTrigger(fixture, "special summon negated 100");
+    const originalTrigger = getDuelLegalActions(fixture.session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
+    assertRestoredNegatedTrigger(fixture, "special summon negated 100", originalTrigger!);
   });
 });
 
@@ -250,7 +262,7 @@ function activateNegator(fixture: { session: ReturnType<typeof createDuel> }): v
   applyAndAssert(fixture.session, action!);
 }
 
-function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: string): void {
+function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: string, originalTrigger: Parameters<typeof applyLuaRestoreResponse>[1]): void {
   const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.scriptSource, createCardReader(fixture.cards));
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c200.lua", "c300.lua"]);
@@ -264,6 +276,10 @@ function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: st
   const publicState = queryPublicState(restored.session);
   expect(trigger).toMatchObject({ windowId: publicState.actionWindowId, windowKind: "triggerBucket" });
   expectLuaRestoreStalePreapply(restored, trigger!, 0);
+  const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalTrigger);
+  expect(originalTriggerPreapply.ok).toBe(false);
+  expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
+  expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
   applyLuaRestoreAndAssert(restored, trigger!);
   const staleResult = applyLuaRestoreResponse(restored, trigger!);
   expect(staleResult.ok).toBe(false);
