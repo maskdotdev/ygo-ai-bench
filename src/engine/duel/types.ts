@@ -785,6 +785,7 @@ export interface ScriptedFixtureEffect {
   property?: number;
   activationChain?: "open" | "chain";
   logMessage?: string;
+  negateChainEffectOnResolve?: string;
   negateAttackOnResolve?: boolean;
   negateSummonOnResolve?: {
     player: PlayerId;

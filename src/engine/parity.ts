@@ -663,6 +663,10 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
           collectDuelTriggerEffects(ctx.duel, move.collectEvent, moved, fixtureMoveEventPayload(move));
         }
       }
+      if (effect.negateChainEffectOnResolve) {
+        const target = ctx.duel.chain.find((link) => link.effectId === effect.negateChainEffectOnResolve);
+        ctx.log(`Negated chain ${Boolean(target && ctx.negateChainLink(target.id))}`);
+      }
       if (effect.negateAttackOnResolve) ctx.log(`Negated attack ${negateDuelAttack(ctx.duel)}`);
       if (effect.negateSummonOnResolve) ctx.log(`Negated summon ${Boolean(negateFixtureSummon(ctx.duel, effect.negateSummonOnResolve))}`);
       if (effect.logMessage) ctx.log(effect.logMessage);
