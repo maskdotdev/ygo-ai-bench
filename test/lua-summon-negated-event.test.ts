@@ -117,6 +117,7 @@ describe("Lua summon-negated events", () => {
     const originalNegatedTriggerPreapply = applyLuaRestoreResponse(restored, originalNegatedTrigger!);
     expect(originalNegatedTriggerPreapply.ok).toBe(false);
     expect(originalNegatedTriggerPreapply.error).toContain("Response is not currently legal");
+    assertPublicRestoreMetadata(restored, originalNegatedTriggerPreapply);
     expect(originalNegatedTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     applyLuaRestoreAndAssert(restored, negatedTrigger!);
     drainRestoredChain(restored);
@@ -268,6 +269,8 @@ function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: st
   expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c200.lua", "c300.lua"]);
   expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
   expect(restored.session.state.pendingTriggers).toEqual(fixture.session.state.pendingTriggers);
+  expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(fixture.session).pendingTriggerBuckets);
+  expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(fixture.session).triggerOrderPrompt);
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -279,12 +282,14 @@ function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: st
   const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalTrigger);
   expect(originalTriggerPreapply.ok).toBe(false);
   expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
+  assertPublicRestoreMetadata(restored, originalTriggerPreapply);
   expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
   applyLuaRestoreAndAssert(restored, trigger!);
   const staleResult = applyLuaRestoreResponse(restored, trigger!);
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
   expect(staleResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  assertPublicRestoreMetadata(restored, staleResult);
   expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored.session, staleResult.state.waitingFor!));
   expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleResult.state.waitingFor!));
   expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
@@ -316,6 +321,7 @@ function expectLuaRestoreStalePreapply(restored: LuaSnapshotRestoreResult, actio
   expect(result.ok).toBe(false);
   expect(result.error).toContain("Response is not currently legal");
   expect(result.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  assertPublicRestoreMetadata(restored, result);
   expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, player));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
   expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
@@ -324,8 +330,19 @@ function expectLuaRestoreStalePreapply(restored: LuaSnapshotRestoreResult, actio
 function applyLuaRestoreAndAssert(restored: LuaSnapshotRestoreResult, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const result = applyLuaRestoreResponse(restored, action);
   expect(result.ok, result.error).toBe(true);
+  assertPublicRestoreMetadata(restored, result);
   expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   return result;
+}
+
+function assertPublicRestoreMetadata(restored: LuaSnapshotRestoreResult, result: ReturnType<typeof applyLuaRestoreResponse>): void {
+  const publicState = queryPublicState(restored.session);
+  expect(result.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) {
+    expect(result.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  } else {
+    expect(result.state).not.toHaveProperty("triggerOrderPrompt");
+  }
 }
