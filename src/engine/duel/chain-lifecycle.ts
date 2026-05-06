@@ -1,7 +1,7 @@
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { DuelState } from "#duel/types.js";
 
-const chainEndedBlockingEvents = new Set(["chainSolved", "chainNegated", "chainDisabled"]);
+const chainEndedBlockingEvents = new Set(["chainSolving", "chainSolved", "chainNegated", "chainDisabled"]);
 
 export function collectDeferredChainEndedAfterDecline(
   state: DuelState,
