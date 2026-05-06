@@ -327,6 +327,8 @@ describe("Lua trigger chain windows", () => {
     applyAndAssert(session, firstTrigger!);
     expect(session.state.chain.map((link) => link.effectId)).toEqual([firstEffectId]);
     expect(session.state.pendingTriggers.map((trigger) => session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["16300"]);
+    const originalSecondTrigger = getDuelLegalActions(session, 1).find((action) => action.type === "activateTrigger" && action.effectId === session.state.pendingTriggers[0]?.effectId);
+    expect(originalSecondTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -340,6 +342,12 @@ describe("Lua trigger chain windows", () => {
 
     const secondTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.effectId === restored.session.state.pendingTriggers[0]?.effectId);
     expect(secondTrigger).toBeDefined();
+    const originalSecondTriggerPreapply = applyLuaRestoreResponse(restored, originalSecondTrigger!);
+    expect(originalSecondTriggerPreapply.ok).toBe(false);
+    expect(originalSecondTriggerPreapply.error).toContain("Response is not currently legal");
+    expect(originalSecondTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(originalSecondTriggerPreapply.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(originalSecondTriggerPreapply.legalActionGroups.flatMap((group) => group.actions)).toEqual(originalSecondTriggerPreapply.legalActions);
     applyLuaRestoreAndAssert(restored, secondTrigger!);
     expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.session.state.pendingTriggers).toEqual([]);
