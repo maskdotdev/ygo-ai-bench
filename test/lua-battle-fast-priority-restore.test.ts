@@ -30,6 +30,7 @@ describe("Lua battle fast priority restore", () => {
     expect(resolved.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
+    expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") })]));
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
     expect(restored.host.messages).toEqual(["restored battle quick resolved"]);
   });
@@ -660,6 +661,7 @@ function setupRestoredBattleQuick(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_
     { code: "100", name: "Restore Battle Priority Attacker", kind: "monster", attack: 1800 },
     { code: "300", name: "Restore Battle Priority Quick", kind: "monster" },
     { code: "400", name: "Restore Battle Chain Quick", kind: "monster" },
+    { code: "500", name: "Restore Opponent Battle Quick", kind: "monster" },
   ];
   const source = {
     readScript(name: string) {
@@ -691,11 +693,25 @@ function setupRestoredBattleQuick(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_
         end
         `;
       }
+      if (name === "c500.lua") {
+        return `
+        c500={}
+        function c500.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_QUICK_O)
+          e:SetProperty(${property})
+          e:SetRange(LOCATION_HAND)
+          e:SetCondition(function(e,tp) return Duel.GetCurrentChain()==0 end)
+          e:SetOperation(function(e,tp) Debug.Message("restored opponent battle quick resolved") end)
+          c:RegisterEffect(e)
+        end
+        `;
+      }
       return undefined;
     },
   };
   const session = createDuel({ seed: property === "EFFECT_FLAG_DAMAGE_STEP" ? 56 : 57, startingHandSize: 2, cardReader: createCardReader(cards) });
-  loadDecks(session, { 0: { main: ["100", "300"] }, 1: { main: ["400"] } });
+  loadDecks(session, { 0: { main: ["100", "300"] }, 1: { main: ["400", "500"] } });
   startDuel(session);
 
   const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
@@ -705,9 +721,11 @@ function setupRestoredBattleQuick(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_
   const host = createLuaScriptHost(session);
   const quickScript = host.loadCardScript(300, source);
   const chainQuickScript = host.loadCardScript(400, source);
+  const opponentQuickScript = host.loadCardScript(500, source);
   expect(quickScript.ok, quickScript.error).toBe(true);
   expect(chainQuickScript.ok, chainQuickScript.error).toBe(true);
-  expect(host.registerInitialEffects()).toBe(2);
+  expect(opponentQuickScript.ok, opponentQuickScript.error).toBe(true);
+  expect(host.registerInitialEffects()).toBe(3);
 
   const battle = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle");
   expect(battle).toBeDefined();
