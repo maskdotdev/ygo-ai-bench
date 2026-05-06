@@ -328,7 +328,7 @@ function capturedSingleNumberUpvalue(L: unknown, index: number, matchesName: (na
 }
 
 function isChainPlayerUpvalueName(name: string): boolean {
-  return name === "chainPlayer" || name === "chain_player";
+  return name === "chainPlayer" || name === "chain_player" || name === "cp";
 }
 
 function luaChainLimitRegistryKey(ctx: DuelEffectContext | undefined, untilChainEnd: boolean, filterRef: number): string | undefined {
