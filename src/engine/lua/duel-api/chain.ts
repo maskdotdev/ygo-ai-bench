@@ -192,6 +192,7 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (handlerCode !== undefined) return `closure:handler-code:${handlerCode}`;
   const literalHandlerCode = literalHandlerCodePredicate(L, index, hostState);
   if (literalHandlerCode !== undefined) return `closure:handler-code:${literalHandlerCode}`;
+  if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
   const responsePlayer = capturedResponsePlayer(L, index);
   if (responsePlayer !== undefined) return `closure:response-player:${responsePlayer}`;
   const chainPlayer = capturedChainPlayer(L, index);
@@ -292,15 +293,25 @@ function capturedHandlerCode(L: unknown, index: number): number | undefined {
 
 function literalHandlerCodePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
   if (hasNonEnvironmentUpvalues(L, index)) return undefined;
-  const location = luaFunctionSourceLocation(L, index);
-  if (!location) return undefined;
-  const source = hostState.loadedScriptBodies?.get(location.source);
-  if (!source) return undefined;
-  const snippet = source.split(/\r?\n/).slice(location.line - 1, location.lastLine).join(" ");
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
   const match = snippet.match(/return\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*(?:GetCode|IsCode)\s*\(\s*\)\s*==\s*(\d+)/)
     ?? snippet.match(/return\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsCode\s*\(\s*(\d+)\s*\)/);
   const code = match?.[1] ? Number(match[1]) : undefined;
   return code !== undefined && Number.isSafeInteger(code) && code > 0 ? code : undefined;
+}
+
+function literalResponseMatchesChainPlayerPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
+  if (hasNonEnvironmentUpvalues(L, index)) return false;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return false;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const responsePlayerParam = params?.[1];
+  const chainPlayerParam = params?.[2];
+  const equality = snippet.match(/return\s+([A-Za-z_]\w*)\s*==\s*([A-Za-z_]\w*)/);
+  if (!responsePlayerParam || !chainPlayerParam || !equality?.[1] || !equality[2]) return false;
+  const compared = [equality[1], equality[2]].sort().join(":");
+  return compared === [responsePlayerParam, chainPlayerParam].sort().join(":");
 }
 
 function hasNonEnvironmentUpvalues(L: unknown, index: number): boolean {
@@ -312,6 +323,14 @@ function hasNonEnvironmentUpvalues(L: unknown, index: number): boolean {
     lua.lua_pop(L, 1);
     if (name !== "_ENV") return true;
   }
+}
+
+function luaFunctionSourceSnippet(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
+  const location = luaFunctionSourceLocation(L, index);
+  if (!location) return undefined;
+  const source = hostState.loadedScriptBodies?.get(location.source);
+  if (!source) return undefined;
+  return source.split(/\r?\n/).slice(location.line - 1, location.lastLine).join(" ");
 }
 
 function luaFunctionSourceLocation(L: unknown, index: number): { source: string; line: number; lastLine: number } | undefined {
