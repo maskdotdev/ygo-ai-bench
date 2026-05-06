@@ -174,6 +174,13 @@ describe("open fast pass handoff restore", () => {
     expect(getDuelLegalActions(restored, 1)).toEqual([]);
     expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-open-alt-turn-open-quick")).toBe(false);
     expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-open-alt-turn-chain-quick")).toBe(false);
+
+    const restoredOpenWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredOpenWindow)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpenWindow.state.chainPasses).toEqual([]);
+    expect(getDuelLegalActions(restoredOpenWindow, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restoredOpenWindow, 0)).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(getGroupedDuelLegalActions(restoredOpenWindow, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpenWindow, 0));
   });
 });
 
