@@ -485,6 +485,7 @@ describe("Lua trigger chain windows", () => {
     assertStaleLuaPreviousWindow(restoredAfterOpponentTrigger, restoredPass!, 1);
     const restoredPassed = applyLuaRestoreAndAssert(restoredAfterOpponentTrigger, restoredPass!);
     expect(restoredPassed.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(restoredAfterOpponentTrigger.session.state.chainPasses).toEqual([]);
     expect(restoredPassed.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", effectId: turnOpenQuickId })]));
     expect(hasGroupedEffect(restoredPassed.legalActionGroups, 0, turnOpenQuickId, "open")).toBe(true);
     expect(getDuelLegalActions(restoredAfterOpponentTrigger.session, 1)).toEqual([]);
@@ -500,6 +501,7 @@ describe("Lua trigger chain windows", () => {
     assertStaleLuaPreviousWindow(restored, pass!, 1);
     const opponentPassed = applyLuaRestoreAndAssert(restored, pass!);
     expect(opponentPassed.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(opponentPassed.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(opponentPassed.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     assertLuaRestoreLegalWindow(restored, opponentPassed, 0);
