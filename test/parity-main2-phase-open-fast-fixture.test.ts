@@ -1,0 +1,239 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity Main Phase 2 open fast-effect fixture", () => {
+  it("exposes turn-player open fast effects after entering Main Phase 2", () => {
+    const cards: DuelCardData[] = [
+      { code: "110", name: "Turn Main2 Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "120", name: "Turn Main2 Filler", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "210", name: "Opponent Main2 Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "220", name: "Opponent Main2 Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "main2 phase open fast effect fixture",
+      options: { seed: 271, startingHandSize: 2 },
+      decks: {
+        0: { main: ["110", "120"] },
+        1: { main: ["210", "220"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "phase-main2-turn-open-quick",
+            player: 0,
+            code: "110",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Turn Main2 open quick resolved",
+          },
+          {
+            id: "phase-main2-opponent-chain-quick",
+            player: 1,
+            code: "210",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Opponent Main2 chain quick resolved",
+          },
+          {
+            id: "phase-main2-opponent-open-quick",
+            player: 1,
+            code: "220",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Opponent Main2 open quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps Battle Phase entry on turn-player open priority before Main Phase 2",
+            windowId: 1,
+            windowKind: "open",
+            phase: "battle",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(1)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "phase-main2-turn-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "phase-main2-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "phase-main2-turn-open-quick", 1, "open"),
+              absentWindowEffectGroup(1, "phase-main2-opponent-open-quick", 1, "open"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "main2" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro exposes turn-player open fast effects after entering Main Phase 2",
+            windowId: 2,
+            windowKind: "open",
+            phase: "main2",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            legalActionCounts: { 0: 7, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "phase-main2-turn-open-quick", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "110", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "120", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "110", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "120", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "phase-main2-turn-open-quick", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "110", location: "hand" },
+                { type: "normalSummon", player: 0, code: "120", location: "hand" },
+                { type: "setMonster", player: 0, code: "110", location: "hand" },
+                { type: "setMonster", player: 0, code: "120", location: "hand" },
+              ], 1, 2),
+              turnGroup(2),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "open", effectId: "phase-main2-opponent-open-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "phase-main2-opponent-open-quick", 2, "open")],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "phase-main2-turn-open-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro gives the opponent first chain-response priority after a Main Phase 2 open fast effect",
+            windowId: 3,
+            windowKind: "chainResponse",
+            phase: "main2",
+            waitingFor: 1,
+            pendingTriggers: [],
+            chain: [{ player: 0, effectId: "phase-main2-turn-open-quick", sourceUid: "p0-deck-110-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "phase-main2-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "phase-main2-opponent-chain-quick", 1, 3), chainPassGroup(1, 1, 3)],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "phase-main2-opponent-open-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "phase-main2-opponent-open-quick", 3, "chainResponse")],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "phase-main2-opponent-chain-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the Main Phase 2 open fast-effect chain and returns to turn-player open priority",
+            windowId: 4,
+            windowKind: "open",
+            phase: "main2",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 6, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "110", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "120", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "110", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "120", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "110", location: "hand" },
+                { type: "normalSummon", player: 0, code: "120", location: "hand" },
+                { type: "setMonster", player: 0, code: "110", location: "hand" },
+                { type: "setMonster", player: 0, code: "120", location: "hand" },
+              ], 1, 4),
+              turnGroup(4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "phase-main2-turn-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "open", effectId: "phase-main2-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "phase-main2-turn-open-quick", 4, "open"),
+              absentWindowEffectGroup(1, "phase-main2-opponent-open-quick", 4, "open"),
+            ],
+            logIncludes: ["Opponent Main2 chain quick resolved", "Turn Main2 open quick resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state returns to Main Phase 2 turn-player open priority after the open fast-effect chain",
+        windowId: 4,
+        windowKind: "open",
+        phase: "main2",
+        waitingFor: 0,
+        pendingTriggers: [],
+        chain: [],
+        chainPasses: [],
+        legalActionCounts: { 0: 6, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "110", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "120", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "110", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "120", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "110", location: "hand" },
+            { type: "normalSummon", player: 0, code: "120", location: "hand" },
+            { type: "setMonster", player: 0, code: "110", location: "hand" },
+            { type: "setMonster", player: 0, code: "120", location: "hand" },
+          ], 1, 4),
+          turnGroup(4),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "phase-main2-turn-open-quick" },
+          { type: "activateEffect", player: 1, windowId: 4, windowKind: "open", effectId: "phase-main2-opponent-open-quick" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "phase-main2-turn-open-quick", 4, "open"),
+          absentWindowEffectGroup(1, "phase-main2-opponent-open-quick", 4, "open"),
+        ],
+        logIncludes: ["Opponent Main2 chain quick resolved", "Turn Main2 open quick resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
