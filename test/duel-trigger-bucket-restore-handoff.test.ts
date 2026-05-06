@@ -136,6 +136,7 @@ describe("trigger bucket restore handoff", () => {
     assertRestoreLegalWindow(restoredChainWindow, staleQuick, staleQuick.state.waitingFor!);
     const pass = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restoredChainWindow, 0), 0)).toBe(true);
     const staleBeforePass = applyResponse(restoredChainWindow, { ...pass!, windowId: pass!.windowId! - 1 });
     expect(staleBeforePass.ok).toBe(false);
     expect(staleBeforePass.error).toContain("Response is not currently legal");
@@ -238,6 +239,7 @@ describe("trigger bucket restore handoff", () => {
     assertRestoreLegalWindow(restoredChainWindow, staleQuick, staleQuick.state.waitingFor!);
     const pass = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restoredChainWindow, 0), 0)).toBe(true);
     const staleBeforePass = applyResponse(restoredChainWindow, { ...pass!, windowId: pass!.windowId! - 1 });
     expect(staleBeforePass.ok).toBe(false);
     expect(staleBeforePass.error).toContain("Response is not currently legal");
@@ -443,6 +445,14 @@ function hasGroupedEffect(
 ): boolean {
   return groups.some((group) =>
     group.windowKind === windowKind && group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowKind === windowKind),
+  );
+}
+
+function hasGroupedPass(groups: ReturnType<typeof getGroupedDuelLegalActions>, player: 0 | 1): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === "chainResponse" &&
+      group.actions.some((action) => action.type === "passChain" && action.player === player && action.windowId === group.windowId && action.windowKind === "chainResponse"),
   );
 }
 
