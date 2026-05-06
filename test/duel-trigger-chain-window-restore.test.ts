@@ -45,6 +45,49 @@ describe("trigger chain-window restore", () => {
     expect(getDuelLegalActions(restoredChainWindow, 0)).toEqual([]);
     assertStaleResponse(restoredChainWindow, secondTrigger!);
   });
+
+  it("restores mandatory sibling triggers before exposing fast-effect priority", () => {
+    const session = createTriggerSession();
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const secondTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(firstTriggerSource).toBeTruthy();
+    expect(secondTriggerSource).toBeTruthy();
+    expect(opponentQuickSource).toBeTruthy();
+    registerEffect(session, normalSummonTrigger("restore-first-mandatory-chain-window-trigger", firstTriggerSource!.uid, "Restored first mandatory trigger resolved", false));
+    registerEffect(session, normalSummonTrigger("restore-second-mandatory-held-trigger", secondTriggerSource!.uid, "Restored second mandatory trigger resolved", false));
+    registerEffect(session, chainOnlyQuickEffect("restore-opponent-mandatory-chain-window-quick", opponentQuickSource!.uid, 1, "Restored opponent mandatory chain-window quick resolved"));
+
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid)!);
+    const restoredFirstBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreMandatoryRegistry());
+    expect(getDuelLegalActions(restoredFirstBucket, 0).some((action) => action.type === "declineTrigger")).toBe(false);
+    const firstTrigger = getDuelLegalActions(restoredFirstBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-first-mandatory-chain-window-trigger");
+    expect(firstTrigger).toBeDefined();
+    const afterFirstTrigger = applyAndAssert(restoredFirstBucket, firstTrigger!);
+    expect(afterFirstTrigger.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
+    expect(afterFirstTrigger.state.chain.map((link) => link.effectId)).toEqual(["restore-first-mandatory-chain-window-trigger"]);
+    expect(afterFirstTrigger.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-second-mandatory-held-trigger", eventName: "normalSummoned", eventCardUid: summoned!.uid }),
+    ]);
+    expect(getDuelLegalActions(restoredFirstBucket, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-opponent-mandatory-chain-window-quick")).toBe(false);
+
+    const restoredSecondBucket = restoreDuel(serializeDuel(restoredFirstBucket), createCardReader(cards), restoreMandatoryRegistry());
+    expect(getDuelLegalActions(restoredSecondBucket, 0).some((action) => action.type === "declineTrigger")).toBe(false);
+    const secondTrigger = getDuelLegalActions(restoredSecondBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-second-mandatory-held-trigger");
+    expect(secondTrigger).toBeDefined();
+    const afterSecondTrigger = applyAndAssert(restoredSecondBucket, secondTrigger!);
+    expect(afterSecondTrigger.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [] });
+    expect(afterSecondTrigger.state.chain.map((link) => link.effectId)).toEqual(["restore-first-mandatory-chain-window-trigger", "restore-second-mandatory-held-trigger"]);
+
+    const restoredChainWindow = restoreDuel(serializeDuel(restoredSecondBucket), createCardReader(cards), restoreMandatoryRegistry());
+    const opponentQuick = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-opponent-mandatory-chain-window-quick");
+    expect(opponentQuick).toBeDefined();
+    expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    expect(getDuelLegalActions(restoredChainWindow, 0)).toEqual([]);
+    assertStaleResponse(restoredChainWindow, secondTrigger!);
+  });
 });
 
 function createTriggerSession() {
@@ -57,7 +100,7 @@ function createTriggerSession() {
   return session;
 }
 
-function normalSummonTrigger(id: string, sourceUid: string, detail: string): DuelEffectDefinition {
+function normalSummonTrigger(id: string, sourceUid: string, detail: string, optional = true): DuelEffectDefinition {
   return {
     id,
     registryKey: id,
@@ -65,6 +108,7 @@ function normalSummonTrigger(id: string, sourceUid: string, detail: string): Due
     controller: 0,
     event: "trigger",
     triggerEvent: "normalSummoned",
+    optional,
     range: ["hand"],
     operation(ctx) {
       ctx.log(detail);
@@ -95,6 +139,19 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-second-held-trigger": restoreLoggedEffect("Restored second trigger resolved"),
     "restore-opponent-chain-window-quick": (effect) => ({
       ...restoreLoggedEffect("Restored opponent chain-window quick resolved")(effect),
+      canActivate(ctx) {
+        return ctx.duel.chain.length > 0;
+      },
+    }),
+  };
+}
+
+function restoreMandatoryRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
+  return {
+    "restore-first-mandatory-chain-window-trigger": restoreLoggedEffect("Restored first mandatory trigger resolved"),
+    "restore-second-mandatory-held-trigger": restoreLoggedEffect("Restored second mandatory trigger resolved"),
+    "restore-opponent-mandatory-chain-window-quick": (effect) => ({
+      ...restoreLoggedEffect("Restored opponent mandatory chain-window quick resolved")(effect),
       canActivate(ctx) {
         return ctx.duel.chain.length > 0;
       },
