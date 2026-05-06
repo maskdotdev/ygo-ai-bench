@@ -360,6 +360,52 @@ describe("battle action restore", () => {
     assertStaleResponse(restoredTriggerWindow, trigger!);
   });
 
+  it("progresses restored battle cleanup trigger buckets after one trigger resolves", () => {
+    const session = createBattleSession(["100", "300", "500"], ["400"]);
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const beforeSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const damageSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(attacker).toBeTruthy();
+    expect(beforeSource).toBeTruthy();
+    expect(damageSource).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    registerEffect(session, beforeBattleDamageTrigger("restore-before-battle-damage-bucket-trigger", beforeSource!.uid, "Restored before battle damage bucket trigger resolved"));
+    registerEffect(session, battleDamageTrigger("restore-battle-damage-bucket-trigger", damageSource!.uid, "Restored battle damage bucket trigger resolved"));
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!);
+    passBattleWindow(session, "passAttack");
+    passBattleWindow(session, "passDamage");
+    passBattleWindow(session, "passDamage");
+    passBattleWindow(session, "passDamage");
+    passBattleWindow(session, "passDamage");
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), battleCleanupTriggerRegistry());
+    applyAndAssert(restored, getDuelLegalActions(restored, 1).find((action) => action.type === "passDamage")!);
+    const restoredTurnPassWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), battleCleanupTriggerRegistry());
+    const result = applyAndAssert(restoredTurnPassWindow, getDuelLegalActions(restoredTurnPassWindow, 0).find((action) => action.type === "passDamage")!);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 1: { lifePoints: 6200 } } });
+    expect(restoredTurnPassWindow.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-before-battle-damage-bucket-trigger", "restore-battle-damage-bucket-trigger"]);
+
+    const restoredTriggerWindow = restoreDuel(serializeDuel(restoredTurnPassWindow), createCardReader(cards), battleCleanupTriggerRegistry());
+    const beforeTrigger = getDuelLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-before-battle-damage-bucket-trigger");
+    expect(beforeTrigger).toBeDefined();
+    const afterBeforeTrigger = applyAndAssert(restoredTriggerWindow, beforeTrigger!);
+    expect(afterBeforeTrigger.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
+    expect(afterBeforeTrigger.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-battle-damage-bucket-trigger", eventName: "battleDamageDealt", eventPlayer: 1, eventValue: 1800 }),
+    ]);
+    expect(afterBeforeTrigger.state.log.some((entry) => entry.detail === "Restored before battle damage bucket trigger resolved")).toBe(true);
+    expect(afterBeforeTrigger.state.log.some((entry) => entry.detail === "Restored battle damage bucket trigger resolved")).toBe(false);
+
+    const restoredSecondTriggerWindow = restoreDuel(serializeDuel(restoredTriggerWindow), createCardReader(cards), battleCleanupTriggerRegistry());
+    const damageTrigger = getDuelLegalActions(restoredSecondTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-battle-damage-bucket-trigger");
+    expect(damageTrigger).toBeDefined();
+    const damageTriggerResult = applyAndAssert(restoredSecondTriggerWindow, damageTrigger!);
+    expect(damageTriggerResult.state.pendingTriggers).toEqual([]);
+    expect(damageTriggerResult.state.log.some((entry) => entry.detail === "Restored battle damage bucket trigger resolved")).toBe(true);
+    assertStaleResponse(restoredSecondTriggerWindow, damageTrigger!);
+  });
+
   it("returns restored battle quick chains to the battle response player", () => {
     const session = createBattleSession(["100", "300"], ["400", "500"]);
     const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
@@ -624,6 +670,13 @@ function restoreBeforeBattleDamageTrigger(detail: string): (effect: Omit<DuelEff
     ...restoreBattleDamageTrigger(detail)(effect),
     triggerEvent: "beforeBattleDamage",
   });
+}
+
+function battleCleanupTriggerRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
+  return {
+    "restore-before-battle-damage-bucket-trigger": restoreBeforeBattleDamageTrigger("Restored before battle damage bucket trigger resolved"),
+    "restore-battle-damage-bucket-trigger": restoreBattleDamageTrigger("Restored battle damage bucket trigger resolved"),
+  };
 }
 
 function restoreBattleQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
