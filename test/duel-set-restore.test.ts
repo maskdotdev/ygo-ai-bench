@@ -20,6 +20,17 @@ describe("set action restore", () => {
     expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "setMonster" && candidate.uid === monster!.uid);
     expect(action).toBeDefined();
+    expect(action).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
+
+    const staleResult = applyResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
+    expect(staleResult.ok).toBe(false);
+    expect(staleResult.error).toContain("Response is not currently legal");
+    expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expect(restored.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.state.log.some((entry) => entry.action === "setMonster" && entry.card === "Normal Test Monster")).toBe(false);
 
     const result = applyResponse(restored, action!);
     expect(result.ok).toBe(true);
@@ -48,6 +59,17 @@ describe("set action restore", () => {
     expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "setSpellTrap" && candidate.uid === spell!.uid);
     expect(action).toBeDefined();
+    expect(action).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
+
+    const staleResult = applyResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
+    expect(staleResult.ok).toBe(false);
+    expect(staleResult.error).toContain("Response is not currently legal");
+    expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expect(restored.state.cards.find((card) => card.uid === spell!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.state.log.some((entry) => entry.action === "set" && entry.card === "Test Spell")).toBe(false);
 
     const result = applyResponse(restored, action!);
     expect(result.ok).toBe(true);
