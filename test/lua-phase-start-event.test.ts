@@ -177,6 +177,8 @@ describe("Lua phase-start events", () => {
       expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     }
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["phaseStartEnd", "phaseEnd"]);
+    const originalPhaseStartTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalPhaseStartTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -189,6 +191,9 @@ describe("Lua phase-start events", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalPhaseStartTrigger!);
+    expect(originalTriggerPreapply.ok).toBe(false);
+    expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
     expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored phase start 512");
