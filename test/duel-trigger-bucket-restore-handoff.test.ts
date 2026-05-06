@@ -232,6 +232,14 @@ describe("trigger bucket restore handoff", () => {
     assertRestoreLegalWindow(restoredChainWindow, staleQuick, staleQuick.state.waitingFor!);
     const pass = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    const staleBeforePass = applyResponse(restoredChainWindow, { ...pass!, windowId: pass!.windowId! - 1 });
+    expect(staleBeforePass.ok).toBe(false);
+    expect(staleBeforePass.error).toContain("Response is not currently legal");
+    expect(staleBeforePass.state.actionWindowId).toBe(restoredChainWindow.state.actionWindowId);
+    expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restoredChainWindow, 0));
+    expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainWindow, 0));
+    assertRestoreLegalWindow(restoredChainWindow, staleBeforePass, staleBeforePass.state.waitingFor!);
+
     const resolved = applyAndAssert(restoredChainWindow, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
     expect(resolved.state.log.some((entry) => entry.detail === "Restored turn mandatory before opponent activation resolved")).toBe(true);
