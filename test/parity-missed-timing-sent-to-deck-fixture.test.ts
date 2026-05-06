@@ -130,6 +130,15 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
           turnGroup(2),
         ],
         absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-optional-when" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Trigger Activations",
+            windowId: 2,
+            windowKind: "open",
+            actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-optional-when" }],
+          },
+        ],
         logIncludes: ["Return optional if resolved"],
       },
     };
