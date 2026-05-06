@@ -8,7 +8,7 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 describe("Lua battle chain quick replay restore", () => {
   it("replays restored damage-step chain quick responses back to the battle window", () => {
-    const fixture = setupBattleQuickFixture();
+    const fixture = setupBattleQuickFixture("EFFECT_FLAG_DAMAGE_STEP");
     passBattleResponse(fixture.session, 1, "passDamage");
     activateTurnQuick(fixture.session);
 
@@ -55,9 +55,63 @@ describe("Lua battle chain quick replay restore", () => {
     expect(stalePass.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse.session, 1));
     expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse.session, 1));
   });
+
+  it("replays restored damage-calculation chain quick responses back to the battle window", () => {
+    const fixture = setupBattleQuickFixture("EFFECT_FLAG_DAMAGE_CAL");
+    passBattleResponse(fixture.session, 1, "passDamage");
+    passBattleResponse(fixture.session, 0, "passDamage");
+    passBattleResponse(fixture.session, 1, "passDamage");
+    passBattleResponse(fixture.session, 0, "passDamage");
+    expect(fixture.session.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    passBattleResponse(fixture.session, 1, "passDamage");
+    activateTurnQuick(fixture.session);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(queryPublicState(restored.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const opponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid.includes("400"));
+    expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    expect(hasGroupedLuaEffect(restored, 1, "400", "chainResponse")).toBe(true);
+    expect(hasGroupedLuaEffect(restored, 1, "500", "chainResponse")).toBe(false);
+
+    const opponentChained = applyLuaRestoreAndAssert(restored, opponentQuick!);
+    expect(opponentChained.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 0 } });
+    expect(opponentChained.state.chain.map((link) => link.sourceUid)).toEqual([
+      expect.stringContaining("300"),
+      expect.stringContaining("400"),
+    ]);
+    expect(restored.host.messages).toEqual([]);
+
+    const restoredOpponentResponse = restoreDuelWithLuaScripts(serializeDuel(restored.session), fixture.source, createCardReader(fixture.cards));
+    expect(restoredOpponentResponse.restoreComplete, restoredOpponentResponse.incompleteReasons.join("; ")).toBe(true);
+    expect(queryPublicState(restoredOpponentResponse.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(restoredOpponentResponse.session.state.chain.map((link) => link.sourceUid)).toEqual([
+      expect.stringContaining("300"),
+      expect.stringContaining("400"),
+    ]);
+    expect(getLuaRestoreLegalActions(restoredOpponentResponse, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActions(restoredOpponentResponse, 1).some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
+    expect(getLuaRestoreLegalActionGroups(restoredOpponentResponse, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpponentResponse, 1));
+
+    const pass = getLuaRestoreLegalActions(restoredOpponentResponse, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyLuaRestoreAndAssert(restoredOpponentResponse, pass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleStep: "damageCalculation", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 1 } });
+    expect(resolved.legalActions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") }),
+      expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" }),
+    ]));
+    expect(restoredOpponentResponse.host.messages).toEqual(["restored chain-only battle quick resolved", "restored battle quick resolved"]);
+
+    const stalePass = applyLuaRestoreResponse(restoredOpponentResponse, pass!);
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse.session, 1));
+    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse.session, 1));
+  });
 });
 
-function setupBattleQuickFixture() {
+function setupBattleQuickFixture(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_FLAG_DAMAGE_CAL") {
   const cards: DuelCardData[] = [
     { code: "100", name: "Replay Battle Attacker", kind: "monster", attack: 1800 },
     { code: "300", name: "Replay Battle Quick", kind: "monster" },
@@ -66,13 +120,13 @@ function setupBattleQuickFixture() {
   ];
   const source = {
     readScript(name: string) {
-      if (name === "c300.lua") return battleQuickScript(300, "Duel.GetCurrentChain()==0", "restored battle quick resolved");
-      if (name === "c400.lua") return battleQuickScript(400, "Duel.GetCurrentChain()>0", "restored chain-only battle quick resolved");
-      if (name === "c500.lua") return battleQuickScript(500, "Duel.GetCurrentChain()==0", "restored opponent battle quick resolved");
+      if (name === "c300.lua") return battleQuickScript(300, property, "Duel.GetCurrentChain()==0", "restored battle quick resolved");
+      if (name === "c400.lua") return battleQuickScript(400, property, "Duel.GetCurrentChain()>0", "restored chain-only battle quick resolved");
+      if (name === "c500.lua") return battleQuickScript(500, property, "Duel.GetCurrentChain()==0", "restored opponent battle quick resolved");
       return undefined;
     },
   };
-  const session = createDuel({ seed: 58, startingHandSize: 2, cardReader: createCardReader(cards) });
+  const session = createDuel({ seed: property === "EFFECT_FLAG_DAMAGE_STEP" ? 58 : 59, startingHandSize: 2, cardReader: createCardReader(cards) });
   loadDecks(session, { 0: { main: ["100", "300"] }, 1: { main: ["400", "500"] } });
   startDuel(session);
   const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
@@ -93,13 +147,13 @@ function setupBattleQuickFixture() {
   return { cards, session, source };
 }
 
-function battleQuickScript(code: number, condition: string, message: string): string {
+function battleQuickScript(code: number, property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_FLAG_DAMAGE_CAL", condition: string, message: string): string {
   return `
   c${code}={}
   function c${code}.initial_effect(c)
     local e=Effect.CreateEffect(c)
     e:SetType(EFFECT_TYPE_QUICK_O)
-    e:SetProperty(EFFECT_FLAG_DAMAGE_STEP)
+    e:SetProperty(${property})
     e:SetRange(LOCATION_HAND)
     e:SetCondition(function(e,tp) return ${condition} end)
     e:SetOperation(function(e,tp) Debug.Message("${message}") end)
