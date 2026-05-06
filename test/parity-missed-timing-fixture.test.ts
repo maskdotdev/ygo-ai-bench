@@ -144,6 +144,28 @@ describe("EDOPro parity missed timing fixtures", () => {
                 triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
                 actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-when" }],
               },
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-when" },
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-if" },
+                ],
+              },
+              {
+                player: 1,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
+                actions: [
+                  { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-when" },
+                  { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if" },
+                ],
+              },
             ],
             logIncludes: ["Multi step send resolved"],
           },
