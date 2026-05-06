@@ -383,6 +383,7 @@ describe("Node upstream snapshot restore", () => {
       { type: "selectOption", player: 1, promptId: "lua-restore-prompt", option: 3, label: "Select option 3", windowId: 0, windowKind: "prompt", windowToken: restoredPromptToken },
       { type: "selectOption", player: 1, promptId: "lua-restore-prompt", option: 5, label: "Select option 5", windowId: 0, windowKind: "prompt", windowToken: restoredPromptToken },
     ]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
     const option = getLuaRestoreLegalActions(restored, 1)[1]!;
@@ -408,6 +409,8 @@ describe("Node upstream snapshot restore", () => {
       { type: "selectYesNo", player: 0, promptId: "lua-restore-yes-no", yes: true, label: "Yes", windowId: 1, windowKind: "prompt", windowToken: restoredYesNoToken },
       { type: "selectYesNo", player: 0, promptId: "lua-restore-yes-no", yes: false, label: "No", windowId: 1, windowKind: "prompt", windowToken: restoredYesNoToken },
     ]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const staleYes = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "selectYesNo" && candidate.yes);
     expect(staleYes).toBeDefined();
     const no = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "selectYesNo" && !candidate.yes);
