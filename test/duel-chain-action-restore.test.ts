@@ -11,7 +11,11 @@ function expectCurrentWindowMetadata(session: ReturnType<typeof restoreDuel>, re
 }
 
 function assertRestoreLegalWindow(session: ReturnType<typeof restoreDuel>, response: ReturnType<typeof applyResponse>, player: 0 | 1): void {
+  const publicState = queryPublicState(session);
   expect(response.state.actionWindowId).toBe(session.state.actionWindowId);
+  expect(response.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) expect(response.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  else expect(response.state).not.toHaveProperty("triggerOrderPrompt");
   expect(response.legalActions).toEqual(getDuelLegalActions(session, player));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, player));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
