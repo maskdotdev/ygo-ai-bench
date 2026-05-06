@@ -679,10 +679,15 @@ describe("duel snapshot persistence", () => {
       windowId: group.windowId,
       windowKind: group.windowKind,
       triggerBucket: group.triggerBucket,
-      actionTypes: group.actions.map((candidate) => candidate.type),
+      actions: group.actions.map((candidate) => ({
+        type: candidate.type,
+        windowId: candidate.windowId,
+        windowKind: candidate.windowKind,
+        effectId: candidate.type === "activateTrigger" || candidate.type === "declineTrigger" ? candidate.effectId : undefined,
+      })),
     }))).toEqual([
-      { label: "Trigger Activations", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: [restored.state.pendingTriggers[0]!.id] }, actionTypes: ["activateTrigger"] },
-      { label: "Trigger Declines", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: [restored.state.pendingTriggers[0]!.id] }, actionTypes: ["declineTrigger"] },
+      { label: "Trigger Activations", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: [restored.state.pendingTriggers[0]!.id] }, actions: [{ type: "activateTrigger", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", effectId: "snapshot-delayed-trigger" }] },
+      { label: "Trigger Declines", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: [restored.state.pendingTriggers[0]!.id] }, actions: [{ type: "declineTrigger", windowId: queryPublicState(restored).actionWindowId, windowKind: "triggerBucket", effectId: "snapshot-delayed-trigger" }] },
     ]);
     const result = applyResponse(restored, action!);
 
