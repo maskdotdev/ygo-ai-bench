@@ -1,0 +1,227 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution cross-player SEGOC decline chain response fixture", () => {
+  it("opens opponent responses after declining the final cross-player optional bucket", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cross Decline Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Cross Decline Turn Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Cross Decline Opponent Mandatory", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Cross Decline Turn Optional", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Cross Decline Opponent Optional", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "700", name: "Cross Decline Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Opponent Cross Decline Quick", kind: "monster", attack: 1600, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution cross-player segoc decline chain response fixture",
+      options: { seed: 297, startingHandSize: 4 },
+      decks: {
+        0: { main: ["100", "300", "500", "700"] },
+        1: { main: ["400", "600", "900", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-cross-decline-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 1, code: "900", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Cross decline starter resolved",
+          },
+          {
+            id: "fixture-cross-decline-turn-mandatory",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Cross decline turn mandatory resolved",
+          },
+          {
+            id: "fixture-cross-decline-opponent-mandatory",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Cross decline opponent mandatory resolved",
+          },
+          {
+            id: "fixture-cross-decline-turn-optional",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Cross decline turn optional resolved",
+          },
+          {
+            id: "fixture-cross-decline-opponent-optional",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Cross decline opponent optional should not resolve",
+          },
+          {
+            id: "fixture-cross-decline-opponent-quick",
+            player: 1,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Cross decline opponent quick resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-decline-starter" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-decline-turn-mandatory" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-decline-opponent-mandatory" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-decline-turn-optional" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-cross-decline-opponent-optional" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens opponent chain-response priority after the final cross-player chain-created SEGOC optional trigger is declined",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-cross-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-cross-decline-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-decline-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-cross-decline-opponent-quick", 1, 5), chainPassGroup(1, 1, 5)],
+            absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-cross-decline-opponent-optional", triggerBucket: "opponentOptional" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(1, "fixture-cross-decline-opponent-optional", "opponentOptional", 5, "triggerBucket")],
+            locations: { graveyard: ["700", "900"], hand: ["100", "300", "500", "400", "600", "800"] },
+            logIncludes: ["Cross decline starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-decline-opponent-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the responded cross-player post-decline trigger chain back to turn-player open priority",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 9, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-cross-decline-starter", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 6, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 6, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 6,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-cross-decline-starter", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+              ], 1, 6),
+              turnGroup(6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "open", effectId: "fixture-cross-decline-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "open", effectId: "fixture-cross-decline-opponent-optional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-cross-decline-opponent-quick", 6, "open"),
+              absentTriggerActivationGroup(1, "fixture-cross-decline-opponent-optional", "opponentOptional", 6, "open"),
+            ],
+            locations: { graveyard: ["700", "900"], hand: ["100", "300", "500", "400", "600", "800"] },
+            logIncludes: [
+              "Cross decline opponent quick resolved",
+              "Cross decline turn optional resolved",
+              "Cross decline opponent mandatory resolved",
+              "Cross decline turn mandatory resolved",
+            ],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state resolves an opponent fast response after cross-player chain-created SEGOC optional decline completes selection",
+        phase: "main1",
+        windowId: 6,
+        windowKind: "open",
+        waitingFor: 0,
+        chain: [],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        legalActionCounts: { 0: 9, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        absentLegalActions: [
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "open", effectId: "fixture-cross-decline-opponent-quick" },
+          { type: "activateTrigger", player: 1, windowId: 6, windowKind: "open", effectId: "fixture-cross-decline-opponent-optional" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(1, "fixture-cross-decline-opponent-quick", 6, "open"),
+          absentTriggerActivationGroup(1, "fixture-cross-decline-opponent-optional", "opponentOptional", 6, "open"),
+        ],
+        locations: { graveyard: ["700", "900"], hand: ["100", "300", "500", "400", "600", "800"] },
+        logIncludes: [
+          "Cross decline starter resolved",
+          "Cross decline opponent quick resolved",
+          "Cross decline turn optional resolved",
+          "Cross decline opponent mandatory resolved",
+          "Cross decline turn mandatory resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
