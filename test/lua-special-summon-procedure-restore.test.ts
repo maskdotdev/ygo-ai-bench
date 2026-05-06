@@ -163,6 +163,14 @@ describe("Lua special summon procedure restore", () => {
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
 
+    const staleAction = applyLuaRestoreResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
+    expect(staleAction.ok).toBe(false);
+    expect(staleAction.error).toContain("Response is not currently legal");
+    expect(staleAction.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    assertFailedRestoreSurface(restored, staleAction);
+    expect(restored.host.messages).toEqual([]);
+    expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
     expect(result.error).toContain("summon procedure is no longer in range");
@@ -236,6 +244,15 @@ describe("Lua special summon procedure restore", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
+
+    const staleAction = applyLuaRestoreResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
+    expect(staleAction.ok).toBe(false);
+    expect(staleAction.error).toContain("Response is not currently legal");
+    expect(staleAction.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    assertFailedRestoreSurface(restored, staleAction);
+    expect(restored.host.messages).toEqual([]);
+    expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === filler!.uid)).toMatchObject({ location: "hand" });
 
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
@@ -326,6 +343,16 @@ describe("Lua special summon procedure restore", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
+
+    const staleAction = applyLuaRestoreResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
+    expect(staleAction.ok).toBe(false);
+    expect(staleAction.error).toContain("Response is not currently legal");
+    expect(staleAction.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    assertFailedRestoreSurface(restored, staleAction);
+    expect(restored.host.messages).toEqual([]);
+    expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === firstMaterial!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === blockedMaterial!.uid)).toMatchObject({ location: "hand" });
 
     const result = applyLuaRestoreResponse(restored, action!);
     expect(result.ok).toBe(false);
