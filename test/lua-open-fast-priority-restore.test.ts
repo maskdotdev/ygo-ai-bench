@@ -379,6 +379,15 @@ describe("Lua open fast priority restore", () => {
 
     const chainQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid.includes("19400"));
     expect(chainQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    const staleBeforeChainQuick = applyLuaRestoreResponse(restored, { ...chainQuick!, windowId: chainQuick!.windowId! - 1 });
+    expect(staleBeforeChainQuick.ok).toBe(false);
+    expect(staleBeforeChainQuick.error).toContain("Response is not currently legal");
+    expect(staleBeforeChainQuick.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeChainQuick.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleBeforeChainQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleBeforeChainQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeChainQuick.legalActions);
+    expect(restored.host.messages).toEqual([]);
+
     const chainQuickResult = applyLuaRestoreAndAssert(restored, chainQuick!);
     expect(chainQuickResult.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
 
