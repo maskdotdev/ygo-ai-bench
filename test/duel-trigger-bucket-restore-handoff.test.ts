@@ -102,6 +102,7 @@ describe("trigger bucket restore handoff", () => {
     expect(activated.state.log.some((entry) => entry.detail === "Restored opponent optional activation resolved")).toBe(false);
     expect(getDuelLegalActions(restoredOpponentBucket, 1)).toEqual([]);
     expect(getDuelLegalActions(restoredOpponentBucket, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", effectId: "restore-turn-chain-response-after-opponent-activation", windowKind: "chainResponse" })]));
+    expect(getDuelLegalActions(restoredOpponentBucket, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-after-opponent-activation")).toBe(false);
 
     const restoredChainWindow = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreActivationRegistry());
     expect(queryPublicState(restoredChainWindow)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
@@ -119,6 +120,7 @@ describe("trigger bucket restore handoff", () => {
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
     expect(resolved.state.log.some((entry) => entry.detail === "Restored opponent optional activation resolved")).toBe(true);
     expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-open-priority-after-opponent-activation", windowKind: "open" })]));
+    expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-turn-chain-response-after-opponent-activation")).toBe(false);
     expect(getDuelLegalActions(restoredChainWindow, 1)).toEqual([]);
     const stalePass = applyResponse(restoredChainWindow, pass!);
     expect(stalePass.ok).toBe(false);
@@ -167,6 +169,7 @@ describe("trigger bucket restore handoff", () => {
     expect(activated.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", pendingTriggers: [] });
     expect(activated.state.chain.map((link) => link.effectId)).toEqual(["restore-turn-mandatory-before-opponent-activation", "restore-opponent-mandatory-activation"]);
     expect(getDuelLegalActions(restoredOpponentBucket, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", effectId: "restore-turn-chain-response-after-opponent-mandatory", windowKind: "chainResponse" })]));
+    expect(getDuelLegalActions(restoredOpponentBucket, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-after-opponent-mandatory")).toBe(false);
 
     const restoredChainWindow = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreMandatoryRegistry());
     const pass = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "passChain");
@@ -176,6 +179,7 @@ describe("trigger bucket restore handoff", () => {
     expect(resolved.state.log.some((entry) => entry.detail === "Restored turn mandatory before opponent activation resolved")).toBe(true);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored opponent mandatory activation resolved")).toBe(true);
     expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-open-priority-after-opponent-mandatory", windowKind: "open" })]));
+    expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-turn-chain-response-after-opponent-mandatory")).toBe(false);
     const stalePass = applyResponse(restoredChainWindow, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
