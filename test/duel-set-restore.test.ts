@@ -204,6 +204,59 @@ describe("set action restore", () => {
     assertRestoreLegalWindow(restored, staleReplay, staleReplay.state.waitingFor!);
   });
 
+  it("restores tribute set legal actions and applies the restored action", () => {
+    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["600", "100"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const setMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "600");
+    const tribute = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(setMonster).toBeTruthy();
+    expect(tribute).toBeTruthy();
+    moveDuelCard(session.state, tribute!.uid, "monsterZone", 0);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    expect(getGroupedDuelLegalActions(restored, 0)).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+    const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "tributeSet" && candidate.uid === setMonster!.uid && candidate.tributeUids.includes(tribute!.uid));
+    expect(action?.type).toBe("tributeSet");
+    if (!action || action.type !== "tributeSet") throw new Error("Expected restored Tribute Set action");
+    expect(action).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
+
+    const staleResult = applyResponse(restored, { ...action, windowId: action.windowId! - 1 });
+    expect(staleResult.ok).toBe(false);
+    expect(staleResult.error).toContain("Response is not currently legal");
+    expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    assertRestoreLegalWindow(restored, staleResult, 0);
+    expect(restored.state.cards.find((card) => card.uid === tribute!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(restored.state.cards.find((card) => card.uid === setMonster!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.state.players[0].normalSummonAvailable).toBe(true);
+
+    const result = applyResponse(restored, action);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === tribute!.uid)?.location).toBe("graveyard");
+    expect(result.state.cards.find((card) => card.uid === setMonster!.uid)).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
+    expect(result.state.players[0].normalSummonAvailable).toBe(false);
+    expect(result.state.waitingFor).toBeDefined();
+    expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
+    expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    assertRestoreLegalWindow(restored, result, result.state.waitingFor!);
+    expect(result.state.log.some((entry) => entry.action === "setMonster" && entry.detail === "Tribute Set with 1 tribute(s)")).toBe(true);
+    const staleReplay = applyResponse(restored, action);
+    expect(staleReplay.ok).toBe(false);
+    expect(staleReplay.error).toContain("Response is not currently legal");
+    expect(staleReplay.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
+    expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
+    assertRestoreLegalWindow(restored, staleReplay, staleReplay.state.waitingFor!);
+  });
+
   it("restores spell/trap set legal actions and applies the restored action", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
