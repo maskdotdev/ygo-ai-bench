@@ -1,0 +1,252 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentPassBattleGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  passDamageGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity opponent damage-calculation quick-effect pass handoff response chain-limit fixture", () => {
+  it("applies one-chain limits after the opponent responds to a damage-calculation pass handoff", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Opponent Damage Calculation Handoff Limit Attacker", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Opponent Damage Calculation Handoff Limit Open Quick", kind: "monster", attack: 500, defense: 500 },
+      { code: "400", name: "Opponent Damage Calculation Handoff Limit Turn Blocked Quick", kind: "monster", attack: 500, defense: 500 },
+      { code: "500", name: "Opponent Damage Calculation Handoff Limit Chain Limiter", kind: "monster", attack: 500, defense: 500 },
+      { code: "600", name: "Opponent Damage Calculation Handoff Limit Followup", kind: "monster", attack: 500, defense: 500 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "opponent damage calculation quick pass handoff response chain limit fixture",
+      options: { seed: 347, startingHandSize: 3 },
+      decks: {
+        0: { main: ["100", "400"] },
+        1: { main: ["300", "500", "600"] },
+      },
+      setup: {
+        moveCards: [{ player: 0, code: "100", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
+        effects: [
+          {
+            id: "fixture-opponent-damage-calculation-handoff-limit-open-quick",
+            player: 1,
+            code: "300",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            property: 0x8000,
+            activationChain: "open",
+            logMessage: "Fixture opponent damage-calculation handoff limit open quick resolved",
+          },
+          {
+            id: "fixture-opponent-damage-calculation-handoff-chain-limiter",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            property: 0x8000,
+            activationChain: "chain",
+            chainLimitOnTarget: { untilChainEnd: false, allowPlayer: 1 },
+            logMessage: "Fixture opponent damage-calculation handoff chain limiter resolved",
+          },
+          {
+            id: "fixture-opponent-damage-calculation-handoff-limit-followup",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            property: 0x8000,
+            activationChain: "chain",
+            logMessage: "Fixture opponent damage-calculation handoff limit followup should not resolve",
+          },
+          {
+            id: "fixture-turn-damage-calculation-handoff-limit-blocked",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            property: 0x8000,
+            activationChain: "chain",
+            logMessage: "Fixture turn damage-calculation handoff limit blocked quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
+        makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" })),
+        makeScriptedStep(makeResponseSelector("passAttack", 1)),
+        makeScriptedStep(makeResponseSelector("passAttack", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("passDamage", 1)),
+        makeScriptedStep(makeResponseSelector("passDamage", 0)),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-damage-calculation-handoff-limit-open-quick" })),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro offers opponent chain-only damage-calculation responses after the turn player passes the opponent's quick chain before limits apply",
+            waitingFor: 1,
+            windowId: 10,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleStep: "damageCalculation",
+            battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            chain: [{ player: 1, effectId: "fixture-opponent-damage-calculation-handoff-limit-open-quick", sourceUid: "p1-deck-300-0" }],
+            chainPasses: [0],
+            chainLimits: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 10, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-handoff-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 10, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-handoff-limit-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 10, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 10,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 10, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-handoff-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 10, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-handoff-limit-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 10),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 10, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-handoff-limit-open-quick" },
+              { type: "passDamage", player: 1, windowId: 10, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-handoff-limit-open-quick", 10, "chainResponse"),
+              absentPassBattleGroup(1, "passDamage", 10),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-damage-calculation-handoff-chain-limiter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro applies one-chain SetChainLimit restrictions after the opponent responds to a damage-calculation quick pass handoff",
+            waitingFor: 1,
+            windowId: 11,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleStep: "damageCalculation",
+            battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            chain: [
+              { player: 1, effectId: "fixture-opponent-damage-calculation-handoff-limit-open-quick", sourceUid: "p1-deck-300-0" },
+              { player: 1, effectId: "fixture-opponent-damage-calculation-handoff-chain-limiter", sourceUid: "p1-deck-500-1" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 2 }],
+            damagePasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 11, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-handoff-limit-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 11, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-opponent-damage-calculation-handoff-limit-followup", 1, 11),
+              chainPassGroup(1, 1, 11),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 11, windowKind: "chainResponse", effectId: "fixture-turn-damage-calculation-handoff-limit-blocked" },
+              { type: "passDamage", player: 1, windowId: 11, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-turn-damage-calculation-handoff-limit-blocked", 11, "chainResponse"),
+              absentPassBattleGroup(1, "passDamage", 11),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent damage-calculation SetChainLimit handoff response window restorable before the allowed opponent passes",
+            waitingFor: 1,
+            windowId: 11,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleStep: "damageCalculation",
+            battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            chain: [
+              { player: 1, effectId: "fixture-opponent-damage-calculation-handoff-limit-open-quick", sourceUid: "p1-deck-300-0" },
+              { player: 1, effectId: "fixture-opponent-damage-calculation-handoff-chain-limiter", sourceUid: "p1-deck-500-1" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 2 }],
+            damagePasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 11, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-handoff-limit-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 11, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-opponent-damage-calculation-handoff-limit-followup", 1, 11),
+              chainPassGroup(1, 1, 11),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 11, windowKind: "chainResponse", effectId: "fixture-turn-damage-calculation-handoff-limit-blocked" },
+              { type: "passDamage", player: 1, windowId: 11, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-turn-damage-calculation-handoff-limit-blocked", 11, "chainResponse"),
+              absentPassBattleGroup(1, "passDamage", 11),
+            ],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro clears one-chain limits and resumes the opponent damage-calculation response window after the allowed opponent passes the handoff chain",
+        waitingFor: 1,
+        windowId: 12,
+        windowKind: "battle",
+        pendingBattle: true,
+        battleStep: "damageCalculation",
+        battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+        chain: [],
+        chainPasses: [],
+        chainLimits: [],
+        damagePasses: [],
+        legalActionCounts: { 0: 0, 1: 1 },
+        legalActionGroupCounts: { 0: 0, 1: 1 },
+        legalActions: [{ type: "passDamage", player: 1, windowId: 12, windowKind: "battle", count: 1 }],
+        legalActionGroups: [passDamageGroup(1, 1, 12)],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 12, windowKind: "battle", effectId: "fixture-turn-damage-calculation-handoff-limit-blocked" },
+          { type: "activateEffect", player: 1, windowId: 12, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-handoff-limit-open-quick" },
+          { type: "activateEffect", player: 1, windowId: 12, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-handoff-chain-limiter" },
+          { type: "activateEffect", player: 1, windowId: 12, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-handoff-limit-followup" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-turn-damage-calculation-handoff-limit-blocked", 12, "battle"),
+          absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-handoff-limit-open-quick", 12, "battle"),
+          absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-handoff-chain-limiter", 12, "battle"),
+          absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-handoff-limit-followup", 12, "battle"),
+        ],
+        logIncludes: [
+          "Fixture opponent damage-calculation handoff chain limiter resolved",
+          "Fixture opponent damage-calculation handoff limit open quick resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
