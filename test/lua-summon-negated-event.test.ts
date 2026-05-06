@@ -111,6 +111,7 @@ describe("Lua summon-negated events", () => {
 
     const negatedTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid.includes("400"));
     expect(negatedTrigger).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, negatedTrigger!, 0);
     applyLuaRestoreAndAssert(restored, negatedTrigger!);
     drainRestoredChain(restored);
     expect(restored.host.messages).toContain("negated after attempt 100");
@@ -262,6 +263,7 @@ function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: st
   expect(trigger).toBeDefined();
   const publicState = queryPublicState(restored.session);
   expect(trigger).toMatchObject({ windowId: publicState.actionWindowId, windowKind: "triggerBucket" });
+  expectLuaRestoreStalePreapply(restored, trigger!, 0);
   applyLuaRestoreAndAssert(restored, trigger!);
   const staleResult = applyLuaRestoreResponse(restored, trigger!);
   expect(staleResult.ok).toBe(false);
@@ -279,6 +281,7 @@ function drainRestoredChain(restored: LuaSnapshotRestoreResult): void {
     const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
     const pass = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, pass!, player);
     applyLuaRestoreAndAssert(restored, pass!);
   }
 }
@@ -290,6 +293,16 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, result.state.waitingFor!));
   expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   return result;
+}
+
+function expectLuaRestoreStalePreapply(restored: LuaSnapshotRestoreResult, action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1): void {
+  const result = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(result.ok).toBe(false);
+  expect(result.error).toContain("Response is not currently legal");
+  expect(result.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }
 
 function applyLuaRestoreAndAssert(restored: LuaSnapshotRestoreResult, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
