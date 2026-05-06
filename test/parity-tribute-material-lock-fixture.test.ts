@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { directAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity tribute material lock fixtures", () => {
   it("removes Tribute Summon actions when the required tribute cannot be released for summons", () => {
@@ -73,7 +74,16 @@ describe("EDOPro parity tribute material lock fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state preserves the Tribute Summon target in hand when release use is locked",
         phase: "battle",
+        windowId: 1,
         locations: { hand: ["100"], monsterZone: ["200"] },
+        legalActionCounts: { 0: 3, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "declareAttack", player: 0, attackerUid: "p0-deck-200-1", directAttack: true, windowId: 1, windowKind: "open", count: 1 },
+          { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [directAttackGroup(0, "p0-deck-200-1", 1, 1), turnGroup(1)],
       },
     };
 

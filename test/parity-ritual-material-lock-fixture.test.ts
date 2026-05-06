@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Ritual material lock fixtures", () => {
   it("removes Ritual Summon actions when a selected material cannot be used as material", () => {
@@ -73,7 +74,15 @@ describe("EDOPro parity Ritual material lock fixtures", () => {
         source: "edopro",
         note: "EDOPro final fixture state preserves the Ritual monster in hand when material use is locked",
         phase: "battle",
+        windowId: 1,
         locations: { hand: ["900", "100", "200"] },
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(1)],
       },
     };
 
