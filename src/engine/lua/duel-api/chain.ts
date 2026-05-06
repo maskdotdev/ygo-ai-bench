@@ -200,6 +200,7 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
   const blockedEffectType = literalNotEffectTypePredicate(L, index, hostState);
   if (blockedEffectType !== undefined) return `closure:not-effect-type:${blockedEffectType}`;
+  if (literalNotMonsterLinkActiveTypePredicate(L, index, hostState)) return "closure:not-active-monster-link";
   const blockedActiveType = literalNotActiveTypePredicate(L, index, hostState);
   if (blockedActiveType !== undefined) return `closure:not-active-type:${blockedActiveType}`;
   const responsePlayer = capturedResponsePlayer(L, index);
@@ -402,6 +403,16 @@ function literalNotActiveTypePredicate(L: unknown, index: number, hostState: Lua
   if (match[2] === "IsSpellEffect") return 0x2;
   if (match[2] === "IsTrapEffect") return 0x4;
   return undefined;
+}
+
+function literalNotMonsterLinkActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
+  if (hasNonEnvironmentUpvalues(L, index)) return false;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return false;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  if (!effectParam) return false;
+  return new RegExp(`return\\s+not\\s*\\(\\s*${effectParam}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)\\s+and\\s+${effectParam}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsLinkMonster\\s*\\(\\s*\\)\\s*\\)`).test(snippet);
 }
 
 function literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
