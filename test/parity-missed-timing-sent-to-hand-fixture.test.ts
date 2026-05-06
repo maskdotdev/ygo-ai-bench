@@ -105,6 +105,7 @@ describe("EDOPro parity sent-to-hand missed timing fixtures", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            chainPasses: [],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "bounce-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "bounce-optional-if" },
@@ -121,6 +122,7 @@ describe("EDOPro parity sent-to-hand missed timing fixtures", () => {
         waitingFor: 0,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         locationCounts: { graveyard: { "700": 1 }, hand: { "100": 1, "400": 1, "500": 1, "600": 6 } },
         legalActionCounts: { 0: 11, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
@@ -279,6 +281,7 @@ describe("EDOPro parity sent-to-hand missed timing fixtures", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            chainPasses: [],
             legalActionCounts: { 0: 14, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
             legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "bounce-decline-open-fast", count: 1 }],
@@ -300,6 +303,7 @@ describe("EDOPro parity sent-to-hand missed timing fixtures", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            chainPasses: [],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "bounce-decline-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "bounce-decline-optional-if" },
@@ -317,6 +321,7 @@ describe("EDOPro parity sent-to-hand missed timing fixtures", () => {
         pendingTriggers: [],
         pendingTriggerBuckets: [],
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 14, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
         absentLegalActions: [

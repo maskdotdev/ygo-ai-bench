@@ -105,6 +105,7 @@ describe("EDOPro parity banished missed timing fixtures", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            chainPasses: [],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-optional-if" },
@@ -121,6 +122,7 @@ describe("EDOPro parity banished missed timing fixtures", () => {
         waitingFor: 0,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         locationCounts: { banished: { "600": 1 }, graveyard: { "700": 1 }, hand: { "100": 1, "400": 1, "500": 1, "600": 5 } },
         legalActionCounts: { 0: 9, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
@@ -294,6 +296,7 @@ describe("EDOPro parity banished missed timing fixtures", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            chainPasses: [],
             legalActionCounts: { 0: 12, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
             legalActions: [
@@ -340,6 +343,7 @@ describe("EDOPro parity banished missed timing fixtures", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            chainPasses: [],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "banish-decline-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "banish-decline-optional-if" },
@@ -357,6 +361,7 @@ describe("EDOPro parity banished missed timing fixtures", () => {
         pendingTriggers: [],
         pendingTriggerBuckets: [],
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 12, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
         absentLegalActions: [
