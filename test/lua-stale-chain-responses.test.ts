@@ -66,6 +66,7 @@ describe("Lua stale chain responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.chain).toHaveLength(0);
+    expectNoPublicTriggerWindow(session);
     expect(host.messages).toEqual(["lua stale pass source resolved"]);
   });
 
@@ -131,6 +132,7 @@ describe("Lua stale chain responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(session.state.chain).toHaveLength(0);
+    expectNoPublicTriggerWindow(session);
     expect(host.messages).toEqual(["lua stale quick source resolved"]);
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect")).toBe(true);
   });
@@ -222,6 +224,7 @@ describe("Lua stale chain responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.session.state.chain).toHaveLength(0);
+    expectNoPublicTriggerWindow(restored.session);
     expect(restored.host.messages).toEqual(["restored stale pass source resolved"]);
   });
 
@@ -328,6 +331,7 @@ describe("Lua stale chain responses", () => {
     expect(staleCurrentPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleCurrentPass.legalActions);
     expect(restored.host.messages).toEqual(["restored quick stale pass response resolved", "restored quick stale pass source resolved"]);
     expect(restored.session.state.chain).toHaveLength(0);
+    expectNoPublicTriggerWindow(restored.session);
   });
 
   it("rejects stale Lua quick responses captured before snapshot restore", () => {
@@ -431,6 +435,7 @@ describe("Lua stale chain responses", () => {
     expect(replay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(replay.legalActionGroups.flatMap((group) => group.actions)).toEqual(replay.legalActions);
     expect(restored.session.state.chain).toHaveLength(0);
+    expectNoPublicTriggerWindow(restored.session);
     expect(restored.host.messages).toEqual(["restored stale quick source resolved"]);
   });
 });
@@ -451,4 +456,10 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function expectNoPublicTriggerWindow(session: ReturnType<typeof createDuel>): void {
+  const publicState = queryPublicState(session);
+  expect(publicState.pendingTriggerBuckets).toEqual([]);
+  expect(publicState).not.toHaveProperty("triggerOrderPrompt");
 }
