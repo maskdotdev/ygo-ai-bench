@@ -63,6 +63,71 @@ describe("trigger bucket restore handoff", () => {
     expect(staleDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentBucket, 0));
     expect(staleDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleDecline.legalActions);
   });
+
+  it("returns restored opponent optional activations through chain response to open priority", () => {
+    const session = createDuel({ seed: 2, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "100", "100"] },
+    });
+    startDuel(session);
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const turnQuickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const opponentTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(turnTriggerSource).toBeTruthy();
+    expect(turnQuickSource).toBeTruthy();
+    expect(opponentTriggerSource).toBeTruthy();
+    registerEffect(session, normalSummonTrigger("restore-turn-optional-before-opponent-activation", turnTriggerSource!.uid, 0, "Restored turn optional before opponent activation resolved"));
+    registerEffect(session, normalSummonTrigger("restore-opponent-optional-activation", opponentTriggerSource!.uid, 1, "Restored opponent optional activation resolved"));
+    registerEffect(session, openOnlyQuickEffect("restore-open-priority-after-opponent-activation", turnQuickSource!.uid, 0, "Restored open priority after opponent activation resolved"));
+    registerEffect(session, chainOnlyQuickEffect("restore-turn-chain-response-after-opponent-activation", turnQuickSource!.uid, 0, "Restored turn chain response after opponent activation resolved"));
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeDefined();
+    applyAndAssert(session, summon!);
+    const restoredTurnBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreActivationRegistry());
+    const turnDecline = getDuelLegalActions(restoredTurnBucket, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-turn-optional-before-opponent-activation");
+    expect(turnDecline).toBeDefined();
+    applyAndAssert(restoredTurnBucket, turnDecline!);
+
+    const restoredOpponentBucket = restoreDuel(serializeDuel(restoredTurnBucket), createCardReader(cards), restoreActivationRegistry());
+    expect(queryPublicState(restoredOpponentBucket)).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
+    const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-opponent-optional-activation");
+    expect(opponentActivation).toBeDefined();
+    const activated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
+    expect(activated.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", pendingTriggers: [] });
+    expect(activated.state.chain.map((link) => link.effectId)).toEqual(["restore-opponent-optional-activation"]);
+    expect(activated.state.log.some((entry) => entry.detail === "Restored opponent optional activation resolved")).toBe(false);
+    expect(getDuelLegalActions(restoredOpponentBucket, 1)).toEqual([]);
+    expect(getDuelLegalActions(restoredOpponentBucket, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", effectId: "restore-turn-chain-response-after-opponent-activation", windowKind: "chainResponse" })]));
+
+    const restoredChainWindow = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreActivationRegistry());
+    expect(queryPublicState(restoredChainWindow)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    const pass = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const staleBeforePass = applyResponse(restoredChainWindow, { ...pass!, windowId: pass!.windowId! - 1 });
+    expect(staleBeforePass.ok).toBe(false);
+    expect(staleBeforePass.error).toContain("Response is not currently legal");
+    expect(staleBeforePass.state.actionWindowId).toBe(restoredChainWindow.state.actionWindowId);
+    expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restoredChainWindow, 0));
+    expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainWindow, 0));
+    expect(staleBeforePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforePass.legalActions);
+
+    const resolved = applyAndAssert(restoredChainWindow, pass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored opponent optional activation resolved")).toBe(true);
+    expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-open-priority-after-opponent-activation", windowKind: "open" })]));
+    expect(getDuelLegalActions(restoredChainWindow, 1)).toEqual([]);
+    const stalePass = applyResponse(restoredChainWindow, pass!);
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.state.actionWindowId).toBe(restoredChainWindow.state.actionWindowId);
+    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restoredChainWindow, 0));
+    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainWindow, 0));
+    expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
+  });
 });
 
 function normalSummonTrigger(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
@@ -97,6 +162,23 @@ function openOnlyQuickEffect(id: string, sourceUid: string, controller: 0 | 1, d
   };
 }
 
+function chainOnlyQuickEffect(id: string, sourceUid: string, controller: 0 | 1, detail: string): DuelEffectDefinition {
+  return {
+    id,
+    registryKey: id,
+    sourceUid,
+    controller,
+    event: "quick",
+    range: ["hand"],
+    operation(ctx) {
+      ctx.log(detail);
+    },
+    canActivate(ctx) {
+      return ctx.duel.chain.length > 0;
+    },
+  };
+}
+
 function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
   return {
     "restore-turn-optional-decline": restoreLoggedEffect("Restored turn optional trigger resolved"),
@@ -105,6 +187,25 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
       ...restoreLoggedEffect("Restored open priority after opponent decline resolved")(effect),
       canActivate(ctx) {
         return ctx.duel.chain.length === 0;
+      },
+    }),
+  };
+}
+
+function restoreActivationRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
+  return {
+    "restore-turn-optional-before-opponent-activation": restoreLoggedEffect("Restored turn optional before opponent activation resolved"),
+    "restore-opponent-optional-activation": restoreLoggedEffect("Restored opponent optional activation resolved"),
+    "restore-open-priority-after-opponent-activation": (effect) => ({
+      ...restoreLoggedEffect("Restored open priority after opponent activation resolved")(effect),
+      canActivate(ctx) {
+        return ctx.duel.chain.length === 0;
+      },
+    }),
+    "restore-turn-chain-response-after-opponent-activation": (effect) => ({
+      ...restoreLoggedEffect("Restored turn chain response after opponent activation resolved")(effect),
+      canActivate(ctx) {
+        return ctx.duel.chain.length > 0;
       },
     }),
   };
