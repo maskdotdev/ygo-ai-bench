@@ -211,7 +211,7 @@ describe("EDOPro parity missed timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-optional-if" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro presents opponent optional if triggers only after the turn player's optional bucket is consumed while opponent optional when remains missed",
@@ -264,7 +264,7 @@ describe("EDOPro parity missed timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-opponent-optional-if" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
         }),
       ],
       expected: {
