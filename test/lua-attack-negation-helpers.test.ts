@@ -147,6 +147,16 @@ describe("Lua attack negation helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredTrigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(restoredTrigger).toBeDefined();
+    const staleTrigger = applyLuaRestoreResponse(restored, { ...restoredTrigger!, windowId: restoredTrigger!.windowId! - 1 });
+    expect(staleTrigger.ok).toBe(false);
+    expect(staleTrigger.error).toContain("Response is not currently legal");
+    expect(staleTrigger.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
+    expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["attackDisabled"]);
+    expect(restored.host.messages).not.toContain("attack disabled trigger 100/0/64/0");
+
     applyLuaRestoreAndAssert(restored, restoredTrigger!);
     expect(restored.host.messages).toContain("attack disabled trigger 100/0/64/0");
 
