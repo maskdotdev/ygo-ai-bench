@@ -124,6 +124,11 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   if (predicate === "aux.TRUE") return { ...limit, allows: () => true };
   const capturedCard = predicate?.match(/^closure:card-not-handler:(.+)$/);
   if (capturedCard?.[1]) return { ...limit, allows: (effect) => effect.sourceUid !== capturedCard[1] };
+  const capturedCards = predicate?.match(/^closure:cards-not-handler:(.+)$/);
+  if (capturedCards?.[1]) {
+    const blockedUids = new Set(capturedCards[1].split(",").map(decodeURIComponent).filter(Boolean));
+    return { ...limit, allows: (effect) => !blockedUids.has(effect.sourceUid) };
+  }
   const typeMask = predicate?.match(/^closure:type-mask-response-player:(\d+)$/);
   if (typeMask?.[1]) return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || (sourceTypeFlags(hostState, effect.sourceUid) & Number(typeMask[1])) === 0 };
   const handlerCode = predicate?.match(/^closure:handler-code:(\d+)$/);
