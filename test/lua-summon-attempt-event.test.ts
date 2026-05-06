@@ -206,12 +206,14 @@ function assertRestoredAttemptTrigger(restored: LuaSnapshotRestoreResult, origin
   expect(staleBeforeTrigger.ok).toBe(false);
   expect(staleBeforeTrigger.error).toContain("Response is not currently legal");
   expect(staleBeforeTrigger.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  assertPublicRestoreMetadata(restored, staleBeforeTrigger);
   expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
   expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(staleBeforeTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTrigger.legalActions);
   const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalTrigger);
   expect(originalTriggerPreapply.ok).toBe(false);
   expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
+  assertPublicRestoreMetadata(restored, originalTriggerPreapply);
   expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
 
   applyLuaRestoreAndAssert(restored, trigger!);
@@ -219,6 +221,7 @@ function assertRestoredAttemptTrigger(restored: LuaSnapshotRestoreResult, origin
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
   expect(staleResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  assertPublicRestoreMetadata(restored, staleResult);
   expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
   expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
@@ -236,8 +239,16 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
 function applyLuaRestoreAndAssert(restored: LuaSnapshotRestoreResult, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
   const result = applyLuaRestoreResponse(restored, action);
   expect(result.ok, result.error).toBe(true);
+  assertPublicRestoreMetadata(restored, result);
   expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   return result;
+}
+
+function assertPublicRestoreMetadata(restored: LuaSnapshotRestoreResult, response: ReturnType<typeof applyLuaRestoreResponse>): void {
+  const publicState = queryPublicState(restored.session);
+  expect(response.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) expect(response.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  else expect(response.state).not.toHaveProperty("triggerOrderPrompt");
 }
