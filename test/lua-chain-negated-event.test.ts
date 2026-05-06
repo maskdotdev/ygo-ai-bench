@@ -87,12 +87,18 @@ describe("Lua chain-negated events", () => {
     const negatorAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect");
     expect(negatorAction).toBeDefined();
     applyAndAssert(session, negatorAction!);
+    const originalPass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+    expect(originalPass).toBeDefined();
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(getLuaRestoreLegalActions(restoredChain, 1)).toEqual(getDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
+    const originalPassPreapply = applyLuaRestoreResponse(restoredChain, originalPass!);
+    expect(originalPassPreapply.ok).toBe(false);
+    expect(originalPassPreapply.error).toContain("Response is not currently legal");
+    expect(originalPassPreapply.legalActions).toEqual(getDuelLegalActions(restoredChain.session, 1));
     while (restoredChain.session.state.chain.length > 0) {
       const player = restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer;
       const pass = getLuaRestoreLegalActions(restoredChain, player).find((candidate) => candidate.type === "passChain");
