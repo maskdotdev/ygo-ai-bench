@@ -653,6 +653,14 @@ describe("Lua trigger bucket helpers", () => {
 
     const opponentOptionalDecline = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "declineTrigger");
     expect(opponentOptionalDecline).toMatchObject({ player: 1, windowKind: "triggerBucket", triggerBucket: "opponentOptional" });
+    const staleBeforeOpponentOptionalDecline = applyLuaRestoreResponse(restored, { ...opponentOptionalDecline!, windowId: opponentOptionalDecline!.windowId! - 1 });
+    expect(staleBeforeOpponentOptionalDecline.ok).toBe(false);
+    expect(staleBeforeOpponentOptionalDecline.error).toContain("Response is not currently legal");
+    expect(staleBeforeOpponentOptionalDecline.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeOpponentOptionalDecline.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleBeforeOpponentOptionalDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleBeforeOpponentOptionalDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeOpponentOptionalDecline.legalActions);
+
     const resolved = applyLuaRestoreAndAssert(restored, opponentOptionalDecline!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(resolved.state.chain).toEqual([]);
