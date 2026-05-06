@@ -9,6 +9,14 @@ function expectCurrentWindowMetadata(session: ReturnType<typeof restoreDuel>, re
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId: session.state.actionWindowId, windowKind: response.state.windowKind });
 }
 
+function assertRestoreLegalWindow(session: ReturnType<typeof restoreDuel>, response: ReturnType<typeof applyResponse>, player: 0 | 1): void {
+  expect(response.state.actionWindowId).toBe(session.state.actionWindowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, player));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  expectCurrentWindowMetadata(session, response);
+}
+
 describe("chain action restore", () => {
   it("restores chain response legal actions and resolves the chain after a restored pass", () => {
     const { session, restored } = setupRestoredChainResponse("pass");
@@ -30,7 +38,7 @@ describe("chain action restore", () => {
     expect(staleBeforePass.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
-    expect(staleBeforePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforePass.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforePass, 1);
     expectCurrentWindowMetadata(restored, staleBeforePass);
 
     const result = applyResponse(restored, pass!);
@@ -48,7 +56,7 @@ describe("chain action restore", () => {
     expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
-    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    assertRestoreLegalWindow(restored, staleResult, 0);
     expectCurrentWindowMetadata(restored, staleResult);
   });
 
@@ -70,7 +78,7 @@ describe("chain action restore", () => {
     expect(staleBeforeQuick.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforeQuick.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleBeforeQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
-    expect(staleBeforeQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeQuick.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforeQuick, 1);
     expectCurrentWindowMetadata(restored, staleBeforeQuick);
 
     const result = applyResponse(restored, quick!);
@@ -92,7 +100,7 @@ describe("chain action restore", () => {
     expect(staleResult.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
-    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    assertRestoreLegalWindow(restored, staleResult, 1);
     expectCurrentWindowMetadata(restored, staleResult);
 
     const pass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
@@ -103,7 +111,7 @@ describe("chain action restore", () => {
     expect(staleBeforePass.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
-    expect(staleBeforePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforePass.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforePass, 1);
     expectCurrentWindowMetadata(restored, staleBeforePass);
 
     const resolved = applyResponse(restored, pass!);
@@ -167,7 +175,7 @@ describe("chain action restore", () => {
     expect(staleBeforeQuick.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforeQuick.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleBeforeQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
-    expect(staleBeforeQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeQuick.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforeQuick, 0);
 
     const chained = applyResponse(restored, quick!);
     expect(chained.ok, chained.error).toBe(true);
@@ -180,7 +188,7 @@ describe("chain action restore", () => {
     expect(staleQuick.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleQuick.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
-    expect(staleQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleQuick.legalActions);
+    assertRestoreLegalWindow(restored, staleQuick, 0);
   });
 
   it("returns restored chain resolution to turn-player open fast-effect priority", () => {
@@ -225,7 +233,7 @@ describe("chain action restore", () => {
     expect(staleBeforePass.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
-    expect(staleBeforePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforePass.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforePass, 1);
 
     const result = applyResponse(restored, pass!);
 
@@ -245,7 +253,7 @@ describe("chain action restore", () => {
     expect(staleBeforeQuick.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforeQuick.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleBeforeQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
-    expect(staleBeforeQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeQuick.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforeQuick, 0);
 
     const quickResult = applyResponse(restored, quick!);
     expect(quickResult.ok, quickResult.error).toBe(true);
@@ -261,7 +269,7 @@ describe("chain action restore", () => {
     expect(staleQuick.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleQuick.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
-    expect(staleQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleQuick.legalActions);
+    assertRestoreLegalWindow(restored, staleQuick, 1);
 
     const restoredQuickChain = restoreDuel(serializeDuel(restored), createCardReader(cards), {
       "restore-open-priority-source": restoreChainEffect("Restored open priority source resolved"),
@@ -281,7 +289,7 @@ describe("chain action restore", () => {
     expect(staleBeforeOpponentQuick.state.actionWindowId).toBe(restoredQuickChain.state.actionWindowId);
     expect(staleBeforeOpponentQuick.legalActions).toEqual(getDuelLegalActions(restoredQuickChain, 1));
     expect(staleBeforeOpponentQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredQuickChain, 1));
-    expect(staleBeforeOpponentQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeOpponentQuick.legalActions);
+    assertRestoreLegalWindow(restoredQuickChain, staleBeforeOpponentQuick, 1);
 
     const opponentQuickResult = applyResponse(restoredQuickChain, opponentQuick!);
     expect(opponentQuickResult.ok, opponentQuickResult.error).toBe(true);
@@ -299,7 +307,7 @@ describe("chain action restore", () => {
     expect(staleOpponentQuick.state.actionWindowId).toBe(restoredQuickChain.state.actionWindowId);
     expect(staleOpponentQuick.legalActions).toEqual(getDuelLegalActions(restoredQuickChain, 1));
     expect(staleOpponentQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredQuickChain, 1));
-    expect(staleOpponentQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleOpponentQuick.legalActions);
+    assertRestoreLegalWindow(restoredQuickChain, staleOpponentQuick, 1);
 
     const opponentPass = getDuelLegalActions(restoredQuickChain, 1).find((action) => action.type === "passChain");
     expect(opponentPass).toBeDefined();
@@ -318,7 +326,7 @@ describe("chain action restore", () => {
     expect(stalePass.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
-    expect(stalePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePass.legalActions);
+    assertRestoreLegalWindow(restored, stalePass, 1);
   });
 
   it("opens restored chain-ended trigger buckets after resolving a restored chain", () => {
@@ -392,7 +400,7 @@ describe("chain action restore", () => {
     expect(staleBeforeTrigger.state.actionWindowId).toBe(restoredTriggerBucket.state.actionWindowId);
     expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, 0));
     expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, 0));
-    expect(staleBeforeTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTrigger.legalActions);
+    assertRestoreLegalWindow(restoredTriggerBucket, staleBeforeTrigger, 0);
 
     const triggerResult = applyResponse(restoredTriggerBucket, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
@@ -426,7 +434,7 @@ describe("chain action restore", () => {
     expect(staleOpponentQuick.state.actionWindowId).toBe(restoredTriggerChain.state.actionWindowId);
     expect(staleOpponentQuick.legalActions).toEqual(getDuelLegalActions(restoredTriggerChain, 1));
     expect(staleOpponentQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerChain, 1));
-    expect(staleOpponentQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleOpponentQuick.legalActions);
+    assertRestoreLegalWindow(restoredTriggerChain, staleOpponentQuick, 1);
     const triggerPass = getDuelLegalActions(restoredTriggerChain, triggerResult.state.waitingFor!).find((action) => action.type === "passChain");
     expect(triggerPass).toBeDefined();
     const staleBeforeTriggerPass = applyResponse(restoredTriggerChain, { ...triggerPass!, windowId: triggerPass!.windowId! - 1 });
@@ -435,7 +443,7 @@ describe("chain action restore", () => {
     expect(staleBeforeTriggerPass.state.actionWindowId).toBe(restoredTriggerChain.state.actionWindowId);
     expect(staleBeforeTriggerPass.legalActions).toEqual(getDuelLegalActions(restoredTriggerChain, 1));
     expect(staleBeforeTriggerPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerChain, 1));
-    expect(staleBeforeTriggerPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTriggerPass.legalActions);
+    assertRestoreLegalWindow(restoredTriggerChain, staleBeforeTriggerPass, 1);
 
     const resolvedTrigger = applyResponse(restoredTriggerChain, triggerPass!);
     expect(resolvedTrigger.ok, resolvedTrigger.error).toBe(true);
@@ -507,7 +515,7 @@ describe("chain action restore", () => {
     expect(staleBeforeDecline.state.actionWindowId).toBe(restoredTriggerBucket.state.actionWindowId);
     expect(staleBeforeDecline.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, 0));
     expect(staleBeforeDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, 0));
-    expect(staleBeforeDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeDecline.legalActions);
+    assertRestoreLegalWindow(restoredTriggerBucket, staleBeforeDecline, 0);
 
     const declined = applyResponse(restoredTriggerBucket, decline!);
     expect(declined.ok, declined.error).toBe(true);
@@ -527,7 +535,7 @@ describe("chain action restore", () => {
     expect(staleDecline.state.actionWindowId).toBe(restoredTriggerBucket.state.actionWindowId);
     expect(staleDecline.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, 0));
     expect(staleDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, 0));
-    expect(staleDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleDecline.legalActions);
+    assertRestoreLegalWindow(restoredTriggerBucket, staleDecline, 0);
   });
 });
 
