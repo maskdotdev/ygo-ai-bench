@@ -166,6 +166,7 @@ describe("open fast pass handoff restore", () => {
     expect(turnChain).toBeDefined();
     const resolved = applyAndAssert(restored, turnChain!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+    expect(restored.state.chainPasses).toEqual([]);
     expect(restored.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
       "restore-open-alt-turn-chain-quick resolved",
       "restore-open-alt-opponent-chain-quick resolved",
