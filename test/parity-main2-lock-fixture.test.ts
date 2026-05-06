@@ -40,15 +40,32 @@ describe("EDOPro parity Main Phase 2 lock fixtures", () => {
             waitingFor: 0,
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "changePhase", player: 0, phase: "end", windowId: 1, windowKind: "open", count: 1 }],
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, phase: "end", windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
             legalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 1, windowKind: "open", count: 1 },
+                ],
+              },
               {
                 player: 0,
                 label: "Turn",
                 windowId: 1,
                 windowKind: "open",
                 count: 1,
-                actions: [{ type: "changePhase", player: 0, phase: "end", windowId: 1, windowKind: "open", count: 1 }],
+                actions: [
+                  { type: "changePhase", player: 0, phase: "end", windowId: 1, windowKind: "open", count: 1 },
+                  { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+                ],
               },
             ],
             absentLegalActions: [{ type: "changePhase", player: 0, phase: "main2", windowId: 1, windowKind: "open" }],
