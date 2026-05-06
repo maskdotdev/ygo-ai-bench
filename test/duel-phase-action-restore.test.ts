@@ -92,6 +92,18 @@ describe("phase action restore", () => {
     expect(getDuelLegalActions(restoredChainWindow, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-open-quick")).toBe(false);
     expect(getGroupedDuelLegalActions(restoredChainWindow, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredChainWindow, 0));
 
+    const oldTurnChainQuickAction = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-chain-quick");
+    expect(oldTurnChainQuickAction).toBeDefined();
+    const resolvedChain = applyResponse(restoredChainWindow, oldTurnChainQuickAction!);
+    expect(resolvedChain.ok, resolvedChain.error).toBe(true);
+    expect(resolvedChain.state).toMatchObject({ waitingFor: 1, windowKind: "open", turnPlayer: 1, turn: 2, phase: "main1", chain: [], pendingTriggers: [] });
+    expect(restoredChainWindow.state.chainPasses).toEqual([]);
+    expect(resolvedChain.legalActions).toEqual(getDuelLegalActions(restoredChainWindow, 1));
+    expect(resolvedChain.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainWindow, 1));
+    expect(resolvedChain.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-old-turn-chain-quick")).toBe(false);
+    expect(resolvedChain.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-end-turn-new-turn-open-quick")).toBe(true);
+    expect(getDuelLegalActions(restoredChainWindow, 0)).toEqual([]);
+
     const staleEndTurn = applyResponse(restoredHandoff, endTurn!);
     expect(staleEndTurn.ok).toBe(false);
     expect(staleEndTurn.error).toContain("Response is not currently legal");
@@ -266,6 +278,7 @@ function restoreOpenOnlyQuick(effect: Omit<DuelEffectDefinition, "operation">): 
 function chainOnlyQuick(id: string, sourceUid: string, controller: 0 | 1): DuelEffectDefinition {
   return {
     ...openOnlyQuick(id, sourceUid, controller),
+    oncePerTurn: true,
     canActivate(ctx) {
       return ctx.duel.chain.length > 0;
     },
