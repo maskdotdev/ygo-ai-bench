@@ -315,12 +315,15 @@ describe("chain action restore", () => {
     startDuel(session);
     const source = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
     const triggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const openQuickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
     const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
     expect(source).toBeTruthy();
     expect(triggerSource).toBeTruthy();
+    expect(openQuickSource).toBeTruthy();
     expect(opponentQuickSource).toBeTruthy();
     registerEffect(session, chainEffect("restore-chain-ended-source", source!.uid, 0, "ignition", "Restored chain-ended source resolved"));
-    registerEffect(session, chainEffect("restore-chain-ended-trigger", triggerSource!.uid, 0, "trigger", "Restored chain-ended trigger resolved", "chainEnded"));
+    registerEffect(session, { ...chainEffect("restore-chain-ended-trigger", triggerSource!.uid, 0, "trigger", "Restored chain-ended trigger resolved", "chainEnded"), oncePerTurn: true });
+    registerEffect(session, openOnlyQuickEffect("restore-chain-ended-open-quick", openQuickSource!.uid, 0, "Restored chain-ended open quick resolved"));
     registerEffect(session, chainOnlyQuickEffect("restore-chain-ended-opponent-quick", opponentQuickSource!.uid, 1, "Restored chain-ended opponent quick resolved"));
 
     const original = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-chain-ended-source");
@@ -334,6 +337,7 @@ describe("chain action restore", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
       "restore-chain-ended-source": restoreChainEffect("Restored chain-ended source resolved"),
       "restore-chain-ended-trigger": restoreChainEffect("Restored chain-ended trigger resolved"),
+      "restore-chain-ended-open-quick": restoreOpenOnlyQuickEffect("Restored chain-ended open quick resolved"),
       "restore-chain-ended-opponent-quick": restoreChainOnlyQuickEffect("Restored chain-ended opponent quick resolved"),
     });
     const result = applyResponse(restored, pass!);
@@ -349,12 +353,14 @@ describe("chain action restore", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-chain-ended-open-quick")).toBe(false);
     expect(restored.state.log.some((entry) => entry.detail === "Restored chain-ended source resolved")).toBe(true);
     expect(restored.state.log.some((entry) => entry.detail === "Restored chain-ended trigger resolved")).toBe(false);
 
     const restoredTriggerBucket = restoreDuel(serializeDuel(restored), createCardReader(cards), {
       "restore-chain-ended-source": restoreChainEffect("Restored chain-ended source resolved"),
       "restore-chain-ended-trigger": restoreChainEffect("Restored chain-ended trigger resolved"),
+      "restore-chain-ended-open-quick": restoreOpenOnlyQuickEffect("Restored chain-ended open quick resolved"),
       "restore-chain-ended-opponent-quick": restoreChainOnlyQuickEffect("Restored chain-ended opponent quick resolved"),
     });
     expect(restoredTriggerBucket.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
@@ -384,6 +390,9 @@ describe("chain action restore", () => {
     expect(resolvedTrigger.ok, resolvedTrigger.error).toBe(true);
     expect(resolvedTrigger.state.chain).toEqual([]);
     expect(resolvedTrigger.state.log.some((entry) => entry.detail === "Restored chain-ended trigger resolved")).toBe(true);
+    expect(resolvedTrigger.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(resolvedTrigger.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-chain-ended-open-quick", windowKind: "open" })]));
+    expect(getDuelLegalActions(restoredTriggerBucket, 1)).toEqual([]);
     expect(resolvedTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerBucket, resolvedTrigger.state.waitingFor!));
     expect(resolvedTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerBucket, resolvedTrigger.state.waitingFor!));
     expect(resolvedTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolvedTrigger.legalActions);
