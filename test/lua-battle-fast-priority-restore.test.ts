@@ -156,6 +156,7 @@ describe("Lua battle fast priority restore", () => {
     expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
     expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
+    expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") })]));
 
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
