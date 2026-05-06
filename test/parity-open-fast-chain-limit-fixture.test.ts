@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
   it("expires one-chain limits after an open fast-effect chain resolves", () => {
@@ -74,6 +74,7 @@ describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
             ],
             legalActionGroups: [chainEffectGroup(0, "open-fast-turn-followup", 1, 1), chainPassGroup(0, 1, 1)],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-opponent-blocked" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "open-fast-opponent-blocked", 1)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
@@ -94,6 +95,7 @@ describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
             ],
             legalActionGroups: [chainEffectGroup(0, "open-fast-turn-followup", 1, 1), chainPassGroup(0, 1, 1)],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-opponent-blocked" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "open-fast-opponent-blocked", 1)],
           },
           after: {
             source: "edopro",
@@ -127,6 +129,15 @@ describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
               turnGroup(2),
             ],
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-fast-chain-limiter" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-fast-chain-limiter" }],
+              },
+            ],
             logIncludes: ["Open chain limiter resolved"],
           },
         }),
@@ -163,6 +174,15 @@ describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
           turnGroup(2),
         ],
         absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-fast-chain-limiter" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 2,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-fast-chain-limiter" }],
+          },
+        ],
         logIncludes: ["Open chain limiter resolved"],
       },
     };
@@ -240,6 +260,7 @@ describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
             ],
             legalActionGroups: [chainEffectGroup(1, "open-fast-opponent-allowed", 1, 1), chainPassGroup(1, 1, 1)],
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-turn-blocked" }],
+            absentLegalActionGroups: [absentChainEffectGroup(0, "open-fast-turn-blocked", 1)],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-opponent-allowed" }), {
@@ -260,6 +281,7 @@ describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
             ],
             legalActionGroups: [chainEffectGroup(1, "open-fast-opponent-allowed", 1, 1), chainPassGroup(1, 1, 1)],
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-turn-blocked" }],
+            absentLegalActionGroups: [absentChainEffectGroup(0, "open-fast-turn-blocked", 1)],
           },
           after: {
             source: "edopro",
@@ -293,6 +315,15 @@ describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
               turnGroup(2),
             ],
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-fast-turn-blocked" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-fast-turn-blocked" }],
+              },
+            ],
             logIncludes: ["Opponent allowed chain quick resolved", "Open until-chain-end limiter resolved"],
           },
         }),
@@ -329,6 +360,15 @@ describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
           turnGroup(2),
         ],
         absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-fast-turn-blocked" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 2,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-fast-turn-blocked" }],
+          },
+        ],
         logIncludes: ["Opponent allowed chain quick resolved", "Open until-chain-end limiter resolved"],
       },
     };
