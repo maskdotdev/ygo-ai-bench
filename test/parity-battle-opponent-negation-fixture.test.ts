@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup } from "./parity-legal-action-group-helpers.js";
+import { absentAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle opponent negation fixtures", () => {
   it("lets the non-turn player negate from the first attack-response window", () => {
@@ -81,10 +81,18 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
             pendingBattle: false,
             currentAttack: false,
             windowId: 3,
+            windowKind: "open",
             battleWindow: null,
             lifePoints: { 0: 8000, 1: 8000 },
             attacksDeclared: ["p0-deck-100-0"],
             attackCanceledUids: ["p0-deck-100-0"],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(3)],
             absentLegalActions: [
               { type: "passAttack", player: 1 },
               { type: "passDamage", player: 1 },
@@ -107,10 +115,18 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
         pendingBattle: false,
         currentAttack: false,
         windowId: 3,
+        windowKind: "open",
         battleWindow: null,
         lifePoints: { 0: 8000, 1: 8000 },
         attacksDeclared: ["p0-deck-100-0"],
         attackCanceledUids: ["p0-deck-100-0"],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(3)],
         absentLegalActions: [
           { type: "passAttack", player: 1 },
           { type: "passDamage", player: 1 },
