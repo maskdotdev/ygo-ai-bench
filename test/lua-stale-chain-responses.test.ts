@@ -215,6 +215,7 @@ describe("Lua stale chain responses", () => {
     const restoredPassResult = applyLuaRestoreAndAssert(restored, restoredPass!);
     expect(restoredPassResult.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(restoredPassResult.state.chain).toEqual([]);
+    expect(restored.session.state.chainPasses).toEqual([]);
 
     const replay = applyLuaRestoreResponse(restored, stalePass!);
 
@@ -323,6 +324,7 @@ describe("Lua stale chain responses", () => {
     const currentPassResult = applyLuaRestoreAndAssert(restored, currentPass!);
     expect(currentPassResult.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(currentPassResult.state.chain).toEqual([]);
+    expect(restored.session.state.chainPasses).toEqual([]);
 
     const staleCurrentPass = applyLuaRestoreResponse(restored, currentPass!);
 
@@ -420,6 +422,7 @@ describe("Lua stale chain responses", () => {
     const restoredPassResult = applyLuaRestoreAndAssert(restored, restoredPass!);
     expect(restoredPassResult.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(restoredPassResult.state.chain).toEqual([]);
+    expect(restored.session.state.chainPasses).toEqual([]);
 
     const staleRestoredPass = applyLuaRestoreResponse(restored, restoredPass!);
 
