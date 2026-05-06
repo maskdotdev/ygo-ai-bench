@@ -85,6 +85,44 @@ describe("battle action restore", () => {
     assertStaleResponse(restoredTurnPassWindow, turnPass!);
   });
 
+  it("restores damage response passes into the next damage window", () => {
+    const session = createBattleSession(["100"], ["400"]);
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeTruthy();
+    specialSummonDuelCard(session.state, attacker!.uid, 0);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && !action.targetUid)!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passAttack")!);
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "passAttack")!);
+    expect(session.state.battleWindow).toMatchObject({ kind: "startDamageStep", responsePlayer: 1 });
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    const opponentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passDamage");
+    expect(opponentPass).toBeDefined();
+    const afterOpponentPass = applyAndAssert(restored, opponentPass!);
+    expect(afterOpponentPass.state).toMatchObject({ waitingFor: 0, windowKind: "battle", damagePasses: [1], battleWindow: { kind: "startDamageStep", responsePlayer: 0 } });
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+
+    const restoredTurnPassWindow = restoreDuel(serializeDuel(restored), createCardReader(cards));
+    expect(restoredTurnPassWindow.state.damagePasses).toEqual([1]);
+    expect(restoredTurnPassWindow.state.battleWindow).toEqual(restored.state.battleWindow);
+    const turnPass = getDuelLegalActions(restoredTurnPassWindow, 0).find((action) => action.type === "passDamage");
+    expect(turnPass).toBeDefined();
+    const staleBeforeTurnPass = applyResponse(restoredTurnPassWindow, { ...turnPass!, windowId: turnPass!.windowId! - 1 });
+    expect(staleBeforeTurnPass.ok).toBe(false);
+    expect(staleBeforeTurnPass.error).toContain("Response is not currently legal");
+    expect(staleBeforeTurnPass.state.actionWindowId).toBe(restoredTurnPassWindow.state.actionWindowId);
+    expect(staleBeforeTurnPass.legalActions).toEqual(getDuelLegalActions(restoredTurnPassWindow, 0));
+    expect(staleBeforeTurnPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTurnPassWindow, 0));
+    expect(staleBeforeTurnPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTurnPass.legalActions);
+
+    const result = applyAndAssert(restoredTurnPassWindow, turnPass!);
+    expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "beforeDamageCalculation", responsePlayer: 1 } });
+    expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
+    expect(getDuelLegalActions(restoredTurnPassWindow, 0)).toEqual([]);
+    assertStaleResponse(restoredTurnPassWindow, turnPass!);
+  });
+
   it("returns restored battle quick chains to the battle response player", () => {
     const session = createBattleSession(["100", "300"], ["400", "500"]);
     const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
