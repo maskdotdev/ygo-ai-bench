@@ -127,6 +127,8 @@ describe("Lua CheckEvent payloads", () => {
     );
     expect(result.ok, result.error).toBe(true);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "leftField", eventCode: 1019, eventPlayer: 0, eventValue: 23, eventReason: 64, eventReasonPlayer: 1 });
+    const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -136,6 +138,10 @@ describe("Lua CheckEvent payloads", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalTrigger!);
+    expect(originalTriggerPreapply.ok).toBe(false);
+    expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
+    expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored alias trigger 100/0/23/64/1");
   });
