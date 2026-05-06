@@ -85,6 +85,25 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
               { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-chain-opponent-chain-quick" },
               { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-chain-opponent-open-quick" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-chain-turn-open-quick" }],
+              },
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-chain-opponent-chain-quick" },
+                  { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-chain-opponent-open-quick" },
+                ],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "trigger-chain-success" }), {
@@ -114,6 +133,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
               chainPassGroup(1, 1, 2),
             ],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "trigger-chain-opponent-open-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "trigger-chain-opponent-open-quick", 2)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
@@ -149,6 +169,18 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "trigger-chain-opponent-open-quick" },
               { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "200", location: "hand" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "trigger-chain-opponent-chain-quick" },
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "trigger-chain-opponent-open-quick" },
+                ],
+              },
+            ],
             logIncludes: ["Summon success trigger resolved"],
           },
         }),
@@ -182,6 +214,18 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
           { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "trigger-chain-opponent-chain-quick" },
           { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "trigger-chain-opponent-open-quick" },
           { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "200", location: "hand" },
+        ],
+        absentLegalActionGroups: [
+          {
+            player: 1,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            actions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "trigger-chain-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "trigger-chain-opponent-open-quick" },
+            ],
+          },
         ],
         logIncludes: ["Summon success trigger resolved"],
       },
@@ -376,6 +420,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
             ],
             legalActionGroups: [chainEffectGroup(0, "trigger-pass-resolution-turn-chain-quick", 1, 3), chainPassGroup(0, 1, 3)],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "trigger-pass-resolution-opponent-chain-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "trigger-pass-resolution-opponent-chain-quick", 3)],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-pass-resolution-turn-chain-quick" }), {
