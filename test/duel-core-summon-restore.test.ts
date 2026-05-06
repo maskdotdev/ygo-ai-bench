@@ -118,6 +118,15 @@ describe("core summon restore", () => {
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === monster!.uid);
     expectRestoredOpenAction(restored, action);
 
+    const staleBeforeSummon = applyResponse(restored, { ...action!, windowId: action!.windowId! - 1 });
+    expect(staleBeforeSummon.ok).toBe(false);
+    expect(staleBeforeSummon.error).toContain("Response is not currently legal");
+    expect(staleBeforeSummon.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+    expect(restored.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
+
     const result = applyResponse(restored, action!);
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack", faceUp: true });
