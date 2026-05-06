@@ -231,6 +231,7 @@ describe("Lua deck and field helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();
+    expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored confirm 1/2/100");
   });
@@ -288,6 +289,7 @@ describe("Lua deck and field helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeTruthy();
+    expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored tohand confirm 1/1/100");
   });
@@ -877,6 +879,16 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function expectLuaRestoreStalePreapply(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1): void {
+  const response = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(response.ok).toBe(false);
+  expect(response.error).toContain("Response is not currently legal");
+  expect(response.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 }
 
 function deckCodes(session: ReturnType<typeof createDuel>, player: 0 | 1): string[] {
