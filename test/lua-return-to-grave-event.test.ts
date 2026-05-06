@@ -163,63 +163,79 @@ describe("Lua return-to-grave events", () => {
     loadDecks(session, { 0: { main: ["100", "200", "300", "400", "500"] }, 1: { main: [] } });
     startDuel(session);
 
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              local tc=Duel.SelectMatchingCard(tp,aux.FilterBoolFunction(Card.IsCode,200),tp,LOCATION_HAND,0,1,1,nil):GetFirst()
+              Duel.Remove(tc,POS_FACEUP,REASON_EFFECT+REASON_TEMPORARY)
+              Duel.ReturnToGrave(tc)
+              Duel.Damage(1, 100, REASON_EFFECT)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c300.lua") {
+          return `
+          c300={}
+          function c300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_RETURN_TO_GRAVE)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Debug.Message("when return resolved")
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c400.lua") {
+          return `
+          c400={}
+          function c400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_RETURN_TO_GRAVE)
+            e:SetProperty(EFFECT_FLAG_DELAY)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Debug.Message("if return resolved")
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c500.lua") {
+          return `
+          c500={}
+          function c500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_DAMAGE)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Debug.Message("damage boundary resolved")
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
-      c100={}
-      function c100.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_IGNITION)
-        e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp)
-          local tc=Duel.SelectMatchingCard(tp,aux.FilterBoolFunction(Card.IsCode,200),tp,LOCATION_HAND,0,1,1,nil):GetFirst()
-          Duel.Remove(tc,POS_FACEUP,REASON_EFFECT+REASON_TEMPORARY)
-          Duel.ReturnToGrave(tc)
-          Duel.Damage(1, 100, REASON_EFFECT)
-        end)
-        c:RegisterEffect(e)
-      end
-
-      c300={}
-      function c300.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_TRIGGER_O)
-        e:SetCode(EVENT_RETURN_TO_GRAVE)
-        e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp)
-          Debug.Message("when return resolved")
-        end)
-        c:RegisterEffect(e)
-      end
-
-      c400={}
-      function c400.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_TRIGGER_O)
-        e:SetCode(EVENT_RETURN_TO_GRAVE)
-        e:SetProperty(EFFECT_FLAG_DELAY)
-        e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp)
-          Debug.Message("if return resolved")
-        end)
-        c:RegisterEffect(e)
-      end
-
-      c500={}
-      function c500.initial_effect(c)
-        local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_TRIGGER_O)
-        e:SetCode(EVENT_DAMAGE)
-        e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp)
-          Debug.Message("damage boundary resolved")
-        end)
-        c:RegisterEffect(e)
-      end
-      `,
-      "return-to-grave-later-boundary-missed-timing.lua",
-    );
-    expect(loaded.ok, loaded.error).toBe(true);
+    for (const code of [100, 300, 400, 500]) {
+      const loaded = host.loadCardScript(code, source);
+      expect(loaded.ok, loaded.error).toBe(true);
+    }
     expect(host.registerInitialEffects()).toBe(4);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
@@ -232,6 +248,15 @@ describe("Lua return-to-grave events", () => {
     expect(session.state.eventHistory).toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "returnedToGraveyard", eventCode: 1203 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
     );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(restoredPendingEffectIds).not.toContain("lua-2-1203");
+    expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1203", "lua-4-1111"]));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
   });
 });
 
