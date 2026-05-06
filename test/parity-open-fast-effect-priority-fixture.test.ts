@@ -196,7 +196,7 @@ describe("EDOPro parity open fast-effect priority fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-chain-quick" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the open fast-effect chain after the opponent chains the only response",
