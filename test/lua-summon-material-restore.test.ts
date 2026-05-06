@@ -98,6 +98,108 @@ describe("Lua summon material restore helpers", () => {
     expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
     assertLuaRestoreLegalWindow(restored, staleReplay, staleReplay.state.waitingFor!);
   });
+
+  it("restores material missed timing after later event boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Material Later Source", kind: "monster" },
+      { code: "500", name: "Restore When Material Later", kind: "monster" },
+      { code: "600", name: "Restore If Material Later", kind: "monster" },
+      { code: "700", name: "Restore Damage Boundary Watcher", kind: "monster" },
+      { code: "900", name: "Restore Material Later Fusion", kind: "extra", fusionMaterials: ["500", "600"] },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              local fusion=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+              local materials=Duel.SelectMatchingCard(0, function(tc) return tc:IsCode(500) or tc:IsCode(600) end, 0, LOCATION_HAND, 0, 2, 2, fusion)
+              Duel.FusionSummon(fusion, materials)
+              Duel.Damage(1, 100, REASON_EFFECT)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c500.lua") {
+          return `
+          c500={}
+          function c500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_BE_MATERIAL)
+            e:SetRange(LOCATION_GRAVE)
+            e:SetOperation(function(e,tp) Debug.Message("when material resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c600.lua") {
+          return `
+          c600={}
+          function c600.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_BE_MATERIAL)
+            e:SetProperty(EFFECT_FLAG_DELAY)
+            e:SetRange(LOCATION_GRAVE)
+            e:SetOperation(function(e,tp) Debug.Message("if material resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c700.lua") {
+          return `
+          c700={}
+          function c700.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_DAMAGE)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("damage boundary resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 59, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "500", "600", "700"], extra: ["900"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    for (const code of [100, 500, 600, 700]) {
+      const loaded = host.loadCardScript(code, source);
+      expect(loaded.ok, loaded.error).toBe(true);
+    }
+    expect(host.registerInitialEffects()).toBe(4);
+
+    const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1108");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1108", "lua-4-1111"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "usedAsMaterial", eventCode: 1108 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(restoredPendingEffectIds).not.toContain("lua-2-1108");
+    expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1108", "lua-4-1111"]));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+  });
 });
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
