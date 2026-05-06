@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -95,6 +96,110 @@ describe("Lua equip restore helpers", () => {
     expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
     expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
     assertLuaRestoreLegalWindow(restored, staleReplay, staleReplay.state.waitingFor!);
+  });
+
+  it("restores equip missed timing after later event boundaries", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Restore Equip Later Target", kind: "monster" },
+      { code: "500", name: "Restore Equip Later Spell", kind: "spell", typeFlags: 0x40002 },
+      { code: "600", name: "Restore When Equip Watcher", kind: "monster" },
+      { code: "700", name: "Restore If Equip Watcher", kind: "monster" },
+      { code: "800", name: "Restore Equip Damage Watcher", kind: "monster" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c500.lua") {
+          return `
+          c500={}
+          function c500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+              Duel.Equip(tp, c, target)
+              Duel.Damage(1, 100, REASON_EFFECT)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c600.lua") {
+          return `
+          c600={}
+          function c600.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_EQUIP)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("when equip resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c700.lua") {
+          return `
+          c700={}
+          function c700.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_EQUIP)
+            e:SetProperty(EFFECT_FLAG_DELAY)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("if equip resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c800.lua") {
+          return `
+          c800={}
+          function c800.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_DAMAGE)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("damage boundary resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 264, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "500", "600", "700", "800"] }, 1: { main: [] } });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    for (const code of [500, 600, 700, 800]) {
+      const loaded = host.loadCardScript(code, source);
+      expect(loaded.ok, loaded.error).toBe(true);
+    }
+    expect(host.registerInitialEffects()).toBe(4);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("500"));
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    const pendingEffectIds = session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(pendingEffectIds).not.toContain("lua-2-1121");
+    expect(pendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1121", "lua-4-1111"]));
+    expect(session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "equipped", eventCode: 1121 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(restoredPendingEffectIds).not.toContain("lua-2-1121");
+    expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1121", "lua-4-1111"]));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
   });
 });
 
