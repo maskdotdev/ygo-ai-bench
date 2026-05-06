@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup, chainEffectGroup, chainPassGroup, effectGroup, passDamageGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentAttackGroup,
+  absentPassBattleGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  effectGroup,
+  passDamageGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures", () => {
   it("offers opponent damage-calculation quick effects during damage calculation", () => {
@@ -227,6 +236,7 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
             ],
             legalActionGroups: [chainEffectGroup(0, "fixture-turn-damage-calculation-chain-quick", 1, 9), chainPassGroup(0, 1, 9)],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 9, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-chain-only-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-chain-only-quick", 9, "chainResponse")],
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
@@ -254,6 +264,10 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
               { type: "activateEffect", player: 1, windowId: 10, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-open-quick" },
               { type: "passDamage", player: 1, windowId: 10, windowKind: "battle" },
             ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-open-quick", 10, "chainResponse"),
+              absentPassBattleGroup(1, "passDamage", 10),
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
@@ -278,6 +292,10 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
               { type: "activateEffect", player: 1, windowId: 11, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-open-quick" },
               { type: "activateEffect", player: 1, windowId: 11, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-chain-only-quick" },
             ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-open-quick", 11, "battle"),
+              absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-chain-only-quick", 11, "battle"),
+            ],
             logIncludes: ["Fixture opponent damage-calculation open quick resolved"],
           },
         }),
@@ -301,6 +319,10 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
         absentLegalActions: [
           { type: "activateEffect", player: 1, windowId: 11, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-open-quick" },
           { type: "activateEffect", player: 1, windowId: 11, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-chain-only-quick" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-open-quick", 11, "battle"),
+          absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-chain-only-quick", 11, "battle"),
         ],
         logIncludes: ["Fixture opponent damage-calculation open quick resolved"],
       },
@@ -404,6 +426,10 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
               { type: "activateEffect", player: 0, windowId: 10, windowKind: "battle", effectId: "fixture-turn-damage-calculation-chain-quick-chain" },
               { type: "activateEffect", player: 1, windowId: 10, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-open-quick-chain" },
             ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-turn-damage-calculation-chain-quick-chain", 10, "battle"),
+              absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-open-quick-chain", 10, "battle"),
+            ],
             logIncludes: ["Fixture turn damage-calculation chain quick chain resolved", "Fixture opponent damage-calculation open quick chain resolved"],
           },
         }),
@@ -427,6 +453,10 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 10, windowKind: "battle", effectId: "fixture-turn-damage-calculation-chain-quick-chain" },
           { type: "activateEffect", player: 1, windowId: 10, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-open-quick-chain" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-turn-damage-calculation-chain-quick-chain", 10, "battle"),
+          absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-open-quick-chain", 10, "battle"),
         ],
         logIncludes: ["Fixture turn damage-calculation chain quick chain resolved", "Fixture opponent damage-calculation open quick chain resolved"],
       },
