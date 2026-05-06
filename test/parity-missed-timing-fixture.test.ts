@@ -297,6 +297,7 @@ describe("EDOPro parity missed timing fixtures", () => {
         waitingFor: 0,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         eventHistory: [
           { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
           { eventName: "chaining", eventCardUid: "p0-deck-100-0" },
@@ -644,6 +645,7 @@ describe("EDOPro parity missed timing fixtures", () => {
             windowKind: "open",
             pendingTriggers: [],
             chain: [],
+            chainPasses: [],
             logIncludes: ["Decline mandatory when resolved"],
           },
         }),
@@ -655,6 +657,7 @@ describe("EDOPro parity missed timing fixtures", () => {
         windowKind: "open",
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 11, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
         legalActions: [
