@@ -75,9 +75,12 @@ describe("Lua summon material restore helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    expect(hasGroupedTrigger(restored, 0, trigger!.effectId)).toBe(true);
     const staleTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
     expect(staleTrigger.ok).toBe(false);
     expect(staleTrigger.error).toContain("Response is not currently legal");
@@ -201,9 +204,14 @@ describe("Lua summon material restore helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
     const restoredLegalEffectIds = getLuaRestoreTriggerEffectIds(restored, 0);
     expect(restoredLegalEffectIds).not.toContain("lua-2-1108");
     expect(restoredLegalEffectIds).toEqual(expect.arrayContaining(["lua-3-1108", "lua-4-1111"]));
+    expect(hasGroupedTrigger(restored, 0, "lua-3-1108")).toBe(true);
+    expect(hasGroupedTrigger(restored, 0, "lua-4-1111")).toBe(true);
+    expect(hasGroupedTrigger(restored, 0, "lua-2-1108")).toBe(false);
   });
 
   it("restores pre-material missed timing after later event boundaries", () => {
@@ -308,9 +316,14 @@ describe("Lua summon material restore helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
     const restoredLegalEffectIds = getLuaRestoreTriggerEffectIds(restored, 0);
     expect(restoredLegalEffectIds).not.toContain("lua-2-1109");
     expect(restoredLegalEffectIds).toEqual(expect.arrayContaining(["lua-3-1109", "lua-4-1111"]));
+    expect(hasGroupedTrigger(restored, 0, "lua-3-1109")).toBe(true);
+    expect(hasGroupedTrigger(restored, 0, "lua-4-1111")).toBe(true);
+    expect(hasGroupedTrigger(restored, 0, "lua-2-1109")).toBe(false);
   });
 
   it("restores special-summon-success missed timing after later event boundaries", () => {
@@ -417,14 +430,23 @@ describe("Lua summon material restore helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
     const restoredLegalEffectIds = getLuaRestoreTriggerEffectIds(restored, 0);
     expect(restoredLegalEffectIds).not.toContain("lua-2-1102");
     expect(restoredLegalEffectIds).toEqual(expect.arrayContaining(["lua-3-1102", "lua-4-1111"]));
+    expect(hasGroupedTrigger(restored, 0, "lua-3-1102")).toBe(true);
+    expect(hasGroupedTrigger(restored, 0, "lua-4-1111")).toBe(true);
+    expect(hasGroupedTrigger(restored, 0, "lua-2-1102")).toBe(false);
   });
 });
 
 function getLuaRestoreTriggerEffectIds(restored: Parameters<typeof getLuaRestoreLegalActions>[0], player: 0 | 1): string[] {
   return getLuaRestoreLegalActions(restored, player).flatMap((action) => (action.type === "activateTrigger" ? [action.effectId] : []));
+}
+
+function hasGroupedTrigger(restored: Parameters<typeof getLuaRestoreLegalActions>[0], player: 0 | 1, effectId: string): boolean {
+  return getLuaRestoreLegalActionGroups(restored, player).some((group) => group.actions.some((action) => action.type === "activateTrigger" && action.effectId === effectId));
 }
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
