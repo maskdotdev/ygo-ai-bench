@@ -191,6 +191,59 @@ describe("trigger order prompt restore", () => {
     expect(staleDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 1));
     expect(staleDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleDecline.legalActions);
   });
+
+  it("restores opponent mandatory order prompts after bucket handoff", () => {
+    const session = createPromptSession();
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const firstOpponentSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    const secondOpponentSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "100");
+    expect(summoned).toBeTruthy();
+    expect(turnTriggerSource).toBeTruthy();
+    expect(firstOpponentSource).toBeTruthy();
+    expect(secondOpponentSource).toBeTruthy();
+    registerEffect(session, normalSummonTrigger("restore-order-turn-mandatory-handoff", turnTriggerSource!.uid, "Restored order turn mandatory handoff resolved", false));
+    registerEffect(session, opponentNormalSummonTrigger("restore-order-first-opponent-mandatory", firstOpponentSource!.uid, "Restored order first opponent mandatory resolved", false));
+    registerEffect(session, opponentNormalSummonTrigger("restore-order-second-opponent-mandatory", secondOpponentSource!.uid, "Restored order second opponent mandatory resolved", false));
+
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid)!);
+    const restoredTurnBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreOpponentMandatoryRegistry());
+    const turnActivation = getDuelLegalActions(restoredTurnBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-turn-mandatory-handoff");
+    expect(turnActivation).toBeDefined();
+    expect(getDuelLegalActions(restoredTurnBucket, 0).some((action) => action.type === "declineTrigger")).toBe(false);
+    applyAndAssert(restoredTurnBucket, turnActivation!);
+
+    const restoredOpponentBucket = restoreDuel(serializeDuel(restoredTurnBucket), createCardReader(cards), restoreOpponentMandatoryRegistry());
+    const prompt = queryPublicState(restoredOpponentBucket).triggerOrderPrompt;
+    expect(prompt).toEqual({
+      id: `${restoredOpponentBucket.state.actionWindowId}:opponentMandatory:1`,
+      type: "orderTriggers",
+      player: 1,
+      triggerBucket: "opponentMandatory",
+      triggerIds: restoredOpponentBucket.state.pendingTriggers.map((trigger) => trigger.id),
+    });
+    expect(getDuelLegalActions(restoredOpponentBucket, 0)).toEqual([]);
+    expect(getDuelLegalActions(restoredOpponentBucket, 1).some((action) => action.type === "declineTrigger")).toBe(false);
+    expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => group.triggerBucket?.triggerIds)).toEqual([prompt!.triggerIds]);
+
+    const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-opponent-mandatory");
+    expect(opponentActivation).toBeDefined();
+    const activated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
+    expect(activated.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-opponent-mandatory"]);
+    expect(queryPublicState(restoredOpponentBucket).triggerOrderPrompt).toBeUndefined();
+    expect(getDuelLegalActions(restoredOpponentBucket, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["restore-order-second-opponent-mandatory"]);
+
+    const restoredSingleTrigger = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreOpponentMandatoryRegistry());
+    expect(queryPublicState(restoredSingleTrigger).triggerOrderPrompt).toBeUndefined();
+    expect(restoredSingleTrigger.state.pendingTriggers).toEqual(restoredOpponentBucket.state.pendingTriggers);
+    const staleActivation = applyResponse(restoredSingleTrigger, opponentActivation!);
+    expect(staleActivation.ok).toBe(false);
+    expect(staleActivation.error).toContain("Response is not currently legal");
+    expect(staleActivation.state.actionWindowId).toBe(restoredSingleTrigger.state.actionWindowId);
+    expect(staleActivation.legalActions).toEqual(getDuelLegalActions(restoredSingleTrigger, 1));
+    expect(staleActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 1));
+    expect(staleActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleActivation.legalActions);
+  });
 });
 
 function createPromptSession() {
@@ -219,7 +272,7 @@ function normalSummonTrigger(id: string, sourceUid: string, detail: string, opti
   };
 }
 
-function opponentNormalSummonTrigger(id: string, sourceUid: string, detail: string): DuelEffectDefinition {
+function opponentNormalSummonTrigger(id: string, sourceUid: string, detail: string, optional = true): DuelEffectDefinition {
   return {
     id,
     registryKey: id,
@@ -227,7 +280,7 @@ function opponentNormalSummonTrigger(id: string, sourceUid: string, detail: stri
     controller: 1,
     event: "trigger",
     triggerEvent: "normalSummoned",
-    optional: true,
+    optional,
     range: ["hand"],
     operation(ctx) {
       ctx.log(detail);
@@ -261,6 +314,14 @@ function restoreOpponentRegistry(): Record<string, (effect: Omit<DuelEffectDefin
     "restore-order-turn-handoff": restoreLoggedEffect("Restored order turn handoff resolved"),
     "restore-order-first-opponent": restoreLoggedEffect("Restored order first opponent resolved"),
     "restore-order-second-opponent": restoreLoggedEffect("Restored order second opponent resolved"),
+  };
+}
+
+function restoreOpponentMandatoryRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
+  return {
+    "restore-order-turn-mandatory-handoff": restoreLoggedEffect("Restored order turn mandatory handoff resolved"),
+    "restore-order-first-opponent-mandatory": restoreLoggedEffect("Restored order first opponent mandatory resolved"),
+    "restore-order-second-opponent-mandatory": restoreLoggedEffect("Restored order second opponent mandatory resolved"),
   };
 }
 
