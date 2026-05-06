@@ -80,6 +80,20 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
 
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
+  expect(
+    getLuaRestoreLegalActionGroups(restored, 0).some(
+      (group) =>
+        group.windowId === restored.session.state.actionWindowId &&
+        group.windowKind === "triggerBucket" &&
+        group.actions.some(
+          (action) =>
+            action.type === "activateTrigger" &&
+            action.effectId === trigger!.effectId &&
+            action.windowId === restored.session.state.actionWindowId &&
+            action.windowKind === "triggerBucket",
+        ),
+    ),
+  ).toBe(true);
   const staleTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
   expect(staleTrigger.ok).toBe(false);
   expect(staleTrigger.error).toContain("Response is not currently legal");
