@@ -65,7 +65,7 @@ describe("EDOPro parity sent-to-hand missed timing fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "bounce-multistep" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro drops optional when sent-to-hand triggers when that movement is not the final event, while optional if remains available",
@@ -85,7 +85,7 @@ describe("EDOPro parity sent-to-hand missed timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "bounce-optional-if" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
         }),
       ],
       expected: {
