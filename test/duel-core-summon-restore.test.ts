@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelEffectDefinition } from "#duel/types.js";
+import type { DuelEffectDefinition, DuelResponse } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 function expectRestoredOpenAction(restored: ReturnType<typeof restoreDuel>, action: { windowId?: number; windowKind?: string } | undefined): void {
@@ -25,6 +25,13 @@ function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restore
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
   assertRestoreLegalWindow(restored, staleResult, staleResult.state.waitingFor!);
+}
+
+function expectStalePreviousWindowRejected(restored: ReturnType<typeof restoreDuel>, action: DuelResponse, player: 0 | 1): void {
+  const staleResult = applyResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(staleResult.ok).toBe(false);
+  expect(staleResult.error).toContain("Response is not currently legal");
+  assertRestoreLegalWindow(restored, staleResult, player);
 }
 
 function expectGroupedTrigger(restored: ReturnType<typeof restoreDuel>, effectId: string): void {
@@ -208,6 +215,7 @@ describe("core summon restore", () => {
     const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "restore-ritual-success-watcher");
     expect(trigger).toBeDefined();
     expectGroupedTrigger(restoredTriggerWindow, "restore-ritual-success-watcher");
+    expectStalePreviousWindowRejected(restoredTriggerWindow, trigger!, 0);
     const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.state.pendingTriggers).toEqual([]);
