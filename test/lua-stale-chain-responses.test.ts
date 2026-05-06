@@ -206,6 +206,9 @@ describe("Lua stale chain responses", () => {
     const restoredPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(restoredPass).toBeDefined();
     expect(restoredPass).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "chainResponse" });
+    const stalePreapply = applyLuaRestoreResponse(restored, stalePass!);
+    expect(stalePreapply.ok).toBe(false);
+    expect(stalePreapply.error).toContain("Response is not currently legal");
     const restoredPassResult = applyLuaRestoreAndAssert(restored, restoredPass!);
     expect(restoredPassResult.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(restoredPassResult.state.chain).toEqual([]);
@@ -293,6 +296,9 @@ describe("Lua stale chain responses", () => {
     const restoredQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
     expect(restoredQuick).toBeDefined();
     expect(restoredQuick).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "chainResponse" });
+    const stalePreapply = applyLuaRestoreResponse(restored, stalePass!);
+    expect(stalePreapply.ok).toBe(false);
+    expect(stalePreapply.error).toContain("Response is not currently legal");
     const restoredQuickResult = applyLuaRestoreAndAssert(restored, restoredQuick!);
     expect(restoredQuickResult.state.chain).toHaveLength(2);
     expect(restoredQuickResult.state.waitingFor).toBe(1);
