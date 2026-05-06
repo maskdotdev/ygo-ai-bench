@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
   it("returns trigger chain resolution to turn-player open fast-effect priority", () => {
@@ -278,6 +278,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
             ],
             legalActionGroups: [chainEffectGroup(0, "trigger-pass-handoff-turn-chain-quick", 1, 3), chainPassGroup(0, 1, 3)],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-chain-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "trigger-pass-handoff-opponent-chain-quick", 3)],
           },
         }),
       ],
@@ -297,6 +298,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
         ],
         legalActionGroups: [chainEffectGroup(0, "trigger-pass-handoff-turn-chain-quick", 1, 3), chainPassGroup(0, 1, 3)],
         absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-chain-quick" }],
+        absentLegalActionGroups: [absentChainEffectGroup(1, "trigger-pass-handoff-opponent-chain-quick", 3)],
       },
     };
 
@@ -421,6 +423,15 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
               { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-pass-resolution-turn-chain-quick" },
               { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "200", location: "hand" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 5,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-pass-resolution-turn-chain-quick" }],
+              },
+            ],
             logIncludes: ["Pass resolution turn chain quick resolved", "Pass resolution trigger resolved"],
           },
         }),
@@ -444,6 +455,15 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-pass-resolution-turn-chain-quick" },
           { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "200", location: "hand" },
+        ],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 5,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-pass-resolution-turn-chain-quick" }],
+          },
         ],
         logIncludes: ["Pass resolution turn chain quick resolved", "Pass resolution trigger resolved"],
       },
@@ -553,6 +573,22 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
               { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "trigger-pass-opponent-response-opponent-chain-quick" },
               { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "200", location: "hand" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 5,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-pass-opponent-response-turn-chain-quick" }],
+              },
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 5,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "trigger-pass-opponent-response-opponent-chain-quick" }],
+              },
+            ],
             logIncludes: [
               "Pass opponent response opponent chain quick resolved",
               "Pass opponent response turn chain quick resolved",
@@ -581,6 +617,22 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
           { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-pass-opponent-response-turn-chain-quick" },
           { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "trigger-pass-opponent-response-opponent-chain-quick" },
           { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "200", location: "hand" },
+        ],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 5,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-pass-opponent-response-turn-chain-quick" }],
+          },
+          {
+            player: 1,
+            label: "Effects",
+            windowId: 5,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "trigger-pass-opponent-response-opponent-chain-quick" }],
+          },
         ],
         logIncludes: [
           "Pass opponent response opponent chain quick resolved",
