@@ -163,6 +163,23 @@ export const absentSummonGroup = (action: Omit<OpenAction, "count">, windowId?: 
   actions: [{ ...action, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const }],
 });
 
+export const spellTrapSetGroup = (uid: string, count = 1, windowId?: number): ScriptedLegalActionGroupExpectation => ({
+  player: 0,
+  label: "Set",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "open",
+  count,
+  actions: [{ type: "setSpellTrap", player: 0, uid, ...(windowId === undefined ? {} : { windowId }), windowKind: "open", count }],
+});
+
+export const absentSpellTrapSetGroup = (uid: string, windowId?: number): ScriptedLegalActionGroupExpectation => ({
+  player: 0,
+  label: "Set",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "open",
+  actions: [{ type: "setSpellTrap", player: 0, uid, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" }],
+});
+
 export const triggerActivationGroup = (player: 0 | 1, effectId: string, triggerBucket: "turnMandatory" | "turnOptional" | "opponentMandatory" | "opponentOptional", count = 1, windowId?: number) => ({
   player,
   label: "Trigger Activations",
