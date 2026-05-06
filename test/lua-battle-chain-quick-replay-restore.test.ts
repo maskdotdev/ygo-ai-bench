@@ -58,6 +58,7 @@ function assertBattleReplayRestore(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT
     expect.stringContaining("400"),
   ]);
   expect(getLuaRestoreLegalActions(restoredOpponentResponse, 0)).toEqual([]);
+  expect(getLuaRestoreLegalActionGroups(restoredOpponentResponse, 0)).toEqual([]);
   expect(getLuaRestoreLegalActions(restoredOpponentResponse, 1).some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
   expect(getLuaRestoreLegalActionGroups(restoredOpponentResponse, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpponentResponse, 1));
 
@@ -70,6 +71,7 @@ function assertBattleReplayRestore(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT
     expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") }),
     expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" }),
   ]));
+  expect(resolved.legalActionGroups.some((group) => group.actions.some((action) => action.type === "activateEffect" && action.player === 1 && action.windowKind === "battle" && action.uid.includes("500")))).toBe(true);
   expect(restoredOpponentResponse.host.messages).toEqual(["restored chain-only battle quick resolved", "restored battle quick resolved"]);
 
   const stalePass = applyLuaRestoreResponse(restoredOpponentResponse, pass!);
