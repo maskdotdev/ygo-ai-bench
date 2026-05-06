@@ -509,6 +509,13 @@ describe("Lua trigger bucket helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.type)).toEqual(["activateTrigger"]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    const staleTurnMandatory = applyLuaRestoreResponse(restored, turnMandatory!);
+    expect(staleTurnMandatory.ok).toBe(false);
+    expect(staleTurnMandatory.error).toContain("Response is not currently legal");
+    expect(staleTurnMandatory.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleTurnMandatory.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleTurnMandatory.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleTurnMandatory.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTurnMandatory.legalActions);
 
     const restoredAfterTurnMandatory = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
     expect(restoredAfterTurnMandatory.restoreComplete, restoredAfterTurnMandatory.incompleteReasons.join("; ")).toBe(true);
