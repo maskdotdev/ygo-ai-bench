@@ -1,0 +1,217 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentChainEffectGroup, absentTriggerActivationGroup, chainEffectGroup, chainPassGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handoff turn response opponent response fixture", () => {
+  it("reopens opponent responses after the turn player responds to a double-declined SEGOC handoff chain", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Double Optional Handoff Pingpong Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Turn Double Optional Handoff Pingpong Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Double Optional Handoff Pingpong Turn Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Double Optional Handoff Pingpong Opponent Mandatory", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Double Optional Handoff Pingpong Turn Optional", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Double Optional Handoff Pingpong Opponent Optional", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "700", name: "Double Optional Handoff Pingpong Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Opponent Double Optional Handoff Pingpong First Quick", kind: "monster", attack: 1600, defense: 1000 },
+      { code: "950", name: "Opponent Double Optional Handoff Pingpong Second Quick", kind: "monster", attack: 1300, defense: 1300 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc turn optional decline pass handoff turn response opponent response fixture",
+      options: { seed: 312, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "500", "700"] },
+        1: { main: ["400", "600", "900", "950", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-double-optional-handoff-pingpong-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 1, code: "900", from: "hand", to: "graveyard" },
+              { player: 1, code: "950", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Double optional handoff pingpong starter resolved",
+          },
+          {
+            id: "fixture-double-optional-handoff-pingpong-turn-mandatory",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Double optional handoff pingpong turn mandatory should not resolve yet",
+          },
+          {
+            id: "fixture-double-optional-handoff-pingpong-opponent-mandatory",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Double optional handoff pingpong opponent mandatory should not resolve yet",
+          },
+          {
+            id: "fixture-double-optional-handoff-pingpong-turn-optional",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Double optional handoff pingpong turn optional should not resolve",
+          },
+          {
+            id: "fixture-double-optional-handoff-pingpong-opponent-optional",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Double optional handoff pingpong opponent optional should not resolve",
+          },
+          {
+            id: "fixture-double-optional-handoff-pingpong-turn-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Double optional handoff pingpong turn quick should not resolve yet",
+          },
+          {
+            id: "fixture-double-optional-handoff-pingpong-first-opponent-quick",
+            player: 1,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Double optional handoff pingpong first opponent quick should not resolve yet",
+          },
+          {
+            id: "fixture-double-optional-handoff-pingpong-second-opponent-quick",
+            player: 1,
+            code: "950",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Double optional handoff pingpong second opponent quick should not resolve yet",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-double-optional-handoff-pingpong-starter" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-double-optional-handoff-pingpong-turn-optional" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-double-optional-handoff-pingpong-opponent-optional" })),
+        makeScriptedStep(makeResponseSelector("passChain", 0)),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-double-optional-handoff-pingpong-first-opponent-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro reopens turn-player chain-response priority after the opponent chains from a double-declined chain-created SEGOC pass handoff",
+            phase: "main1",
+            windowId: 7,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-double-optional-handoff-pingpong-first-opponent-quick", sourceUid: "p1-deck-900-2" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-double-optional-handoff-pingpong-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "fixture-double-optional-handoff-pingpong-turn-quick", 1, 7), chainPassGroup(0, 1, 7)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-double-optional-handoff-pingpong-first-opponent-quick" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-double-optional-handoff-pingpong-second-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 7, windowKind: "triggerBucket", effectId: "fixture-double-optional-handoff-pingpong-turn-optional", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 7, windowKind: "triggerBucket", effectId: "fixture-double-optional-handoff-pingpong-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-double-optional-handoff-pingpong-first-opponent-quick", 7),
+              absentChainEffectGroup(1, "fixture-double-optional-handoff-pingpong-second-opponent-quick", 7),
+              absentTriggerActivationGroup(0, "fixture-double-optional-handoff-pingpong-turn-optional", "turnOptional", 7, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-double-optional-handoff-pingpong-opponent-optional", "opponentOptional", 7, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "500", "400", "600", "800"] },
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-double-optional-handoff-pingpong-turn-quick" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro gives the opponent another chain-response window when they still have a legal response after the turn player responds to a double-declined chain-created SEGOC handoff chain",
+        phase: "main1",
+        windowId: 8,
+        windowKind: "chainResponse",
+        waitingFor: 1,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [
+          { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+          { player: 1, effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+          { player: 1, effectId: "fixture-double-optional-handoff-pingpong-first-opponent-quick", sourceUid: "p1-deck-900-2" },
+          { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-quick", sourceUid: "p0-deck-200-1" },
+        ],
+        chainPasses: [],
+        legalActionCounts: { 0: 0, 1: 2 },
+        legalActionGroupCounts: { 0: 0, 1: 2 },
+        legalActions: [
+          { type: "activateEffect", player: 1, windowId: 8, windowKind: "chainResponse", effectId: "fixture-double-optional-handoff-pingpong-second-opponent-quick", count: 1 },
+          { type: "passChain", player: 1, windowId: 8, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(1, "fixture-double-optional-handoff-pingpong-second-opponent-quick", 1, 8),
+          chainPassGroup(1, 1, 8),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 8, windowKind: "chainResponse", effectId: "fixture-double-optional-handoff-pingpong-turn-quick" },
+          { type: "activateEffect", player: 1, windowId: 8, windowKind: "chainResponse", effectId: "fixture-double-optional-handoff-pingpong-first-opponent-quick" },
+          { type: "activateTrigger", player: 0, windowId: 8, windowKind: "triggerBucket", effectId: "fixture-double-optional-handoff-pingpong-turn-optional", triggerBucket: "turnOptional" },
+          { type: "activateTrigger", player: 1, windowId: 8, windowKind: "triggerBucket", effectId: "fixture-double-optional-handoff-pingpong-opponent-optional", triggerBucket: "opponentOptional" },
+        ],
+        absentLegalActionGroups: [
+          absentChainEffectGroup(0, "fixture-double-optional-handoff-pingpong-turn-quick", 8),
+          absentChainEffectGroup(1, "fixture-double-optional-handoff-pingpong-first-opponent-quick", 8),
+          absentTriggerActivationGroup(0, "fixture-double-optional-handoff-pingpong-turn-optional", "turnOptional", 8, "triggerBucket"),
+          absentTriggerActivationGroup(1, "fixture-double-optional-handoff-pingpong-opponent-optional", "opponentOptional", 8, "triggerBucket"),
+        ],
+        locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "500", "400", "600", "800"] },
+        logIncludes: ["Double optional handoff pingpong starter resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
