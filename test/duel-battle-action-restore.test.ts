@@ -445,6 +445,7 @@ describe("battle action restore", () => {
     expect(quickResult.state.log.some((entry) => entry.detail === "Restored battle turn quick resolved")).toBe(true);
     expect(quickResult.state.log.some((entry) => entry.detail === "Restored battle opponent chain quick resolved")).toBe(true);
     expect(quickResult.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passAttack", player: 1, windowKind: "battle" })]));
+    expect(quickResult.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-battle-opponent-chain-quick")).toBe(false);
     expect(getDuelLegalActions(restoredQuick, 0)).toEqual([]);
     assertStaleResponse(restoredQuick, opponentQuick!);
 
@@ -454,6 +455,7 @@ describe("battle action restore", () => {
     expect(restored.state.chain).toHaveLength(0);
     expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passAttack", player: 1, windowKind: "battle" })]));
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-battle-opponent-chain-quick")).toBe(false);
     expect(getDuelLegalActions(restored, 0)).toEqual([]);
     assertStaleResponse(restored, pass!);
   });
