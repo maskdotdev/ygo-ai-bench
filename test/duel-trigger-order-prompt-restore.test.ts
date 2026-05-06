@@ -235,8 +235,10 @@ describe("trigger order prompt restore", () => {
     const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-opponent-mandatory");
     expect(opponentActivation).toBeDefined();
     const activated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
+    expect(activated.state).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
     expect(activated.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-opponent-mandatory"]);
     expect(queryPublicState(restoredOpponentBucket).triggerOrderPrompt).toBeUndefined();
+    expect(getDuelLegalActions(restoredOpponentBucket, 1).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
     expect(getDuelLegalActions(restoredOpponentBucket, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["restore-order-second-opponent-mandatory"]);
 
     const restoredSingleTrigger = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreOpponentMandatoryRegistry());
