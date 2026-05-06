@@ -19,6 +19,14 @@ describe("chain action restore", () => {
       { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "chainResponse", actionTypes: ["passChain"] },
     ]);
 
+    const staleBeforePass = applyResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
+    expect(staleBeforePass.ok).toBe(false);
+    expect(staleBeforePass.error).toContain("Response is not currently legal");
+    expect(staleBeforePass.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(staleBeforePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforePass.legalActions);
+
     const result = applyResponse(restored, pass!);
     expect(result.ok, result.error).toBe(true);
     expect(result.state.chain).toHaveLength(0);
