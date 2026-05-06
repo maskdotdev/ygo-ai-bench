@@ -48,10 +48,11 @@ describe("pendulum restore", () => {
       { code: "200", name: "High Restore Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 8, rightScale: 8 },
       { code: "300", name: "Restored Extra Pendulum", kind: "monster", typeFlags: 0x1000001, level: 4 },
       { code: "400", name: "Restored Pendulum Watcher", kind: "monster", level: 4 },
+      { code: "500", name: "Restored Hand Pendulum", kind: "monster", typeFlags: 0x1000001, level: 5 },
     ];
-    const session = createDuel({ seed: 252, startingHandSize: 4, cardReader: createCardReader(pendulumCards) });
+    const session = createDuel({ seed: 252, startingHandSize: 5, cardReader: createCardReader(pendulumCards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400"] },
+      0: { main: ["100", "200", "300", "400", "500"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -60,10 +61,12 @@ describe("pendulum restore", () => {
     const high = session.state.cards.find((card) => card.code === "200");
     const candidate = session.state.cards.find((card) => card.code === "300");
     const watcher = session.state.cards.find((card) => card.code === "400");
+    const handCandidate = session.state.cards.find((card) => card.code === "500");
     expect(low).toBeDefined();
     expect(high).toBeDefined();
     expect(candidate).toBeDefined();
     expect(watcher).toBeDefined();
+    expect(handCandidate).toBeDefined();
     moveDuelCard(session.state, low!.uid, "spellTrapZone", 0);
     moveDuelCard(session.state, high!.uid, "spellTrapZone", 0);
     moveDuelCard(session.state, candidate!.uid, "monsterZone", 0);
@@ -75,8 +78,15 @@ describe("pendulum restore", () => {
     });
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidateAction) => candidateAction.type === "pendulumSummon" && candidateAction.summonUids.includes(candidate!.uid));
-    expect(action).toMatchObject({ type: "pendulumSummon", summonUids: [candidate!.uid], windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
+    expect(action).toMatchObject({ type: "pendulumSummon", summonUids: [handCandidate!.uid, candidate!.uid], windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
     if (!action || action.type !== "pendulumSummon") throw new Error("Expected restored Pendulum Summon action");
+    expect(
+      getGroupedDuelLegalActions(restored, 0).some(
+        (group) =>
+          group.label === "Summons" &&
+          group.actions.some((groupAction) => groupAction.type === "pendulumSummon" && groupAction.summonUids.length === 2 && groupAction.summonUids.includes(handCandidate!.uid) && groupAction.summonUids.includes(candidate!.uid)),
+      ),
+    ).toBe(true);
 
     const staleBeforeSummon = applyResponse(restored, { ...action, windowId: action.windowId! - 1 });
     expect(staleBeforeSummon.ok).toBe(false);
@@ -88,7 +98,7 @@ describe("pendulum restore", () => {
     expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "extraDeck", faceUp: true });
     expect(restored.state.players[0].pendulumSummonAvailable).toBe(true);
 
-    const result = applyResponse(restored, action);
+    const result = applyResponse(restored, { ...action, summonUids: [candidate!.uid] });
     expect(result.ok).toBe(true);
     expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", summonType: "pendulum", faceUp: true });
     expect(restored.state.players[0].pendulumSummonAvailable).toBe(false);
