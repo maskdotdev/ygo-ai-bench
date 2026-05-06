@@ -406,6 +406,8 @@ describe("Lua raised event payloads", () => {
     );
     expect(result.ok, result.error).toBe(true);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCode: 1014, eventPlayer: 1, eventValue: 99, eventReason: 64, eventReasonPlayer: 1 });
+    const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c200.lua" }]);
@@ -416,6 +418,10 @@ describe("Lua raised event payloads", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expectGroupedActionsToContainLegalActions(restored, 0);
+    const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalTrigger!);
+    expect(originalTriggerPreapply.ok).toBe(false);
+    expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
+    expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
 
     activateFirstRestoredTrigger(restored);
     expect(restored.host.messages).toContain("restored operation payload 1/99/64/1");
