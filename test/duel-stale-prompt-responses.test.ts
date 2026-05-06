@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
+import type { DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("duel stale prompt responses", () => {
@@ -61,12 +62,17 @@ describe("duel stale prompt responses", () => {
       1: { main: ["400", "400"] },
     });
     startDuel(session);
+    const quickSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand");
+    expect(quickSource).toBeDefined();
+    registerEffect(session, openOnlyQuickEffect("restore-prompt-open-quick", quickSource!.uid, "Restored prompt open quick resolved"));
     session.state.prompt = { id: "restore-stale-option-prompt", type: "selectOption", player: 1, options: [2, 4], returnTo: 0 };
     session.state.waitingFor = 1;
 
     const staleOption = getDuelLegalActions(session, 1).find((action) => action.type === "selectOption" && action.option === 4);
     expect(staleOption).toBeDefined();
-    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-prompt-open-quick": restoreOpenOnlyQuickEffect("Restored prompt open quick resolved"),
+    });
     const restoredOption = getDuelLegalActions(restored, 1).find((action) => action.type === "selectOption" && action.option === 2);
     expect(restoredOption).toBeDefined();
     expect(restoredOption).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "prompt" });
@@ -81,9 +87,12 @@ describe("duel stale prompt responses", () => {
     expect(restored.state.log.some((entry) => entry.action === "selectOption")).toBe(false);
     const optionResult = applyResponse(restored, restoredOption!);
     expect(optionResult.ok).toBe(true);
+    expect(optionResult.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(optionResult.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-prompt-open-quick", windowKind: "open" })]));
     expect(optionResult.legalActions).toEqual(getDuelLegalActions(restored, optionResult.state.waitingFor!));
     expect(optionResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, optionResult.state.waitingFor!));
     expect(optionResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(optionResult.legalActions);
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
     const replay = applyResponse(restored, staleOption!);
 
     expect(replay.ok).toBe(false);
@@ -94,6 +103,7 @@ describe("duel stale prompt responses", () => {
     expect(restored.state.prompt).toBeUndefined();
     expect(restored.state.log.filter((entry) => entry.action === "selectOption" && entry.detail === "Selected option 2")).toHaveLength(1);
     expect(restored.state.log.some((entry) => entry.action === "selectOption" && entry.detail === "Selected option 4")).toBe(false);
+    expect(restored.state.log.some((entry) => entry.detail === "Restored prompt open quick resolved")).toBe(false);
   });
 
   it("rejects stale yes-no responses captured before snapshot restore", () => {
@@ -139,3 +149,32 @@ describe("duel stale prompt responses", () => {
     expect(restored.state.log.some((entry) => entry.action === "selectYesNo" && entry.detail === "Selected no")).toBe(false);
   });
 });
+
+function openOnlyQuickEffect(id: string, sourceUid: string, detail: string): DuelEffectDefinition {
+  return {
+    id,
+    registryKey: id,
+    sourceUid,
+    controller: 0,
+    event: "quick",
+    range: ["hand"],
+    canActivate(ctx) {
+      return ctx.duel.chain.length === 0;
+    },
+    operation(ctx) {
+      ctx.log(detail);
+    },
+  };
+}
+
+function restoreOpenOnlyQuickEffect(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...effect,
+    canActivate(ctx) {
+      return ctx.duel.chain.length === 0;
+    },
+    operation(ctx) {
+      ctx.log(detail);
+    },
+  });
+}
