@@ -55,6 +55,8 @@ describe("Lua summon-attempt events", () => {
       expect.objectContaining({ eventName: "normalSummoning", eventCode: 1103 }),
       expect.objectContaining({ eventName: "normalSummoned", eventCode: 1100 }),
     ]);
+    const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -63,7 +65,7 @@ describe("Lua summon-attempt events", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    assertRestoredAttemptTrigger(restored);
+    assertRestoredAttemptTrigger(restored, originalTrigger!);
     expect(restored.host.messages).toContain("normal attempt 100");
   });
 
@@ -114,6 +116,8 @@ describe("Lua summon-attempt events", () => {
       expect.objectContaining({ eventName: "specialSummoning", eventCode: 1105 }),
       expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102 }),
     ]);
+    const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -122,7 +126,7 @@ describe("Lua summon-attempt events", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    assertRestoredAttemptTrigger(restored);
+    assertRestoredAttemptTrigger(restored, originalTrigger!);
     expect(restored.host.messages).toContain("special attempt 100");
   });
 
@@ -178,6 +182,8 @@ describe("Lua summon-attempt events", () => {
       expect.objectContaining({ eventName: "flipSummoning", eventCode: 1104 }),
       expect.objectContaining({ eventName: "flipSummoned", eventCode: 1101 }),
     ]);
+    const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScript, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -186,12 +192,12 @@ describe("Lua summon-attempt events", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    assertRestoredAttemptTrigger(restored);
+    assertRestoredAttemptTrigger(restored, originalTrigger!);
     expect(restored.host.messages).toContain("flip attempt 100");
   });
 });
 
-function assertRestoredAttemptTrigger(restored: LuaSnapshotRestoreResult): void {
+function assertRestoredAttemptTrigger(restored: LuaSnapshotRestoreResult, originalTrigger: Parameters<typeof applyLuaRestoreResponse>[1]): void {
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
   const publicState = queryPublicState(restored.session);
@@ -203,6 +209,10 @@ function assertRestoredAttemptTrigger(restored: LuaSnapshotRestoreResult): void 
   expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
   expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(staleBeforeTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTrigger.legalActions);
+  const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalTrigger);
+  expect(originalTriggerPreapply.ok).toBe(false);
+  expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
+  expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
 
   applyLuaRestoreAndAssert(restored, trigger!);
   const staleResult = applyLuaRestoreResponse(restored, trigger!);
