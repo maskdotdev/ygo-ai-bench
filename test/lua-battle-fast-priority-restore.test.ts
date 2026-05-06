@@ -83,6 +83,8 @@ describe("Lua battle fast priority restore", () => {
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "chainResponse", uid: expect.stringContaining("400") })]));
+    expect(getLuaRestoreLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.uid.includes("500"))).toBe(false);
     const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
 
