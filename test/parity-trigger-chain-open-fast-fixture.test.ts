@@ -79,7 +79,20 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
             legalActionCounts: { 0: 1, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
-            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-chain-success", count: 1 }],
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-chain-success", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-chain-success", triggerBucket: "turnMandatory", count: 1 },
+                ],
+              },
+            ],
             absentLegalActions: [
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-chain-turn-open-quick" },
               { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-chain-opponent-chain-quick" },
