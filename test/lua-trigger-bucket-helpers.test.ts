@@ -561,6 +561,14 @@ describe("Lua trigger bucket helpers", () => {
 
     const opponentMandatory = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger");
     expect(opponentMandatory).toMatchObject({ player: 1, windowKind: "triggerBucket", triggerBucket: "opponentMandatory" });
+    const staleBeforeOpponentMandatory = applyLuaRestoreResponse(restored, { ...opponentMandatory!, windowId: opponentMandatory!.windowId! - 1 });
+    expect(staleBeforeOpponentMandatory.ok).toBe(false);
+    expect(staleBeforeOpponentMandatory.error).toContain("Response is not currently legal");
+    expect(staleBeforeOpponentMandatory.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeOpponentMandatory.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleBeforeOpponentMandatory.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleBeforeOpponentMandatory.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeOpponentMandatory.legalActions);
+
     const afterOpponentMandatory = applyLuaRestoreAndAssert(restored, opponentMandatory!);
     expect(afterOpponentMandatory.state.chain).toHaveLength(2);
     expect(afterOpponentMandatory.state.pendingTriggers.map((trigger) => afterOpponentMandatory.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12200", "12500"]);
@@ -587,6 +595,14 @@ describe("Lua trigger bucket helpers", () => {
 
     const turnOptionalDecline = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "declineTrigger");
     expect(turnOptionalDecline).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnOptional" });
+    const staleBeforeTurnOptionalDecline = applyLuaRestoreResponse(restored, { ...turnOptionalDecline!, windowId: turnOptionalDecline!.windowId! - 1 });
+    expect(staleBeforeTurnOptionalDecline.ok).toBe(false);
+    expect(staleBeforeTurnOptionalDecline.error).toContain("Response is not currently legal");
+    expect(staleBeforeTurnOptionalDecline.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeTurnOptionalDecline.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleBeforeTurnOptionalDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleBeforeTurnOptionalDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTurnOptionalDecline.legalActions);
+
     const afterTurnOptional = applyLuaRestoreAndAssert(restored, turnOptionalDecline!);
     expect(afterTurnOptional.state.pendingTriggers.map((trigger) => afterTurnOptional.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12500"]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
