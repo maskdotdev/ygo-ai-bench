@@ -213,18 +213,24 @@ function restoreLoggedEffect(detail: string): (effect: Omit<DuelEffectDefinition
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
   const response = applyResponse(session, action);
   expect(response.ok, response.error).toBe(true);
+  const windowId = session.state.actionWindowId;
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
+  for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
   return response;
 }
 
 function assertStaleResponse(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
   const stale = applyResponse(session, action);
+  const windowId = session.state.actionWindowId;
   expect(stale.ok).toBe(false);
   expect(stale.error).toContain("Response is not currently legal");
-  expect(stale.state.actionWindowId).toBe(session.state.actionWindowId);
+  expect(stale.state.actionWindowId).toBe(windowId);
   expect(stale.legalActions).toEqual(getDuelLegalActions(session, stale.state.waitingFor!));
   expect(stale.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, stale.state.waitingFor!));
   expect(stale.legalActionGroups.flatMap((group) => group.actions)).toEqual(stale.legalActions);
+  for (const legalAction of stale.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: stale.state.windowKind });
+  for (const group of stale.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: stale.state.windowKind });
 }
