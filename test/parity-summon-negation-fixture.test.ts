@@ -55,7 +55,7 @@ describe("EDOPro parity summon negation fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro exposes summon-negation responses before matching Normal Summon success triggers can resolve",
@@ -71,7 +71,7 @@ describe("EDOPro parity summon negation fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-summon-negator" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro removes the Normal Summon success trigger after the summon-negation response resolves",

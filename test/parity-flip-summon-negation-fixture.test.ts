@@ -56,7 +56,7 @@ describe("EDOPro parity flip summon negation fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("flipSummon", 0, { code: "100", location: "monsterZone" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro exposes Flip Summon negation responses before matching Flip Summon success triggers can resolve",
@@ -72,7 +72,7 @@ describe("EDOPro parity flip summon negation fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-flip-summon-negator" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro removes the Flip Summon success trigger after the Flip Summon negation response resolves",

@@ -63,7 +63,7 @@ describe("EDOPro parity special summon negation fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("specialSummonProcedure", 0, { code: "100", location: "hand", effectId: "fixture-inherent-special-summon" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro exposes inherent Special Summon negation responses before matching Special Summon success triggers can resolve",
@@ -79,7 +79,7 @@ describe("EDOPro parity special summon negation fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-special-summon-negator" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro removes the Special Summon success trigger after the inherent Special Summon negation response resolves",
