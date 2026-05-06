@@ -1,0 +1,257 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution cross-player SEGOC chain response fixture", () => {
+  it("opens turn-player responses after cross-player chain-created SEGOC selection completes", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cross Chain Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Turn Cross Chain Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Cross Chain Turn Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Cross Chain Opponent Mandatory", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Cross Chain Turn Optional", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Cross Chain Opponent Optional", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "700", name: "Cross Chain Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Filler", kind: "monster", attack: 800, defense: 800 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution cross-player segoc chain response fixture",
+      options: { seed: 291, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "500", "700"] },
+        1: { main: ["400", "600", "800", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-cross-chain-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Cross chain starter resolved",
+          },
+          {
+            id: "fixture-cross-chain-turn-mandatory",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Cross chain turn mandatory should not resolve yet",
+          },
+          {
+            id: "fixture-cross-chain-opponent-mandatory",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Cross chain opponent mandatory should not resolve yet",
+          },
+          {
+            id: "fixture-cross-chain-turn-optional",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Cross chain turn optional should not resolve yet",
+          },
+          {
+            id: "fixture-cross-chain-opponent-optional",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Cross chain opponent optional should not resolve yet",
+          },
+          {
+            id: "fixture-cross-chain-turn-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Cross chain turn quick should not resolve yet",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-chain-starter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro builds cross-player SEGOC buckets from trigger events created while an effect chain resolves",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-cross-chain-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-chain-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-chain-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-chain-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-4" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 1, triggerBucket: "opponentMandatory" },
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-turn-mandatory", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-cross-chain-turn-mandatory", "turnMandatory", 1, 1)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-opponent-mandatory", triggerBucket: "opponentMandatory" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-turn-optional", triggerBucket: "turnOptional" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-turn-mandatory", triggerBucket: "turnMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-chain-turn-quick", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-cross-chain-opponent-mandatory", "opponentMandatory", 1, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-cross-chain-turn-optional", "turnOptional", 1, "triggerBucket"),
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-turn-mandatory" }],
+              },
+            ],
+            locations: { graveyard: ["700", "200"], hand: ["100", "300", "500", "400", "600", "800", "800", "800"] },
+            logIncludes: ["Cross chain starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-chain-turn-mandatory" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-chain-opponent-mandatory" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-chain-turn-optional" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro advances to opponent optional triggers only after the turn-player optional bucket is consumed",
+            windowId: 4,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-cross-chain-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-chain-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-chain-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-chain-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-chain-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-chain-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-cross-chain-opponent-optional", "opponentOptional", 1, 4),
+              triggerDeclineGroup(1, "fixture-cross-chain-opponent-optional", "opponentOptional", 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-chain-turn-quick" },
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-chain-turn-optional", triggerBucket: "turnOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-chain-turn-quick", 4, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-cross-chain-turn-optional", "turnOptional", 4, "triggerBucket"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-chain-opponent-optional" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens turn-player chain-response priority after cross-player chain-created SEGOC selection completes with an opponent trigger",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-chain-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-chain-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-chain-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-chain-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-chain-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "fixture-cross-chain-turn-quick", 1, 5), chainPassGroup(0, 1, 5)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-cross-chain-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [absentTriggerActivationGroup(1, "fixture-cross-chain-opponent-optional", "opponentOptional", 5, "triggerBucket")],
+            locations: { graveyard: ["700", "200"], hand: ["100", "300", "500", "400", "600", "800", "800", "800"] },
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro keeps cross-player chain-created SEGOC trigger chains pending while exposing turn-player responses after the opponent optional bucket is consumed",
+        phase: "main1",
+        windowId: 5,
+        windowKind: "chainResponse",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [
+          { player: 0, effectId: "fixture-cross-chain-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+          { player: 1, effectId: "fixture-cross-chain-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+          { player: 0, effectId: "fixture-cross-chain-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+          { player: 1, effectId: "fixture-cross-chain-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+        ],
+        chainPasses: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-chain-turn-quick", count: 1 },
+          { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [chainEffectGroup(0, "fixture-cross-chain-turn-quick", 1, 5), chainPassGroup(0, 1, 5)],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-cross-chain-opponent-optional", triggerBucket: "opponentOptional" },
+        ],
+        absentLegalActionGroups: [absentTriggerActivationGroup(1, "fixture-cross-chain-opponent-optional", "opponentOptional", 5, "triggerBucket")],
+        locations: { graveyard: ["700", "200"], hand: ["100", "300", "500", "400", "600", "800", "800", "800"] },
+        logIncludes: ["Cross chain starter resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
