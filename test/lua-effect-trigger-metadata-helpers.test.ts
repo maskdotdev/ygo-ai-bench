@@ -151,6 +151,7 @@ describe("Lua effect trigger metadata helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 1)).toHaveLength(0);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
 
+    expectLuaRestoreStalePreapply(restored, restoredIfTrigger!, 0);
     applyLuaRestoreAndAssert(restored, restoredIfTrigger!);
     expect(restored.host.messages).toContain("lua if optional resolved");
     const staleRestoredIfTrigger = applyLuaRestoreResponse(restored, restoredIfTrigger!);
@@ -172,11 +173,13 @@ describe("Lua effect trigger metadata helpers", () => {
       return effect?.triggerTiming === "when";
     });
     expect(opponentWhenTrigger).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, opponentWhenTrigger!, 1);
     applyLuaRestoreAndAssert(restored, opponentWhenTrigger!);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     const opponentIfTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger");
     expect(opponentIfTrigger).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "triggerBucket" });
+    expectLuaRestoreStalePreapply(restored, opponentIfTrigger!, 1);
     applyLuaRestoreAndAssert(restored, opponentIfTrigger!);
     expect(restored.host.messages).toContain("lua opponent when optional resolved");
     expect(restored.host.messages).toContain("lua opponent if optional resolved");
@@ -444,4 +447,14 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expectGroupedActionsToContainLegalActions(response);
   return response;
+}
+
+function expectLuaRestoreStalePreapply(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1], player: 0 | 1): void {
+  const response = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(response.ok).toBe(false);
+  expect(response.error).toContain("Response is not currently legal");
+  expect(response.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expectGroupedActionsToContainLegalActions(response);
 }
