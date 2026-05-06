@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, sendDuelCardToGraveyard, startDuel } from "#duel/core.js";
+import { restoreDuel, serializeDuel } from "#duel/snapshot.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -254,11 +255,14 @@ describe("duel effect reset", () => {
     expect(applyResponse(session, battle!).ok).toBe(true);
     expect(session.state.effects[0]).toMatchObject({ id: "reset-after-two-phases", reset: { count: 1 } });
 
-    const main2 = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "main2");
-    expect(main2).toBeDefined();
-    expect(applyResponse(session, main2!).ok).toBe(true);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.effects[0]).toMatchObject({ id: "reset-after-two-phases", reset: { count: 1 } });
 
-    expect(session.state.effects).toHaveLength(0);
+    const main2 = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "main2");
+    expect(main2).toBeDefined();
+    expect(applyResponse(restored, main2!).ok).toBe(true);
+
+    expect(restored.state.effects).toHaveLength(0);
   });
 
   it("removes end-phase reset effects when ending the turn directly", () => {
