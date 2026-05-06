@@ -33,6 +33,7 @@ describe("trigger bucket restore handoff", () => {
     const restoredTurnBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
     const turnDecline = getDuelLegalActions(restoredTurnBucket, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-turn-optional-decline");
     expect(turnDecline).toBeDefined();
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredTurnBucket, 0), 0, "restore-turn-optional-decline", "declineTrigger")).toBe(true);
     applyAndAssert(restoredTurnBucket, turnDecline!);
     expect(restoredTurnBucket.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-opponent-optional-decline"]);
     expect(restoredTurnBucket.state.waitingFor).toBe(1);
@@ -42,6 +43,7 @@ describe("trigger bucket restore handoff", () => {
     expect(getDuelLegalActions(restoredOpponentBucket, 0)).toEqual([]);
     const opponentDecline = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "declineTrigger" && action.effectId === "restore-opponent-optional-decline");
     expect(opponentDecline).toBeDefined();
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredOpponentBucket, 1), 1, "restore-opponent-optional-decline", "declineTrigger")).toBe(true);
     const staleBeforeDecline = applyResponse(restoredOpponentBucket, { ...opponentDecline!, windowId: opponentDecline!.windowId! - 1 });
     expect(staleBeforeDecline.ok).toBe(false);
     expect(staleBeforeDecline.error).toContain("Response is not currently legal");
@@ -95,12 +97,14 @@ describe("trigger bucket restore handoff", () => {
     const restoredTurnBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreActivationRegistry());
     const turnDecline = getDuelLegalActions(restoredTurnBucket, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-turn-optional-before-opponent-activation");
     expect(turnDecline).toBeDefined();
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredTurnBucket, 0), 0, "restore-turn-optional-before-opponent-activation", "declineTrigger")).toBe(true);
     applyAndAssert(restoredTurnBucket, turnDecline!);
 
     const restoredOpponentBucket = restoreDuel(serializeDuel(restoredTurnBucket), createCardReader(cards), restoreActivationRegistry());
     expect(queryPublicState(restoredOpponentBucket)).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
     const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-opponent-optional-activation");
     expect(opponentActivation).toBeDefined();
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredOpponentBucket, 1), 1, "restore-opponent-optional-activation", "activateTrigger")).toBe(true);
     const activated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
     expect(activated.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", pendingTriggers: [] });
     expect(activated.state.chain.map((link) => link.effectId)).toEqual(["restore-opponent-optional-activation"]);
@@ -187,6 +191,7 @@ describe("trigger bucket restore handoff", () => {
     const turnActivation = getDuelLegalActions(restoredTurnBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-turn-mandatory-before-opponent-activation");
     expect(turnActivation).toBeDefined();
     expect(getDuelLegalActions(restoredTurnBucket, 0).some((action) => action.type === "declineTrigger")).toBe(false);
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredTurnBucket, 0), 0, "restore-turn-mandatory-before-opponent-activation", "activateTrigger")).toBe(true);
     applyAndAssert(restoredTurnBucket, turnActivation!);
 
     const restoredOpponentBucket = restoreDuel(serializeDuel(restoredTurnBucket), createCardReader(cards), restoreMandatoryRegistry());
@@ -194,6 +199,7 @@ describe("trigger bucket restore handoff", () => {
     expect(getDuelLegalActions(restoredOpponentBucket, 1).some((action) => action.type === "declineTrigger")).toBe(false);
     const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-opponent-mandatory-activation");
     expect(opponentActivation).toBeDefined();
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredOpponentBucket, 1), 1, "restore-opponent-mandatory-activation", "activateTrigger")).toBe(true);
     const activated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
     expect(activated.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", pendingTriggers: [] });
     expect(activated.state.chain.map((link) => link.effectId)).toEqual(["restore-turn-mandatory-before-opponent-activation", "restore-opponent-mandatory-activation"]);
@@ -400,5 +406,20 @@ function hasGroupedEffect(
 ): boolean {
   return groups.some((group) =>
     group.windowKind === windowKind && group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowKind === windowKind),
+  );
+}
+
+function hasGroupedTrigger(
+  groups: ReturnType<typeof getGroupedDuelLegalActions>,
+  player: 0 | 1,
+  effectId: string,
+  actionType: "activateTrigger" | "declineTrigger",
+): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === "triggerBucket" &&
+      group.actions.some(
+        (action) => action.type === actionType && action.player === player && action.effectId === effectId && action.windowId === group.windowId && action.windowKind === "triggerBucket",
+      ),
   );
 }
