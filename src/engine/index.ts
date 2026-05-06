@@ -28,6 +28,7 @@ export {
   canSpecialSummonDuelCard,
   specialSummonDuelCard,
   tributeSummonDuelCard,
+  tributeSetDuelCard,
   flipSummonDuelCard,
   fusionSummonDuelCard,
   synchroSummonDuelCard,

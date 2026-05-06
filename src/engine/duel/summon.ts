@@ -349,6 +349,14 @@ export function normalSummonActions(state: DuelState, player: PlayerId, hand: Du
 }
 
 export function tributeSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], canReleaseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
+  return tributeNormalActions(state, player, hand, "tributeSummon", "Tribute Summon", canReleaseMaterial);
+}
+
+export function tributeSetActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], canReleaseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
+  return tributeNormalActions(state, player, hand, "tributeSet", "Tribute Set", canReleaseMaterial);
+}
+
+function tributeNormalActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], type: "tributeSummon" | "tributeSet", labelVerb: string, canReleaseMaterial: DuelMaterialPredicate): DuelAction[] {
   if (!state.players[player].normalSummonAvailable) return [];
   const availableTributes = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canReleaseMaterial(card.uid));
   const actions: DuelAction[] = [];
@@ -358,7 +366,7 @@ export function tributeSummonActions(state: DuelState, player: PlayerId, hand: D
     for (let tributeCount = Math.max(1, tributeRange.min); tributeCount <= tributeRange.max; tributeCount += 1) {
       for (const tributeUids of tributeCombinations(state, availableTributes, tributeCount)) {
         const tributeNames = tributeUids.map((tributeUid) => findCard(state, tributeUid)?.name ?? tributeUid).join(", ");
-        actions.push({ type: "tributeSummon", player, uid: card.uid, tributeUids, label: `Tribute Summon ${card.name} using ${tributeNames}` });
+        actions.push({ type, player, uid: card.uid, tributeUids, label: `${labelVerb} ${card.name} using ${tributeNames}` });
       }
     }
   }

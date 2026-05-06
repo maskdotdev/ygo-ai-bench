@@ -48,7 +48,7 @@ export function duelActionMatchesSelector(
   if (selector.windowKind !== undefined && action.windowKind !== selector.windowKind) return false;
   if (selector.uid && "uid" in action && action.uid !== selector.uid) return false;
   if (selector.tributeUids) {
-    if (action.type !== "tributeSummon" || !sameStringMembers(action.tributeUids, selector.tributeUids)) return false;
+    if ((action.type !== "tributeSummon" && action.type !== "tributeSet") || !sameStringMembers(action.tributeUids, selector.tributeUids)) return false;
   }
   if (selector.materialUids) {
     if (!isMaterialAction(action) || !sameStringMembers(action.materialUids, selector.materialUids)) return false;

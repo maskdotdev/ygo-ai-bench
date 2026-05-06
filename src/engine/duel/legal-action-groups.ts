@@ -56,7 +56,7 @@ function duelActionGroupKey(action: DuelAction): string {
   if (action.type === "activateTrigger") return "trigger-activate";
   if (action.type === "declineTrigger") return "trigger-decline";
   if (action.type === "activateEffect" || action.type === "specialSummonProcedure") return "effect";
-  if (action.type.endsWith("Summon") || action.type === "setMonster") return "summon";
+  if (action.type.endsWith("Summon") || action.type === "setMonster" || action.type === "tributeSet") return "summon";
   if (action.type === "declareAttack" || action.type === "replayAttack" || action.type === "cancelAttack") return "attack";
   if (action.type === "passAttack" || action.type === "passDamage" || action.type === "passChain") return "pass";
   if (action.type === "changePhase" || action.type === "endTurn") return "turn";

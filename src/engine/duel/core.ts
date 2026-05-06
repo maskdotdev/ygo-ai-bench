@@ -27,6 +27,8 @@ import {
   setMonster,
   synchroSummonActions,
   synchroSummonDuelCard as synchroSummonDuelCardWithEvents,
+  tributeSetActions,
+  tributeSetDuelCard as tributeSetDuelCardWithEvents,
   tributeSummonActions,
   tributeSummonDuelCard as tributeSummonDuelCardWithEvents,
   type DuelMaterialMover,
@@ -212,6 +214,7 @@ const responseHandlers: DuelResponseHandlers = {
     normalSummon(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), () => isNoTributeSummonAllowed(state, player));
   },
   tributeSummon: tributeSummonDuelCard,
+  tributeSet: tributeSetDuelCard,
   fusionSummon: fusionSummonDuelCard,
   synchroSummon: synchroSummonDuelCard,
   xyzSummon: xyzSummonDuelCard,
@@ -313,6 +316,11 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       if (action.type !== "tributeSummon") return true;
       const card = findCard(state, action.uid);
       return Boolean(card && !isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state)));
+    }));
+    actions.push(...tributeSetActions(state, player, hand, createReleasePredicate(state, duelReason.release | duelReason.summon)).filter((action) => {
+      if (action.type !== "tributeSet") return true;
+      const card = findCard(state, action.uid);
+      return Boolean(card && !isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state)));
     }));
     actions.push(...fusionSummonActions(state, player, createMaterialUsePredicate(state, "fusion")));
     actions.push(...synchroSummonActions(state, player, createMaterialUsePredicate(state, "synchro")));
@@ -495,6 +503,16 @@ export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: s
     (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
     createMaterialMover(state),
     createReleasePredicate(state, duelReason.release | duelReason.summon),
+  );
+}
+
+export function tributeSetDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
+  const card = findCard(state, uid);
+  if (card && isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Set`);
+  tributeSetDuelCardWithEvents(state, player, uid, tributeUids,
+    createMaterialMover(state),
+    createReleasePredicate(state, duelReason.release | duelReason.summon),
+    (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
   );
 }
 

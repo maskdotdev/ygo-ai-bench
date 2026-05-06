@@ -743,6 +743,7 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "selectOption" && response.type === "selectOption" && (action.promptId !== response.promptId || action.option !== response.option)) return false;
   if (action.type === "selectYesNo" && response.type === "selectYesNo" && (action.promptId !== response.promptId || action.yes !== response.yes)) return false;
   if (action.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringMembers(action.tributeUids, response.tributeUids)) return false;
+  if (action.type === "tributeSet" && response.type === "tributeSet" && !sameStringMembers(action.tributeUids, response.tributeUids)) return false;
   if (action.type === "fusionSummon" && response.type === "fusionSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
   if (action.type === "synchroSummon" && response.type === "synchroSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
   if (action.type === "xyzSummon" && response.type === "xyzSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;

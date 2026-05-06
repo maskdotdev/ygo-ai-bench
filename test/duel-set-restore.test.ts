@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
@@ -102,6 +103,56 @@ describe("set action restore", () => {
     expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
 
     const staleSet = applyResponse(restored, action!);
+    expect(staleSet.ok).toBe(false);
+    expect(staleSet.error).toContain("Response is not currently legal");
+    assertRestoreLegalWindow(restored, staleSet, 0);
+  });
+
+  it("restores tribute sets to turn-player open fast-effect priority", () => {
+    const session = createDuel({ seed: 269, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["600", "100", "300"] },
+      1: { main: ["400", "500", "500"] },
+    });
+    startDuel(session);
+
+    const setMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "600");
+    const tribute = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(setMonster).toBeTruthy();
+    expect(tribute).toBeTruthy();
+    expect(turnQuick).toBeTruthy();
+    expect(opponentQuick).toBeTruthy();
+    moveDuelCard(session.state, tribute!.uid, "monsterZone", 0);
+    registerEffect(session, openOnlyQuick("restore-tribute-set-turn-open-quick", turnQuick!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-tribute-set-opponent-open-quick", opponentQuick!.uid, 1));
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "tributeSet" && candidate.uid === setMonster!.uid && candidate.tributeUids.includes(tribute!.uid));
+    expect(action?.type).toBe("tributeSet");
+    if (!action || action.type !== "tributeSet") throw new Error("Expected Tribute Set action");
+    const result = applyResponse(session, action);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(result.legalActions.some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "restore-tribute-set-turn-open-quick")).toBe(true);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-tribute-set-turn-open-quick": restoreOpenOnlyQuick,
+      "restore-tribute-set-opponent-open-quick": restoreOpenOnlyQuick,
+    });
+    expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restored.state.cards.find((card) => card.uid === tribute!.uid)?.location).toBe("graveyard");
+    expect(restored.state.cards.find((card) => card.uid === setMonster!.uid)).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
+    expect(restored.state.players[0].normalSummonAvailable).toBe(false);
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "restore-tribute-set-turn-open-quick")).toBe(true);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "restore-tribute-set-opponent-open-quick")).toBe(false);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "tributeSet" && candidate.uid === setMonster!.uid)).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+
+    const staleSet = applyResponse(restored, action);
     expect(staleSet.ok).toBe(false);
     expect(staleSet.error).toContain("Response is not currently legal");
     assertRestoreLegalWindow(restored, staleSet, 0);
