@@ -86,7 +86,7 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   expect(staleTrigger.state.actionWindowId).toBe(restored.session.state.actionWindowId);
   expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
   expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-  expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
+  assertLuaRestoreLegalWindow(restored, staleTrigger, 0);
   expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["battleDestroyed"]);
   expect(restored.host.messages).not.toContain(`${message} 200/true`);
 
@@ -97,7 +97,7 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   expect(staleReplay.state.actionWindowId).toBe(restored.session.state.actionWindowId);
   expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
   expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, staleReplay.state.waitingFor!));
-  expect(staleReplay.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleReplay.legalActions);
+  assertLuaRestoreLegalWindow(restored, staleReplay, staleReplay.state.waitingFor!);
   return { messages: restored.host.messages };
 }
 
@@ -125,6 +125,16 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(result.ok, result.error).toBe(true);
   expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
-  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  assertLuaRestoreLegalWindow(restored, result, result.state.waitingFor!);
   return result;
+}
+
+function assertLuaRestoreLegalWindow(restored: ReturnType<typeof restoreDuelWithLuaScripts>, result: ReturnType<typeof applyLuaRestoreResponse>, player: 0 | 1): void {
+  const windowId = restored.session.state.actionWindowId;
+  expect(result.state.actionWindowId).toBe(windowId);
+  expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, player));
+  expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  for (const legalAction of result.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: result.state.windowKind });
+  for (const group of result.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: result.state.windowKind });
 }
