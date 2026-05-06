@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { summonGroup } from "./parity-legal-action-group-helpers.js";
+import { turnGroup, summonGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Normal Summon success fixtures", () => {
   it("opens Normal Summon actions and resolves success triggers", () => {
@@ -128,6 +128,13 @@ describe("EDOPro parity Normal Summon success fixtures", () => {
         pendingTriggers: [],
         chain: [],
         locations: { monsterZone: ["100"], hand: ["200"] },
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(2)],
         logIncludes: ["Fixture normal summon success watcher resolved"],
       },
     };

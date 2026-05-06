@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity special summon negation fixtures", () => {
   it("removes special-summon-success triggers when an inherent Special Summon is negated", () => {
@@ -101,6 +102,25 @@ describe("EDOPro parity special summon negation fixtures", () => {
         pendingTriggers: [],
         chain: [],
         locations: { graveyard: ["100"], hand: ["200", "300"] },
+        legalActionCounts: { 0: 6, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "normalSummon", player: 0, code: "200", location: "hand", windowId: 3, windowKind: "open", count: 1 },
+          { type: "normalSummon", player: 0, code: "300", location: "hand", windowId: 3, windowKind: "open", count: 1 },
+          { type: "setMonster", player: 0, code: "200", location: "hand", windowId: 3, windowKind: "open", count: 1 },
+          { type: "setMonster", player: 0, code: "300", location: "hand", windowId: 3, windowKind: "open", count: 1 },
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "200", location: "hand" },
+            { type: "normalSummon", player: 0, code: "300", location: "hand" },
+            { type: "setMonster", player: 0, code: "200", location: "hand" },
+            { type: "setMonster", player: 0, code: "300", location: "hand" },
+          ], 1, 3),
+          turnGroup(3),
+        ],
         logIncludes: ["Fixture special-summon-negated watcher resolved"],
       },
     };
