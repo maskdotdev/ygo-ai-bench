@@ -245,6 +245,7 @@ describe("Lua battle timing helpers", () => {
     if (damagePassPlayer === undefined) throw new Error("Expected restored damage window to wait for a player");
     const staleDamagePass = getLuaRestoreLegalActions(restored, damagePassPlayer).find((candidate) => candidate.type === "passDamage");
     expect(staleDamagePass).toBeDefined();
+    expectLuaRestoreStalePreapply(restored, staleDamagePass!, damagePassPlayer);
     applyLuaRestoreAndAssert(restored, staleDamagePass!);
     const replay = applyLuaRestoreResponse(restored, staleDamagePass!);
     expect(replay.ok).toBe(false);
