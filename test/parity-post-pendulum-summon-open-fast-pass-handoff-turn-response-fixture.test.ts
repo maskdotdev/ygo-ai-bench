@@ -1,0 +1,265 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentSummonGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  summonGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity post-Pendulum-Summon open fast-effect pass handoff turn response fixture", () => {
+  it("reopens turn-player chain responses after the opponent passes a post-Pendulum-Summon open fast chain", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Post Pendulum Handoff Low Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1, attack: 1000, defense: 1000 },
+      { code: "200", name: "Post Pendulum Handoff High Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 8, rightScale: 8, attack: 1000, defense: 1000 },
+      { code: "300", name: "Post Pendulum Handoff Candidate", kind: "monster", typeFlags: 0x1000001, level: 4, attack: 1500, defense: 1500 },
+      { code: "400", name: "Post Pendulum Handoff Turn Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "700", name: "Post Pendulum Handoff Turn Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Post Pendulum Handoff Opponent Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "600", name: "Post Pendulum Handoff Opponent Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "post pendulum summon open fast pass handoff turn response fixture",
+      options: { seed: 426, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "400", "700"] },
+        1: { main: ["500", "600"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "100", from: "hand", to: "spellTrapZone" },
+          { player: 0, code: "200", from: "hand", to: "spellTrapZone" },
+          { player: 0, code: "400", from: "hand", to: "graveyard" },
+          { player: 0, code: "700", from: "hand", to: "graveyard" },
+          { player: 1, code: "500", from: "hand", to: "graveyard" },
+          { player: 1, code: "600", from: "hand", to: "graveyard" },
+        ],
+        effects: [
+          {
+            id: "post-pendulum-summon-handoff-turn-open-quick",
+            player: 0,
+            code: "400",
+            location: "graveyard",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Post Pendulum Summon handoff turn open quick resolved",
+          },
+          {
+            id: "post-pendulum-summon-handoff-turn-chain-quick",
+            player: 0,
+            code: "700",
+            location: "graveyard",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Post Pendulum Summon handoff turn chain quick resolved",
+          },
+          {
+            id: "post-pendulum-summon-handoff-opponent-chain-quick",
+            player: 1,
+            code: "500",
+            location: "graveyard",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Post Pendulum Summon handoff opponent chain quick should not resolve",
+          },
+          {
+            id: "post-pendulum-summon-handoff-opponent-open-quick",
+            player: 1,
+            code: "600",
+            location: "graveyard",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "open",
+            logMessage: "Post Pendulum Summon handoff opponent open quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected handoff candidate", windowId: 0, windowKind: "open" }, {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro exposes Pendulum Summons beside turn-player open fast effects before the Pendulum Summon is performed",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            legalActionCounts: { 0: 6, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "post-pendulum-summon-handoff-turn-open-quick", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "pendulumSummon", player: 0, windowId: 0, windowKind: "open", summonUids: ["p0-deck-300-2"], count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "post-pendulum-summon-handoff-turn-open-quick", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"] },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            locations: { spellTrapZone: ["100", "200"], hand: ["300"], graveyard: ["400", "700", "500", "600"] },
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "post-pendulum-summon-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "post-pendulum-summon-handoff-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "post-pendulum-summon-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "post-pendulum-summon-handoff-turn-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "post-pendulum-summon-handoff-opponent-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "post-pendulum-summon-handoff-opponent-open-quick", 0, "open"),
+            ],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro returns triggerless Pendulum Summons to turn-player open priority with that player's open fast effects available",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            chainPasses: [],
+            locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], graveyard: ["400", "700", "500", "600"] },
+            cards: [{ uid: "p0-deck-300-2", code: "300", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "post-pendulum-summon-handoff-turn-open-quick", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "post-pendulum-summon-handoff-turn-open-quick", count: 1 }],
+              },
+              turnGroup(1),
+            ],
+            absentLegalActions: [
+              { type: "pendulumSummon", player: 0, windowId: 1, windowKind: "open", summonUids: ["p0-deck-300-2"] },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "post-pendulum-summon-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "post-pendulum-summon-handoff-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "post-pendulum-summon-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentSummonGroup({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"] }, 1),
+              absentWindowEffectGroup(0, "post-pendulum-summon-handoff-turn-chain-quick", 1, "open"),
+              absentWindowEffectGroup(1, "post-pendulum-summon-handoff-opponent-chain-quick", 1, "open"),
+              absentWindowEffectGroup(1, "post-pendulum-summon-handoff-opponent-open-quick", 1, "open"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "post-pendulum-summon-handoff-turn-open-quick" })),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro reopens turn-player chain-only responses after the opponent passes a post-Pendulum-Summon open fast-effect chain",
+            phase: "main1",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [{ player: 0, effectId: "post-pendulum-summon-handoff-turn-open-quick", sourceUid: "p0-deck-400-3" }],
+            chainPasses: [1],
+            locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], graveyard: ["400", "700", "500", "600"] },
+            cards: [{ uid: "p0-deck-300-2", code: "300", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "post-pendulum-summon-handoff-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "post-pendulum-summon-handoff-turn-chain-quick", 1, 3),
+              chainPassGroup(0, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "post-pendulum-summon-handoff-turn-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "post-pendulum-summon-handoff-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "post-pendulum-summon-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "post-pendulum-summon-handoff-turn-open-quick", 3),
+              absentChainEffectGroup(1, "post-pendulum-summon-handoff-opponent-chain-quick", 3),
+              absentWindowEffectGroup(1, "post-pendulum-summon-handoff-opponent-open-quick", 3, "chainResponse"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "post-pendulum-summon-handoff-turn-chain-quick" })),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro resolves post-Pendulum-Summon pass-handoff chains back to turn-player open priority after the opponent passes the reopened response window",
+        phase: "main1",
+        windowId: 5,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], graveyard: ["400", "700", "500", "600"] },
+        cards: [{ uid: "p0-deck-300-2", code: "300", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 5, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 5, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(5)],
+        absentLegalActions: [
+          { type: "pendulumSummon", player: 0, windowId: 5, windowKind: "open", summonUids: ["p0-deck-300-2"] },
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "post-pendulum-summon-handoff-turn-open-quick" },
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "post-pendulum-summon-handoff-turn-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "post-pendulum-summon-handoff-opponent-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "post-pendulum-summon-handoff-opponent-open-quick" },
+        ],
+        absentLegalActionGroups: [
+          absentSummonGroup({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"] }, 5),
+          absentWindowEffectGroup(0, "post-pendulum-summon-handoff-turn-open-quick", 5, "open"),
+          absentWindowEffectGroup(0, "post-pendulum-summon-handoff-turn-chain-quick", 5, "open"),
+          absentWindowEffectGroup(1, "post-pendulum-summon-handoff-opponent-chain-quick", 5, "open"),
+          absentWindowEffectGroup(1, "post-pendulum-summon-handoff-opponent-open-quick", 5, "open"),
+        ],
+        logIncludes: [
+          "Post Pendulum Summon handoff turn chain quick resolved",
+          "Post Pendulum Summon handoff turn open quick resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
