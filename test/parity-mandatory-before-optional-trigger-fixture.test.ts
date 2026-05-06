@@ -45,6 +45,7 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro hides same-player optional triggers while same-player mandatory triggers in the same event remain pending",
@@ -91,6 +92,7 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-mandatory-first" }), {
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro presents same-player optional triggers only after same-player mandatory triggers are consumed",
@@ -129,7 +131,7 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-optional-second" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro allows the optional trigger to be declined once the mandatory bucket is empty",
