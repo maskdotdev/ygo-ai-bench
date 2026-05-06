@@ -134,6 +134,8 @@ describe("Lua battle fast priority restore", () => {
     const fixture = setupRestoredBattleQuick("EFFECT_FLAG_DAMAGE_STEP");
     passBattleResponse(fixture.session, 1, "passDamage");
     expect(fixture.session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "startDamageStep", responsePlayer: 0 } });
+    const originalQuick = getDuelLegalActions(fixture.session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(originalQuick).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -150,6 +152,10 @@ describe("Lua battle fast priority restore", () => {
     expect(staleBeforeQuick.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleBeforeQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(staleBeforeQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeQuick.legalActions);
+    const originalQuickPreapply = applyLuaRestoreResponse(restored, originalQuick!);
+    expect(originalQuickPreapply.ok).toBe(false);
+    expect(originalQuickPreapply.error).toContain("Response is not currently legal");
+    expect(originalQuickPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(restored.session.state.damagePasses).toEqual([1]);
     expect(restored.host.messages).toEqual([]);
 
