@@ -5,9 +5,13 @@ import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelEffectDefinition, DuelResponse } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
-function expectRestoredOpenAction(restored: ReturnType<typeof restoreDuel>, action: { windowId?: number; windowKind?: string } | undefined): void {
+function expectRestoredOpenAction(restored: ReturnType<typeof restoreDuel>, action: NonNullable<Parameters<typeof applyResponse>[1]> | undefined): void {
   expect(action).toBeDefined();
+  if (action === undefined) return;
   expect(action).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
+  expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toContainEqual(action);
+  expect(getDuelLegalActions(restored, 1)).toEqual([]);
+  expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
 }
 
 function assertRestoreLegalWindow(restored: ReturnType<typeof restoreDuel>, response: ReturnType<typeof applyResponse>, player: 0 | 1): void {
