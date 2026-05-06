@@ -45,6 +45,16 @@ function expectResultActionsMatchResultState(result: ReturnType<typeof applyResp
   expect(groupedActions).toEqual(expect.arrayContaining(result.legalActions));
 }
 
+function expectStalePreapplyRejected(session: ReturnType<typeof restoreDuel>, action: DuelAction, player: 0 | 1): void {
+  const staleResult = applyResponse(session, { ...action, windowId: action.windowId! - 1 });
+  expect(staleResult.ok).toBe(false);
+  expect(staleResult.error).toContain("Response is not currently legal");
+  expect(staleResult.state.actionWindowId).toBe(session.state.actionWindowId);
+  expect(staleResult.legalActions).toEqual(getDuelLegalActions(session, player));
+  expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, player));
+  expectResultActionsMatchResultState(staleResult);
+}
+
 describe("duel action windows", () => {
   it("copies stamped action payloads away from the source action list", () => {
     const actions: DuelAction[] = [{ type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["a", "b"], label: "Fusion" }];
@@ -253,6 +263,7 @@ describe("duel action windows", () => {
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     const battlePhase = getDuelLegalActions(restored, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
     expect(battlePhase).toBeDefined();
+    expectStalePreapplyRejected(restored, battlePhase!, 0);
     const battleResult = applyResponse(restored, battlePhase!);
     expect(battleResult.ok).toBe(true);
     expect(battleResult.legalActions).toEqual(getDuelLegalActions(restored, battleResult.state.waitingFor!));
@@ -298,6 +309,7 @@ describe("duel action windows", () => {
     expect(staleCancel?.windowId).toBe(5);
     expect(staleCancel?.windowKind).toBe("battle");
 
+    expectStalePreapplyRejected(restored, replayAttack!, 0);
     const replayResult = applyResponse(restored, replayAttack!);
     expect(replayResult.ok).toBe(true);
     expect(replayResult.legalActions).toEqual(getDuelLegalActions(restored, replayResult.state.waitingFor!));
