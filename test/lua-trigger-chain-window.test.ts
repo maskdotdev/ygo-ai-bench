@@ -339,6 +339,7 @@ describe("Lua trigger chain windows", () => {
     expect(getLuaRestoreLegalActions(restored, 0)).toHaveLength(0);
     expect(getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual([restored.session.state.pendingTriggers[0]?.effectId]);
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    expect(hasLuaRestoreGroupedTrigger(restored, 1, restored.session.state.pendingTriggers[0]!.effectId, "activateTrigger")).toBe(true);
 
     const secondTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.effectId === restored.session.state.pendingTriggers[0]?.effectId);
     expect(secondTrigger).toBeDefined();
@@ -447,12 +448,15 @@ describe("Lua trigger chain windows", () => {
     expect(restored.session.state.pendingTriggers.map((trigger) => restored.session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["17300"]);
     expect(restored.session.state.waitingFor).toBe(1);
 
-    const opponentTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.effectId === restored.session.state.pendingTriggers[0]?.effectId);
+    const opponentTriggerEffectId = restored.session.state.pendingTriggers[0]?.effectId;
+    const opponentTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.effectId === opponentTriggerEffectId);
     expect(opponentTrigger).toBeDefined();
+    expect(hasLuaRestoreGroupedTrigger(restored, 1, opponentTriggerEffectId!, "activateTrigger")).toBe(true);
     applyLuaRestoreAndAssert(restored, opponentTrigger!);
     expect(restored.session.state.waitingFor).toBe(1);
     expect(getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual([opponentChainQuickId]);
     expect(getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId)).toMatchObject({ windowKind: "chainResponse" });
+    expect(hasLuaRestoreGroupedEffect(restored, 1, opponentChainQuickId, "chainResponse")).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
     const originalRestoredOpponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
     expect(originalRestoredOpponentQuick).toBeDefined();
@@ -463,6 +467,7 @@ describe("Lua trigger chain windows", () => {
     expect(restoredAfterOpponentTrigger.session.state.pendingTriggers).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual([opponentChainQuickId]);
     expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId)).toMatchObject({ windowKind: "chainResponse" });
+    expect(hasLuaRestoreGroupedEffect(restoredAfterOpponentTrigger, 1, opponentChainQuickId, "chainResponse")).toBe(true);
     expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
 
     const restoredOpponentQuick = getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
@@ -479,6 +484,7 @@ describe("Lua trigger chain windows", () => {
     const restoredPassed = applyLuaRestoreAndAssert(restoredAfterOpponentTrigger, restoredPass!);
     expect(restoredPassed.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(restoredPassed.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", effectId: turnOpenQuickId })]));
+    expect(hasGroupedEffect(restoredPassed.legalActionGroups, 0, turnOpenQuickId, "open")).toBe(true);
     expect(getDuelLegalActions(restoredAfterOpponentTrigger.session, 1)).toEqual([]);
     expect(restoredAfterOpponentTrigger.host.messages).toEqual(["restored open opponent chain quick resolved", "restored open opponent trigger resolved", "restored open turn trigger resolved"]);
 
@@ -495,6 +501,7 @@ describe("Lua trigger chain windows", () => {
     expect(opponentPassed.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     assertLuaRestoreLegalWindow(restored, opponentPassed, 0);
     expect(opponentPassed.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", effectId: turnOpenQuickId })]));
+    expect(hasGroupedEffect(opponentPassed.legalActionGroups, 0, turnOpenQuickId, "open")).toBe(true);
     expect(getDuelLegalActions(restored.session, 1)).toEqual([]);
     expect(restored.host.messages).toEqual(["restored open opponent chain quick resolved", "restored open opponent trigger resolved", "restored open turn trigger resolved"]);
   });
@@ -738,4 +745,42 @@ function assertLuaRestoreLegalWindow(restored: Parameters<typeof applyLuaRestore
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
+function hasLuaRestoreGroupedTrigger(
+  restored: Parameters<typeof applyLuaRestoreResponse>[0],
+  player: 0 | 1,
+  effectId: string,
+  actionType: "activateTrigger" | "declineTrigger",
+): boolean {
+  return getLuaRestoreLegalActionGroups(restored, player).some(
+    (group) =>
+      group.windowId === restored.session.state.actionWindowId &&
+      group.windowKind === "triggerBucket" &&
+      group.actions.some(
+        (action) => action.type === actionType && action.player === player && action.effectId === effectId && action.windowId === group.windowId && action.windowKind === "triggerBucket",
+      ),
+  );
+}
+
+function hasLuaRestoreGroupedEffect(
+  restored: Parameters<typeof applyLuaRestoreResponse>[0],
+  player: 0 | 1,
+  effectId: string,
+  windowKind: "chainResponse" | "open",
+): boolean {
+  return hasGroupedEffect(getLuaRestoreLegalActionGroups(restored, player), player, effectId, windowKind);
+}
+
+function hasGroupedEffect(
+  groups: ReturnType<typeof getGroupedDuelLegalActions>,
+  player: 0 | 1,
+  effectId: string,
+  windowKind: "chainResponse" | "open",
+): boolean {
+  return groups.some(
+    (group) =>
+      group.windowKind === windowKind &&
+      group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowId === group.windowId && action.windowKind === windowKind),
+  );
 }
