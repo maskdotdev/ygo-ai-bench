@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity open fast-effect alternation fixtures", () => {
   it("returns chain response priority to the turn player after the opponent chains", () => {
@@ -105,6 +105,7 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
             ],
             legalActionGroups: [chainEffectGroup(0, "alternation-turn-chain-quick", 1, 2), chainPassGroup(0, 1, 2)],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "alternation-opponent-chain-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "alternation-opponent-chain-quick", 2)],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "alternation-turn-chain-quick" }), {
@@ -143,6 +144,18 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-open-quick" },
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-chain-quick" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-open-quick" },
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-chain-quick" },
+                ],
+              },
+            ],
             logIncludes: ["Turn chain quick resolved", "Opponent chain quick resolved", "Turn open quick resolved"],
           },
         }),
@@ -180,6 +193,18 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-open-quick" },
           { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-chain-quick" },
+        ],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            actions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-chain-quick" },
+            ],
+          },
         ],
         logIncludes: ["Turn chain quick resolved", "Opponent chain quick resolved", "Turn open quick resolved"],
       },
@@ -267,6 +292,7 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
             ],
             legalActionGroups: [chainEffectGroup(1, "pass-handoff-opponent-chain-quick", 1, 1), chainPassGroup(1, 1, 1)],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "pass-handoff-opponent-open-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "pass-handoff-opponent-open-quick", 1)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
@@ -289,6 +315,18 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
             absentLegalActions: [
               { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "pass-handoff-opponent-chain-quick" },
               { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "pass-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "chainResponse",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "pass-handoff-opponent-chain-quick" },
+                  { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "pass-handoff-opponent-open-quick" },
+                ],
+              },
             ],
           },
         }),
@@ -326,6 +364,25 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-chain-quick" },
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "pass-handoff-opponent-open-quick" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-open-quick" },
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-chain-quick" },
+                ],
+              },
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [{ type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "pass-handoff-opponent-open-quick" }],
+              },
+            ],
             logIncludes: ["Pass handoff turn open quick resolved"],
           },
         }),
@@ -361,6 +418,25 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
           { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-open-quick" },
           { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-chain-quick" },
           { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "pass-handoff-opponent-open-quick" },
+        ],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            actions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "pass-handoff-turn-chain-quick" },
+            ],
+          },
+          {
+            player: 1,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            actions: [{ type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "pass-handoff-opponent-open-quick" }],
+          },
         ],
         logIncludes: ["Pass handoff turn open quick resolved"],
       },
