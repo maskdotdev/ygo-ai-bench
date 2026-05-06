@@ -251,7 +251,7 @@ describe("Lua open fast priority restore", () => {
 
     const quickResult = applyLuaRestoreAndAssert(restored, quick!);
     expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
-    expect(getLuaRestoreLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.uid.includes("19700"))).toBe(false);
+    expect(getLuaRestoreLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.uid.includes("18300"))).toBe(true);
 
     const staleQuick = applyLuaRestoreResponse(restored, quick!);
     expect(staleQuick.ok).toBe(false);
