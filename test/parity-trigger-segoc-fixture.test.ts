@@ -552,6 +552,7 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            chainPasses: [],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [
@@ -576,6 +577,7 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
         pendingTriggers: [],
         pendingTriggerBuckets: [],
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
         legalActions: [
@@ -682,6 +684,7 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            chainPasses: [],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [
@@ -706,6 +709,7 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
         pendingTriggers: [],
         pendingTriggerBuckets: [],
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
         legalActions: [
