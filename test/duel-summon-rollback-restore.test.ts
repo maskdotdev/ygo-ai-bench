@@ -24,6 +24,17 @@ function expectOpenWindowGroups(groups: ReturnType<typeof getGroupedDuelLegalAct
   for (const group of groups) expect(group).toMatchObject({ windowId, windowKind: "open" });
 }
 
+function assertOpenRestoreLegalWindow(session: ReturnType<typeof restoreDuel>, response: ReturnType<typeof applyResponse>): void {
+  const windowId = session.state.actionWindowId;
+  expect(response.state.actionWindowId).toBe(windowId);
+  expect(response.state.windowKind).toBe("open");
+  expectOpenWindowActions(response.legalActions, windowId);
+  expectOpenWindowGroups(response.legalActionGroups, windowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, 0));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+}
+
 type RestoredFailedMoveCase = {
   name: string;
   seed: number;
@@ -151,13 +162,7 @@ describe("duel summon rollback after restore", () => {
 
       expect(staleResult.ok).toBe(false);
       expect(staleResult.error).toContain("Response is not currently legal");
-      expect(staleResult.state.actionWindowId).toBe(restoredWindowId);
-      expect(staleResult.state.windowKind).toBe("open");
-      expectOpenWindowActions(staleResult.legalActions, restoredWindowId);
-      expectOpenWindowGroups(staleResult.legalActionGroups, restoredWindowId);
-      expect(staleResult.legalActions).toEqual(getDuelLegalActions(session, 0));
-      expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
-      expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+      assertOpenRestoreLegalWindow(session, staleResult);
       expect(session.state.cards.find((card) => card.uid === target.uid)?.location).toBe(testCase.target.location);
       expect(session.state.cards.find((card) => card.uid === first.uid)?.location).toBe(testCase.first.moveTo ?? testCase.first.location);
       expect(session.state.cards.find((card) => card.uid === blocked.uid)?.location).toBe(testCase.blocked.moveTo ?? testCase.blocked.location);
@@ -168,13 +173,7 @@ describe("duel summon rollback after restore", () => {
       expect(result.ok).toBe(false);
       expect(result.error).toContain(testCase.block.error);
       expect(session.state.actionWindowId).toBe(restoredWindowId);
-      expect(result.state.actionWindowId).toBe(restoredWindowId);
-      expect(result.state.windowKind).toBe("open");
-      expectOpenWindowActions(result.legalActions, restoredWindowId);
-      expectOpenWindowGroups(result.legalActionGroups, restoredWindowId);
-      expect(result.legalActions).toEqual(getDuelLegalActions(session, 0));
-      expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
-      expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+      assertOpenRestoreLegalWindow(session, result);
       expect(session.state.cards.find((card) => card.uid === target.uid)?.location).toBe(testCase.target.location);
       expect(session.state.cards.find((card) => card.uid === first.uid)?.location).toBe(testCase.first.moveTo ?? testCase.first.location);
       expect(session.state.cards.find((card) => card.uid === blocked.uid)?.location).toBe(testCase.blocked.moveTo ?? testCase.blocked.location);
