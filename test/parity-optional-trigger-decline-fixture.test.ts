@@ -93,7 +93,7 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-first-optional" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro allows declining a same-bucket optional trigger without declining the whole bucket",
