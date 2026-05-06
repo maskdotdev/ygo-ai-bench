@@ -312,6 +312,139 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
     expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
   });
 
+  it("opens fast responses after declining a held optional sibling trigger", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Decline Chain Window Summon", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Decline First Chain Window Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Decline Opponent Chain Window Quick", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Decline Held Trigger", kind: "monster", attack: 1200, defense: 1200 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "trigger chain window declined sibling fixture",
+      options: { seed: 186, startingHandSize: 3 },
+      decks: {
+        0: { main: ["100", "300", "500"] },
+        1: { main: ["400", "100", "100"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-decline-first-chain-window-trigger",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            range: ["hand"],
+            logMessage: "Decline first trigger resolved",
+          },
+          {
+            id: "fixture-decline-held-trigger",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            range: ["hand"],
+            logMessage: "Decline held trigger should not resolve",
+          },
+          {
+            id: "fixture-decline-opponent-chain-window-quick",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            logMessage: "Decline opponent chain-window quick resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-decline-first-chain-window-trigger" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps a selected optional trigger chain waiting while same-bucket siblings remain selectable or declinable",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "fixture-decline-first-chain-window-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggers: [{ player: 0, effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-opponent-chain-window-quick" }],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-decline-held-trigger" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens fast responses only after the held optional sibling is declined and SEGOC trigger selection is complete",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-decline-first-chain-window-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-decline-opponent-chain-window-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves only the selected trigger after the declined sibling leaves the trigger bucket",
+            windowId: 4,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(4)],
+            logIncludes: ["Decline first trigger resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state resolves the selected optional trigger after its held sibling is declined",
+        windowId: 4,
+        windowKind: "open",
+        waitingFor: 0,
+        chain: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(4)],
+        logIncludes: ["Decline first trigger resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+
   it("holds mandatory sibling triggers behind the active trigger chain window", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Mandatory Chain Window Summon", kind: "monster", attack: 1800, defense: 1200 },
