@@ -814,6 +814,14 @@ describe("duel trigger buckets", () => {
     ]);
     const activation = getDuelLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.effectId === "opponent-restored-mandatory");
     expect(activation).toBeTruthy();
+    const staleBeforeActivation = applyResponse(restored, { ...activation!, windowId: activation!.windowId! - 1 });
+    expect(staleBeforeActivation.ok).toBe(false);
+    expect(staleBeforeActivation.error).toContain("Response is not currently legal");
+    expect(staleBeforeActivation.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleBeforeActivation.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(staleBeforeActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(staleBeforeActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeActivation.legalActions);
+
     const activated = applyAndAssert(restored, activation!);
     expect(restored.state.pendingTriggers).toEqual([]);
     const staleActivation = applyResponse(restored, activation!);
