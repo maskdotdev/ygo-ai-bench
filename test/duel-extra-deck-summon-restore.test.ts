@@ -109,20 +109,25 @@ describe("extra deck summon restore", () => {
   });
 
   it("restores Xyz Summon legal actions and applies the restored action", () => {
-    const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "300"], extra: ["920"] },
-      1: { main: ["400", "400"] },
+      0: { main: ["100", "300", "500"], extra: ["920"] },
+      1: { main: ["400", "400", "400"] },
     });
     startDuel(session);
 
     const xyz = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    const watcher = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
     const materials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && (card.code === "100" || card.code === "300"));
     expect(xyz).toBeTruthy();
+    expect(watcher).toBeTruthy();
     expect(materials).toHaveLength(2);
     for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+    registerEffect(session, summonSuccessWatcher("restore-xyz-success-watcher", watcher!.uid, "Restored Xyz success watcher resolved"));
 
-    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-xyz-success-watcher": restoreSummonSuccessWatcher("Restored Xyz success watcher resolved"),
+    });
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid);
     expect(action?.type).toBe("xyzSummon");
@@ -133,11 +138,29 @@ describe("extra deck summon restore", () => {
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === xyz!.uid)).toMatchObject({ location: "monsterZone", overlayCount: 2, faceUp: true });
     expect(action.materialUids.every((uid) => result.state.cards.find((card) => card.uid === uid)?.location === "overlay")).toBe(true);
+    expect(result.state.pendingTriggers).toEqual([expect.objectContaining({ effectId: "restore-xyz-success-watcher", eventName: "specialSummoned", eventCardUid: xyz!.uid })]);
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expectStaleRestoredResponseRejected(restored, action);
+
+    const restoredTriggerWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), {
+      "restore-xyz-success-watcher": restoreSummonSuccessWatcher("Restored Xyz success watcher resolved"),
+    });
+    expect(restoredTriggerWindow.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
+    expect(action.materialUids.every((uid) => restoredTriggerWindow.state.cards.find((card) => card.uid === uid)?.location === "overlay")).toBe(true);
+    const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "restore-xyz-success-watcher");
+    expect(trigger).toBeDefined();
+    const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
+    expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.state.pendingTriggers).toEqual([]);
+    expect(triggerResult.state.cards.find((card) => card.uid === xyz!.uid)).toMatchObject({ location: "monsterZone", overlayCount: 2, faceUp: true });
+    expect(triggerResult.state.log.some((entry) => entry.detail === "Restored Xyz success watcher resolved")).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    expectStaleRestoredResponseRejected(restoredTriggerWindow, trigger!);
   });
 
   it("restores Link Summon legal actions and applies the restored action", () => {
