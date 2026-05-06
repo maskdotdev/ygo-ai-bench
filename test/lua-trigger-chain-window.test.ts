@@ -3,7 +3,7 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions 
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
-import type { DuelCardData } from "#duel/types.js";
+import type { DuelCardData, DuelResponse } from "#duel/types.js";
 import { setupLuaChainFixture } from "./lua-chain-fixtures.js";
 
 describe("Lua trigger chain windows", () => {
@@ -256,6 +256,7 @@ describe("Lua trigger chain windows", () => {
     assertLuaRestoreLegalWindow(restored, staleQuick, 1);
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    assertStaleLuaPreviousWindow(restored, pass!, 1);
     applyLuaRestoreAndAssert(restored, pass!);
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
@@ -481,6 +482,7 @@ describe("Lua trigger chain windows", () => {
     expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
     const restoredPass = getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).find((action) => action.type === "passChain");
     expect(restoredPass).toBeDefined();
+    assertStaleLuaPreviousWindow(restoredAfterOpponentTrigger, restoredPass!, 1);
     const restoredPassed = applyLuaRestoreAndAssert(restoredAfterOpponentTrigger, restoredPass!);
     expect(restoredPassed.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(restoredPassed.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, windowKind: "open", effectId: turnOpenQuickId })]));
@@ -495,6 +497,7 @@ describe("Lua trigger chain windows", () => {
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    assertStaleLuaPreviousWindow(restored, pass!, 1);
     const opponentPassed = applyLuaRestoreAndAssert(restored, pass!);
     expect(opponentPassed.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(opponentPassed.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
@@ -745,6 +748,13 @@ function assertLuaRestoreLegalWindow(restored: Parameters<typeof applyLuaRestore
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
+function assertStaleLuaPreviousWindow(restored: Parameters<typeof applyLuaRestoreResponse>[0], action: DuelResponse, player: 0 | 1): void {
+  const stale = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
+  expect(stale.ok).toBe(false);
+  expect(stale.error).toContain("Response is not currently legal");
+  assertLuaRestoreLegalWindow(restored, stale, player);
 }
 
 function hasLuaRestoreGroupedTrigger(
