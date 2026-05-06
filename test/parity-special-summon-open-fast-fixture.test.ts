@@ -53,7 +53,7 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("specialSummonProcedure", 0, { code: "100", location: "hand", effectId: "special-summon-procedure" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro returns triggerless inherent Special Summons to turn-player open priority with that player's open fast effects available",

@@ -45,7 +45,7 @@ describe("EDOPro parity Normal Summon open fast-effect fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro returns triggerless Normal Summons to turn-player open priority with that player's open fast effects available",

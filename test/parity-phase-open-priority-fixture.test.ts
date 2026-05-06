@@ -44,7 +44,7 @@ describe("EDOPro parity phase open priority fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro returns phase changes to turn-player open priority without handing priority to the opponent",
