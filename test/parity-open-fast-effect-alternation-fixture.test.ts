@@ -118,6 +118,27 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
             chain: [],
             legalActionCounts: { 0: 8, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+              ], 1, 3),
+              turnGroup(3),
+            ],
             absentLegalActions: [
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-open-quick" },
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-chain-quick" },
@@ -135,6 +156,16 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
         chain: [],
         legalActionCounts: { 0: 8, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
         legalActionGroups: [
           summonGroup([
             { type: "normalSummon", player: 0, code: "100", location: "hand" },
@@ -145,6 +176,10 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
             { type: "setMonster", player: 0, code: "400", location: "hand" },
           ], 1, 3),
           turnGroup(3),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-open-quick" },
+          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "alternation-turn-chain-quick" },
         ],
         logIncludes: ["Turn chain quick resolved", "Opponent chain quick resolved", "Turn open quick resolved"],
       },
