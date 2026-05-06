@@ -203,6 +203,11 @@ describe("trigger order prompt restore", () => {
     const restoredSingleTrigger = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreOpponentRegistry());
     expect(queryPublicState(restoredSingleTrigger).triggerOrderPrompt).toBeUndefined();
     expect(restoredSingleTrigger.state.pendingTriggers).toEqual(restoredOpponentBucket.state.pendingTriggers);
+    expect(getDuelLegalActions(restoredSingleTrigger, 1).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getDuelLegalActions(restoredSingleTrigger, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
+      "restore-order-second-opponent",
+      "restore-order-second-opponent",
+    ]);
     const staleDecline = applyResponse(restoredSingleTrigger, opponentDecline!);
     expect(staleDecline.ok).toBe(false);
     expect(staleDecline.error).toContain("Response is not currently legal");
