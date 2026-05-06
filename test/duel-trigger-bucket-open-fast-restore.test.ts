@@ -76,6 +76,8 @@ describe("trigger bucket open fast restore", () => {
     expect(queryPublicState(restoredOpenWindow)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
     expect(getDuelLegalActions(restoredOpenWindow, 0).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-open-fast-turn-open-quick"]);
     expect(getGroupedDuelLegalActions(restoredOpenWindow, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpenWindow, 0));
+    expect(hasGroupedEffect(restoredOpenWindow, 0, "restore-open-fast-turn-open-quick", "open")).toBe(true);
+    expect(hasGroupedEffect(restoredOpenWindow, 0, "restore-open-fast-turn-chain-quick", "open")).toBe(false);
     expect(getDuelLegalActions(restoredOpenWindow, 1)).toEqual([]);
     const stalePass = applyResponse(restoredChainWindow, pass!);
     expect(stalePass.ok).toBe(false);
@@ -235,6 +237,9 @@ describe("trigger bucket open fast restore", () => {
     expect(queryPublicState(restoredOpenWindow)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
     expect(getDuelLegalActions(restoredOpenWindow, 0).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-fast-resolve-turn-open-quick"]);
     expect(getGroupedDuelLegalActions(restoredOpenWindow, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpenWindow, 0));
+    expect(hasGroupedEffect(restoredOpenWindow, 0, "restore-fast-resolve-turn-open-quick", "open")).toBe(true);
+    expect(hasGroupedEffect(restoredOpenWindow, 0, "restore-fast-resolve-turn-chain-quick", "open")).toBe(false);
+    expect(hasGroupedEffect(restoredOpenWindow, 1, "restore-fast-resolve-opponent-open-quick", "open")).toBe(false);
     expect(getDuelLegalActions(restoredOpenWindow, 1)).toEqual([]);
     const staleOpponentChain = applyResponse(restoredOpponentResponse, opponentChain!);
     expect(staleOpponentChain.ok).toBe(false);
