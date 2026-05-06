@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelEffectDefinition } from "#duel/types.js";
+import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
+import type { DuelAction, DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("trigger bucket restore handoff", () => {
@@ -154,6 +155,11 @@ describe("trigger bucket restore handoff", () => {
     expect(hasGroupedEffect(resolved.legalActionGroups, 0, "restore-turn-chain-response-after-opponent-activation", "open")).toBe(false);
     expect(hasGroupedEffect(resolved.legalActionGroups, 1, "restore-opponent-open-after-opponent-activation", "open")).toBe(false);
     expect(getDuelLegalActions(restoredChainWindow, 1)).toEqual([]);
+    const restoredAfterResolution = restoreDuel(serializeDuel(restoredChainWindow), createCardReader(cards), restoreActivationRegistry());
+    expect(queryPublicState(restoredAfterResolution)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(actionsWithoutWindowToken(getDuelLegalActions(restoredAfterResolution, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(restoredChainWindow, 0)));
+    expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredAfterResolution, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredChainWindow, 0)));
+    expect(getDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
     const stalePass = applyResponse(restoredChainWindow, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
@@ -251,6 +257,11 @@ describe("trigger bucket restore handoff", () => {
     expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-opponent-open-after-opponent-mandatory")).toBe(false);
     expect(hasGroupedEffect(resolved.legalActionGroups, 0, "restore-turn-chain-response-after-opponent-mandatory", "open")).toBe(false);
     expect(hasGroupedEffect(resolved.legalActionGroups, 1, "restore-opponent-open-after-opponent-mandatory", "open")).toBe(false);
+    const restoredAfterResolution = restoreDuel(serializeDuel(restoredChainWindow), createCardReader(cards), restoreMandatoryRegistry());
+    expect(queryPublicState(restoredAfterResolution)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(actionsWithoutWindowToken(getDuelLegalActions(restoredAfterResolution, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(restoredChainWindow, 0)));
+    expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredAfterResolution, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredChainWindow, 0)));
+    expect(getDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
     const stalePass = applyResponse(restoredChainWindow, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
@@ -404,6 +415,20 @@ function assertRestoreLegalWindow(session: ReturnType<typeof createDuel>, respon
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
+function actionsWithoutWindowToken(actions: DuelAction[]): Array<Omit<DuelAction, "windowToken">> {
+  return actions.map((action) => {
+    const { windowToken: _windowToken, ...rest } = action;
+    return rest;
+  });
+}
+
+function groupsWithoutWindowToken(groups: DuelLegalActionGroup[]): DuelLegalActionGroup[] {
+  return groups.map((group) => ({
+    ...group,
+    actions: actionsWithoutWindowToken(group.actions) as DuelAction[],
+  }));
 }
 
 function hasGroupedEffect(
