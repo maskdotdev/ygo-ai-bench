@@ -118,6 +118,8 @@ describe("trigger bucket restore handoff", () => {
     const quickResult = applyAndAssert(restoredChainWindow, quick!);
     expect(quickResult.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", pendingTriggers: [] });
     expect(quickResult.state.chain.map((link) => link.effectId)).toEqual(["restore-opponent-optional-activation", "restore-turn-chain-response-after-opponent-activation"]);
+    expect(hasGroupedEffect(quickResult.legalActionGroups, 0, "restore-open-priority-after-opponent-activation", "chainResponse")).toBe(false);
+    expect(hasGroupedEffect(quickResult.legalActionGroups, 1, "restore-opponent-open-after-opponent-activation", "chainResponse")).toBe(false);
     expect(quickResult.state.log.some((entry) => entry.detail === "Restored opponent optional activation resolved")).toBe(false);
     expect(quickResult.state.log.some((entry) => entry.detail === "Restored turn chain response after opponent activation resolved")).toBe(false);
     const staleQuick = applyResponse(restoredChainWindow, quick!);
@@ -210,6 +212,8 @@ describe("trigger bucket restore handoff", () => {
       "restore-opponent-mandatory-activation",
       "restore-turn-chain-response-after-opponent-mandatory",
     ]);
+    expect(hasGroupedEffect(quickResult.legalActionGroups, 0, "restore-open-priority-after-opponent-mandatory", "chainResponse")).toBe(false);
+    expect(hasGroupedEffect(quickResult.legalActionGroups, 1, "restore-opponent-open-after-opponent-mandatory", "chainResponse")).toBe(false);
     expect(quickResult.state.log.some((entry) => entry.detail === "Restored turn mandatory before opponent activation resolved")).toBe(false);
     expect(quickResult.state.log.some((entry) => entry.detail === "Restored opponent mandatory activation resolved")).toBe(false);
     expect(quickResult.state.log.some((entry) => entry.detail === "Restored turn chain response after opponent mandatory resolved")).toBe(false);
