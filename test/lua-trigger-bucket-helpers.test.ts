@@ -515,6 +515,15 @@ describe("Lua trigger bucket helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
 
+    const restoredAfterOpponentMandatory = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
+    expect(restoredAfterOpponentMandatory.restoreComplete, restoredAfterOpponentMandatory.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredAfterOpponentMandatory.session.state.chain).toHaveLength(2);
+    expect(restoredAfterOpponentMandatory.session.state.pendingTriggers.map((trigger) => restoredAfterOpponentMandatory.session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12200", "12500"]);
+    expect(getLuaRestoreLegalActions(restoredAfterOpponentMandatory, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActions(restoredAfterOpponentMandatory, 0)).toEqual(getDuelLegalActions(restoredAfterOpponentMandatory.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredAfterOpponentMandatory, 0)).toEqual(getGroupedDuelLegalActions(restoredAfterOpponentMandatory.session, 0));
+    expect(getLuaRestoreLegalActions(restoredAfterOpponentMandatory, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
+
     const turnOptionalDecline = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "declineTrigger");
     expect(turnOptionalDecline).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnOptional" });
     const afterTurnOptional = applyLuaRestoreAndAssert(restored, turnOptionalDecline!);
