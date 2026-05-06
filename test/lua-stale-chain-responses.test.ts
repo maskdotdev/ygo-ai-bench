@@ -395,6 +395,14 @@ describe("Lua stale chain responses", () => {
     const restoredPass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(restoredPass).toBeDefined();
     expect(restoredPass).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "chainResponse" });
+    const staleBeforeRestoredPass = applyLuaRestoreResponse(restored, { ...restoredPass!, windowId: restoredPass!.windowId! - 1 });
+    expect(staleBeforeRestoredPass.ok).toBe(false);
+    expect(staleBeforeRestoredPass.error).toContain("Response is not currently legal");
+    expect(staleBeforeRestoredPass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeRestoredPass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleBeforeRestoredPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleBeforeRestoredPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeRestoredPass.legalActions);
+
     const restoredPassResult = applyLuaRestoreAndAssert(restored, restoredPass!);
     expect(restoredPassResult.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(restoredPassResult.state.chain).toEqual([]);
