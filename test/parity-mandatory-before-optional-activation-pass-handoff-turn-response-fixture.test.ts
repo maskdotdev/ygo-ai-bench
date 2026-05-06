@@ -1,0 +1,222 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity mandatory before optional activation pass handoff turn response fixture", () => {
+  it("opens opponent responses after the trigger player chains from a same-player trigger pass handoff", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summon Source", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Mandatory Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Optional Trigger", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Turn Chain Quick From Handoff", kind: "monster", attack: 500, defense: 500 },
+      { code: "600", name: "Opponent Chain Quick After Handoff", kind: "monster", attack: 600, defense: 600 },
+      { code: "700", name: "Turn Open Quick After Handoff", kind: "monster", attack: 700, defense: 700 },
+      { code: "800", name: "Opponent Open Quick Filtered", kind: "monster", attack: 800, defense: 800 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "mandatory before optional activation pass handoff turn response fixture",
+      options: { seed: 425, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "300", "400", "500", "700"] },
+        1: { main: ["600", "800", "100", "100", "100"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-activation-handoff-mandatory-first",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Activation handoff mandatory trigger resolved",
+          },
+          {
+            id: "fixture-activation-handoff-optional-second",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            range: ["hand"],
+            logMessage: "Activation handoff optional trigger resolved",
+          },
+          {
+            id: "fixture-activation-handoff-turn-chain",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Activation handoff turn chain quick resolved",
+          },
+          {
+            id: "fixture-activation-handoff-opponent-chain",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Activation handoff opponent chain quick resolved",
+          },
+          {
+            id: "fixture-activation-handoff-turn-open",
+            player: 0,
+            code: "700",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Activation handoff turn open fast should not resolve yet",
+          },
+          {
+            id: "fixture-activation-handoff-opponent-open-filtered",
+            player: 1,
+            code: "800",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Activation handoff opponent open fast should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-activation-handoff-mandatory-first" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-activation-handoff-optional-second" })),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro returns selected same-player trigger-chain response priority to the trigger player after the opponent passes with a response available",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-activation-handoff-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-activation-handoff-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            chainPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-activation-handoff-turn-chain", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "fixture-activation-handoff-turn-chain", 1, 4), chainPassGroup(0, 1, 4)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-activation-handoff-turn-open" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-activation-handoff-opponent-chain" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-activation-handoff-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-activation-handoff-turn-open", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-activation-handoff-opponent-chain", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-activation-handoff-opponent-open-filtered", 4, "chainResponse"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-activation-handoff-turn-chain" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens opponent responses after the trigger player chains from a same-player selected-trigger pass handoff",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-activation-handoff-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-activation-handoff-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-activation-handoff-turn-chain", sourceUid: "p0-deck-500-3" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-activation-handoff-opponent-chain", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-activation-handoff-opponent-chain", 1, 5), chainPassGroup(1, 1, 5)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-activation-handoff-turn-chain" },
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-activation-handoff-turn-open" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-activation-handoff-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-activation-handoff-turn-chain", 5, "chainResponse"),
+              absentWindowEffectGroup(0, "fixture-activation-handoff-turn-open", 5, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-activation-handoff-opponent-open-filtered", 5, "chainResponse"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-activation-handoff-opponent-chain" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro resolves same-player selected-trigger pass-handoff chains after the opponent responds and the trigger player has no remaining response",
+        windowId: 6,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        legalActionCounts: { 0: 3, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-activation-handoff-turn-open", count: 1 },
+          { type: "changePhase", player: 0, windowId: 6, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 6, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 6,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-activation-handoff-turn-open", count: 1 }],
+          },
+          turnGroup(6),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-activation-handoff-mandatory-first" },
+          { type: "activateTrigger", player: 0, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-activation-handoff-optional-second" },
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-activation-handoff-turn-chain" },
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "open", effectId: "fixture-activation-handoff-opponent-chain" },
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "open", effectId: "fixture-activation-handoff-opponent-open-filtered" },
+        ],
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "fixture-activation-handoff-mandatory-first", "turnMandatory", 6, "triggerBucket"),
+          absentTriggerActivationGroup(0, "fixture-activation-handoff-optional-second", "turnOptional", 6, "triggerBucket"),
+          absentWindowEffectGroup(0, "fixture-activation-handoff-turn-chain", 6, "open"),
+          absentWindowEffectGroup(1, "fixture-activation-handoff-opponent-chain", 6, "open"),
+          absentWindowEffectGroup(1, "fixture-activation-handoff-opponent-open-filtered", 6, "open"),
+        ],
+        logIncludes: [
+          "Activation handoff opponent chain quick resolved",
+          "Activation handoff turn chain quick resolved",
+          "Activation handoff optional trigger resolved",
+          "Activation handoff mandatory trigger resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
