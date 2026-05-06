@@ -50,6 +50,51 @@ describe("trigger order prompt restore", () => {
     expect(staleDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleDecline.legalActions);
   });
 
+  it("restores same-bucket optional order prompts and clears them after activation", () => {
+    const session = createPromptSession();
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const secondTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(summoned).toBeTruthy();
+    expect(firstTriggerSource).toBeTruthy();
+    expect(secondTriggerSource).toBeTruthy();
+    registerEffect(session, normalSummonTrigger("restore-order-first-activation", firstTriggerSource!.uid, "Restored order first activation resolved"));
+    registerEffect(session, normalSummonTrigger("restore-order-second-after-activation", secondTriggerSource!.uid, "Restored order second after activation resolved"));
+
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid)!);
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), restoreActivationRegistry());
+    const prompt = queryPublicState(restored).triggerOrderPrompt;
+    expect(prompt).toEqual({
+      id: `${restored.state.actionWindowId}:turnOptional:0`,
+      type: "orderTriggers",
+      player: 0,
+      triggerBucket: "turnOptional",
+      triggerIds: restored.state.pendingTriggers.map((trigger) => trigger.id),
+    });
+
+    const activation = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-activation");
+    expect(activation).toBeDefined();
+    const activated = applyAndAssert(restored, activation!);
+    expect(activated.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-after-activation"]);
+    expect(queryPublicState(restored).triggerOrderPrompt).toBeUndefined();
+    expect(restored.state.chain.map((link) => link.effectId)).toEqual(["restore-order-first-activation"]);
+    expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
+      "restore-order-second-after-activation",
+      "restore-order-second-after-activation",
+    ]);
+
+    const restoredSingleTrigger = restoreDuel(serializeDuel(restored), createCardReader(cards), restoreActivationRegistry());
+    expect(queryPublicState(restoredSingleTrigger).triggerOrderPrompt).toBeUndefined();
+    expect(restoredSingleTrigger.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
+    const staleActivation = applyResponse(restoredSingleTrigger, activation!);
+    expect(staleActivation.ok).toBe(false);
+    expect(staleActivation.error).toContain("Response is not currently legal");
+    expect(staleActivation.state.actionWindowId).toBe(restoredSingleTrigger.state.actionWindowId);
+    expect(staleActivation.legalActions).toEqual(getDuelLegalActions(restoredSingleTrigger, 0));
+    expect(staleActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredSingleTrigger, 0));
+    expect(staleActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleActivation.legalActions);
+  });
+
   it("restores same-bucket mandatory order prompts and clears them after activation", () => {
     const session = createPromptSession();
     const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
@@ -124,6 +169,13 @@ function restoreMandatoryRegistry(): Record<string, (effect: Omit<DuelEffectDefi
   return {
     "restore-order-first-mandatory": restoreLoggedEffect("Restored order first mandatory resolved"),
     "restore-order-second-mandatory": restoreLoggedEffect("Restored order second mandatory resolved"),
+  };
+}
+
+function restoreActivationRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
+  return {
+    "restore-order-first-activation": restoreLoggedEffect("Restored order first activation resolved"),
+    "restore-order-second-after-activation": restoreLoggedEffect("Restored order second after activation resolved"),
   };
 }
 
