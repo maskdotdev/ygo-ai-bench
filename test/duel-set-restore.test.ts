@@ -63,6 +63,50 @@ describe("set action restore", () => {
     assertRestoreLegalWindow(restored, staleSet, 0);
   });
 
+  it("restores spell/trap sets to turn-player open fast-effect priority", () => {
+    const session = createDuel({ seed: 268, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["200", "300", "500"] },
+      1: { main: ["400", "500", "500"] },
+    });
+    startDuel(session);
+
+    const setSpell = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const turnQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(setSpell).toBeTruthy();
+    expect(turnQuick).toBeTruthy();
+    expect(opponentQuick).toBeTruthy();
+    registerEffect(session, openOnlyQuick("restore-spell-set-turn-open-quick", turnQuick!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-spell-set-opponent-open-quick", opponentQuick!.uid, 1));
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setSpellTrap" && candidate.uid === setSpell!.uid);
+    expect(action).toBeDefined();
+    const result = applyResponse(session, action!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(result.legalActions.some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "restore-spell-set-turn-open-quick")).toBe(true);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-spell-set-turn-open-quick": restoreOpenOnlyQuick,
+      "restore-spell-set-opponent-open-quick": restoreOpenOnlyQuick,
+    });
+    expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restored.state.cards.find((card) => card.uid === setSpell!.uid)).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "restore-spell-set-turn-open-quick")).toBe(true);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "restore-spell-set-opponent-open-quick")).toBe(false);
+    expect(getDuelLegalActions(restored, 0).some((candidate) => candidate.type === "setSpellTrap" && candidate.uid === setSpell!.uid)).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+
+    const staleSet = applyResponse(restored, action!);
+    expect(staleSet.ok).toBe(false);
+    expect(staleSet.error).toContain("Response is not currently legal");
+    assertRestoreLegalWindow(restored, staleSet, 0);
+  });
+
   it("restores monster set legal actions and applies the restored action", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
