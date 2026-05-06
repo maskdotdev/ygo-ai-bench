@@ -625,7 +625,11 @@ function assertFinalOpenRestore(
   expect(restored.state).toMatchObject({ chain: [], pendingTriggers: [] });
   expect(actionsWithoutWindowToken(getDuelLegalActions(restored, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(session, 0)));
   expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restored, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(session, 0)));
+  expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+  for (const action of getDuelLegalActions(restored, 0)) expect(action).toMatchObject({ windowId: publicState.actionWindowId, windowKind: "open" });
+  for (const group of getGroupedDuelLegalActions(restored, 0)) expect(group).toMatchObject({ windowId: publicState.actionWindowId, windowKind: "open" });
   expect(getDuelLegalActions(restored, 1)).toEqual([]);
+  expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
 }
 
 function actionsWithoutWindowToken(actions: DuelAction[]): Array<Omit<DuelAction, "windowToken">> {
