@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { turnGroup } from "./parity-legal-action-group-helpers.js";
+import { chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity trigger chain-window fixtures", () => {
   it("holds sibling triggers behind the active trigger chain window", () => {
@@ -294,6 +294,30 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-held-trigger", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-held-trigger", triggerBucket: "turnOptional", count: 1 },
             ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-held-trigger", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [
+                  { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-held-trigger", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-direct-second-held-trigger" }), {
@@ -407,7 +431,36 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 },
             ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 }],
+              },
+            ],
             absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-opponent-chain-window-quick" }],
+            absentLegalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                actions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-opponent-chain-window-quick" }],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-decline-held-trigger" }), {
@@ -427,6 +480,7 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-decline-opponent-chain-window-quick", count: 1 },
               { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
             ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-decline-opponent-chain-window-quick", 1, 3), chainPassGroup(1, 1, 3)],
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
@@ -774,7 +828,30 @@ describe("EDOPro parity trigger chain-window fixtures", () => {
             legalActionCounts: { 0: 1, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger", triggerBucket: "turnMandatory", count: 1 },
+                ],
+              },
+            ],
             absentLegalActions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger" }],
+              },
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-direct-second-mandatory-held-trigger" }), {
