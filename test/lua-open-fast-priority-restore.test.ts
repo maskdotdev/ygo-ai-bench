@@ -384,6 +384,8 @@ describe("Lua open fast priority restore", () => {
     expect(pass).toBeDefined();
     const opened = applyLuaRestoreAndAssert(restored, pass!);
     expect(opened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.uid.includes("19700"))).toBe(false);
 
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
