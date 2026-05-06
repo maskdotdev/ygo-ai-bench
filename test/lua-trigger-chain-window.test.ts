@@ -454,6 +454,8 @@ describe("Lua trigger chain windows", () => {
     expect(getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual([opponentChainQuickId]);
     expect(getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId)).toMatchObject({ windowKind: "chainResponse" });
     expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
+    const originalRestoredOpponentQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
+    expect(originalRestoredOpponentQuick).toBeDefined();
 
     const restoredAfterOpponentTrigger = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
     expect(restoredAfterOpponentTrigger.restoreComplete, restoredAfterOpponentTrigger.incompleteReasons.join("; ")).toBe(true);
@@ -465,6 +467,10 @@ describe("Lua trigger chain windows", () => {
 
     const restoredOpponentQuick = getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).find((action) => action.type === "activateEffect" && action.effectId === opponentChainQuickId);
     expect(restoredOpponentQuick).toBeDefined();
+    const originalRestoredOpponentQuickPreapply = applyLuaRestoreResponse(restoredAfterOpponentTrigger, originalRestoredOpponentQuick!);
+    expect(originalRestoredOpponentQuickPreapply.ok).toBe(false);
+    expect(originalRestoredOpponentQuickPreapply.error).toContain("Response is not currently legal");
+    expect(originalRestoredOpponentQuickPreapply.legalActions).toEqual(getDuelLegalActions(restoredAfterOpponentTrigger.session, 1));
     const restoredQuickResult = applyLuaRestoreAndAssert(restoredAfterOpponentTrigger, restoredOpponentQuick!);
     expect(restoredQuickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 0).filter((action) => action.type === "activateEffect")).toHaveLength(0);
