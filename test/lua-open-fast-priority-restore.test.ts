@@ -386,6 +386,8 @@ describe("Lua open fast priority restore", () => {
     const summoned = applyAndAssert(session, summon!);
     expect(summoned.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
     expect(summoned.state.pendingTriggers.map((trigger) => trigger.effectId)).toHaveLength(1);
+    const originalTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -398,6 +400,10 @@ describe("Lua open fast priority restore", () => {
     expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(staleBeforeTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTrigger.legalActions);
+    const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalTrigger!);
+    expect(originalTriggerPreapply.ok).toBe(false);
+    expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
+    expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(restored.host.messages).toEqual([]);
 
     const triggerResult = applyLuaRestoreAndAssert(restored, trigger!);
