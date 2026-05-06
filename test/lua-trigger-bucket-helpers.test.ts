@@ -560,6 +560,13 @@ describe("Lua trigger bucket helpers", () => {
     expect(getLuaRestoreLegalActions(restored, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.type)).toEqual(["activateTrigger", "declineTrigger"]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    const staleTurnOptionalDecline = applyLuaRestoreResponse(restored, turnOptionalDecline!);
+    expect(staleTurnOptionalDecline.ok).toBe(false);
+    expect(staleTurnOptionalDecline.error).toContain("Response is not currently legal");
+    expect(staleTurnOptionalDecline.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleTurnOptionalDecline.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(staleTurnOptionalDecline.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(staleTurnOptionalDecline.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTurnOptionalDecline.legalActions);
 
     const restoredAfterTurnOptional = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
     expect(restoredAfterTurnOptional.restoreComplete, restoredAfterTurnOptional.incompleteReasons.join("; ")).toBe(true);
