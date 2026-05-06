@@ -81,6 +81,16 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
               { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-optional-if", count: 1 },
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-optional-when" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroy-optional-when" }],
+              },
+            ],
             logIncludes: ["Destroy multi step resolved"],
           },
         }),
@@ -130,6 +140,15 @@ describe("EDOPro parity destroyed missed timing fixtures", () => {
           turnGroup(2),
         ],
         absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-optional-when" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Trigger Activations",
+            windowId: 2,
+            windowKind: "open",
+            actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroy-optional-when" }],
+          },
+        ],
         logIncludes: ["Destroy optional if resolved"],
       },
     };

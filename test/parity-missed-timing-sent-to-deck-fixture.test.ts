@@ -81,6 +81,16 @@ describe("EDOPro parity sent-to-deck missed timing fixtures", () => {
               { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-optional-if", count: 1 },
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-optional-when" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-optional-when" }],
+              },
+            ],
             logIncludes: ["Return multi step resolved"],
           },
         }),

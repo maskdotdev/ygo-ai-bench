@@ -81,6 +81,16 @@ describe("EDOPro parity banished missed timing fixtures", () => {
               { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-optional-if", count: 1 },
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-optional-when" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-optional-when" }],
+              },
+            ],
             logIncludes: ["Banish multi step resolved"],
           },
         }),
@@ -130,6 +140,15 @@ describe("EDOPro parity banished missed timing fixtures", () => {
           turnGroup(2),
         ],
         absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-optional-when" }],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Trigger Activations",
+            windowId: 2,
+            windowKind: "open",
+            actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-optional-when" }],
+          },
+        ],
         logIncludes: ["Banish optional if resolved"],
       },
     };
@@ -227,6 +246,25 @@ describe("EDOPro parity banished missed timing fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-decline-optional-when" },
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-decline-open-fast" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-decline-optional-when" },
+                ],
+              },
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "banish-decline-open-fast" }],
+              },
+            ],
             logIncludes: ["Banish decline multi step resolved"],
           },
         }),
@@ -261,6 +299,18 @@ describe("EDOPro parity banished missed timing fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-if" },
             ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "open",
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-when" },
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-if" },
+                ],
+              },
+            ],
             logIncludes: ["Banish decline multi step resolved", "banish-decline-optional-if"],
           },
         }),
@@ -293,6 +343,18 @@ describe("EDOPro parity banished missed timing fixtures", () => {
         absentLegalActions: [
           { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-when" },
           { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-if" },
+        ],
+        absentLegalActionGroups: [
+          {
+            player: 0,
+            label: "Trigger Activations",
+            windowId: 2,
+            windowKind: "open",
+            actions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "banish-decline-optional-if" },
+            ],
+          },
         ],
         logIncludes: ["Banish decline multi step resolved", "banish-decline-optional-if"],
       },

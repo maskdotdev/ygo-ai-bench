@@ -81,6 +81,16 @@ describe("EDOPro parity sent-to-hand missed timing fixtures", () => {
               { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "bounce-optional-if", count: 1 },
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "bounce-optional-when" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "bounce-optional-when" }],
+              },
+            ],
             logIncludes: ["Bounce multi step resolved"],
           },
         }),
