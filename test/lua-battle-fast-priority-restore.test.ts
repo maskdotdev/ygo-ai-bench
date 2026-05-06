@@ -16,6 +16,8 @@ describe("Lua battle fast priority restore", () => {
     expect(quick).toMatchObject({ player: 0, windowKind: "battle" });
     const quickResult = applyAndAssert(fixture.session, quick!);
     expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", damagePasses: [], battleWindow: { kind: "startDamageStep", responsePlayer: 0 } });
+    const originalPass = getDuelLegalActions(fixture.session, 1).find((candidate) => candidate.type === "passChain");
+    expect(originalPass).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -34,6 +36,10 @@ describe("Lua battle fast priority restore", () => {
     expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(staleBeforePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforePass.legalActions);
+    const originalPassPreapply = applyLuaRestoreResponse(restored, originalPass!);
+    expect(originalPassPreapply.ok).toBe(false);
+    expect(originalPassPreapply.error).toContain("Response is not currently legal");
+    expect(originalPassPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(restored.host.messages).toEqual([]);
 
     const resolved = applyLuaRestoreAndAssert(restored, pass!);
