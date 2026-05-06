@@ -299,6 +299,12 @@ describe("duel ritual summons", () => {
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
     expect(action).toMatchObject({ type: "ritualSummon", materialUids: [firstMaterial!.uid, secondMaterial!.uid] });
     if (!action || action.type !== "ritualSummon") throw new Error("Expected restored full-zone Ritual Summon action");
+    const stale = applyResponse(restored, { ...action, windowId: "stale-ritual-window" });
+    expect(stale.ok).toBe(false);
+    expect(stale.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(stale.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(stale.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(stale.legalActionGroups.flatMap((group) => group.actions)).toEqual(stale.legalActions);
 
     const result = applyResponse(restored, action);
     expect(result.ok).toBe(true);
