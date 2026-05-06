@@ -1,0 +1,225 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution opponent same-bucket optional restore fixture", () => {
+  it("restores opponent optional order prompts after a chain-created SEGOC bucket handoff", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Opponent Optional Handoff Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Opponent Optional Handoff Turn Optional", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Opponent Optional Handoff First Opponent", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Opponent Optional Handoff Second Opponent", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "700", name: "Opponent Optional Handoff Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Optional Handoff Filler", kind: "monster", attack: 800, defense: 800 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution opponent same-bucket optional restore fixture",
+      options: { seed: 351, startingHandSize: 4 },
+      decks: {
+        0: { main: ["100", "300", "700", "800"] },
+        1: { main: ["400", "500", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-chain-resolution-opponent-optional-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [{ player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" }],
+            logMessage: "Chain resolution opponent optional starter resolved",
+          },
+          {
+            id: "fixture-chain-resolution-turn-optional-handoff",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Chain resolution turn optional handoff should not resolve",
+          },
+          {
+            id: "fixture-chain-resolution-first-opponent-optional",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Chain resolution first opponent optional should not resolve",
+          },
+          {
+            id: "fixture-chain-resolution-second-opponent-optional",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Chain resolution second opponent optional resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-optional-starter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro holds chain-created opponent optional triggers behind the active turn optional bucket",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional-handoff", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-2" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-turn-optional-handoff", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-turn-optional-handoff", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-chain-resolution-turn-optional-handoff", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-chain-resolution-turn-optional-handoff", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional", triggerBucket: "opponentOptional" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional", "opponentOptional", 1, "triggerBucket")],
+            locations: { graveyard: ["700"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Chain resolution opponent optional starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-resolution-turn-optional-handoff" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro restores opponent same-bucket optional trigger ordering after a chain-created SEGOC bucket handoff",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [],
+            pendingTriggers: [
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" },
+            ],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 1, triggerBucket: "opponentOptional" },
+            legalActionCounts: { 0: 0, 1: 4 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+                  { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+                ],
+              },
+              {
+                player: 1,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
+                count: 1,
+                actions: [
+                  { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+                  { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-turn-optional-handoff", triggerBucket: "turnOptional" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "fixture-chain-resolution-turn-optional-handoff", "turnOptional", 2, "triggerBucket")],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-second-opponent-optional" }), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro allows the opponent to select either same-bucket optional trigger first after handoff restore",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            triggerOrderPrompt: { type: "orderTriggers", player: 1, triggerBucket: "opponentOptional" },
+            legalActionCounts: { 0: 0, 1: 4 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-chain-resolution-second-opponent-optional", "opponentOptional", 1, 2),
+              triggerDeclineGroup(1, "fixture-chain-resolution-second-opponent-optional", "opponentOptional", 1, 2),
+            ],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps the remaining opponent optional trigger in the active bucket after the first opponent trigger is selected",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 1, effectId: "fixture-chain-resolution-second-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-2" }],
+            pendingTriggers: [{ player: 1, effectId: "fixture-chain-resolution-first-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            triggerOrderPrompt: null,
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional", "opponentOptional", 1, 3),
+              triggerDeclineGroup(1, "fixture-chain-resolution-first-opponent-optional", "opponentOptional", 1, 3),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-chain-resolution-first-opponent-optional" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro resolves the selected opponent optional trigger after restored chain-created opponent bucket ordering",
+        phase: "main1",
+        windowId: 4,
+        windowKind: "open",
+        waitingFor: 0,
+        chain: [],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        locations: { graveyard: ["700"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+        logIncludes: [
+          "Chain resolution opponent optional starter resolved",
+          "Chain resolution second opponent optional resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
