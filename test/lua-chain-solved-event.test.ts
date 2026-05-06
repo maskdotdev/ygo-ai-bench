@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -164,7 +164,11 @@ function expectLuaRestoreStalePreapply(restored: Parameters<typeof applyLuaResto
 
 function assertLuaRestoreLegalWindow(restored: Parameters<typeof applyLuaRestoreResponse>[0], response: ReturnType<typeof applyLuaRestoreResponse>, player: 0 | 1): void {
   const windowId = restored.session.state.actionWindowId;
+  const publicState = queryPublicState(restored.session);
   expect(response.state.actionWindowId).toBe(windowId);
+  expect(response.state.pendingTriggerBuckets).toEqual(publicState.pendingTriggerBuckets);
+  if ("triggerOrderPrompt" in publicState) expect(response.state.triggerOrderPrompt).toEqual(publicState.triggerOrderPrompt);
+  else expect(response.state).not.toHaveProperty("triggerOrderPrompt");
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, player));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
