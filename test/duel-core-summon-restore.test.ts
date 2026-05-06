@@ -154,6 +154,16 @@ describe("core summon restore", () => {
     if (!action || action.type !== "ritualSummon") throw new Error("Expected restored Ritual Summon action");
     expectRestoredOpenAction(restored, action);
 
+    const staleBeforeSummon = applyResponse(restored, { ...action, windowId: action.windowId! - 1 });
+    expect(staleBeforeSummon.ok).toBe(false);
+    expect(staleBeforeSummon.error).toContain("Response is not currently legal");
+    expect(staleBeforeSummon.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+    expect(restored.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "hand" });
+    expect(action.materialUids.every((uid) => restored.state.cards.find((card) => card.uid === uid)?.location === "hand")).toBe(true);
+
     const result = applyResponse(restored, action);
     expect(result.ok).toBe(true);
     expect(result.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
