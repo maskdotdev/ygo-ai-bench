@@ -187,12 +187,32 @@ describe("trigger bucket restore handoff", () => {
     expect(getDuelLegalActions(restoredOpponentBucket, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-open-priority-after-opponent-mandatory")).toBe(false);
 
     const restoredChainWindow = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreMandatoryRegistry());
+    const quick = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-turn-chain-response-after-opponent-mandatory");
+    expect(quick).toBeDefined();
+    const quickResult = applyAndAssert(restoredChainWindow, quick!);
+    expect(quickResult.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", pendingTriggers: [] });
+    expect(quickResult.state.chain.map((link) => link.effectId)).toEqual([
+      "restore-turn-mandatory-before-opponent-activation",
+      "restore-opponent-mandatory-activation",
+      "restore-turn-chain-response-after-opponent-mandatory",
+    ]);
+    expect(quickResult.state.log.some((entry) => entry.detail === "Restored turn mandatory before opponent activation resolved")).toBe(false);
+    expect(quickResult.state.log.some((entry) => entry.detail === "Restored opponent mandatory activation resolved")).toBe(false);
+    expect(quickResult.state.log.some((entry) => entry.detail === "Restored turn chain response after opponent mandatory resolved")).toBe(false);
+    const staleQuick = applyResponse(restoredChainWindow, quick!);
+    expect(staleQuick.ok).toBe(false);
+    expect(staleQuick.error).toContain("Response is not currently legal");
+    expect(staleQuick.state.actionWindowId).toBe(restoredChainWindow.state.actionWindowId);
+    expect(staleQuick.legalActions).toEqual(getDuelLegalActions(restoredChainWindow, 0));
+    expect(staleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainWindow, 0));
+    expect(staleQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleQuick.legalActions);
     const pass = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     const resolved = applyAndAssert(restoredChainWindow, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
     expect(resolved.state.log.some((entry) => entry.detail === "Restored turn mandatory before opponent activation resolved")).toBe(true);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored opponent mandatory activation resolved")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored turn chain response after opponent mandatory resolved")).toBe(true);
     expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-open-priority-after-opponent-mandatory", windowKind: "open" })]));
     expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-turn-chain-response-after-opponent-mandatory")).toBe(false);
     const stalePass = applyResponse(restoredChainWindow, pass!);
