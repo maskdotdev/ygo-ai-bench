@@ -1,0 +1,253 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity mandatory before optional activation chain response fixture", () => {
+  it("opens opponent chain responses after same-player mandatory and optional triggers are selected", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summon Source", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Mandatory Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Optional Trigger", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Opponent Chain Quick After Optional", kind: "monster", attack: 500, defense: 500 },
+      { code: "600", name: "Turn Open Quick After Response", kind: "monster", attack: 600, defense: 600 },
+      { code: "700", name: "Opponent Open Quick Filtered", kind: "monster", attack: 700, defense: 700 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "mandatory before optional activation chain response fixture",
+      options: { seed: 423, startingHandSize: 4 },
+      decks: {
+        0: { main: ["100", "300", "400", "600"] },
+        1: { main: ["500", "700", "100", "100"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-activation-chain-mandatory-first",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Activation chain mandatory trigger resolved",
+          },
+          {
+            id: "fixture-activation-chain-optional-second",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            range: ["hand"],
+            logMessage: "Activation chain optional trigger resolved",
+          },
+          {
+            id: "fixture-activation-chain-opponent-response",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Activation chain opponent response resolved",
+          },
+          {
+            id: "fixture-activation-chain-turn-open-fast",
+            player: 0,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Activation chain turn open fast resolved",
+          },
+          {
+            id: "fixture-activation-chain-opponent-open-filtered",
+            player: 1,
+            code: "700",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Activation chain opponent open fast should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-activation-chain-mandatory-first" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps same-player optional triggers ahead of fast effects after same-player mandatory triggers are selected",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "fixture-activation-chain-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggers: [{ player: 0, effectId: "fixture-activation-chain-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-activation-chain-optional-second", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-activation-chain-optional-second", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-activation-chain-optional-second", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "fixture-activation-chain-optional-second", "turnOptional", 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-activation-chain-turn-open-fast" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-activation-chain-opponent-response" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-activation-chain-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-activation-chain-turn-open-fast", 2, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-activation-chain-opponent-response", 2, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-activation-chain-opponent-open-filtered", 2, "triggerBucket"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-activation-chain-optional-second" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens opponent chain-response priority after same-player mandatory and optional trigger selection completes",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-activation-chain-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-activation-chain-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-activation-chain-opponent-response", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-activation-chain-opponent-response", 1, 3), chainPassGroup(1, 1, 3)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-activation-chain-optional-second", triggerBucket: "turnOptional" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-activation-chain-turn-open-fast" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-activation-chain-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-activation-chain-optional-second", "turnOptional", 3, "triggerBucket"),
+              absentWindowEffectGroup(0, "fixture-activation-chain-turn-open-fast", 3, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-activation-chain-opponent-open-filtered", 3, "chainResponse"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-activation-chain-opponent-response" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves responded same-player trigger chains before returning to turn-player open fast priority",
+            windowId: 4,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-activation-chain-turn-open-fast", count: 1 },
+              { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 4,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-activation-chain-turn-open-fast", count: 1 }],
+              },
+              turnGroup(4),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-activation-chain-mandatory-first" },
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-activation-chain-optional-second" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-activation-chain-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-activation-chain-mandatory-first", "turnMandatory", 4, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-activation-chain-optional-second", "turnOptional", 4, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-activation-chain-opponent-open-filtered", 4, "open"),
+            ],
+            logIncludes: ["Activation chain opponent response resolved", "Activation chain optional trigger resolved", "Activation chain mandatory trigger resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-activation-chain-turn-open-fast" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves restored turn-player open fast effects after responded same-player trigger chains",
+            windowId: 5,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-activation-chain-mandatory-first" },
+              { type: "activateTrigger", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-activation-chain-optional-second" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "fixture-activation-chain-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-activation-chain-mandatory-first", "turnMandatory", 5, "open"),
+              absentTriggerActivationGroup(0, "fixture-activation-chain-optional-second", "turnOptional", 5, "open"),
+              absentWindowEffectGroup(1, "fixture-activation-chain-opponent-open-filtered", 5, "open"),
+            ],
+            logIncludes: ["Activation chain turn open fast resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state returns to turn-player open priority after the post-response open fast effect resolves",
+        windowId: 5,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        legalActionCounts: { 0: 3, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-activation-chain-mandatory-first" },
+          { type: "activateTrigger", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-activation-chain-optional-second" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "fixture-activation-chain-opponent-open-filtered" },
+        ],
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "fixture-activation-chain-mandatory-first", "turnMandatory", 5, "open"),
+          absentTriggerActivationGroup(0, "fixture-activation-chain-optional-second", "turnOptional", 5, "open"),
+          absentWindowEffectGroup(1, "fixture-activation-chain-opponent-open-filtered", 5, "open"),
+        ],
+        logIncludes: ["Activation chain turn open fast resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
