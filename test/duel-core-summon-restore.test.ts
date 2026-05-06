@@ -27,6 +27,19 @@ function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restore
   assertRestoreLegalWindow(restored, staleResult, staleResult.state.waitingFor!);
 }
 
+function expectGroupedTrigger(restored: ReturnType<typeof restoreDuel>, effectId: string): void {
+  const windowId = restored.state.actionWindowId;
+  expect(
+    getGroupedDuelLegalActions(restored, 0).some(
+      (group) =>
+        group.windowId === windowId &&
+        group.windowKind === "triggerBucket" &&
+        group.triggerBucket?.triggerBucket === "turnOptional" &&
+        group.actions.some((action) => action.type === "activateTrigger" && action.effectId === effectId && action.windowId === windowId && action.windowKind === "triggerBucket"),
+    ),
+  ).toBe(true);
+}
+
 describe("core summon restore", () => {
   it("restores Normal Summon legal actions and applies the restored action", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -194,6 +207,7 @@ describe("core summon restore", () => {
     expect(restoredTriggerWindow.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
     const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.effectId === "restore-ritual-success-watcher");
     expect(trigger).toBeDefined();
+    expectGroupedTrigger(restoredTriggerWindow, "restore-ritual-success-watcher");
     const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.state.pendingTriggers).toEqual([]);

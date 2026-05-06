@@ -111,6 +111,7 @@ describe("pendulum restore", () => {
     expect(restoredTriggerWindow.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", summonType: "pendulum", faceUp: true });
     const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidateAction) => candidateAction.type === "activateTrigger" && candidateAction.effectId === "restore-pendulum-success-watcher");
     expect(trigger).toBeDefined();
+    expectGroupedTrigger(restoredTriggerWindow, "restore-pendulum-success-watcher");
     const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.state.pendingTriggers).toEqual([]);
@@ -150,4 +151,17 @@ function restoreSummonSuccessWatcher(detail: string): (effect: Omit<DuelEffectDe
       ctx.log(detail);
     },
   });
+}
+
+function expectGroupedTrigger(restored: ReturnType<typeof restoreDuel>, effectId: string): void {
+  const windowId = restored.state.actionWindowId;
+  expect(
+    getGroupedDuelLegalActions(restored, 0).some(
+      (group) =>
+        group.windowId === windowId &&
+        group.windowKind === "triggerBucket" &&
+        group.triggerBucket?.triggerBucket === "turnOptional" &&
+        group.actions.some((action) => action.type === "activateTrigger" && action.effectId === effectId && action.windowId === windowId && action.windowKind === "triggerBucket"),
+    ),
+  ).toBe(true);
 }
