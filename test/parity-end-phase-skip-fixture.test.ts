@@ -42,8 +42,21 @@ describe("EDOPro parity End Phase skip fixtures", () => {
             battleWindow: null,
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 }],
+            legalActions: [
+              { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+            ],
             legalActionGroups: [
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 2, windowKind: "open", count: 1 },
+                ],
+              },
               {
                 player: 0,
                 label: "Turn",
@@ -78,8 +91,21 @@ describe("EDOPro parity End Phase skip fixtures", () => {
             turnPlayer: 0,
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
-            legalActions: [{ type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 }],
+            legalActions: [
+              { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+            ],
             legalActionGroups: [
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 2, windowKind: "open", count: 1 },
+                ],
+              },
               {
                 player: 0,
                 label: "Turn",
