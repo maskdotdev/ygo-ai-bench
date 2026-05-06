@@ -158,7 +158,18 @@ function assertRestoredFullZoneExtraDeckSummon(type: "fusionSummon" | "synchroSu
   const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === type && candidate.uid === target!.uid);
   expect(action).toMatchObject({ type, materialUids: materials.map((card) => card.uid) });
   if (!action || action.type !== type) throw new Error(`Expected restored full-zone ${type} action`);
-  expect(action).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
+  const restoredWindowId = queryPublicState(restored).actionWindowId;
+  expect(action).toMatchObject({ windowId: restoredWindowId, windowKind: "open" });
+
+  const staleBeforeSummon = applyResponse(restored, { ...action, windowId: restoredWindowId - 1 });
+  expect(staleBeforeSummon.ok).toBe(false);
+  expect(staleBeforeSummon.error).toContain("Response is not currently legal");
+  expect(staleBeforeSummon.state.actionWindowId).toBe(restoredWindowId);
+  expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
+  expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+  expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+  expect(restored.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "extraDeck" });
+  expect(materials.every((material) => restored.state.cards.find((card) => card.uid === material.uid)?.location === "monsterZone")).toBe(true);
 
   const result = applyResponse(restored, action);
   expect(result.ok).toBe(true);
