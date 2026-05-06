@@ -1,0 +1,263 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handoff fixture", () => {
+  it("hands response priority to the opponent after both optional chain-created SEGOC buckets are declined and the turn player passes", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Double Optional Decline Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Turn Double Optional Decline Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Double Optional Decline Turn Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Double Optional Decline Opponent Mandatory", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Double Optional Decline Turn Optional", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Double Optional Decline Opponent Optional", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "700", name: "Double Optional Decline Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Opponent Double Optional Decline Quick", kind: "monster", attack: 1600, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc turn optional decline pass handoff fixture",
+      options: { seed: 306, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "500", "700"] },
+        1: { main: ["400", "600", "900", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-double-optional-decline-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 1, code: "900", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Double optional decline starter resolved",
+          },
+          {
+            id: "fixture-double-optional-decline-turn-mandatory",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Double optional decline turn mandatory should not resolve yet",
+          },
+          {
+            id: "fixture-double-optional-decline-opponent-mandatory",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Double optional decline opponent mandatory should not resolve yet",
+          },
+          {
+            id: "fixture-double-optional-decline-turn-optional",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Double optional decline turn optional should not resolve",
+          },
+          {
+            id: "fixture-double-optional-decline-opponent-optional",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            range: ["hand"],
+            logMessage: "Double optional decline opponent optional should not resolve",
+          },
+          {
+            id: "fixture-double-optional-decline-turn-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Double optional decline turn quick should not resolve",
+          },
+          {
+            id: "fixture-double-optional-decline-opponent-quick",
+            player: 1,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Double optional decline opponent quick should not resolve yet",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-double-optional-decline-starter" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-double-optional-decline-turn-mandatory" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-double-optional-decline-opponent-mandatory" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-double-optional-decline-turn-optional" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-double-optional-decline-opponent-optional" }), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent optional bucket active after the turn-player optional chain-created SEGOC trigger is declined",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-double-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-double-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            pendingTriggers: [{ player: 1, effectId: "fixture-double-optional-decline-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-double-optional-decline-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-double-optional-decline-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-double-optional-decline-opponent-optional", "opponentOptional", 1, 4),
+              triggerDeclineGroup(1, "fixture-double-optional-decline-opponent-optional", "opponentOptional", 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-double-optional-decline-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-double-optional-decline-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-double-optional-decline-turn-optional", triggerBucket: "turnOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-double-optional-decline-turn-quick", 4, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-double-optional-decline-opponent-quick", 4, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-double-optional-decline-turn-optional", "turnOptional", 4, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro opens turn-player chain-response priority after both optional chain-created SEGOC buckets are declined and the last selected trigger is the opponent mandatory trigger",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-double-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-double-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-double-optional-decline-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "fixture-double-optional-decline-turn-quick", 1, 5), chainPassGroup(0, 1, 5)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-double-optional-decline-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-double-optional-decline-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-double-optional-decline-opponent-quick", 5),
+              absentTriggerActivationGroup(1, "fixture-double-optional-decline-opponent-optional", "opponentOptional", 5, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+            logIncludes: ["Double optional decline starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro hands chain-response priority to the opponent after the turn player passes the post-decline response window",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-double-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-double-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-double-optional-decline-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-double-optional-decline-opponent-quick", 1, 6), chainPassGroup(1, 1, 6)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-double-optional-decline-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-double-optional-decline-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-double-optional-decline-turn-quick", 6),
+              absentTriggerActivationGroup(1, "fixture-double-optional-decline-opponent-optional", "opponentOptional", 6, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro keeps the double-declined chain-created SEGOC trigger chain pending after the turn player passes and the opponent has a chain response",
+        phase: "main1",
+        windowId: 6,
+        windowKind: "chainResponse",
+        waitingFor: 1,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [
+          { player: 0, effectId: "fixture-double-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+          { player: 1, effectId: "fixture-double-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+        ],
+        chainPasses: [0],
+        legalActionCounts: { 0: 0, 1: 2 },
+        legalActionGroupCounts: { 0: 0, 1: 2 },
+        legalActions: [
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-double-optional-decline-opponent-quick", count: 1 },
+          { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [chainEffectGroup(1, "fixture-double-optional-decline-opponent-quick", 1, 6), chainPassGroup(1, 1, 6)],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-double-optional-decline-turn-quick" },
+          { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-double-optional-decline-opponent-optional", triggerBucket: "opponentOptional" },
+        ],
+        absentLegalActionGroups: [
+          absentChainEffectGroup(0, "fixture-double-optional-decline-turn-quick", 6),
+          absentTriggerActivationGroup(1, "fixture-double-optional-decline-opponent-optional", "opponentOptional", 6, "triggerBucket"),
+        ],
+        locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+        logIncludes: ["Double optional decline starter resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
