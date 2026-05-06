@@ -503,6 +503,7 @@ describe("Lua trigger bucket helpers", () => {
     const turnMandatory = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(turnMandatory).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnMandatory" });
     const afterTurnMandatory = applyLuaRestoreAndAssert(restored, turnMandatory!);
+    expect(afterTurnMandatory.state).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
     expect(afterTurnMandatory.state.chain).toHaveLength(1);
     expect(afterTurnMandatory.state.pendingTriggers.map((trigger) => afterTurnMandatory.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["12400", "12200", "12500"]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
