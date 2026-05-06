@@ -294,11 +294,30 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
             logIncludes: ["fixture-final-decline-first-optional", "fixture-final-decline-second-optional"],
           },
         }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-final-decline-open-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the restored post-decline open fast effect after every same-bucket optional trigger is declined",
+            windowId: 4,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            triggerOrderPrompt: null,
+            chain: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-final-decline-first-optional" },
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-final-decline-second-optional" },
+            ],
+            logIncludes: ["Final decline open quick resolved"],
+          },
+        }),
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final state offers open fast effects after declining every same-bucket optional trigger",
-        windowId: 3,
+        note: "EDOPro final state returns to open priority after the post-decline open fast effect resolves",
+        windowId: 4,
         windowKind: "open",
         waitingFor: 0,
         pendingTriggers: [],
@@ -307,27 +326,11 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
         chain: [],
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
-        legalActions: [
-          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-final-decline-open-quick", count: 1 },
-          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
-          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
-        ],
-        legalActionGroups: [
-          {
-            player: 0,
-            label: "Effects",
-            windowId: 3,
-            windowKind: "open",
-            count: 1,
-            actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-final-decline-open-quick", count: 1 }],
-          },
-          turnGroup(3),
-        ],
         absentLegalActions: [
-          { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-final-decline-second-optional" },
-          { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-final-decline-second-optional" },
+          { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-final-decline-first-optional" },
+          { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-final-decline-second-optional" },
         ],
-        logIncludes: ["fixture-final-decline-first-optional", "fixture-final-decline-second-optional"],
+        logIncludes: ["Final decline open quick resolved"],
       },
     };
 
