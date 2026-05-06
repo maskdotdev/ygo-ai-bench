@@ -208,6 +208,7 @@ describe("Lua stale chain responses", () => {
     const restoredPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(restoredPass).toBeDefined();
     expect(restoredPass).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "chainResponse" });
+    expect(hasGroupedAction(restored, 1, "passChain")).toBe(true);
     const stalePreapply = applyLuaRestoreResponse(restored, stalePass!);
     expect(stalePreapply.ok).toBe(false);
     expect(stalePreapply.error).toContain("Response is not currently legal");
@@ -299,6 +300,7 @@ describe("Lua stale chain responses", () => {
     const restoredQuick = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
     expect(restoredQuick).toBeDefined();
     expect(restoredQuick).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "chainResponse" });
+    expect(hasGroupedAction(restored, 1, "activateEffect", restoredQuick!.effectId)).toBe(true);
     const stalePreapply = applyLuaRestoreResponse(restored, stalePass!);
     expect(stalePreapply.ok).toBe(false);
     expect(stalePreapply.error).toContain("Response is not currently legal");
@@ -317,6 +319,7 @@ describe("Lua stale chain responses", () => {
 
     const currentPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(currentPass).toBeDefined();
+    expect(hasGroupedAction(restored, 1, "passChain")).toBe(true);
     const currentPassResult = applyLuaRestoreAndAssert(restored, currentPass!);
     expect(currentPassResult.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(currentPassResult.state.chain).toEqual([]);
@@ -405,6 +408,7 @@ describe("Lua stale chain responses", () => {
     const restoredPass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(restoredPass).toBeDefined();
     expect(restoredPass).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "chainResponse" });
+    expect(hasGroupedAction(restored, 0, "passChain")).toBe(true);
     const staleBeforeRestoredPass = applyLuaRestoreResponse(restored, { ...restoredPass!, windowId: restoredPass!.windowId! - 1 });
     expect(staleBeforeRestoredPass.ok).toBe(false);
     expect(staleBeforeRestoredPass.error).toContain("Response is not currently legal");
@@ -460,6 +464,12 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function hasGroupedAction(restored: Parameters<typeof getLuaRestoreLegalActions>[0], player: 0 | 1, type: "activateEffect" | "passChain", effectId?: string): boolean {
+  return getLuaRestoreLegalActionGroups(restored, player).some((group) =>
+    group.actions.some((action) => action.type === type && (effectId === undefined || ("effectId" in action && action.effectId === effectId))),
+  );
 }
 
 function expectNoPublicTriggerWindow(session: ReturnType<typeof createDuel>): void {
