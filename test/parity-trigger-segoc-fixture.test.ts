@@ -719,4 +719,132 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
 
     expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
   });
+
+  it("returns opponent mandatory activations directly to open fast-effect priority when no chain response exists", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Summon Source", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Turn Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Opponent Mandatory", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Turn Open Quick After Mandatory", kind: "monster", attack: 500, defense: 500 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "opponent mandatory activation open fast SEGOC fixture",
+      options: { seed: 59, startingHandSize: 3 },
+      decks: {
+        0: { main: ["100", "300", "500"] },
+        1: { main: ["400", "100", "100"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-segoc-turn-mandatory-before-opponent-open",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            optional: false,
+            range: ["hand"],
+            logMessage: "SEGOC turn mandatory before opponent open resolved",
+          },
+          {
+            id: "fixture-segoc-opponent-mandatory-open",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            optional: false,
+            range: ["hand"],
+            logMessage: "SEGOC opponent mandatory open resolved",
+          },
+          {
+            id: "fixture-segoc-open-fast-after-opponent-mandatory",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "SEGOC open fast after opponent mandatory resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-segoc-turn-mandatory-before-opponent-open" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-segoc-opponent-mandatory-open" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves mandatory SEGOC trigger chains immediately when no legal chain response exists",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-mandatory", count: 1 },
+              { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-mandatory", count: 1 }],
+              },
+              turnGroup(3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-mandatory" },
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-mandatory-open" },
+            ],
+            logIncludes: ["SEGOC opponent mandatory open resolved", "SEGOC turn mandatory before opponent open resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state offers turn-player open fast effects after an unresponded mandatory SEGOC chain resolves",
+        windowId: 3,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        legalActionCounts: { 0: 3, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-mandatory", count: 1 },
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-mandatory", count: 1 }],
+          },
+          turnGroup(3),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-mandatory" },
+          { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-mandatory-open" },
+        ],
+        logIncludes: ["SEGOC opponent mandatory open resolved", "SEGOC turn mandatory before opponent open resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
 });
