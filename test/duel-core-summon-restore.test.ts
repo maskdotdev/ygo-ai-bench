@@ -10,17 +10,21 @@ function expectRestoredOpenAction(restored: ReturnType<typeof restoreDuel>, acti
   expect(action).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
 }
 
+function assertRestoreLegalWindow(restored: ReturnType<typeof restoreDuel>, response: ReturnType<typeof applyResponse>, player: 0 | 1): void {
+  const windowId = restored.state.actionWindowId;
+  expect(response.state.actionWindowId).toBe(windowId);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored, player));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, player));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
+  for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
 function expectStaleRestoredResponseRejected(restored: ReturnType<typeof restoreDuel>, action: NonNullable<Parameters<typeof applyResponse>[1]>): void {
   const staleResult = applyResponse(restored, action);
-  const windowId = restored.state.actionWindowId;
   expect(staleResult.ok).toBe(false);
   expect(staleResult.error).toContain("Response is not currently legal");
-  expect(staleResult.state.actionWindowId).toBe(windowId);
-  expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, staleResult.state.waitingFor!));
-  expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, staleResult.state.waitingFor!));
-  expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
-  for (const legalAction of staleResult.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: staleResult.state.windowKind });
-  for (const group of staleResult.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: staleResult.state.windowKind });
+  assertRestoreLegalWindow(restored, staleResult, staleResult.state.waitingFor!);
 }
 
 describe("core summon restore", () => {
@@ -45,7 +49,7 @@ describe("core summon restore", () => {
     expect(staleBeforeSummon.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
-    expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforeSummon, 0);
     expect(restored.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "hand" });
     expect(restored.state.players[0].normalSummonAvailable).toBe(true);
 
@@ -56,7 +60,7 @@ describe("core summon restore", () => {
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    assertRestoreLegalWindow(restored, result, result.state.waitingFor!);
     expectStaleRestoredResponseRejected(restored, action!);
   });
 
@@ -87,7 +91,7 @@ describe("core summon restore", () => {
     expect(staleBeforeSummon.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
-    expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforeSummon, 0);
     expect(restored.state.cards.find((card) => card.uid === tribute!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.state.cards.find((card) => card.uid === tributeMonster!.uid)).toMatchObject({ location: "hand" });
     expect(restored.state.players[0].normalSummonAvailable).toBe(true);
@@ -100,7 +104,7 @@ describe("core summon restore", () => {
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    assertRestoreLegalWindow(restored, result, result.state.waitingFor!);
     expectStaleRestoredResponseRejected(restored, action);
   });
 
@@ -128,7 +132,7 @@ describe("core summon restore", () => {
     expect(staleBeforeSummon.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
-    expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforeSummon, 0);
     expect(restored.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
 
     const result = applyResponse(restored, action!);
@@ -137,7 +141,7 @@ describe("core summon restore", () => {
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    assertRestoreLegalWindow(restored, result, result.state.waitingFor!);
     expectStaleRestoredResponseRejected(restored, action!);
   });
 
@@ -169,7 +173,7 @@ describe("core summon restore", () => {
     expect(staleBeforeSummon.state.actionWindowId).toBe(restored.state.actionWindowId);
     expect(staleBeforeSummon.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleBeforeSummon.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
-    expect(staleBeforeSummon.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSummon.legalActions);
+    assertRestoreLegalWindow(restored, staleBeforeSummon, 0);
     expect(restored.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "hand" });
     expect(action.materialUids.every((uid) => restored.state.cards.find((card) => card.uid === uid)?.location === "hand")).toBe(true);
 
@@ -181,7 +185,7 @@ describe("core summon restore", () => {
     expect(result.state.waitingFor).toBeDefined();
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
-    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    assertRestoreLegalWindow(restored, result, result.state.waitingFor!);
     expectStaleRestoredResponseRejected(restored, action);
 
     const restoredTriggerWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), {
@@ -197,7 +201,7 @@ describe("core summon restore", () => {
     expect(triggerResult.state.log.some((entry) => entry.detail === "Restored Ritual success watcher resolved")).toBe(true);
     expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, triggerResult.state.waitingFor!));
     expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, triggerResult.state.waitingFor!));
-    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    assertRestoreLegalWindow(restoredTriggerWindow, triggerResult, triggerResult.state.waitingFor!);
     expectStaleRestoredResponseRejected(restoredTriggerWindow, trigger!);
   });
 });
