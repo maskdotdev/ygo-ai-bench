@@ -77,6 +77,9 @@ describe("pendulum restore", () => {
       "restore-pendulum-success-watcher": restoreSummonSuccessWatcher("Restored Pendulum success watcher resolved"),
     });
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
     const action = getDuelLegalActions(restored, 0).find((candidateAction) => candidateAction.type === "pendulumSummon" && candidateAction.summonUids.includes(candidate!.uid));
     expect(action).toMatchObject({ type: "pendulumSummon", summonUids: [handCandidate!.uid, candidate!.uid], windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
     if (!action || action.type !== "pendulumSummon") throw new Error("Expected restored Pendulum Summon action");
