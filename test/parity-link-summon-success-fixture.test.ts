@@ -127,6 +127,21 @@ describe("EDOPro parity Link Summon success fixtures", () => {
             windowKind: "open",
             waitingFor: 0,
             pendingTriggers: [],
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "normalSummon", player: 0, code: "300", location: "hand", windowId: 2, windowKind: "open", count: 1 },
+              { type: "setMonster", player: 0, code: "300", location: "hand", windowId: 2, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+              ], 1, 2),
+              turnGroup(2),
+            ],
             logIncludes: ["Fixture Link summon success watcher resolved"],
           },
         }),
