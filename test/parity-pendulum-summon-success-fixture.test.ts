@@ -124,7 +124,7 @@ describe("EDOPro parity Pendulum Summon success fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-pendulum-success-watcher" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the Special Summon success trigger after the Pendulum Summon",

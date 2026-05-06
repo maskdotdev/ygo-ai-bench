@@ -109,7 +109,7 @@ describe("EDOPro parity Flip Summon success fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-flip-success-watcher" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the Flip Summon success trigger after the flipped monster is face-up on the field",
