@@ -3,6 +3,11 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions 
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
+function expectCurrentWindowMetadata(session: ReturnType<typeof restoreDuel>, response: ReturnType<typeof applyResponse>): void {
+  for (const action of response.legalActions) expect(action).toMatchObject({ windowId: session.state.actionWindowId, windowKind: response.state.windowKind });
+  for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId: session.state.actionWindowId, windowKind: response.state.windowKind });
+}
+
 describe("phase action restore", () => {
   it("restores phase change legal actions and applies the restored action", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -27,6 +32,7 @@ describe("phase action restore", () => {
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expectCurrentWindowMetadata(restored, staleResult);
     expect(restored.state.phase).toBe("main1");
     expect(restored.state.log.some((entry) => entry.action === "phase" && entry.detail === "Moved to battle")).toBe(false);
 
@@ -45,6 +51,7 @@ describe("phase action restore", () => {
     expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(staleReplay.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleReplay.legalActions);
+    expectCurrentWindowMetadata(restored, staleReplay);
   });
 
   it("restores end turn legal actions and applies the restored action", () => {
@@ -70,6 +77,7 @@ describe("phase action restore", () => {
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expectCurrentWindowMetadata(restored, staleResult);
     expect(restored.state.turnPlayer).toBe(0);
     expect(restored.state.turn).toBe(1);
     expect(restored.state.phase).toBe("main1");
@@ -92,5 +100,6 @@ describe("phase action restore", () => {
     expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(staleReplay.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleReplay.legalActions);
+    expectCurrentWindowMetadata(restored, staleReplay);
   });
 });

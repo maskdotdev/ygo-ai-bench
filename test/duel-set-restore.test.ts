@@ -3,6 +3,11 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions 
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
+function expectCurrentWindowMetadata(session: ReturnType<typeof restoreDuel>, response: ReturnType<typeof applyResponse>): void {
+  for (const action of response.legalActions) expect(action).toMatchObject({ windowId: session.state.actionWindowId, windowKind: response.state.windowKind });
+  for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId: session.state.actionWindowId, windowKind: response.state.windowKind });
+}
+
 describe("set action restore", () => {
   it("restores monster set legal actions and applies the restored action", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -29,6 +34,7 @@ describe("set action restore", () => {
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expectCurrentWindowMetadata(restored, staleResult);
     expect(restored.state.cards.find((card) => card.uid === monster!.uid)).toMatchObject({ location: "hand" });
     expect(restored.state.log.some((entry) => entry.action === "setMonster" && entry.card === "Normal Test Monster")).toBe(false);
 
@@ -48,6 +54,7 @@ describe("set action restore", () => {
     expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(staleReplay.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleReplay.legalActions);
+    expectCurrentWindowMetadata(restored, staleReplay);
   });
 
   it("restores spell/trap set legal actions and applies the restored action", () => {
@@ -75,6 +82,7 @@ describe("set action restore", () => {
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expectCurrentWindowMetadata(restored, staleResult);
     expect(restored.state.cards.find((card) => card.uid === spell!.uid)).toMatchObject({ location: "hand" });
     expect(restored.state.log.some((entry) => entry.action === "set" && entry.card === "Test Spell")).toBe(false);
 
@@ -93,5 +101,6 @@ describe("set action restore", () => {
     expect(staleReplay.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(staleReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(staleReplay.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleReplay.legalActions);
+    expectCurrentWindowMetadata(restored, staleReplay);
   });
 });
