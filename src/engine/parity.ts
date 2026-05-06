@@ -485,9 +485,17 @@ function matchesPendingTriggerBucket(actual: PendingTriggerBucketState | undefin
 }
 
 function resolveScriptedStep(step: ScriptedStepResponse, legal: DuelAction[], cards: { uid: string; code: string; location: DuelLocation }[]): DuelAction | undefined {
-  if (isConcreteResponse(step) && legal.some((action) => sameAction(action, step))) return step;
+  if (isConcreteResponse(step)) {
+    const action = legal.find((candidate) => sameAction(candidate, step));
+    if (action) return withMatchedWindowStamp(step, action);
+  }
   const selector = step as ScriptedResponseSelector;
   return selectDuelActionBySelector(legal, selector, cards);
+}
+
+function withMatchedWindowStamp(step: DuelAction, action: DuelAction): DuelAction {
+  if (action.windowToken === undefined) return step;
+  return { ...step, windowId: action.windowId, windowKind: action.windowKind, windowToken: action.windowToken } as DuelAction;
 }
 
 function isConcreteResponse(step: ScriptedStepResponse): step is DuelAction {

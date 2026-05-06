@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, canSpecialSummonDuelCard, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, canSpecialSummonDuelCard, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelCardData } from "#duel/types.js";
+import type { DuelCardData, DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("pendulum restore", () => {
@@ -37,10 +37,11 @@ describe("pendulum restore", () => {
       { code: "100", name: "Low Restore Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1 },
       { code: "200", name: "High Restore Scale", kind: "monster", typeFlags: 0x1000001, level: 4, leftScale: 8, rightScale: 8 },
       { code: "300", name: "Restored Extra Pendulum", kind: "monster", typeFlags: 0x1000001, level: 4 },
+      { code: "400", name: "Restored Pendulum Watcher", kind: "monster", level: 4 },
     ];
-    const session = createDuel({ seed: 252, startingHandSize: 3, cardReader: createCardReader(pendulumCards) });
+    const session = createDuel({ seed: 252, startingHandSize: 4, cardReader: createCardReader(pendulumCards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300"] },
+      0: { main: ["100", "200", "300", "400"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -48,15 +49,20 @@ describe("pendulum restore", () => {
     const low = session.state.cards.find((card) => card.code === "100");
     const high = session.state.cards.find((card) => card.code === "200");
     const candidate = session.state.cards.find((card) => card.code === "300");
+    const watcher = session.state.cards.find((card) => card.code === "400");
     expect(low).toBeDefined();
     expect(high).toBeDefined();
     expect(candidate).toBeDefined();
+    expect(watcher).toBeDefined();
     moveDuelCard(session.state, low!.uid, "spellTrapZone", 0);
     moveDuelCard(session.state, high!.uid, "spellTrapZone", 0);
     moveDuelCard(session.state, candidate!.uid, "monsterZone", 0);
     moveDuelCard(session.state, candidate!.uid, "extraDeck", 0);
+    registerEffect(session, summonSuccessWatcher("restore-pendulum-success-watcher", watcher!.uid, "Restored Pendulum success watcher resolved"));
 
-    const restored = restoreDuel(serializeDuel(session), createCardReader(pendulumCards));
+    const restored = restoreDuel(serializeDuel(session), createCardReader(pendulumCards), {
+      "restore-pendulum-success-watcher": restoreSummonSuccessWatcher("Restored Pendulum success watcher resolved"),
+    });
     expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
     const action = getDuelLegalActions(restored, 0).find((candidateAction) => candidateAction.type === "pendulumSummon" && candidateAction.summonUids.includes(candidate!.uid));
     expect(action).toMatchObject({ type: "pendulumSummon", summonUids: [candidate!.uid], windowId: queryPublicState(restored).actionWindowId, windowKind: "open" });
@@ -76,6 +82,7 @@ describe("pendulum restore", () => {
     expect(result.ok).toBe(true);
     expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", summonType: "pendulum", faceUp: true });
     expect(restored.state.players[0].pendulumSummonAvailable).toBe(false);
+    expect(result.state.pendingTriggers).toEqual([expect.objectContaining({ effectId: "restore-pendulum-success-watcher", eventName: "specialSummoned", eventCardUid: candidate!.uid })]);
     expect(result.legalActions).toEqual(getDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, result.state.waitingFor!));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
@@ -86,5 +93,51 @@ describe("pendulum restore", () => {
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, staleResult.state.waitingFor!));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, staleResult.state.waitingFor!));
     expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+
+    const restoredTriggerWindow = restoreDuel(serializeDuel(restored), createCardReader(pendulumCards), {
+      "restore-pendulum-success-watcher": restoreSummonSuccessWatcher("Restored Pendulum success watcher resolved"),
+    });
+    expect(restoredTriggerWindow.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
+    expect(restoredTriggerWindow.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", summonType: "pendulum", faceUp: true });
+    const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidateAction) => candidateAction.type === "activateTrigger" && candidateAction.effectId === "restore-pendulum-success-watcher");
+    expect(trigger).toBeDefined();
+    const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
+    expect(triggerResult.ok, triggerResult.error).toBe(true);
+    expect(triggerResult.state.pendingTriggers).toEqual([]);
+    expect(triggerResult.state.log.some((entry) => entry.detail === "Restored Pendulum success watcher resolved")).toBe(true);
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, triggerResult.state.waitingFor!));
+    expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
+    const staleTrigger = applyResponse(restoredTriggerWindow, trigger!);
+    expect(staleTrigger.ok).toBe(false);
+    expect(staleTrigger.error).toContain("Response is not currently legal");
+    expect(staleTrigger.state.actionWindowId).toBe(restoredTriggerWindow.state.actionWindowId);
+    expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, staleTrigger.state.waitingFor!));
+    expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, staleTrigger.state.waitingFor!));
+    expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
   });
 });
+
+function summonSuccessWatcher(id: string, sourceUid: string, detail: string): DuelEffectDefinition {
+  return {
+    id,
+    registryKey: id,
+    sourceUid,
+    controller: 0,
+    event: "trigger",
+    triggerEvent: "specialSummoned",
+    range: ["hand"],
+    operation(ctx) {
+      ctx.log(detail);
+    },
+  };
+}
+
+function restoreSummonSuccessWatcher(detail: string): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...effect,
+    operation(ctx) {
+      ctx.log(detail);
+    },
+  });
+}
