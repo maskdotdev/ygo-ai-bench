@@ -634,6 +634,7 @@ function assertFinalOpenRestore(
   expect(publicState).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggerBuckets: [] });
   expect(publicState).not.toHaveProperty("triggerOrderPrompt");
   expect(restored.state).toMatchObject({ chain: [], pendingTriggers: [] });
+  expect(restored.state.chainPasses).toEqual([]);
   expect(actionsWithoutWindowToken(getDuelLegalActions(restored, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(session, 0)));
   expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restored, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(session, 0)));
   expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
