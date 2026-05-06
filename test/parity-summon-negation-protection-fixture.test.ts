@@ -54,7 +54,7 @@ describe("EDOPro parity summon negation protection fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro still opens summon-negation response timing for Normal Summons protected by EFFECT_CANNOT_DISABLE_SUMMON",
@@ -70,7 +70,7 @@ describe("EDOPro parity summon negation protection fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-blocked-summon-negator" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps the Normal Summon success trigger when EFFECT_CANNOT_DISABLE_SUMMON prevents summon negation",

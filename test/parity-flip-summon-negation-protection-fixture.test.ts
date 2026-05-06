@@ -55,7 +55,7 @@ describe("EDOPro parity flip summon negation protection fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("flipSummon", 0, { code: "100", location: "monsterZone" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro still opens flip-summon-negation response timing for Flip Summons protected by EFFECT_CANNOT_DISABLE_FLIP_SUMMON",
@@ -71,7 +71,7 @@ describe("EDOPro parity flip summon negation protection fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-blocked-flip-summon-negator" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps the Flip Summon success trigger when EFFECT_CANNOT_DISABLE_FLIP_SUMMON prevents summon negation",
