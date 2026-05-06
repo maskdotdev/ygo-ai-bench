@@ -212,6 +212,8 @@ describe("Lua attack negation helpers", () => {
     expect(attack).toBeDefined();
     applyAndAssert(session, attack!);
     expect(getDuelLegalActions(session, 1).some((action) => action.type === "activateEffect")).toBe(true);
+    const originalAttackPass = getDuelLegalActions(session, 1).find((action) => action.type === "passAttack");
+    expect(originalAttackPass).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
@@ -222,6 +224,9 @@ describe("Lua attack negation helpers", () => {
     const staleAttackPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passAttack");
     expect(negate).toBeDefined();
     expect(staleAttackPass).toBeDefined();
+    const originalPassPreapply = applyLuaRestoreResponse(restored, originalAttackPass!);
+    expect(originalPassPreapply.ok).toBe(false);
+    expect(originalPassPreapply.error).toContain("Response is not currently legal");
     expectLuaRestoreStalePreapply(restored, negate!, 1);
     const result = applyLuaRestoreAndAssert(restored, negate!);
 
@@ -324,7 +329,9 @@ describe("Lua attack negation helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expectLuaRestoreStalePreapply(restored, pass!, 1);
-    const result = applyLuaRestoreAndAssert(restored, pass!);
+    const restoredPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(restoredPass).toBeDefined();
+    const result = applyLuaRestoreAndAssert(restored, restoredPass!);
 
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "attackNegationResponse", responsePlayer: 1 } });
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passAttack", player: 1, windowKind: "battle" })]));
@@ -422,7 +429,9 @@ describe("Lua attack negation helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expectLuaRestoreStalePreapply(restored, pass!, 1);
-    const result = applyLuaRestoreAndAssert(restored, pass!);
+    const restoredPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(restoredPass).toBeDefined();
+    const result = applyLuaRestoreAndAssert(restored, restoredPass!);
 
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
@@ -521,7 +530,9 @@ describe("Lua attack negation helpers", () => {
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expectLuaRestoreStalePreapply(restored, pass!, 1);
-    const result = applyLuaRestoreAndAssert(restored, pass!);
+    const restoredPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(restoredPass).toBeDefined();
+    const result = applyLuaRestoreAndAssert(restored, restoredPass!);
 
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 1 } });
     expect(result.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
