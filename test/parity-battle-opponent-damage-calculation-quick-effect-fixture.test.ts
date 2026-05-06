@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup, effectGroup, passDamageGroup } from "./parity-legal-action-group-helpers.js";
+import { absentAttackGroup, effectGroup, passDamageGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures", () => {
   it("offers opponent damage-calculation quick effects during damage calculation", () => {
@@ -103,6 +103,13 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
             lifePoints: { 1: 6200 },
             battleDamage: { 1: 1800 },
             attacksDeclared: ["p0-deck-100-0"],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 15, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 15, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(15)],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 15, windowKind: "open" }],
             absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, undefined, 15)],
             logIncludes: ["Fixture opponent damage-calculation quick resolved", "Direct attack"],
@@ -121,6 +128,13 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
         lifePoints: { 1: 6200 },
         battleDamage: { 1: 1800 },
         attacksDeclared: ["p0-deck-100-0"],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 15, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 15, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(15)],
         absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 15, windowKind: "open" }],
         absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, undefined, 15)],
         logIncludes: ["Fixture opponent damage-calculation quick resolved", "Direct attack"],
