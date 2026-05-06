@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelEffectDefinition } from "#duel/types.js";
+import type { DuelEffectDefinition, DuelResponse } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("trigger order prompt restore", () => {
@@ -36,6 +36,7 @@ describe("trigger order prompt restore", () => {
 
     const decline = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-order-first-optional");
     expect(decline).toBeDefined();
+    assertStalePreviousWindow(restored, decline!, 0);
     const declined = applyAndAssert(restored, decline!);
     expect(declined.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
     expect(declined.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-optional"]);
@@ -98,6 +99,7 @@ describe("trigger order prompt restore", () => {
 
     const activation = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-activation");
     expect(activation).toBeDefined();
+    assertStalePreviousWindow(restored, activation!, 0);
     const activated = applyAndAssert(restored, activation!);
     expect(activated.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
     expect(activated.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-after-activation"]);
@@ -158,6 +160,7 @@ describe("trigger order prompt restore", () => {
 
     const activation = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-mandatory");
     expect(activation).toBeDefined();
+    assertStalePreviousWindow(restored, activation!, 0);
     const activated = applyAndAssert(restored, activation!);
     expect(activated.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
     expect(activated.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-mandatory"]);
@@ -222,6 +225,7 @@ describe("trigger order prompt restore", () => {
 
     const opponentDecline = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "declineTrigger" && action.effectId === "restore-order-first-opponent");
     expect(opponentDecline).toBeDefined();
+    assertStalePreviousWindow(restoredOpponentBucket, opponentDecline!, 1);
     const declined = applyAndAssert(restoredOpponentBucket, opponentDecline!);
     expect(declined.state).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
     expect(declined.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-opponent"]);
@@ -291,6 +295,7 @@ describe("trigger order prompt restore", () => {
 
     const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-opponent-mandatory");
     expect(opponentActivation).toBeDefined();
+    assertStalePreviousWindow(restoredOpponentBucket, opponentActivation!, 1);
     const activated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
     expect(activated.state).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
     expect(activated.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-opponent-mandatory"]);
@@ -411,6 +416,13 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   assertLegalWindowMetadata(session, response, response.state.waitingFor!);
   return response;
+}
+
+function assertStalePreviousWindow(session: ReturnType<typeof createDuel>, action: DuelResponse, player: 0 | 1): void {
+  const stale = applyResponse(session, { ...action, windowId: action.windowId! - 1 });
+  expect(stale.ok).toBe(false);
+  expect(stale.error).toContain("Response is not currently legal");
+  assertLegalWindowMetadata(session, stale, player);
 }
 
 function assertLegalWindowMetadata(session: ReturnType<typeof createDuel>, response: ReturnType<typeof applyResponse>, player: 0 | 1) {
