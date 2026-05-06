@@ -175,6 +175,8 @@ function assertSnapshotRestore(
     const beforeGroups = JSON.stringify(getGroupedDuelLegalActions(session, player));
     const afterGroups = JSON.stringify(getGroupedDuelLegalActions(restored, player));
     if (afterGroups !== beforeGroups) failures.push({ fixture, message: `${context}: snapshot/restore changed player ${player} legal action groups` });
+    assertLegalActionSurface(session, player, (message) => failures.push({ fixture, message: `${context}: live ${message}` }));
+    assertLegalActionSurface(restored, player, (message) => failures.push({ fixture, message: `${context}: restored ${message}` }));
   }
   return failures.length === 0 ? restored : undefined;
 }
@@ -356,24 +358,33 @@ function assertLegalActionGroupCounts(session: DuelSession, expected: Partial<Re
 
 function assertLegalActionGroupsFlattenLegalActions(session: DuelSession, expected: ScriptedDuelWindowExpectation, fail: (message: string) => void): void {
   for (const player of expectedLegalActionPlayers(expected)) {
-    const legalActions = getLegalActions(session, player);
-    const groupedActions = getGroupedDuelLegalActions(session, player).flatMap((group) => group.actions);
-    if (JSON.stringify(groupedActions) !== JSON.stringify(legalActions)) fail(`Expected player ${player} legal action groups to flatten to legal actions`);
+    assertLegalActionSurface(session, player, fail);
   }
 }
 
 function assertLegalActionWindowStamps(session: DuelSession, expected: ScriptedDuelWindowExpectation, fail: (message: string) => void): void {
-  const windowKind = currentWindowKind(session);
   for (const player of expectedLegalActionPlayers(expected)) {
-    for (const action of getLegalActions(session, player)) {
-      if (action.windowId !== session.state.actionWindowId || action.windowKind !== windowKind) {
-        fail(`Expected player ${player} legal action ${action.type} to be stamped with window ${session.state.actionWindowId}/${windowKind ?? "none"}`);
-      }
+    assertLegalActionWindowStampsForPlayer(session, player, fail);
+  }
+}
+
+function assertLegalActionSurface(session: DuelSession, player: PlayerId, fail: (message: string) => void): void {
+  const legalActions = getLegalActions(session, player);
+  const groupedActions = getGroupedDuelLegalActions(session, player).flatMap((group) => group.actions);
+  if (JSON.stringify(groupedActions) !== JSON.stringify(legalActions)) fail(`Expected player ${player} legal action groups to flatten to legal actions`);
+  assertLegalActionWindowStampsForPlayer(session, player, fail);
+}
+
+function assertLegalActionWindowStampsForPlayer(session: DuelSession, player: PlayerId, fail: (message: string) => void): void {
+  const windowKind = currentWindowKind(session);
+  for (const action of getLegalActions(session, player)) {
+    if (action.windowId !== session.state.actionWindowId || action.windowKind !== windowKind) {
+      fail(`Expected player ${player} legal action ${action.type} to be stamped with window ${session.state.actionWindowId}/${windowKind ?? "none"}`);
     }
-    for (const group of getGroupedDuelLegalActions(session, player)) {
-      if (group.windowId !== session.state.actionWindowId || group.windowKind !== windowKind) {
-        fail(`Expected player ${player} legal action group ${group.label} to be stamped with window ${session.state.actionWindowId}/${windowKind ?? "none"}`);
-      }
+  }
+  for (const group of getGroupedDuelLegalActions(session, player)) {
+    if (group.windowId !== session.state.actionWindowId || group.windowKind !== windowKind) {
+      fail(`Expected player ${player} legal action group ${group.label} to be stamped with window ${session.state.actionWindowId}/${windowKind ?? "none"}`);
     }
   }
 }
