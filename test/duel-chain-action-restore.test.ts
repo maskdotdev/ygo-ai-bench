@@ -4,6 +4,11 @@ import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
+function expectCurrentWindowMetadata(session: ReturnType<typeof restoreDuel>, response: ReturnType<typeof applyResponse>): void {
+  for (const action of response.legalActions) expect(action).toMatchObject({ windowId: session.state.actionWindowId, windowKind: response.state.windowKind });
+  for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId: session.state.actionWindowId, windowKind: response.state.windowKind });
+}
+
 describe("chain action restore", () => {
   it("restores chain response legal actions and resolves the chain after a restored pass", () => {
     const { session, restored } = setupRestoredChainResponse("pass");
@@ -26,6 +31,7 @@ describe("chain action restore", () => {
     expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
     expect(staleBeforePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforePass.legalActions);
+    expectCurrentWindowMetadata(restored, staleBeforePass);
 
     const result = applyResponse(restored, pass!);
     expect(result.ok, result.error).toBe(true);
@@ -43,6 +49,7 @@ describe("chain action restore", () => {
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expectCurrentWindowMetadata(restored, staleResult);
   });
 
   it("restores chain response quick actions and rejects stale restored quick actions", () => {
@@ -64,6 +71,7 @@ describe("chain action restore", () => {
     expect(staleBeforeQuick.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleBeforeQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
     expect(staleBeforeQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeQuick.legalActions);
+    expectCurrentWindowMetadata(restored, staleBeforeQuick);
 
     const result = applyResponse(restored, quick!);
     expect(result.ok, result.error).toBe(true);
@@ -85,6 +93,7 @@ describe("chain action restore", () => {
     expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
     expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    expectCurrentWindowMetadata(restored, staleResult);
 
     const pass = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -95,6 +104,7 @@ describe("chain action restore", () => {
     expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
     expect(staleBeforePass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforePass.legalActions);
+    expectCurrentWindowMetadata(restored, staleBeforePass);
 
     const resolved = applyResponse(restored, pass!);
     expect(resolved.ok, resolved.error).toBe(true);
