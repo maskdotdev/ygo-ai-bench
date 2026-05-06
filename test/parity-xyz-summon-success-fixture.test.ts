@@ -120,7 +120,7 @@ describe("EDOPro parity Xyz Summon success fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-xyz-success-watcher" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the Special Summon success trigger after the Xyz monster reaches the field",

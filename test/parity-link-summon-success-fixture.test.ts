@@ -119,7 +119,7 @@ describe("EDOPro parity Link Summon success fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-link-success-watcher" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the Special Summon success trigger after the Link monster reaches the field",
