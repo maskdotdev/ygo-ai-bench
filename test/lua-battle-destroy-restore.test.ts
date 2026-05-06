@@ -77,6 +77,8 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+  expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+  expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
 
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
