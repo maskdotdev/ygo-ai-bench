@@ -146,6 +146,8 @@ describe("Lua chain negation lockout helpers", () => {
     const sourceAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === sourceCard!.uid);
     expect(sourceAction).toBeDefined();
     applyAndAssert(session, sourceAction!);
+    const originalNegator = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect");
+    expect(originalNegator).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -155,6 +157,10 @@ describe("Lua chain negation lockout helpers", () => {
 
     const negator = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect");
     expect(negator).toBeDefined();
+    const originalNegatorPreapply = applyLuaRestoreResponse(restored, originalNegator!);
+    expect(originalNegatorPreapply.ok).toBe(false);
+    expect(originalNegatorPreapply.error).toContain("Response is not currently legal");
+    expect(originalNegatorPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     applyLuaRestoreAndAssert(restored, negator!);
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
