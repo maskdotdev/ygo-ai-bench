@@ -54,6 +54,7 @@ describe("EDOPro parity Normal Summon open fast-effect fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [],
             chain: [],
+            chainPasses: [],
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
@@ -96,6 +97,7 @@ describe("EDOPro parity Normal Summon open fast-effect fixtures", () => {
         waitingFor: 0,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
         legalActions: [

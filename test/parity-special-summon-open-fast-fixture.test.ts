@@ -62,6 +62,7 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [],
             chain: [],
+            chainPasses: [],
             locations: { monsterZone: ["100"], hand: ["200", "300", "400", "400", "400"] },
             legalActionCounts: { 0: 7, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
@@ -115,6 +116,7 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
         waitingFor: 0,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 7, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
         legalActions: [
