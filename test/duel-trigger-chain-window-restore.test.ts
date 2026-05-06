@@ -74,6 +74,7 @@ describe("trigger chain-window restore", () => {
     expect(hasGroupedEffect(resolved.legalActionGroups, 1, "restore-opponent-chain-window-quick", "open")).toBe(false);
     const restoredAfterResolution = restoreDuel(serializeDuel(restoredChainWindow), createCardReader(cards), restoreRegistry());
     expect(queryPublicState(restoredAfterResolution)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredAfterResolution.state.chainPasses).toEqual([]);
     expect(actionsWithoutWindowToken(getDuelLegalActions(restoredAfterResolution, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(restoredChainWindow, 0)));
     expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredAfterResolution, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredChainWindow, 0)));
     expect(getDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
@@ -137,6 +138,7 @@ describe("trigger chain-window restore", () => {
     expect(resolved.state.log.some((entry) => entry.detail === "Restored decline second trigger should not resolve")).toBe(false);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored decline opponent chain-window quick resolved")).toBe(true);
     expect(hasGroupedEffect(resolved.legalActionGroups, 1, "restore-decline-opponent-chain-window-quick", "open")).toBe(false);
+    expect(restoredChainWindow.state.chainPasses).toEqual([]);
     assertStaleResponse(restoredChainWindow, pass!);
   });
 
@@ -210,6 +212,7 @@ describe("trigger chain-window restore", () => {
     expect(hasGroupedEffect(resolved.legalActionGroups, 1, "restore-opponent-mandatory-chain-window-quick", "open")).toBe(false);
     const restoredAfterResolution = restoreDuel(serializeDuel(restoredChainWindow), createCardReader(cards), restoreMandatoryRegistry());
     expect(queryPublicState(restoredAfterResolution)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredAfterResolution.state.chainPasses).toEqual([]);
     expect(actionsWithoutWindowToken(getDuelLegalActions(restoredAfterResolution, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(restoredChainWindow, 0)));
     expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredAfterResolution, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredChainWindow, 0)));
     expect(getDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
