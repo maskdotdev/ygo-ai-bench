@@ -239,6 +239,52 @@ describe("core summon restore", () => {
     assertRestoreLegalWindow(restored, staleFlip, 0);
   });
 
+  it("restores triggerless Ritual Summons to turn-player open fast-effect priority", () => {
+    const session = createDuel({ seed: 248, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "300", "500"] },
+      1: { main: ["400", "500", "500", "500"] },
+    });
+    startDuel(session);
+
+    const ritual = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const turnQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const opponentQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(ritual).toBeTruthy();
+    expect(turnQuick).toBeTruthy();
+    expect(opponentQuick).toBeTruthy();
+    registerEffect(session, openOnlyQuick("restore-ritual-open-turn-quick", turnQuick!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-ritual-open-opponent-quick", opponentQuick!.uid, 1));
+
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
+    expect(summon?.type).toBe("ritualSummon");
+    if (!summon || summon.type !== "ritualSummon") throw new Error("Expected Ritual Summon action");
+    const result = applyResponse(session, summon);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-ritual-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-ritual-open-turn-quick": restoreOpenOnlyQuick,
+      "restore-ritual-open-opponent-quick": restoreOpenOnlyQuick,
+    });
+    expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restored.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(summon.materialUids.every((uid) => restored.state.cards.find((card) => card.uid === uid)?.location === "graveyard")).toBe(true);
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-ritual-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-ritual-open-opponent-quick")).toBe(false);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "ritualSummon" && action.uid === ritual!.uid)).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+
+    const staleSummon = applyResponse(restored, summon);
+    expect(staleSummon.ok).toBe(false);
+    expect(staleSummon.error).toContain("Response is not currently legal");
+    assertRestoreLegalWindow(restored, staleSummon, 0);
+  });
+
   it("restores Normal Summon legal actions and applies the restored action", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
