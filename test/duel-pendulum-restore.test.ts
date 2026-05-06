@@ -112,6 +112,14 @@ describe("pendulum restore", () => {
     const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((candidateAction) => candidateAction.type === "activateTrigger" && candidateAction.effectId === "restore-pendulum-success-watcher");
     expect(trigger).toBeDefined();
     expectGroupedTrigger(restoredTriggerWindow, "restore-pendulum-success-watcher");
+    const staleBeforeTrigger = applyResponse(restoredTriggerWindow, { ...trigger!, windowId: trigger!.windowId! - 1 });
+    expect(staleBeforeTrigger.ok).toBe(false);
+    expect(staleBeforeTrigger.error).toContain("Response is not currently legal");
+    expect(staleBeforeTrigger.state.actionWindowId).toBe(restoredTriggerWindow.state.actionWindowId);
+    expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restoredTriggerWindow, 0));
+    expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow, 0));
+    assertRestoreLegalWindow(restoredTriggerWindow, staleBeforeTrigger, 0);
+
     const triggerResult = applyResponse(restoredTriggerWindow, trigger!);
     expect(triggerResult.ok, triggerResult.error).toBe(true);
     expect(triggerResult.state.pendingTriggers).toEqual([]);
