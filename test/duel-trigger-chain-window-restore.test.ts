@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelEffectDefinition } from "#duel/types.js";
+import type { DuelEffectDefinition, DuelResponse } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("trigger chain-window restore", () => {
@@ -63,6 +63,7 @@ describe("trigger chain-window restore", () => {
 
     const pass = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    assertStalePreviousWindow(restoredChainWindow, pass!);
     const resolved = applyAndAssert(restoredChainWindow, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
     expect(resolved.state.log.some((entry) => entry.detail === "Restored first trigger resolved")).toBe(true);
@@ -132,6 +133,7 @@ describe("trigger chain-window restore", () => {
 
     const pass = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    assertStalePreviousWindow(restoredChainWindow, pass!);
     const resolved = applyAndAssert(restoredChainWindow, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
     expect(resolved.state.log.some((entry) => entry.detail === "Restored first mandatory trigger resolved")).toBe(true);
@@ -229,6 +231,13 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
 
 function assertStaleResponse(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
   const stale = applyResponse(session, action);
+  expect(stale.ok).toBe(false);
+  expect(stale.error).toContain("Response is not currently legal");
+  assertLegalWindow(session, stale, stale.state.waitingFor!);
+}
+
+function assertStalePreviousWindow(session: ReturnType<typeof createDuel>, action: DuelResponse) {
+  const stale = applyResponse(session, { ...action, windowId: action.windowId! - 1 });
   expect(stale.ok).toBe(false);
   expect(stale.error).toContain("Response is not currently legal");
   assertLegalWindow(session, stale, stale.state.waitingFor!);
