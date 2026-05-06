@@ -79,6 +79,48 @@ describe("trigger chain-window restore", () => {
     assertStaleResponse(restoredChainWindow, pass!);
   });
 
+  it("restores fast-effect priority after declining a held optional sibling trigger", () => {
+    const session = createTriggerSession();
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const firstTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const secondTriggerSource = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    const opponentQuickSource = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(firstTriggerSource).toBeTruthy();
+    expect(secondTriggerSource).toBeTruthy();
+    expect(opponentQuickSource).toBeTruthy();
+    registerEffect(session, normalSummonTrigger("restore-decline-first-chain-window-trigger", firstTriggerSource!.uid, "Restored decline first trigger resolved"));
+    registerEffect(session, normalSummonTrigger("restore-decline-second-held-trigger", secondTriggerSource!.uid, "Restored decline second trigger should not resolve"));
+    registerEffect(session, chainOnlyQuickEffect("restore-decline-opponent-chain-window-quick", opponentQuickSource!.uid, 1, "Restored decline opponent chain-window quick resolved"));
+
+    applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid)!);
+    const restoredFirstBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreDeclineRegistry());
+    const firstTrigger = getDuelLegalActions(restoredFirstBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-decline-first-chain-window-trigger");
+    expect(firstTrigger).toBeDefined();
+    applyAndAssert(restoredFirstBucket, firstTrigger!);
+
+    const restoredHeldBucket = restoreDuel(serializeDuel(restoredFirstBucket), createCardReader(cards), restoreDeclineRegistry());
+    const heldDecline = getDuelLegalActions(restoredHeldBucket, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-decline-second-held-trigger");
+    expect(heldDecline).toBeDefined();
+    expect(hasGroupedTrigger(getGroupedDuelLegalActions(restoredHeldBucket, 0), 0, "restore-decline-second-held-trigger")).toBe(true);
+    const afterDecline = applyAndAssert(restoredHeldBucket, heldDecline!);
+    expect(afterDecline.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(afterDecline.state.chain.map((link) => link.effectId)).toEqual(["restore-decline-first-chain-window-trigger"]);
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredHeldBucket, 1), 1, "restore-decline-opponent-chain-window-quick", "chainResponse")).toBe(true);
+    assertStaleResponse(restoredHeldBucket, heldDecline!);
+
+    const restoredChainWindow = restoreDuel(serializeDuel(restoredHeldBucket), createCardReader(cards), restoreDeclineRegistry());
+    const pass = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    assertStalePreviousWindow(restoredChainWindow, pass!);
+    const resolved = applyAndAssert(restoredChainWindow, pass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored decline first trigger resolved")).toBe(true);
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored decline second trigger should not resolve")).toBe(false);
+    expect(hasGroupedEffect(resolved.legalActionGroups, 1, "restore-decline-opponent-chain-window-quick", "open")).toBe(false);
+    assertStaleResponse(restoredChainWindow, pass!);
+  });
+
   it("restores mandatory sibling triggers before exposing fast-effect priority", () => {
     const session = createTriggerSession();
     const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
@@ -217,6 +259,19 @@ function restoreMandatoryRegistry(): Record<string, (effect: Omit<DuelEffectDefi
     "restore-second-mandatory-held-trigger": restoreLoggedEffect("Restored second mandatory trigger resolved"),
     "restore-opponent-mandatory-chain-window-quick": (effect) => ({
       ...restoreLoggedEffect("Restored opponent mandatory chain-window quick resolved")(effect),
+      canActivate(ctx) {
+        return ctx.duel.chain.length > 0;
+      },
+    }),
+  };
+}
+
+function restoreDeclineRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
+  return {
+    "restore-decline-first-chain-window-trigger": restoreLoggedEffect("Restored decline first trigger resolved"),
+    "restore-decline-second-held-trigger": restoreLoggedEffect("Restored decline second trigger should not resolve"),
+    "restore-decline-opponent-chain-window-quick": (effect) => ({
+      ...restoreLoggedEffect("Restored decline opponent chain-window quick resolved")(effect),
       canActivate(ctx) {
         return ctx.duel.chain.length > 0;
       },
