@@ -177,8 +177,10 @@ describe("trigger order prompt restore", () => {
     const opponentDecline = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "declineTrigger" && action.effectId === "restore-order-first-opponent");
     expect(opponentDecline).toBeDefined();
     const declined = applyAndAssert(restoredOpponentBucket, opponentDecline!);
+    expect(declined.state).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
     expect(declined.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-opponent"]);
     expect(queryPublicState(restoredOpponentBucket).triggerOrderPrompt).toBeUndefined();
+    expect(getDuelLegalActions(restoredOpponentBucket, 1).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
     expect(getDuelLegalActions(restoredOpponentBucket, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
       "restore-order-second-opponent",
       "restore-order-second-opponent",
