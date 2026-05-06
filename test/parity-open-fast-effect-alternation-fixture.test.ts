@@ -86,7 +86,7 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "alternation-opponent-chain-quick" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro alternates chain response priority back to the turn player after the opponent adds a fast effect",
@@ -108,7 +108,7 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "alternation-turn-chain-quick" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro resolves the fast-effect chain when no legal opponent response remains",
