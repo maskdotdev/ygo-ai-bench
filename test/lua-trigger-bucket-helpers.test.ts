@@ -402,6 +402,14 @@ describe("Lua trigger bucket helpers", () => {
     const firstActivation = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === restored.session.state.pendingTriggers[0]?.effectId);
     expect(firstActivation).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnOptional" });
     const firstEffectId = restored.session.state.pendingTriggers[0]?.effectId;
+    const staleBeforeFirstActivation = applyLuaRestoreResponse(restored, { ...firstActivation!, windowId: firstActivation!.windowId! - 1 });
+    expect(staleBeforeFirstActivation.ok).toBe(false);
+    expect(staleBeforeFirstActivation.error).toContain("Response is not currently legal");
+    expect(staleBeforeFirstActivation.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeFirstActivation.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleBeforeFirstActivation.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleBeforeFirstActivation.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeFirstActivation.legalActions);
+
     const afterFirstActivation = applyLuaRestoreAndAssert(restored, firstActivation!);
     expect(afterFirstActivation.state.chain.map((link) => link.effectId)).toEqual([firstEffectId]);
     expect(afterFirstActivation.state.pendingTriggers.map((trigger) => afterFirstActivation.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["11300", "11400"]);
@@ -502,6 +510,14 @@ describe("Lua trigger bucket helpers", () => {
 
     const turnMandatory = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(turnMandatory).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnMandatory" });
+    const staleBeforeTurnMandatory = applyLuaRestoreResponse(restored, { ...turnMandatory!, windowId: turnMandatory!.windowId! - 1 });
+    expect(staleBeforeTurnMandatory.ok).toBe(false);
+    expect(staleBeforeTurnMandatory.error).toContain("Response is not currently legal");
+    expect(staleBeforeTurnMandatory.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeTurnMandatory.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleBeforeTurnMandatory.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleBeforeTurnMandatory.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTurnMandatory.legalActions);
+
     const afterTurnMandatory = applyLuaRestoreAndAssert(restored, turnMandatory!);
     expect(afterTurnMandatory.state).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
     expect(afterTurnMandatory.state.chain).toHaveLength(1);
