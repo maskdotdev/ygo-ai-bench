@@ -332,6 +332,13 @@ describe("duel trigger buckets", () => {
     expect(restored.state.waitingFor).toBe(0);
     expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restored-later-payload-trigger"]);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toEqual(["restored-later-payload-trigger"]);
+    const staleTurnPass = applyResponse(restored, turnPass!);
+    expect(staleTurnPass.ok).toBe(false);
+    expect(staleTurnPass.error).toContain("Response is not currently legal");
+    expect(staleTurnPass.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleTurnPass.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleTurnPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleTurnPass.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTurnPass.legalActions);
   });
 
   it("continues trigger selection when only trigger timing differs", () => {
