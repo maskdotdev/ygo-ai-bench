@@ -31,6 +31,8 @@ describe("trigger order prompt restore", () => {
       ["activateTrigger", "activateTrigger"],
       ["declineTrigger", "declineTrigger"],
     ]);
+    expect(hasGroupedTrigger(restored, 0, "restore-order-first-optional", "activateTrigger")).toBe(true);
+    expect(hasGroupedTrigger(restored, 0, "restore-order-first-optional", "declineTrigger")).toBe(true);
 
     const decline = getDuelLegalActions(restored, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-order-first-optional");
     expect(decline).toBeDefined();
@@ -54,6 +56,8 @@ describe("trigger order prompt restore", () => {
       "restore-order-second-optional",
       "restore-order-second-optional",
     ]);
+    expect(hasGroupedTrigger(restoredSingleTrigger, 0, "restore-order-second-optional", "activateTrigger")).toBe(true);
+    expect(hasGroupedTrigger(restoredSingleTrigger, 0, "restore-order-second-optional", "declineTrigger")).toBe(true);
     const staleDecline = applyResponse(restoredSingleTrigger, decline!);
     expect(staleDecline.ok).toBe(false);
     expect(staleDecline.error).toContain("Response is not currently legal");
@@ -89,6 +93,8 @@ describe("trigger order prompt restore", () => {
       ["activateTrigger", "activateTrigger"],
       ["declineTrigger", "declineTrigger"],
     ]);
+    expect(hasGroupedTrigger(restored, 0, "restore-order-first-activation", "activateTrigger")).toBe(true);
+    expect(hasGroupedTrigger(restored, 0, "restore-order-first-activation", "declineTrigger")).toBe(true);
 
     const activation = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-activation");
     expect(activation).toBeDefined();
@@ -113,6 +119,8 @@ describe("trigger order prompt restore", () => {
       "restore-order-second-after-activation",
       "restore-order-second-after-activation",
     ]);
+    expect(hasGroupedTrigger(restoredSingleTrigger, 0, "restore-order-second-after-activation", "activateTrigger")).toBe(true);
+    expect(hasGroupedTrigger(restoredSingleTrigger, 0, "restore-order-second-after-activation", "declineTrigger")).toBe(true);
     const staleActivation = applyResponse(restoredSingleTrigger, activation!);
     expect(staleActivation.ok).toBe(false);
     expect(staleActivation.error).toContain("Response is not currently legal");
@@ -146,6 +154,7 @@ describe("trigger order prompt restore", () => {
     expect(getDuelLegalActions(restored, 0).some((action) => action.type === "declineTrigger")).toBe(false);
     expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([prompt!.triggerIds]);
     expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.actions.map((action) => action.type))).toEqual([["activateTrigger", "activateTrigger"]]);
+    expect(hasGroupedTrigger(restored, 0, "restore-order-first-mandatory", "activateTrigger")).toBe(true);
 
     const activation = getDuelLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-mandatory");
     expect(activation).toBeDefined();
@@ -163,6 +172,7 @@ describe("trigger order prompt restore", () => {
     expect(getDuelLegalActions(restoredSingleTrigger, 0).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
     expect(getGroupedDuelLegalActions(restoredSingleTrigger, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([restoredSingleTrigger.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restoredSingleTrigger, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["restore-order-second-mandatory"]);
+    expect(hasGroupedTrigger(restoredSingleTrigger, 0, "restore-order-second-mandatory", "activateTrigger")).toBe(true);
     const staleActivation = applyResponse(restoredSingleTrigger, activation!);
     expect(staleActivation.ok).toBe(false);
     expect(staleActivation.error).toContain("Response is not currently legal");
@@ -207,6 +217,8 @@ describe("trigger order prompt restore", () => {
       ["activateTrigger", "activateTrigger"],
       ["declineTrigger", "declineTrigger"],
     ]);
+    expect(hasGroupedTrigger(restoredOpponentBucket, 1, "restore-order-first-opponent", "activateTrigger")).toBe(true);
+    expect(hasGroupedTrigger(restoredOpponentBucket, 1, "restore-order-first-opponent", "declineTrigger")).toBe(true);
 
     const opponentDecline = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "declineTrigger" && action.effectId === "restore-order-first-opponent");
     expect(opponentDecline).toBeDefined();
@@ -230,6 +242,8 @@ describe("trigger order prompt restore", () => {
       "restore-order-second-opponent",
       "restore-order-second-opponent",
     ]);
+    expect(hasGroupedTrigger(restoredSingleTrigger, 1, "restore-order-second-opponent", "activateTrigger")).toBe(true);
+    expect(hasGroupedTrigger(restoredSingleTrigger, 1, "restore-order-second-opponent", "declineTrigger")).toBe(true);
     const staleDecline = applyResponse(restoredSingleTrigger, opponentDecline!);
     expect(staleDecline.ok).toBe(false);
     expect(staleDecline.error).toContain("Response is not currently legal");
@@ -273,6 +287,7 @@ describe("trigger order prompt restore", () => {
     expect(getDuelLegalActions(restoredOpponentBucket, 1).some((action) => action.type === "declineTrigger")).toBe(false);
     expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => group.triggerBucket?.triggerIds)).toEqual([prompt!.triggerIds]);
     expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => group.actions.map((action) => action.type))).toEqual([["activateTrigger", "activateTrigger"]]);
+    expect(hasGroupedTrigger(restoredOpponentBucket, 1, "restore-order-first-opponent-mandatory", "activateTrigger")).toBe(true);
 
     const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-order-first-opponent-mandatory");
     expect(opponentActivation).toBeDefined();
@@ -290,6 +305,7 @@ describe("trigger order prompt restore", () => {
     expect(getDuelLegalActions(restoredSingleTrigger, 1).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
     expect(getGroupedDuelLegalActions(restoredSingleTrigger, 1).map((group) => group.triggerBucket?.triggerIds)).toEqual([restoredSingleTrigger.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restoredSingleTrigger, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["restore-order-second-opponent-mandatory"]);
+    expect(hasGroupedTrigger(restoredSingleTrigger, 1, "restore-order-second-opponent-mandatory", "activateTrigger")).toBe(true);
     const staleActivation = applyResponse(restoredSingleTrigger, opponentActivation!);
     expect(staleActivation.ok).toBe(false);
     expect(staleActivation.error).toContain("Response is not currently legal");
@@ -405,4 +421,20 @@ function assertLegalWindowMetadata(session: ReturnType<typeof createDuel>, respo
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   for (const legalAction of response.legalActions) expect(legalAction).toMatchObject({ windowId, windowKind: response.state.windowKind });
   for (const group of response.legalActionGroups) expect(group).toMatchObject({ windowId, windowKind: response.state.windowKind });
+}
+
+function hasGroupedTrigger(
+  session: ReturnType<typeof createDuel>,
+  player: 0 | 1,
+  effectId: string,
+  actionType: "activateTrigger" | "declineTrigger",
+): boolean {
+  return getGroupedDuelLegalActions(session, player).some(
+    (group) =>
+      group.windowId === session.state.actionWindowId &&
+      group.windowKind === "triggerBucket" &&
+      group.actions.some(
+        (action) => action.type === actionType && action.player === player && action.effectId === effectId && action.windowId === group.windowId && action.windowKind === "triggerBucket",
+      ),
+  );
 }
