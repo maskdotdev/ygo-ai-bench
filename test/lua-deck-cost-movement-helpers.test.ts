@@ -215,8 +215,8 @@ describe("Lua deck and cost movement helpers", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const scriptName = "discard-later-boundary-missed-timing.lua";
+    const script = `
       local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -259,9 +259,76 @@ describe("Lua deck and cost movement helpers", () => {
         Debug.Message("damage boundary resolved")
       end)
       damage_watcher:RegisterEffect(damage_effect)
-      `,
-      "discard-later-boundary-missed-timing.lua",
-    );
+      `;
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+              Duel.SendtoGrave(target, REASON_DISCARD+REASON_COST)
+              Duel.Damage(1, 100, REASON_EFFECT)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c200.lua") {
+          return `
+          c200={}
+          function c200.initial_effect(c)
+          end
+          `;
+        }
+        if (name === "c300.lua") {
+          return `
+          c300={}
+          function c300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_DISCARD)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("when discard resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c400.lua") {
+          return `
+          c400={}
+          function c400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_DISCARD)
+            e:SetProperty(EFFECT_FLAG_DELAY)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("if discard resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c500.lua") {
+          return `
+          c500={}
+          function c500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_DAMAGE)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("damage boundary resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const loaded = host.loadScript(script, scriptName);
     expect(loaded.ok, loaded.error).toBe(true);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
@@ -275,6 +342,15 @@ describe("Lua deck and cost movement helpers", () => {
       expect.arrayContaining([expect.objectContaining({ eventName: "discarded", eventCode: 1018 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
     );
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(restoredPendingEffectIds).not.toContain("lua-2-1018");
+    expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1018", "lua-4-1111"]));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
   });
 
   it("makes earlier Lua optional when triggers miss timing at draw boundaries", () => {
