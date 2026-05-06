@@ -607,6 +607,25 @@ describe("battle action restore", () => {
       "restore-after-damage-turn-quick": restoreDamageStepQuickEffect("Restored after damage turn quick resolved"),
       "restore-after-damage-opponent-chain-quick": restoreChainOnlyDamageStepQuickEffect("Restored after damage opponent chain quick resolved"),
     });
+    const restoredQuick = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-after-damage-turn-quick": restoreDamageStepQuickEffect("Restored after damage turn quick resolved"),
+      "restore-after-damage-opponent-chain-quick": restoreChainOnlyDamageStepQuickEffect("Restored after damage opponent chain quick resolved"),
+    });
+    const opponentQuick = getDuelLegalActions(restoredQuick, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-after-damage-opponent-chain-quick");
+    expect(opponentQuick).toBeDefined();
+    expect(opponentQuick).toMatchObject({ player: 1, windowKind: "chainResponse" });
+    expect(getDuelLegalActions(restoredQuick, 0)).toEqual([]);
+    const quickResult = applyAndAssert(restoredQuick, opponentQuick!);
+    expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "afterDamageCalculation", responsePlayer: 1 } });
+    expect(restoredQuick.state.chain).toHaveLength(0);
+    expect(restoredQuick.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
+    expect(quickResult.state.log.some((entry) => entry.detail === "Restored after damage turn quick resolved")).toBe(true);
+    expect(quickResult.state.log.some((entry) => entry.detail === "Restored after damage opponent chain quick resolved")).toBe(true);
+    expect(quickResult.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" })]));
+    expect(quickResult.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-after-damage-opponent-chain-quick")).toBe(false);
+    expect(getDuelLegalActions(restoredQuick, 0)).toEqual([]);
+    assertStaleResponse(restoredQuick, opponentQuick!);
+
     const result = applyAndAssert(restored, pass!);
 
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "afterDamageCalculation", responsePlayer: 1 } });
