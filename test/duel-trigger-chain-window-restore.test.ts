@@ -110,6 +110,20 @@ describe("trigger chain-window restore", () => {
     assertStaleResponse(restoredHeldBucket, heldDecline!);
 
     const restoredChainWindow = restoreDuel(serializeDuel(restoredHeldBucket), createCardReader(cards), restoreDeclineRegistry());
+    const opponentQuick = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-decline-opponent-chain-window-quick");
+    expect(opponentQuick).toBeDefined();
+    assertStalePreviousWindow(restoredChainWindow, opponentQuick!);
+    const afterOpponentQuick = applyAndAssert(restoredChainWindow, opponentQuick!);
+    expect(afterOpponentQuick.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(afterOpponentQuick.state.chain.map((link) => link.effectId)).toEqual([
+      "restore-decline-first-chain-window-trigger",
+      "restore-decline-opponent-chain-window-quick",
+    ]);
+    expect(afterOpponentQuick.state.log.some((entry) => entry.detail === "Restored decline first trigger resolved")).toBe(false);
+    expect(afterOpponentQuick.state.log.some((entry) => entry.detail === "Restored decline second trigger should not resolve")).toBe(false);
+    expect(afterOpponentQuick.state.log.some((entry) => entry.detail === "Restored decline opponent chain-window quick resolved")).toBe(false);
+    assertStaleResponse(restoredChainWindow, opponentQuick!);
+
     const pass = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     assertStalePreviousWindow(restoredChainWindow, pass!);
@@ -117,6 +131,7 @@ describe("trigger chain-window restore", () => {
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
     expect(resolved.state.log.some((entry) => entry.detail === "Restored decline first trigger resolved")).toBe(true);
     expect(resolved.state.log.some((entry) => entry.detail === "Restored decline second trigger should not resolve")).toBe(false);
+    expect(resolved.state.log.some((entry) => entry.detail === "Restored decline opponent chain-window quick resolved")).toBe(true);
     expect(hasGroupedEffect(resolved.legalActionGroups, 1, "restore-decline-opponent-chain-window-quick", "open")).toBe(false);
     assertStaleResponse(restoredChainWindow, pass!);
   });
