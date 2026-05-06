@@ -535,6 +535,16 @@ describe("Lua battle fast priority restore", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toMatchObject({ player: 0, windowKind: "triggerBucket" });
+    const staleBeforeTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
+    expect(staleBeforeTrigger.ok).toBe(false);
+    expect(staleBeforeTrigger.error).toContain("Response is not currently legal");
+    expect(staleBeforeTrigger.state.actionWindowId).toBe(restored.session.state.actionWindowId);
+    expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(staleBeforeTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeTrigger.legalActions);
+    expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["battleDamageDealt"]);
+    expect(restored.host.messages).toEqual([]);
+
     const triggerResult = applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toEqual(["restored cleanup battle damage 1/1800/32/6200"]);
     expect(restored.session.state.pendingTriggers).toEqual([]);
