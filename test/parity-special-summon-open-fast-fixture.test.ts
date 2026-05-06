@@ -108,6 +108,36 @@ describe("EDOPro parity Special Summon open fast-effect fixtures", () => {
         chain: [],
         legalActionCounts: { 0: 7, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "special-summon-turn-open-quick", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 1, windowKind: "open", code: "200", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 1, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 1, windowKind: "open", code: "200", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 1, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 1,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "special-summon-turn-open-quick", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "200", location: "hand" },
+            { type: "normalSummon", player: 0, code: "400", location: "hand" },
+            { type: "setMonster", player: 0, code: "200", location: "hand" },
+            { type: "setMonster", player: 0, code: "400", location: "hand" },
+          ], 1, 1),
+          turnGroup(1),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "special-summon-opponent-open-quick" },
+          { type: "specialSummonProcedure", player: 0, windowId: 1, windowKind: "open", effectId: "special-summon-procedure" },
+        ],
       },
     };
 

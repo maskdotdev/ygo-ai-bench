@@ -89,6 +89,26 @@ describe("EDOPro parity Normal Summon open fast-effect fixtures", () => {
         chain: [],
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "normal-summon-turn-open-quick", count: 1 },
+          { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 1,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "normal-summon-turn-open-quick", count: 1 }],
+          },
+          turnGroup(1),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "normal-summon-opponent-open-quick" },
+          { type: "normalSummon", player: 0, windowId: 1, windowKind: "open", code: "200", location: "hand" },
+        ],
       },
     };
 

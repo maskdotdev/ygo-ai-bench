@@ -79,6 +79,15 @@ describe("EDOPro parity phase open priority fixtures", () => {
         chain: [],
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(1)],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "phase-turn-open-quick" },
+          { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "phase-opponent-open-quick" },
+        ],
       },
     };
 
