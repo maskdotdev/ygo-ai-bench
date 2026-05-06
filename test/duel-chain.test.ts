@@ -119,7 +119,10 @@ describe("duel chains", () => {
     applyAndAssert(session, starterAction!);
     expect(session.state.effects.find((effect) => effect.id === "counted-reset-chain")).toMatchObject({ reset: { count: 1 } });
 
-    registerEffect(session, {
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.effects.find((effect) => effect.id === "counted-reset-chain")).toMatchObject({ reset: { count: 1 } });
+
+    registerEffect(restored, {
       id: "second-chain-starter",
       sourceUid: starter!.uid,
       controller: 0,
@@ -129,11 +132,11 @@ describe("duel chains", () => {
         ctx.log("Second reset chain counter");
       },
     });
-    const secondAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "second-chain-starter");
+    const secondAction = getDuelLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.effectId === "second-chain-starter");
     expect(secondAction).toBeTruthy();
-    applyAndAssert(session, secondAction!);
+    applyAndAssert(restored, secondAction!);
 
-    expect(session.state.effects.some((effect) => effect.id === "counted-reset-chain")).toBe(false);
+    expect(restored.state.effects.some((effect) => effect.id === "counted-reset-chain")).toBe(false);
   });
 
   it("clears effect count usage when reset-chain removes an effect", () => {
