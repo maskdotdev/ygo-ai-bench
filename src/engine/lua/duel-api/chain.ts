@@ -193,6 +193,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   const literalHandlerCode = literalHandlerCodePredicate(L, index, hostState);
   if (literalHandlerCode !== undefined) return `closure:handler-code:${literalHandlerCode}`;
   if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
+  const blockedEffectType = literalNotEffectTypePredicate(L, index, hostState);
+  if (blockedEffectType !== undefined) return `closure:not-effect-type:${blockedEffectType}`;
   const responsePlayer = capturedResponsePlayer(L, index);
   if (responsePlayer !== undefined) return `closure:response-player:${responsePlayer}`;
   const chainPlayer = capturedChainPlayer(L, index);
@@ -323,6 +325,18 @@ function hasNonEnvironmentUpvalues(L: unknown, index: number): boolean {
     lua.lua_pop(L, 1);
     if (name !== "_ENV") return true;
   }
+}
+
+function literalNotEffectTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  const match = snippet.match(/return\s+not\s+([A-Za-z_]\w*)\s*:\s*IsHasType\s*\(\s*([A-Za-z_]\w*|\d+)\s*\)/);
+  if (!effectParam || match?.[1] !== effectParam || !match[2]) return undefined;
+  const mask = match[2] === "EFFECT_TYPE_ACTIVATE" ? 0x10 : Number(match[2]);
+  return Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
 }
 
 function luaFunctionSourceSnippet(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
