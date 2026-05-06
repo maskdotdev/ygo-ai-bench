@@ -28,6 +28,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro SEGOC collects turn mandatory, opponent mandatory, turn optional, then opponent optional trigger buckets",
@@ -78,7 +79,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-turn-mandatory" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro passes priority to the opponent mandatory bucket after the turn player's mandatory trigger is placed on chain",
@@ -124,7 +125,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-opponent-mandatory" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro presents turn-player optional triggers before opponent optional triggers after mandatory buckets are consumed",
@@ -179,7 +180,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-turn-optional" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro presents opponent optional triggers only after the turn-player optional bucket is activated or declined",
