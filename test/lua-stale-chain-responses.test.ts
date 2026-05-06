@@ -396,6 +396,8 @@ describe("Lua stale chain responses", () => {
     expect(restoredPass).toBeDefined();
     expect(restoredPass).toMatchObject({ windowId: queryPublicState(restored.session).actionWindowId, windowKind: "chainResponse" });
     const restoredPassResult = applyLuaRestoreAndAssert(restored, restoredPass!);
+    expect(restoredPassResult.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(restoredPassResult.state.chain).toEqual([]);
 
     const staleRestoredPass = applyLuaRestoreResponse(restored, restoredPass!);
 
