@@ -76,6 +76,8 @@ describe("trigger chain-window restore", () => {
     expect(actionsWithoutWindowToken(getDuelLegalActions(restoredAfterResolution, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(restoredChainWindow, 0)));
     expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredAfterResolution, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredChainWindow, 0)));
     expect(getDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredAfterResolution, 1), 1, "restore-opponent-chain-window-quick", "open")).toBe(false);
     assertStaleResponse(restoredChainWindow, pass!);
   });
 
@@ -208,6 +210,8 @@ describe("trigger chain-window restore", () => {
     expect(actionsWithoutWindowToken(getDuelLegalActions(restoredAfterResolution, 0))).toEqual(actionsWithoutWindowToken(getDuelLegalActions(restoredChainWindow, 0)));
     expect(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredAfterResolution, 0))).toEqual(groupsWithoutWindowToken(getGroupedDuelLegalActions(restoredChainWindow, 0)));
     expect(getDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restoredAfterResolution, 1)).toEqual([]);
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredAfterResolution, 1), 1, "restore-opponent-mandatory-chain-window-quick", "open")).toBe(false);
     assertStaleResponse(restoredChainWindow, pass!);
   });
 });
