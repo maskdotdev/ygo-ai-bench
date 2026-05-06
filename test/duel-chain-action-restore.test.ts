@@ -151,6 +151,14 @@ describe("chain action restore", () => {
 
     const quick = getDuelLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-self-quick");
     expect(quick).toBeDefined();
+    const staleBeforeQuick = applyResponse(restored, { ...quick!, windowId: quick!.windowId! - 1 });
+    expect(staleBeforeQuick.ok).toBe(false);
+    expect(staleBeforeQuick.error).toContain("Response is not currently legal");
+    expect(staleBeforeQuick.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleBeforeQuick.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleBeforeQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(staleBeforeQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeQuick.legalActions);
+
     const chained = applyResponse(restored, quick!);
     expect(chained.ok, chained.error).toBe(true);
     expect(chained.legalActions).toEqual(getDuelLegalActions(restored, chained.state.waitingFor!));
