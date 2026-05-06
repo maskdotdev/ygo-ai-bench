@@ -121,6 +121,21 @@ describe("Lua battle-target events", () => {
 
     const trigger = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
+    expect(
+      getLuaRestoreLegalActionGroups(restored, 1).some(
+        (group) =>
+          group.windowId === restored.session.state.actionWindowId &&
+          group.windowKind === "triggerBucket" &&
+          group.actions.some(
+            (action) =>
+              action.type === "activateTrigger" &&
+              action.player === 1 &&
+              action.effectId === trigger!.effectId &&
+              action.windowId === restored.session.state.actionWindowId &&
+              action.windowKind === "triggerBucket",
+          ),
+      ),
+    ).toBe(true);
     expectLuaRestoreStalePreapply(restored, trigger!, 1);
     applyLuaRestoreAndAssert(restored, trigger!);
     drainRestoredChain(restored);
