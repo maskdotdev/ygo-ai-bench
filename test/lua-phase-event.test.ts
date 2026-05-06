@@ -296,10 +296,14 @@ describe("Lua phase events", () => {
 
     const quick = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect");
     expect(quick).toBeDefined();
-    applyLuaRestoreAndAssert(restored, quick!);
+    const quickResult = applyLuaRestoreAndAssert(restored, quick!);
+    expect(quickResult.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(restored.session.state.chain.map((link) => link.effectId)).toHaveLength(2);
     const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
-    applyLuaRestoreAndAssert(restored, pass!);
+    const resolved = applyLuaRestoreAndAssert(restored, pass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(restored.host.messages).toEqual(["restored phase chain quick", "restored phase chain trigger 512"]);
   });
 });
