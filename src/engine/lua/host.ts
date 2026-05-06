@@ -130,6 +130,8 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   if (handlerCode?.[1]) return { ...limit, allows: (effect) => sourceCode(hostState, effect.sourceUid) === handlerCode[1] };
   const blockedEffectType = predicate?.match(/^closure:not-effect-type:(\d+)$/);
   if (blockedEffectType?.[1]) return { ...limit, allows: (effect) => (effectTypeFlags(hostState, effect.id) & Number(blockedEffectType[1])) === 0 };
+  const blockedActiveType = predicate?.match(/^closure:not-active-type:(\d+)$/);
+  if (blockedActiveType?.[1]) return { ...limit, allows: (effect) => (sourceTypeFlags(hostState, effect.sourceUid) & Number(blockedActiveType[1])) === 0 };
   const responsePlayer = predicate?.match(/^closure:response-player:([01])$/);
   if (responsePlayer?.[1]) return { ...limit, allows: (_effect, player) => player === Number(responsePlayer[1]) };
   if (predicate === "closure:response-matches-chain-player") return { ...limit, allows: (_effect, player, activeChainPlayer) => player === activeChainPlayer };

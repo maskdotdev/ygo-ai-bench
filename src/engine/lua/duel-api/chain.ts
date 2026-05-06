@@ -195,6 +195,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
   const blockedEffectType = literalNotEffectTypePredicate(L, index, hostState);
   if (blockedEffectType !== undefined) return `closure:not-effect-type:${blockedEffectType}`;
+  const blockedActiveType = literalNotActiveTypePredicate(L, index, hostState);
+  if (blockedActiveType !== undefined) return `closure:not-active-type:${blockedActiveType}`;
   const responsePlayer = capturedResponsePlayer(L, index);
   if (responsePlayer !== undefined) return `closure:response-player:${responsePlayer}`;
   const chainPlayer = capturedChainPlayer(L, index);
@@ -337,6 +339,20 @@ function literalNotEffectTypePredicate(L: unknown, index: number, hostState: Lua
   if (!effectParam || match?.[1] !== effectParam || !match[2]) return undefined;
   const mask = match[2] === "EFFECT_TYPE_ACTIVATE" ? 0x10 : Number(match[2]);
   return Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
+}
+
+function literalNotActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  const match = snippet.match(/return\s+not\s+([A-Za-z_]\w*)\s*:\s*(IsMonsterEffect|IsSpellEffect|IsTrapEffect)\s*\(\s*\)/);
+  if (!effectParam || match?.[1] !== effectParam || !match[2]) return undefined;
+  if (match[2] === "IsMonsterEffect") return 0x1;
+  if (match[2] === "IsSpellEffect") return 0x2;
+  if (match[2] === "IsTrapEffect") return 0x4;
+  return undefined;
 }
 
 function luaFunctionSourceSnippet(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
