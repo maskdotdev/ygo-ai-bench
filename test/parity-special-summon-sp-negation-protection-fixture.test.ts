@@ -62,7 +62,7 @@ describe("EDOPro parity special summon sp-negation protection fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("specialSummonProcedure", 0, { code: "100", location: "hand", effectId: "fixture-inherent-sp-protected-special-summon" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro still opens summon-negation response timing for inherent Special Summons protected by EFFECT_CANNOT_DISABLE_SPSUMMON",
@@ -78,7 +78,7 @@ describe("EDOPro parity special summon sp-negation protection fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-blocked-sp-summon-negator" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps the Special Summon success trigger when EFFECT_CANNOT_DISABLE_SPSUMMON prevents summon negation",
