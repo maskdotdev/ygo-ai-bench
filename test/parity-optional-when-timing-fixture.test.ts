@@ -45,7 +45,7 @@ describe("EDOPro parity optional when timing fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-single-step-send" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps optional when triggers available when their triggering event is the last event",
@@ -84,7 +84,7 @@ describe("EDOPro parity optional when timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-optional-when" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
         }),
       ],
       expected: {
