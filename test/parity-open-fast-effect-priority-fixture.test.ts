@@ -43,6 +43,7 @@ describe("EDOPro parity open fast-effect priority fixtures", () => {
             windowKind: "open",
             waitingFor: 0,
             chain: [],
+            chainPasses: [],
             legalActionCounts: { 0: 6, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
@@ -83,6 +84,7 @@ describe("EDOPro parity open fast-effect priority fixtures", () => {
         windowKind: "open",
         waitingFor: 0,
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 6, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
         legalActions: [
@@ -222,6 +224,7 @@ describe("EDOPro parity open fast-effect priority fixtures", () => {
             windowKind: "open",
             waitingFor: 0,
             chain: [],
+            chainPasses: [],
             legalActionCounts: { 0: 6, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
@@ -263,6 +266,7 @@ describe("EDOPro parity open fast-effect priority fixtures", () => {
         waitingFor: 0,
         phase: "main1",
         chain: [],
+        chainPasses: [],
         legalActionCounts: { 0: 6, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
         legalActions: [
