@@ -1,6 +1,8 @@
 import type { ScriptedLegalActionExpectation, ScriptedLegalActionGroupExpectation } from "#duel/types.js";
 
 type AttackChoice = { attackerUid: string; targetUid?: string; directAttack?: true };
+type TriggerBucket = "turnMandatory" | "turnOptional" | "opponentMandatory" | "opponentOptional";
+type WindowKind = "open" | "triggerBucket" | "chainResponse";
 
 export const directAttackGroup = (player: 0 | 1, attackerUid: string, count = 1, windowId?: number) => ({
   player,
@@ -161,6 +163,33 @@ export const triggerActivationGroup = (player: 0 | 1, effectId: string, triggerB
   triggerBucket: { player, triggerBucket },
   count,
   actions: [{ type: "activateTrigger" as const, player, effectId, triggerBucket, ...(windowId === undefined ? {} : { windowId }), windowKind: "triggerBucket" as const, count }],
+});
+
+export const triggerDeclineGroup = (player: 0 | 1, effectId: string, triggerBucket: TriggerBucket, count = 1, windowId?: number) => ({
+  player,
+  label: "Trigger Declines",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "triggerBucket" as const,
+  triggerBucket: { player, triggerBucket },
+  count,
+  actions: [{ type: "declineTrigger" as const, player, effectId, triggerBucket, ...(windowId === undefined ? {} : { windowId }), windowKind: "triggerBucket" as const, count }],
+});
+
+export const absentTriggerActivationGroup = (player: 0 | 1, effectId: string, triggerBucket: TriggerBucket, windowId: number, windowKind: WindowKind) => ({
+  player,
+  label: "Trigger Activations",
+  windowId,
+  windowKind,
+  triggerBucket: { player, triggerBucket },
+  actions: [{ type: "activateTrigger" as const, player, windowId, windowKind, effectId, ...(windowKind === "triggerBucket" ? { triggerBucket } : {}) }],
+});
+
+export const absentWindowEffectGroup = (player: 0 | 1, effectId: string, windowId: number, windowKind: WindowKind) => ({
+  player,
+  label: "Effects",
+  windowId,
+  windowKind,
+  actions: [{ type: "activateEffect" as const, player, windowId, windowKind, effectId }],
 });
 
 export const absentEffectGroup = (player: 0 | 1, effectId: string, windowId?: number) => ({

@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity SEGOC trigger fixtures", () => {
   it("orders turn-player mandatory triggers before non-turn mandatory triggers", () => {
@@ -221,9 +229,17 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-segoc-turn-optional-decline", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-segoc-turn-optional-decline", triggerBucket: "turnOptional", count: 1 },
             ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-segoc-turn-optional-decline", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-segoc-turn-optional-decline", "turnOptional", 1, 1),
+            ],
             absentLegalActions: [
               { type: "activateTrigger", player: 1, effectId: "fixture-segoc-opponent-optional-decline", triggerBucket: "opponentOptional" },
               { type: "activateEffect", player: 0, effectId: "fixture-segoc-open-fast-after-opponent-decline" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(1, "fixture-segoc-opponent-optional-decline", "opponentOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "fixture-segoc-open-fast-after-opponent-decline", 1, "triggerBucket"),
             ],
           },
         }),
@@ -243,7 +259,12 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
               { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-optional-decline", triggerBucket: "opponentOptional", count: 1 },
               { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-optional-decline", triggerBucket: "opponentOptional", count: 1 },
             ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-segoc-opponent-optional-decline", "opponentOptional", 1, 2),
+              triggerDeclineGroup(1, "fixture-segoc-opponent-optional-decline", "opponentOptional", 1, 2),
+            ],
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-segoc-open-fast-after-opponent-decline" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(0, "fixture-segoc-open-fast-after-opponent-decline", 2, "triggerBucket")],
           },
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-segoc-opponent-optional-decline" }), {
@@ -279,6 +300,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
               { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-optional-decline" },
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-decline" },
             ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(1, "fixture-segoc-opponent-optional-decline", "opponentOptional", 3, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-segoc-open-fast-after-opponent-decline", 3, "open"),
+            ],
             logIncludes: ["fixture-segoc-turn-optional-decline", "fixture-segoc-opponent-optional-decline"],
           },
         }),
@@ -296,6 +321,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-optional-decline" },
               { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-optional-decline" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-segoc-turn-optional-decline", "turnOptional", 4, "open"),
+              absentTriggerActivationGroup(1, "fixture-segoc-opponent-optional-decline", "opponentOptional", 4, "open"),
             ],
             logIncludes: ["SEGOC open fast after opponent decline resolved"],
           },
@@ -315,6 +344,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
         absentLegalActions: [
           { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-optional-decline" },
           { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-optional-decline" },
+        ],
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "fixture-segoc-turn-optional-decline", "turnOptional", 4, "open"),
+          absentTriggerActivationGroup(1, "fixture-segoc-opponent-optional-decline", "opponentOptional", 4, "open"),
         ],
         logIncludes: ["SEGOC open fast after opponent decline resolved"],
       },
@@ -389,7 +422,12 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
               { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-optional-activation", triggerBucket: "opponentOptional", count: 1 },
               { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-optional-activation", triggerBucket: "opponentOptional", count: 1 },
             ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-segoc-opponent-optional-activation", "opponentOptional", 1, 2),
+              triggerDeclineGroup(1, "fixture-segoc-opponent-optional-activation", "opponentOptional", 1, 2),
+            ],
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-segoc-open-fast-after-opponent-activation" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(0, "fixture-segoc-open-fast-after-opponent-activation", 2, "triggerBucket")],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-segoc-opponent-optional-activation" }), {
@@ -425,6 +463,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
               { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-optional-activation" },
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-activation" },
             ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(1, "fixture-segoc-opponent-optional-activation", "opponentOptional", 3, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-segoc-open-fast-after-opponent-activation", 3, "open"),
+            ],
             logIncludes: ["fixture-segoc-turn-optional-before-opponent-activation", "SEGOC opponent optional activation resolved"],
           },
         }),
@@ -442,6 +484,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-optional-before-opponent-activation" },
               { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-optional-activation" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-segoc-turn-optional-before-opponent-activation", "turnOptional", 4, "open"),
+              absentTriggerActivationGroup(1, "fixture-segoc-opponent-optional-activation", "opponentOptional", 4, "open"),
             ],
             logIncludes: ["SEGOC open fast after opponent activation resolved"],
           },
@@ -461,6 +507,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
         absentLegalActions: [
           { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-optional-before-opponent-activation" },
           { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-optional-activation" },
+        ],
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "fixture-segoc-turn-optional-before-opponent-activation", "turnOptional", 4, "open"),
+          absentTriggerActivationGroup(1, "fixture-segoc-opponent-optional-activation", "opponentOptional", 4, "open"),
         ],
         logIncludes: ["SEGOC open fast after opponent activation resolved"],
       },
@@ -564,6 +614,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
               { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-chain-response" },
               { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-optional-chain" },
             ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-segoc-turn-chain-response", 4, "open"),
+              absentTriggerActivationGroup(1, "fixture-segoc-opponent-optional-chain", "opponentOptional", 4, "triggerBucket"),
+            ],
             logIncludes: ["SEGOC turn chain response resolved", "SEGOC opponent optional chain resolved"],
           },
         }),
@@ -588,6 +642,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-chain-response" },
           { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-optional-chain" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-segoc-turn-chain-response", 4, "open"),
+          absentTriggerActivationGroup(1, "fixture-segoc-opponent-optional-chain", "opponentOptional", 4, "triggerBucket"),
         ],
         logIncludes: ["SEGOC turn chain response resolved", "SEGOC opponent optional chain resolved"],
       },
@@ -696,6 +754,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
               { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-mandatory-chain-response" },
               { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-mandatory-chain" },
             ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-segoc-turn-mandatory-chain-response", 4, "open"),
+              absentTriggerActivationGroup(1, "fixture-segoc-opponent-mandatory-chain", "opponentMandatory", 4, "triggerBucket"),
+            ],
             logIncludes: ["SEGOC turn mandatory chain response resolved", "SEGOC opponent mandatory chain resolved", "SEGOC turn mandatory before opponent chain resolved"],
           },
         }),
@@ -720,6 +782,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-mandatory-chain-response" },
           { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-mandatory-chain" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-segoc-turn-mandatory-chain-response", 4, "open"),
+          absentTriggerActivationGroup(1, "fixture-segoc-opponent-mandatory-chain", "opponentMandatory", 4, "triggerBucket"),
         ],
         logIncludes: ["SEGOC turn mandatory chain response resolved", "SEGOC opponent mandatory chain resolved", "SEGOC turn mandatory before opponent chain resolved"],
       },
@@ -814,6 +880,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-mandatory" },
               { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-mandatory-open" },
             ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-segoc-open-fast-after-opponent-mandatory", 3, "open"),
+              absentTriggerActivationGroup(1, "fixture-segoc-opponent-mandatory-open", "opponentMandatory", 3, "triggerBucket"),
+            ],
             logIncludes: ["SEGOC opponent mandatory open resolved", "SEGOC turn mandatory before opponent open resolved"],
           },
         }),
@@ -831,6 +901,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-mandatory-before-opponent-open" },
               { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-mandatory-open" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-segoc-turn-mandatory-before-opponent-open", "turnMandatory", 4, "open"),
+              absentTriggerActivationGroup(1, "fixture-segoc-opponent-mandatory-open", "opponentMandatory", 4, "open"),
             ],
             logIncludes: ["SEGOC open fast after opponent mandatory resolved"],
           },
@@ -850,6 +924,10 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
         absentLegalActions: [
           { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-mandatory-before-opponent-open" },
           { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-mandatory-open" },
+        ],
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "fixture-segoc-turn-mandatory-before-opponent-open", "turnMandatory", 4, "open"),
+          absentTriggerActivationGroup(1, "fixture-segoc-opponent-mandatory-open", "opponentMandatory", 4, "open"),
         ],
         logIncludes: ["SEGOC open fast after opponent mandatory resolved"],
       },
