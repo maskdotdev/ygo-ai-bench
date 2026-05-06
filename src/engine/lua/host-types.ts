@@ -80,6 +80,7 @@ export interface LuaHostState {
   fusionMaterialUids: string[];
   scriptSource: LuaScriptSource | undefined;
   loadedScripts: Set<string>;
+  loadedScriptBodies: Map<string, string>;
   currentScriptCardCode: string | undefined;
   pushEffectTable: (state: unknown, id: number) => void;
   getEffectTypeFlags: (id: number) => number | undefined;

@@ -80,6 +80,7 @@ export function loadLuaScriptFile(L: unknown, hostState: LuaHostState, name: str
   if (code === undefined) return { ok: false, name, error: `Script ${name} was not found` };
   const previousCode = hostState.currentScriptCardCode;
   hostState.currentScriptCardCode = cardCodeFromScriptName(name) ?? previousCode;
+  hostState.loadedScriptBodies.set(name, code);
   const result = runLuaScript(L, code, name);
   hostState.currentScriptCardCode = previousCode;
   if (result.ok) hostState.loadedScripts.add(name);

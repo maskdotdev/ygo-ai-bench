@@ -51,7 +51,8 @@ describe("Node upstream chain-limit snapshot restore", () => {
         e:SetRange(LOCATION_HAND)
         e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
           if chk==0 then return true end
-          Duel.SetChainLimitTillChainEnd(function(te,rp,tp) return te:GetHandler():GetCode()==200 end)
+          local marker = { allowed = false }
+          Duel.SetChainLimitTillChainEnd(function(te,rp,tp) return te:GetHandler():GetCode()==200 or marker.allowed end)
         end)
         e:SetOperation(function(e,c) Debug.Message("limit source") end)
         c:RegisterEffect(e)
@@ -874,7 +875,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 
-  it("reports Lua one-chain limit predicates that cannot be restored from snapshots", () => {
+  it("restores inline literal handler-code Lua one-chain limit predicates from snapshots", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
     tempRoots.push(root);
     fs.mkdirSync(path.join(root, "script"), { recursive: true });
@@ -932,25 +933,21 @@ describe("Node upstream chain-limit snapshot restore", () => {
 
     const snapshot = serializeDuel(session);
     expect(snapshot.state.chainLimits).toEqual([
-      expect.objectContaining({ registryKey: expect.stringMatching(/^lua-chain-limit:100:0:link:/), untilChainEnd: false, expiresAtChainLength: 1 }),
+      expect.objectContaining({ registryKey: "lua-chain-limit:100:0:link:known:closure:handler-code:200", untilChainEnd: false, expiresAtChainLength: 1 }),
     ]);
     const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
 
-    expect(restored.restoreComplete).toBe(false);
+    expect(restored.restoreComplete).toBe(true);
     expect(restored.chainLimitRegistryKeys).toEqual(snapshot.state.chainLimits.map((limit) => limit.registryKey));
-    expect(restored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
-    expect(restored.incompleteReasons).toEqual([`missing Lua chain-limit registry keys: ${restored.chainLimitRegistryKeys[0]}`]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.incompleteReasons).toEqual([]);
     expect(restored.session.state.chainLimits).toHaveLength(1);
-    expect(restored.session.state.chainLimits[0]).toMatchObject({ untilChainEnd: false, expiresAtChainLength: 1 });
-    expect(restored.session.state.chainLimits[0]).not.toHaveProperty("registryKey");
-    expect(getDuelLegalActions(restored.session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
-    expect(getGroupedDuelLegalActions(restored.session, 1).flatMap((group) => group.actions).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(false);
-    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
-    expect(applyLuaRestoreResponse(restored, { type: "passChain", player: 0, label: "Pass" })).toMatchObject({
-      ok: false,
-      legalActions: [],
-      legalActionGroups: [],
-    });
+    expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey: "lua-chain-limit:100:0:link:known:closure:handler-code:200", untilChainEnd: false, expiresAtChainLength: 1 });
+    expect(getDuelLegalActions(restored.session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
+    expect(getGroupedDuelLegalActions(restored.session, 1).flatMap((group) => group.actions).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
+    expectLuaRestoreGroupsMirrorActions(restored, 1);
+    const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
+    expect(restoredAction).toBeDefined();
+    applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 });

@@ -38,6 +38,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     fusionMaterialUids: [],
     scriptSource,
     loadedScripts: new Set(),
+    loadedScriptBodies: new Map(),
     currentScriptCardCode: undefined,
     pushEffectTable(state, id) {
       pushLuaEffectTable(state, id, hostState);
@@ -74,12 +75,14 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   return {
     messages: hostState.messages,
     loadScript(code, name) {
+      hostState.loadedScriptBodies.set(name, code);
       return runLuaCardScript(L, hostState, code, name);
     },
     loadCardScript(cardCode, source) {
       const name = scriptFilenameForCard(cardCode);
       const code = source.readScript(name);
       if (code === undefined) return { ok: false, name, error: `Script ${name} was not found` };
+      hostState.loadedScriptBodies.set(name, code);
       return runLuaCardScript(L, hostState, code, name);
     },
     registerInitialEffects() {

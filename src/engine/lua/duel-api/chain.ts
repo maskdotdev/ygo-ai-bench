@@ -12,6 +12,7 @@ export interface LuaDuelChainApiHostState {
   getEffectTypeFlags: (id: number) => number | undefined;
   changeChainOperation: (state: unknown, chainIndex: number, operationRef: number) => boolean;
   activeContext: DuelEffectContext | undefined;
+  loadedScriptBodies?: Map<string, string>;
 }
 
 export function installDuelChainApi(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): void {
@@ -161,7 +162,7 @@ function pushChainMaterial(L: unknown, session: DuelSession, hostState: LuaDuelC
 function pushSetChainLimit(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState, untilChainEnd: boolean): number {
   const filterRef = readOptionalFunctionRef(L, 1);
   if (filterRef === undefined) return 0;
-  const registryKey = knownLuaChainLimitRegistryKey(L, hostState.activeContext, untilChainEnd) ?? luaChainLimitRegistryKey(hostState.activeContext, untilChainEnd, filterRef);
+  const registryKey = knownLuaChainLimitRegistryKey(L, hostState, untilChainEnd) ?? luaChainLimitRegistryKey(hostState.activeContext, untilChainEnd, filterRef);
   addDuelChainLimit(session.state, {
     ...(registryKey === undefined ? {} : { registryKey }),
     untilChainEnd,
@@ -171,13 +172,14 @@ function pushSetChainLimit(L: unknown, session: DuelSession, hostState: LuaDuelC
   return 0;
 }
 
-function knownLuaChainLimitRegistryKey(L: unknown, ctx: DuelEffectContext | undefined, untilChainEnd: boolean): string | undefined {
+function knownLuaChainLimitRegistryKey(L: unknown, hostState: LuaDuelChainApiHostState, untilChainEnd: boolean): string | undefined {
+  const ctx = hostState.activeContext;
   if (!ctx?.source.code) return undefined;
-  const known = knownLuaChainLimitPredicate(L, 1);
+  const known = knownLuaChainLimitPredicate(L, 1, hostState);
   return known ? `lua-chain-limit:${ctx.source.code}:${ctx.player}:${untilChainEnd ? "chain" : "link"}:known:${known}` : undefined;
 }
 
-function knownLuaChainLimitPredicate(L: unknown, index: number): string | undefined {
+function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
   if (isGlobalTableFunction(L, index, "aux", "FALSE")) return "aux.FALSE";
   if (isGlobalTableFunction(L, index, "aux", "TRUE")) return "aux.TRUE";
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
@@ -188,6 +190,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number): string | undefi
   if (typeMask !== undefined) return `closure:type-mask-response-player:${typeMask}`;
   const handlerCode = capturedHandlerCode(L, index);
   if (handlerCode !== undefined) return `closure:handler-code:${handlerCode}`;
+  const literalHandlerCode = literalHandlerCodePredicate(L, index, hostState);
+  if (literalHandlerCode !== undefined) return `closure:handler-code:${literalHandlerCode}`;
   const responsePlayer = capturedResponsePlayer(L, index);
   if (responsePlayer !== undefined) return `closure:response-player:${responsePlayer}`;
   const chainPlayer = capturedChainPlayer(L, index);
@@ -284,6 +288,67 @@ function isTypeMaskUpvalueName(name: string): boolean {
 function capturedHandlerCode(L: unknown, index: number): number | undefined {
   const captured = capturedSingleNumberUpvalue(L, index, isHandlerCodeUpvalueName);
   return captured !== undefined && captured > 0 ? captured : undefined;
+}
+
+function literalHandlerCodePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
+  const location = luaFunctionSourceLocation(L, index);
+  if (!location) return undefined;
+  const source = hostState.loadedScriptBodies?.get(location.source);
+  if (!source) return undefined;
+  const snippet = source.split(/\r?\n/).slice(location.line - 1, location.lastLine).join(" ");
+  const match = snippet.match(/return\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*(?:GetCode|IsCode)\s*\(\s*\)\s*==\s*(\d+)/)
+    ?? snippet.match(/return\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsCode\s*\(\s*(\d+)\s*\)/);
+  const code = match?.[1] ? Number(match[1]) : undefined;
+  return code !== undefined && Number.isSafeInteger(code) && code > 0 ? code : undefined;
+}
+
+function hasNonEnvironmentUpvalues(L: unknown, index: number): boolean {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) return false;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    lua.lua_pop(L, 1);
+    if (name !== "_ENV") return true;
+  }
+}
+
+function luaFunctionSourceLocation(L: unknown, index: number): { source: string; line: number; lastLine: number } | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  lua.lua_getglobal(L, to_luastring("debug"));
+  lua.lua_getfield(L, -1, to_luastring("getinfo"));
+  if (!lua.lua_isfunction(L, -1)) {
+    lua.lua_pop(L, 2);
+    return undefined;
+  }
+  lua.lua_pushvalue(L, absoluteIndex);
+  lua.lua_pushstring(L, to_luastring("S"));
+  const status = lua.lua_pcall(L, 2, 1, 0);
+  if (status !== lua.LUA_OK || !lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, 2);
+    return undefined;
+  }
+  const source = readStringField(L, -1, "source");
+  const line = readIntegerField(L, -1, "linedefined");
+  const lastLine = readIntegerField(L, -1, "lastlinedefined");
+  lua.lua_pop(L, 2);
+  if (!source || line === undefined || lastLine === undefined || line < 1 || lastLine < line) return undefined;
+  return { source, line, lastLine };
+}
+
+function readStringField(L: unknown, tableIndex: number, field: string): string | undefined {
+  lua.lua_getfield(L, tableIndex, to_luastring(field));
+  const value = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) : undefined;
+  lua.lua_pop(L, 1);
+  return value;
+}
+
+function readIntegerField(L: unknown, tableIndex: number, field: string): number | undefined {
+  lua.lua_getfield(L, tableIndex, to_luastring(field));
+  const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
+  lua.lua_pop(L, 1);
+  return value;
 }
 
 function isHandlerCodeUpvalueName(name: string): boolean {
