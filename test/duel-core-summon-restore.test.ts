@@ -143,6 +143,52 @@ describe("core summon restore", () => {
     assertRestoreLegalWindow(restored, staleProcedure, 0);
   });
 
+  it("restores triggerless Flip Summons to turn-player open fast-effect priority", () => {
+    const session = createDuel({ seed: 246, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "500", "500"] },
+    });
+    startDuel(session);
+
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const turnQuick = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const opponentQuick = queryPublicState(session).cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeTruthy();
+    expect(turnQuick).toBeTruthy();
+    expect(opponentQuick).toBeTruthy();
+    moveDuelCard(session.state, summoned!.uid, "monsterZone", 0).position = "faceDownDefense";
+    session.state.cards.find((card) => card.uid === summoned!.uid)!.faceUp = false;
+    registerEffect(session, openOnlyQuick("restore-flip-open-turn-quick", turnQuick!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-flip-open-opponent-quick", opponentQuick!.uid, 1));
+
+    const flip = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "flipSummon" && candidate.uid === summoned!.uid);
+    expect(flip).toBeDefined();
+    const result = applyResponse(session, flip!);
+    expect(result.ok, result.error).toBe(true);
+    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(result.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-flip-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
+      "restore-flip-open-turn-quick": restoreOpenOnlyQuick,
+      "restore-flip-open-opponent-quick": restoreOpenOnlyQuick,
+    });
+    expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [] });
+    expect(restored.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack", faceUp: true });
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-flip-open-turn-quick")).toBe(true);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.effectId === "restore-flip-open-opponent-quick")).toBe(false);
+    expect(getDuelLegalActions(restored, 0).some((action) => action.type === "flipSummon" && action.uid === summoned!.uid)).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 0));
+
+    const staleFlip = applyResponse(restored, flip!);
+    expect(staleFlip.ok).toBe(false);
+    expect(staleFlip.error).toContain("Response is not currently legal");
+    assertRestoreLegalWindow(restored, staleFlip, 0);
+  });
+
   it("restores Normal Summon legal actions and applies the restored action", () => {
     const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
