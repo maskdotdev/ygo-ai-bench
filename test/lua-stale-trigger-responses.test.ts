@@ -235,6 +235,7 @@ describe("Lua stale trigger responses", () => {
     expect(stalePreapply.error).toContain("Response is not currently legal");
     const restoredActivation = applyLuaRestoreAndAssert(restored, restoredTrigger!);
     expect(restoredActivation.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(restoredActivation.state.chain).toHaveLength(0);
     expect(restoredActivation.state.pendingTriggers).toHaveLength(0);
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual([]);
