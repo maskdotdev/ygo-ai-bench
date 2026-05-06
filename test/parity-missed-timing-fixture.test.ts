@@ -323,4 +323,181 @@ describe("EDOPro parity missed timing fixtures", () => {
 
     expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
   });
+
+  it("keeps optional when triggers missed across restored optional declines", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Decline Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Decline Mandatory When", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Decline Optional When", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Decline Optional If", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Decline Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "700", name: "Decline Opponent Optional When", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "800", name: "Decline Opponent Optional If", kind: "monster", attack: 1300, defense: 1300 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "missed-timing restored decline fixture",
+      options: { seed: 54, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "300", "400", "500", "600"] },
+        1: { main: ["600", "700", "800", "600", "600"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "decline-multistep-send",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "600", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard", eventIsLast: false },
+              { player: 1, code: "600", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Decline multi step send resolved",
+          },
+          {
+            id: "decline-mandatory-when",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            triggerTiming: "when",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Decline mandatory when resolved",
+          },
+          {
+            id: "decline-optional-when",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            triggerTiming: "when",
+            range: ["hand"],
+            logMessage: "Decline optional when should not resolve",
+          },
+          {
+            id: "decline-optional-if",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            triggerTiming: "if",
+            range: ["hand"],
+            logMessage: "Decline optional if should not resolve",
+          },
+          {
+            id: "decline-opponent-optional-when",
+            player: 1,
+            code: "700",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            triggerTiming: "when",
+            range: ["hand"],
+            logMessage: "Decline opponent optional when should not resolve",
+          },
+          {
+            id: "decline-opponent-optional-if",
+            player: 1,
+            code: "800",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            triggerTiming: "if",
+            range: ["hand"],
+            logMessage: "Decline opponent optional if should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "decline-multistep-send" }), {
+          snapshotRestore: true,
+          after: {
+            source: "edopro",
+            note: "Only mandatory when and optional if triggers survive the non-last movement across restore",
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "decline-mandatory-when" },
+              { player: 0, effectId: "decline-optional-if" },
+              { player: 1, effectId: "decline-opponent-optional-if" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, effectId: "decline-optional-when" },
+              { type: "activateTrigger", player: 1, effectId: "decline-opponent-optional-when" },
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "decline-mandatory-when" }), {
+          snapshotRestore: true,
+          after: {
+            source: "edopro",
+            note: "Restored mandatory trigger selection advances to turn optional if without exposing missed optional when",
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "decline-mandatory-when" }],
+            pendingTriggers: [
+              { player: 0, effectId: "decline-optional-if" },
+              { player: 1, effectId: "decline-opponent-optional-if" },
+            ],
+            legalActions: [
+              { type: "activateTrigger", player: 0, effectId: "decline-optional-if" },
+              { type: "declineTrigger", player: 0, effectId: "decline-optional-if" },
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, effectId: "decline-optional-when" }],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "decline-optional-if" }), {
+          snapshotRestore: true,
+          after: {
+            source: "edopro",
+            note: "Declining restored turn optional if hands off to opponent optional if while opponent optional when remains missed",
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "decline-mandatory-when" }],
+            pendingTriggers: [{ player: 1, effectId: "decline-opponent-optional-if" }],
+            legalActions: [
+              { type: "activateTrigger", player: 1, effectId: "decline-opponent-optional-if" },
+              { type: "declineTrigger", player: 1, effectId: "decline-opponent-optional-if" },
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 1, effectId: "decline-opponent-optional-when" }],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "decline-opponent-optional-if" }), {
+          snapshotRestore: true,
+          after: {
+            source: "edopro",
+            note: "After restored optional declines, the already-chosen mandatory trigger resolves without resurrecting missed optional when triggers",
+            windowKind: "open",
+            pendingTriggers: [],
+            chain: [],
+            logIncludes: ["Decline mandatory when resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "Restored decline path leaves optional when triggers missed and unresolved",
+        pendingTriggers: [],
+        chain: [],
+        logIncludes: ["Decline multi step send resolved", "Decline mandatory when resolved"],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, effectId: "decline-optional-when" },
+          { type: "activateTrigger", player: 1, effectId: "decline-opponent-optional-when" },
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
 });
