@@ -68,13 +68,22 @@ describe("Lua short chain-player chain-limit restore", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
+    expect(hasGroupedLuaEffect(restored, 1, "lua-2")).toBe(true);
     applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 });
+
+function hasGroupedLuaEffect(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1, effectId: string): boolean {
+  return getLuaRestoreLegalActionGroups(restored, player).some((group) =>
+    group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId),
+  );
+}
 
 function applyAndAssert(session: DuelSession, response: DuelResponse): void {
   const result = applyResponse(session, response);
