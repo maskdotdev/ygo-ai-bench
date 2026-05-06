@@ -369,6 +369,14 @@ describe("chain action restore", () => {
       "restore-chain-ended-opponent-quick": restoreChainOnlyQuickEffect("Restored chain-ended opponent quick resolved"),
       "restore-chain-ended-opponent-open-only": restoreOpenOnlyQuickEffect("Restored chain-ended opponent open-only resolved"),
     });
+    const staleBeforePass = applyResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
+    expect(staleBeforePass.ok).toBe(false);
+    expect(staleBeforePass.error).toContain("Response is not currently legal");
+    expect(staleBeforePass.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    assertRestoreLegalWindow(restored, staleBeforePass, 1);
+
     const result = applyResponse(restored, pass!);
     expect(result.ok, result.error).toBe(true);
     expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", chain: [] });
@@ -504,6 +512,14 @@ describe("chain action restore", () => {
       "restore-chain-ended-decline-opponent-quick": restoreChainOnlyQuickEffect("Restored chain-ended decline opponent quick resolved"),
       "restore-chain-ended-decline-opponent-open-only": restoreOpenOnlyQuickEffect("Restored chain-ended decline opponent open-only resolved"),
     });
+    const staleBeforePass = applyResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
+    expect(staleBeforePass.ok).toBe(false);
+    expect(staleBeforePass.error).toContain("Response is not currently legal");
+    expect(staleBeforePass.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    assertRestoreLegalWindow(restored, staleBeforePass, 1);
+
     const result = applyResponse(restored, pass!);
     expect(result.ok, result.error).toBe(true);
     expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", chain: [] });
