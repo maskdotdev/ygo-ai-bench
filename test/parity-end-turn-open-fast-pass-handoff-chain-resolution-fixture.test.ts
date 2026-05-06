@@ -1,0 +1,240 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity end turn open fast-effect pass handoff chain resolution fixture", () => {
+  it("resolves new-turn chains from a returned End Turn handoff window after the previous turn player passes", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Previous Turn Handoff Chain Resolution Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "200", name: "Next Turn Handoff Chain Resolution Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Previous Turn Handoff Chain Resolution Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Next Turn Handoff Chain Resolution Quick", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "end turn open fast pass handoff chain resolution fixture",
+      options: { seed: 271, startingHandSize: 2 },
+      decks: {
+        0: { main: ["100", "400"] },
+        1: { main: ["200", "500"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "end-turn-handoff-chain-resolution-previous-open-quick",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Previous turn handoff chain resolution open quick should not be offered",
+          },
+          {
+            id: "end-turn-handoff-chain-resolution-next-open-quick",
+            player: 1,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Next turn handoff chain resolution open quick resolved",
+          },
+          {
+            id: "end-turn-handoff-chain-resolution-previous-chain-quick",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Previous turn handoff chain resolution quick should not resolve",
+          },
+          {
+            id: "end-turn-handoff-chain-resolution-next-chain-quick",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Next turn handoff chain resolution quick resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("endTurn", 0), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens the next turn player's open fast-effect window after End Turn",
+            windowId: 1,
+            windowKind: "open",
+            phase: "main1",
+            turnPlayer: 1,
+            turn: 2,
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 7 },
+            legalActionGroupCounts: { 0: 0, 1: 3 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-next-open-quick", count: 1 },
+              { type: "normalSummon", player: 1, windowId: 1, windowKind: "open", code: "200", location: "hand", count: 1 },
+              { type: "normalSummon", player: 1, windowId: 1, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "setMonster", player: 1, windowId: 1, windowKind: "open", code: "200", location: "hand", count: 1 },
+              { type: "setMonster", player: 1, windowId: 1, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "changePhase", player: 1, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 1, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-next-open-quick", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 1, code: "200", location: "hand" },
+                { type: "normalSummon", player: 1, code: "500", location: "hand" },
+                { type: "setMonster", player: 1, code: "200", location: "hand" },
+                { type: "setMonster", player: 1, code: "500", location: "hand" },
+              ], 1, 1),
+              {
+                player: 1,
+                label: "Turn",
+                windowId: 1,
+                windowKind: "open",
+                actions: [
+                  { type: "changePhase", player: 1, windowId: 1, windowKind: "open", count: 1 },
+                  { type: "endTurn", player: 1, windowId: 1, windowKind: "open", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-previous-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-previous-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-next-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "end-turn-handoff-chain-resolution-previous-open-quick", 1, "open"),
+              absentWindowEffectGroup(0, "end-turn-handoff-chain-resolution-previous-chain-quick", 1, "open"),
+              absentWindowEffectGroup(1, "end-turn-handoff-chain-resolution-next-chain-quick", 1, "open"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "end-turn-handoff-chain-resolution-next-open-quick" })),
+        makeScriptedStep(makeResponseSelector("passChain", 0)),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "end-turn-handoff-chain-resolution-next-chain-quick" })),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro opens previous-turn response priority after the new turn player chains from the returned turn-handoff response window",
+            windowId: 4,
+            windowKind: "chainResponse",
+            phase: "main1",
+            turnPlayer: 1,
+            turn: 2,
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 1, effectId: "end-turn-handoff-chain-resolution-next-open-quick", sourceUid: "p1-deck-200-0" },
+              { player: 1, effectId: "end-turn-handoff-chain-resolution-next-chain-quick", sourceUid: "p1-deck-500-1" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-handoff-chain-resolution-previous-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "end-turn-handoff-chain-resolution-previous-chain-quick", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-handoff-chain-resolution-previous-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-handoff-chain-resolution-next-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-handoff-chain-resolution-next-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "end-turn-handoff-chain-resolution-previous-open-quick", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "end-turn-handoff-chain-resolution-next-open-quick", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "end-turn-handoff-chain-resolution-next-chain-quick", 4, "chainResponse"),
+            ],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro resolves the new turn player's turn-handoff chain after the previous turn player passes the reopened response window",
+        windowId: 5,
+        windowKind: "open",
+        phase: "main1",
+        turnPlayer: 1,
+        turn: 2,
+        waitingFor: 1,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        legalActionCounts: { 0: 0, 1: 6 },
+        legalActionGroupCounts: { 0: 0, 1: 2 },
+        legalActions: [
+          { type: "normalSummon", player: 1, windowId: 5, windowKind: "open", code: "200", location: "hand", count: 1 },
+          { type: "normalSummon", player: 1, windowId: 5, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 1, windowId: 5, windowKind: "open", code: "200", location: "hand", count: 1 },
+          { type: "setMonster", player: 1, windowId: 5, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 1, windowId: 5, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 1, windowId: 5, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          summonGroup([
+            { type: "normalSummon", player: 1, code: "200", location: "hand" },
+            { type: "normalSummon", player: 1, code: "500", location: "hand" },
+            { type: "setMonster", player: 1, code: "200", location: "hand" },
+            { type: "setMonster", player: 1, code: "500", location: "hand" },
+          ], 1, 5),
+          {
+            player: 1,
+            label: "Turn",
+            windowId: 5,
+            windowKind: "open",
+            actions: [
+              { type: "changePhase", player: 1, windowId: 5, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 1, windowId: 5, windowKind: "open", count: 1 },
+            ],
+          },
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-next-open-quick" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-next-chain-quick" },
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-previous-open-quick" },
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-previous-chain-quick" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(1, "end-turn-handoff-chain-resolution-next-open-quick", 5, "open"),
+          absentWindowEffectGroup(1, "end-turn-handoff-chain-resolution-next-chain-quick", 5, "open"),
+          absentWindowEffectGroup(0, "end-turn-handoff-chain-resolution-previous-open-quick", 5, "open"),
+          absentWindowEffectGroup(0, "end-turn-handoff-chain-resolution-previous-chain-quick", 5, "open"),
+        ],
+        logIncludes: [
+          "Next turn handoff chain resolution quick resolved",
+          "Next turn handoff chain resolution open quick resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
