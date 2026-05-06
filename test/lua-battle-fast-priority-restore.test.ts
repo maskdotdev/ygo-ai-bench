@@ -47,6 +47,7 @@ describe("Lua battle fast priority restore", () => {
 
     const resolved = applyLuaRestoreAndAssert(restored, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(resolved.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
@@ -87,6 +88,7 @@ describe("Lua battle fast priority restore", () => {
 
     const result = applyLuaRestoreAndAssert(restored, pass!);
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleStep: "damage", battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
@@ -129,6 +131,7 @@ describe("Lua battle fast priority restore", () => {
 
     const result = applyLuaRestoreAndAssert(restored, pass!);
     expect(result.state).toMatchObject({ waitingFor: 1, windowKind: "battle", battleStep: "damageCalculation", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 1 } });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
@@ -200,6 +203,7 @@ describe("Lua battle fast priority restore", () => {
     expect(pass).toBeDefined();
     const resolved = applyLuaRestoreAndAssert(restored, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(resolved.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
@@ -268,6 +272,7 @@ describe("Lua battle fast priority restore", () => {
     expect(pass).toBeDefined();
     const resolved = applyLuaRestoreAndAssert(restored, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleStep: "damageCalculation", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 1 } });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(resolved.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
@@ -336,6 +341,7 @@ describe("Lua battle fast priority restore", () => {
     expect(pass).toBeDefined();
     const resolved = applyLuaRestoreAndAssert(restored, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "afterDamageCalculation", responsePlayer: 1 } });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(resolved.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
@@ -407,6 +413,7 @@ describe("Lua battle fast priority restore", () => {
     expect(pass).toBeDefined();
     const resolved = applyLuaRestoreAndAssert(restored, pass!);
     expect(resolved.state).toMatchObject({ waitingFor: 1, windowKind: "battle", damagePasses: [], battleWindow: { kind: "endDamageStep", responsePlayer: 1 } });
+    expect(restored.session.state.chainPasses).toEqual([]);
     expect(resolved.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(resolved.legalActionGroups.flatMap((group) => group.actions)).toEqual(resolved.legalActions);
