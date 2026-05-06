@@ -2,7 +2,7 @@ import type { ScriptedLegalActionExpectation, ScriptedLegalActionGroupExpectatio
 
 type AttackChoice = { attackerUid: string; targetUid?: string; directAttack?: true };
 type TriggerBucket = "turnMandatory" | "turnOptional" | "opponentMandatory" | "opponentOptional";
-type WindowKind = "open" | "triggerBucket" | "chainResponse";
+type WindowKind = "open" | "battle" | "triggerBucket" | "chainResponse";
 
 export const directAttackGroup = (player: 0 | 1, attackerUid: string, count = 1, windowId?: number) => ({
   player,
@@ -93,6 +93,14 @@ export const passBattleGroup = (player: 0 | 1, type: "passAttack" | "passDamage"
   windowKind: "battle" as const,
   count,
   actions: [{ type, player, ...(windowId === undefined ? {} : { windowId }), windowKind: "battle" as const, count }],
+});
+
+export const absentPassBattleGroup = (player: 0 | 1, type: "passAttack" | "passDamage", windowId?: number) => ({
+  player,
+  label: "Pass",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "battle" as const,
+  actions: [{ type, player, ...(windowId === undefined ? {} : { windowId }), windowKind: "battle" as const }],
 });
 
 export const effectGroup = (player: 0 | 1, effectId: string, count = 1, windowId?: number) => ({
