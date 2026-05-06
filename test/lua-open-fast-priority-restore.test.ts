@@ -278,6 +278,18 @@ describe("Lua open fast priority restore", () => {
       expect.stringContaining("18300"),
     ]);
     expect(restored.host.messages).toEqual(["restored open fast source resolved"]);
+    const restoredFinalResponse = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
+    expect(restoredFinalResponse.restoreComplete, restoredFinalResponse.incompleteReasons.join("; ")).toBe(true);
+    expect(queryPublicState(restoredFinalResponse.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(restoredFinalResponse.session.state.chain.map((link) => link.sourceUid)).toEqual([
+      expect.stringContaining("18200"),
+      expect.stringContaining("18300"),
+    ]);
+    expect(getLuaRestoreLegalActions(restoredFinalResponse, 0)).toEqual([]);
+    expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restoredFinalResponse, 1))).toEqual(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 1)));
+    expect(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restoredFinalResponse, 1))).toEqual(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restored, 1)));
+    expect(getLuaRestoreLegalActionGroups(restoredFinalResponse, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredFinalResponse, 1));
+    expect(hasGroupedLuaEffect(getLuaRestoreLegalActionGroups(restoredFinalResponse, 1), 1, "18300", "chainResponse")).toBe(true);
 
     const staleOpponentChainQuick = applyLuaRestoreResponse(restored, opponentChainQuick!);
     expect(staleOpponentChainQuick.ok).toBe(false);
