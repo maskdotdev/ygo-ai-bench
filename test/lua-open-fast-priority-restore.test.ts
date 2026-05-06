@@ -233,6 +233,14 @@ describe("Lua open fast priority restore", () => {
     expect(opened.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(opened.legalActions.some((action) => action.type === "activateEffect" && action.uid.includes("18300"))).toBe(false);
     expect(hasGroupedLuaEffect(opened.legalActionGroups, 1, "18300", "open")).toBe(false);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
+
+    const restoredOpenWindow = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
+    expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(queryPublicState(restoredOpenWindow.session)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restoredOpenWindow, 0))).toEqual(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0)));
+    expect(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restoredOpenWindow, 0))).toEqual(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restored, 0)));
+    expect(getLuaRestoreLegalActions(restoredOpenWindow, 1)).toEqual([]);
 
     const staleChainPass = applyLuaRestoreResponse(restored, chainPass!);
     expect(staleChainPass.ok).toBe(false);
