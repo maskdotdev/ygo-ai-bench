@@ -35,6 +35,7 @@ describe("trigger order prompt restore", () => {
     expect(declined.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-optional"]);
     expect(queryPublicState(restored).triggerOrderPrompt).toBeUndefined();
     expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([declined.state.pendingTriggers.map((trigger) => trigger.id), declined.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
       "restore-order-second-optional",
       "restore-order-second-optional",
@@ -44,6 +45,7 @@ describe("trigger order prompt restore", () => {
     expect(queryPublicState(restoredSingleTrigger).triggerOrderPrompt).toBeUndefined();
     expect(restoredSingleTrigger.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
     expect(getDuelLegalActions(restoredSingleTrigger, 0).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getGroupedDuelLegalActions(restoredSingleTrigger, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([restoredSingleTrigger.state.pendingTriggers.map((trigger) => trigger.id), restoredSingleTrigger.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restoredSingleTrigger, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
       "restore-order-second-optional",
       "restore-order-second-optional",
@@ -87,6 +89,7 @@ describe("trigger order prompt restore", () => {
     expect(queryPublicState(restored).triggerOrderPrompt).toBeUndefined();
     expect(restored.state.chain.map((link) => link.effectId)).toEqual(["restore-order-first-activation"]);
     expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([activated.state.pendingTriggers.map((trigger) => trigger.id), activated.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
       "restore-order-second-after-activation",
       "restore-order-second-after-activation",
@@ -96,6 +99,7 @@ describe("trigger order prompt restore", () => {
     expect(queryPublicState(restoredSingleTrigger).triggerOrderPrompt).toBeUndefined();
     expect(restoredSingleTrigger.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
     expect(getDuelLegalActions(restoredSingleTrigger, 0).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getGroupedDuelLegalActions(restoredSingleTrigger, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([restoredSingleTrigger.state.pendingTriggers.map((trigger) => trigger.id), restoredSingleTrigger.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restoredSingleTrigger, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
       "restore-order-second-after-activation",
       "restore-order-second-after-activation",
@@ -140,12 +144,14 @@ describe("trigger order prompt restore", () => {
     expect(activated.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-mandatory"]);
     expect(queryPublicState(restored).triggerOrderPrompt).toBeUndefined();
     expect(getDuelLegalActions(restored, 0).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getGroupedDuelLegalActions(restored, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([activated.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restored, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["restore-order-second-mandatory"]);
 
     const restoredSingleTrigger = restoreDuel(serializeDuel(restored), createCardReader(cards), restoreMandatoryRegistry());
     expect(queryPublicState(restoredSingleTrigger).triggerOrderPrompt).toBeUndefined();
     expect(restoredSingleTrigger.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
     expect(getDuelLegalActions(restoredSingleTrigger, 0).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getGroupedDuelLegalActions(restoredSingleTrigger, 0).map((group) => group.triggerBucket?.triggerIds)).toEqual([restoredSingleTrigger.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restoredSingleTrigger, 0).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["restore-order-second-mandatory"]);
     const staleActivation = applyResponse(restoredSingleTrigger, activation!);
     expect(staleActivation.ok).toBe(false);
@@ -195,6 +201,7 @@ describe("trigger order prompt restore", () => {
     expect(declined.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-opponent"]);
     expect(queryPublicState(restoredOpponentBucket).triggerOrderPrompt).toBeUndefined();
     expect(getDuelLegalActions(restoredOpponentBucket, 1).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => group.triggerBucket?.triggerIds)).toEqual([declined.state.pendingTriggers.map((trigger) => trigger.id), declined.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restoredOpponentBucket, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
       "restore-order-second-opponent",
       "restore-order-second-opponent",
@@ -204,6 +211,7 @@ describe("trigger order prompt restore", () => {
     expect(queryPublicState(restoredSingleTrigger).triggerOrderPrompt).toBeUndefined();
     expect(restoredSingleTrigger.state.pendingTriggers).toEqual(restoredOpponentBucket.state.pendingTriggers);
     expect(getDuelLegalActions(restoredSingleTrigger, 1).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getGroupedDuelLegalActions(restoredSingleTrigger, 1).map((group) => group.triggerBucket?.triggerIds)).toEqual([restoredSingleTrigger.state.pendingTriggers.map((trigger) => trigger.id), restoredSingleTrigger.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restoredSingleTrigger, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual([
       "restore-order-second-opponent",
       "restore-order-second-opponent",
@@ -258,12 +266,14 @@ describe("trigger order prompt restore", () => {
     expect(activated.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-order-second-opponent-mandatory"]);
     expect(queryPublicState(restoredOpponentBucket).triggerOrderPrompt).toBeUndefined();
     expect(getDuelLegalActions(restoredOpponentBucket, 1).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getGroupedDuelLegalActions(restoredOpponentBucket, 1).map((group) => group.triggerBucket?.triggerIds)).toEqual([activated.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restoredOpponentBucket, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["restore-order-second-opponent-mandatory"]);
 
     const restoredSingleTrigger = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreOpponentMandatoryRegistry());
     expect(queryPublicState(restoredSingleTrigger).triggerOrderPrompt).toBeUndefined();
     expect(restoredSingleTrigger.state.pendingTriggers).toEqual(restoredOpponentBucket.state.pendingTriggers);
     expect(getDuelLegalActions(restoredSingleTrigger, 1).some((action) => action.type === "activateEffect" || action.type === "passChain")).toBe(false);
+    expect(getGroupedDuelLegalActions(restoredSingleTrigger, 1).map((group) => group.triggerBucket?.triggerIds)).toEqual([restoredSingleTrigger.state.pendingTriggers.map((trigger) => trigger.id)]);
     expect(getDuelLegalActions(restoredSingleTrigger, 1).filter((action) => action.type === "activateTrigger" || action.type === "declineTrigger").map((action) => action.effectId)).toEqual(["restore-order-second-opponent-mandatory"]);
     const staleActivation = applyResponse(restoredSingleTrigger, opponentActivation!);
     expect(staleActivation.ok).toBe(false);
