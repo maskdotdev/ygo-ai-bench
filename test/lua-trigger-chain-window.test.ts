@@ -761,9 +761,11 @@ function assertLuaRestoreLegalWindow(restored: Parameters<typeof applyLuaRestore
 }
 
 function assertStaleLuaPreviousWindow(restored: Parameters<typeof applyLuaRestoreResponse>[0], action: DuelResponse, player: 0 | 1): void {
+  const beforeChainPasses = [...restored.session.state.chainPasses];
   const stale = applyLuaRestoreResponse(restored, { ...action, windowId: action.windowId! - 1 });
   expect(stale.ok).toBe(false);
   expect(stale.error).toContain("Response is not currently legal");
+  expect(restored.session.state.chainPasses).toEqual(beforeChainPasses);
   assertLuaRestoreLegalWindow(restored, stale, player);
 }
 
