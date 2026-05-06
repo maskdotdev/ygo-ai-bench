@@ -318,8 +318,8 @@ describe("Lua chain event helpers", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
+    const scriptName = "readjust-missed-timing.lua";
+    const script = `
       local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -362,9 +362,69 @@ describe("Lua chain event helpers", () => {
         Debug.Message("readjust boundary resolved")
       end)
       adjust_watcher:RegisterEffect(adjust_effect)
-      `,
-      "readjust-missed-timing.lua",
-    );
+      `;
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+              Duel.SendtoGrave(target, REASON_EFFECT)
+              Duel.Readjust()
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c300.lua") {
+          return `
+          c300={}
+          function c300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_TO_GRAVE)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("when to grave resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c400.lua") {
+          return `
+          c400={}
+          function c400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_TO_GRAVE)
+            e:SetProperty(EFFECT_FLAG_DELAY)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("if to grave resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c500.lua") {
+          return `
+          c500={}
+          function c500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_ADJUST)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("readjust boundary resolved") end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const loaded = host.loadScript(script, scriptName);
     expect(loaded.ok, loaded.error).toBe(true);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
@@ -378,6 +438,15 @@ describe("Lua chain event helpers", () => {
       expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014 }), expect.objectContaining({ eventName: "adjust", eventCode: 1040 })]),
     );
     expect(session.state.log).toContainEqual(expect.objectContaining({ action: "adjust", detail: "Readjust" }));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(restoredPendingEffectIds).not.toContain("lua-2-1014");
+    expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1014", "lua-4-1040"]));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
   });
 
   it("makes Lua optional when readjust triggers miss timing after later event boundaries", () => {
