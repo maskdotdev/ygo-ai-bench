@@ -97,9 +97,7 @@ describe("Lua special summon procedure restore", () => {
     expect(staleResult.ok).toBe(false);
     expect(staleResult.error).toContain("Response is not currently legal");
     expect(staleResult.state.actionWindowId).toBe(restored.session.state.actionWindowId);
-    expect(staleResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(staleResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleResult.legalActions);
+    assertFailedRestoreSurface(restored, staleResult);
     expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "hand" });
