@@ -1,0 +1,250 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-handoff opponent-response fixture", () => {
+  it("reopens turn-player responses after the opponent chains from a restored opponent mandatory handoff", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Opponent Mandatory Handoff Response Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Opponent Mandatory Handoff Response Turn Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "300", name: "Opponent Mandatory Handoff Response Turn Mandatory", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Opponent Mandatory Handoff Response First Opponent", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Opponent Mandatory Handoff Response Second Opponent", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "700", name: "Opponent Mandatory Handoff Response Moved Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Mandatory Handoff Response Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Opponent Mandatory Handoff Response Opponent Quick", kind: "monster", attack: 1600, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution opponent same-bucket mandatory pass-handoff opponent-response fixture",
+      options: { seed: 358, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "700", "800"] },
+        1: { main: ["400", "500", "900", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-chain-resolution-opponent-mandatory-handoff-response-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "700", from: "hand", to: "graveyard", collectEvent: "sentToGraveyard" },
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 1, code: "900", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Chain resolution opponent mandatory handoff response starter resolved",
+          },
+          {
+            id: "fixture-chain-resolution-turn-mandatory-handoff-response",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain resolution turn mandatory handoff response should not resolve yet",
+          },
+          {
+            id: "fixture-chain-resolution-first-opponent-mandatory-handoff-response",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain resolution first opponent mandatory handoff response should not resolve yet",
+          },
+          {
+            id: "fixture-chain-resolution-second-opponent-mandatory-handoff-response",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "sentToGraveyard",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Chain resolution second opponent mandatory handoff response should not resolve yet",
+          },
+          {
+            id: "fixture-chain-resolution-opponent-mandatory-handoff-response-turn-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain resolution opponent mandatory handoff response turn quick should not resolve yet",
+          },
+          {
+            id: "fixture-chain-resolution-opponent-mandatory-handoff-response-opponent-quick",
+            player: 1,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain resolution opponent mandatory handoff response opponent quick should not resolve yet",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-mandatory-handoff-response-starter" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-resolution-turn-mandatory-handoff-response" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro restores opponent same-bucket mandatory trigger ordering before pass-handoff response checks",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            pendingTriggers: [
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-response", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-handoff-response", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
+            ],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentMandatory" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 1, triggerBucket: "opponentMandatory" },
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-response", triggerBucket: "opponentMandatory", count: 1 },
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-mandatory-handoff-response", triggerBucket: "opponentMandatory", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentMandatory" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-response", triggerBucket: "opponentMandatory", count: 1 },
+                  { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-mandatory-handoff-response", triggerBucket: "opponentMandatory", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-response-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-response-opponent-quick" },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-response", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-handoff-response-turn-quick", 2, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-handoff-response-opponent-quick", 2, "triggerBucket"),
+              {
+                player: 1,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentMandatory" },
+                actions: [{ type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-response" }],
+              },
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Chain resolution opponent mandatory handoff response starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-second-opponent-mandatory-handoff-response" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-response" })),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro hands restored opponent mandatory trigger-chain responses to the opponent after the turn player passes",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-handoff-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+            ],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-response-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-handoff-response-opponent-quick", 1, 5),
+              chainPassGroup(1, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-response-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-response", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-handoff-response-turn-quick", 5),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-handoff-response", "opponentMandatory", 5, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Chain resolution opponent mandatory handoff response starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-resolution-opponent-mandatory-handoff-response-opponent-quick" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro reopens turn-player responses after an opponent response to restored opponent same-bucket mandatory trigger chains",
+        phase: "main1",
+        windowId: 6,
+        windowKind: "chainResponse",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [
+          { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+          { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-handoff-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+          { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+          { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory-handoff-response-opponent-quick", sourceUid: "p1-deck-900-2" },
+        ],
+        chainPasses: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-response-turn-quick", count: 1 },
+          { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-handoff-response-turn-quick", 1, 6),
+          chainPassGroup(0, 1, 6),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-response-opponent-quick" },
+          { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-response", triggerBucket: "opponentMandatory" },
+        ],
+        absentLegalActionGroups: [
+          absentChainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-handoff-response-opponent-quick", 6),
+          absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-handoff-response", "opponentMandatory", 6, "chainResponse"),
+        ],
+        locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+        logIncludes: ["Chain resolution opponent mandatory handoff response starter resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
