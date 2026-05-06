@@ -403,6 +403,20 @@ describe("chain action restore", () => {
     expect(restoredTriggerChain.state.chain.map((link) => link.effectId)).toEqual(["restore-chain-ended-trigger"]);
     expect(getDuelLegalActions(restoredTriggerChain, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-chain-ended-opponent-quick")).toBe(true);
     expect(getDuelLegalActions(restoredTriggerChain, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-chain-ended-opponent-open-only")).toBe(false);
+    const opponentQuick = getDuelLegalActions(restoredTriggerChain, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-chain-ended-opponent-quick");
+    expect(opponentQuick).toBeDefined();
+    const quickResult = applyResponse(restoredTriggerChain, opponentQuick!);
+    expect(quickResult.ok, quickResult.error).toBe(true);
+    expect(quickResult.state.chain.map((link) => link.effectId)).toEqual(["restore-chain-ended-trigger", "restore-chain-ended-opponent-quick"]);
+    expect(quickResult.state.log.some((entry) => entry.detail === "Restored chain-ended trigger resolved")).toBe(false);
+    expect(quickResult.state.log.some((entry) => entry.detail === "Restored chain-ended opponent quick resolved")).toBe(false);
+    const staleOpponentQuick = applyResponse(restoredTriggerChain, opponentQuick!);
+    expect(staleOpponentQuick.ok).toBe(false);
+    expect(staleOpponentQuick.error).toContain("Response is not currently legal");
+    expect(staleOpponentQuick.state.actionWindowId).toBe(restoredTriggerChain.state.actionWindowId);
+    expect(staleOpponentQuick.legalActions).toEqual(getDuelLegalActions(restoredTriggerChain, 1));
+    expect(staleOpponentQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTriggerChain, 1));
+    expect(staleOpponentQuick.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleOpponentQuick.legalActions);
     const triggerPass = getDuelLegalActions(restoredTriggerChain, triggerResult.state.waitingFor!).find((action) => action.type === "passChain");
     expect(triggerPass).toBeDefined();
     const staleBeforeTriggerPass = applyResponse(restoredTriggerChain, { ...triggerPass!, windowId: triggerPass!.windowId! - 1 });
@@ -417,6 +431,7 @@ describe("chain action restore", () => {
     expect(resolvedTrigger.ok, resolvedTrigger.error).toBe(true);
     expect(resolvedTrigger.state.chain).toEqual([]);
     expect(resolvedTrigger.state.log.some((entry) => entry.detail === "Restored chain-ended trigger resolved")).toBe(true);
+    expect(resolvedTrigger.state.log.some((entry) => entry.detail === "Restored chain-ended opponent quick resolved")).toBe(true);
     expect(resolvedTrigger.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(resolvedTrigger.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 0, effectId: "restore-chain-ended-open-quick", windowKind: "open" })]));
     expect(getDuelLegalActions(restoredTriggerChain, 1)).toEqual([]);
