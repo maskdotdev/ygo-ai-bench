@@ -65,7 +65,7 @@ describe("EDOPro parity banished missed timing fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "banish-multistep" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro drops optional when banished triggers when that banish is followed by another event, while optional if remains available",
@@ -85,7 +85,7 @@ describe("EDOPro parity banished missed timing fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "banish-optional-if" }), {
-          snapshotRestore: true,
+          snapshotRestore: "both",
         }),
       ],
       expected: {
