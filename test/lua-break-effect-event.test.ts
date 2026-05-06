@@ -242,54 +242,78 @@ describe("Lua break-effect events", () => {
     loadDecks(session, { 0: { main: ["100", "300", "400", "500"] }, 1: { main: [] } });
     startDuel(session);
 
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Duel.BreakEffect()
+              Duel.Damage(1, 100, REASON_EFFECT)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c300.lua") {
+          return `
+          c300={}
+          function c300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_BREAK_EFFECT)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Debug.Message("when break resolved")
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c400.lua") {
+          return `
+          c400={}
+          function c400.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_BREAK_EFFECT)
+            e:SetProperty(EFFECT_FLAG_DELAY)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Debug.Message("if break resolved")
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c500.lua") {
+          return `
+          c500={}
+          function c500.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_DAMAGE)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              Debug.Message("damage boundary resolved")
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
-      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local when_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local if_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local damage_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-
-      local e=Effect.CreateEffect(source)
-      e:SetType(EFFECT_TYPE_IGNITION)
-      e:SetRange(LOCATION_HAND)
-      e:SetOperation(function(e,tp)
-        Duel.BreakEffect()
-        Duel.Damage(1, 100, REASON_EFFECT)
-      end)
-      source:RegisterEffect(e)
-
-      local when_effect=Effect.CreateEffect(when_watcher)
-      when_effect:SetType(EFFECT_TYPE_TRIGGER_O)
-      when_effect:SetCode(EVENT_BREAK_EFFECT)
-      when_effect:SetRange(LOCATION_HAND)
-      when_effect:SetOperation(function(e,tp)
-        Debug.Message("when break resolved")
-      end)
-      when_watcher:RegisterEffect(when_effect)
-
-      local if_effect=Effect.CreateEffect(if_watcher)
-      if_effect:SetType(EFFECT_TYPE_TRIGGER_O)
-      if_effect:SetCode(EVENT_BREAK_EFFECT)
-      if_effect:SetProperty(EFFECT_FLAG_DELAY)
-      if_effect:SetRange(LOCATION_HAND)
-      if_effect:SetOperation(function(e,tp)
-        Debug.Message("if break resolved")
-      end)
-      if_watcher:RegisterEffect(if_effect)
-
-      local damage_effect=Effect.CreateEffect(damage_watcher)
-      damage_effect:SetType(EFFECT_TYPE_TRIGGER_O)
-      damage_effect:SetCode(EVENT_DAMAGE)
-      damage_effect:SetRange(LOCATION_HAND)
-      damage_effect:SetOperation(function(e,tp)
-        Debug.Message("damage boundary resolved")
-      end)
-      damage_watcher:RegisterEffect(damage_effect)
-      `,
-      "break-effect-later-boundary-missed-timing.lua",
-    );
-    expect(loaded.ok, loaded.error).toBe(true);
+    for (const code of [100, 300, 400, 500]) {
+      const loaded = host.loadCardScript(code, source);
+      expect(loaded.ok, loaded.error).toBe(true);
+    }
+    expect(host.registerInitialEffects()).toBe(4);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
@@ -301,6 +325,15 @@ describe("Lua break-effect events", () => {
     expect(session.state.eventHistory).toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "breakEffect", eventCode: 1050 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
     );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
+    expect(restoredPendingEffectIds).not.toContain("lua-2-1050");
+    expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1050", "lua-4-1111"]));
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
   });
 
   it("keeps operation event helpers from mutating ended duels", () => {
