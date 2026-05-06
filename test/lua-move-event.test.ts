@@ -123,6 +123,8 @@ describe("Lua move events", () => {
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["moved"]);
+    const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -140,6 +142,10 @@ describe("Lua move events", () => {
     expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(staleTrigger.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleTrigger.legalActions);
+    const originalTriggerPreapply = applyLuaRestoreResponse(restored, originalTrigger!);
+    expect(originalTriggerPreapply.ok).toBe(false);
+    expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
+    expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["moved"]);
     expect(restored.host.messages).not.toContain("restored move trigger 200");
 
